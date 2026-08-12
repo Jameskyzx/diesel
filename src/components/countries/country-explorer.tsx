@@ -37,7 +37,7 @@ const emptyCountrySummaries: CountryMapSummary[] = [];
 function MapModuleLoading() {
   return (
     <div
-      className="grid h-full min-h-[30rem] place-items-center rounded-md border border-slate-200 bg-[#e8f0ee]"
+      className="grid h-full min-h-[30rem] place-items-center rounded-[1.75rem] border border-black/[0.06] bg-[#edf3ef]"
       data-testid="map-module-loading"
       role="status"
     >
@@ -141,31 +141,31 @@ export function CountryExplorer({
     selectedIso3;
 
   return (
-    <main className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <section className="mb-5 grid gap-5 rounded-md border border-[#1b312b] bg-[#111918] px-5 py-6 text-white shadow-[0_16px_40px_rgb(15_32_28_/_0.12)] xl:grid-cols-[1fr_auto] xl:items-end sm:px-7">
+    <main className="page-shell py-8 sm:py-10">
+      <section className="mb-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-[#b8e548]">
+          <div className="section-kicker flex items-center gap-2">
             <Globe2 aria-hidden="true" className="size-4" />
             GLOBAL COUNTRY INTELLIGENCE
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          <h1 className="display-title mt-4 text-4xl font-semibold tracking-[-0.045em] text-[#142821] sm:text-5xl lg:text-6xl">
             全球柴油机法规地图
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-            悬停预览国家覆盖情况，点击地图或使用键盘国家选择器打开可分享的国家详情。
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
+            悬停查看覆盖，选择国家进入可分享、可追溯的法规与产品判断。
           </p>
         </div>
 
-        <div className="grid min-w-72 gap-1.5">
+        <div className="surface-panel grid min-w-72 gap-2 rounded-[1.25rem] p-4">
           <label
-            className="text-xs font-medium text-slate-300"
+            className="text-[11px] font-semibold tracking-[0.12em] text-emerald-800 uppercase"
             htmlFor="country-select"
           >
-            键盘 / 触控选择国家
+            快速选择国家
           </label>
           <select
             aria-label="选择国家"
-            className="h-11 rounded-md border border-white/15 bg-white/10 px-3 text-sm text-white shadow-none outline-none focus-visible:ring-[3px] focus-visible:ring-[#b8e548]/50"
+            className="h-12 rounded-xl border border-black/[0.08] bg-[#f7f8f3] px-3 text-sm font-medium text-[#17382e] shadow-none outline-none focus-visible:ring-[3px] focus-visible:ring-emerald-700/20"
             disabled={data.status !== "ready"}
             id="country-select"
             onChange={(event) => {
@@ -175,9 +175,9 @@ export function CountryExplorer({
             }}
             value={selectedIso3 ?? ""}
           >
-            <option className="text-slate-900" value="">请选择国家</option>
+            <option value="">请选择国家</option>
             {countryIndex.map((country) => (
-              <option className="text-slate-900" key={country.iso3} value={country.iso3}>
+              <option key={country.iso3} value={country.iso3}>
                 {country.name} · {country.iso3}
               </option>
             ))}
@@ -187,9 +187,9 @@ export function CountryExplorer({
 
       <section
         aria-label="已录入国家快捷入口"
-        className="mb-4 flex min-h-10 items-center gap-2 overflow-x-auto pb-1"
+        className="mb-5 flex min-h-10 items-center gap-2 overflow-x-auto pb-1"
       >
-        <span className="mr-1 inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <span className="mr-1 inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-emerald-900/65">
           <Database aria-hidden="true" className="size-3.5" />
           已录入
         </span>
@@ -204,6 +204,11 @@ export function CountryExplorer({
               onClick={() => selectCountry(country.iso3)}
               size="sm"
               variant={selectedIso3 === country.iso3 ? "default" : "outline"}
+              className={
+                selectedIso3 === country.iso3
+                  ? "rounded-full bg-[#173d31] px-4 text-white"
+                  : "rounded-full border-black/[0.07] bg-white/75 px-4 text-slate-600 hover:bg-emerald-50 hover:text-emerald-900"
+              }
             >
               {country.nameEn} · {country.iso3}
             </Button>
@@ -221,7 +226,7 @@ export function CountryExplorer({
 
       <section className="min-h-[30rem] lg:h-[calc(100dvh-18rem)] lg:min-h-[34rem]">
         {data.status === "loading" ? (
-          <div className="grid h-full min-h-[30rem] place-items-center rounded-md border border-slate-200 bg-white shadow-[0_10px_26px_rgb(15_32_28_/_0.06)]">
+          <div className="grid h-full min-h-[30rem] place-items-center rounded-[1.75rem] border border-black/[0.06] bg-white/85 shadow-[0_24px_70px_rgb(29_56_47_/_0.08)]">
             <div className="text-center">
               <LoaderCircle
                 aria-hidden="true"
@@ -236,7 +241,7 @@ export function CountryExplorer({
 
         {data.status === "error" ? (
           <div
-            className="grid h-full min-h-[30rem] place-items-center rounded-md border border-destructive/25 bg-card p-6 text-center"
+            className="grid h-full min-h-[30rem] place-items-center rounded-[1.75rem] border border-destructive/25 bg-card p-6 text-center"
             role="alert"
           >
             <div>
@@ -268,7 +273,7 @@ export function CountryExplorer({
         ) : null}
       </section>
 
-      <p className="mt-3 text-xs text-muted-foreground">
+      <p className="mt-4 px-1 text-[11px] text-muted-foreground">
         边界数据：Natural Earth 1:110m（公共领域）。国家详情以 ISO3
         与数据库连接。
         {selectedName ? ` 当前选择：${selectedName}。` : ""}

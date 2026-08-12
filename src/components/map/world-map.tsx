@@ -305,7 +305,7 @@ export function WorldMap({
   return (
     <div
       aria-label="可交互世界国家地图。可点击国家打开详情。"
-      className="relative h-full min-h-[30rem] overflow-hidden rounded-lg border border-slate-200 bg-[#e9f2f3] shadow-sm"
+      className="relative h-full min-h-[30rem] overflow-hidden rounded-[1.75rem] border border-black/[0.07] bg-[#e9f2f3] shadow-[0_28px_80px_rgb(29_56_47_/_0.12)]"
       data-testid="world-map"
       role="region"
     >
@@ -315,17 +315,17 @@ export function WorldMap({
         data-testid="map-canvas-container"
         ref={containerRef}
       />
-      <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-wrap gap-2 text-xs">
-        <span className="rounded-full border border-emerald-800/20 bg-emerald-800 px-3 py-1.5 font-medium text-white shadow-sm">
+      <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-wrap gap-2 text-xs sm:left-5 sm:top-5">
+        <span className="rounded-full border border-emerald-900/10 bg-[#173d31]/95 px-3.5 py-2 font-medium text-white shadow-sm backdrop-blur">
           有数据（Demo / 已核验）
         </span>
-        <span className="rounded-full border bg-white/95 px-3 py-1.5 font-medium text-slate-600 shadow-sm">
+        <span className="rounded-full border border-black/[0.06] bg-white/90 px-3.5 py-2 font-medium text-slate-600 shadow-sm backdrop-blur">
           暂无数据
         </span>
       </div>
       {tooltip ? (
         <div
-          className="pointer-events-none absolute z-20 w-56 rounded-xl border bg-card/95 p-3 shadow-xl backdrop-blur"
+          className="pointer-events-none absolute z-20 w-56 rounded-2xl border border-black/[0.08] bg-[#fffefa]/95 p-4 shadow-[0_20px_50px_rgb(24_53_44_/_0.2)] backdrop-blur"
           data-country-iso3={tooltip.iso3}
           data-testid="map-tooltip"
           style={{
@@ -355,8 +355,8 @@ export function WorldMap({
             ),
           }}
         >
-          <p className="font-semibold">{tooltip.name}</p>
-          <p className="mt-0.5 text-xs font-medium text-muted-foreground">
+          <p className="display-title text-lg font-semibold text-[#17382e]">{tooltip.name}</p>
+          <p className="mt-0.5 text-[10px] font-semibold tracking-[0.16em] text-emerald-700">
             {tooltip.iso3}
           </p>
           <p className="mt-2 text-xs">

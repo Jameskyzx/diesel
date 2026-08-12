@@ -1,0 +1,277 @@
+import "server-only";
+
+import { env } from "@/env";
+import {
+  countryDetailResponseSchema,
+  countryMapResponseSchema,
+  type CountryDetailResponse,
+  type CountryMapResponse,
+} from "@/features/countries/schemas";
+import {
+  countryDetailQuerySchema,
+  hasDetailedCountryCoverage,
+} from "@/features/database/schemas";
+import { getDatabase } from "@/server/db/client";
+import { getDemoDatabase } from "@/server/db/demo-client";
+import { getDatabaseMode } from "@/server/db/environment";
+import { createCountryRepository } from "@/server/repositories/country-repository";
+
+function serializeDate(value: Date): string {
+  return value.toISOString();
+}
+
+function currentUtcDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function isCurrentEffectiveRegulation(
+  regulation: {
+    effectiveFrom: string | null;
+    effectiveTo: string | null;
+    status: string;
+  },
+  asOf: string,
+): boolean {
+  const recordCanSupportTheDate =
+    regulation.status === "effective" ||
+    (regulation.status === "superseded" &&
+      regulation.effectiveTo !== null);
+
+  return recordCanSupportTheDate &&
+    regulation.effectiveFrom !== null &&
+    regulation.effectiveFrom <= asOf &&
+    (regulation.effectiveTo === null || regulation.effectiveTo > asOf);
+}
+
+export function isFutureAdoptedRegulation(
+  regulation: {
+    adoptedOn: string | null;
+    effectiveFrom: string | null;
+    status: string;
+  },
+  asOf: string,
+): boolean {
+  const adoptionWasKnown =
+    regulation.adoptedOn !== null && regulation.adoptedOn <= asOf;
+
+  return regulation.status !== "proposed" &&
+    adoptionWasKnown &&
+    (regulation.effectiveFrom === null || regulation.effectiveFrom > asOf);
+}
+
+function latestTimestamp(values: string[]): string {
+  return values.toSorted().at(-1) ?? new Date(0).toISOString();
+}
+
+/**
+ * ADR-045：核验新鲜度判定（纯函数，时钟可注入）。
+ * 超过阈值天数未核验视为 stale（UI 仅告警，不隐藏数据）。
+ */
+export function isStaleVerification(
+  verifiedIso: string,
+  nowIso: string,
+  thresholdDays: number,
+): boolean {
+  const ageMs = new Date(nowIso).getTime() - new Date(verifiedIso).getTime();
+  return ageMs > thresholdDays * 24 * 60 * 60 * 1000;
+}
+
+async function getCountryRepository() {
+  if (getDatabaseMode() === "pglite-demo") {
+    return createCountryRepository(await getDemoDatabase());
+  }
+
+  return createCountryRepository(getDatabase());
+}
+
+export async function listCountryMapSummaries(): Promise<CountryMapResponse> {
+  const repository = await getCountryRepository();
+  const rows = await repository.listMapSummaries();
+  const nowIso = new Date().toISOString();
+
+  return countryMapResponseSchema.parse({
+    countries: rows.map((country) => {
+      const verifiedAt = serializeDate(country.verifiedAt);
+      return {
+        ...country,
+        isStale: isStaleVerification(
+          verifiedAt,
+          nowIso,
+          env.COUNTRY_STALE_AFTER_DAYS,
+        ),
+        verifiedAt,
+      };
+    }),
+    status: "ok",
+  });
+}
+
+export async function getCountryDetails(
+  input: unknown,
+): Promise<CountryDetailResponse> {
+  const { asOf = currentUtcDate(), iso3 } =
+    countryDetailQuerySchema.parse(input);
+  const repository = await getCountryRepository();
+  const profile = await repository.findByIso3({ iso3 });
+
+  // ADR-040：目录国家（planned/no_data/none）没有详情数据，保持 ADR-029
+  // 的精确 no_data 契约；只有详情可见的覆盖状态才进入完整查询。
+  if (!profile || !hasDetailedCountryCoverage(profile.dataCoverageStatus)) {
+    return countryDetailResponseSchema.parse({
+      iso3,
+      status: "no_data",
+    });
+  }
+
+  const country = await repository.findDetailsByIso3({ asOf, iso3 });
+
+  if (!country) {
+    return countryDetailResponseSchema.parse({
+      iso3,
+      status: "no_data",
+    });
+  }
+
+  const {
+    regulations: countryRegulationRows,
+    ...countryWithoutRegulations
+  } = country;
+  const regulations = countryRegulationRows.map((regulation) => ({
+    ...regulation,
+    applicability: {
+      countryIso3: regulation.applicability.countryIso3,
+      jurisdiction: {
+        code: regulation.applicability.jurisdictionCode,
+        id: regulation.applicability.jurisdictionId,
+        isDemo: regulation.applicability.jurisdictionIsDemo,
+        name: regulation.applicability.jurisdictionName,
+        source: {
+          id: regulation.applicability.jurisdictionSourceId,
+          isDemo: regulation.applicability.jurisdictionSourceIsDemo,
+          publishedOn:
+            regulation.applicability.jurisdictionSourcePublishedOn,
+          publisher: regulation.applicability.jurisdictionSourcePublisher,
+          title: regulation.applicability.jurisdictionSourceTitle,
+          url: regulation.applicability.jurisdictionSourceUrl,
+          verifiedAt: serializeDate(
+            regulation.applicability.jurisdictionSourceVerifiedAt,
+          ),
+        },
+        verifiedAt: serializeDate(
+          regulation.applicability.jurisdictionVerifiedAt,
+        ),
+      },
+      membership: {
+        isDemo: regulation.applicability.membershipIsDemo,
+        source: {
+          id: regulation.applicability.membershipSourceId,
+          isDemo: regulation.applicability.membershipSourceIsDemo,
+          publishedOn: regulation.applicability.membershipSourcePublishedOn,
+          publisher: regulation.applicability.membershipSourcePublisher,
+          title: regulation.applicability.membershipSourceTitle,
+          url: regulation.applicability.membershipSourceUrl,
+          verifiedAt: serializeDate(
+            regulation.applicability.membershipSourceVerifiedAt,
+          ),
+        },
+        validFrom: regulation.applicability.membershipValidFrom,
+        validTo: regulation.applicability.membershipValidTo,
+        verifiedAt: serializeDate(
+          regulation.applicability.membershipVerifiedAt,
+        ),
+      },
+    },
+    source: {
+      ...regulation.source,
+      verifiedAt: serializeDate(regulation.source.verifiedAt),
+    },
+    verifiedAt: serializeDate(regulation.verifiedAt),
+  }));
+  const marketMetrics = country.marketMetrics.map((metric) => ({
+    ...metric,
+    source: {
+      ...metric.source,
+      verifiedAt: serializeDate(metric.source.verifiedAt),
+    },
+    verifiedAt: serializeDate(metric.verifiedAt),
+  }));
+  const jurisdictions = country.jurisdictions.map((jurisdiction) => ({
+    ...jurisdiction,
+    jurisdictionVerifiedAt: serializeDate(
+      jurisdiction.jurisdictionVerifiedAt,
+    ),
+    membershipSource: {
+      ...jurisdiction.membershipSource,
+      verifiedAt: serializeDate(jurisdiction.membershipSource.verifiedAt),
+    },
+    source: {
+      ...jurisdiction.source,
+      verifiedAt: serializeDate(jurisdiction.source.verifiedAt),
+    },
+    verifiedAt: serializeDate(jurisdiction.verifiedAt),
+  }));
+  const countrySource = {
+    ...country.source,
+    verifiedAt: serializeDate(country.source.verifiedAt),
+  };
+  const currentEffectiveRegulations = regulations
+    .filter((regulation) => isCurrentEffectiveRegulation(regulation, asOf))
+    .map((regulation) => ({
+      ...regulation,
+      statusAtAsOf: "effective" as const,
+    }));
+  const futureAdoptedRegulations = regulations
+    .filter((regulation) => isFutureAdoptedRegulation(regulation, asOf))
+    .map((regulation) => ({
+      ...regulation,
+      statusAtAsOf: "adopted" as const,
+    }));
+  const visibleRegulations = [
+    ...currentEffectiveRegulations,
+    ...futureAdoptedRegulations,
+  ];
+  const sources = Array.from(
+    new Map(
+      [
+        countrySource,
+        ...jurisdictions.flatMap(({ membershipSource, source }) => [
+          source,
+          membershipSource,
+        ]),
+        ...visibleRegulations.map(({ source }) => source),
+        ...marketMetrics.map(({ source }) => source),
+      ].map((source) => [source.id, source]),
+    ).values(),
+  );
+  const lastVerifiedAt = latestTimestamp([
+    serializeDate(country.verifiedAt),
+    ...jurisdictions.flatMap(({ jurisdictionVerifiedAt, verifiedAt }) => [
+      jurisdictionVerifiedAt,
+      verifiedAt,
+    ]),
+    ...visibleRegulations.map(({ verifiedAt }) => verifiedAt),
+    ...marketMetrics.map(({ verifiedAt }) => verifiedAt),
+    ...sources.map(({ verifiedAt }) => verifiedAt),
+  ]);
+
+  return countryDetailResponseSchema.parse({
+    asOf,
+    country: {
+      ...countryWithoutRegulations,
+      currentEffectiveRegulations,
+      futureAdoptedRegulations,
+      isStale: isStaleVerification(
+        lastVerifiedAt,
+        new Date().toISOString(),
+        env.COUNTRY_STALE_AFTER_DAYS,
+      ),
+      jurisdictions,
+      lastVerifiedAt,
+      marketMetrics,
+      source: countrySource,
+      sources,
+      verifiedAt: serializeDate(country.verifiedAt),
+    },
+    status: "available",
+  });
+}

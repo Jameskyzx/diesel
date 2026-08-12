@@ -1,0 +1,83 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1785265591324,
+      "tag": "0000_initial_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785303298859,
+      "tag": "0001_knowledge_hybrid_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785305058561,
+      "tag": "0002_ai_chat_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785309822635,
+      "tag": "0003_marketing_analysis_tools",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785311600772,
+      "tag": "0004_admin_data_governance",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785342191460,
+      "tag": "0005_on_road_truck_bus_scopes",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785672678404,
+      "tag": "0006_governance_jurisdiction_entity",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785948742201,
+      "tag": "0007_market_metric_scope_uniqueness",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785957739711,
+      "tag": "0008_panoramic_hannibal_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785958139925,
+      "tag": "0009_breezy_reptil",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785960023566,
+      "tag": "0010_military_wilson_fisk",
+      "breakpoints": true
+    }
+  ]
+}

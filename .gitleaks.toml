@@ -1,0 +1,16 @@
+# Gitleaks 配置（M2 密钥扫描基线）。
+# CI 中由 .github/workflows/ci.yml 的 secrets job 使用固定版本二进制运行；
+# 本地可用 `gitleaks detect --source . --config .gitleaks.toml --redact` 自检。
+
+[extend]
+# 使用 gitleaks 内置默认规则集，再叠加项目允许清单。
+useDefault = true
+
+[allowlist]
+description = "项目允许清单：锁文件完整性哈希与环境变量示例占位值"
+paths = [
+  # 锁文件的 integrity hash 是 base64 摘要，不是密钥，会触发通用规则误报。
+  '''(^|/)pnpm-lock\.yaml$''',
+  # 示例文件只包含占位值；真实密钥只允许进入 .env.local 等被忽略文件。
+  '''(^|/)\.env\.example$''',
+]

@@ -1,0 +1,3 @@
+DROP INDEX "market_metrics_observation_idx";--> statement-breakpoint
+CREATE UNIQUE INDEX "market_metrics_scoped_observation_idx" ON "market_metrics" USING btree ("country_iso3","metric_code","application_scope","period_start","period_end","data_source_id") WHERE "market_metrics"."application_scope" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "market_metrics_global_observation_idx" ON "market_metrics" USING btree ("country_iso3","metric_code","period_start","period_end","data_source_id") WHERE "market_metrics"."application_scope" IS NULL;

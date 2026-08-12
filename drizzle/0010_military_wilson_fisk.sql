@@ -1,0 +1,1 @@
+ALTER TABLE "data_sources" ADD CONSTRAINT "data_sources_demo_type_check" CHECK ("data_sources"."is_demo" = ("data_sources"."source_type" = 'demo'));

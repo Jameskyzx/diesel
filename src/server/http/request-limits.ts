@@ -1,0 +1,11 @@
+// 6 MiB decoded attachment budget plus base64/JSON framing and short text history.
+export const MAX_CHAT_REQUEST_BYTES = 9 * 1024 * 1024;
+export const MAX_CHAT_REQUEST_BODY_READ_MS = 30_000;
+export const MAX_CHAT_RESPONSE_LEASE_MS = 120_000;
+export const MAX_DOCUMENT_REPROCESS_REQUEST_BYTES = 256 * 1024;
+export const MAX_DOCUMENT_UPLOAD_REQUEST_BYTES = 6 * 1024 * 1024;
+export const MAX_KNOWLEDGE_IMPORT_REQUEST_BYTES = 6 * 1024 * 1024;
+export const MAX_KNOWLEDGE_SEARCH_REQUEST_BYTES = 64 * 1024;
+export const MAX_MARKET_CSV_FILE_BYTES = 2_000_000;
+export const MAX_MARKET_CSV_UPLOAD_REQUEST_BYTES = 3 * 1024 * 1024;
+export const MAX_PRODUCT_FIT_REQUEST_BYTES = 64 * 1024;

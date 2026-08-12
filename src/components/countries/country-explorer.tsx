@@ -1,0 +1,287 @@
+"use client";
+
+import { Database, Globe2, LoaderCircle, RotateCcw } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { CountryDetailDrawer } from "@/components/countries/country-detail-drawer";
+import { Button } from "@/components/ui/button";
+import {
+  countryGeoIndexSchema,
+  countryMapResponseSchema,
+  type CountryGeoIndex,
+  type CountryMapSummary,
+} from "@/features/countries/schemas";
+import { hasDetailedCountryCoverage } from "@/features/database/schemas";
+import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
+import type { ProductFitInitialFilters } from "@/components/products/product-fit-panel";
+
+type ExplorerData =
+  | { status: "loading" }
+  | { message: string; status: "error" }
+  | {
+      countryIndex: CountryGeoIndex;
+      countries: CountryMapSummary[];
+      status: "ready";
+    };
+
+type CountryExplorerProps = {
+  initialCountryIso3?: string;
+  initialFilters?: ProductFitInitialFilters;
+};
+
+const emptyCountryIndex: CountryGeoIndex = [];
+const emptyCountrySummaries: CountryMapSummary[] = [];
+
+function MapModuleLoading() {
+  return (
+    <div
+      className="grid h-full min-h-[30rem] place-items-center rounded-md border border-slate-200 bg-[#e8f0ee]"
+      data-testid="map-module-loading"
+      role="status"
+    >
+      <div className="text-center">
+        <LoaderCircle
+          aria-hidden="true"
+          className="mx-auto size-8 animate-spin text-primary"
+        />
+        <p className="mt-3 text-sm text-muted-foreground">
+          正在初始化交互地图…
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const WorldMap = dynamic(
+  async () => {
+    const mapModule = await import("@/components/map/world-map");
+    return mapModule.WorldMap;
+  },
+  {
+    loading: MapModuleLoading,
+    ssr: false,
+  },
+);
+
+export function CountryExplorer({
+  initialCountryIso3,
+  initialFilters,
+}: CountryExplorerProps) {
+  const router = useRouter();
+  const [data, setData] = useState<ExplorerData>({ status: "loading" });
+  const [reloadKey, setReloadKey] = useState(0);
+  const selectedIso3 = initialCountryIso3 ?? null;
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    void Promise.all([
+      fetch("/api/countries", {
+        headers: { accept: "application/json" },
+        signal: abortController.signal,
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(
+            await parseApiErrorMessage(response, "国家摘要请求失败"),
+          );
+        }
+        return countryMapResponseSchema.parse(await response.json());
+      }),
+      fetch("/geo/world-countries-index.json", {
+        signal: abortController.signal,
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error("国家索引请求失败");
+        }
+        return countryGeoIndexSchema.parse(await response.json());
+      }),
+    ])
+      .then(([mapResponse, countryIndex]) => {
+        setData({
+          countries: mapResponse.countries,
+          countryIndex,
+          status: "ready",
+        });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        setData({
+          message: toUserFacingErrorMessage(
+            error,
+            "地图数据暂时无法加载，请重试。",
+          ),
+          status: "error",
+        });
+      });
+
+    return () => abortController.abort();
+  }, [reloadKey]);
+
+  const selectCountry = useCallback(
+    (iso3: string) => {
+      router.push(`/countries/${iso3}`);
+    },
+    [router],
+  );
+
+  const closeCountry = useCallback(() => {
+    router.push("/map");
+  }, [router]);
+
+  const countryIndex =
+    data.status === "ready" ? data.countryIndex : emptyCountryIndex;
+  const countries =
+    data.status === "ready" ? data.countries : emptyCountrySummaries;
+  const selectedName =
+    countryIndex.find(({ iso3 }) => iso3 === selectedIso3)?.name ??
+    selectedIso3;
+
+  return (
+    <main className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <section className="mb-5 grid gap-5 rounded-md border border-[#1b312b] bg-[#111918] px-5 py-6 text-white shadow-[0_16px_40px_rgb(15_32_28_/_0.12)] xl:grid-cols-[1fr_auto] xl:items-end sm:px-7">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-[#b8e548]">
+            <Globe2 aria-hidden="true" className="size-4" />
+            GLOBAL COUNTRY INTELLIGENCE
+          </div>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            全球柴油机法规地图
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
+            悬停预览国家覆盖情况，点击地图或使用键盘国家选择器打开可分享的国家详情。
+            记录会明确区分虚构 Demo 与已核验公开来源，并显示来源和核验时间。
+          </p>
+        </div>
+
+        <div className="grid min-w-72 gap-1.5">
+          <label
+            className="text-xs font-medium text-slate-300"
+            htmlFor="country-select"
+          >
+            键盘 / 触控选择国家
+          </label>
+          <select
+            aria-label="选择国家"
+            className="h-11 rounded-md border border-white/15 bg-white/10 px-3 text-sm text-white shadow-none outline-none focus-visible:ring-[3px] focus-visible:ring-[#b8e548]/50"
+            disabled={data.status !== "ready"}
+            id="country-select"
+            onChange={(event) => {
+              if (event.target.value) {
+                selectCountry(event.target.value);
+              }
+            }}
+            value={selectedIso3 ?? ""}
+          >
+            <option className="text-slate-900" value="">请选择国家</option>
+            {countryIndex.map((country) => (
+              <option className="text-slate-900" key={country.iso3} value={country.iso3}>
+                {country.name} · {country.iso3}
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
+
+      <section
+        aria-label="已录入国家快捷入口"
+        className="mb-4 flex min-h-10 items-center gap-2 overflow-x-auto pb-1"
+      >
+        <span className="mr-1 inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <Database aria-hidden="true" className="size-3.5" />
+          已录入
+        </span>
+        {countries
+          .filter((country) =>
+            hasDetailedCountryCoverage(country.dataCoverageStatus),
+          )
+          .map((country) => (
+            <Button
+              aria-pressed={selectedIso3 === country.iso3}
+              key={country.iso3}
+              onClick={() => selectCountry(country.iso3)}
+              size="sm"
+              variant={selectedIso3 === country.iso3 ? "default" : "outline"}
+            >
+              {country.nameEn} · {country.iso3}
+            </Button>
+          ))}
+        {countries.length > 0 &&
+        countries.every(
+          (country) =>
+            !hasDetailedCountryCoverage(country.dataCoverageStatus),
+        ) ? (
+          <span className="text-xs text-muted-foreground">
+            暂无已录入详情的国家
+          </span>
+        ) : null}
+      </section>
+
+      <section className="min-h-[30rem] lg:h-[calc(100dvh-18rem)] lg:min-h-[34rem]">
+        {data.status === "loading" ? (
+          <div className="grid h-full min-h-[30rem] place-items-center rounded-md border border-slate-200 bg-white shadow-[0_10px_26px_rgb(15_32_28_/_0.06)]">
+            <div className="text-center">
+              <LoaderCircle
+                aria-hidden="true"
+                className="mx-auto size-8 animate-spin text-primary"
+              />
+              <p className="mt-3 text-sm text-muted-foreground">
+                正在加载世界地图与国家摘要…
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        {data.status === "error" ? (
+          <div
+            className="grid h-full min-h-[30rem] place-items-center rounded-md border border-destructive/25 bg-card p-6 text-center"
+            role="alert"
+          >
+            <div>
+              <p className="font-semibold">地图加载失败</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {data.message}
+              </p>
+              <Button
+                className="mt-4"
+                onClick={() => {
+                  setData({ status: "loading" });
+                  setReloadKey((key) => key + 1);
+                }}
+                variant="outline"
+              >
+                <RotateCcw aria-hidden="true" className="size-4" />
+                重试
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {data.status === "ready" ? (
+          <WorldMap
+            countries={data.countries}
+            onSelectCountry={selectCountry}
+            selectedIso3={selectedIso3}
+          />
+        ) : null}
+      </section>
+
+      <p className="mt-3 text-xs text-muted-foreground">
+        边界数据：Natural Earth 1:110m（公共领域）。国家详情以 ISO3
+        与数据库连接。
+        {selectedName ? ` 当前选择：${selectedName}。` : ""}
+      </p>
+
+      <CountryDetailDrawer
+        countryIndex={countryIndex}
+        initialFilters={initialFilters}
+        iso3={selectedIso3}
+        onClose={closeCountry}
+        onSelectCountry={selectCountry}
+      />
+    </main>
+  );
+}

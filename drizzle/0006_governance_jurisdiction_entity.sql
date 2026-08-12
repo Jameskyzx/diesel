@@ -1,0 +1,1 @@
+ALTER TYPE "public"."governed_entity_type" ADD VALUE 'jurisdiction';

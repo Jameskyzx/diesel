@@ -1,0 +1,2 @@
+ALTER TABLE "jurisdictions" DROP CONSTRAINT "jurisdictions_country_type_check";--> statement-breakpoint
+ALTER TABLE "jurisdictions" ADD CONSTRAINT "jurisdictions_country_type_check" CHECK (("jurisdictions"."type" = 'country' AND "jurisdictions"."country_iso3" IS NOT NULL) OR ("jurisdictions"."type" <> 'country' AND "jurisdictions"."country_iso3" IS NULL));

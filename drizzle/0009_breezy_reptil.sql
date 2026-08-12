@@ -1,0 +1,2 @@
+ALTER TABLE "countries" ADD CONSTRAINT "countries_coverage_status_check" CHECK ("countries"."data_coverage_status" IN ('none', 'demo', 'planned', 'no_data', 'covered'));--> statement-breakpoint
+ALTER TABLE "countries" ADD CONSTRAINT "countries_demo_coverage_check" CHECK ("countries"."is_demo" = ("countries"."data_coverage_status" = 'demo'));

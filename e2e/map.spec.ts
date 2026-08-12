@@ -86,6 +86,54 @@ test("keeps the map tooltip inside a narrow pointer viewport", async ({
   );
 });
 
+test("updates the tooltip across consecutive country hovers", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "Pointer-coordinate hover coverage runs in the desktop project.",
+  );
+
+  await page.goto("/map");
+
+  const mapContainer = page.getByTestId("map-canvas-container");
+  await expect(mapContainer).toHaveAttribute("data-map-ready", "true");
+  const mapBox = await mapContainer.boundingBox();
+  expect(mapBox).not.toBeNull();
+
+  const zoom = 1.15;
+  const worldSize = 512 * 2 ** zoom;
+  const mercatorY = (latitude: number) =>
+    (1 -
+      Math.log(
+        Math.tan(Math.PI / 4 + (latitude * Math.PI) / 360),
+      ) /
+        Math.PI) /
+    2;
+  const countryPosition = (longitude: number, latitude: number) => ({
+    x: (mapBox?.width ?? 0) / 2 + ((longitude - 8) / 360) * worldSize,
+    y:
+      (mapBox?.height ?? 0) / 2 +
+      (mercatorY(latitude) - mercatorY(18)) * worldSize,
+  });
+  const tooltip = page.getByTestId("map-tooltip");
+
+  // Natural Earth 1:110m 的粗粒度边界在当前固定视图下，该点稳定命中 FRA。
+  await mapContainer.hover({ position: countryPosition(10, 51) });
+  await expect(tooltip).toHaveAttribute("data-country-iso3", "FRA");
+  await expect(tooltip).toContainText("France");
+
+  await mapContainer.hover({ position: countryPosition(105, 35) });
+  await expect(tooltip).toHaveAttribute("data-country-iso3", "CHN");
+  await expect(tooltip).toContainText("People's Republic of China");
+  await expect(tooltip).not.toContainText("France");
+
+  await mapContainer.hover({ position: countryPosition(-52, -10) });
+  await expect(tooltip).toHaveAttribute("data-country-iso3", "BRA");
+  await expect(tooltip).toContainText("Brazil");
+  await expect(tooltip).not.toContainText("People's Republic of China");
+});
+
 test("opens, restores, switches, and shows an explicit no-data country", async ({
   page,
 }) => {

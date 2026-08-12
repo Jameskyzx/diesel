@@ -5,6 +5,7 @@ import type {
   LineLayerSpecification,
   Map as MapLibreMap,
   MapLayerMouseEvent,
+  MapMouseEvent,
   MapSourceDataEvent,
   StyleSpecification,
 } from "maplibre-gl";
@@ -195,11 +196,24 @@ export function WorldMap({
       "bottom-right",
     );
 
-    const handlePointerMove = (event: MapLayerMouseEvent) => {
+    const clearHoveredCountry = () => {
+      if (hoveredRef.current) {
+        setCountryState(map, hoveredRef.current, { hover: false });
+      }
+      hoveredRef.current = null;
+      setTooltip(null);
+      map.getCanvas().style.cursor = "";
+    };
+
+    const handlePointerMove = (event: MapMouseEvent) => {
+      const [feature] = map.queryRenderedFeatures(event.point, {
+        layers: [COUNTRY_FILL_LAYER],
+      });
       const parsed = countryGeoFeaturePropertiesSchema.safeParse(
-        event.features?.[0]?.properties,
+        feature?.properties,
       );
       if (!parsed.success) {
+        clearHoveredCountry();
         return;
       }
 
@@ -210,6 +224,7 @@ export function WorldMap({
 
       hoveredRef.current = iso3;
       setCountryState(map, iso3, { hover: true });
+      map.getCanvas().style.cursor = "pointer";
       setTooltip({
         containerHeight: container.clientHeight,
         containerWidth: container.clientWidth,
@@ -219,15 +234,6 @@ export function WorldMap({
         x: event.point.x,
         y: event.point.y,
       });
-    };
-
-    const handlePointerLeave = () => {
-      if (hoveredRef.current) {
-        setCountryState(map, hoveredRef.current, { hover: false });
-      }
-      hoveredRef.current = null;
-      setTooltip(null);
-      map.getCanvas().style.cursor = "";
     };
 
     const handleCountryClick = (event: MapLayerMouseEvent) => {
@@ -267,11 +273,8 @@ export function WorldMap({
         setCountryState(map, selectedRef.current, { selected: true });
       }
 
-      map.on("mousemove", COUNTRY_FILL_LAYER, handlePointerMove);
-      map.on("mouseenter", COUNTRY_FILL_LAYER, () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", COUNTRY_FILL_LAYER, handlePointerLeave);
+      map.on("mousemove", handlePointerMove);
+      map.on("mouseleave", clearHoveredCountry);
       map.on("click", COUNTRY_FILL_LAYER, handleCountryClick);
     });
 
@@ -323,6 +326,7 @@ export function WorldMap({
       {tooltip ? (
         <div
           className="pointer-events-none absolute z-20 w-56 rounded-xl border bg-card/95 p-3 shadow-xl backdrop-blur"
+          data-country-iso3={tooltip.iso3}
           data-testid="map-tooltip"
           style={{
             left: Math.max(

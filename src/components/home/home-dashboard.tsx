@@ -1,23 +1,16 @@
 "use client";
 
 import {
-  Activity,
   AlertTriangle,
   ArrowRight,
   ArrowUpRight,
   Bot,
-  Check,
-  Clock3,
-  Database,
   FileCheck2,
   Globe2,
-  Layers3,
   LoaderCircle,
   Map as MapIcon,
   RefreshCw,
   Search,
-  ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -38,9 +31,6 @@ type DashboardState =
 type DashboardMetrics = {
   covered: number;
   fresh: number;
-  noData: number;
-  planned: number;
-  stale: number;
   total: number;
 };
 
@@ -49,9 +39,6 @@ const initialState: DashboardState = { status: "loading" };
 const emptyMetrics: DashboardMetrics = {
   covered: 0,
   fresh: 0,
-  noData: 0,
-  planned: 0,
-  stale: 0,
   total: 0,
 };
 
@@ -97,12 +84,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
         result.total += 1;
         if (hasDetailedCountryCoverage(country.dataCoverageStatus)) {
           result.covered += 1;
-          if (country.isStale) result.stale += 1;
-          else result.fresh += 1;
-        } else if (country.dataCoverageStatus === "planned") {
-          result.planned += 1;
-        } else {
-          result.noData += 1;
+          if (!country.isStale) result.fresh += 1;
         }
         return result;
       },
@@ -154,7 +136,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
           className="absolute inset-0 -z-10 opacity-[0.09] [background-image:linear-gradient(rgb(255_255_255_/_0.5)_1px,transparent_1px),linear-gradient(90deg,rgb(255_255_255_/_0.5)_1px,transparent_1px)] [background-size:52px_52px]"
         />
 
-        <div className="grid min-h-[580px] lg:grid-cols-[1.12fr_0.88fr]">
+        <div className="grid min-h-[540px] lg:grid-cols-[1.12fr_0.88fr]">
           <div className="flex flex-col justify-between px-5 py-7 sm:px-8 sm:py-9 lg:px-11 lg:py-11 xl:px-14 xl:py-14">
             <div>
               <div className="flex flex-wrap items-center gap-2.5 text-[11px] font-semibold tracking-[0.18em] text-[#c7ec6b]">
@@ -171,18 +153,11 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
                 把全球法规，
                 <span className="text-[#c7ec6b]">变成可复核的业务动作。</span>
               </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                从国家法规、产品认证到市场比较，在同一条证据链上完成检索、判断与交接。
-                每个结论都保留状态、日期和来源边界。
+              <p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
+                查法规、验产品、比市场；结论带日期与来源。
               </p>
 
-              <div className="mt-7 flex flex-wrap gap-2 text-xs text-slate-300">
-                <CapabilityPill icon={Database} label="结构化事实" />
-                <CapabilityPill icon={ShieldCheck} label="确定性适配" />
-                <CapabilityPill icon={Sparkles} label="可追溯 AI" />
-              </div>
-
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
                   className={cn(
                     buttonVariants({ size: "lg" }),
@@ -217,8 +192,8 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
               />
               <p>
                 {demoMode
-                  ? "当前为完全虚构的作品 Demo：可验证流程与追溯设计，不可用于真实可售性判断、报价、认证声明或法律结论。"
-                  : "工作边界：系统输出用于事实检索与内部复核，不替代正式认证、法律意见或销售承诺。"}
+                  ? "虚构作品 Demo，不可用于可售性、报价、认证或法律结论。"
+                  : "用于内部复核，不替代正式认证、法律意见或销售承诺。"}
               </p>
             </div>
           </div>
@@ -279,17 +254,11 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 border-t border-white/10 pt-4 text-xs">
-                <div className="rounded-lg bg-white/[0.035] px-3 py-2.5">
-                  <p className="text-slate-500">最近核验</p>
-                  <p className="mt-1 font-medium text-slate-200">
-                    {latestVerifiedAt ?? "同步中"}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-white/[0.035] px-3 py-2.5">
-                  <p className="text-slate-500">输出模式</p>
-                  <p className="mt-1 font-medium text-slate-200">Source-grounded</p>
-                </div>
+              <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-4 text-xs">
+                <span className="text-slate-500">最近核验</span>
+                <span className="font-medium text-slate-200">
+                  {latestVerifiedAt ?? "同步中"}
+                </span>
               </div>
             </div>
           </div>
@@ -298,90 +267,62 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
 
       <section
         aria-label="覆盖概览"
-        className="mt-5 grid overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_35px_rgb(24_55_45_/_0.055)] sm:grid-cols-2 xl:grid-cols-4"
+        className="mt-5 grid overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_35px_rgb(24_55_45_/_0.055)] sm:grid-cols-3"
       >
         <MetricCard
-          detail="ISO3 基础目录"
           icon={Globe2}
           label="国家目录"
           loading={state.status === "loading"}
           value={state.status === "ready" ? metrics.total : null}
         />
         <MetricCard
-          detail="不等于所有场景都有数值"
-          icon={Layers3}
+          icon={MapIcon}
           label="结构化覆盖"
           loading={state.status === "loading"}
           value={state.status === "ready" ? metrics.covered : null}
         />
         <MetricCard
-          detail="按 verifiedAt 判断"
-          icon={Clock3}
+          icon={FileCheck2}
           label="来源在新鲜期"
           loading={state.status === "loading"}
           value={state.status === "ready" ? metrics.fresh : null}
         />
-        <MetricCard
-          detail="显式 no-data / planned"
-          icon={Database}
-          label="待补详情"
-          loading={state.status === "loading"}
-          value={
-            state.status === "ready" ? metrics.noData + metrics.planned : null
-          }
-        />
       </section>
 
-      <section className="py-14 sm:py-16 lg:py-20" aria-labelledby="missions-title">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.18em] text-emerald-700">
-              START WITH A DECISION
-            </p>
-            <h2
-              className="mt-3 text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl"
-              id="missions-title"
-            >
-              三条黄金任务，直接进入工作状态
-            </h2>
-          </div>
-          <p className="max-w-xl text-sm leading-6 text-slate-600 sm:text-right">
-            按法规、产品和市场三个真实协作任务组织入口，减少从“看见数据”到“做出下一步”的距离。
-          </p>
-        </div>
+      <section className="py-12 sm:py-14 lg:py-16" aria-labelledby="missions-title">
+        <h2
+          className="text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl"
+          id="missions-title"
+        >
+          直接开始
+        </h2>
 
-        <div className="mt-8 grid gap-4 lg:grid-cols-3">
+        <div className="mt-7 grid gap-4 lg:grid-cols-3">
           <MissionCard
             eyebrow="REGULATORY SCAN"
             href="/map"
             icon={Search}
             index="01"
             title="从国家切入法规边界"
-          >
-            选择国家与业务场景，核对查询日状态、功率范围、限值和逐条来源。
-          </MissionCard>
+          />
           <MissionCard
             eyebrow="PRODUCT FIT"
             href={productFitHref}
             icon={FileCheck2}
             index="02"
             title="运行确定性产品适配"
-          >
-            把产品、认证与法规条件拆开检查，明确 fit、not fit 或 unknown 的原因。
-          </MissionCard>
+          />
           <MissionCard
             eyebrow="MARKET BRIEF"
             href="/chat"
             icon={Bot}
             index="03"
             title="生成有证据的市场简报"
-          >
-            比较多个市场并保留引用卡片，让销售、产品和合规可以继续复核与交接。
-          </MissionCard>
+          />
         </div>
       </section>
 
-      <section className="grid gap-5 pb-8 xl:grid-cols-[1.18fr_0.82fr]">
+      <section className="pb-8">
         <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-[0_14px_40px_rgb(24_55_45_/_0.06)]">
           <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7 sm:py-6">
             <div>
@@ -465,61 +406,8 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
           ) : null}
         </div>
 
-        <aside className="relative overflow-hidden rounded-[1.25rem] border border-[#1e3730] bg-[#10201c] p-6 text-white shadow-[0_18px_45px_rgb(12_32_27_/_0.14)] sm:p-8">
-          <div
-            aria-hidden="true"
-            className="absolute -top-20 -right-20 size-56 rounded-full bg-[#b8e548]/8 blur-3xl"
-          />
-          <div className="relative">
-            <div className="flex items-center gap-2 text-[#c7ec6b]">
-              <ShieldCheck aria-hidden="true" className="size-4" />
-              <p className="text-[11px] font-semibold tracking-[0.18em]">
-                EVIDENCE CONTRACT
-              </p>
-            </div>
-            <h2 className="mt-4 max-w-md text-3xl font-semibold tracking-[-0.035em]">
-              高级感来自可信，而不是隐藏复杂度。
-            </h2>
-            <p className="mt-4 text-sm leading-6 text-slate-300">
-              系统把事实、规则和 AI 的职责拆开，让每次判断都能回到原始证据和确定性逻辑。
-            </p>
-
-            <div className="mt-8 space-y-5">
-              <ContractRow
-                icon={Database}
-                label="事实层"
-                text="法规状态、有效日期、功率范围与来源结构化保存。"
-              />
-              <ContractRow
-                icon={Activity}
-                label="决策层"
-                text="产品适配和市场评分由版本化规则计算，不由模型改写。"
-              />
-              <ContractRow
-                icon={Sparkles}
-                label="解释层"
-                text="AI 只调用只读工具并组织结果；证据不足时明确返回缺口。"
-              />
-            </div>
-          </div>
-        </aside>
       </section>
     </main>
-  );
-}
-
-function CapabilityPill({
-  icon: Icon,
-  label,
-}: {
-  icon: typeof Database;
-  label: string;
-}) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5">
-      <Icon aria-hidden="true" className="size-3.5 text-[#c7ec6b]" />
-      {label}
-    </span>
   );
 }
 
@@ -535,47 +423,42 @@ function SignalRow({ label, value }: { label: string; value: number | null }) {
 }
 
 function MetricCard({
-  detail,
   icon: Icon,
   label,
   loading,
   value,
 }: {
-  detail: string;
   icon: typeof Globe2;
   label: string;
   loading: boolean;
   value: number | null;
 }) {
   return (
-    <article className="relative border-b border-slate-100 p-5 last:border-b-0 sm:min-h-36 sm:border-r sm:nth-[2n]:border-r-0 xl:border-b-0 xl:nth-[2n]:border-r xl:last:border-r-0 xl:p-6">
-      <div className="flex items-start justify-between gap-4">
+    <article className="relative border-b border-slate-100 p-5 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0 xl:p-6">
+      <div className="flex items-center gap-4">
         <span className="grid size-9 place-items-center rounded-full bg-emerald-50 text-emerald-800">
           <Icon aria-hidden="true" className="size-4" />
         </span>
+        <p className="flex-1 text-sm font-medium text-slate-700">{label}</p>
         {loading ? (
-          <span className="mt-1 h-8 w-14 animate-pulse rounded-md bg-slate-100" />
+          <span className="h-8 w-14 animate-pulse rounded-md bg-slate-100" />
         ) : (
           <span className="text-3xl font-semibold tracking-[-0.04em] text-slate-950">
             {value ?? "—"}
           </span>
         )}
       </div>
-      <p className="mt-4 text-sm font-medium text-slate-800">{label}</p>
-      <p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p>
     </article>
   );
 }
 
 function MissionCard({
-  children,
   eyebrow,
   href,
   icon: Icon,
   index,
   title,
 }: {
-  children: React.ReactNode;
   eyebrow: string;
   href: string;
   icon: typeof MapIcon;
@@ -584,7 +467,7 @@ function MissionCard({
 }) {
   return (
     <Link
-      className="group relative flex min-h-72 flex-col overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white p-6 shadow-[0_12px_34px_rgb(24_55_45_/_0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:shadow-[0_22px_55px_rgb(24_82_59_/_0.12)] sm:p-7"
+      className="group relative flex min-h-56 flex-col overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white p-6 shadow-[0_12px_34px_rgb(24_55_45_/_0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:shadow-[0_22px_55px_rgb(24_82_59_/_0.12)] sm:p-7"
       href={href}
     >
       <div className="flex items-start justify-between gap-4">
@@ -595,14 +478,13 @@ function MissionCard({
           {index}
         </span>
       </div>
-      <p className="mt-8 text-[10px] font-semibold tracking-[0.18em] text-emerald-700">
+      <p className="mt-7 text-[10px] font-semibold tracking-[0.18em] text-emerald-700">
         {eyebrow}
       </p>
       <h3 className="mt-3 text-2xl font-semibold tracking-[-0.025em] text-slate-950">
         {title}
       </h3>
-      <p className="mt-3 flex-1 text-sm leading-6 text-slate-600">{children}</p>
-      <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+      <span className="mt-auto pt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
         开始任务
         <ArrowRight
           aria-hidden="true"
@@ -610,30 +492,5 @@ function MissionCard({
         />
       </span>
     </Link>
-  );
-}
-
-function ContractRow({
-  icon: Icon,
-  label,
-  text,
-}: {
-  icon: typeof Database;
-  label: string;
-  text: string;
-}) {
-  return (
-    <div className="grid grid-cols-[2rem_1fr] gap-3 border-t border-white/10 pt-5">
-      <span className="grid size-8 place-items-center rounded-full border border-white/10 bg-white/5 text-[#c7ec6b]">
-        <Icon aria-hidden="true" className="size-3.5" />
-      </span>
-      <div>
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold">{label}</p>
-          <Check aria-hidden="true" className="size-3.5 text-[#c7ec6b]" />
-        </div>
-        <p className="mt-1 text-xs leading-5 text-slate-400">{text}</p>
-      </div>
-    </div>
   );
 }

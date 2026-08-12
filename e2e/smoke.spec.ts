@@ -6,9 +6,17 @@ test("renders the operational home entry and primary navigation", async ({ page 
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "全球柴油机业务工作台",
+      name: "把全球法规，变成可复核的业务动作。",
     }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "三条黄金任务，直接进入工作状态",
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("GLOBAL DIESEL INTELLIGENCE")).toBeVisible();
+  await expect(page.getByText("EVIDENCE CONTRACT")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible();
   await expect(page.getByRole("link", { exact: true, name: "首页" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("link", { exact: true, name: "对话" })).toBeVisible();

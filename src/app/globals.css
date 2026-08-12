@@ -6,24 +6,24 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.375rem;
-  --background: oklch(0.955 0.012 155);
-  --foreground: oklch(0.19 0.026 245);
-  --card: oklch(0.995 0.004 150);
-  --card-foreground: oklch(0.2 0.026 245);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.026 245);
-  --primary: oklch(0.42 0.12 158);
-  --primary-foreground: oklch(0.985 0.006 158);
-  --secondary: oklch(0.935 0.014 155);
-  --secondary-foreground: oklch(0.27 0.035 235);
-  --muted: oklch(0.925 0.014 155);
-  --muted-foreground: oklch(0.52 0.028 235);
-  --accent: oklch(0.93 0.035 157);
-  --accent-foreground: oklch(0.3 0.075 158);
+  --radius: 0.875rem;
+  --background: oklch(0.975 0.008 92);
+  --foreground: oklch(0.2 0.025 165);
+  --card: oklch(0.995 0.003 92);
+  --card-foreground: oklch(0.2 0.025 165);
+  --popover: oklch(0.995 0.003 92);
+  --popover-foreground: oklch(0.2 0.025 165);
+  --primary: oklch(0.43 0.115 158);
+  --primary-foreground: oklch(0.985 0.005 92);
+  --secondary: oklch(0.945 0.012 105);
+  --secondary-foreground: oklch(0.27 0.03 165);
+  --muted: oklch(0.95 0.009 100);
+  --muted-foreground: oklch(0.52 0.025 165);
+  --accent: oklch(0.925 0.035 150);
+  --accent-foreground: oklch(0.31 0.08 158);
   --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.87 0.02 155);
-  --input: oklch(0.87 0.02 155);
+  --border: oklch(0.885 0.012 115);
+  --input: oklch(0.885 0.012 115);
   --ring: oklch(0.52 0.12 158);
 }
 
@@ -63,10 +63,32 @@
 
   body {
     @apply min-h-screen bg-background text-foreground antialiased;
-    background-image: none;
+    background-image:
+      radial-gradient(circle at 8% 0%, rgb(198 224 210 / 0.34), transparent 28rem),
+      radial-gradient(circle at 92% 18%, rgb(232 225 195 / 0.3), transparent 25rem);
+    background-attachment: fixed;
   }
 
   ::selection {
     @apply bg-primary/20 text-foreground;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-[1520px] px-4 sm:px-6 lg:px-10;
+  }
+
+  .display-title {
+    font-family: ui-serif, "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+    font-variation-settings: "opsz" 64;
+  }
+
+  .surface-panel {
+    @apply border border-black/[0.07] bg-white/90 shadow-[0_24px_70px_rgb(29_56_47_/_0.08)] backdrop-blur-sm;
+  }
+
+  .section-kicker {
+    @apply text-[0.68rem] font-semibold tracking-[0.2em] text-emerald-700 uppercase;
   }
 }

@@ -976,21 +976,21 @@ export function SalesChat({
   return (
     <aside
       aria-labelledby="sales-chat-heading"
-      className="flex h-full min-h-[34rem] flex-col overflow-hidden rounded-md border bg-card shadow-sm"
+      className="surface-panel flex h-full min-h-[34rem] flex-col overflow-hidden rounded-[1.75rem]"
       data-sales-chat-root
       id="sales-chat-panel"
       role="complementary"
     >
-      <header className="flex items-center justify-between border-b border-white/10 bg-[#111918] px-4 py-3 text-white">
-        <div className="flex items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-md bg-[#b8e548] text-[#111918]">
+      <header className="flex items-center justify-between border-b border-black/[0.06] bg-[#fffefa]/85 px-5 py-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-full bg-[#173d31] text-[#dff29d] shadow-sm">
             <Bot aria-hidden="true" className="size-4" />
           </span>
           <div>
-            <h2 className="text-sm font-semibold" id="sales-chat-heading">
+            <h2 className="text-sm font-semibold text-[#17382e]" id="sales-chat-heading">
               AI 营销分析助手
             </h2>
-            <p className="text-[11px] text-slate-400">
+            <p className="mt-0.5 text-[11px] text-slate-500">
               {demoMode
                 ? "离线 Demo AI（确定性模拟）"
                 : aiConfigured
@@ -1006,12 +1006,12 @@ export function SalesChat({
         aria-label="AI 对话记录"
         aria-live="polite"
         aria-relevant="additions text"
-        className="min-h-56 flex-1 space-y-3 overflow-y-auto p-3"
+        className="min-h-56 flex-1 space-y-4 overflow-y-auto bg-[#fafaf6]/65 p-4 sm:p-6"
         role="log"
       >
         {messages.length === 0 ? (
-          <div className="rounded-md border border-dashed border-slate-300 bg-[#f7faf8] p-4 text-sm">
-            <p className="text-xs leading-5 text-muted-foreground">
+          <div className="rounded-2xl border border-dashed border-emerald-900/15 bg-[#f1f5ec] p-5 text-sm">
+            <p className="text-xs leading-6 text-muted-foreground">
               {demoMode
                 ? "离线 Demo 可尝试：“CHN 目前有哪些有效法规？”或“CHN 的 non-road 100 kW 产品是否适配？”；只查询明确标记的虚构 fixture。"
                 : "例如：“CHN 目前有哪些有效法规？”或“DEU 的 non-road 120 kW 产品是否适配？”也可以比较 CHN 与 BRA 并生成结构化销售简报。"}
@@ -1022,10 +1022,10 @@ export function SalesChat({
         {messages.map((message) => (
           <article
             className={cn(
-              "rounded-xl px-3 py-2.5 text-sm",
+              "rounded-2xl px-4 py-3 text-sm shadow-sm",
               message.role === "user"
-                ? "ml-8 bg-[#0e6b4b] text-white"
-                : "mr-2 border border-slate-200 bg-white",
+                ? "ml-8 bg-[#173d31] text-white sm:ml-24"
+                : "mr-2 border border-black/[0.06] bg-white sm:mr-12",
             )}
             key={message.id}
           >
@@ -1088,7 +1088,7 @@ export function SalesChat({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t border-slate-200 bg-[#f7faf8] p-3">
+      <div className="border-t border-black/[0.06] bg-[#f2f4ee] p-3 sm:p-4">
         <form
           aria-busy={validatingAttachments}
           className="space-y-2"
@@ -1150,7 +1150,7 @@ export function SalesChat({
             </p>
           ) : null}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 rounded-2xl border border-black/[0.07] bg-white p-2 shadow-sm focus-within:ring-[3px] focus-within:ring-emerald-700/15">
             <input
               accept={
                 imageUploadsEnabled
@@ -1175,7 +1175,7 @@ export function SalesChat({
                     ? "添加文件或图片"
                     : "添加文件"
               }
-              className="size-11 p-0"
+              className="size-11 rounded-xl border-0 bg-[#f1f4ee] p-0 text-emerald-900 shadow-none hover:bg-[#e6eee2]"
               disabled={waiting || validatingAttachments || !aiConfigured}
               onClick={() => fileInputRef.current?.click()}
               type="button"
@@ -1194,7 +1194,7 @@ export function SalesChat({
               输入问题
             </label>
             <textarea
-              className="min-h-11 flex-1 resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-[#0e6b4b]/25"
+              className="min-h-11 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-slate-400"
               id="sales-chat-input"
               maxLength={MAX_CHAT_USER_MESSAGE_CHARACTERS}
               onChange={(event) => setInput(event.target.value)}
@@ -1219,7 +1219,7 @@ export function SalesChat({
             />
             <Button
               aria-label="发送问题"
-              className="size-11 p-0"
+              className="size-11 rounded-xl bg-[#173d31] p-0 text-white shadow-none hover:bg-[#215142]"
               disabled={
                 waiting ||
                 validatingAttachments ||

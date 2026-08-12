@@ -153,7 +153,6 @@ export function CountryExplorer({
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
             悬停预览国家覆盖情况，点击地图或使用键盘国家选择器打开可分享的国家详情。
-            记录会明确区分虚构 Demo 与已核验公开来源，并显示来源和核验时间。
           </p>
         </div>
 

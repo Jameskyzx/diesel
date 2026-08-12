@@ -25,9 +25,7 @@ test("renders the operational home entry and primary navigation", async ({ page 
     page.locator('button[aria-label="打开 AI 营销分析助手"]'),
   ).toHaveCount(0);
   await expect(page.getByTestId("portfolio-disclaimer")).toHaveCount(0);
-  await expect(page.getByTestId("usage-boundary")).toContainText(
-    "不替代正式认证、法律意见或销售承诺",
-  );
+  await expect(page.getByTestId("usage-boundary")).toHaveCount(0);
   await page.getByRole("link", { exact: true, name: "地图" }).click();
   await expect(page).toHaveURL(/\/map$/);
   await expect(page.getByTestId("world-map")).toBeVisible();
@@ -43,6 +41,11 @@ test("opens the dedicated chat workspace from primary navigation", async ({ page
   await expect(page.getByText("服务端 AI 已配置")).toBeVisible();
   await expect(page.getByPlaceholder("输入问题，可附上文件或图片…")).toBeEditable();
   await expect(page.getByRole("button", { name: "添加文件或图片" })).toBeEnabled();
+  await expect(page.getByText("先选国家，也可以直接指定国家。")).toHaveCount(0);
+  await expect(
+    page.getByText("信息参考，不替代正式认证或法律意见"),
+  ).toHaveCount(0);
+  await expect(page.getByText(/扫描版 PDF 请上传清晰页面截图/)).toHaveCount(0);
 });
 
 test("answers a capability question without forcing a fact tool", async ({ page }) => {

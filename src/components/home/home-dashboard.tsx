@@ -124,164 +124,101 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
       : null;
 
   return (
-    <main className="mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
-      <section className="relative isolate overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#0b1513] text-white shadow-[0_30px_90px_rgb(11_31_26_/_0.22)]">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_18%_12%,rgb(60_121_91_/_0.34),transparent_34%),radial-gradient(circle_at_86%_18%,rgb(184_229_72_/_0.12),transparent_27%),linear-gradient(120deg,#0b1513_0%,#101e1a_52%,#09110f_100%)]"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 opacity-[0.09] [background-image:linear-gradient(rgb(255_255_255_/_0.5)_1px,transparent_1px),linear-gradient(90deg,rgb(255_255_255_/_0.5)_1px,transparent_1px)] [background-size:52px_52px]"
-        />
+    <main className="page-shell py-8 sm:py-12 lg:py-16">
+      <section className="grid items-center gap-12 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
+        <div className="max-w-3xl">
+          <p className="section-kicker flex items-center gap-2">
+            <span className="size-1.5 rounded-full bg-emerald-600" />
+            GLOBAL DIESEL INTELLIGENCE
+          </p>
+          <h1
+            aria-label="把全球法规，变成可复核的业务动作。"
+            className="display-title mt-7 text-[3.4rem] leading-[1.02] font-semibold tracking-[-0.055em] text-[#142821] text-balance sm:text-[4.8rem] lg:text-[5.6rem]"
+          >
+            把全球法规，
+            <span className="block text-emerald-700">变成可复核的业务动作。</span>
+          </h1>
+          <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">
+            查法规、验产品、比市场。每个结论都能回到日期、状态与来源。
+          </p>
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "h-12 rounded-full bg-[#173d31] px-6 text-white shadow-[0_14px_34px_rgb(23_61_49_/_0.2)] hover:bg-[#215142]",
+              )}
+              href="/map"
+            >
+              打开全球地图
+              <ArrowUpRight aria-hidden="true" className="size-4" />
+            </Link>
+            <Link
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold text-[#23483b] transition-colors hover:bg-emerald-50"
+              href="/chat"
+            >
+              进入 AI 工作区
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
+          </div>
+        </div>
 
-        <div className="grid min-h-[540px] lg:grid-cols-[1.12fr_0.88fr]">
-          <div className="flex flex-col justify-between px-5 py-7 sm:px-8 sm:py-9 lg:px-11 lg:py-11 xl:px-14 xl:py-14">
-            <div>
-              <div className="flex flex-wrap items-center gap-2.5 text-[11px] font-semibold tracking-[0.18em] text-[#c7ec6b]">
-                <span className="inline-flex items-center gap-2 rounded-full border border-[#b8e548]/25 bg-[#b8e548]/8 px-3 py-1.5">
-                  <span className="size-1.5 rounded-full bg-[#b8e548] shadow-[0_0_12px_#b8e548]" />
-                  GLOBAL DIESEL INTELLIGENCE
-                </span>
-                <span className="whitespace-nowrap text-slate-400">
-                  /&nbsp;&nbsp;FDE PORTFOLIO
-                </span>
+        <div className="relative lg:pl-4">
+          <div className="absolute -inset-5 -z-10 rounded-[3rem] bg-[#dbe8dd]/70 blur-2xl" />
+          <div className="relative overflow-hidden rounded-[2rem] bg-[#12372d] p-6 text-white shadow-[0_34px_80px_rgb(20_55_45_/_0.22)] sm:p-8">
+            <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgb(255_255_255_/_0.5)_1px,transparent_1px),linear-gradient(90deg,rgb(255_255_255_/_0.5)_1px,transparent_1px)] [background-size:64px_64px]" />
+            <div className="relative flex items-center justify-between border-b border-white/10 pb-5">
+              <div>
+                <p className="text-[10px] font-semibold tracking-[0.2em] text-emerald-200/70 uppercase">
+                  Live coverage
+                </p>
+                <p className="display-title mt-1 text-xl font-semibold">全球证据网络</p>
               </div>
-
-              <h1 className="mt-7 max-w-[760px] text-[2.65rem] leading-[1.05] font-semibold tracking-[-0.045em] text-balance sm:text-6xl lg:text-[4.25rem]">
-                把全球法规，
-                <span className="text-[#c7ec6b]">变成可复核的业务动作。</span>
-              </h1>
-              <p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
-                查法规、验产品、比市场；结论带日期与来源。
-              </p>
-
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Link
-                  className={cn(
-                    buttonVariants({ size: "lg" }),
-                    "h-12 rounded-full bg-[#b8e548] px-6 font-semibold text-[#102019] shadow-[0_12px_30px_rgb(184_229_72_/_0.18)] hover:bg-[#caef75]",
-                  )}
-                  href="/map"
-                >
-                  打开全球地图
-                  <ArrowUpRight aria-hidden="true" className="size-4" />
-                </Link>
-                <Link
-                  className={cn(
-                    buttonVariants({ size: "lg", variant: "outline" }),
-                    "h-12 rounded-full border-white/15 bg-white/5 px-6 text-white shadow-none hover:border-white/30 hover:bg-white/10 hover:text-white",
-                  )}
-                  href="/chat"
-                >
-                  <Bot aria-hidden="true" className="size-4" />
-                  进入 AI 工作区
-                </Link>
+              <span className="flex items-center gap-2 text-xs text-emerald-100">
+                <span className="size-2 rounded-full bg-[#cce878] shadow-[0_0_0_5px_rgb(204_232_120_/_0.1)]" />
+                在线
+              </span>
+            </div>
+            <div className="relative grid gap-8 py-8 sm:grid-cols-[1fr_1.1fr] sm:items-end">
+              <div>
+                <p className="display-title text-7xl leading-none font-semibold tracking-[-0.06em] text-[#dbf1a2]">
+                  {coverageRate === null ? "—" : `${coverageRate}%`}
+                </p>
+                <p className="mt-3 text-sm text-emerald-100/70">结构化覆盖率</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-1">
+                <SignalRow label="国家目录" value={state.status === "ready" ? metrics.total : null} />
+                <SignalRow label="结构化覆盖" value={state.status === "ready" ? metrics.covered : null} />
+                <SignalRow label="来源在新鲜期" value={state.status === "ready" ? metrics.fresh : null} />
               </div>
             </div>
-
-          </div>
-
-          <div className="relative hidden items-center border-l border-white/10 bg-black/10 p-10 lg:flex">
-            <div className="relative mx-auto w-full max-w-[560px] overflow-hidden rounded-[1.35rem] border border-white/12 bg-[#101c19]/88 p-5 shadow-[0_25px_60px_rgb(0_0_0_/_0.28)] backdrop-blur sm:p-6">
-              <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
-                <div>
-                  <p className="text-[10px] font-semibold tracking-[0.2em] text-slate-500">
-                    LIVE EVIDENCE SURFACE
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-white">
-                    全球证据网络
-                  </p>
-                </div>
-                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/8 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-emerald-200">
-                  <span className="size-1.5 rounded-full bg-emerald-300" />
-                  OPERATIONAL
-                </span>
-              </div>
-
-              <div className="grid gap-5 py-6 sm:grid-cols-[1fr_0.92fr] sm:items-center">
-                <div className="relative mx-auto grid aspect-square w-full max-w-[230px] place-items-center">
-                  <div className="absolute inset-[7%] rounded-full border border-[#b8e548]/15" />
-                  <div className="absolute inset-[20%] rounded-full border border-dashed border-white/15" />
-                  <div className="absolute top-[13%] left-[22%] size-2 rounded-full bg-[#b8e548] shadow-[0_0_16px_#b8e548]" />
-                  <div className="absolute right-[15%] bottom-[29%] size-1.5 rounded-full bg-sky-300 shadow-[0_0_12px_#7dd3fc]" />
-                  <div className="absolute bottom-[12%] left-[33%] size-1.5 rounded-full bg-amber-300 shadow-[0_0_12px_#fcd34d]" />
-                  <div className="grid size-[54%] place-items-center rounded-full border border-white/10 bg-[radial-gradient(circle_at_35%_30%,#244d3c,#10241e_56%,#0b1714)] shadow-[0_0_55px_rgb(82_144_110_/_0.23)]">
-                    <div className="text-center">
-                      <Globe2
-                        aria-hidden="true"
-                        className="mx-auto size-7 text-[#c7ec6b]"
-                      />
-                      <p className="mt-2 text-3xl font-semibold tracking-tight">
-                        {coverageRate === null ? "—" : `${coverageRate}%`}
-                      </p>
-                      <p className="mt-1 text-[9px] tracking-[0.16em] text-slate-400">
-                        STRUCTURED
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2.5">
-                  <SignalRow
-                    label="国家目录"
-                    value={state.status === "ready" ? metrics.total : null}
-                  />
-                  <SignalRow
-                    label="结构化覆盖"
-                    value={state.status === "ready" ? metrics.covered : null}
-                  />
-                  <SignalRow
-                    label="来源在新鲜期"
-                    value={state.status === "ready" ? metrics.fresh : null}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-4 border-t border-white/10 pt-4 text-xs">
-                <span className="text-slate-500">最近核验</span>
-                <span className="font-medium text-slate-200">
-                  {latestVerifiedAt ?? "同步中"}
-                </span>
-              </div>
+            <div className="relative flex items-center justify-between border-t border-white/10 pt-5 text-xs text-emerald-100/60">
+              <span>最近核验</span>
+              <span className="font-medium text-white">{latestVerifiedAt ?? "同步中"}</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section
-        aria-label="覆盖概览"
-        className="mt-5 grid overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_12px_35px_rgb(24_55_45_/_0.055)] sm:grid-cols-3"
-      >
-        <MetricCard
-          icon={Globe2}
-          label="国家目录"
-          loading={state.status === "loading"}
-          value={state.status === "ready" ? metrics.total : null}
-        />
-        <MetricCard
-          icon={MapIcon}
-          label="结构化覆盖"
-          loading={state.status === "loading"}
-          value={state.status === "ready" ? metrics.covered : null}
-        />
-        <MetricCard
-          icon={FileCheck2}
-          label="来源在新鲜期"
-          loading={state.status === "loading"}
-          value={state.status === "ready" ? metrics.fresh : null}
-        />
+      <section aria-label="覆盖概览" className="mt-14 grid gap-px overflow-hidden rounded-[1.5rem] border border-black/[0.06] bg-black/[0.06] sm:grid-cols-3">
+        <MetricCard icon={Globe2} label="国家目录" loading={state.status === "loading"} value={state.status === "ready" ? metrics.total : null} />
+        <MetricCard icon={MapIcon} label="结构化覆盖" loading={state.status === "loading"} value={state.status === "ready" ? metrics.covered : null} />
+        <MetricCard icon={FileCheck2} label="来源在新鲜期" loading={state.status === "loading"} value={state.status === "ready" ? metrics.fresh : null} />
       </section>
 
-      <section className="py-12 sm:py-14 lg:py-16" aria-labelledby="missions-title">
-        <h2
-          className="text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl"
-          id="missions-title"
-        >
-          直接开始
-        </h2>
+      <section className="py-20 sm:py-24" aria-labelledby="missions-title">
+        <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-end">
+          <div>
+            <p className="section-kicker">Three ways in</p>
+            <h2 className="display-title mt-3 text-4xl font-semibold tracking-[-0.04em] text-[#142821] sm:text-5xl" id="missions-title">
+              直接开始
+            </h2>
+          </div>
+          <p className="max-w-xl text-base leading-7 text-slate-600 lg:justify-self-end">
+            从国家、产品或市场任意一端进入，同一套证据结构贯穿判断与交接。
+          </p>
+        </div>
 
-        <div className="mt-7 grid gap-4 lg:grid-cols-3">
+        <div className="mt-10 grid gap-4 lg:grid-cols-3">
           <MissionCard
             eyebrow="REGULATORY SCAN"
             href="/map"
@@ -306,19 +243,17 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
         </div>
       </section>
 
-      <section className="pb-8">
-        <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-[0_14px_40px_rgb(24_55_45_/_0.06)]">
-          <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7 sm:py-6">
+      <section className="pb-10">
+        <div className="surface-panel overflow-hidden rounded-[1.75rem]">
+          <div className="flex items-end justify-between gap-4 border-b border-black/[0.06] px-6 py-6 sm:px-8 sm:py-7">
             <div>
-              <p className="text-[11px] font-semibold tracking-[0.18em] text-slate-500">
-                COVERAGE RADAR
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+              <p className="section-kicker">Selected markets</p>
+              <h2 className="display-title mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#142821]">
                 代表市场入口
               </h2>
             </div>
             <Link
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 transition-colors hover:text-emerald-900"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-50"
               href="/map"
             >
               全部国家
@@ -352,14 +287,14 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
             </div>
           ) : null}
           {state.status === "ready" ? (
-            <div className="grid gap-px bg-slate-100 sm:grid-cols-2">
+            <div className="grid gap-px bg-black/[0.06] sm:grid-cols-2 lg:grid-cols-3">
               {featuredCountries.map((country) => (
                 <Link
-                  className="group flex min-h-24 items-center gap-4 bg-white px-5 py-4 transition-colors hover:bg-emerald-50/60 sm:px-7"
+                  className="group flex min-h-28 items-center gap-4 bg-[#fffefa] px-6 py-5 transition-colors hover:bg-[#f0f6ed]"
                   href={`/countries/${country.iso3}`}
                   key={country.iso3}
                 >
-                  <span className="grid size-11 shrink-0 place-items-center rounded-full border border-slate-200 bg-slate-50 text-xs font-semibold tracking-[0.08em] text-slate-700 transition-colors group-hover:border-emerald-300 group-hover:bg-white group-hover:text-emerald-800">
+                  <span className="display-title grid size-12 shrink-0 place-items-center rounded-full border border-emerald-900/10 bg-[#eef4e9] text-xs font-semibold tracking-[0.08em] text-emerald-900 transition-transform group-hover:scale-105">
                     {country.iso3}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -389,7 +324,6 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
             </div>
           ) : null}
         </div>
-
       </section>
     </main>
   );
@@ -397,9 +331,9 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
 
 function SignalRow({ label, value }: { label: string; value: number | null }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.07] bg-white/[0.035] px-3 py-2.5">
-      <span className="text-xs text-slate-400">{label}</span>
-      <span className="font-mono text-sm font-semibold text-white">
+    <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.055] px-3 py-3">
+      <span className="truncate text-[11px] text-emerald-100/60">{label}</span>
+      <span className="text-sm font-semibold text-white">
         {value ?? "—"}
       </span>
     </div>
@@ -418,16 +352,16 @@ function MetricCard({
   value: number | null;
 }) {
   return (
-    <article className="relative border-b border-slate-100 p-5 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0 xl:p-6">
+    <article className="bg-[#fffefa] p-6 sm:p-7">
       <div className="flex items-center gap-4">
-        <span className="grid size-9 place-items-center rounded-full bg-emerald-50 text-emerald-800">
+        <span className="grid size-10 place-items-center rounded-full bg-[#edf3e8] text-emerald-800">
           <Icon aria-hidden="true" className="size-4" />
         </span>
-        <p className="flex-1 text-sm font-medium text-slate-700">{label}</p>
+        <p className="flex-1 text-sm font-medium text-slate-600">{label}</p>
         {loading ? (
           <span className="h-8 w-14 animate-pulse rounded-md bg-slate-100" />
         ) : (
-          <span className="text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+          <span className="display-title text-4xl font-semibold tracking-[-0.04em] text-[#17382e]">
             {value ?? "—"}
           </span>
         )}
@@ -451,21 +385,21 @@ function MissionCard({
 }) {
   return (
     <Link
-      className="group relative flex min-h-56 flex-col overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white p-6 shadow-[0_12px_34px_rgb(24_55_45_/_0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:shadow-[0_22px_55px_rgb(24_82_59_/_0.12)] sm:p-7"
+      className="group relative flex min-h-64 flex-col overflow-hidden rounded-[1.5rem] border border-black/[0.07] bg-[#fffefa] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-800/30 hover:shadow-[0_24px_60px_rgb(30_71_57_/_0.12)]"
       href={href}
     >
       <div className="flex items-start justify-between gap-4">
-        <span className="grid size-11 place-items-center rounded-full bg-[#10201c] text-[#c7ec6b] transition-transform duration-300 group-hover:scale-105">
+        <span className="grid size-11 place-items-center rounded-full bg-[#173d31] text-[#dcf39b] transition-transform duration-300 group-hover:scale-105">
           <Icon aria-hidden="true" className="size-4" />
         </span>
         <span className="font-mono text-xs tracking-[0.16em] text-slate-400">
           {index}
         </span>
       </div>
-      <p className="mt-7 text-[10px] font-semibold tracking-[0.18em] text-emerald-700">
+      <p className="mt-8 text-[10px] font-semibold tracking-[0.18em] text-emerald-700">
         {eyebrow}
       </p>
-      <h3 className="mt-3 text-2xl font-semibold tracking-[-0.025em] text-slate-950">
+      <h3 className="display-title mt-3 text-3xl leading-tight font-semibold tracking-[-0.035em] text-[#17382e]">
         {title}
       </h3>
       <span className="mt-auto pt-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-900">

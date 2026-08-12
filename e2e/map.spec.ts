@@ -225,7 +225,7 @@ test("keeps AI access in the dedicated chat workspace", async ({ page }) => {
   await expect(assistant.getByText("服务端 AI 已配置")).toBeVisible();
   await expect(
     assistant.getByText("信息参考，不替代正式认证或法律意见"),
-  ).toBeVisible();
+  ).toHaveCount(0);
   const chatInput = assistant.getByPlaceholder(
     "输入问题，可附上文件或图片…",
   );

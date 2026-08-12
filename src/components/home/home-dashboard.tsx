@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AlertTriangle,
   ArrowRight,
   ArrowUpRight,
   Bot,
@@ -181,21 +180,6 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
               </div>
             </div>
 
-            <div
-              className="mt-10 flex max-w-3xl items-start gap-3 border-t border-white/10 pt-5 text-xs leading-5 text-slate-400 sm:text-sm"
-              data-testid="usage-boundary"
-              role="note"
-            >
-              <AlertTriangle
-                aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 text-amber-300"
-              />
-              <p>
-                {demoMode
-                  ? "虚构作品 Demo，不可用于可售性、报价、认证或法律结论。"
-                  : "用于内部复核，不替代正式认证、法律意见或销售承诺。"}
-              </p>
-            </div>
           </div>
 
           <div className="relative hidden items-center border-l border-white/10 bg-black/10 p-10 lg:flex">

@@ -1011,12 +1011,7 @@ export function SalesChat({
       >
         {messages.length === 0 ? (
           <div className="rounded-md border border-dashed border-slate-300 bg-[#f7faf8] p-4 text-sm">
-            <p className="font-medium">
-              {selectedCountryIso3
-                ? `已从国家详情带入 ${selectedCountryIso3}`
-                : "先选国家，也可以直接指定国家。"}
-            </p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            <p className="text-xs leading-5 text-muted-foreground">
               {demoMode
                 ? "离线 Demo 可尝试：“CHN 目前有哪些有效法规？”或“CHN 的 non-road 100 kW 产品是否适配？”；只查询明确标记的虚构 fixture。"
                 : "例如：“CHN 目前有哪些有效法规？”或“DEU 的 non-road 120 kW 产品是否适配？”也可以比较 CHN 与 BRA 并生成结构化销售简报。"}
@@ -1094,13 +1089,6 @@ export function SalesChat({
       </div>
 
       <div className="border-t border-slate-200 bg-[#f7faf8] p-3">
-        <p className="mb-2 flex gap-1.5 text-[11px] leading-4 text-amber-800">
-          <AlertTriangle
-            aria-hidden="true"
-            className="mt-0.5 size-3.5 shrink-0"
-          />
-          信息参考，不替代正式认证或法律意见
-        </p>
         <form
           aria-busy={validatingAttachments}
           className="space-y-2"
@@ -1161,10 +1149,6 @@ export function SalesChat({
               正在验证附件安全性…
             </p>
           ) : null}
-
-          <p className="text-[10px] leading-4 text-muted-foreground">
-            {imageUploadsEnabled ? "PNG/JPEG/WebP、" : ""}PDF（最多 40 页）、TXT/Markdown/CSV；单个 3 MiB，本轮最多 4 个、合计 6 MiB；可提取文字单文件 30,000、本轮 40,000 字符。{imageUploadsEnabled ? "扫描版 PDF 请上传清晰页面截图。" : "当前未配置视觉模型，图片上传已关闭。"}附件仅作未核验上下文，事实结论仍需可追溯证据；发送后会释放原始附件，后续追问请重新上传。
-          </p>
 
           <div className="flex gap-2">
             <input

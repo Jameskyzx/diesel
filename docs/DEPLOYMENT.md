@@ -1689,3 +1689,15 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
   客户端共享 `unknown-client` 单一配额桶。
 - gitleaks 与依赖审计使用固定版本/级别；新增公告由 audit job 在 critical
   级别拦截，high 级工具链公告登记于 README 等待上游修复。
+
+## 7. 最近一次代码发布记录
+
+2026-08-13 已将 Git `832563d85ca42faf1bcf2fb26713224a088173e0` 版本化发布至
+`/opt/diesel/releases/832563d85ca42faf1bcf2fb26713224a088173e0`。该提交相对此前在役
+`379b138b377f710b92ed04741f49946acb1ec62e` 仅修改首页产品文案及其 E2E 断言；本次不含
+Migration、fixture 或数据库写入，因此保留既有 PostgreSQL 治理图，未重跑 §4.3 的定向治理
+发布。发布过程创建 0600 的环境/Nginx/旧 release 回滚备份，远端冻结安装和生产构建通过，
+`current` 原子切换后 PM2 仅一个 `diesel-demo` 进程以 `diesel` uid 运行且零重启；内网与公网
+`/api/health` 均返回目标 Git 版本。公网 `/`、`/map`、`/chat`、`/countries/CHN` 为 200，
+`/api/countries` 返回 178 国且全部 `covered`，首页新标题读回成功；IP 与 VPS 内部备用 Host
+均 301 到 `https://jamesky.site`，未遗留 `RECOVERY_REQUIRED` 或 `PUBLISH_COMMITTED`。

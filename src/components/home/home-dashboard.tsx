@@ -127,19 +127,19 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
     <main className="page-shell py-8 sm:py-12 lg:py-16">
       <section className="grid items-center gap-12 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
         <div className="max-w-3xl">
-          <p className="section-kicker flex items-center gap-2">
-            <span className="size-1.5 rounded-full bg-emerald-600" />
-            GLOBAL DIESEL INTELLIGENCE
+          <p className="flex items-center gap-3 text-sm font-semibold text-[#1f4b3d]">
+            <span className="h-px w-8 bg-emerald-700" />
+            面向海外销售与产品团队
           </p>
           <h1
-            aria-label="把全球法规，变成可复核的业务动作。"
-            className="display-title mt-7 text-[3.4rem] leading-[1.02] font-semibold tracking-[-0.055em] text-[#142821] text-balance sm:text-[4.8rem] lg:text-[5.6rem]"
+            aria-label="全球柴油机法规与产品数据库"
+            className="mt-7 text-[2.8rem] leading-[1.06] font-semibold tracking-[-0.045em] text-[#142821] sm:text-[4rem] lg:text-[4.65rem]"
           >
-            把全球法规，
-            <span className="block text-emerald-700">变成可复核的业务动作。</span>
+            <span className="block">全球柴油机法规</span>
+            <span className="mt-1 block">与产品数据库</span>
           </h1>
-          <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600">
-            查法规、验产品、比市场。每个结论都能回到日期、状态与来源。
+          <p className="mt-7 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+            查询各国排放法规和适用日期，核对发动机产品适配，比较市场数据。结果保留来源与核验时间。
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link

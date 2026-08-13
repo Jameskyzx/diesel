@@ -6,7 +6,7 @@ test("renders the operational home entry and primary navigation", async ({ page 
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "把全球法规，变成可复核的业务动作。",
+      name: "全球柴油机法规与产品数据库",
     }),
   ).toBeVisible();
   await expect(
@@ -15,7 +15,7 @@ test("renders the operational home entry and primary navigation", async ({ page 
       name: "直接开始",
     }),
   ).toBeVisible();
-  await expect(page.getByText("GLOBAL DIESEL INTELLIGENCE")).toBeVisible();
+  await expect(page.getByText("面向海外销售与产品团队")).toBeVisible();
   await expect(page.getByText("EVIDENCE CONTRACT")).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible();
   await expect(page.getByRole("link", { exact: true, name: "首页" })).toHaveAttribute("aria-current", "page");

@@ -3,8 +3,8 @@ import "server-only";
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 
-import type { ApplicationScope } from "@/features/database/schemas";
-import { countryCatalog } from "@/server/db/seed/country-catalog";
+import { generateSalesBriefResultSchema } from "@/features/ai/schemas";
+import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
 import { currentUtcDate } from "@/server/ai/tool-results";
 
 const emptyUsage = {
@@ -21,62 +21,17 @@ const emptyUsage = {
   },
 } as const;
 
-const countryCodes = new Set(countryCatalog.map(({ iso3 }) => iso3));
-
-const scopeMatchers: ReadonlyArray<{
-  pattern: RegExp;
-  scope: ApplicationScope;
-}> = [
-  { pattern: /on-road-truck|卡车|货车/iu, scope: "on-road-truck" },
-  { pattern: /on-road-bus|客车|公交/iu, scope: "on-road-bus" },
-  { pattern: /construction|工程机械|建筑机械/iu, scope: "construction" },
-  { pattern: /agriculture|农业|农机/iu, scope: "agriculture" },
-  { pattern: /generator-set|发电机组/iu, scope: "generator-set" },
-  { pattern: /marine|船用/iu, scope: "marine" },
-  { pattern: /non-road|非道路/iu, scope: "non-road" },
-  { pattern: /on-road|道路/iu, scope: "on-road" },
-];
-
 type PortfolioDemoToolCall = {
   input: Record<string, unknown>;
   toolName:
+    | "calculateOpportunityScore"
+    | "compareMarkets"
     | "compareRegulations"
     | "findCompatibleProducts"
     | "generateSalesBrief"
-    | "getCountryProfile";
+    | "getCountryProfile"
+    | "searchKnowledgeBase";
 };
-
-function countryCodesIn(text: string): string[] {
-  const matches = text.toUpperCase().match(/(?:^|[^A-Z])([A-Z]{3})(?=$|[^A-Z])/gu);
-  if (!matches) {
-    return [];
-  }
-
-  const countries = matches
-    .map((match) => match.replace(/[^A-Z]/gu, ""))
-    .filter((iso3) => countryCodes.has(iso3));
-  return Array.from(new Set(countries));
-}
-
-function applicationScopeIn(text: string): ApplicationScope | null {
-  return scopeMatchers.find(({ pattern }) => pattern.test(text))?.scope ?? null;
-}
-
-function powerKwIn(text: string): number | null {
-  const match = text.match(/(?:^|\D)(\d+(?:\.\d+)?)\s*(?:kw|千瓦)(?:\D|$)/iu);
-  return match ? Number(match[1]) : null;
-}
-
-function explicitAsOfIn(text: string): string | null {
-  return text.match(/\b\d{4}-\d{2}-\d{2}\b/u)?.[0] ?? null;
-}
-
-function productModelCodeIn(text: string): string | null {
-  const match = text
-    .toUpperCase()
-    .match(/\b(?=[A-Z0-9-]*\d)([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\b/u);
-  return match?.[1] ?? null;
-}
 
 function latestUserText(prompt: unknown): string {
   if (!Array.isArray(prompt)) {
@@ -140,46 +95,27 @@ function userTexts(prompt: unknown): string[] {
     });
 }
 
-function latestCompleteAnalysisContext(messages: readonly string[]): string {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index] ?? "";
-    if (
-      countryCodesIn(message).length >= 2 &&
-      applicationScopeIn(message) !== null &&
-      powerKwIn(message) !== null
-    ) {
-      return message;
-    }
-  }
-
-  return messages.at(-1) ?? "";
-}
-
 export function selectPortfolioDemoTool(
   userText: string,
   conversationContext: string | readonly string[] = userText,
 ): PortfolioDemoToolCall {
-  const contextText =
+  const providedTexts =
     typeof conversationContext === "string"
-      ? conversationContext
-      : latestCompleteAnalysisContext(conversationContext);
-  const countriesFromLatestTurn = countryCodesIn(userText);
-  const countries =
-    countriesFromLatestTurn.length > 0
-      ? countriesFromLatestTurn
-      : countryCodesIn(contextText);
-  const applicationScope =
-    applicationScopeIn(userText) ?? applicationScopeIn(contextText);
-  const powerKw = powerKwIn(userText) ?? powerKwIn(contextText);
-  const asOf =
-    explicitAsOfIn(userText) ??
-    explicitAsOfIn(contextText) ??
-    currentUtcDate();
-  const productModelCode =
-    productModelCodeIn(userText) ?? productModelCodeIn(contextText);
+      ? [conversationContext]
+      : [...conversationContext];
+  const userTexts =
+    providedTexts.at(-1) === userText
+      ? providedTexts
+      : [...providedTexts, userText];
+  const context = buildConversationBusinessContext(userTexts);
+  const countries = context.countryIso3s;
+  const applicationScope = context.applicationScope;
+  const powerKw = context.powerKw;
+  const asOf = context.asOf ?? currentUtcDate();
+  const productModelCode = context.productModelCode;
 
   if (
-    /销售简报|客户复述|下一步建议|sales\s*brief/iu.test(userText) &&
+    context.activeTask === "sales_brief" &&
     countries.length >= 2 &&
     applicationScope !== null &&
     powerKw !== null
@@ -190,14 +126,43 @@ export function selectPortfolioDemoTool(
         asOf,
         countryIso3s: countries.slice(0, 5),
         powerKw,
-        targetCountryIso3: countries[0],
+        targetCountryIso3: context.targetCountryIso3 ?? countries[0],
+        ...(productModelCode ? { productModelCode } : {}),
       },
       toolName: "generateSalesBrief",
     };
   }
 
   if (
-    /比较|对比|compare/iu.test(userText) &&
+    context.activeTask === "opportunity_score" &&
+    countries.length >= 2 &&
+    applicationScope !== null &&
+    powerKw !== null
+  ) {
+    return {
+      input: {
+        applicationScope,
+        asOf,
+        countryIso3s: countries.slice(0, 5),
+        powerKw,
+        ...(productModelCode ? { productModelCode } : {}),
+      },
+      toolName: "calculateOpportunityScore",
+    };
+  }
+
+  if (context.activeTask === "market_compare" && countries.length >= 2) {
+    return {
+      input: {
+        countryIso3s: countries.slice(0, 5),
+        ...(applicationScope ? { applicationScope } : {}),
+      },
+      toolName: "compareMarkets",
+    };
+  }
+
+  if (
+    context.activeTask === "regulation_compare" &&
     countries.length >= 2 &&
     applicationScope !== null &&
     powerKw !== null
@@ -214,7 +179,7 @@ export function selectPortfolioDemoTool(
   }
 
   if (
-    /产品|适配|兼容|product|fit/iu.test(userText) &&
+    context.activeTask === "product_fit" &&
     applicationScope !== null &&
     powerKw !== null
   ) {
@@ -222,7 +187,7 @@ export function selectPortfolioDemoTool(
       input: {
         applicationScope,
         asOf,
-        countryIso3: countries[0] ?? null,
+        countryIso3: context.focusedCountryIso3 ?? countries[0] ?? null,
         powerKw,
         ...(productModelCode ? { productModelCode } : {}),
       },
@@ -230,31 +195,123 @@ export function selectPortfolioDemoTool(
     };
   }
 
-  const topics = /市场|销量|market/iu.test(userText)
-    ? ["market"]
-    : /法规|排放|regulation|emission/iu.test(userText)
-      ? ["regulations"]
-      : ["country"];
+  if (context.activeTask === "knowledge") {
+    return {
+      input: {
+        applicationScope,
+        asOf,
+        countryIso3: context.focusedCountryIso3 ?? countries[0] ?? null,
+        query: userText,
+      },
+      toolName: "searchKnowledgeBase",
+    };
+  }
+
+  const topics =
+    context.profileTopics.length > 0 ? context.profileTopics : ["country"];
 
   return {
     input: {
       asOf,
-      countryIso3: countries[0] ?? null,
+      countryIso3: context.focusedCountryIso3 ?? countries[0] ?? null,
       topics,
     },
     toolName: "getCountryProfile",
   };
 }
 
-function toolSummary(toolName: PortfolioDemoToolCall["toolName"]): string {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+export function salesBriefSummaryFromPrompt(prompt: unknown): string | null {
+  if (!Array.isArray(prompt)) {
+    return null;
+  }
+
+  for (let messageIndex = prompt.length - 1; messageIndex >= 0; messageIndex -= 1) {
+    const message = prompt[messageIndex];
+    if (
+      !isRecord(message) ||
+      message.role !== "tool" ||
+      !Array.isArray(message.content)
+    ) {
+      continue;
+    }
+
+    for (
+      let partIndex = message.content.length - 1;
+      partIndex >= 0;
+      partIndex -= 1
+    ) {
+      const part = message.content[partIndex];
+      if (
+        !isRecord(part) ||
+        part.type !== "tool-result" ||
+        part.toolName !== "generateSalesBrief" ||
+        part.toolCallId !== "portfolio-demo-generateSalesBrief" ||
+        !isRecord(part.output) ||
+        part.output.type !== "json"
+      ) {
+        continue;
+      }
+
+      const parsed = generateSalesBriefResultSchema.safeParse(
+        part.output.value,
+      );
+      if (!parsed.success) {
+        return null;
+      }
+
+      const { brief } = parsed.data;
+      if (
+        brief.marketScore.countryIso3 !== brief.query.targetCountryIso3
+      ) {
+        return null;
+      }
+
+      const score =
+        brief.marketScore.overallScore === null
+          ? `${brief.marketScore.countryIso3} 当前证据下不可评分`
+          : `${brief.marketScore.countryIso3} 总体机会分为 ${brief.marketScore.overallScore}/100`;
+      const risk = brief.risks[0]
+        ? `首要风险：${brief.risks[0].title}：${brief.risks[0].text}。`
+        : "结构化简报未列出风险。";
+      const action = brief.salesActions[0]
+        ? `第一行动：${brief.salesActions[0].action}。`
+        : "结构化简报未列出行动。";
+
+      return `${score}（数据覆盖率 ${brief.marketScore.dataCoveragePct}%）。${risk}${action}\n\n离线 Demo 仅使用明确标记的虚构 fixture，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见`;
+    }
+  }
+
+  return null;
+}
+
+function toolSummary(
+  toolName: PortfolioDemoToolCall["toolName"],
+  prompt: unknown,
+): string {
   if (toolName === "findCompatibleProducts") {
     return "已运行 product-fit-v1 确定性匹配。适配状态、逐项理由和证据以结构化卡片为准；离线 Demo 只使用明确标记的虚构产品与认证 fixture。\n\n信息参考，不替代正式认证或法律意见";
   }
   if (toolName === "compareRegulations") {
     return "已按同一场景、功率和日期完成法规比较。状态、限值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。\n\n信息参考，不替代正式认证或法律意见";
   }
+  if (toolName === "compareMarkets") {
+    return "已按一致口径查询结构化市场指标。可比性、观测值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。";
+  }
+  if (toolName === "calculateOpportunityScore") {
+    return "已运行 opportunity-score-v1 确定性评分。分数、权重、数据覆盖率和缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。";
+  }
   if (toolName === "generateSalesBrief") {
-    return "已生成确定性的结构化销售简报。机会、风险、产品建议、下一步和数据缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture，不可用于客户承诺。\n\n信息参考，不替代正式认证或法律意见";
+    return (
+      salesBriefSummaryFromPrompt(prompt) ??
+      "已生成确定性的结构化销售简报。机会、风险、产品建议、下一步和数据缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见"
+    );
+  }
+  if (toolName === "searchKnowledgeBase") {
+    return "已检索可追溯文档证据。命中内容、页码或章节、有效期和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。\n\n信息参考，不替代正式认证或法律意见";
   }
   return "已查询国家资料。当前有效法规、未来已采纳法规、核验时间和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。\n\n信息参考，不替代正式认证或法律意见";
 }
@@ -297,7 +354,10 @@ export function createPortfolioDemoModel() {
         };
       }
 
-      const text = toolSummary(selectedTool?.toolName ?? "getCountryProfile");
+      const text = toolSummary(
+        selectedTool?.toolName ?? "getCountryProfile",
+        options.prompt,
+      );
       return {
         stream: simulateReadableStream({
           chunks: [

@@ -88,6 +88,12 @@ test("portfolio demo keeps an explicitly named product scoped to one result", as
   await expect(conversation).toContainText("DEMO ONLY — Fictional Engine 200");
   await expect(conversation).not.toContainText("Fictional Engine 100");
   await expect(conversation).toContainText("不可用于报价、认证声明或销售承诺");
+  const query = assistant.getByLabel("确定性产品适配查询条件");
+  await expect(query).toContainText("CHN");
+  await expect(query).toContainText("non-road");
+  await expect(query).toContainText("100 kW");
+  await expect(query).toContainText("2026-08-12");
+  await expect(query).toContainText("DEMO-ENG-200");
 });
 
 test("previews, removes, and validates chat attachments", async ({ page }) => {
@@ -135,12 +141,17 @@ test("previews, removes, and validates chat attachments", async ({ page }) => {
   );
 });
 
-test("releases failed-send image data before the next chat request", async ({
+test("keeps a failed question and attachment for explicit retry or editing", async ({
   page,
 }) => {
   const chatRequestBodies: string[] = [];
   await page.route("**/api/chat", async (route) => {
-    chatRequestBodies.push(route.request().postData() ?? "");
+    const requestNumber = chatRequestBodies.push(
+      route.request().postData() ?? "",
+    );
+    if (requestNumber >= 2) {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
     await route.fulfill({
       body: JSON.stringify({
         error: {
@@ -152,22 +163,29 @@ test("releases failed-send image data before the next chat request", async ({
       status: 503,
     });
   });
+  await page.addInitScript(() => {
+    const readAsDataURL = FileReader.prototype.readAsDataURL;
+    FileReader.prototype.readAsDataURL = function (blob: Blob) {
+      setTimeout(() => readAsDataURL.call(this, blob), 300);
+    };
+  });
 
   await page.goto("/chat");
   const assistant = page.getByRole("complementary", {
     name: "AI 营销分析助手",
   });
-  const prompt = assistant.getByPlaceholder("输入问题，可附上文件或图片…");
-  await assistant.getByLabel("选择文件或图片").setInputFiles({
-    buffer: Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAHUlEQVR4nGNQTl72nxLMMGrA/9EwWDYaBsnDIgwAMoorH0C43vMAAAAASUVORK5CYII=",
-      "base64",
-    ),
-    mimeType: "image/png",
-    name: "failed-engine-plate.png",
+  const prompt = assistant.getByPlaceholder(/输入问题，可附上文件/);
+  await assistant.getByLabel(/选择文件/).setInputFiles({
+    buffer: Buffer.from("engine plate note", "utf8"),
+    mimeType: "text/plain",
+    name: "failed-engine-note.txt",
   });
   await prompt.fill("描述这张铭牌图片");
-  await assistant.getByRole("button", { name: "发送问题" }).click();
+  const sendButton = assistant.getByRole("button", { name: "发送问题" });
+  await Promise.all([
+    expect(sendButton).toBeDisabled(),
+    sendButton.dblclick(),
+  ]);
 
   await expect.poll(() => chatRequestBodies.length).toBe(1);
   await expect(assistant.getByRole("alert")).toContainText(
@@ -175,16 +193,30 @@ test("releases failed-send image data before the next chat request", async ({
   );
   await expect(
     assistant.getByText(
-      "[已发送附件：failed-engine-plate.png；后续追问请重新上传]",
+      "[已发送附件：failed-engine-note.txt；后续追问请重新上传]",
     ),
   ).toBeVisible();
+  await expect(assistant.getByText("失败的问题和附件已在本页保留。")).toBeVisible();
   await expect(
-    assistant.getByRole("img", { name: "failed-engine-plate.png" }),
-  ).toHaveCount(0);
+    assistant.getByText("附件：failed-engine-note.txt", { exact: true }),
+  ).toBeVisible();
+  await expect(assistant.getByRole("button", { name: "原样重试" })).toBeVisible();
+  await expect(
+    assistant.getByRole("button", { name: "编辑后重试" }),
+  ).toBeVisible();
+  await expect(prompt).toHaveAttribute("readonly", "");
+  expect(chatRequestBodies).toHaveLength(1);
 
-  await prompt.fill("第二轮：请继续说明需要哪些信息");
-  await assistant.getByRole("button", { name: "发送问题" }).click();
+  const retryButton = assistant.getByRole("button", { name: "原样重试" });
+  const editButton = assistant.getByRole("button", { name: "编辑后重试" });
+  await Promise.all([
+    expect(retryButton).toBeDisabled(),
+    expect(editButton).toBeDisabled(),
+    retryButton.dblclick(),
+  ]);
   await expect.poll(() => chatRequestBodies.length).toBe(2);
+  await page.waitForTimeout(100);
+  expect(chatRequestBodies).toHaveLength(2);
 
   const secondRequestBody = JSON.parse(chatRequestBodies[1] ?? "null") as {
     messages?: Array<{
@@ -192,23 +224,36 @@ test("releases failed-send image data before the next chat request", async ({
       role?: string;
     }>;
   } | null;
-  expect(secondRequestBody?.messages).toHaveLength(2);
-
-  const historicalUserMessage = secondRequestBody?.messages?.[0];
-  expect(historicalUserMessage?.role).toBe("user");
-  expect(historicalUserMessage?.parts).toEqual(
+  expect(secondRequestBody?.messages).toHaveLength(1);
+  const retriedUserMessage = secondRequestBody?.messages?.[0];
+  expect(retriedUserMessage?.role).toBe("user");
+  expect(retriedUserMessage?.parts).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
-        text: "[已发送附件：failed-engine-plate.png；后续追问请重新上传]",
+        type: "file",
+        url: expect.stringContaining("data:text/plain;base64,"),
+      }),
+      expect.objectContaining({
+        text: "描述这张铭牌图片",
         type: "text",
       }),
     ]),
   );
-  expect(historicalUserMessage?.parts?.some((part) => part.type === "file")).toBe(
-    false,
-  );
-  expect(JSON.stringify(historicalUserMessage)).not.toContain("data:image/");
-  expect(JSON.stringify(historicalUserMessage)).not.toContain(";base64,");
+
+  await expect(editButton).toBeEnabled();
+  await editButton.click();
+  await expect(prompt).toHaveValue("描述这张铭牌图片");
+  await expect(prompt).toBeEditable();
+  await expect(
+    assistant.getByRole("list", { name: "待发送附件" }),
+  ).toContainText("failed-engine-note.txt");
+  await expect(
+    assistant.getByText(
+      "[已发送附件：failed-engine-note.txt；后续追问请重新上传]",
+    ),
+  ).toHaveCount(0);
+  await page.waitForTimeout(200);
+  expect(chatRequestBodies).toHaveLength(2);
 });
 
 test("locks attachment controls while validating image bytes", async ({

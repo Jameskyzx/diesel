@@ -58,6 +58,12 @@ import {
   compareRegulations,
   generateSalesBrief,
 } from "@/server/services/marketing-analysis-service";
+import {
+  buildSalesChatEvidenceContract,
+  evidenceContractAllowsModelText,
+  evidenceNeedsRegulatoryDisclaimer,
+  type SalesChatEvidenceContract,
+} from "@/server/ai/evidence-contract";
 
 export const MAX_AI_TOOL_STEPS = 5;
 const regulatoryDisclaimer = "信息参考，不替代正式认证或法律意见";
@@ -321,7 +327,7 @@ export function createSalesChatTools({
   return {
     calculateOpportunityScore: tool({
       description:
-        "Calculate deterministic opportunity scores for a 2-5 country comparison cohort. The code-owned opportunity-score-v1 weights and structured database facts are authoritative; unknown or missing inputs are excluded rather than scored as zero. Use this for any opportunity score or ranking request. Never calculate or modify a score yourself.",
+        "Calculate deterministic opportunity scores for a 2-5 country comparison cohort. The code-owned opportunity-score-v1 weights and structured database facts are authoritative; unknown or missing inputs are excluded rather than scored as zero. Use this for any opportunity score or ranking request. Preserve an explicitly named productModelCode instead of broadening to the full catalog. Never calculate or modify a score yourself.",
       execute: async (
         input: CalculateOpportunityScoreInput,
         { toolCallId },
@@ -517,7 +523,7 @@ export function createSalesChatTools({
 
     generateSalesBrief: tool({
       description:
-        "Generate a deterministic structured JSON sales brief for one target country benchmarked against 1-4 other countries. It returns exactly the factual score, opportunities, risks, compatible products, rule-generated actions, missing data and sources. Use this for sales brief or sales strategy requests; explain the returned score without changing it.",
+        "Generate a deterministic structured JSON sales brief for one target country benchmarked against 1-4 other countries. It returns exactly the factual score, opportunities, risks, compatible products, rule-generated actions, missing data and sources. Use this for sales brief or sales strategy requests; preserve an explicitly named productModelCode instead of broadening to the full catalog, and explain the returned score without changing it.",
       execute: async (
         input: GenerateSalesBriefInput,
         { toolCallId },
@@ -672,18 +678,22 @@ export function buildEvidenceGapResponse(
 
 function createEvidenceBoundaryTransform({
   allowUnverifiedAttachmentResponse = false,
+  evidenceContract,
+  hasUnverifiedAttachments = false,
 }: {
   allowUnverifiedAttachmentResponse?: boolean;
-} = {}) {
+  evidenceContract: SalesChatEvidenceContract;
+  hasUnverifiedAttachments?: boolean;
+}) {
   let hasToolResult = false;
-  let hasSufficientEvidence = false;
   let hasInsufficientEvidence = false;
   let hasExecutionFailure = false;
   const toolResults: AiToolResult[] = [];
   const bufferedText: Array<{ id: string; text: string }> = [];
 
   const canEmitModelText = () =>
-    hasSufficientEvidence && !hasInsufficientEvidence;
+    !hasInsufficientEvidence &&
+    evidenceContractAllowsModelText(evidenceContract, toolResults);
 
   return new TransformStream({
     transform(chunk, controller) {
@@ -695,12 +705,10 @@ function createEvidenceBoundaryTransform({
           toolResults.push(parsed.data);
         }
         if (
-          parsed.success &&
-          parsed.data.status === "ok" &&
-          parsed.data.evidenceSufficient
+          !parsed.success ||
+          parsed.data.status !== "ok" ||
+          !parsed.data.evidenceSufficient
         ) {
-          hasSufficientEvidence = true;
-        } else {
           hasInsufficientEvidence = true;
         }
         controller.enqueue(chunk);
@@ -746,7 +754,7 @@ function createEvidenceBoundaryTransform({
           !hasToolResult &&
           hasBufferedText;
         const requiresAttachmentBoundary =
-          allowUnverifiedAttachmentResponse && hasBufferedText;
+          hasUnverifiedAttachments || allowUnverifiedAttachmentResponse;
         if ((hasToolResult && canEmitModelText()) || canEmitAttachmentText) {
           if (requiresAttachmentBoundary) {
             const id = "unverified-attachment-boundary";
@@ -754,7 +762,7 @@ function createEvidenceBoundaryTransform({
             controller.enqueue({
               id,
               text:
-                "以下仅为对用户上传附件的内容提取或概述；附件尚未经过来源核验，不能作为法规、认证、产品或市场事实。\n\n",
+                "本轮包含用户上传附件；附件尚未经过来源核验，不能作为法规、认证、产品或市场事实。\n\n",
               type: "text-delta",
             });
             controller.enqueue({ id, type: "text-end" });
@@ -771,14 +779,50 @@ function createEvidenceBoundaryTransform({
             });
             controller.enqueue({ id: textPart.id, type: "text-end" });
           }
+          if (
+            hasToolResult &&
+            evidenceNeedsRegulatoryDisclaimer(
+              evidenceContract,
+              toolResults,
+            ) &&
+            !bufferedText.some(({ text }) =>
+              text.includes(regulatoryDisclaimer),
+            )
+          ) {
+            const id = "regulatory-disclaimer";
+            controller.enqueue({ id, type: "text-start" });
+            controller.enqueue({
+              id,
+              text: `\n\n${regulatoryDisclaimer}`,
+              type: "text-delta",
+            });
+            controller.enqueue({ id, type: "text-end" });
+          }
         } else {
+          if (requiresAttachmentBoundary) {
+            const id = "unverified-attachment-boundary";
+            controller.enqueue({ id, type: "text-start" });
+            controller.enqueue({
+              id,
+              text:
+                "本轮包含用户上传附件；附件尚未经过来源核验，不能作为法规、认证、产品或市场事实。\n\n",
+              type: "text-delta",
+            });
+            controller.enqueue({ id, type: "text-end" });
+          }
           const id = "evidence-boundary";
           controller.enqueue({ id, type: "text-start" });
           controller.enqueue({
             id,
             text: buildEvidenceGapResponse(
               toolResults,
-              hasExecutionFailure,
+              hasExecutionFailure ||
+                (hasToolResult &&
+                  !hasInsufficientEvidence &&
+                  !evidenceContractAllowsModelText(
+                    evidenceContract,
+                    toolResults,
+                  )),
             ),
             type: "text-delta",
           });
@@ -794,17 +838,27 @@ function createEvidenceBoundaryTransform({
 export function streamSalesChat(input: {
   allowUnverifiedAttachmentResponse?: boolean;
   auditRepository: Pick<AiAuditRepository, "recordToolCall">;
+  hasUnverifiedAttachments?: boolean;
   messages: ModelMessage[];
   model: LanguageModel;
   selectedCountryIso3: string | null;
   sessionId: string;
   tools: SalesChatTools;
+  trustedUserTexts: readonly string[];
 }) {
+  const evidenceContract = buildSalesChatEvidenceContract({
+    selectedCountryIso3: input.selectedCountryIso3,
+    userTexts: input.trustedUserTexts,
+  });
+
   return streamText({
     experimental_transform: () =>
       createEvidenceBoundaryTransform({
         allowUnverifiedAttachmentResponse:
           input.allowUnverifiedAttachmentResponse === true,
+        evidenceContract,
+        hasUnverifiedAttachments:
+          input.hasUnverifiedAttachments === true,
       }),
     instructions: buildSalesChatInstructions(input.selectedCountryIso3),
     maxRetries: 1,

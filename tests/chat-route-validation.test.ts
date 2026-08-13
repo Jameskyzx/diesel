@@ -243,7 +243,7 @@ describe("POST /api/chat validation ordering", () => {
             messages: [
               {
                 id: "valid-message",
-                parts: [{ text: "查询法规", type: "text" }],
+                parts: [{ text: "查询 CHN 法规", type: "text" }],
                 role: "user",
               },
             ],

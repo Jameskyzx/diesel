@@ -254,6 +254,32 @@ test("carries explicit country filters into the chat workspace", async ({
   expect(unfilteredHref).not.toContain("powerKw");
   expect(unfilteredHref).not.toContain("productModelCode");
 
+  let releaseEvaluation = () => {};
+  const evaluationRelease = new Promise<void>((resolve) => {
+    releaseEvaluation = resolve;
+  });
+  let evaluationStarted = () => {};
+  const evaluationStart = new Promise<void>((resolve) => {
+    evaluationStarted = resolve;
+  });
+  let evaluationSettled = () => {};
+  const evaluationCompletion = new Promise<void>((resolve) => {
+    evaluationSettled = resolve;
+  });
+
+  await page.route("**/api/product-fit", async (route) => {
+    try {
+      const response = await route.fetch();
+      evaluationStarted();
+      await evaluationRelease;
+      await route.fulfill({ response });
+    } catch {
+      // Entering chat intentionally aborts this stale country-page request.
+    } finally {
+      evaluationSettled();
+    }
+  });
+
   await page.goto(
     "/countries/CHN?applicationScope=non-road&asOf=2026-01-20&powerKw=100&productModelCode=DEMO-ENG-100",
   );
@@ -264,8 +290,14 @@ test("carries explicit country filters into the chat workspace", async ({
     "href",
     "/chat?asOf=2026-01-20&countryIso3=CHN&applicationScope=non-road&powerKw=100&productModelCode=DEMO-ENG-100",
   );
+  await evaluationStart;
   await filteredChatLink.click();
 
+  await expect(page).toHaveURL(
+    /\/chat\?asOf=2026-01-20&countryIso3=CHN&applicationScope=non-road&powerKw=100&productModelCode=DEMO-ENG-100$/,
+  );
+  releaseEvaluation();
+  await evaluationCompletion;
   await expect(page).toHaveURL(
     /\/chat\?asOf=2026-01-20&countryIso3=CHN&applicationScope=non-road&powerKw=100&productModelCode=DEMO-ENG-100$/,
   );
@@ -275,6 +307,34 @@ test("carries explicit country filters into the chat workspace", async ({
   await expect(assistant.getByText(/地图国家：CHN/)).toBeVisible();
   await expect(assistant.getByLabel("输入问题")).toHaveValue(
     "请分析 CHN 的 non-road 100 kW 法规与产品适配，重点判断产品 DEMO-ENG-100，判断日期 2026-01-20，并明确说明证据缺口以及结果能否用于销售承诺。",
+  );
+});
+
+test("uses a newly committed fit query in chat before the URL refresh completes", async ({
+  page,
+}) => {
+  await page.goto("/countries/CHN");
+  await expect(page.getByTestId("country-detail")).toBeVisible();
+
+  await page.getByLabel("产品型号").selectOption("DEMO-ENG-200");
+  await page.getByLabel("应用场景").selectOption("agriculture");
+  await page.getByLabel("功率（kW）").fill("150");
+  await page.getByLabel("评估日期").fill("2026-01-20");
+  await page.getByRole("button", { name: "运行确定性匹配" }).click();
+  await expect(page.getByTestId("product-fit-result")).toBeVisible();
+
+  const chatLink = page.getByRole("link", { name: "在对话中分析" });
+  await expect(chatLink).toHaveAttribute(
+    "href",
+    "/chat?asOf=2026-01-20&countryIso3=CHN&applicationScope=agriculture&powerKw=150&productModelCode=DEMO-ENG-200",
+  );
+  await chatLink.click();
+
+  await expect(page).toHaveURL(
+    /\/chat\?asOf=2026-01-20&countryIso3=CHN&applicationScope=agriculture&powerKw=150&productModelCode=DEMO-ENG-200$/,
+  );
+  await expect(page.getByLabel("输入问题")).toHaveValue(
+    "请分析 CHN 的 agriculture 150 kW 法规与产品适配，重点判断产品 DEMO-ENG-200，判断日期 2026-01-20，并明确说明证据缺口以及结果能否用于销售承诺。",
   );
 });
 

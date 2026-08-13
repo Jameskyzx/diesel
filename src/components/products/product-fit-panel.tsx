@@ -34,6 +34,8 @@ export type ProductFitInitialFilters = {
   productModelCode?: string;
 };
 
+export type ProductFitCommittedFilters = Required<ProductFitInitialFilters>;
+
 type ProductListState =
   | { status: "loading" }
   | { message: string; status: "error" }
@@ -137,10 +139,16 @@ export function ProductFitPanel({
   asOf,
   countryIso3,
   initialFilters,
+  onEvaluationCommitted,
+  registerNavigationGuard,
 }: {
   asOf: string;
   countryIso3: string;
   initialFilters?: ProductFitInitialFilters;
+  onEvaluationCommitted?: (filters: ProductFitCommittedFilters) => void;
+  registerNavigationGuard?: (
+    cancelPendingEvaluation: (() => void) | null,
+  ) => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -182,12 +190,18 @@ export function ProductFitPanel({
   }
 
   useEffect(() => {
-    return () => {
+    const cancelPendingEvaluation = () => {
       evaluationRequestIdRef.current += 1;
       evaluationAbortControllerRef.current?.abort();
       evaluationAbortControllerRef.current = null;
     };
-  }, []);
+
+    registerNavigationGuard?.(cancelPendingEvaluation);
+    return () => {
+      cancelPendingEvaluation();
+      registerNavigationGuard?.(null);
+    };
+  }, [registerNavigationGuard]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -233,28 +247,12 @@ export function ProductFitPanel({
    * （String(Number(...))），避免 `100.0` 之类的表示触发服务端
    * 规范化重定向并重置面板状态。
    */
-  function syncFiltersToUrl(overrides?: {
-    applicationScope?: ApplicationScope;
-    asOf?: string;
-    powerKw?: string;
-    productModelCode?: string;
-  }) {
-    const rawPower = overrides?.powerKw ?? powerKw;
-    const parsedPower = Number(rawPower);
+  function syncFiltersToUrl(filters: ProductFitCommittedFilters) {
     const params = new URLSearchParams(searchParams.toString());
-    params.set(
-      "applicationScope",
-      overrides?.applicationScope ?? applicationScope,
-    );
-    params.set("asOf", overrides?.asOf ?? evaluationDate);
-    params.set(
-      "powerKw",
-      Number.isFinite(parsedPower) ? String(parsedPower) : rawPower,
-    );
-    params.set(
-      "productModelCode",
-      overrides?.productModelCode ?? productModelCode,
-    );
+    params.set("applicationScope", filters.applicationScope);
+    params.set("asOf", filters.asOf);
+    params.set("powerKw", String(filters.powerKw));
+    params.set("productModelCode", filters.productModelCode);
     router.replace(`${pathname}?${params.toString()}`);
   }
 
@@ -302,8 +300,15 @@ export function ProductFitPanel({
       ) {
         return;
       }
+      const committedFilters: ProductFitCommittedFilters = {
+        applicationScope: parsed.input.applicationScope,
+        asOf: parsed.asOf,
+        powerKw: parsed.input.powerKw,
+        productModelCode: parsed.input.productModelCode,
+      };
       setEvaluation({ evaluation: parsed, status: "ready" });
-      syncFiltersToUrl(overrides);
+      onEvaluationCommitted?.(committedFilters);
+      syncFiltersToUrl(committedFilters);
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === "AbortError") {
         return;

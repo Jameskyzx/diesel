@@ -36,6 +36,17 @@ const clientToolResultBase = z.object({
   warnings: z.array(z.string()),
 });
 
+const clientAnalysisQuerySchema = z
+  .object({
+    applicationScope: z.string(),
+    asOf: z.iso.date(),
+    countryIso3s: z.array(z.string()).min(2),
+    metricCodes: z.array(z.string()).optional(),
+    powerKw: z.number().finite().nonnegative(),
+    productModelCode: z.string().optional(),
+  })
+  .passthrough();
+
 const clientCountryRegulationSchema = z
   .object({
     applicability: z
@@ -150,6 +161,15 @@ const clientCompatibleProductsResultSchema = clientToolResultBase
         })
         .passthrough(),
     ),
+    query: z
+      .object({
+        applicationScope: z.string(),
+        asOf: z.iso.date(),
+        countryIso3: z.string().nullable(),
+        powerKw: z.number().finite().nonnegative(),
+        productModelCode: z.string().optional(),
+      })
+      .passthrough(),
     tool: z.literal("findCompatibleProducts"),
   })
   .passthrough();
@@ -216,6 +236,7 @@ const clientRegulationComparisonResultSchema = clientToolResultBase
             .passthrough(),
         ),
         missingData: z.array(z.string()),
+        query: clientAnalysisQuerySchema,
       })
       .passthrough(),
     tool: z.literal("compareRegulations"),
@@ -287,6 +308,7 @@ const clientOpportunityScoreResultSchema = clientToolResultBase
   .extend({
     scorecard: z
       .object({
+        query: clientAnalysisQuerySchema,
         rulesetVersion: z.string(),
         scores: z.array(clientCountryScoreSchema),
         weights: z
@@ -329,6 +351,11 @@ const clientSalesBriefResultSchema = clientToolResultBase
             })
             .passthrough(),
         ),
+        query: clientAnalysisQuerySchema
+          .extend({
+            targetCountryIso3: z.string(),
+          })
+          .passthrough(),
         risks: z.array(
           z
             .object({

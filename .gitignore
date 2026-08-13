@@ -4,7 +4,9 @@
 
 # Next.js
 /.next
+/.next-e2e
 /out
+tsconfig.e2e.json
 
 # Test output
 /coverage

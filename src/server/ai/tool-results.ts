@@ -835,6 +835,7 @@ export function buildToolErrorResult(
         },
         missingData: ["销售简报工具执行失败。"],
         opportunities: [],
+        query: input,
         recommendedProducts: [],
         risks: [],
         salesActions: [],

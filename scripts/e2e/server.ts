@@ -1,3 +1,4 @@
+import { copyFile, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 
 import next from "next";
@@ -5,6 +6,9 @@ import next from "next";
 async function startServer() {
   const hostname = "127.0.0.1";
   const port = 3100;
+  const originalNextEnv = await readFile("next-env.d.ts");
+
+  await copyFile("tsconfig.json", "tsconfig.e2e.json");
   const app = next({
     dev: true,
     hostname,
@@ -12,7 +16,14 @@ async function startServer() {
   });
   const handle = app.getRequestHandler();
 
-  await app.prepare();
+  try {
+    await app.prepare();
+  } finally {
+    // Next writes generated route imports to the repository-level
+    // next-env.d.ts even when the E2E server uses a separate distDir. Restore
+    // the exact pre-test file so Playwright never dirties production config.
+    await writeFile("next-env.d.ts", originalNextEnv);
+  }
 
   const server = createServer((request, response) => {
     if (

@@ -62,6 +62,13 @@ export const calculateOpportunityScoreInputSchema =
   compareRegulationsInputSchema
     .extend({
       metricCodes: z.array(metricCodeSchema).min(1).max(8).optional(),
+      productModelCode: z
+        .string()
+        .trim()
+        .min(1)
+        .max(100)
+        .transform((value) => value.toUpperCase())
+        .optional(),
     })
     .strict();
 
@@ -331,6 +338,7 @@ export const salesBriefSchema = z
     marketScore: countryOpportunityScoreSchema,
     missingData: z.array(z.string()),
     opportunities: z.array(salesBriefItemSchema),
+    query: generateSalesBriefInputSchema,
     recommendedProducts: z.array(recommendedProductSchema),
     risks: z.array(salesBriefItemSchema),
     salesActions: z.array(salesActionSchema),

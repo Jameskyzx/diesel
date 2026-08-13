@@ -2,7 +2,7 @@
 
 import { Database, Globe2, LoaderCircle, RotateCcw } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CountryDetailDrawer } from "@/components/countries/country-detail-drawer";
@@ -72,7 +72,19 @@ export function CountryExplorer({
   const router = useRouter();
   const [data, setData] = useState<ExplorerData>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
+  const cancelPendingProductEvaluationRef = useRef<(() => void) | null>(null);
   const selectedIso3 = initialCountryIso3 ?? null;
+
+  const cancelPendingProductEvaluation = useCallback(() => {
+    cancelPendingProductEvaluationRef.current?.();
+  }, []);
+
+  const registerProductFitNavigationGuard = useCallback(
+    (cancelPendingEvaluation: (() => void) | null) => {
+      cancelPendingProductEvaluationRef.current = cancelPendingEvaluation;
+    },
+    [],
+  );
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -123,14 +135,16 @@ export function CountryExplorer({
 
   const selectCountry = useCallback(
     (iso3: string) => {
+      cancelPendingProductEvaluation();
       router.push(`/countries/${iso3}`);
     },
-    [router],
+    [cancelPendingProductEvaluation, router],
   );
 
   const closeCountry = useCallback(() => {
+    cancelPendingProductEvaluation();
     router.push("/map");
-  }, [router]);
+  }, [cancelPendingProductEvaluation, router]);
 
   const countryIndex =
     data.status === "ready" ? data.countryIndex : emptyCountryIndex;
@@ -280,11 +294,15 @@ export function CountryExplorer({
       </p>
 
       <CountryDetailDrawer
+        cancelPendingProductEvaluation={cancelPendingProductEvaluation}
         countryIndex={countryIndex}
         initialFilters={initialFilters}
         iso3={selectedIso3}
         onClose={closeCountry}
         onSelectCountry={selectCountry}
+        registerProductFitNavigationGuard={
+          registerProductFitNavigationGuard
+        }
       />
     </main>
   );

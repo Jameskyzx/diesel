@@ -470,6 +470,25 @@ describe("marketing analysis service", () => {
     });
   });
 
+  it("keeps a named product scoped through opportunity scoring", async () => {
+    const scorecard = await calculateOpportunityScore({
+      ...input,
+      productModelCode: "demo-eng-200",
+    });
+
+    expect(scorecard.query.productModelCode).toBe("DEMO-ENG-200");
+    for (const score of scorecard.scores) {
+      const readiness = score.components.find(
+        ({ key }) => key === "productReadiness",
+      );
+      expect(readiness?.inputFacts).toEqual([
+        "fit=0",
+        "not_fit=0",
+        "unknown=1",
+      ]);
+    }
+  });
+
   it("returns the required structured sales-brief JSON fields", async () => {
     const brief = await generateSalesBrief({
       ...input,
@@ -481,12 +500,19 @@ describe("marketing analysis service", () => {
       "marketScore",
       "missingData",
       "opportunities",
+      "query",
       "recommendedProducts",
       "risks",
       "salesActions",
       "sources",
     ]);
     expect(brief.marketScore.overallScore).toBe(100);
+    expect(brief.query).toMatchObject({
+      applicationScope: "non-road",
+      countryIso3s: ["CHN", "BRA"],
+      powerKw: 100,
+      targetCountryIso3: "CHN",
+    });
     expect(brief.recommendedProducts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -509,6 +535,18 @@ describe("marketing analysis service", () => {
     expect(brief.salesActions.every(({ kind }) => kind === "rule_generated")).toBe(
       true,
     );
+  });
+
+  it("keeps a named product scoped through the sales brief", async () => {
+    const brief = await generateSalesBrief({
+      ...input,
+      productModelCode: "demo-eng-200",
+      targetCountryIso3: "CHN",
+    });
+
+    expect(brief.query.productModelCode).toBe("DEMO-ENG-200");
+    expect(brief.recommendedProducts).toEqual([]);
+    expect(brief.risks.map(({ title }) => title)).toContain("产品证据缺口");
   });
 
   it("rejects matching metric codes whose definitions differ", async () => {

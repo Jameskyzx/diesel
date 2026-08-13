@@ -8,6 +8,8 @@ import {
   FileText,
   LoaderCircle,
   Paperclip,
+  PencilLine,
+  RotateCcw,
   Send,
   X,
 } from "lucide-react";
@@ -65,6 +67,16 @@ type PendingAttachment = {
   file: File;
   id: string;
   mediaType: ChatAttachmentMediaType;
+};
+
+type FailedSubmission = {
+  attachments: PendingAttachment[];
+  messageId: string;
+  text: string;
+};
+
+type ActiveSubmission = Omit<FailedSubmission, "messageId"> & {
+  messageId?: string;
 };
 
 function attachmentValidationMessage(
@@ -364,6 +376,80 @@ function ScoreBreakdown({ score }: { score: ClientOpportunityScore }) {
   );
 }
 
+type QuerySummaryResult = Extract<
+  ClientAiToolResult,
+  {
+    tool:
+      | "calculateOpportunityScore"
+      | "compareRegulations"
+      | "findCompatibleProducts"
+      | "generateSalesBrief";
+  }
+>;
+
+function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
+  let fields: Array<{ label: string; value: string }>;
+
+  if (result.tool === "findCompatibleProducts") {
+    fields = [
+      { label: "国家", value: result.query.countryIso3 ?? "未指定" },
+      { label: "场景", value: result.query.applicationScope },
+      { label: "功率", value: `${result.query.powerKw} kW` },
+      { label: "日期", value: result.query.asOf },
+      ...(result.query.productModelCode
+        ? [{ label: "产品", value: result.query.productModelCode }]
+        : []),
+    ];
+  } else if (result.tool === "generateSalesBrief") {
+    const { query } = result.brief;
+    fields = [
+      { label: "目标国家", value: query.targetCountryIso3 },
+      { label: "比较国家", value: query.countryIso3s.join("、") },
+      { label: "场景", value: query.applicationScope },
+      { label: "功率", value: `${query.powerKw} kW` },
+      { label: "日期", value: query.asOf },
+      ...(query.productModelCode
+        ? [{ label: "产品", value: query.productModelCode }]
+        : []),
+    ];
+  } else {
+    const query =
+      result.tool === "compareRegulations"
+        ? result.comparison.query
+        : result.scorecard.query;
+    fields = [
+      {
+        label: "国家",
+        value: query.countryIso3s.join("、"),
+      },
+      { label: "场景", value: query.applicationScope },
+      { label: "功率", value: `${query.powerKw} kW` },
+      { label: "日期", value: query.asOf },
+      ...(query.productModelCode
+        ? [{ label: "产品", value: query.productModelCode }]
+        : []),
+    ];
+  }
+
+  return (
+    <dl
+      aria-label={`${toolLabels[result.tool]}查询条件`}
+      className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg border border-primary/15 bg-background/80 p-2.5 text-xs sm:grid-cols-3"
+    >
+      {fields.map((field) => (
+        <div className="min-w-0" key={field.label}>
+          <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground">
+            {field.label}
+          </dt>
+          <dd className="mt-0.5 break-words font-medium text-foreground">
+            {field.value}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 function ToolFacts({ result }: { result: ClientAiToolResult }) {
   if (result.tool === "getCountryProfile") {
     if (!result.profile || result.profile.status === "no_data") {
@@ -374,13 +460,13 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
       <div className="space-y-2 text-xs">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg bg-background/70 p-2">
-            <span className="text-muted-foreground">当前有效法规</span>
+            <span className="text-muted-foreground">查询日有效法规</span>
             <strong className="mt-1 block text-base">
               {result.profile.country.currentEffectiveRegulations.length}
             </strong>
           </div>
           <div className="rounded-lg bg-background/70 p-2">
-            <span className="text-muted-foreground">未来已通过法规</span>
+            <span className="text-muted-foreground">查询日已采纳法规</span>
             <strong className="mt-1 block text-base">
               {result.profile.country.futureAdoptedRegulations.length}
             </strong>
@@ -510,8 +596,8 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
               {country.countryIso3} · {country.countryName ?? "无国家记录"}
             </p>
             <p className="mt-1 text-muted-foreground">
-              当前生效 {country.currentEffectiveRegulations.length} ·
-              未来已采纳 {country.futureAdoptedRegulations.length}
+              查询日有效 {country.currentEffectiveRegulations.length} ·
+              查询日已采纳 {country.futureAdoptedRegulations.length}
             </p>
             {(() => {
               const available = new Set(
@@ -675,6 +761,13 @@ function ToolResultCard({ result }: { result: ClientAiToolResult }) {
         </span>
       </header>
 
+      {result.tool === "findCompatibleProducts" ||
+      result.tool === "compareRegulations" ||
+      result.tool === "calculateOpportunityScore" ||
+      result.tool === "generateSalesBrief" ? (
+        <ToolQuerySummary result={result} />
+      ) : null}
+
       {hasDemoEvidence ? (
         <div
           className="flex gap-1.5 rounded-lg border border-amber-400 bg-amber-100 p-2 text-xs font-semibold text-amber-950"
@@ -772,9 +865,14 @@ export function SalesChat({
   const [pendingAttachments, setPendingAttachments] = useState<
     PendingAttachment[]
   >([]);
+  const [failedSubmission, setFailedSubmission] =
+    useState<FailedSubmission | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [submissionPending, setSubmissionPending] = useState(false);
   const [validatingAttachments, setValidatingAttachments] = useState(false);
   const validatingAttachmentsRef = useRef(false);
+  const activeSubmissionRef = useRef<ActiveSubmission | null>(null);
+  const submissionPendingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -816,11 +914,41 @@ export function SalesChat({
       }),
     [],
   );
-  const { error, messages, sendMessage, setMessages, status } = useChat({
+  const {
+    clearError,
+    error,
+    messages,
+    sendMessage,
+    setMessages,
+    status,
+  } = useChat({
+    onFinish: ({ isError, messages: finishedMessages }) => {
+      const activeSubmission = activeSubmissionRef.current;
+      if (!activeSubmission) {
+        return;
+      }
+
+      if (!isError) {
+        setFailedSubmission(null);
+        return;
+      }
+
+      const messageId =
+        activeSubmission.messageId ??
+        finishedMessages.findLast((message) => message.role === "user")?.id;
+      if (messageId) {
+        setFailedSubmission({
+          attachments: activeSubmission.attachments,
+          messageId,
+          text: activeSubmission.text,
+        });
+      }
+    },
     transport,
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const waiting = status === "submitted" || status === "streaming";
+  const recoveryPending = error !== undefined && failedSubmission !== null;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });
@@ -837,7 +965,10 @@ export function SalesChat({
       return;
     }
 
-    if (validatingAttachmentsRef.current) {
+    if (
+      validatingAttachmentsRef.current ||
+      submissionPendingRef.current
+    ) {
       return;
     }
     validatingAttachmentsRef.current = true;
@@ -909,7 +1040,10 @@ export function SalesChat({
   }
 
   function removeAttachment(id: string) {
-    if (validatingAttachmentsRef.current) {
+    if (
+      validatingAttachmentsRef.current ||
+      submissionPendingRef.current
+    ) {
       return;
     }
 
@@ -919,34 +1053,47 @@ export function SalesChat({
     setAttachmentError(null);
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const text = input.trim();
-    if (
-      !text ||
-      waiting ||
-      validatingAttachmentsRef.current ||
-      !aiConfigured
-    ) {
-      return;
-    }
-
-    let files: FileUIPart[];
+  async function submissionFiles(
+    attachments: readonly PendingAttachment[],
+  ): Promise<FileUIPart[] | null> {
     try {
-      files = await Promise.all(
-        pendingAttachments.map((attachment) => fileToUiPart(attachment)),
+      return await Promise.all(
+        attachments.map((attachment) => fileToUiPart(attachment)),
       );
     } catch {
       setAttachmentError("附件读取失败，请重新选择后再试。");
-      return;
+      return null;
     }
+  }
 
-    setInput("");
-    setPendingAttachments([]);
-    setAttachmentError(null);
+  function releaseMessageAttachmentData() {
+    setMessages((currentMessages) =>
+      currentMessages.map((message) => ({
+        ...message,
+        parts: message.parts.flatMap((part) =>
+          part.type === "file"
+            ? [
+                {
+                  text: `[已发送附件：${part.filename ?? "未命名附件"}；后续追问请重新上传]`,
+                  type: "text" as const,
+                },
+              ]
+            : [part],
+        ),
+      })),
+    );
+  }
+
+  async function sendSubmission(
+    submission: ActiveSubmission,
+    files: FileUIPart[],
+  ) {
+    activeSubmissionRef.current = submission;
     try {
       await sendMessage(
-        { files, text },
+        submission.messageId
+          ? { files, messageId: submission.messageId, text: submission.text }
+          : { files, text: submission.text },
         {
           body: {
             selectedCountryIso3,
@@ -955,21 +1102,87 @@ export function SalesChat({
         },
       );
     } finally {
-      setMessages((currentMessages) =>
-        currentMessages.map((message) => ({
-          ...message,
-          parts: message.parts.flatMap((part) =>
-            part.type === "file"
-              ? [
-                  {
-                    text: `[已发送附件：${part.filename ?? "未命名附件"}；后续追问请重新上传]`,
-                    type: "text" as const,
-                  },
-                ]
-              : [part],
-          ),
-        })),
+      releaseMessageAttachmentData();
+      if (activeSubmissionRef.current === submission) {
+        activeSubmissionRef.current = null;
+      }
+    }
+  }
+
+  async function retryFailedSubmission() {
+    if (!failedSubmission || waiting || submissionPendingRef.current) {
+      return;
+    }
+
+    submissionPendingRef.current = true;
+    setSubmissionPending(true);
+    try {
+      const files = await submissionFiles(failedSubmission.attachments);
+      if (!files) {
+        return;
+      }
+
+      clearError();
+      setAttachmentError(null);
+      await sendSubmission(failedSubmission, files);
+    } finally {
+      submissionPendingRef.current = false;
+      setSubmissionPending(false);
+    }
+  }
+
+  function editFailedSubmission() {
+    if (!failedSubmission || waiting || submissionPendingRef.current) {
+      return;
+    }
+
+    setMessages((currentMessages) => {
+      const failedMessageIndex = currentMessages.findIndex(
+        (message) => message.id === failedSubmission.messageId,
       );
+      return failedMessageIndex >= 0
+        ? currentMessages.slice(0, failedMessageIndex)
+        : currentMessages;
+    });
+    setInput(failedSubmission.text);
+    setPendingAttachments(failedSubmission.attachments);
+    setFailedSubmission(null);
+    setAttachmentError(null);
+    clearError();
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = input.trim();
+    if (
+      !text ||
+      waiting ||
+      recoveryPending ||
+      validatingAttachmentsRef.current ||
+      submissionPendingRef.current ||
+      !aiConfigured
+    ) {
+      return;
+    }
+
+    submissionPendingRef.current = true;
+    setSubmissionPending(true);
+    try {
+      const attachments = pendingAttachments;
+      const files = await submissionFiles(attachments);
+      if (!files) {
+        return;
+      }
+
+      setInput("");
+      setPendingAttachments([]);
+      setFailedSubmission(null);
+      setAttachmentError(null);
+      await sendSubmission({ attachments, text }, files);
+    } finally {
+      submissionPendingRef.current = false;
+      setSubmissionPending(false);
     }
   }
 
@@ -1079,10 +1292,51 @@ export function SalesChat({
 
         {error ? (
           <div
-            className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
+            className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
             role="alert"
           >
-            {chatErrorMessage(error)}
+            <p>{chatErrorMessage(error)}</p>
+            {failedSubmission ? (
+              <div className="space-y-2 rounded-lg border border-destructive/20 bg-background/70 p-2.5 text-foreground">
+                <p className="font-semibold">失败的问题和附件已在本页保留。</p>
+                <p className="line-clamp-3 text-muted-foreground">
+                  问题：{failedSubmission.text}
+                </p>
+                {failedSubmission.attachments.length > 0 ? (
+                  <p className="break-words text-muted-foreground">
+                    附件：
+                    {failedSubmission.attachments
+                      .map(({ file }) => file.name)
+                      .join("、")}
+                  </p>
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    className="h-8 gap-1.5 px-3 text-xs"
+                    disabled={waiting || submissionPending}
+                    onClick={() => void retryFailedSubmission()}
+                    type="button"
+                    variant="outline"
+                  >
+                    <RotateCcw aria-hidden="true" className="size-3.5" />
+                    原样重试
+                  </Button>
+                  <Button
+                    className="h-8 gap-1.5 px-3 text-xs"
+                    disabled={waiting || submissionPending}
+                    onClick={editFailedSubmission}
+                    type="button"
+                    variant="outline"
+                  >
+                    <PencilLine aria-hidden="true" className="size-3.5" />
+                    编辑后重试
+                  </Button>
+                </div>
+                <p className="text-[10px] leading-4 text-muted-foreground">
+                  系统不会自动重复请求；仅在你选择重试时再次发送。
+                </p>
+              </div>
+            ) : null}
           </div>
         ) : null}
         <div ref={messagesEndRef} />
@@ -1090,7 +1344,7 @@ export function SalesChat({
 
       <div className="border-t border-black/[0.06] bg-[#f2f4ee] p-3 sm:p-4">
         <form
-          aria-busy={validatingAttachments}
+          aria-busy={validatingAttachments || submissionPending}
           className="space-y-2"
           onSubmit={submit}
         >
@@ -1116,7 +1370,9 @@ export function SalesChat({
                   <Button
                     aria-label={`移除附件 ${attachment.file.name}`}
                     className="size-8 p-0"
-                    disabled={waiting || validatingAttachments}
+                    disabled={
+                      waiting || submissionPending || validatingAttachments
+                    }
                     onClick={() => removeAttachment(attachment.id)}
                     type="button"
                     variant="outline"
@@ -1161,7 +1417,13 @@ export function SalesChat({
                 imageUploadsEnabled ? "选择文件或图片" : "选择文件"
               }
               className="sr-only"
-              disabled={waiting || validatingAttachments || !aiConfigured}
+              disabled={
+                waiting ||
+                recoveryPending ||
+                submissionPending ||
+                validatingAttachments ||
+                !aiConfigured
+              }
               multiple
               onChange={selectAttachments}
               ref={fileInputRef}
@@ -1176,7 +1438,13 @@ export function SalesChat({
                     : "添加文件"
               }
               className="size-11 rounded-xl border-0 bg-[#f1f4ee] p-0 text-emerald-900 shadow-none hover:bg-[#e6eee2]"
-              disabled={waiting || validatingAttachments || !aiConfigured}
+              disabled={
+                waiting ||
+                recoveryPending ||
+                submissionPending ||
+                validatingAttachments ||
+                !aiConfigured
+              }
               onClick={() => fileInputRef.current?.click()}
               type="button"
               variant="outline"
@@ -1213,6 +1481,7 @@ export function SalesChat({
                   ? "输入问题，可附上文件或图片…"
                   : "输入问题，可附上文件…"
               }
+              readOnly={recoveryPending || submissionPending}
               rows={2}
               ref={inputRef}
               value={input}
@@ -1222,13 +1491,15 @@ export function SalesChat({
               className="size-11 rounded-xl bg-[#173d31] p-0 text-white shadow-none hover:bg-[#215142]"
               disabled={
                 waiting ||
+                recoveryPending ||
+                submissionPending ||
                 validatingAttachments ||
                 !input.trim() ||
                 !aiConfigured
               }
               type="submit"
             >
-              {waiting ? (
+              {waiting || submissionPending ? (
                 <LoaderCircle
                   aria-hidden="true"
                   className="size-4 animate-spin"

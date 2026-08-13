@@ -15,8 +15,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -35,6 +34,7 @@ import {
 } from "@/features/countries/schemas";
 import {
   ProductFitPanel,
+  type ProductFitCommittedFilters,
   type ProductFitInitialFilters,
 } from "@/components/products/product-fit-panel";
 import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
@@ -60,11 +60,15 @@ type CurrentDetailState =
   | { iso3: string; status: "loading" };
 
 type CountryDetailDrawerProps = {
+  cancelPendingProductEvaluation: () => void;
   countryIndex: CountryGeoIndex;
   initialFilters?: ProductFitInitialFilters;
   iso3: string | null;
   onClose: () => void;
   onSelectCountry: (iso3: string) => void;
+  registerProductFitNavigationGuard: (
+    cancelPendingEvaluation: (() => void) | null,
+  ) => void;
 };
 
 const statusLabels = {
@@ -120,11 +124,13 @@ function buildChatHref({
 }
 
 export function CountryDetailDrawer({
+  cancelPendingProductEvaluation,
   countryIndex,
   initialFilters,
   iso3,
   onClose,
   onSelectCountry,
+  registerProductFitNavigationGuard,
 }: CountryDetailDrawerProps) {
   const [detail, setDetail] = useState<DetailState>({ status: "idle" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -325,7 +331,11 @@ export function CountryDetailDrawer({
           {currentDetail.status === "ready" &&
           currentDetail.response.status === "available" ? (
             <CountryDetailContent
+              cancelPendingProductEvaluation={cancelPendingProductEvaluation}
               initialFilters={initialFilters}
+              registerProductFitNavigationGuard={
+                registerProductFitNavigationGuard
+              }
               response={currentDetail.response}
             />
           ) : null}
@@ -342,13 +352,34 @@ export function CountryDetailDrawer({
 }
 
 function CountryDetailContent({
+  cancelPendingProductEvaluation,
   initialFilters,
+  registerProductFitNavigationGuard,
   response,
 }: {
+  cancelPendingProductEvaluation: () => void;
   initialFilters?: ProductFitInitialFilters;
+  registerProductFitNavigationGuard: (
+    cancelPendingEvaluation: (() => void) | null,
+  ) => void;
   response: Extract<CountryDetailResponse, { status: "available" }>;
 }) {
   const { country } = response;
+  const contextKey = `${country.iso3}:${JSON.stringify(initialFilters ?? {})}`;
+  const [committedFilters, setCommittedFilters] = useState<{
+    contextKey: string;
+    filters: ProductFitCommittedFilters;
+  } | null>(null);
+  const chatFilters =
+    committedFilters?.contextKey === contextKey
+      ? committedFilters.filters
+      : initialFilters;
+  const handleEvaluationCommitted = useCallback(
+    (filters: ProductFitCommittedFilters) => {
+      setCommittedFilters({ contextKey, filters });
+    },
+    [contextKey],
+  );
 
   return (
     <div className="space-y-5" data-testid="country-detail">
@@ -402,6 +433,8 @@ function CountryDetailContent({
         countryIso3={country.iso3}
         initialFilters={initialFilters}
         key={country.iso3}
+        onEvaluationCommitted={handleEvaluationCommitted}
+        registerNavigationGuard={registerProductFitNavigationGuard}
       />
 
       <section
@@ -414,17 +447,18 @@ function CountryDetailContent({
         <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
           将当前国家、用途、功率、日期及已选择的产品型号带入对话；对话结果仍需复核来源，不能替代正式认证或销售审批。
         </p>
-        <Link
+        <a
           className={cn(buttonVariants(), "mt-3 w-full")}
           href={buildChatHref({
             countryIso3: country.iso3,
-            initialFilters,
+            initialFilters: chatFilters,
             responseAsOf: response.asOf,
           })}
+          onClick={cancelPendingProductEvaluation}
         >
           <MessageSquareText aria-hidden="true" className="size-4" />
           在对话中分析
-        </Link>
+        </a>
       </section>
 
       <RegulationSection

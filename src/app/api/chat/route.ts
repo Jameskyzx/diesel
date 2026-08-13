@@ -141,10 +141,13 @@ async function processChatRequest(request: Request): Promise<Response> {
     const hasAttachments = latestUserMessage.parts.some(
       (part) => part.type === "file",
     );
-    const latestUserText = latestUserMessage.parts
-      .filter((part) => part.type === "text")
-      .map((part) => part.text)
-      .join("");
+    const userTexts = trustedUserMessages.map((message) =>
+      message.parts
+        .filter((part) => part.type === "text")
+        .map((part) => part.text)
+        .join(""),
+    );
+    const latestUserText = userTexts.at(-1)!;
     const allowUnverifiedAttachmentResponse =
       hasAttachments && allowsToolFreeAttachmentResponse(latestUserText);
     const directResponse = hasAttachments
@@ -152,6 +155,7 @@ async function processChatRequest(request: Request): Promise<Response> {
       : buildDirectChatResponse({
           selectedCountryIso3: body.selectedCountryIso3,
           text: latestUserText,
+          userTexts,
         });
     if (directResponse) {
       return directChatResponse(directResponse);
@@ -192,11 +196,13 @@ async function processChatRequest(request: Request): Promise<Response> {
     const result = streamSalesChat({
       allowUnverifiedAttachmentResponse,
       auditRepository,
+      hasUnverifiedAttachments: hasAttachments,
       messages: await convertToModelMessages(modelUiMessages, { tools }),
       model,
       selectedCountryIso3: body.selectedCountryIso3,
       sessionId: body.sessionId,
       tools,
+      trustedUserTexts: userTexts,
     });
 
     return result.toUIMessageStreamResponse({

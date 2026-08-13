@@ -535,6 +535,7 @@ export async function calculateOpportunityScore(input: unknown) {
             asOf: query.asOf,
             countryIso3,
             powerKw: query.powerKw,
+            productModelCode: query.productModelCode,
           }),
         ),
       ),
@@ -697,6 +698,7 @@ export async function generateSalesBrief(input: unknown) {
       countryIso3s: query.countryIso3s,
       metricCodes: query.metricCodes,
       powerKw: query.powerKw,
+      productModelCode: query.productModelCode,
     }),
     compareRegulations({
       applicationScope: query.applicationScope,
@@ -709,6 +711,7 @@ export async function generateSalesBrief(input: unknown) {
       asOf: query.asOf,
       countryIso3: query.targetCountryIso3,
       powerKw: query.powerKw,
+      productModelCode: query.productModelCode,
     }),
   ]);
   const marketScore = scorecard.scores.find(
@@ -873,6 +876,7 @@ export async function generateSalesBrief(input: unknown) {
     marketScore,
     missingData,
     opportunities,
+    query,
     recommendedProducts,
     risks,
     salesActions,

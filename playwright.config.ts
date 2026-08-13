@@ -36,6 +36,7 @@ export default defineConfig({
           AI_PROVIDER: "openai-compatible",
           DATABASE_MODE: "pglite-demo",
           KNOWLEDGE_STORAGE_ROOT: "e2e-knowledge",
+          PLAYWRIGHT_E2E: "true",
           // 小阈值使 Demo fixture（2026-01-15 核验）在所有运行日期都判定
           // 为 stale，确定性覆盖 ADR-045 的 UI 告警。
           COUNTRY_STALE_AFTER_DAYS: "1",

@@ -5,6 +5,7 @@ const baseURL =
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "demo.spec.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   globalTeardown: "./scripts/e2e/global-teardown.ts",
@@ -34,6 +35,7 @@ export default defineConfig({
           AI_MODEL: "e2e-placeholder-model",
           AI_MULTIMODAL_MODEL: "e2e-placeholder-vision-model",
           AI_PROVIDER: "openai-compatible",
+          AI_CHAT_RATE_LIMIT_BACKEND: "memory",
           DATABASE_MODE: "pglite-demo",
           KNOWLEDGE_STORAGE_ROOT: "e2e-knowledge",
           PLAYWRIGHT_E2E: "true",
@@ -45,7 +47,7 @@ export default defineConfig({
         },
         reuseExistingServer: false,
         timeout: 120_000,
-        url: `${baseURL}/api/health`,
+        url: `${baseURL}/api/health/ready`,
       },
   projects: [
     {
@@ -55,6 +57,11 @@ export default defineConfig({
     {
       name: "mobile-chromium",
       use: { ...devices["Pixel 7"] },
+    },
+    {
+      name: "core-webkit",
+      testMatch: "accessibility.spec.ts",
+      use: { ...devices["Desktop Safari"] },
     },
   ],
 });

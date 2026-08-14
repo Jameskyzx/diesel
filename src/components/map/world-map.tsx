@@ -22,6 +22,7 @@ import {
   type CountryMapSummary,
 } from "@/features/countries/schemas";
 import { hasDetailedCountryCoverage } from "@/features/database/schemas";
+import { WORLD_COUNTRIES_GEOJSON_URL } from "@/lib/geo-assets";
 
 const COUNTRY_SOURCE = "world-countries";
 const COUNTRY_FILL_LAYER = "country-fill";
@@ -283,7 +284,7 @@ export function WorldMap({
     map.on("error", handleMapError);
     map.on("load", () => {
       map.addSource(COUNTRY_SOURCE, {
-        data: "/geo/world-countries.geojson",
+        data: WORLD_COUNTRIES_GEOJSON_URL,
         promoteId: "ISO3",
         type: "geojson",
       });

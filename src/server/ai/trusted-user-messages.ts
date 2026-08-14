@@ -11,7 +11,11 @@ import {
   MAX_CHAT_ATTACHMENTS_TOTAL_BYTES,
 } from "@/features/ai/attachments";
 import { hasStructurallyValidChatImage } from "@/features/ai/image-attachments";
-import { MAX_CHAT_USER_MESSAGE_CHARACTERS } from "@/features/ai/constants";
+import {
+  MAX_CHAT_HISTORY_TEXT_CHARACTERS,
+  MAX_CHAT_HISTORY_USER_MESSAGES,
+  MAX_CHAT_USER_MESSAGE_CHARACTERS,
+} from "@/features/ai/constants";
 
 export const trustedUserTextPartSchema = z
   .object({
@@ -138,6 +142,7 @@ export function selectTrustedUserMessages<
     return null;
   }
 
+  const validatedMessages: Array<{ message: TMessage; textLength: number }> = [];
   for (const [messageIndex, message] of userMessages.entries()) {
     const isLatestUserMessage = messageIndex === userMessages.length - 1;
     const parts = z
@@ -159,6 +164,7 @@ export function selectTrustedUserMessages<
     if (!text.trim() || text.length > MAX_CHAT_USER_MESSAGE_CHARACTERS) {
       return null;
     }
+    validatedMessages.push({ message, textLength: text.length });
 
     if (isLatestUserMessage) {
       const attachments = parts.data.filter((part) => part.type === "file");
@@ -180,5 +186,18 @@ export function selectTrustedUserMessages<
     }
   }
 
-  return userMessages;
+  const selected: TMessage[] = [];
+  let selectedTextCharacters = 0;
+  for (const { message, textLength } of validatedMessages.toReversed()) {
+    if (
+      selected.length >= MAX_CHAT_HISTORY_USER_MESSAGES ||
+      selectedTextCharacters + textLength > MAX_CHAT_HISTORY_TEXT_CHARACTERS
+    ) {
+      break;
+    }
+    selected.push(message);
+    selectedTextCharacters += textLength;
+  }
+
+  return selected.toReversed();
 }

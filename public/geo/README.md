@@ -20,3 +20,9 @@ code. `NOR` and `FRA` use `ADM0_A3` because their source `ISO_A3` value is
 `world-countries-index.json` contains only the ISO3/name pairs used by the
 accessible keyboard and touch country selector. The application does not store
 the world geometry in React state.
+
+The public geometry request is redirected to the content-versioned URL
+`/geo/world-countries.ab7bef6a.geojson`. Only that versioned response receives
+the one-year `immutable` cache policy. When the source bytes change, update the
+short SHA-256 prefix in `next.config.ts`; never reuse a versioned URL for new
+content.

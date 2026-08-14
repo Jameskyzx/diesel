@@ -167,8 +167,8 @@ describe("opportunity-score-v1 pure rules", () => {
   it("normalizes only within a comparable cohort", () => {
     const normalized = normalizeComparableMetric(
       [
-        { countryIso3: "CHN", value: 12_345 },
-        { countryIso3: "BRA", value: 6_789 },
+        { countryIso3: "CHN", value: "12345.000000" },
+        { countryIso3: "BRA", value: "6789.000000" },
       ],
       "higher_is_better",
     );
@@ -179,10 +179,25 @@ describe("opportunity-score-v1 pure rules", () => {
     });
     expect(
       normalizeComparableMetric(
-        [{ countryIso3: "CHN", value: 12_345 }],
+        [{ countryIso3: "CHN", value: "12345.000000" }],
         "higher_is_better",
       ).size,
     ).toBe(0);
+  });
+
+  it("normalizes adjacent values above Number.MAX_SAFE_INTEGER exactly", () => {
+    const normalized = normalizeComparableMetric(
+      [
+        { countryIso3: "CHN", value: "9007199254740993.000001" },
+        { countryIso3: "BRA", value: "9007199254740993.000002" },
+      ],
+      "higher_is_better",
+    );
+
+    expect(Object.fromEntries(normalized)).toEqual({
+      BRA: 100,
+      CHN: 0,
+    });
   });
 
   it("reads weights from validated server configuration", () => {

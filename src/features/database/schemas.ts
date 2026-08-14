@@ -66,6 +66,64 @@ export const decimalNumberStringSchema = z
     "Number must use decimal notation",
   );
 
+function exactFixedScaleDecimalSchema(input: {
+  allowNegative: boolean;
+  precision: number;
+  scale: number;
+}) {
+  const maximumIntegerDigits = input.precision - input.scale;
+  const notation = input.allowNegative
+    ? /^-?\d+(?:\.\d+)?$/
+    : /^\d+(?:\.\d+)?$/;
+
+  return z
+    .string()
+    .trim()
+    .min(1)
+    .regex(notation, "Value must be a plain decimal string")
+    .superRefine((value, context) => {
+      const unsigned = value.startsWith("-") ? value.slice(1) : value;
+      const [integerPart = "", fractionalPart = ""] = unsigned.split(".");
+      const significantIntegerDigits = integerPart.replace(/^0+/, "").length;
+      if (Math.max(1, significantIntegerDigits) > maximumIntegerDigits) {
+        context.addIssue({
+          code: "custom",
+          message: `Value exceeds numeric(${input.precision},${input.scale}) integer precision`,
+        });
+      }
+      if (fractionalPart.length > input.scale) {
+        context.addIssue({
+          code: "custom",
+          message: `Value exceeds numeric(${input.precision},${input.scale}) scale`,
+        });
+      }
+    })
+    .transform((value) => {
+      const negative = value.startsWith("-");
+      const unsigned = negative ? value.slice(1) : value;
+      const [rawInteger = "0", rawFraction = ""] = unsigned.split(".");
+      const integer = rawInteger.replace(/^0+(?=\d)/, "");
+      const fraction = rawFraction.padEnd(input.scale, "0");
+      const magnitude = `${integer}.${fraction}`;
+      const isZero = /^0+\.0+$/.test(magnitude);
+      return `${negative && !isZero ? "-" : ""}${magnitude}`;
+    });
+}
+
+/** PostgreSQL numeric(18,6), retained as an exact canonical string. */
+export const regulationLimitDecimalSchema = exactFixedScaleDecimalSchema({
+  allowNegative: false,
+  precision: 18,
+  scale: 6,
+});
+
+/** PostgreSQL numeric(24,6), retained as an exact canonical string. */
+export const marketMetricDecimalSchema = exactFixedScaleDecimalSchema({
+  allowNegative: true,
+  precision: 24,
+  scale: 6,
+});
+
 export const httpUrlSchema = z
   .url()
   .superRefine((value, context) => {

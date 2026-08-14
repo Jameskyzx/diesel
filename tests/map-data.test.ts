@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import {
+  countryDirectorySchema,
   countryGeoFeaturePropertiesSchema,
   countryGeoIndexSchema,
 } from "@/features/countries/schemas";
+import { countryCatalog } from "@/server/db/seed/country-catalog";
 
 const countryGeoJsonSchema = z
   .object({
@@ -70,5 +72,28 @@ describe("world country map assets", () => {
       ({ properties }) => properties.ISO3 === "MLT",
     );
     expect(JSON.stringify(malta?.geometry)).toContain("14.183604");
+  });
+
+  it("keeps every catalog country selectable and marks missing geometry explicitly", async () => {
+    const countryIndex = await readJson(
+      "public/geo/world-countries-index.json",
+    ).then((value) => countryGeoIndexSchema.parse(value));
+    const geometryIso3s = new Set(countryIndex.map(({ iso3 }) => iso3));
+    const directory = countryDirectorySchema.parse(
+      countryCatalog.map(({ iso3, nameEn }) => ({
+        hasGeometry: geometryIso3s.has(iso3),
+        iso3,
+        name: nameEn,
+      })),
+    );
+
+    expect(directory).toHaveLength(178);
+    expect(directory.filter(({ hasGeometry }) => !hasGeometry)).toEqual([
+      expect.objectContaining({
+        hasGeometry: false,
+        iso3: "MUS",
+        name: "Mauritius",
+      }),
+    ]);
   });
 });

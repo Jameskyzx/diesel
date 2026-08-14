@@ -107,7 +107,9 @@ test("answers a capability question without forcing a fact tool", async ({ page 
     .fill("你好，你能帮我做什么？");
   await assistant.getByRole("button", { name: "发送问题" }).click();
 
-  const conversation = assistant.getByRole("log", { name: "AI 对话记录" });
+  const conversation = assistant.getByRole("region", {
+    name: "AI 对话记录",
+  });
   await expect(conversation).toContainText("结构化事实和可追溯来源");
   await expect(conversation).toContainText("比较 2–5 个国家");
   const markdown = conversation.getByTestId("assistant-markdown");
@@ -116,35 +118,6 @@ test("answers a capability question without forcing a fact tool", async ({ page 
   await expect(conversation).not.toContainText("没有足够证据");
   await expect(conversation).not.toContainText("正在执行确定性查询");
   await expect(conversation).not.toContainText("国家与法规资料");
-});
-
-test("portfolio demo keeps an explicitly named product scoped to one result", async ({
-  page,
-}) => {
-  test.skip(
-    process.env.PORTFOLIO_DEMO_MODE !== "true",
-    "This deterministic routing assertion only applies to portfolio Demo mode.",
-  );
-
-  await page.goto(
-    "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-  );
-
-  const assistant = page.getByRole("complementary", {
-    name: "AI 营销分析助手",
-  });
-  await assistant.getByRole("button", { name: "发送问题" }).click();
-
-  const conversation = assistant.getByRole("log", { name: "AI 对话记录" });
-  await expect(conversation).toContainText("DEMO ONLY — Fictional Engine 200");
-  await expect(conversation).not.toContainText("Fictional Engine 100");
-  await expect(conversation).toContainText("不可用于报价、认证声明或销售承诺");
-  const query = assistant.getByLabel("确定性产品适配查询条件");
-  await expect(query).toContainText("CHN");
-  await expect(query).toContainText("non-road");
-  await expect(query).toContainText("100 kW");
-  await expect(query).toContainText("2026-08-12");
-  await expect(query).toContainText("DEMO-ENG-200");
 });
 
 test("previews, removes, and validates chat attachments", async ({ page }) => {
@@ -349,9 +322,10 @@ test("locks attachment controls while validating image bytes", async ({
     name: "slow-engine.png",
   });
 
-  await expect(assistant.getByRole("status")).toContainText(
-    "正在验证附件安全性",
-  );
+  const attachmentValidationStatus = assistant
+    .getByRole("status")
+    .filter({ hasText: "正在验证附件安全性" });
+  await expect(attachmentValidationStatus).toBeVisible();
   await expect(fileInput).toBeDisabled();
   await expect(
     assistant.getByRole("button", { name: "正在验证附件" }),
@@ -365,13 +339,13 @@ test("locks attachment controls while validating image bytes", async ({
     browserGlobal.__releaseAttachmentValidation?.();
   });
 
-  await expect(assistant.getByRole("status")).toHaveCount(0);
+  await expect(attachmentValidationStatus).toHaveCount(0);
   await expect(assistant.getByText("slow-engine.png")).toBeVisible();
   await expect(sendButton).toBeEnabled();
 });
 
 test("returns a structured health response", async ({ request }) => {
-  const response = await request.get("/api/health");
+  const response = await request.get("/api/health/live");
 
   expect(response.ok()).toBe(true);
   expect(response.headers()["content-type"]).toContain("application/json");
@@ -379,6 +353,16 @@ test("returns a structured health response", async ({ request }) => {
   const body: unknown = await response.json();
   expect(body).toEqual(
     expect.objectContaining({
+      service: "global-diesel-regulations",
+      status: "ok",
+    }),
+  );
+
+  const readiness = await request.get("/api/health/ready");
+  expect(readiness.ok()).toBe(true);
+  await expect(readiness.json()).resolves.toEqual(
+    expect.objectContaining({
+      checks: { database: "ok" },
       service: "global-diesel-regulations",
       status: "ok",
     }),

@@ -11,6 +11,7 @@ describe("assistant Markdown", () => {
   it("renders CommonMark and GFM structure", () => {
     const html = renderToStaticMarkup(
       createElement(AssistantMarkdown, {
+        allowedExternalUrls: ["https://authority.example/evidence"],
         content: [
           "# 结论",
           "",
@@ -56,10 +57,20 @@ describe("assistant Markdown", () => {
     expect(html).toContain("已隐藏模型图片：tracking pixel");
   });
 
-  it("allows only HTTP(S), in-app paths, query strings and anchors", () => {
-    expect(safeAssistantMarkdownUrl("https://example.com/a")).toBe(
+  it("allows in-app links and only citation-approved external URLs", () => {
+    expect(
+      safeAssistantMarkdownUrl("https://example.com/a", [
+        "https://example.com/a",
+      ]),
+    ).toBe(
       "https://example.com/a",
     );
+    expect(safeAssistantMarkdownUrl("https://example.com/a")).toBe("");
+    expect(
+      safeAssistantMarkdownUrl("https://evil.example/phishing", [
+        "https://example.com/a",
+      ]),
+    ).toBe("");
     expect(safeAssistantMarkdownUrl("/countries/CHN")).toBe(
       "/countries/CHN",
     );

@@ -188,18 +188,37 @@ describe("jamesky.site Nginx boundary", () => {
         `runuser -u diesel -- test -r "\${release_dir}/${artifact}"`,
       );
     }
-    const trustedInstallCommand =
-      'corepack pnpm --config.registry="${PNPM_REGISTRY:-https://registry.npmjs.org}" \\\n  install --frozen-lockfile --trust-lockfile';
-    const installIndex = deploymentRunbook.indexOf(trustedInstallCommand);
-    const cleanBuildCommand =
-      'env -i \\\n  HOME=/root \\\n  PATH="${PATH}" \\\n  APP_VERSION="${release_id}" \\\n  NODE_ENV=production \\\n  corepack pnpm build';
-    const buildIndex = deploymentRunbook.indexOf(cleanBuildCommand);
+    const isolatedBuildCommand =
+      'runuser -u diesel-build -- env -i \\\n  HOME=/opt/diesel/build';
+    const buildIndex = deploymentRunbook.indexOf(isolatedBuildCommand);
+    const buildScriptIndex = deploymentRunbook.indexOf(
+      "bash scripts/deploy/build-release.sh",
+      buildIndex,
+    );
+    const runtimeEnvironmentLinkIndex = deploymentRunbook.indexOf(
+      'ln -s /opt/diesel/shared/.env.production.local "${release_dir}/.env.production.local"',
+      buildIndex,
+    );
     const nextReadProbeIndex = deploymentRunbook.indexOf(
       'runuser -u diesel -- test -r "${release_dir}/.next/BUILD_ID"',
     );
     const deployReadyIndex = deploymentRunbook.indexOf("touch .deploy-ready");
-    expect(installIndex).toBeGreaterThanOrEqual(0);
-    expect(buildIndex).toBeGreaterThan(installIndex);
+    expect(buildIndex).toBeGreaterThanOrEqual(0);
+    expect(buildScriptIndex).toBeGreaterThan(buildIndex);
+    expect(runtimeEnvironmentLinkIndex).toBeGreaterThan(buildScriptIndex);
+    expect(deploymentRunbook).toContain("groupadd --system diesel-build");
+    expect(deploymentRunbook).toContain(
+      "useradd --system --gid diesel-build",
+    );
+    expect(deploymentRunbook).not.toContain(
+      'chown -R diesel-build:diesel "${release_dir}"',
+    );
+    expect(deploymentRunbook).toContain(
+      'chown -hR root:diesel-build "${release_dir}"',
+    );
+    expect(deploymentRunbook).toContain(
+      '"${release_dir}/node_modules" "${release_dir}/.next"',
+    );
     expect(deploymentRunbook).not.toContain("npm_config_registry");
     expect(deploymentRunbook).not.toContain("pnpm config set registry");
     expect(nextReadProbeIndex).toBeGreaterThan(buildIndex);

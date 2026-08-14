@@ -40,13 +40,14 @@ const emptyTableCounts = {
   data_sources: 0,
   jurisdictions: 0,
   market_import_batches: 0,
+  market_metrics: 0,
   regulation_limits: 0,
   regulations: 0,
 };
 
 const emptySnapshot = {
   exportedAt: "2026-08-11T00:00:00.000Z",
-  formatVersion: 3,
+  formatVersion: 4,
   tableCounts: emptyTableCounts,
   tables: {
     countries: [],
@@ -56,6 +57,7 @@ const emptySnapshot = {
     data_sources: [],
     jurisdictions: [],
     market_import_batches: [],
+    market_metrics: [],
     regulation_limits: [],
     regulations: [],
   },

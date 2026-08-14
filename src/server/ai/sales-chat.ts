@@ -32,6 +32,10 @@ import {
   type SearchKnowledgeBaseInput,
 } from "@/features/ai/schemas";
 import {
+  MAX_AI_BUFFERED_TEXT_CHARACTERS,
+  MAX_AI_OUTPUT_TOKENS,
+} from "@/features/ai/constants";
+import {
   calculateOpportunityScoreInputSchema,
   compareMarketsInputSchema,
   compareRegulationsInputSchema,
@@ -568,6 +572,7 @@ const profileTopicLabels = {
 export function buildEvidenceGapResponse(
   results: AiToolResult[],
   hasExecutionFailure: boolean,
+  hasOutputLimitExceeded = false,
 ): string {
   const details = new Set<string>();
 
@@ -641,6 +646,9 @@ export function buildEvidenceGapResponse(
   if (hasExecutionFailure) {
     details.add("至少一项查询执行或参数校验失败，请检查输入后重试。");
   }
+  if (hasOutputLimitExceeded) {
+    details.add("AI 解释超过安全输出上限，已丢弃该段文本；请缩小问题后重试。");
+  }
 
   const detailLines = Array.from(details);
   const partialEvidence = results.some(
@@ -669,8 +677,10 @@ function createEvidenceBoundaryTransform({
   let hasToolResult = false;
   let hasInsufficientEvidence = false;
   let hasExecutionFailure = false;
+  let hasOutputLimitExceeded = false;
   const toolResults: AiToolResult[] = [];
   const bufferedText: Array<{ id: string; text: string }> = [];
+  let bufferedTextCharacters = 0;
 
   const canEmitModelText = () =>
     !hasInsufficientEvidence &&
@@ -680,6 +690,7 @@ function createEvidenceBoundaryTransform({
     transform(chunk, controller) {
       if (chunk.type === "tool-result") {
         bufferedText.length = 0;
+        bufferedTextCharacters = 0;
         hasToolResult = true;
         const parsed = aiToolResultSchema.safeParse(chunk.output);
         if (parsed.success) {
@@ -702,6 +713,7 @@ function createEvidenceBoundaryTransform({
         chunk.type === "error"
       ) {
         bufferedText.length = 0;
+        bufferedTextCharacters = 0;
         hasToolResult = true;
         hasInsufficientEvidence = true;
         hasExecutionFailure = true;
@@ -710,17 +722,32 @@ function createEvidenceBoundaryTransform({
       }
 
       if (chunk.type === "text-start") {
+        if (hasOutputLimitExceeded) {
+          return;
+        }
         bufferedText.push({ id: chunk.id, text: "" });
         return;
       }
 
       if (chunk.type === "text-delta") {
+        if (
+          hasOutputLimitExceeded ||
+          bufferedTextCharacters + chunk.text.length >
+            MAX_AI_BUFFERED_TEXT_CHARACTERS
+        ) {
+          bufferedText.length = 0;
+          bufferedTextCharacters = 0;
+          hasInsufficientEvidence = true;
+          hasOutputLimitExceeded = true;
+          return;
+        }
         const current = bufferedText.at(-1);
         if (current) {
           current.text += chunk.text;
         } else {
           bufferedText.push({ id: chunk.id, text: chunk.text });
         }
+        bufferedTextCharacters += chunk.text.length;
         return;
       }
 
@@ -804,6 +831,7 @@ function createEvidenceBoundaryTransform({
                     evidenceContract,
                     toolResults,
                   )),
+              hasOutputLimitExceeded,
             ),
             type: "text-delta",
           });
@@ -843,6 +871,7 @@ export function streamSalesChat(input: {
       }),
     instructions: buildSalesChatInstructions(input.selectedCountryIso3),
     maxRetries: 1,
+    maxOutputTokens: MAX_AI_OUTPUT_TOKENS,
     messages: input.messages,
     model: input.model,
     prepareStep: ({ steps }) => {

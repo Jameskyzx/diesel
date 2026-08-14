@@ -8,6 +8,10 @@ let rateLimitModule: RateLimitModule;
 
 import { selectTrustedUserMessages } from "@/server/ai/trusted-user-messages";
 import {
+  MAX_CHAT_HISTORY_TEXT_CHARACTERS,
+  MAX_CHAT_HISTORY_USER_MESSAGES,
+} from "@/features/ai/constants";
+import {
   MAX_CHAT_REQUEST_BODY_READ_MS,
   MAX_CHAT_RESPONSE_LEASE_MS,
 } from "@/server/http/request-limits";
@@ -45,6 +49,37 @@ function chatRequest(): Request {
 }
 
 describe("POST /api/chat rate limiting contract (ADR-041)", () => {
+  it("fails closed with a sanitized 503 when the shared limiter is unavailable", async () => {
+    const sensitiveText = "postgres://rate-limit:secret@example.test/database";
+    const consoleSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    (globalThis as { __aiChatRateLimiter?: unknown }).__aiChatRateLimiter = {
+      check: vi.fn().mockRejectedValue(new Error(sensitiveText)),
+      reset: vi.fn(),
+    };
+
+    try {
+      const response = await routeModule.POST(chatRequest());
+      const body = JSON.stringify(await response.json());
+
+      expect(response.status).toBe(503);
+      expect(response.headers.get("Retry-After")).toBe("60");
+      expect(body).not.toContain(sensitiveText);
+      expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain(
+        sensitiveText,
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "AI chat rate limiter unavailable",
+        { errorCode: "Error" },
+      );
+    } finally {
+      delete (globalThis as { __aiChatRateLimiter?: unknown })
+        .__aiChatRateLimiter;
+      consoleSpy.mockRestore();
+    }
+  });
+
   it("keeps only user-authored history for the model context", () => {
     const messages = [
       {
@@ -90,6 +125,31 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
         },
       ]),
     ).toBeNull();
+  });
+
+  it("keeps only the newest user history within prompt budgets", () => {
+    const messages = Array.from(
+      { length: MAX_CHAT_HISTORY_USER_MESSAGES + 3 },
+      (_, index) => ({
+        id: `user-${index}`,
+        parts: [{ text: `问题 ${index}`, type: "text" }],
+        role: "user",
+      }),
+    );
+    const selectedByCount = selectTrustedUserMessages(messages);
+    expect(selectedByCount).toHaveLength(MAX_CHAT_HISTORY_USER_MESSAGES);
+    expect(selectedByCount?.[0]).toBe(messages[3]);
+
+    const textBudgetMessages = Array.from({ length: 8 }, (_, index) => ({
+      id: `large-${index}`,
+      parts: [{ text: String(index).repeat(2_000), type: "text" }],
+      role: "user",
+    }));
+    const selectedByText = selectTrustedUserMessages(textBudgetMessages);
+    expect(selectedByText).toHaveLength(
+      MAX_CHAT_HISTORY_TEXT_CHARACTERS / 2_000,
+    );
+    expect(selectedByText?.at(-1)).toBe(textBudgetMessages.at(-1));
   });
 
   it("accepts approved inline attachments only on the latest user turn", () => {

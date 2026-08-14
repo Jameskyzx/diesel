@@ -1,13 +1,18 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import { env } from "@/env";
+import { getDatabase } from "@/server/db/client";
+import {
+  createRateLimitRepository,
+  type RateLimitRepository,
+} from "@/server/repositories/rate-limit-repository";
 
 /**
- * 固定窗口速率限制器（ADR-041）。
- *
- * 确定性纯逻辑：窗口按 epoch 对齐，`nowMs` 可注入以便测试。计数保存在
- * 进程内存中 —— 每个部署实例独立计数（已知限制：多实例部署时实际上限为
- * limit × 实例数；共享计数留给生产基础设施决策）。
+ * 固定窗口速率限制器（ADR-041）。窗口按 epoch 对齐，`nowMs` 可注入以便测试。
+ * `createRateLimiter` 是开发/测试用内存实现；生产由
+ * `createPostgresRateLimiter` 在数据库中跨实例原子共享计数。
  */
 export type RateLimitDecision = {
   allowed: boolean;
@@ -17,7 +22,7 @@ export type RateLimitDecision = {
 };
 
 export type RateLimiter = {
-  check: (key: string, nowMs?: number) => RateLimitDecision;
+  check: (key: string, nowMs?: number) => Promise<RateLimitDecision>;
   reset: () => void;
 };
 
@@ -34,6 +39,25 @@ type Bucket = {
   count: number;
   windowStart: number;
 };
+
+export type AiChatRateLimitBackend = "memory" | "postgres";
+
+export function resolveAiChatRateLimitBackend(options: {
+  configuredBackend?: AiChatRateLimitBackend;
+  nodeEnv: "development" | "production" | "test";
+}): AiChatRateLimitBackend {
+  const backend =
+    options.configuredBackend ??
+    (options.nodeEnv === "production" ? "postgres" : "memory");
+
+  if (options.nodeEnv === "production" && backend !== "postgres") {
+    throw new Error(
+      "Production AI chat rate limiting requires the postgres backend.",
+    );
+  }
+
+  return backend;
+}
 
 export function createRateLimiter(options: {
   limit: number;
@@ -55,7 +79,7 @@ export function createRateLimiter(options: {
   }
 
   return {
-    check(key, nowMs = Date.now()): RateLimitDecision {
+    async check(key, nowMs = Date.now()): Promise<RateLimitDecision> {
       const windowStart =
         Math.floor(nowMs / options.windowMs) * options.windowMs;
       purgeStale(windowStart);
@@ -96,6 +120,49 @@ export function createRateLimiter(options: {
     reset() {
       buckets.clear();
       lastPurgeWindowStart = Number.NEGATIVE_INFINITY;
+    },
+  };
+}
+
+export function createPostgresRateLimiter(options: {
+  limit: number;
+  repository: RateLimitRepository;
+  scope: string;
+  windowMs: number;
+}): RateLimiter {
+  return {
+    async check(key, nowMs = Date.now()): Promise<RateLimitDecision> {
+      const windowStart =
+        Math.floor(nowMs / options.windowMs) * options.windowMs;
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((windowStart + options.windowMs - nowMs) / 1000),
+      );
+      const requestCount = await options.repository.consumeBucket({
+        expiresAt: new Date(windowStart + options.windowMs),
+        keyHash: createHash("sha256").update(key).digest("hex"),
+        limit: options.limit,
+        now: new Date(nowMs),
+        scope: options.scope,
+        windowStart: new Date(windowStart),
+      });
+
+      return requestCount <= options.limit
+        ? {
+            allowed: true,
+            limit: options.limit,
+            remaining: options.limit - requestCount,
+            retryAfterSeconds: 0,
+          }
+        : {
+            allowed: false,
+            limit: options.limit,
+            remaining: 0,
+            retryAfterSeconds,
+          };
+    },
+    reset() {
+      // Shared production state is intentionally not reset from the app.
     },
   };
 }
@@ -170,15 +237,31 @@ type RuntimeWithRateLimiter = typeof globalThis & {
 };
 
 const AI_CHAT_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const AI_CHAT_RATE_LIMIT_SCOPE = "ai-chat-hourly-v1";
 export const AI_CHAT_MAX_IN_FLIGHT = 4;
 export const AI_CHAT_MAX_IN_FLIGHT_PER_CLIENT = 2;
 
 export function getAiChatRateLimiter(): RateLimiter {
   const runtime = globalThis as RuntimeWithRateLimiter;
-  runtime.__aiChatRateLimiter ??= createRateLimiter({
-    limit: env.AI_CHAT_RATE_LIMIT_PER_HOUR,
-    windowMs: AI_CHAT_RATE_LIMIT_WINDOW_MS,
-  });
+  if (!runtime.__aiChatRateLimiter) {
+    const backend = resolveAiChatRateLimitBackend({
+      configuredBackend: env.AI_CHAT_RATE_LIMIT_BACKEND,
+      nodeEnv: env.NODE_ENV,
+    });
+
+    runtime.__aiChatRateLimiter =
+      backend === "postgres"
+        ? createPostgresRateLimiter({
+            limit: env.AI_CHAT_RATE_LIMIT_PER_HOUR,
+            repository: createRateLimitRepository(getDatabase()),
+            scope: AI_CHAT_RATE_LIMIT_SCOPE,
+            windowMs: AI_CHAT_RATE_LIMIT_WINDOW_MS,
+          })
+        : createRateLimiter({
+            limit: env.AI_CHAT_RATE_LIMIT_PER_HOUR,
+            windowMs: AI_CHAT_RATE_LIMIT_WINDOW_MS,
+          });
+  }
 
   return runtime.__aiChatRateLimiter;
 }

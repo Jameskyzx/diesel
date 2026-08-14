@@ -18,6 +18,16 @@ export const countryGeoIndexSchema = z.array(
     .strict(),
 );
 
+export const countryDirectoryEntrySchema = z
+  .object({
+    hasGeometry: z.boolean(),
+    iso3: iso3Schema,
+    name: z.string().trim().min(1),
+  })
+  .strict();
+
+export const countryDirectorySchema = z.array(countryDirectoryEntrySchema);
+
 export const countryGeoFeaturePropertiesSchema = z
   .object({
     ISO3: iso3Schema,
@@ -181,7 +191,12 @@ export const countryApiErrorSchema = z
   .object({
     error: z
       .object({
-        code: z.enum(["INVALID_ISO3", "INVALID_AS_OF", "INTERNAL_ERROR"]),
+        code: z.enum([
+          "COUNTRY_NOT_FOUND",
+          "INVALID_ISO3",
+          "INVALID_AS_OF",
+          "INTERNAL_ERROR",
+        ]),
         message: z.string(),
       })
       .strict(),
@@ -191,6 +206,7 @@ export const countryApiErrorSchema = z
 export type CountryDetailResponse = z.infer<
   typeof countryDetailResponseSchema
 >;
+export type CountryDirectory = z.infer<typeof countryDirectorySchema>;
 export type CountryGeoIndex = z.infer<typeof countryGeoIndexSchema>;
 export type CountryMapResponse = z.infer<typeof countryMapResponseSchema>;
 export type CountryMapSummary = z.infer<typeof countryMapSummarySchema>;

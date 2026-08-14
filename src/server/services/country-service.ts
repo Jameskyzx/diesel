@@ -54,14 +54,18 @@ export function isFutureAdoptedRegulation(
   regulation: {
     adoptedOn: string | null;
     effectiveFrom: string | null;
+    effectiveTo: string | null;
     status: string;
   },
   asOf: string,
 ): boolean {
   const adoptionWasKnown =
     regulation.adoptedOn !== null && regulation.adoptedOn <= asOf;
+  const lifecycleIsUsable =
+    regulation.status !== "superseded" || regulation.effectiveTo !== null;
 
   return regulation.status !== "proposed" &&
+    lifecycleIsUsable &&
     adoptionWasKnown &&
     (regulation.effectiveFrom === null || regulation.effectiveFrom > asOf);
 }

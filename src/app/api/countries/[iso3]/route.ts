@@ -7,6 +7,7 @@ import {
   type CountryDetailQuery,
 } from "@/features/database/schemas";
 import { getErrorCode } from "@/lib/api-error";
+import { isKnownCountryIso3 } from "@/server/services/country-directory";
 import { getCountryDetails } from "@/server/services/country-service";
 
 export const runtime = "nodejs";
@@ -65,6 +66,18 @@ export async function GET(request: Request, context: CountryRouteContext) {
     }
 
     return internalErrorResponse(error);
+  }
+
+  if (!isKnownCountryIso3(input.iso3)) {
+    return NextResponse.json(
+      countryApiErrorSchema.parse({
+        error: {
+          code: "COUNTRY_NOT_FOUND",
+          message: "未找到该 ISO3 对应的国家目录记录。",
+        },
+      }),
+      { status: 404 },
+    );
   }
 
   try {

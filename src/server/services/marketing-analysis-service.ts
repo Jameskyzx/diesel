@@ -556,7 +556,7 @@ export async function calculateOpportunityScore(input: unknown) {
     const normalized = normalizeComparableMetric(
       metric.observations.map((observation) => ({
         countryIso3: observation.countryIso3,
-        value: Number(observation.valueNumeric),
+        value: observation.valueNumeric,
       })),
       direction,
     );

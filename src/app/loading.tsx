@@ -7,7 +7,7 @@ export default function Loading() {
       role="status"
     >
       <span className="sr-only">正在加载页面</span>
-      <div className="animate-pulse space-y-8">
+      <div className="animate-pulse space-y-8 motion-reduce:animate-none">
         <div className="space-y-3">
           <div className="h-4 w-36 rounded-full bg-muted" />
           <div className="h-10 w-full max-w-xl rounded-xl bg-muted" />

@@ -329,7 +329,20 @@ function holdLeaseUntilResponseCompletes(
 
 export async function POST(request: Request): Promise<Response> {
   const clientIdentifier = extractClientIdentifier(request.headers);
-  const rateDecision = getAiChatRateLimiter().check(clientIdentifier);
+  let rateDecision;
+  try {
+    rateDecision = await getAiChatRateLimiter().check(clientIdentifier);
+  } catch (error: unknown) {
+    console.error("AI chat rate limiter unavailable", {
+      errorCode: getErrorCode(error),
+    });
+    return errorResponse(
+      "INTERNAL_ERROR",
+      "AI 聊天服务暂时不可用，请稍后重试。",
+      503,
+      { "Retry-After": "60" },
+    );
+  }
   if (!rateDecision.allowed) {
     return errorResponse(
       "RATE_LIMITED",

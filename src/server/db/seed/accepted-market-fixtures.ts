@@ -2,6 +2,7 @@ import {
   dataSources,
   marketMetrics,
 } from "@/server/db/schema";
+import { marketMetricDecimalSchema } from "@/features/database/schemas";
 
 const marketReadbackTimestamp = new Date("2026-08-03T00:00:00.000Z");
 const marketRecordTimestamps = {
@@ -148,6 +149,40 @@ export const fixtureMarketSources: (typeof dataSources.$inferInsert)[] = [
 
 type MarketFixture = typeof marketMetrics.$inferInsert;
 type RoadScope = "on-road-bus" | "on-road-truck";
+const marketDecimalScale = 1_000_000n;
+
+function scaledMarketDecimal(value: unknown): {
+  canonical: string;
+  scaled: bigint;
+} {
+  const canonical = marketMetricDecimalSchema.parse(value);
+  return {
+    canonical,
+    scaled: BigInt(canonical.replace(".", "")),
+  };
+}
+
+function formatScaledMarketDecimal(value: bigint): string {
+  const negative = value < 0n;
+  const magnitude = negative ? -value : value;
+  const integer = magnitude / marketDecimalScale;
+  const fraction = (magnitude % marketDecimalScale)
+    .toString()
+    .padStart(6, "0");
+  return `${negative ? "-" : ""}${integer}.${fraction}`;
+}
+
+function divideAndRound(numerator: bigint, denominator: bigint): bigint {
+  if (denominator <= 0n) {
+    throw new Error("Market decimal division requires a positive denominator.");
+  }
+  const negative = numerator < 0n;
+  const magnitude = negative ? -numerator : numerator;
+  const quotient = magnitude / denominator;
+  const remainder = magnitude % denominator;
+  const rounded = quotient + (remainder * 2n >= denominator ? 1n : 0n);
+  return negative ? -rounded : rounded;
+}
 
 function yearEndObservation(input: {
   applicationScope: RoadScope;
@@ -156,7 +191,7 @@ function yearEndObservation(input: {
   definition: string;
   id: string;
   methodologyVersion: string;
-  value: number;
+  value: string;
   year: 2022 | 2023;
 }): MarketFixture {
   return {
@@ -175,7 +210,7 @@ function yearEndObservation(input: {
     periodStart: `${input.year}-01-01`,
     publishedOn: null,
     unitCode: "vehicle",
-    valueNumeric: input.value.toFixed(6),
+    valueNumeric: marketMetricDecimalSchema.parse(input.value),
   };
 }
 
@@ -194,11 +229,17 @@ function yoyObservation(input: {
     throw new Error("YoY fixtures require consecutive, method-compatible observations.");
   }
 
-  const currentValue = Number(input.current.valueNumeric);
-  const priorValue = Number(input.prior.valueNumeric);
-  if (!Number.isFinite(currentValue) || !Number.isFinite(priorValue) || priorValue <= 0) {
-    throw new Error("YoY fixtures require finite values and a positive prior value.");
+  const currentValue = scaledMarketDecimal(input.current.valueNumeric);
+  const priorValue = scaledMarketDecimal(input.prior.valueNumeric);
+  if (priorValue.scaled <= 0n) {
+    throw new Error("YoY fixtures require a positive prior value.");
   }
+  const percentageScaled = divideAndRound(
+    (currentValue.scaled - priorValue.scaled) *
+      100n *
+      marketDecimalScale,
+    priorValue.scaled,
+  );
 
   return {
     ...marketRecordTimestamps,
@@ -207,7 +248,7 @@ function yoyObservation(input: {
     currencyCode: null,
     dataSourceId: input.current.dataSourceId,
     definition:
-      `由年末观察值 ${input.prior.id}（${priorValue}）与 ${input.current.id}（${currentValue}）` +
+      `由年末观察值 ${input.prior.id}（${priorValue.canonical}）与 ${input.current.id}（${currentValue.canonical}）` +
       `按 ((current / prior) - 1) × 100 确定性计算；两期方法版本均为 ${input.current.methodologyVersion}。`,
     id: input.id,
     isDemo: false,
@@ -218,7 +259,7 @@ function yoyObservation(input: {
     periodStart: input.current.periodStart,
     publishedOn: input.current.publishedOn,
     unitCode: "percent",
-    valueNumeric: (((currentValue / priorValue) - 1) * 100).toFixed(6),
+    valueNumeric: formatScaledMarketDecimal(percentageScaled),
   };
 }
 
@@ -230,7 +271,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "国家统计局《中国统计年鉴 2024》表 16-20：载货汽车合计；原表单位万辆，乘以 10,000 转为 vehicle。",
     id: acceptedMarketFixtureIds.observation.chnTruck2022,
     methodologyVersion: "official-register-stock-chn-nbs-v1",
-    value: 33_176_500,
+    value: "33176500",
     year: 2022,
   }),
   yearEndObservation({
@@ -240,7 +281,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "国家统计局《中国统计年鉴 2024》表 16-20：载货汽车合计；原表单位万辆，乘以 10,000 转为 vehicle。",
     id: acceptedMarketFixtureIds.observation.chnTruck2023,
     methodologyVersion: "official-register-stock-chn-nbs-v1",
-    value: 33_589_400,
+    value: "33589400",
     year: 2023,
   }),
   yearEndObservation({
@@ -250,7 +291,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "国家统计局《中国统计年鉴 2024》表 16-20：大型载客汽车 + 中型载客汽车；原表单位万辆，求和后乘以 10,000 转为 vehicle。",
     id: acceptedMarketFixtureIds.observation.chnBus2022,
     methodologyVersion: "official-register-stock-chn-nbs-v1",
-    value: 2_094_800,
+    value: "2094800",
     year: 2022,
   }),
   yearEndObservation({
@@ -260,7 +301,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "国家统计局《中国统计年鉴 2024》表 16-20：大型载客汽车 + 中型载客汽车；原表单位万辆，求和后乘以 10,000 转为 vehicle。",
     id: acceptedMarketFixtureIds.observation.chnBus2023,
     methodologyVersion: "official-register-stock-chn-nbs-v1",
-    value: 2_010_900,
+    value: "2010900",
     year: 2023,
   }),
   yearEndObservation({
@@ -270,7 +311,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "FHWA Highway Statistics 2022 Table MV-1：Trucks total（private/commercial + publicly owned）；该宽口径包含轻型卡车类。",
     id: acceptedMarketFixtureIds.observation.usaTruck2022,
     methodologyVersion: "official-register-stock-usa-fhwa-v1",
-    value: 172_364_078,
+    value: "172364078",
     year: 2022,
   }),
   yearEndObservation({
@@ -280,7 +321,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "FHWA Highway Statistics 2023 Table MV-1：Trucks total（private/commercial + publicly owned）；该宽口径包含轻型卡车类。",
     id: acceptedMarketFixtureIds.observation.usaTruck2023,
     methodologyVersion: "official-register-stock-usa-fhwa-v1",
-    value: 177_228_271,
+    value: "177228271",
     year: 2023,
   }),
   yearEndObservation({
@@ -290,7 +331,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "FHWA Highway Statistics 2022 Table MV-10：Grand total buses（private/commercial + publicly owned + federal）。",
     id: acceptedMarketFixtureIds.observation.usaBus2022,
     methodologyVersion: "official-register-stock-usa-fhwa-v1",
-    value: 958_055,
+    value: "958055",
     year: 2022,
   }),
   yearEndObservation({
@@ -300,7 +341,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "FHWA Highway Statistics 2023 Table MV-10：Grand total buses（private/commercial + publicly owned + federal）。",
     id: acceptedMarketFixtureIds.observation.usaBus2023,
     methodologyVersion: "official-register-stock-usa-fhwa-v1",
-    value: 967_525,
+    value: "967525",
     year: 2023,
   }),
   yearEndObservation({
@@ -310,7 +351,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "Eurostat ROAD_EQS_LORROA：LOR_GT3P5/TOTAL + TRC/TOTAL；排除 VG_LE3P5。",
     id: acceptedMarketFixtureIds.observation.deuTruck2022,
     methodologyVersion: "official-register-stock-deu-eurostat-v1",
-    value: 757_813,
+    value: "757813",
     year: 2022,
   }),
   yearEndObservation({
@@ -320,7 +361,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "Eurostat ROAD_EQS_LORROA：LOR_GT3P5/TOTAL + TRC/TOTAL；排除 VG_LE3P5。",
     id: acceptedMarketFixtureIds.observation.deuTruck2023,
     methodologyVersion: "official-register-stock-deu-eurostat-v1",
-    value: 757_491,
+    value: "757491",
     year: 2023,
   }),
   yearEndObservation({
@@ -330,7 +371,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "Eurostat ROAD_EQS_BUSMOT：BUSMOT / TOTAL（客车、长途客车与无轨电车，全部动力）。",
     id: acceptedMarketFixtureIds.observation.deuBus2022,
     methodologyVersion: "official-register-stock-deu-eurostat-v1",
-    value: 82_932,
+    value: "82932",
     year: 2022,
   }),
   yearEndObservation({
@@ -340,7 +381,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "Eurostat ROAD_EQS_BUSMOT：BUSMOT / TOTAL（客车、长途客车与无轨电车，全部动力）。",
     id: acceptedMarketFixtureIds.observation.deuBus2023,
     methodologyVersion: "official-register-stock-deu-eurostat-v1",
-    value: 84_628,
+    value: "84628",
     year: 2023,
   }),
   yearEndObservation({
@@ -350,7 +391,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "SENATRAN Frota Nacional Dezembro 2022：CAMINHÃO + CAMINHÃO TRATOR；排除 CAMINHONETE/CAMIONETA。",
     id: acceptedMarketFixtureIds.observation.braTruck2022,
     methodologyVersion: "official-register-stock-bra-senatran-v1",
-    value: 3_871_687,
+    value: "3871687",
     year: 2022,
   }),
   yearEndObservation({
@@ -360,7 +401,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "SENATRAN Frota Nacional Dezembro 2023：CAMINHÃO + CAMINHÃO TRATOR；排除 CAMINHONETE/CAMIONETA。",
     id: acceptedMarketFixtureIds.observation.braTruck2023,
     methodologyVersion: "official-register-stock-bra-senatran-v1",
-    value: 3_980_714,
+    value: "3980714",
     year: 2023,
   }),
   yearEndObservation({
@@ -370,7 +411,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "SENATRAN Frota Nacional Dezembro 2022：ÔNIBUS + MICROÔNIBUS。",
     id: acceptedMarketFixtureIds.observation.braBus2022,
     methodologyVersion: "official-register-stock-bra-senatran-v1",
-    value: 1_123_588,
+    value: "1123588",
     year: 2022,
   }),
   yearEndObservation({
@@ -380,7 +421,7 @@ const yearEndFixtures: MarketFixture[] = [
     definition: "SENATRAN Frota Nacional Dezembro 2023：ÔNIBUS + MICROÔNIBUS。",
     id: acceptedMarketFixtureIds.observation.braBus2023,
     methodologyVersion: "official-register-stock-bra-senatran-v1",
-    value: 1_152_852,
+    value: "1152852",
     year: 2023,
   }),
 ];

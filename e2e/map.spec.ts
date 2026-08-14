@@ -1,9 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+import { WORLD_COUNTRIES_GEOJSON_URL } from "../src/lib/geo-assets";
+
+const worldCountriesRequest = `**${WORLD_COUNTRIES_GEOJSON_URL}`;
+
 test("shows an explicit error and recovers when country geometry fails", async ({
   page,
 }) => {
-  await page.route("**/geo/world-countries.geojson", async (route) => {
+  await page.route(worldCountriesRequest, async (route) => {
     await route.fulfill({ body: "upstream unavailable", status: 503 });
   });
   await page.goto("/map");
@@ -13,7 +17,7 @@ test("shows an explicit error and recovers when country geometry fails", async (
   ).toBeVisible();
   await expect(page.getByText("有可查看数据")).toHaveCount(0);
 
-  await page.unroute("**/geo/world-countries.geojson");
+  await page.unroute(worldCountriesRequest);
   await page.getByRole("button", { name: "重试加载地图" }).click();
 
   await expect(page.getByTestId("map-canvas-container")).toHaveAttribute(
@@ -62,6 +66,18 @@ test("opens a shareable country URL by clicking the map polygon", async ({
   await expect(
     page.getByRole("heading", { name: "China — demo fixture" }),
   ).toBeVisible();
+});
+
+test("includes a country snapshot in the server-rendered share-page HTML", async ({
+  request,
+}) => {
+  const response = await request.get("/countries/CHN?asOf=2026-01-20");
+  expect(response.ok()).toBe(true);
+  const html = await response.text();
+
+  expect(html).toContain("SERVER-RENDERED COUNTRY SNAPSHOT");
+  expect(html).toContain("country-server-fallback");
+  expect(html).toContain("2026-01-20");
 });
 
 test("keeps the map tooltip inside a narrow pointer viewport", async ({
@@ -254,11 +270,13 @@ test("keeps AI access in the dedicated chat workspace", async ({ page }) => {
     "输入问题，可附上文件或图片…",
   );
   await expect(chatInput).toBeEditable();
-  await expect(chatInput).toBeFocused();
+  await expect(chatInput).not.toBeFocused();
   await expect(
     assistant.getByRole("button", { name: "发送问题" }),
   ).toBeDisabled();
-  await expect(assistant.getByRole("log", { name: "AI 对话记录" })).toBeVisible();
+  await expect(
+    assistant.getByRole("region", { name: "AI 对话记录" }),
+  ).toBeVisible();
 });
 
 test("carries explicit country filters into the chat workspace", async ({
@@ -427,6 +445,15 @@ test("country APIs return structured database-backed states", async ({
     status: "no_data",
   });
 
+  const unknownResponse = await request.get("/api/countries/ZZZ");
+  expect(unknownResponse.status()).toBe(404);
+  await expect(unknownResponse.json()).resolves.toEqual({
+    error: {
+      code: "COUNTRY_NOT_FOUND",
+      message: "未找到该 ISO3 对应的国家目录记录。",
+    },
+  });
+
   const badAsOfResponse = await request.get(
     "/api/countries/CHN?asOf=not-a-date",
   );
@@ -466,6 +493,42 @@ test("country APIs return structured database-backed states", async ({
     },
   });
   expect(blankPowerResponse.status()).toBe(400);
+});
+
+test("keeps a catalog country without geometry selectable and rejects unknown pages", async ({
+  page,
+}) => {
+  await page.goto("/map");
+
+  const countrySelect = page.getByLabel("选择国家");
+  await expect(countrySelect.locator('option[value="MUS"]')).toHaveText(
+    /Mauritius · MUS · 暂无地图边界/,
+  );
+  await countrySelect.selectOption("MUS");
+  await expect(page).toHaveURL(/\/countries\/MUS$/);
+  await expect(page.getByText(/该目录国家暂缺地图边界/)).toBeVisible();
+
+  await page.goto("/countries/ZZZ");
+  await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+  await expect(page.getByTestId("country-no-data")).toHaveCount(0);
+});
+
+test("shows an explicit homepage empty state when no reviewed country is public", async ({
+  page,
+}) => {
+  await page.route("**/api/countries", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({ countries: [], status: "ok" }),
+      contentType: "application/json",
+      status: 200,
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("暂无已核验国家入口")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "打开国家目录" }),
+  ).toHaveAttribute("href", "/map");
 });
 
 test("shared filter URLs reproduce the product-fit evaluation", async ({

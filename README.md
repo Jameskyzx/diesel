@@ -129,10 +129,13 @@ flowchart LR
 pnpm lint
 pnpm typecheck
 pnpm test
+pnpm test:coverage
 pnpm ai:eval
 pnpm db:check
 pnpm build
 pnpm playwright test
+pnpm test:e2e:demo
+pnpm audit:security
 ```
 
 `pnpm ai:eval` 是不调用外部模型的对话 harness：固定 golden prompts，检查确定性
@@ -141,10 +144,13 @@ pnpm playwright test
 
 GitHub CI 对每次 PR/`master` 推送执行：
 
-- ESLint、TypeScript strict、Vitest、Drizzle migration check、生产构建；
-- Chromium 桌面/移动关键流程；
-- gitleaks 全历史密钥扫描；
-- `pnpm audit --audit-level=critical`。
+- ESLint、TypeScript strict、分层 coverage、Drizzle migration check、生产构建；
+- Chromium 桌面/移动关键流程、WebKit + axe 核心 smoke，以及由正式 `pnpm demo`
+  入口启动的独立桌面/移动作品契约；
+- 真实 PostgreSQL + pgvector 空库 Migration 和上一版本脏数据升级 smoke；
+- gitleaks 全历史密钥扫描及不允许整文件绕过的回归；
+- 每周 Dependabot 与[限时依赖公告策略](docs/DEPENDENCY_SECURITY.md)：新 high、过期例外
+  或任一 critical 公告都会阻断。
 
 测试覆盖有效期与功率边界、proposed/effective 隔离、完整来源链、产品适配三态、
 AI 伪造事实对抗、请求体限制、错误脱敏、迟到响应竞态、治理权限与发布事务。
@@ -174,6 +180,8 @@ Copy-Item .env.example .env.local
 - `AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`：可选的服务端 OpenAI-compatible 文本模型；
 - `AI_MULTIMODAL_MODEL`：可选的同端点视觉模型；只有图片上传需要，且必须同时支持
   图片输入与 Function Calling；
+- `AI_CHAT_RATE_LIMIT_BACKEND`：生产使用 `postgres` 跨实例共享配额；`memory` 只用于
+  单进程开发、测试和离线 Demo；
 - `KNOWLEDGE_STORAGE_ROOT`：开发期 `.data` 下的文档目录；
 - `ADMIN_ROLE_BINDINGS_JSON`：受可信身份代理保护的管理角色映射。
 
@@ -181,6 +189,15 @@ Copy-Item .env.example .env.local
 
 ```bash
 pnpm exec tsx --env-file=.env.local scripts/db/ingest-accepted-fixtures.ts
+```
+
+本地文档存储可执行孤儿扫描；默认只报告至少 24 小时未被数据库引用的内容。共享或
+生产环境禁止直接向扫描命令传 `--delete`，只能使用取得治理维护锁的删除脚本；也可用
+`--minimum-age-hours=N` 调高保护窗口：
+
+```bash
+pnpm knowledge:orphans
+pnpm knowledge:orphans:delete --minimum-age-hours=48
 ```
 
 生产/共享环境不得使用本地文件存储、Demo 数据库或客户端伪造的身份 Header。完整

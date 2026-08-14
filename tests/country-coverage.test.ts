@@ -398,7 +398,12 @@ describe("country regulation status grouping", () => {
   it("fails closed when adoption timing or supersession end is unknown", () => {
     expect(
       isFutureAdoptedRegulation(
-        { adoptedOn: null, effectiveFrom: null, status: "adopted" },
+        {
+          adoptedOn: null,
+          effectiveFrom: null,
+          effectiveTo: null,
+          status: "adopted",
+        },
         "2026-08-05",
       ),
     ).toBe(false);
@@ -407,6 +412,7 @@ describe("country regulation status grouping", () => {
         {
           adoptedOn: "2026-01-01",
           effectiveFrom: null,
+          effectiveTo: null,
           status: "adopted",
         },
         "2026-08-05",
@@ -417,6 +423,7 @@ describe("country regulation status grouping", () => {
         {
           adoptedOn: "2026-01-01",
           effectiveFrom: "2027-01-01",
+          effectiveTo: null,
           status: "adopted",
         },
         "2026-08-05",
@@ -427,6 +434,7 @@ describe("country regulation status grouping", () => {
         {
           adoptedOn: "2025-01-01",
           effectiveFrom: "2026-01-01",
+          effectiveTo: null,
           status: "adopted",
         },
         "2026-08-05",
@@ -454,7 +462,12 @@ describe("country regulation status grouping", () => {
     ).toBe(true);
     expect(
       isFutureAdoptedRegulation(
-        { adoptedOn: null, effectiveFrom: null, status: "effective" },
+        {
+          adoptedOn: null,
+          effectiveFrom: null,
+          effectiveTo: null,
+          status: "effective",
+        },
         "2026-08-05",
       ),
     ).toBe(false);
@@ -463,9 +476,21 @@ describe("country regulation status grouping", () => {
         {
           adoptedOn: "2026-01-10",
           effectiveFrom: "2030-01-01",
+          effectiveTo: null,
           status: "adopted",
         },
         "2024-12-31",
+      ),
+    ).toBe(false);
+    expect(
+      isFutureAdoptedRegulation(
+        {
+          adoptedOn: "2026-01-10",
+          effectiveFrom: "2030-01-01",
+          effectiveTo: null,
+          status: "superseded",
+        },
+        "2026-08-05",
       ),
     ).toBe(false);
   });

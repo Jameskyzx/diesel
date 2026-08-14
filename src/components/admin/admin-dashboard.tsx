@@ -13,6 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import {
+  Fragment,
   FormEvent,
   useCallback,
   useEffect,
@@ -31,9 +32,11 @@ import {
   type AdminPrincipal,
 } from "@/features/admin/schemas";
 import { cn } from "@/lib/utils";
+import { isNavigableEvidenceUrl } from "@/lib/source-link";
 
 type AdminDashboardProps = {
   initialPrincipal: AdminPrincipal;
+  initialUtcNow: string;
 };
 
 const previewResponseSchema = z
@@ -137,7 +140,7 @@ function initialPayload(entityType: string): string {
       periodStart: "2025-01-01",
       publishedOn: "2026-07-29",
       unitCode: "units",
-      valueNumeric: 1,
+      valueNumeric: "1",
       verifiedAt,
     },
     product: {
@@ -184,7 +187,7 @@ function initialPayload(entityType: string): string {
           dataSourceId: demoSourceId,
           engineTypeCode: "CI",
           isDemo: true,
-          limitValue: 1,
+          limitValue: "1",
           measurementBasis: "DEMO",
           pollutantCode: "NOX",
           powerMaxKw: 200,
@@ -246,8 +249,65 @@ function FieldLabel({
 const inputClass =
   "w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40";
 
+type PayloadDiff = {
+  after: string;
+  before: string;
+  path: string;
+};
+
+function jsonValueText(value: unknown): string {
+  if (value === undefined) return "（不存在）";
+  return JSON.stringify(value);
+}
+
+function flattenPayload(
+  value: unknown,
+  path = "$",
+  result = new Map<string, unknown>(),
+): Map<string, unknown> {
+  if (Array.isArray(value)) {
+    if (value.length === 0) result.set(path, value);
+    value.forEach((item, index) =>
+      flattenPayload(item, `${path}[${index}]`, result),
+    );
+    return result;
+  }
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value);
+    if (entries.length === 0) result.set(path, value);
+    for (const [key, item] of entries) {
+      flattenPayload(item, `${path}.${key}`, result);
+    }
+    return result;
+  }
+  result.set(path, value);
+  return result;
+}
+
+function payloadDiff(
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): PayloadDiff[] {
+  const beforeValues = flattenPayload(before);
+  const afterValues = flattenPayload(after);
+  return Array.from(new Set([...beforeValues.keys(), ...afterValues.keys()]))
+    .toSorted()
+    .filter(
+      (path) =>
+        jsonValueText(beforeValues.get(path)) !==
+        jsonValueText(afterValues.get(path)),
+    )
+    .map((path) => ({
+      after: jsonValueText(afterValues.get(path)),
+      before: jsonValueText(beforeValues.get(path)),
+      path,
+    }));
+}
+
+
 export function AdminDashboard({
   initialPrincipal,
+  initialUtcNow,
 }: AdminDashboardProps) {
   const [dashboard, setDashboard] =
     useState<AdminDashboardResponse | null>(null);
@@ -260,6 +320,12 @@ export function AdminDashboard({
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [draftActionReasons, setDraftActionReasons] = useState<
+    Record<string, string>
+  >({});
+  const [publishConfirmations, setPublishConfirmations] = useState<
+    Record<string, boolean>
+  >({});
   const [preview, setPreview] = useState<z.infer<
     typeof previewResponseSchema
   > | null>(null);
@@ -322,12 +388,16 @@ export function AdminDashboard({
     };
   }, [loadDashboard]);
 
-  async function runAction(action: () => Promise<void>) {
+  async function runAction(
+    action: () => Promise<void>,
+    successMessage?: string,
+  ) {
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
       await action();
+      if (successMessage) setNotice(successMessage);
     } catch (actionError: unknown) {
       setError(
         actionError instanceof Error
@@ -373,21 +443,24 @@ export function AdminDashboard({
   async function transitionDraft(
     draftId: string,
     action: "publish" | "review",
+    reason: string,
   ) {
     await runAction(async () => {
       await responseJson(
         await fetch(`/api/admin/drafts/${draftId}/${action}`, {
           body: JSON.stringify({
-            reason:
-              action === "review"
-                ? "审核人确认结构和来源信息。"
-                : "审核完成，批准发布到正式查询。",
+            reason,
           }),
           headers: { "content-type": "application/json" },
           method: "POST",
         }),
       );
       setNotice(action === "review" ? "草稿已审核。" : "版本已发布。");
+      setDraftActionReasons((current) => ({ ...current, [draftId]: "" }));
+      setPublishConfirmations((current) => ({
+        ...current,
+        [draftId]: false,
+      }));
     });
   }
 
@@ -486,8 +559,11 @@ export function AdminDashboard({
 
       {!dashboard && !error ? (
         <div
+          aria-busy="true"
+          aria-live="polite"
           className="grid min-h-48 place-items-center rounded-2xl border bg-card text-center"
           data-testid="admin-dashboard-loading"
+          role="status"
         >
           <div>
             <LoaderCircle
@@ -653,7 +729,11 @@ export function AdminDashboard({
           </div>
 
           <DocumentAdminForms busy={busy} runAction={runAction} />
-          <SourceVerificationForm busy={busy} runAction={runAction} />
+          <SourceVerificationForm
+            busy={busy}
+            initialUtcNow={initialUtcNow}
+            runAction={runAction}
+          />
           {initialPrincipal.role === "admin" ? (
             <ArchiveEntityForm busy={busy} runAction={runAction} />
           ) : null}
@@ -711,43 +791,297 @@ export function AdminDashboard({
                   </td>
                 </tr>
               ) : null}
-              {(dashboard?.drafts ?? []).map((draft) => (
-                <tr className="border-b align-top" key={draft.id}>
-                  <td className="py-3 pr-3">
-                    <p className="font-medium">{entityLabels[draft.entityType]}</p>
-                    <p className="max-w-60 truncate text-xs text-muted-foreground">{draft.entityKey}</p>
-                  </td>
-                  <td className="py-3 pr-3">v{draft.version}</td>
-                  <td className="py-3 pr-3">
-                    <span className="rounded-full border px-2 py-1 text-xs">{draft.workflowStatus}</span>
-                  </td>
-                  <td className="py-3 pr-3 text-xs">{draft.createdBy}</td>
-                  <td className="max-w-60 py-3 pr-3 text-xs">{draft.changeReason}</td>
-                  <td className="py-3">
-                    <div className="flex gap-2">
-                      {canReview && draft.workflowStatus === "draft" ? (
-                        <Button
-                          disabled={busy}
-                          onClick={() => void transitionDraft(draft.id, "review")}
-                          size="sm"
-                          variant="outline"
-                        >
-                          审核
-                        </Button>
-                      ) : null}
-                      {canReview && draft.workflowStatus === "reviewed" ? (
-                        <Button
-                          disabled={busy}
-                          onClick={() => void transitionDraft(draft.id, "publish")}
-                          size="sm"
-                        >
-                          发布
-                        </Button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {(dashboard?.drafts ?? []).map((draft) => {
+                const baseline = draft.reviewContext.publishedBaseline;
+                const differences = baseline
+                  ? payloadDiff(baseline.payload, draft.payload)
+                  : [];
+                const dependencies = draft.reviewContext.dependencies;
+                const actionReason = draftActionReasons[draft.id] ?? "";
+                const reasonId = `draft-action-reason-${draft.id}`;
+
+                return (
+                  <Fragment key={draft.id}>
+                    <tr className="border-b align-top">
+                      <td className="py-3 pr-3">
+                        <p className="font-medium">
+                          {entityLabels[draft.entityType]}
+                        </p>
+                        <p className="max-w-60 truncate text-xs text-muted-foreground">
+                          {draft.entityKey}
+                        </p>
+                      </td>
+                      <td className="py-3 pr-3">v{draft.version}</td>
+                      <td className="py-3 pr-3">
+                        <span className="rounded-full border px-2 py-1 text-xs">
+                          {draft.workflowStatus}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-3 text-xs">
+                        {draft.createdBy}
+                      </td>
+                      <td className="max-w-60 py-3 pr-3 text-xs">
+                        {draft.changeReason}
+                      </td>
+                      <td className="py-3 text-xs text-muted-foreground">
+                        展开详情后操作
+                      </td>
+                    </tr>
+                    <tr className="border-b bg-muted/15">
+                      <td className="py-3" colSpan={6}>
+                        <details className="group rounded-xl border bg-background p-3">
+                          <summary className="cursor-pointer font-semibold text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40">
+                            查看 v{draft.version} payload、发布差异与依赖
+                          </summary>
+
+                          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                            <section aria-label={`v${draft.version} 完整 payload`}>
+                              <h3 className="text-sm font-semibold">
+                                完整 payload
+                              </h3>
+                              <pre className="mt-2 max-h-96 overflow-auto rounded-lg border bg-slate-950 p-3 text-xs leading-5 text-slate-100">
+                                {JSON.stringify(draft.payload, null, 2)}
+                              </pre>
+                            </section>
+
+                            <section aria-label={`v${draft.version} 发布版本差异`}>
+                              <h3 className="text-sm font-semibold">
+                                当前发布版本 diff
+                              </h3>
+                              {baseline ? (
+                                <>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    基线：v{baseline.version} · 发布人
+                                    {baseline.publishedBy ?? "未知"} ·
+                                    {baseline.publishedAt ?? "发布时间未知"}
+                                  </p>
+                                  {draft.reviewContext.baselineStatus !==
+                                  "active" ? (
+                                    <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950">
+                                      最近发布 payload 已找到，但正式实体当前为
+                                      {draft.reviewContext.baselineStatus ===
+                                      "archived"
+                                        ? "归档状态"
+                                        : "不可核验状态"}
+                                      ，因此禁止直接发布。
+                                    </p>
+                                  ) : null}
+                                  {differences.length === 0 ? (
+                                    <p className="mt-3 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                                      payload 与服务端查询到的当前发布基线一致。
+                                    </p>
+                                  ) : (
+                                    <div className="mt-2 max-h-96 overflow-auto rounded-lg border">
+                                      <table className="w-full min-w-[620px] text-left text-xs">
+                                        <thead className="sticky top-0 bg-muted">
+                                          <tr>
+                                            <th className="p-2">字段路径</th>
+                                            <th className="p-2">已发布</th>
+                                            <th className="p-2">草稿</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {differences.slice(0, 250).map((item) => (
+                                            <tr className="border-t align-top" key={item.path}>
+                                              <td className="p-2 font-mono">{item.path}</td>
+                                              <td className="max-w-72 break-all p-2 font-mono text-rose-800">
+                                                {item.before}
+                                              </td>
+                                              <td className="max-w-72 break-all p-2 font-mono text-emerald-800">
+                                                {item.after}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                      {differences.length > 250 ? (
+                                        <p className="border-t p-2 text-xs text-amber-800">
+                                          共 {differences.length} 项差异；此处显示前 250 项，请结合完整 payload 复核。
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                  )}
+                                </>
+                              ) : draft.reviewContext.baselineStatus ===
+                                "first_revision" ? (
+                                <p className="mt-3 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                                  服务端已确认这是 v1 首个治理修订：它可能建立新实体，也可能把现有 active 种子数据纳入治理基线。首次发布将以此 payload 建立可审计基线。
+                                </p>
+                              ) : (
+                                <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
+                                  服务端无法核验该实体的当前发布基线。为避免覆盖未知正式数据，发布已被禁止。
+                                </p>
+                              )}
+                            </section>
+                          </div>
+
+                          <section className="mt-4" aria-label="来源与实体依赖">
+                            <h3 className="text-sm font-semibold">
+                              来源与实体依赖
+                            </h3>
+                            {dependencies.length === 0 ? (
+                              <p className="mt-2 text-xs text-muted-foreground">
+                                payload 未声明可识别的来源或父实体引用。
+                              </p>
+                            ) : (
+                              <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                                {dependencies.map((reference) => (
+                                    <li
+                                      className="rounded-lg border p-3 text-xs"
+                                      key={`${reference.kind}:${reference.value}`}
+                                    >
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <p className="font-semibold">
+                                          {reference.kind} · {reference.value}
+                                        </p>
+                                        <span
+                                          className={cn(
+                                            "rounded-full border px-2 py-0.5 text-[11px]",
+                                            reference.state === "active"
+                                              ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                                              : "border-amber-300 bg-amber-50 text-amber-950",
+                                          )}
+                                        >
+                                          {reference.state === "active"
+                                            ? "有效"
+                                            : reference.state === "archived"
+                                              ? "已归档"
+                                              : "缺失"}
+                                        </span>
+                                      </div>
+                                      <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                                        {reference.path}
+                                      </p>
+                                      {reference.label ? (
+                                        <p className="mt-1 text-muted-foreground">
+                                          {reference.label}
+                                          {reference.isDemo === null
+                                            ? ""
+                                            : reference.isDemo
+                                              ? " · Demo"
+                                              : " · 正式数据"}
+                                        </p>
+                                      ) : null}
+                                      {reference.verifiedAt ? (
+                                        <p className="mt-1 text-muted-foreground">
+                                          最近核验：{reference.verifiedAt}
+                                        </p>
+                                      ) : null}
+                                      {reference.url &&
+                                      isNavigableEvidenceUrl(reference.url) ? (
+                                        <a
+                                          className="mt-1 inline-flex text-primary underline"
+                                          href={reference.url}
+                                          rel="noreferrer"
+                                          target="_blank"
+                                        >
+                                          打开来源证据
+                                        </a>
+                                      ) : null}
+                                    </li>
+                                  ))}
+                              </ul>
+                            )}
+                          </section>
+
+                          {draft.reviewContext.blockingReasons.length > 0 ? (
+                            <section
+                              aria-label="发布阻塞项"
+                              className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950"
+                            >
+                              <h3 className="font-semibold">发布阻塞项</h3>
+                              <ul className="mt-2 list-disc space-y-1 pl-5">
+                                {draft.reviewContext.blockingReasons.map(
+                                  (reason) => (
+                                    <li key={reason}>{reason}</li>
+                                  ),
+                                )}
+                              </ul>
+                            </section>
+                          ) : null}
+
+                          {canReview &&
+                          (draft.workflowStatus === "draft" ||
+                            draft.workflowStatus === "reviewed") ? (
+                            <fieldset className="mt-4 rounded-xl border border-primary/20 p-4">
+                              <legend className="px-2 text-sm font-semibold">
+                                {draft.workflowStatus === "draft"
+                                  ? "审核决定"
+                                  : "发布决定"}
+                              </legend>
+                              <FieldLabel htmlFor={reasonId}>
+                                {draft.workflowStatus === "draft"
+                                  ? "审核理由"
+                                  : "发布理由"}
+                              </FieldLabel>
+                              <textarea
+                                className={cn(inputClass, "mt-1 min-h-20")}
+                                id={reasonId}
+                                onChange={(event) =>
+                                  setDraftActionReasons((current) => ({
+                                    ...current,
+                                    [draft.id]: event.target.value,
+                                  }))
+                                }
+                                placeholder="记录核对了哪些字段、来源和依赖（至少 3 个字符）"
+                                value={actionReason}
+                              />
+                              {draft.workflowStatus === "reviewed" ? (
+                                <label className="mt-3 flex items-start gap-2 text-xs leading-5">
+                                  <input
+                                    checked={
+                                      publishConfirmations[draft.id] ?? false
+                                    }
+                                    className="mt-0.5 size-4"
+                                    onChange={(event) =>
+                                      setPublishConfirmations((current) => ({
+                                        ...current,
+                                        [draft.id]: event.target.checked,
+                                      }))
+                                    }
+                                    type="checkbox"
+                                  />
+                                  我已核对完整 payload、服务端发布基线和上方来源/依赖快照；确认发布会在事务内再次校验并立即改变正式查询结果。
+                                </label>
+                              ) : null}
+                              <Button
+                                className="mt-3"
+                                disabled={
+                                  busy ||
+                                  actionReason.trim().length < 3 ||
+                                  (draft.workflowStatus === "reviewed" &&
+                                    (!publishConfirmations[draft.id] ||
+                                      !draft.reviewContext.publishReady))
+                                }
+                                onClick={() =>
+                                  void transitionDraft(
+                                    draft.id,
+                                    draft.workflowStatus === "draft"
+                                      ? "review"
+                                      : "publish",
+                                    actionReason.trim(),
+                                  )
+                                }
+                                size="sm"
+                                type="button"
+                                variant={
+                                  draft.workflowStatus === "draft"
+                                    ? "outline"
+                                    : "default"
+                                }
+                              >
+                                {draft.workflowStatus === "draft"
+                                  ? "提交审核确认"
+                                  : "确认发布版本"}
+                              </Button>
+                            </fieldset>
+                          ) : null}
+                        </details>
+                      </td>
+                    </tr>
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -788,7 +1122,10 @@ export function AdminDashboard({
   );
 }
 
-type ActionRunner = (action: () => Promise<void>) => Promise<void>;
+type ActionRunner = (
+  action: () => Promise<void>,
+  successMessage?: string,
+) => Promise<void>;
 
 function DocumentAdminForms({
   busy,
@@ -808,7 +1145,7 @@ function DocumentAdminForms({
           method: "POST",
         }),
       );
-    });
+    }, "文档已上传为 Draft；尚未进入正式检索。");
   }
 
   async function reprocess(event: FormEvent<HTMLFormElement>) {
@@ -823,7 +1160,7 @@ function DocumentAdminForms({
           method: "POST",
         }),
       );
-    });
+    }, "Draft 文档已重新处理；请复核处理结果后再审核。");
   }
 
   return (
@@ -837,47 +1174,75 @@ function DocumentAdminForms({
           </p>
         </div>
       </div>
-      <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={upload}>
-        <input accept=".txt,.md,.markdown" className={inputClass} name="file" required type="file" />
-        <input className={inputClass} name="title" placeholder="文档标题" required />
-        <input className={inputClass} name="sourceTitle" placeholder="来源标题" required />
-        <input className={inputClass} name="changeReason" placeholder="上传原因" required />
-        <label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-          <input name="isDemo" type="checkbox" value="true" />
-          虚构 Demo 文档
-        </label>
-        <input
-          className={inputClass}
-          name="demoNotice"
-          placeholder="Demo 说明（勾选时必填）"
-        />
-        <input name="documentType" type="hidden" value="other" />
-        <input name="languageCode" type="hidden" value="en" />
-        <input name="sourceType" type="hidden" value="other" />
-        <Button className="sm:col-span-2" disabled={busy} type="submit" variant="outline">
-          上传为 Draft
-        </Button>
+      <form className="mt-4" onSubmit={upload}>
+        <fieldset className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2">
+          <legend className="px-2 text-sm font-semibold">上传新文档</legend>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            原始文件
+            <input accept=".txt,.md,.markdown" className={inputClass} name="file" required type="file" />
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            文档标题
+            <input className={inputClass} name="title" required />
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            来源标题
+            <input className={inputClass} name="sourceTitle" required />
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            上传原因
+            <input className={inputClass} name="changeReason" required />
+          </label>
+          <label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-normal text-foreground">
+            <input name="isDemo" type="checkbox" value="true" />
+            虚构 Demo 文档
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            Demo 说明（勾选时必填）
+            <input className={inputClass} name="demoNotice" />
+          </label>
+          <input name="documentType" type="hidden" value="other" />
+          <input name="languageCode" type="hidden" value="en" />
+          <input name="sourceType" type="hidden" value="other" />
+          <Button className="sm:col-span-2" disabled={busy} type="submit" variant="outline">
+            上传为 Draft
+          </Button>
+        </fieldset>
       </form>
-      <form className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-2" onSubmit={reprocess}>
-        <input className={inputClass} name="documentId" placeholder="Draft 文档 UUID" required />
-        <input className={inputClass} name="reprocesstitle" placeholder="文档标题" required />
-        <input className={inputClass} name="reprocesssourceTitle" placeholder="来源标题" required />
-        <input className={inputClass} name="reason" placeholder="重新处理原因" required />
-        <label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-          <input name="reprocessisDemo" type="checkbox" value="true" />
-          重新处理为虚构 Demo
-        </label>
-        <input
-          className={inputClass}
-          name="reprocessdemoNotice"
-          placeholder="Demo 说明（勾选时必填）"
-        />
-        <input name="reprocessdocumentType" type="hidden" value="other" />
-        <input name="reprocesslanguageCode" type="hidden" value="en" />
-        <input name="reprocesssourceType" type="hidden" value="other" />
-        <Button className="sm:col-span-2" disabled={busy} type="submit" variant="outline">
-          重新处理 Draft 文档
-        </Button>
+      <form className="mt-5" onSubmit={reprocess}>
+        <fieldset className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2">
+          <legend className="px-2 text-sm font-semibold">重新处理 Draft 文档</legend>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            Draft 文档 UUID
+            <input className={inputClass} name="documentId" required />
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            文档标题
+            <input className={inputClass} name="reprocesstitle" required />
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            来源标题
+            <input className={inputClass} name="reprocesssourceTitle" required />
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            重新处理原因
+            <input className={inputClass} name="reason" required />
+          </label>
+          <label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-normal text-foreground">
+            <input name="reprocessisDemo" type="checkbox" value="true" />
+            重新处理为虚构 Demo
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            Demo 说明（勾选时必填）
+            <input className={inputClass} name="reprocessdemoNotice" />
+          </label>
+          <input name="reprocessdocumentType" type="hidden" value="other" />
+          <input name="reprocesslanguageCode" type="hidden" value="en" />
+          <input name="reprocesssourceType" type="hidden" value="other" />
+          <Button className="sm:col-span-2" disabled={busy} type="submit" variant="outline">
+            重新处理 Draft 文档
+          </Button>
+        </fieldset>
       </form>
     </div>
   );
@@ -885,29 +1250,38 @@ function DocumentAdminForms({
 
 function SourceVerificationForm({
   busy,
+  initialUtcNow,
   runAction,
 }: {
   busy: boolean;
+  initialUtcNow: string;
   runAction: ActionRunner;
 }) {
+  const [verifiedAt, setVerifiedAt] = useState(initialUtcNow);
+  const parsedVerifiedAt = z.iso.datetime({ offset: true }).safeParse(verifiedAt);
+  const utcPreview = parsedVerifiedAt.success
+    ? new Date(parsedVerifiedAt.data).toISOString()
+    : null;
+
   async function verify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const sourceId = String(formData.get("sourceId") ?? "");
+    const verifiedAtInput = z.iso
+      .datetime({ offset: true })
+      .parse(String(formData.get("verifiedAt")));
     await runAction(async () => {
       await responseJson(
         await fetch(`/api/admin/sources/${sourceId}/verify`, {
           body: JSON.stringify({
             reason: formData.get("reason"),
-            verifiedAt: new Date(
-              String(formData.get("verifiedAt")),
-            ).toISOString(),
+            verifiedAt: new Date(verifiedAtInput).toISOString(),
           }),
           headers: { "content-type": "application/json" },
           method: "POST",
         }),
       );
-    });
+    }, "来源核验时间已按 UTC 更新并写入审计记录。");
   }
 
   return (
@@ -919,13 +1293,45 @@ function SourceVerificationForm({
           <p className="text-xs text-muted-foreground">每次更新均写入变更审计</p>
         </div>
       </div>
-      <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={verify}>
-        <input className={inputClass} name="sourceId" placeholder="来源 UUID" required />
-        <input className={inputClass} name="verifiedAt" required type="datetime-local" />
-        <input className={inputClass} name="reason" placeholder="核验说明" required />
-        <Button disabled={busy} type="submit" variant="outline">
-          更新核验时间
-        </Button>
+      <form className="mt-4" onSubmit={verify}>
+        <fieldset className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2">
+          <legend className="px-2 text-sm font-semibold">记录来源核验</legend>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            来源 UUID
+            <input className={inputClass} name="sourceId" required />
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            核验时间（ISO 8601，必须含时区）
+            <input
+              aria-describedby="source-verified-at-preview"
+              className={inputClass}
+              name="verifiedAt"
+              onChange={(event) => setVerifiedAt(event.target.value)}
+              required
+              type="text"
+              value={verifiedAt}
+            />
+          </label>
+          <p
+            className={cn(
+              "text-xs sm:col-span-2",
+              utcPreview ? "text-muted-foreground" : "text-destructive",
+            )}
+            id="source-verified-at-preview"
+            role="status"
+          >
+            {utcPreview
+              ? `将保存为 UTC：${utcPreview}`
+              : "请输入带 Z 或明确偏移量的 ISO 8601 时间。"}
+          </p>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            核验说明
+            <input className={inputClass} name="reason" required />
+          </label>
+          <Button disabled={busy || !utcPreview} type="submit" variant="outline">
+            更新核验时间
+          </Button>
+        </fieldset>
       </form>
     </div>
   );
@@ -956,7 +1362,7 @@ function ArchiveEntityForm({
           },
         ),
       );
-    });
+    }, "实体已软归档；正式查询已隐藏该记录并保留审计历史。");
   }
 
   return (
@@ -970,29 +1376,31 @@ function ArchiveEntityForm({
           </p>
         </div>
       </div>
-      <form className="mt-4 grid gap-3 sm:grid-cols-2" onSubmit={archive}>
-        <select className={inputClass} name="entityType">
-          {governedEntityTypes.map((value) => (
-            <option key={value} value={value}>
-              {entityLabels[value]}
-            </option>
-          ))}
-        </select>
-        <input
-          className={inputClass}
-          name="entityKey"
-          placeholder="ISO3 或实体 UUID"
-          required
-        />
-        <input
-          className={inputClass}
-          name="reason"
-          placeholder="归档原因"
-          required
-        />
-        <Button disabled={busy} type="submit" variant="outline">
-          确认软归档
-        </Button>
+      <form className="mt-4" onSubmit={archive}>
+        <fieldset className="grid gap-3 rounded-xl border border-amber-300 p-4 sm:grid-cols-2">
+          <legend className="px-2 text-sm font-semibold">归档目标与原因</legend>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            实体类型
+            <select className={inputClass} name="entityType">
+              {governedEntityTypes.map((value) => (
+                <option key={value} value={value}>
+                  {entityLabels[value]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            实体 Key（ISO3 或 UUID）
+            <input className={inputClass} name="entityKey" required />
+          </label>
+          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
+            归档原因
+            <input className={inputClass} name="reason" required />
+          </label>
+          <Button disabled={busy} type="submit" variant="outline">
+            确认软归档
+          </Button>
+        </fieldset>
       </form>
     </div>
   );

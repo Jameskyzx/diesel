@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "ai:eval": "vitest run tests/sales-chat-harness.test.ts --reporter=verbose",
     "test:e2e": "playwright test",
     "playwright": "playwright",
     "db:check": "drizzle-kit check",

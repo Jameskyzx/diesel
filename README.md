@@ -41,7 +41,8 @@
 
 - **怎样阻止 LLM“有礼貌地胡说”**：所有事实工具都使用 Zod 输入/输出；服务端在
   流级缓冲模型文本，任一工具 `no_data`、失败或证据不足时丢弃肯定文本，改为
-  可执行的证据缺口说明。
+  可执行的证据缺口说明。证据合同还会逐步缩小模型可见工具：缺什么只开放什么，
+  证据齐全或失败后停止工具循环。
 - **怎样正确处理法规时态**：状态、业务有效期、核验时间分别建模；查询统一使用
   `[from,to)`、ISO3、scope、功率和 `asOf`。服务端从 `asOf` 派生
   `statusAtAsOf` 并保留记录状态 `recordStatus`：现在已 superseded 的法规仍可在
@@ -128,10 +129,15 @@ flowchart LR
 pnpm lint
 pnpm typecheck
 pnpm test
+pnpm ai:eval
 pnpm db:check
 pnpm build
 pnpm playwright test
 ```
+
+`pnpm ai:eval` 是不调用外部模型的对话 harness：固定 golden prompts，检查确定性
+分流、缺参、证据需求、每轮可用工具和停止阶段。真实 provider 的工具选择质量仍需
+另行运行带模型版本、成本和日期的 live eval，不能由离线 harness 代替。
 
 GitHub CI 对每次 PR/`master` 推送执行：
 

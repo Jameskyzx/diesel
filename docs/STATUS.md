@@ -77,6 +77,30 @@ Seed 计数代表线上覆盖。
 等宽功率区间。后续仍需通过新 Migration 修正目标约束，并在确认业务语义后归档或纠正
 这些产品及其来源关联；本次代码发布没有擅自修改生产数据。
 
+## 地图 Demo 公共出口清理（2026-08-14，尚未发布）
+
+- 当前工作树已让公开 PostgreSQL 国家地图与详情排除 Demo 分类事实：Demo 国家摘要降为
+  `no_data`，Demo 国家详情失败关闭；非 Demo 国家中的 Demo 辖区、成员关系、法规、市场
+  指标或来源也不会进入国家详情及复用该 service 的 AI 国家画像。
+- `pnpm demo` 的 PGlite fixture 保留，求职者仍可离线演示完整流程；本次不删除或修改
+  生产数据库记录。地图图例改为中性的“有可查看数据”，不再把 Demo 与已核验数据并列。
+- 修改前公网基线：CHN 含 1 个 Demo 辖区、2 条 Demo 法规、1 条 Demo 市场指标；BRA 含
+  1 个 Demo 辖区、1 条 Demo 法规、1 条 Demo 市场指标。部署后需对这两国以及
+  `/api/countries` 做公开读回，确认所有国家详情的 Demo 事实计数为 0。
+
+## AI 对话 Harness 与循环工程（2026-08-14，尚未发布）
+
+- system instruction 已提取为 `sales-chat-system-v2`，以事实来源、工具路由、循环策略、
+  回答契约和附件边界分段；没有增加模型作为法规、产品、市场或评分事实来源的权限。
+- 工具循环现在按 evidence contract 动态收窄 active tools。缺少多项证据时只保留尚未满足
+  的工具并继续 required；证据齐全、失败/不足、执行异常、缺参或纯附件概述后关闭工具，
+  不继续消耗无关步骤。最终模型文字仍经过原有流级 evidence boundary。
+- 新增 `pnpm ai:eval` 离线 harness，当前 13 个 golden prompts 覆盖问候、缺参、单国/
+  跨国法规、市场、产品、混合意图、机会分、销售简报、来源、附件与空证据合同。它不调用
+  外部模型，不得表述为真实模型任务成功率；发布后仍需完成公开聊天读回。
+- 当前工作树质量门：`pnpm lint`、`pnpm typecheck`、48 个文件 / 943 条 Vitest、
+  `pnpm build` 全部通过；完整 Playwright 为 71 passed / 7 skipped（桌面与 Pixel 7）。
+
 ## 三角色模拟评估与本地修复（2026-08-12）
 
 - 三个 subagent 分别模拟海外销售/区域销售、法规/合规工程师和产品/应用工程师，

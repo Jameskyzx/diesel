@@ -238,11 +238,13 @@ function mixedEvidenceMockModel() {
             { type: "stream-start" as const, warnings: [] },
             {
               input: JSON.stringify({
+                applicationScope: "non-road",
+                asOf: "2026-07-29",
                 countryIso3: "BRA",
-                topics: ["regulations"],
+                query: "BRA 法规原文来源",
               }),
-              toolCallId: "mixed-country-profile-call",
-              toolName: "getCountryProfile",
+              toolCallId: "mixed-knowledge-call",
+              toolName: "searchKnowledgeBase",
               type: "tool-call" as const,
             },
             {
@@ -305,16 +307,9 @@ function invalidToolInputMixedModel() {
                 applicationScope: "non-road",
                 asOf: "2026-07-29",
                 countryIso3: "CHN",
-                powerKw: 100,
               }),
-              toolCallId: "invalid-input-product-fit-call",
+              toolCallId: "invalid-product-fit-call",
               toolName: "findCompatibleProducts",
-              type: "tool-call" as const,
-            },
-            {
-              input: JSON.stringify({ countryIso3: "BRA" }),
-              toolCallId: "invalid-country-profile-call",
-              toolName: "getCountryProfile",
               type: "tool-call" as const,
             },
             {
@@ -396,11 +391,13 @@ function sequentialMixedEvidenceMockModel() {
             { id: "premature-answer", type: "text-end" as const },
             {
               input: JSON.stringify({
+                applicationScope: "non-road",
+                asOf: "2026-07-29",
                 countryIso3: "BRA",
-                topics: ["regulations"],
+                query: "BRA 法规原文来源",
               }),
-              toolCallId: "sequential-country-profile-call",
-              toolName: "getCountryProfile",
+              toolCallId: "sequential-knowledge-call",
+              toolName: "searchKnowledgeBase",
               type: "tool-call" as const,
             },
             {
@@ -1508,11 +1505,12 @@ describe("single-agent sales chat", () => {
 
     expect(text).toContain("附件尚未经过来源核验");
     expect(text).toContain("图片中可见一块发动机铭牌");
-    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "auto" });
+    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "none" });
+    expect(model.doStreamCalls[0]?.tools).toBeUndefined();
     expect(auditRepository.recordToolCall).not.toHaveBeenCalled();
   });
 
-  it("fails closed when an auto-mode attachment turn calls an unrelated sufficient tool", async () => {
+  it("fails closed when an attachment-only turn emits a hidden tool call", async () => {
     const model = compatibleProductsMockModel();
     const auditRepository = {
       recordToolCall: vi.fn(async () => undefined),
@@ -1544,8 +1542,9 @@ describe("single-agent sales chat", () => {
     expect(text).toContain("附件尚未经过来源核验");
     expect(text).toContain("没有足够证据");
     expect(text).not.toContain("DEMO-ENG-100 的确定性结果");
-    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "auto" });
-    expect(auditRepository.recordToolCall).toHaveBeenCalledOnce();
+    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "none" });
+    expect(model.doStreamCalls[0]?.tools).toBeUndefined();
+    expect(auditRepository.recordToolCall).not.toHaveBeenCalled();
   });
 
   it("does not let an unrelated attachment weaken the factual evidence gate", async () => {
@@ -1579,6 +1578,10 @@ describe("single-agent sales chat", () => {
     expect(text).toContain("附件尚未经过来源核验");
     expect(text).not.toContain("发动机铭牌");
     expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "required" });
+    expect(model.doStreamCalls[0]?.tools?.map(({ name }) => name)).toEqual([
+      "searchKnowledgeBase",
+      "getCountryProfile",
+    ]);
   });
 
   it("keeps tool-free model prose blocked when no attachment is present", async () => {
@@ -1608,7 +1611,8 @@ describe("single-agent sales chat", () => {
 
     expect(text).toContain("没有足够证据");
     expect(text).not.toContain("发动机铭牌");
-    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "required" });
+    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "none" });
+    expect(model.doStreamCalls[0]?.tools).toBeUndefined();
   });
 
   it("answers product-fit questions from deterministic tool output", async () => {
@@ -1674,6 +1678,12 @@ describe("single-agent sales chat", () => {
     expect(JSON.stringify(model.doStreamCalls[1]?.prompt)).toContain(
       '"status":"fit"',
     );
+    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "required" });
+    expect(model.doStreamCalls[0]?.tools?.map(({ name }) => name)).toEqual([
+      "findCompatibleProducts",
+    ]);
+    expect(model.doStreamCalls[1]?.toolChoice).toEqual({ type: "none" });
+    expect(model.doStreamCalls[1]?.tools).toBeUndefined();
   });
 
   it("does not release prose when a sufficient result comes from the wrong tool", async () => {
@@ -1885,7 +1895,8 @@ describe("single-agent sales chat", () => {
       auditRepository,
       messages: [
         {
-          content: "比较 BRA 法规并推荐 CHN 适配产品。",
+          content:
+            "截至 2026-07-29，先推荐 CHN non-road 100 kW 适配产品，并查 BRA 法规原文来源。",
           role: "user",
         },
       ],
@@ -1902,7 +1913,7 @@ describe("single-agent sales chat", () => {
     expect(auditStatuses.sort()).toEqual(["no_data", "success"]);
   });
 
-  it("fails closed when a later tool call has invalid input", async () => {
+  it("audits and fails closed when an active tool has invalid input", async () => {
     const auditCalls: Array<{
       errorCode: string | null;
       input: Record<string, unknown>;
@@ -1939,7 +1950,8 @@ describe("single-agent sales chat", () => {
       auditRepository,
       messages: [
         {
-          content: "推荐 CHN 产品并核对 BRA 法规。",
+          content:
+            "核对 CHN non-road 100 kW 在 2026-07-29 的产品适配。",
           role: "user",
         },
       ],
@@ -1953,27 +1965,18 @@ describe("single-agent sales chat", () => {
     expect(text).toContain("没有足够证据");
     expect(text).not.toContain("已确定适配");
     expect(text).not.toContain("MOCK-FAKE-99");
-    expect(auditCalls).toHaveLength(2);
-    expect(auditCalls).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          errorCode: null,
-          status: "success",
-          toolCallId: "invalid-input-product-fit-call",
-          toolName: "findCompatibleProducts",
-        }),
-        {
-          errorCode: "INVALID_TOOL_INPUT",
-          input: {
-            inputType: "object",
-            providedFields: ["countryIso3"],
-          },
-          status: "error",
-          toolCallId: "invalid-country-profile-call",
-          toolName: "getCountryProfile",
+    expect(auditCalls).toEqual([
+      {
+        errorCode: "INVALID_TOOL_INPUT",
+        input: {
+          inputType: "object",
+          providedFields: ["applicationScope", "asOf", "countryIso3"],
         },
-      ]),
-    );
+        status: "error",
+        toolCallId: "invalid-product-fit-call",
+        toolName: "findCompatibleProducts",
+      },
+    ]);
   });
 
   it("buffers prose until sequential tool calls all pass the evidence gate", async () => {
@@ -1988,10 +1991,23 @@ describe("single-agent sales chat", () => {
       selectedCountryIso3: null,
       services: {
         findCompatibleProducts: async () => [createFitEvaluation()],
-        getCountryDetails: async () => ({
-          iso3: "BRA",
-          status: "no_data" as const,
-        }),
+        hybridSearchKnowledge: async (input) => {
+          const query = hybridSearchQuerySchema.parse(input);
+          return hybridSearchResponseSchema.parse({
+            embeddingModel: "local-hash-embedding-v1",
+            filters: {
+              applicationScope: query.applicationScope,
+              asOf: query.asOf,
+              countryIso3: query.countryIso3,
+              jurisdictionId: query.jurisdictionId,
+              limit: query.limit,
+            },
+            query: query.query,
+            results: [],
+            scoring: { keywordWeight: 0.5, vectorWeight: 0.5 },
+            status: "ok",
+          });
+        },
       },
       sessionId: "00000000-0000-4000-8000-000000000907",
     });
@@ -1999,7 +2015,8 @@ describe("single-agent sales chat", () => {
       auditRepository,
       messages: [
         {
-          content: "先推荐 CHN 产品，再核对 BRA 法规。",
+          content:
+            "截至 2026-07-29，先推荐 CHN non-road 100 kW 适配产品，再查 BRA 法规原文来源。",
           role: "user",
         },
       ],
@@ -2018,6 +2035,7 @@ describe("single-agent sales chat", () => {
 
   it("emits only prose generated after the final successful tool result", async () => {
     const auditStatuses: string[] = [];
+    const model = sequentialSuccessfulToolsMockModel();
     const auditRepository = {
       recordToolCall: async ({ status }: { status: string }) => {
         auditStatuses.push(status);
@@ -2040,7 +2058,7 @@ describe("single-agent sales chat", () => {
           role: "user",
         },
       ],
-      model: sequentialSuccessfulToolsMockModel(),
+      model,
       selectedCountryIso3: null,
       sessionId: "00000000-0000-4000-8000-000000000909",
       tools,
@@ -2051,6 +2069,13 @@ describe("single-agent sales chat", () => {
     expect(text).toContain("信息参考，不替代正式认证或法律意见");
     expect(text).not.toContain("PREMATURE-CLAIM-BEFORE-SECOND-RESULT");
     expect(auditStatuses).toEqual(["success", "success"]);
+    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "required" });
+    expect(model.doStreamCalls[1]?.toolChoice).toEqual({ type: "required" });
+    expect(model.doStreamCalls[1]?.tools?.map(({ name }) => name)).toEqual([
+      "findCompatibleProducts",
+    ]);
+    expect(model.doStreamCalls[2]?.toolChoice).toEqual({ type: "none" });
+    expect(model.doStreamCalls[2]?.tools).toBeUndefined();
   });
 
   it("propagates Demo classification into product-fit warnings", () => {

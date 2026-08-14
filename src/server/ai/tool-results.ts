@@ -238,8 +238,10 @@ export function buildKnowledgeResult(input: {
       sectionLocator: result.sectionLocator,
       sourceId: result.document.source.id,
       sourceTitle: result.document.source.title,
-      sourceUrl:
-        result.document.source.url ?? result.document.downloadUrl,
+      // Internal document downloads live behind the development-only route
+      // and are relative URLs. They must not be exposed as public citations
+      // or parsed as externally verifiable source links.
+      sourceUrl: result.document.source.url,
       title: result.document.title,
       verifiedAt: result.document.source.verifiedAt,
     })),

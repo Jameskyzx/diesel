@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import postgres, { type Sql } from "postgres";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
+import { normalizePostgresConstraintDefinition } from "./postgres-constraint-definition";
 
 const statementSeparator = "--> statement-breakpoint";
 
@@ -36,7 +37,7 @@ async function constraintDefinition(
   if (rows.length !== 1 || !rows[0]?.definition) {
     throw new Error(`constraint readback failed: ${constraintName}`);
   }
-  return rows[0].definition.replace(/[\s"()]/gu, "").toLowerCase();
+  return normalizePostgresConstraintDefinition(rows[0].definition);
 }
 
 async function main(): Promise<void> {
@@ -302,9 +303,9 @@ async function main(): Promise<void> {
     if (
       !overlapExclusion.includes("excludeusinggist") ||
       !overlapExclusion.includes(
-        "daterange(valid_from,valid_to,'[)'::text)with&&",
+        "daterangevalid_from,valid_to,'['::textwith&&",
       ) ||
-      !overlapExclusion.includes("where(archived_atisnull)")
+      !overlapExclusion.includes("wherearchived_atisnull")
     ) {
       throw new Error("0011 active overlap exclusion readback failed");
     }

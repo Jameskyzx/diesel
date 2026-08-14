@@ -5,6 +5,7 @@ import postgres from "postgres";
 import { z } from "zod";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
+import { normalizePostgresConstraintDefinition } from "./postgres-constraint-definition";
 
 const expectedTables = [
   "ai_chat_sessions",
@@ -87,9 +88,8 @@ async function main(): Promise<void> {
           where conname = 'products_power_check'
         `,
       );
-    const normalizedProductConstraint = productPowerConstraint
-      .replace(/[\s"()]/gu, "")
-      .toLowerCase();
+    const normalizedProductConstraint =
+      normalizePostgresConstraintDefinition(productPowerConstraint);
     if (
       !normalizedProductConstraint.includes("power_min_kw>=0") ||
       !normalizedProductConstraint.includes("power_max_kw>power_min_kw") ||
@@ -106,9 +106,8 @@ async function main(): Promise<void> {
           where conname = 'country_jurisdictions_pk'
         `,
       );
-    const normalizedMembershipPrimaryKey = membershipPrimaryKey
-      .replace(/[\s"]/gu, "")
-      .toLowerCase();
+    const normalizedMembershipPrimaryKey =
+      normalizePostgresConstraintDefinition(membershipPrimaryKey);
     if (
       normalizedMembershipPrimaryKey !==
       "primarykey(country_iso3,jurisdiction_id,valid_from)"
@@ -124,17 +123,16 @@ async function main(): Promise<void> {
           where conname = 'country_jurisdictions_no_active_overlap'
         `,
       );
-    const normalizedMembershipExclusion = membershipExclusion
-      .replace(/[\s"]/gu, "")
-      .toLowerCase();
+    const normalizedMembershipExclusion =
+      normalizePostgresConstraintDefinition(membershipExclusion);
     if (
       !normalizedMembershipExclusion.includes("excludeusinggist") ||
       !normalizedMembershipExclusion.includes("country_iso3with=") ||
       !normalizedMembershipExclusion.includes("jurisdiction_idwith=") ||
       !normalizedMembershipExclusion.includes(
-        "daterange(valid_from,valid_to,'[)'::text)with&&",
+        "daterangevalid_from,valid_to,'['::textwith&&",
       ) ||
-      !normalizedMembershipExclusion.includes("where(archived_atisnull)")
+      !normalizedMembershipExclusion.includes("wherearchived_atisnull")
     ) {
       throw new Error("active membership overlap exclusion readback failed");
     }

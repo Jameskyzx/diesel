@@ -3,18 +3,21 @@ BEGIN
 	IF EXISTS (
 		SELECT 1
 		FROM "products"
-		WHERE "power_min_kw" < 0
-			OR "power_max_kw" <= "power_min_kw"
+		WHERE "archived_at" IS NULL
+			AND (
+				"power_min_kw" < 0
+				OR "power_max_kw" <= "power_min_kw"
+			)
 	) THEN
 		RAISE EXCEPTION USING
 			ERRCODE = '23514',
-			MESSAGE = 'products_power_check migration blocked: resolve products with power_max_kw <= power_min_kw before retrying';
+			MESSAGE = 'products_power_check migration blocked: archive or resolve active products with power_max_kw <= power_min_kw before retrying';
 	END IF;
 END $$;
 --> statement-breakpoint
 ALTER TABLE "products" DROP CONSTRAINT IF EXISTS "products_power_check";
 --> statement-breakpoint
-ALTER TABLE "products" ADD CONSTRAINT "products_power_check" CHECK ("products"."power_min_kw" >= 0 AND "products"."power_max_kw" > "products"."power_min_kw");
+ALTER TABLE "products" ADD CONSTRAINT "products_power_check" CHECK ("products"."archived_at" IS NOT NULL OR ("products"."power_min_kw" >= 0 AND "products"."power_max_kw" > "products"."power_min_kw"));
 --> statement-breakpoint
 DO $$
 BEGIN

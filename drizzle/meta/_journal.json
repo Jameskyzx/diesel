@@ -92,6 +92,13 @@
       "when": 1786724498567,
       "tag": "0012_shared_api_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786745345702,
+      "tag": "0013_archived_product_power_constraint",
+      "breakpoints": true
     }
   ]
 }

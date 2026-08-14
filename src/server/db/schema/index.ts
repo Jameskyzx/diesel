@@ -534,7 +534,7 @@ export const products = pgTable(
     index("products_data_source_idx").on(table.dataSourceId),
     check(
       "products_power_check",
-      sql`${table.powerMinKw} >= 0 AND ${table.powerMaxKw} > ${table.powerMinKw}`,
+      sql`${table.archivedAt} IS NOT NULL OR (${table.powerMinKw} >= 0 AND ${table.powerMaxKw} > ${table.powerMinKw})`,
     ),
     check(
       "products_availability_check",

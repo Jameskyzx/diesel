@@ -494,7 +494,9 @@ trap 'failure_status="$?"; if [ "${release_committed}" -ne 1 ]; then abort_relea
 `root:diesel` 0640；不得在终端、日志或工单中打印其值。构建用户不属于 `diesel`
 组，因此不能读取该文件；release 在构建完成前也不得链接该文件或 `.data`。随后由
 版本化的 `scripts/deploy/build-release.sh` 在清空环境的 `diesel-build` 身份下安装冻结
-依赖并构建。从保护段到 §4.3 公开验收完成必须使用同一个 root shell；
+依赖并构建。安装强制使用 pnpm `--package-import-method=copy`，避免最终 release 改属主时
+通过 hardlink 连带改变共享 store inode 的权限；连续发布必须继续使用同一隔离边界。
+从保护段到 §4.3 公开验收完成必须使用同一个 root shell；
 上述 trap 会在依赖安装、build、切换或验收的任一失败/中断/会话退出时，
 从持久化状态目录原子恢复发布前共享环境文件与被替换的 Nginx 配置，并依据
 `/opt/diesel/current` 的实际指向决定是否需要回切应用和重载旧 PM2。尚未切换

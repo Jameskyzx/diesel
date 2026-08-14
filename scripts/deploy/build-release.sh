@@ -54,7 +54,7 @@ done
 }
 
 corepack pnpm --config.registry="${registry}" \
-  install --frozen-lockfile --trust-lockfile
+  install --frozen-lockfile --trust-lockfile --package-import-method=copy
 
 env -i \
   HOME="${build_home}" \

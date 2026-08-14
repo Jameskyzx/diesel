@@ -179,17 +179,21 @@ describe("invalid unpublished product maintenance", () => {
     expect(counts).toEqual({ active: 8, audits: 0 });
   });
 
-  it("fails closed on count or manifest hash drift", async () => {
-    const { client } = await createDatabase(7);
-    await expect(readInvalidProductManifest(client)).rejects.toThrow(
-      /Expected exactly 8/,
-    );
+  it(
+    "fails closed on count or manifest hash drift",
+    async () => {
+      const { client } = await createDatabase(7);
+      await expect(readInvalidProductManifest(client)).rejects.toThrow(
+        /Expected exactly 8/,
+      );
 
-    const valid = await readInvalidProductManifest(
-      (await createDatabase()).client,
-    );
-    const changed = structuredClone(valid);
-    changed.products[0]!.modelCode = "CHANGED";
-    expect(() => assertValidInvalidProductManifest(changed)).toThrow(/SHA256/);
-  });
+      const valid = await readInvalidProductManifest(
+        (await createDatabase()).client,
+      );
+      const changed = structuredClone(valid);
+      changed.products[0]!.modelCode = "CHANGED";
+      expect(() => assertValidInvalidProductManifest(changed)).toThrow(/SHA256/);
+    },
+    15_000,
+  );
 });

@@ -2908,6 +2908,54 @@
   `2^53` 的六位小数原样往返、已修改及新插入市场观察的物理精确恢复，并证明恢复中途
   失败时市场行与其余治理表在同一事务回滚。
 
+### ADR-147：产品合规适配与查询日供应状态采用双轴语义
+
+- 状态：Accepted
+- 日期：2026-08-15
+- 决策：`product-fit-v2` 保留 `status=fit/not_fit/unknown` 作为法规与认证适配轴，
+  新增按 `[availableFrom, availableTo)` 计算的供应检查，以及
+  `commercialReadiness=ready/not_ready/unknown`。端点证据不完整时供应状态失败关闭为
+  unknown；只有合规 fit 且供应 pass 才为 ready，任一明确不适配或不可供应为 not_ready。
+  `opportunity-score-v2` 的产品准备度使用商业准备度，法规覆盖仍只使用法规/认证检查。
+- 理由：合规适配不等于查询日可售。把供应期只展示在追溯区会允许已停售、尚未上市或
+  供应证据不足的产品进入销售推荐；反过来把供应失败改写成 not_fit 又会污染合规语义。
+- 后果：确定性销售简报只推荐 ready 产品；合规 fit 但供应 fail/unknown 的产品进入风险/
+  缺口，且不生成销售准备动作。该规则只证明已记录产品供应期，不代表库存、交期、价格或
+  真实商业承诺。该 ADR supersede ADR-030/034/035 中关于 v1 和 fit-only 推荐的当前行为，
+  历史文本继续保留。
+- 验证方式：单元测试覆盖供应期上下界、未上市、已停售、缺失端点和组合真值；服务测试
+  锁定机会分使用 ready/not_ready、销售简报排除 unavailable 产品，产品页与 AI 卡片同时
+  展示合规轴和供应轴。
+
+### ADR-148：AI 工具审计按请求轮次 append-only，公共请求使用脱敏结构化日志
+
+- 状态：Accepted
+- 日期：2026-08-15
+- 决策：每个 `/api/chat` 请求由服务端生成 request/turn ID，并将审计键写为
+  `${turnId}:${providerToolCallId}`。AI tool call 与 citations 只插入；重复键视为审计异常，
+  不更新旧记录、不删除旧引用。公共 API 和管理写入统一记录 requestId、route、status、
+  durationMs、errorCode；AI 完成事件另记录 modelId、工具数、loop steps、证据结果和
+  token usage。
+- 隐私边界：日志 schema 为 strict；prompt、附件正文、身份 Header、IP、数据库 URL、
+  API Key 和上游错误正文都不是合法字段。响应返回 `X-Request-Id` 供故障关联。
+- 验证方式：集成测试连续两轮相同 provider tool call 保留两条调用及各自 citation，精确
+  重复键失败关闭；日志测试拒绝额外敏感字段。
+
+### ADR-149：实施写入只在本地隔离 Demo 开放，真实模型质量由预算受限 eval 衡量
+
+- 状态：Accepted
+- 日期：2026-08-15
+- 决策：`pnpm demo:fde` 仅允许 loopback + development + PGlite + 显式 Demo 标志，
+  每次启动新建进程内数据库并显示 `LOCAL / MUTABLE / FICTIONAL`。本地 persona cookie
+  只由 Demo server 映射为测试身份；生产认证和公网 `/admin` 阻断不变。
+- Eval：`pnpm ai:eval:live` 使用 18 条版本化虚构案例与当前 OpenAI-compatible 文本模型，
+  串行记录工具、关键参数、证据、延迟和 token。达到请求、token 或单例时间门立即保存
+  部分报告；未完整或低于安全 100%、工具/参数 90% 不得标为通过，也不进入普通 PR CI。
+- 理由：招聘演示需要可操作的实施闭环和真实模型证据，但二者都不应扩大生产写权限、
+  暴露真实资料或伪造客户反馈。
+- 验证方式：桌面 E2E 完成 CSV → Draft → Review → Publish → Query → Archive；移动端
+  覆盖 persona/Preview。live eval 评分、脱敏和预算停止由单元测试约束。
+
 ## 4. 暂不决策
 
 以下问题在 MVP 出现明确需求或数据证据前不提前设计：

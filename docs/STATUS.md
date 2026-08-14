@@ -116,6 +116,24 @@ Seed 计数代表线上覆盖。
   `pnpm ai:eval` 14/14、`pnpm build` 全部通过；完整 Playwright 为 71 passed / 7 skipped
   （桌面与 Pixel 7）。
 
+## FDE 作品强化（2026-08-15，本地待发布）
+
+- `product-fit-v2` 已把法规/认证适配与查询日供应状态拆成双轴，并按
+  `[availableFrom,availableTo)` 组合 `commercialReadiness`；销售简报只推荐 `ready`
+  产品，缺失或区间外供应证据进入风险/缺口。
+- AI 审计键加入服务端 turn/request ID 并改为 append-only；公共 API、管理写入和 AI
+  完成事件只输出 strict JSON 白名单字段，`X-Request-Id` 可用于故障关联。
+- 国家深链在 scope + power 齐全时服务端渲染确定性决策摘要；完整 UUID、辖区与来源
+  追溯默认折叠。`pnpm demo:fde` 可在隔离 PGlite 中演示 CSV → Draft → Review →
+  Publish → Query → Archive，始终标记 `LOCAL / MUTABLE / FICTIONAL`。
+- 最终 live eval 使用 `deepseek-v4-pro` 与隔离 PGlite 虚构事实完成 18/18 条、78,265
+  tokens；工具选择 94.44%、关键参数 100%、安全/证据失败关闭 100%，报告
+  `thresholdsPassed=true`。唯一失败单例为来源原文检索额外调用了国家画像工具；报告保留该
+  明细，不将 94.44% 写成 100%，也不把这次内部 eval 表述为客户效果。
+- 生产维护代码已具备精确 8 行 dry-run manifest、SHA/行漂移门、serializable 归档、逐
+  实体审计、`pg_dump -Fc` 0600 + SHA256 + `pg_restore --list` 和迁移后 readback；尚未在
+  生产执行，因此公开库脏数据与 Migration 0011/0012 仍不得标为已关闭。
+
 ## 三角色模拟评估与本地修复（2026-08-12）
 
 - 三个 subagent 分别模拟海外销售/区域销售、法规/合规工程师和产品/应用工程师，

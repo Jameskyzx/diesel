@@ -7,6 +7,7 @@
 [在线 Demo](https://jamesky.site) ·
 [全球地图](https://jamesky.site/map) ·
 [AI 分析工作区](https://jamesky.site/chat) ·
+[中英双语 FDE Case Study](docs/FDE_CASE_STUDY.md) ·
 [当前项目状态](docs/STATUS.md) ·
 [三角色模拟评估](docs/SIMULATED_USER_EVALUATION.md)
 
@@ -28,7 +29,7 @@
 
 1. 在[全球地图](https://jamesky.site/map)选择国家，得到可分享的 ISO3 URL。
 2. 在国家详情核对当前 `effective`、未来 `adopted`、来源和最近核验时间。
-3. 输入应用场景、功率和日期，运行 `product-fit-v1` 确定性适配判断。
+3. 输入应用场景、功率和日期，运行 `product-fit-v2`：分别查看法规/认证适配、查询日供应状态和组合后的商业准备度。
 4. 在[AI 工作区](https://jamesky.site/chat)请求比较或销售简报；事实、来源卡片与
    AI 解释分层显示。
 5. 对无数据、过期来源、proposed 法规或缺失认证明确返回缺口，不做乐观推断。
@@ -82,6 +83,15 @@ CHN 的 non-road 100 kW 产品是否适配？
 
 面试讲解顺序、预期画面和失败场景见 [三分钟演示脚本](docs/DEMO.md)。
 
+需要演示数据接入与治理写入时，使用隔离的本地实施入口：
+
+```bash
+pnpm demo:fde
+```
+
+它只绑定 loopback，并持续显示 `LOCAL / MUTABLE / FICTIONAL`；固定向导覆盖错误 CSV
+Preview、Draft、Review/Publish、查询读回和 Archive，不会接触公开数据库。
+
 ## 架构
 
 ```mermaid
@@ -131,16 +141,19 @@ pnpm typecheck
 pnpm test
 pnpm test:coverage
 pnpm ai:eval
+pnpm ai:eval:live
 pnpm db:check
 pnpm build
 pnpm playwright test
 pnpm test:e2e:demo
+pnpm test:e2e:fde
 pnpm audit:security
 ```
 
-`pnpm ai:eval` 是不调用外部模型的对话 harness：固定 golden prompts，检查确定性
-分流、缺参、证据需求、每轮可用工具和停止阶段。真实 provider 的工具选择质量仍需
-另行运行带模型版本、成本和日期的 live eval，不能由离线 harness 代替。
+`pnpm ai:eval` 是不调用外部模型的对话 harness。`pnpm ai:eval:live` 使用隔离的
+PGlite 虚构事实串行运行 18 条版本化案例，并在 18 次请求、80,000 tokens 或单例 90 秒
+任一边界停止；脱敏报告不保存 prompt、完整模型文本或密钥。live eval 不进入普通 PR CI，
+未完整运行或未达阈值时必须保留为失败/部分报告，不能包装成模型成功率。
 
 GitHub CI 对每次 PR/`master` 推送执行：
 

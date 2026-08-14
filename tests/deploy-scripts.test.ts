@@ -166,6 +166,7 @@ describe("versioned deployment scripts", () => {
     expect(buildScript).toContain(
       "[[ -f .build-complete && ! -L .build-complete ]]",
     );
+    expect(buildScript).toContain("--package-import-method=copy");
     expect(runbook).toContain(
       "for build_output in node_modules .next .build-complete; do",
     );

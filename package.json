@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "demo": "tsx scripts/demo/server.ts",
+    "demo:fde": "tsx scripts/demo/fde-server.ts",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
@@ -19,8 +20,10 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "ai:eval": "vitest run tests/sales-chat-harness.test.ts --reporter=verbose",
+    "ai:eval:live": "node --conditions=react-server --import tsx --env-file=.env.local scripts/ai/live-eval.ts",
     "test:e2e": "playwright test",
     "test:e2e:demo": "playwright test --config playwright.demo.config.ts",
+    "test:e2e:fde": "playwright test --config playwright.fde.config.ts",
     "playwright": "playwright",
     "audit:security": "tsx scripts/security/check-pnpm-audit.ts",
     "db:check": "drizzle-kit check",
@@ -28,9 +31,13 @@
     "db:smoke:upgrade": "tsx scripts/db/postgres-upgrade-smoke.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=.env.local scripts/db/migrate.ts",
+    "db:archive-invalid-products": "node --conditions=react-server --import tsx --env-file=.env.local scripts/db/archive-invalid-unpublished-products.ts",
+    "db:backup": "node --conditions=react-server --import tsx --env-file=.env.local scripts/db/backup-postgres.ts",
+    "db:verify-production": "node --conditions=react-server --import tsx --env-file=.env.local scripts/db/verify-production-readback.ts",
     "db:seed": "tsx --env-file=.env.local scripts/db/seed.ts",
     "knowledge:orphans": "tsx --env-file=.env.local scripts/db/scan-orphaned-knowledge-files.ts",
-    "knowledge:orphans:delete": "tsx --env-file=.env.local scripts/db/with-governance-maintenance-lock.ts -- pnpm exec tsx --env-file=.env.local scripts/db/scan-orphaned-knowledge-files.ts --delete"
+    "knowledge:orphans:delete": "tsx --env-file=.env.local scripts/db/with-governance-maintenance-lock.ts -- pnpm exec tsx --env-file=.env.local scripts/db/scan-orphaned-knowledge-files.ts --delete",
+    "ops:canary": "tsx scripts/ops/synthetic-canary.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.16",

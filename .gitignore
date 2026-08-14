@@ -13,6 +13,7 @@ tsconfig.e2e.json
 /playwright-report
 /test-results
 /tmp
+/backups
 
 # Local developer document storage
 /.data

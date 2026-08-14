@@ -21,6 +21,7 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
 
 type AdminDashboardProps = {
+  fdeDemoMode?: boolean;
   initialPrincipal: AdminPrincipal;
   initialUtcNow: string;
 };
@@ -306,6 +308,7 @@ function payloadDiff(
 
 
 export function AdminDashboard({
+  fdeDemoMode = false,
   initialPrincipal,
   initialUtcNow,
 }: AdminDashboardProps) {
@@ -525,6 +528,72 @@ export function AdminDashboard({
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      {fdeDemoMode ? (
+        <section
+          aria-labelledby="fde-demo-guide"
+          className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-5 text-amber-950"
+          data-testid="fde-demo-banner"
+        >
+          <p className="text-xs font-black tracking-[0.18em]">
+            LOCAL / MUTABLE / FICTIONAL
+          </p>
+          <h1 className="mt-2 text-xl font-semibold" id="fde-demo-guide">
+            FDE 本地实施向导
+          </h1>
+          <p className="mt-2 text-sm leading-6">
+            此模式只运行在 loopback + development + PGlite。每次启动都是新的进程内数据库；不会连接或修改 jamesky.site 的生产数据。
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            {(["editor", "reviewer", "admin"] as const).map((role) => (
+              <a
+                aria-current={initialPrincipal.role === role ? "page" : undefined}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 font-semibold",
+                  initialPrincipal.role === role
+                    ? "border-amber-700 bg-amber-200"
+                    : "border-amber-400 bg-white",
+                )}
+                href={`/__fde/persona?role=${role}`}
+                key={role}
+              >
+                切换 {role}
+              </a>
+            ))}
+          </div>
+          <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-6">
+            <li>
+              Editor 下载并上传
+              <a className="mx-1 font-semibold underline" href="/__fde/fixtures/invalid.csv">
+                错误 CSV
+              </a>
+              ，点击“预览并校验”，确认 value_numeric 与期间字段错误可见。
+            </li>
+            <li>
+              再上传
+              <a className="mx-1 font-semibold underline" href="/__fde/fixtures/corrected.csv">
+                修正版 FDE_DEMO_PIPELINE_INDEX
+              </a>
+              ，预览后确认批次，生成 Draft。
+            </li>
+            <li>
+              切换 Reviewer，展开 Draft，核对 payload、diff、依赖和来源，填写理由后 Review，再确认 Publish。
+            </li>
+            <li>
+              打开
+              <Link
+                className="mx-1 font-semibold underline"
+                href="/countries/CHN?applicationScope=non-road&asOf=2026-08-15&powerKw=100"
+              >
+                CHN 查询深链
+              </Link>
+              ，在市场指标区确认新指标已进入正式查询。
+            </li>
+            <li>
+              切换 Admin，从发布队列复制该市场指标 UUID，在“软归档已发布实体”选择 market_metric 并归档；刷新深链确认恢复原状态。
+            </li>
+          </ol>
+        </section>
+      ) : null}
       <header className="rounded-2xl border bg-card p-5 shadow-sm">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <div>

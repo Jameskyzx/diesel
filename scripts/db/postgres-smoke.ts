@@ -110,7 +110,7 @@ async function main(): Promise<void> {
       normalizePostgresConstraintDefinition(membershipPrimaryKey);
     if (
       normalizedMembershipPrimaryKey !==
-      "primarykey(country_iso3,jurisdiction_id,valid_from)"
+      "primarykeycountry_iso3,jurisdiction_id,valid_from"
     ) {
       throw new Error("latest temporal membership primary key was not applied");
     }

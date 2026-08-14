@@ -205,6 +205,11 @@ flowchart TD
   当前选择和单个 Tooltip，不保存世界几何。
 - `/api/countries` 返回地图覆盖摘要，`/api/countries/[iso3]` 返回国家、司法
   辖区、法规状态/有效日期、来源和核验日期；二者均通过 Zod 输出 schema。
+- 国家地图与详情的公开 PostgreSQL 出口不发布 Demo 分类事实：Demo 国家摘要保留
+  ISO3 目录位置但降为 `no_data`，Demo 国家详情失败关闭；非 Demo 国家中的辖区、
+  成员关系、法规、市场指标或任一直接来源只要标为 Demo，整条依赖事实即从详情与
+  AI 国家画像中排除。只有显式 `DATABASE_MODE=pglite-demo` 的本地作品演示继续返回
+  Demo fixture，不能依靠前端徽标掩盖生产混合数据。
 - 国家详情 Repository 强制接收 `asOf`，辖区成员关系与法规均按 `[from,to)`
   有效期过滤。公开 DTO 只返回当前 `effective` 与未来 `adopted` 两组法规，来源和
   AI 引用也只从这两组可见事实生成，不暴露 `proposed`、`superseded` 或历史原始
@@ -288,7 +293,7 @@ Repository 负责按成员期、法规期、限值期、scope 和功率形成候
 
 `product configuration + target context -> specifications + application scopes + certifications + applicable requirements -> ruleset`
 
-阶段 4 已实现的 `product-fit-v1` 由纯 TypeScript 函数计算，Repository 只提供
+阶段 4 已实现的 `product-fit-v2` 由纯 TypeScript 函数计算，Repository 只提供
 候选事实，Route Handler 只接受 Zod 校验输入。当前输出包含：
 
 - 总结论：`fit | not_fit | unknown`；`partial_fit` 保留给未来经批准的细粒度
@@ -320,8 +325,14 @@ Repository 负责按成员期、法规期、限值期、scope 和功率形成候
 结果。两者都保留产品供应期，产品追溯卡、AI 产品卡和销售简报直接展示该事实；
 UI 也显示辖区 ID、法规 ID、认证 ID、适用性来源和核验日期。AI
 `findCompatibleProducts` 引用辖区实体与国家成员关系来源，不使用 LLM 修订结论。
-供应期当前只用于追溯，不改变 `fit/not_fit/unknown`；是否把商业可售性、库存或
-供应期纳入适配规则仍需 ADR-021 批准。本规则也不判断完整发动机配置或营销机会评分。
+所有公开产品消费者都通过 Product Repository 的 publication manifest 边界：Demo 实体和来源
+必须同时为 Demo；真实产品必须匹配已签核的实体 ID、来源 ID 与规格版本，真实认证必须匹配
+实体 ID 与来源 ID。缺少或漂移均失败关闭。
+`status=fit/not_fit/unknown` 仍只表达法规与认证适配，不把商业供应混入合规结论。
+供应期另以 `[availableFrom, availableTo)` 在查询日计算 `availability=pass/fail/unknown`：
+任一端点证据不足即为 unknown。两轴组合为 `commercialReadiness`：合规 fit 且供应 pass
+为 ready；合规 not_fit 或供应 fail 为 not_ready；其余为 unknown。该供应判断不代表库存、
+交付周期或报价承诺，本规则也不判断完整发动机配置。
 
 ## 9. 知识库与检索
 
@@ -351,9 +362,12 @@ UI 也显示辖区 ID、法规 ID、认证 ID、适用性来源和核验日期�
 `documents.content_sha256` 唯一约束裁决。后到创建事务在冲突时删除本次临时来源
 并返回既有文档 ID，API 继续报告 `duplicate`，不会产生 500 或无引用来源记录。
 新文件使用 `<sha256>/content` 内容寻址路径，原始下载名独立保存在文档记录中；因此
-不同文件名的并发重复上传也复用同一物理文件。写入先落同目录临时文件，再原子替换
-最终路径，并在写入前后校验哈希，避免并发读取半写文件；既有带文件名的存储路径
-保持可读。
+不同文件名的并发重复上传也复用同一物理文件。写入先落同目录临时文件，再以指向最终
+路径的无覆盖 hard-link 原子发布，并在写入前后校验哈希，避免并发读取半写文件或多个
+请求都误判自己创建成功；既有带文件名的存储路径保持可读。
+文件写成后若数据库建档失败，不做即时 unlink：同哈希并发请求可能已经复用文件但尚未
+提交引用。失败只记录脱敏告警，默认 dry-run 的孤儿扫描在至少 24 小时后重新读取完整
+数据库引用集；共享/生产删除只能通过治理维护锁包装的显式删除入口执行。
 
 当前开发知识导入器只支持 UTF-8 TXT/Markdown。标题层级写入 `heading_path`，
 段落 locator 写入 `section_locator`，form-feed 分页写入 `page_from/page_to`。
@@ -379,7 +393,9 @@ UI 也显示辖区 ID、法规 ID、认证 ID、适用性来源和核验日期�
 当前调试检索先按 country ISO3、jurisdiction、application scope 和 `[valid_from,
 valid_to)` 过滤，再查询 PostgreSQL `tsvector` 与 pgvector cosine distance。
 关键词得分经固定函数归一化后，与向量相似度按 `0.5 / 0.5` 融合；调试页同时
-显示原始关键词分、向量分和最终顺序。
+显示原始关键词分、向量分和最终顺序。公开/AI 检索在排序前执行失败关闭相关度门槛：
+最终分至少 `0.25`，并且必须存在关键词命中或向量相似度至少 `0.45`；低于门槛的候选
+不进入响应，AI 工具层会对结果再执行一次同样校验。
 
 AI `searchKnowledgeBase` 工具未显式提供 `asOf` 时，以当前 UTC 日期同时作为
 结果声明日期和 Repository 有效期过滤日期；不得声明“截至今天”却用空日期过滤
@@ -423,7 +439,8 @@ MVP 采用“结构化结果优先”：
 
 - UI 直接渲染工具结果中的比较、适配、风险和来源卡片。
 - 自然语言说明与卡片同时展示。
-- 对高风险事实，可在返回前检查回答引用的 fact/source IDs 是否属于本轮工具结果。
+- 对高风险事实，模型 Markdown 中的外部 URL 只有与同一助手消息内结构化 citation 的
+  `sourceUrl` 完全匹配时才可点击；任意其他外链失败关闭为纯文本。
 - 未被工具支持的声明不作为结构化结论展示。
 
 ### 10.4 阶段 6 已实现边界
@@ -436,25 +453,40 @@ MVP 采用“结构化结果优先”：
 - 只读工具固定为 `searchKnowledgeBase`、`getCountryProfile`、
   `findCompatibleProducts`、法规/市场比较、机会评分和销售简报。国家与知识工具复用
   既有 service；产品工具在未指定型号时遍历目录，收到 `productModelCode` 时只评估该
-  精确型号（包括保留 PRODUCT_NOT_FOUND/unknown），并逐项复用 `product-fit-v1`，不让
+  精确型号（包括保留 PRODUCT_NOT_FOUND/unknown），并逐项复用 `product-fit-v2`，不让
   LLM 计算合规结论。销售简报继续复用确定性比较、评分和产品适配结果。
 - `getCountryProfile` 输入必须声明本次需要的 `country`、`regulations`、`market`
   主题；工具按所请求主题逐项检查结构化证据。国家记录存在但所问法规或市场数组为空
   时仍返回 profile 卡片，但外层为 `no_data/evidenceSufficient=false`，不能用国家基础
   元数据替缺失主题放行自然语言。
+- 无 scope/power 的单国概览可使用 `getCountryProfile`；带精确 scope/power 的
+  1–5 国法规查询统一使用 `compareRegulations`。同一问题同时要求法规核对与产品推荐时，
+  evidence contract 要求法规比较与产品适配两份独立结构化结果。
 - 聊天请求通过消息白名单后，先执行保守的确定性对话分流。问候、能力询问、致谢、
   模糊分析请求，以及明显缺少场景/功率/第二国家的适配或比较请求，直接返回能力说明
   或缺参追问，不初始化模型和审计会话，也不会制造空工具卡片；该路径仍受统一入口
   速率限制。任何可能需要法规、市场、产品或评分事实的问题都不得由分流层作答。
-- 进入事实查询后，第一模型步骤使用 `toolChoice=required`，最多执行 5 个工具步骤。
-  模型只解释工具结果；无结果、工具错误或全为 `unknown` 时返回证据不足。
+- 进入事实查询后，服务端从 evidence contract 计算尚未满足的 requirements，每一步
+  只向模型开放能满足这些 requirement 的工具并使用 `toolChoice=required`；证据齐全、
+  任一结果失败/不足、缺参或纯附件概述时切换为 `toolChoice=none`。工具顺序稳定，最多
+  执行 5 个工具步骤；模型不再依靠“自觉”决定是否继续或停止。
+- system instruction 以 `sales-chat-system-v3` 版本化，并按事实边界、工具路由、循环
+  策略、回答契约、附件边界和检索内容不可信边界分段。知识 query 必须与用户明确主题词
+  至少有一个有效重合；检索片段即使包含指令或 URL 也只能作为待解释数据。离线
+  `pnpm ai:eval` 用固定 golden prompts 检查分流、
+  缺参、初始工具集合和停止阶段，不调用外部模型；它不冒充真实 provider 成功率评估。
 - 流级 evidence boundary 跟踪本轮结构化工具结果；工具结果卡片继续即时流式输出，
   模型自然语言则缓冲到完整顺序/并行工具链结束后再判定。若证据不充分，丢弃已缓冲
   的结论文本并按失败工具生成具体缺口和下一步，同时输出法规免责声明；不得用统一
-  空话掩盖缺少国家、法规主题、可比指标、产品证据或工具执行失败等不同原因。
+  空话掩盖缺少国家、法规主题、可比指标、产品证据或工具执行失败等不同原因。模型调用
+  另有 `2048` output-token 硬上限，流边界最多缓冲 `16000` 字符，超限文本整段丢弃。
 - 地图 ISO3 只作为工具参数缺省值；工具参数中的明确 ISO3 优先。
 - UI message 中的工具输出经 Zod 再校验后渲染为结构化卡片。来源、页码/章节、
   法规状态、查询基准与最近核验时间来自工具结果，不从自然语言中提取。
+- 助手自然语言支持 CommonMark 与 GFM 排版，但仍标为“AI 解释/建议（非事实层）”。
+  浏览器不渲染模型原始 HTML 或远程图片；站内路径、查询串与锚点可用，外部 HTTP(S)
+  链接必须属于同一消息的结构化 citation。
+  用户输入继续按纯文本显示，结构化工具卡不经 Markdown 二次解释。
 - 单次回答调用多个工具时，只有全部工具结果都通过 Zod、`status=ok` 且
   `evidenceSufficient=true` 才放行模型自然语言；任一工具 `no_data/error`、证据不足
   或输出畸形都会把整段模型文本替换为固定的证据不足声明，工具卡片仍逐项保留。
@@ -472,6 +504,8 @@ MVP 采用“结构化结果优先”：
   被直接渲染。
 - 当前不持久化完整用户问题、完整模型回答或文档片段。只保存 session 的模型/
   地图上下文、最小化工具参数与结果摘要，以及外键可追溯引用。
+- 每条用户文本最多 2000 字符；送入模型的用户历史只保留最近 12 条且总计不超过
+  12000 字符，避免客户端通过长历史放大上下文与费用。
 - 正式 provider/model、区域、预算和保留策略仍受 ADR-017/023 阻塞；当前
   AI Gateway 是可替换适配边界，不代表生产模型已获批准。
 
@@ -485,15 +519,16 @@ MVP 采用“结构化结果优先”：
 - `compareMarkets` 只读取 `market_metrics`，逐指标检查国家覆盖、重复最新观测、
   scope、单位、币种、methodology 和 period。第一版不换汇、不换单位、不跨期间
   推算。
-- 比较工具把“返回了零散事实”和“证据足以比较”分开：法规比较至少需要两个国家
-  有当前/未来可见法规，市场比较至少需要一个指标通过全部可比性检查；否则外层
+- 比较工具把“返回了零散事实”和“证据足以回答”分开：单国精确法规查询需要该国有
+  当前/未来可见法规，多国法规比较至少需要两国有证据；市场比较至少需要一个指标通过全部可比性检查；否则外层
   `status=no_data`、`evidenceSufficient=false`，但结构化结果仍保留事实和缺失原因。
 - `calculateOpportunityScore` 调用版本化纯函数
-  `opportunity-score-v1`。三个维度为市场潜力、产品准备度和法规认证覆盖，默认
+  `opportunity-score-v2`。三个维度为市场潜力、产品准备度和法规认证覆盖，默认
   权重 `0.5/0.3/0.2`，只能从服务端环境配置读取。AI 外层只有在至少两个请求国家
   产生确定性 `overallScore` 时才视为足以解释排名；单国可评分时保留 scorecard 与
   缺失项，但返回 `no_data/evidenceSufficient=false`，不改变任何已计算分数。
-- `generateSalesBrief` 在服务端重用上述比较、评分和 `product-fit-v1`，返回
+- `generateSalesBrief` 在服务端重用上述比较、评分和 `product-fit-v2`，只把
+  `commercialReadiness=ready` 的产品放入推荐列表；合规 fit 但供应 fail/unknown 的产品进入风险或缺口。返回
   严格 Zod 校验的 JSON：`executiveSummary`、`marketScore`、
   `opportunities`、`risks`、`recommendedProducts`、`salesActions`、
   `missingData`、`sources`。
@@ -799,15 +834,20 @@ HTTP IP/备用域名不承载
 设 10 MiB 上限、关闭请求体缓冲，并以每客户 3 / 全局 8 连接门拒绝过载；
 随后仍由应用的每客户 2 / 全局 4 in-flight 门、9 MiB 流式请求门和附件格式、解码、页数、像素与文本预算做
 权威校验。
+`POST /api/chat` 的小时配额在生产由 PostgreSQL 固定窗口桶原子共享；客户端键先经
+SHA-256，再以到期索引清理。内存后端仅用于开发、测试与离线 Demo，生产配置成内存或
+数据库计数失败都会在进入请求解析、审计和模型前失败关闭。
 
 - 当前应用运行时：VPS 上的 Nginx + PM2 + Next.js Node 22。
 - 当前结构化数据：外部 PostgreSQL/Supabase，由 repository 层访问。
-- 治理发布保护：v3 JSON 快照由一个 long-lived、read-only repeatable-read 锚点事务
-  `pg_export_snapshot()` 固定九张治理表的同一 MVCC 视图；锚点每 10 秒执行最小探针，
+- 治理发布保护：v4 JSON 快照由一个 long-lived、read-only repeatable-read 锚点事务
+  `pg_export_snapshot()` 固定十张治理表（含 `market_metrics`）的同一 MVCC 视图；锚点每
+  10 秒执行最小探针，
   60 秒 idle-in-transaction 上限使失活连接快速失败。顶层时间保留
   PostgreSQL 六位微秒，JSONB 以原始 `jsonb::text` 保存，避免 JavaScript 数值舍入。
   五张小表各用一个短 reader transaction；三张含原始 JSONB 的治理表与生产规模的
-  limit 表按 UUID 主键每 500 行 keyset 分批，每批使用全新单连接 client，并在任何数据
+  `regulation_limits`、`market_metrics` 按 UUID 主键每 500 行 keyset 分批，每批使用全新
+  单连接 client，并在任何数据
   查询前以 `SET TRANSACTION SNAPSHOT` 导入锚点视图。行、原始 JSONB 与微秒时间在同一
   reader/batch 中取得并核验主键闭合，避免全表 JSON 解码和末尾无界 timestamp UNION。
   锚点与至多一个 reader 串行共存。reader 只对连接类 SQLSTATE、`57P01`–`57P03`、
@@ -818,12 +858,14 @@ HTTP IP/备用域名不承载
   全新 worker；每个 worker 有 45 分钟绝对
   上限，超时后依次 TERM、2 秒宽限、KILL，且确认旧进程关闭后才允许重试。只有 worker
   的锚点与全部 reader 只读事务完成、各连接已排队协议写被清空、同连接 teardown
-  探针成功、严格 v3 校验和
+  探针成功、严格 v4 校验和
   `0600` 临时文件全部完成，父进程才以
   同目录 hard-link 原子、无覆盖地提升为正式快照。
   恢复入口先按原始文件 SHA-256、严格 Zod schema、逐表计数与引用闭包失败关闭，显式
   `--apply` 才在 serializable 单事务中 UPSERT 快照记录并按反向外键顺序物理删除快照外
-  记录；外部引用或恢复后计数不闭合即整单回滚。fresh 快照导出、
+  记录；`market_metrics` 目标自然键冲突检查按不超过 60,000 个绑定参数分批执行，全部
+  预检完成后才开始写入，避免大型快照触发 PostgreSQL 65,535 参数上限；外部引用或恢复后
+  计数不闭合即整单回滚。fresh 快照导出、
   SHA/dry-run/no-op `--apply` 演练、批量治理写入及随后的公开 API/页面/代表性语义读回
   在同一个 PostgreSQL advisory maintenance lock 生命周期内执行；`ERR/INT/TERM/HUP/EXIT`
   由防重入 trap 触发单次快照恢复；维护连接禁用 idle/lifetime 回收，并每 10 秒核验同一
@@ -833,7 +875,7 @@ HTTP IP/备用域名不承载
   pooling，不得使用 transaction pooling。wrapper 以清空的父环境启动并从只读
   `.env.production.local` 权威加载生产配置；每次 fresh 快照前在整个 backup 树失败关闭
   检查旧 `RECOVERY_REQUIRED`。无法捕获的进程/主机中断保留 marker 供新锁会话恢复。
-  人工恢复以重新导出的 v3 快照对发布前 snapshot 的
+  人工恢复以重新导出的 v4 快照对发布前 snapshot 的
   `tableCounts + tables` 深比较和当前应用 health/version 为完成条件，不要求发布前状态满足
   post-publish 178/97 覆盖契约；比较与健康检查成功后才删除 marker。正常发布仍仅在完整
   post-publish 公开读回成功后解除保护。
@@ -863,6 +905,7 @@ HTTP IP/备用域名不承载
 | Drizzle ORM | 类型化查询和迁移 |
 | Supabase PostgreSQL | 结构化数据、全文检索、pgvector、PostGIS |
 | Vercel AI SDK | 单 Agent、工具调用和流式输出 |
+| react-markdown / remark-gfm | 仅在客户端将助手解释文本渲染为安全 CommonMark/GFM；不启用原始 HTML |
 | unpdf | 仅服务端、受页数与字符预算约束的 PDF 文本提取；不参与浏览器 bundle |
 | sharp | 仅服务端核验 PNG/JPEG/WebP 真实格式、尺寸并强制解码压缩像素流；不参与浏览器 bundle |
 | Zod | 边界输入、环境和工具契约 |

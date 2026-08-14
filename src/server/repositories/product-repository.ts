@@ -8,6 +8,10 @@ import {
   productCertifications,
   products,
 } from "@/server/db/schema";
+import {
+  isPublicCertificationApproved,
+  isPublicProductApproved,
+} from "@/server/config/public-product-publication";
 import { createRegulationRepository } from "@/server/repositories/regulation-repository";
 
 export function createProductRepository<
@@ -52,7 +56,11 @@ export function createProductRepository<
         )
         .limit(1);
 
-      const product = productRows[0] ?? null;
+      const productCandidate = productRows[0] ?? null;
+      const product =
+        productCandidate && isPublicProductApproved(productCandidate)
+          ? productCandidate
+          : null;
 
       const limitRows = await regulationRepository.findEffectiveByCountry({
         applicationScope: query.applicationScope,
@@ -189,7 +197,7 @@ export function createProductRepository<
         ({ regulationId }) => regulationId,
       );
 
-      const certifications =
+      const certificationCandidates =
         !product || regulationIds.length === 0
           ? []
           : await database
@@ -228,6 +236,9 @@ export function createProductRepository<
                 ),
               )
               .orderBy(asc(productCertifications.certificateNumber));
+      const certifications = certificationCandidates.filter(
+        isPublicCertificationApproved,
+      );
 
       const coveredRegulationIds = new Set(
         certifications.map(({ regulationId }) => regulationId),
@@ -243,7 +254,7 @@ export function createProductRepository<
       };
     },
     async listProducts() {
-      return database
+      const rows = await database
         .select({
           applicationScopes: products.applicationScopes,
           availableFrom: products.availableFrom,
@@ -274,6 +285,8 @@ export function createProductRepository<
           ),
         )
         .orderBy(asc(products.modelCode));
+
+      return rows.filter(isPublicProductApproved);
     },
   };
 }

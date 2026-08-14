@@ -47,6 +47,10 @@ const clientAnalysisQuerySchema = z
   })
   .passthrough();
 
+const clientRegulationQuerySchema = clientAnalysisQuerySchema.extend({
+  countryIso3s: z.array(z.string()).min(1).max(5),
+});
+
 const clientCountryRegulationSchema = z
   .object({
     applicability: z
@@ -136,6 +140,7 @@ const clientCompatibleProductsResultSchema = clientToolResultBase
     evaluations: z.array(
       z
         .object({
+          commercialReadiness: z.enum(["ready", "not_ready", "unknown"]),
           input: z
             .object({
               productModelCode: z.string(),
@@ -157,6 +162,23 @@ const clientCompatibleProductsResultSchema = clientToolResultBase
               })
               .passthrough(),
           ),
+          productChecks: z
+            .object({
+              availability: z
+                .object({
+                  code: z.enum([
+                    "PRODUCT_AVAILABLE",
+                    "PRODUCT_NOT_YET_AVAILABLE",
+                    "PRODUCT_NO_LONGER_AVAILABLE",
+                    "PRODUCT_AVAILABILITY_UNKNOWN",
+                    "PRODUCT_NOT_FOUND",
+                  ]),
+                  message: z.string(),
+                  status: z.enum(["pass", "fail", "unknown"]),
+                })
+                .passthrough(),
+            })
+            .passthrough(),
           status: z.enum(["fit", "not_fit", "unknown"]),
         })
         .passthrough(),
@@ -236,7 +258,7 @@ const clientRegulationComparisonResultSchema = clientToolResultBase
             .passthrough(),
         ),
         missingData: z.array(z.string()),
-        query: clientAnalysisQuerySchema,
+        query: clientRegulationQuerySchema,
       })
       .passthrough(),
     tool: z.literal("compareRegulations"),

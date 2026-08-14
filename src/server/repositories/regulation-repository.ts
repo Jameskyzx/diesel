@@ -188,6 +188,14 @@ export function createRegulationRepository<
                 ),
               ),
               and(
+                or(
+                  eq(regulations.status, "adopted"),
+                  eq(regulations.status, "effective"),
+                  and(
+                    eq(regulations.status, "superseded"),
+                    isNotNull(regulations.effectiveTo),
+                  ),
+                ),
                 lte(regulations.adoptedOn, query.asOf),
                 or(
                   isNull(regulations.effectiveFrom),

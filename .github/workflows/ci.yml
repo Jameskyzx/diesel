@@ -4,6 +4,9 @@ on:
   push:
     branches: [master]
   pull_request:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,6 +19,7 @@ permissions:
 jobs:
   quality:
     name: Lint, typecheck, tests, build
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -43,8 +47,8 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit and integration tests (PGlite)
-        run: pnpm test
+      - name: Unit and integration tests with coverage gate (PGlite)
+        run: pnpm test:coverage
 
       - name: Drizzle migration check
         run: pnpm db:check
@@ -52,8 +56,64 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Upload coverage report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+          if-no-files-found: warn
+
+  postgres-migrations:
+    name: PostgreSQL + pgvector migration smoke
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: diesel_ci
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d diesel_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/diesel_ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrate an empty PostgreSQL database
+        run: pnpm exec tsx scripts/db/migrate.ts
+
+      - name: Verify pgvector and final schema state
+        run: pnpm db:smoke:postgres
+
+      - name: Verify 0010 to 0011 dirty-data fail-closed upgrade
+        run: pnpm db:smoke:upgrade
+
   e2e:
     name: Playwright key flows
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: quality
@@ -76,8 +136,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Playwright Chromium and WebKit
+        run: pnpm exec playwright install --with-deps chromium webkit
 
       - name: Run Playwright tests
         run: pnpm test:e2e
@@ -96,6 +156,52 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-test-results
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: warn
+
+  portfolio-demo-e2e:
+    name: Portfolio demo via pnpm demo
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run the portfolio demo contract
+        run: pnpm test:e2e:demo
+
+      - name: Upload portfolio demo report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-demo-report
+          path: playwright-demo-report/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload Playwright traces and screenshots
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-demo-test-results
           path: test-results/
           retention-days: 14
           if-no-files-found: warn
@@ -123,6 +229,13 @@ jobs:
           echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum -c -
           tar -xzf "${archive}" gitleaks
           ./gitleaks detect --source . --config .gitleaks.toml --redact --verbose --exit-code 1
+          fixture_dir="$(mktemp -d)"
+          trap 'rm -rf -- "${fixture_dir}"' EXIT
+          printf 'GITHUB_TOKEN=ghp_%s%s\n' '0123456789abcdefgh' 'ijklmnopqrstuvwxyz' > "${fixture_dir}/canary.env"
+          if ./gitleaks detect --no-git --source "${fixture_dir}" --config .gitleaks.toml --redact --exit-code 1; then
+            echo "gitleaks regression failed: synthetic secret was not detected" >&2
+            exit 1
+          fi
 
   audit:
     name: Dependency audit
@@ -138,18 +251,16 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
-      # 该 job 不执行安装（pnpm audit 直接读锁文件），因此不启用
-      # setup-node 的 pnpm 缓存（store 路径不存在会导致缓存保存失败）。
+      # 该 job 只安装执行 TypeScript 策略所需的锁定依赖，不运行生命周期脚本；
+      # 不启用 setup-node 缓存，避免独立 scheduled job 的 store 保存噪声。
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
 
-      # 门禁级别为 critical；README「已知依赖风险」记录了当前来自 next /
-      # eslint / drizzle-kit 构建工具链的 high 级公告，等待上游修复。
-      - name: Audit dependencies (critical gate)
-        run: pnpm audit --audit-level=critical
+      - name: Install audit policy runtime
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Show known advisories (informational)
-        if: ${{ always() }}
-        run: pnpm audit --audit-level=moderate || true
+      # 门禁与 high 级限时处置规则见 docs/DEPENDENCY_SECURITY.md。
+      - name: Enforce dependency advisory policy
+        run: pnpm audit:security

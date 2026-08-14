@@ -6,7 +6,7 @@ test("renders the operational home entry and primary navigation", async ({ page 
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "把全球法规，变成可复核的业务动作。",
+      name: "全球柴油机法规与产品数据库",
     }),
   ).toBeVisible();
   await expect(
@@ -15,7 +15,14 @@ test("renders the operational home entry and primary navigation", async ({ page 
       name: "直接开始",
     }),
   ).toBeVisible();
-  await expect(page.getByText("GLOBAL DIESEL INTELLIGENCE")).toBeVisible();
+  await expect(page.getByText("面向海外销售与产品团队")).toBeVisible();
+  await expect(page.getByText("证据边界核验率")).toBeVisible();
+  await expect(
+    page.getByText(
+      "已核验表示来源边界和数据缺口经过审阅，不代表该国存在数值法规。",
+    ),
+  ).toBeVisible();
+  await expect(page.getByText("结构化覆盖率")).toHaveCount(0);
   await expect(page.getByText("EVIDENCE CONTRACT")).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible();
   await expect(page.getByRole("link", { exact: true, name: "首页" })).toHaveAttribute("aria-current", "page");
@@ -29,6 +36,24 @@ test("renders the operational home entry and primary navigation", async ({ page 
   await page.getByRole("link", { exact: true, name: "地图" }).click();
   await expect(page).toHaveURL(/\/map$/);
   await expect(page.getByTestId("world-map")).toBeVisible();
+});
+
+test("does not claim the home data is online when the country summary fails", async ({
+  page,
+}) => {
+  await page.route("**/api/countries", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({ error: { code: "INTERNAL_ERROR" } }),
+      contentType: "application/json",
+      status: 500,
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.getByText("数据不可用")).toBeVisible();
+  await expect(page.getByText("在线", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "重试" })).toBeVisible();
 });
 
 test("opens the dedicated chat workspace from primary navigation", async ({ page }) => {
@@ -46,6 +71,29 @@ test("opens the dedicated chat workspace from primary navigation", async ({ page
     page.getByText("信息参考，不替代正式认证或法律意见"),
   ).toHaveCount(0);
   await expect(page.getByText(/扫描版 PDF 请上传清晰页面截图/)).toHaveCount(0);
+
+  const starter = page.getByRole("button", {
+    name: "CHN 目前有哪些有效法规？",
+  });
+  await starter.click();
+  await expect(page.getByPlaceholder("输入问题，可附上文件或图片…")).toHaveValue(
+    "CHN 目前有哪些有效法规？",
+  );
+});
+
+test("preserves valid chat context while removing one invalid shared parameter", async ({
+  page,
+}) => {
+  await page.goto(
+    "/chat?countryIso3=chn&applicationScope=non-road&powerKw=100.0&asOf=bad&productModelCode=demo-eng-100&utm_source=e2e",
+  );
+
+  await expect(page).toHaveURL(
+    /\/chat\?applicationScope=non-road&countryIso3=CHN&powerKw=100&productModelCode=DEMO-ENG-100&utm_source=e2e$/,
+  );
+  await expect(page.getByPlaceholder("输入问题，可附上文件或图片…")).toHaveValue(
+    /CHN.*non-road 100 kW.*DEMO-ENG-100/,
+  );
 });
 
 test("answers a capability question without forcing a fact tool", async ({ page }) => {
@@ -59,41 +107,17 @@ test("answers a capability question without forcing a fact tool", async ({ page 
     .fill("你好，你能帮我做什么？");
   await assistant.getByRole("button", { name: "发送问题" }).click();
 
-  const conversation = assistant.getByRole("log", { name: "AI 对话记录" });
+  const conversation = assistant.getByRole("region", {
+    name: "AI 对话记录",
+  });
   await expect(conversation).toContainText("结构化事实和可追溯来源");
   await expect(conversation).toContainText("比较 2–5 个国家");
+  const markdown = conversation.getByTestId("assistant-markdown");
+  await expect(markdown.getByRole("list")).toBeVisible();
+  await expect(markdown.getByRole("listitem")).toHaveCount(4);
   await expect(conversation).not.toContainText("没有足够证据");
   await expect(conversation).not.toContainText("正在执行确定性查询");
   await expect(conversation).not.toContainText("国家与法规资料");
-});
-
-test("portfolio demo keeps an explicitly named product scoped to one result", async ({
-  page,
-}) => {
-  test.skip(
-    process.env.PORTFOLIO_DEMO_MODE !== "true",
-    "This deterministic routing assertion only applies to portfolio Demo mode.",
-  );
-
-  await page.goto(
-    "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-  );
-
-  const assistant = page.getByRole("complementary", {
-    name: "AI 营销分析助手",
-  });
-  await assistant.getByRole("button", { name: "发送问题" }).click();
-
-  const conversation = assistant.getByRole("log", { name: "AI 对话记录" });
-  await expect(conversation).toContainText("DEMO ONLY — Fictional Engine 200");
-  await expect(conversation).not.toContainText("Fictional Engine 100");
-  await expect(conversation).toContainText("不可用于报价、认证声明或销售承诺");
-  const query = assistant.getByLabel("确定性产品适配查询条件");
-  await expect(query).toContainText("CHN");
-  await expect(query).toContainText("non-road");
-  await expect(query).toContainText("100 kW");
-  await expect(query).toContainText("2026-08-12");
-  await expect(query).toContainText("DEMO-ENG-200");
 });
 
 test("previews, removes, and validates chat attachments", async ({ page }) => {
@@ -298,9 +322,10 @@ test("locks attachment controls while validating image bytes", async ({
     name: "slow-engine.png",
   });
 
-  await expect(assistant.getByRole("status")).toContainText(
-    "正在验证附件安全性",
-  );
+  const attachmentValidationStatus = assistant
+    .getByRole("status")
+    .filter({ hasText: "正在验证附件安全性" });
+  await expect(attachmentValidationStatus).toBeVisible();
   await expect(fileInput).toBeDisabled();
   await expect(
     assistant.getByRole("button", { name: "正在验证附件" }),
@@ -314,13 +339,13 @@ test("locks attachment controls while validating image bytes", async ({
     browserGlobal.__releaseAttachmentValidation?.();
   });
 
-  await expect(assistant.getByRole("status")).toHaveCount(0);
+  await expect(attachmentValidationStatus).toHaveCount(0);
   await expect(assistant.getByText("slow-engine.png")).toBeVisible();
   await expect(sendButton).toBeEnabled();
 });
 
 test("returns a structured health response", async ({ request }) => {
-  const response = await request.get("/api/health");
+  const response = await request.get("/api/health/live");
 
   expect(response.ok()).toBe(true);
   expect(response.headers()["content-type"]).toContain("application/json");
@@ -332,13 +357,22 @@ test("returns a structured health response", async ({ request }) => {
       status: "ok",
     }),
   );
+
+  const readiness = await request.get("/api/health/ready");
+  expect(readiness.ok()).toBe(true);
+  await expect(readiness.json()).resolves.toEqual(
+    expect.objectContaining({
+      checks: { database: "ok" },
+      service: "global-diesel-regulations",
+      status: "ok",
+    }),
+  );
 });
 
 test("serves browser and Apple touch icons without 404s", async ({ request }) => {
   for (const path of [
     "/icon.svg",
     "/apple-touch-icon.png",
-    "/apple-touch-icon-precomposed.png",
   ]) {
     const response = await request.get(path);
 

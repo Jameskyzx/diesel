@@ -1,13 +1,13 @@
 export default function Loading() {
   return (
-    <main
+    <div
       aria-busy="true"
       aria-live="polite"
       className="mx-auto w-full max-w-7xl px-6 py-12 lg:px-8"
       role="status"
     >
       <span className="sr-only">正在加载页面</span>
-      <div className="animate-pulse space-y-8">
+      <div className="animate-pulse space-y-8 motion-reduce:animate-none">
         <div className="space-y-3">
           <div className="h-4 w-36 rounded-full bg-muted" />
           <div className="h-10 w-full max-w-xl rounded-xl bg-muted" />
@@ -22,6 +22,6 @@ export default function Loading() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

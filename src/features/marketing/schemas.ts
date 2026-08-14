@@ -33,6 +33,19 @@ export const countryComparisonListSchema = z
     }
   });
 
+export const regulationCountryListSchema = z
+  .array(iso3Schema)
+  .min(1)
+  .max(5)
+  .superRefine((countries, context) => {
+    if (new Set(countries).size !== countries.length) {
+      context.addIssue({
+        code: "custom",
+        message: "countryIso3s must not contain duplicates",
+      });
+    }
+  });
+
 export const metricCodeSchema = z
   .string()
   .trim()
@@ -45,7 +58,7 @@ export const compareRegulationsInputSchema = z
   .object({
     applicationScope: applicationScopeSchema,
     asOf: isoDateSchema,
-    countryIso3s: countryComparisonListSchema,
+    countryIso3s: regulationCountryListSchema,
     powerKw: powerKwSchema,
   })
   .strict();
@@ -61,6 +74,7 @@ export const compareMarketsInputSchema = z
 export const calculateOpportunityScoreInputSchema =
   compareRegulationsInputSchema
     .extend({
+      countryIso3s: countryComparisonListSchema,
       metricCodes: z.array(metricCodeSchema).min(1).max(8).optional(),
       productModelCode: z
         .string()
@@ -295,7 +309,7 @@ export const countryOpportunityScoreSchema = z
 export const opportunityScorecardSchema = z
   .object({
     query: calculateOpportunityScoreInputSchema,
-    rulesetVersion: z.literal("opportunity-score-v1"),
+    rulesetVersion: z.literal("opportunity-score-v2"),
     scores: z.array(countryOpportunityScoreSchema),
     sources: z.array(analysisSourceSchema),
     weights: opportunityScoreWeightsSchema,
@@ -314,7 +328,9 @@ export const recommendedProductSchema = z
   .object({
     availableFrom: z.iso.date().nullable(),
     availableTo: z.iso.date().nullable(),
+    availabilityStatus: z.literal("pass"),
     certificationIds: z.array(z.uuid()),
+    commercialReadiness: z.literal("ready"),
     modelCode: z.string().trim().min(1),
     name: z.string().trim().min(1),
     reasons: z.array(z.string()),

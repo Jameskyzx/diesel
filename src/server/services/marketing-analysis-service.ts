@@ -556,7 +556,7 @@ export async function calculateOpportunityScore(input: unknown) {
     const normalized = normalizeComparableMetric(
       metric.observations.map((observation) => ({
         countryIso3: observation.countryIso3,
-        value: Number(observation.valueNumeric),
+        value: observation.valueNumeric,
       })),
       direction,
     );
@@ -585,7 +585,7 @@ export async function calculateOpportunityScore(input: unknown) {
         : countryMarketScores.reduce((sum, score) => sum + score, 0) /
           countryMarketScores.length;
     const productReadiness = calculateProductReadiness(
-      evaluations.map(({ status }) => status),
+      evaluations.map(({ commercialReadiness }) => commercialReadiness),
     );
     const regulationChecks = evaluations.flatMap((evaluation) =>
       evaluation.regulationChecks.map((check) => ({
@@ -595,12 +595,14 @@ export async function calculateOpportunityScore(input: unknown) {
     );
     const regulatoryCoverage =
       calculateRegulatoryCoverage(regulationChecks);
-    const fitCount = evaluations.filter(({ status }) => status === "fit").length;
-    const notFitCount = evaluations.filter(
-      ({ status }) => status === "not_fit",
+    const readyCount = evaluations.filter(
+      ({ commercialReadiness }) => commercialReadiness === "ready",
     ).length;
-    const unknownCount = evaluations.filter(
-      ({ status }) => status === "unknown",
+    const notReadyCount = evaluations.filter(
+      ({ commercialReadiness }) => commercialReadiness === "not_ready",
+    ).length;
+    const readinessUnknownCount = evaluations.filter(
+      ({ commercialReadiness }) => commercialReadiness === "unknown",
     ).length;
     const missingData = [
       ...(marketPotential === null
@@ -614,8 +616,8 @@ export async function calculateOpportunityScore(input: unknown) {
       ...(regulatoryCoverage === null
         ? [`${countryIso3} 没有可确定的法规认证覆盖结果。`]
         : []),
-      ...(unknownCount > 0
-        ? [`${countryIso3} 有 ${unknownCount} 个 unknown 产品结果，未按 0 计分。`]
+      ...(readinessUnknownCount > 0
+        ? [`${countryIso3} 有 ${readinessUnknownCount} 个商业准备度 unknown 产品，未按 0 计分。`]
         : []),
       ...marketComparison.missingData.filter((message) =>
         message.includes(countryIso3),
@@ -636,12 +638,12 @@ export async function calculateOpportunityScore(input: unknown) {
         {
           explanation:
             productReadiness === null
-              ? "没有明确 fit/not_fit 结果；unknown 不作为 0。"
-              : "产品准备度=fit 数量/(fit+not_fit 数量)；unknown 从分母排除并单列缺失。",
+              ? "没有明确 ready/not_ready 结果；unknown 不作为 0。"
+              : "产品准备度=ready 数量/(ready+not_ready 数量)；合规适配与查询日供应状态共同决定，unknown 从分母排除并单列缺失。",
           inputFacts: [
-            `fit=${fitCount}`,
-            `not_fit=${notFitCount}`,
-            `unknown=${unknownCount}`,
+            `ready=${readyCount}`,
+            `not_ready=${notReadyCount}`,
+            `unknown=${readinessUnknownCount}`,
           ],
           key: "productReadiness",
           score: productReadiness,
@@ -675,14 +677,14 @@ export async function calculateOpportunityScore(input: unknown) {
   if (unsupportedMetricCodes.length > 0) {
     for (const score of scores) {
       score.missingData.push(
-        `指标 ${Array.from(new Set(unsupportedMetricCodes)).join(", ")} 未在 opportunity-score-v1 中配置方向，未参与评分。`,
+        `指标 ${Array.from(new Set(unsupportedMetricCodes)).join(", ")} 未在 opportunity-score-v2 中配置方向，未参与评分。`,
       );
     }
   }
 
   return opportunityScorecardSchema.parse({
     query,
-    rulesetVersion: "opportunity-score-v1",
+    rulesetVersion: "opportunity-score-v2",
     scores,
     sources,
     weights,
@@ -723,7 +725,11 @@ export async function generateSalesBrief(input: unknown) {
   }
 
   const recommendedProducts = evaluations.flatMap((evaluation) => {
-    if (evaluation.status !== "fit" || !evaluation.product) {
+    if (
+      evaluation.status !== "fit" ||
+      evaluation.commercialReadiness !== "ready" ||
+      !evaluation.product
+    ) {
       return [];
     }
 
@@ -731,6 +737,7 @@ export async function generateSalesBrief(input: unknown) {
       {
         availableFrom: evaluation.product.availableFrom,
         availableTo: evaluation.product.availableTo,
+        availabilityStatus: "pass" as const,
         certificationIds: Array.from(
           new Set(
             evaluation.regulationChecks.flatMap((check) =>
@@ -740,9 +747,13 @@ export async function generateSalesBrief(input: unknown) {
             ),
           ),
         ),
+        commercialReadiness: "ready" as const,
         modelCode: evaluation.product.modelCode,
         name: evaluation.product.name,
-        reasons: evaluation.reasons.map(({ message }) => message),
+        reasons: [
+          ...evaluation.reasons.map(({ message }) => message),
+          evaluation.productChecks.availability.message,
+        ],
         regulationIds: Array.from(
           new Set(
             evaluation.regulationChecks
@@ -765,6 +776,16 @@ export async function generateSalesBrief(input: unknown) {
   const unknownProducts = evaluations.filter(
     ({ status }) => status === "unknown",
   );
+  const unavailableFitProducts = evaluations.filter(
+    (evaluation) =>
+      evaluation.status === "fit" &&
+      evaluation.productChecks.availability.status === "fail",
+  );
+  const availabilityUnknownFitProducts = evaluations.filter(
+    (evaluation) =>
+      evaluation.status === "fit" &&
+      evaluation.productChecks.availability.status === "unknown",
+  );
   const marketComponent = marketScore.components.find(
     ({ key }) => key === "marketPotential",
   );
@@ -786,8 +807,8 @@ export async function generateSalesBrief(input: unknown) {
             evidenceIds: recommendedProducts.flatMap(
               ({ certificationIds }) => certificationIds,
             ),
-            text: `${recommendedProducts.length} 个产品具有明确 fit 结论。`,
-            title: "已有确定性适配产品",
+            text: `${recommendedProducts.length} 个产品合规适配且在查询日供应。`,
+            title: "已有商业就绪产品",
           },
         ]
       : []),
@@ -820,6 +841,28 @@ export async function generateSalesBrief(input: unknown) {
           },
         ]
       : []),
+    ...(unavailableFitProducts.length > 0
+      ? [
+          {
+            evidenceIds: unavailableFitProducts.flatMap((evaluation) =>
+              evaluation.sources.map(({ id }) => id),
+            ),
+            text: `${unavailableFitProducts.length} 个产品法规/认证适配，但查询日不在供应期内。`,
+            title: "适配产品当前不可供应",
+          },
+        ]
+      : []),
+    ...(availabilityUnknownFitProducts.length > 0
+      ? [
+          {
+            evidenceIds: availabilityUnknownFitProducts.flatMap(
+              (evaluation) => evaluation.sources.map(({ id }) => id),
+            ),
+            text: `${availabilityUnknownFitProducts.length} 个产品法规/认证适配，但供应期证据不足。`,
+            title: "适配产品供应状态未知",
+          },
+        ]
+      : []),
   ];
   const missingData = Array.from(
     new Set([
@@ -836,7 +879,7 @@ export async function generateSalesBrief(input: unknown) {
             action: `为 ${recommendedProducts.map(({ modelCode }) => modelCode).join("、")} 准备法规与认证证据包。`,
             kind: "rule_generated" as const,
             priority: "high" as const,
-            rationale: "这些产品具有可追溯的明确 fit 结论。",
+            rationale: "这些产品同时具有可追溯的合规 fit 结论和查询日供应证据。",
           },
         ]
       : []),
@@ -856,7 +899,7 @@ export async function generateSalesBrief(input: unknown) {
             action: "补齐 missingData 中列出的市场、法规或认证事实后再做商业承诺。",
             kind: "rule_generated" as const,
             priority: "medium" as const,
-            rationale: "opportunity-score-v1 会排除缺失维度并降低数据覆盖率。",
+            rationale: "opportunity-score-v2 会排除缺失维度并降低数据覆盖率。",
           },
         ]
       : []),

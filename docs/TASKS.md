@@ -277,14 +277,14 @@
 | --- | --- | --- | --- |
 | 需求、架构与工程约束 | 已完成 | PRD、架构、数据模型、ADR、`AGENTS.md` | 进入试点前需随已批准业务决策同步更新 |
 | 阶段 0：MVP 数据与安全决策门 | 法规数据门已签核；业务生产门部分阻塞 | 分层覆盖、四类 scope、来源/验收边界与 `ACCEPTANCE.md` #1–#264 已签核；公开作品的数据失败关闭边界可确定性验证 | 真实产品/认证、市场指标与评分、正式模型/Embedding、业务身份、许可再分发、SLA owner、语言、区域和保留策略仍受 ADR-016–023 对应未决项约束 |
-| 阶段 1：工程脚手架与质量门 | 已完成 | Next.js、TypeScript、pnpm、Lint、Vitest、Playwright、健康检查、GitHub CI、gitleaks、依赖审计、受保护 `master` | 持续保持检查全绿并处置依赖公告 |
-| 阶段 2：结构化数据库核心 | 开发完成，生产待接入 | Drizzle Schema、Migration、确定性 Demo Seed、Repository 和集成测试 | 配置真实 Supabase/PostgreSQL，执行 Migration；真实数据不得使用 Demo Seed 替代 |
+| 阶段 1：工程脚手架与质量门 | 已完成 | Next.js、TypeScript、pnpm、Lint、分层 coverage、Vitest、Chromium/WebKit Playwright、独立 Demo E2E、liveness/readiness、真实 PostgreSQL + pgvector migration smoke、GitHub CI、gitleaks、限时依赖公告门禁、受保护 `master` | 持续保持检查全绿并处置依赖公告 |
+| 阶段 2：结构化数据库核心 | 开发完成，公开作品 PostgreSQL 已接入 | Drizzle Schema、Migration、确定性 Demo Seed、Repository、PGlite 集成测试及空库/升级 PostgreSQL smoke | 业务生产仍需独立备份恢复演练、Migration 责任人和变更窗口；真实数据不得使用 Demo Seed 替代 |
 | 阶段 3：领域服务与确定性规则 | 部分完成 | 国家服务、法规/市场比较、`product-fit-v1`、`opportunity-score-v1`、Zod DTO 与已签核真实法规 fixture；`application_scope` 已含 `on-road-truck`/`on-road-bus`（ADR-039） | 真实产品/认证配置粒度、`partial_fit`、市场评分方向和业务批准人仍受 ADR-020/021 阻塞；不再以 ADR-015 声称真实卡车/客车法规 fixture 尚未形成 |
-| 阶段 4：地图与国家详情 | 作品切片完成 | 全球目录、ISO3 分享 URL、国家详情、无数据状态、筛选恢复、freshness 告警及桌面/移动测试；当前数量见 STATUS | #166–#198 稳定 33 国纠错、LIE/SGP 既有图运行库补同步及 #199–#208 十国 source-only refresh 均待本轮部署；业务用途许可与持续 SLA owner 仍未完成 |
+| 阶段 4：地图与国家详情 | 作品切片完成并已发布 | 全球目录、ISO3 分享 URL、国家详情、无数据状态、筛选恢复、freshness 告警、版本化 immutable GeoJSON 及桌面/移动测试；当前数量见 STATUS | 业务用途许可与持续 SLA owner 仍未完成；新增来源继续按 acceptance/治理发布流程更新 |
 | 阶段 5：市场与产品适配 UI | 作品切片完成 | 已核验公开市场观测、Demo 产品选择、适配卡片、来源与三态适配 | 真实产品/认证、指标业务审批、`partial_fit` 和独立跨国比较体验未完成 |
 | 阶段 6：文档入库与混合检索 | 开发切片完成 | TXT/Markdown、本地私有文件、哈希去重、分块、metadata filter、全文/向量混合检索 | 生产对象存储、PDF/OCR/Word、正式 Embedding、许可控制和检索基准未完成 |
-| 阶段 7：单 Agent 营销分析助手 | 功能切片完成，生产待批准 | 7 个只读工具、结构化卡片、证据不足保护、审计和 mock model 测试 | 正式模型/区域/预算、身份关联、速率限制和保留策略未完成 |
-| 阶段 8：安全、性能与试点发布 | 公开作品已上线，业务生产未完成 | 公开只读站、管理路由阻断、角色保护、治理后台、审计、CI、Playwright、密钥扫描、限流与错误脱敏；部署矩阵和历史性能/许可基线 | 业务生产身份代理、备份恢复、监控、专项可访问性审计及专家/销售验收未完成 |
+| 阶段 7：单 Agent 营销分析助手 | 功能切片完成，生产待批准 | 7 个只读工具、结构化卡片、证据不足保护、审计、共享 PostgreSQL 限流和 mock model 测试 | 正式模型/区域/预算、身份关联和保留策略未完成 |
+| 阶段 8：安全、性能与试点发布 | 公开作品已上线，业务生产未完成 | 公开只读站、管理路由阻断、角色保护、治理后台、审计、CI、Playwright/axe 核心 smoke、密钥扫描、限时依赖门禁、安全响应头、限流与错误脱敏；部署矩阵和历史性能/许可基线 | 业务生产身份代理、备份恢复、监控、完整人工可访问性审计及专家/销售验收未完成 |
 
 ### 用户阶段编号对照
 

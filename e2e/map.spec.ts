@@ -1,5 +1,32 @@
 import { expect, test } from "@playwright/test";
 
+import { WORLD_COUNTRIES_GEOJSON_URL } from "../src/lib/geo-assets";
+
+const worldCountriesRequest = `**${WORLD_COUNTRIES_GEOJSON_URL}`;
+
+test("shows an explicit error and recovers when country geometry fails", async ({
+  page,
+}) => {
+  await page.route(worldCountriesRequest, async (route) => {
+    await route.fulfill({ body: "upstream unavailable", status: 503 });
+  });
+  await page.goto("/map");
+
+  await expect(
+    page.getByRole("alert").filter({ hasText: "国家边界加载失败" }),
+  ).toBeVisible();
+  await expect(page.getByText("有可查看数据")).toHaveCount(0);
+
+  await page.unroute(worldCountriesRequest);
+  await page.getByRole("button", { name: "重试加载地图" }).click();
+
+  await expect(page.getByTestId("map-canvas-container")).toHaveAttribute(
+    "data-map-ready",
+    "true",
+  );
+  await expect(page.getByText("有可查看数据")).toBeVisible();
+});
+
 test("opens a shareable country URL by clicking the map polygon", async ({
   page,
 }, testInfo) => {
@@ -39,6 +66,18 @@ test("opens a shareable country URL by clicking the map polygon", async ({
   await expect(
     page.getByRole("heading", { name: "China — demo fixture" }),
   ).toBeVisible();
+});
+
+test("includes a country snapshot in the server-rendered share-page HTML", async ({
+  request,
+}) => {
+  const response = await request.get("/countries/CHN?asOf=2026-01-20");
+  expect(response.ok()).toBe(true);
+  const html = await response.text();
+
+  expect(html).toContain("SERVER-RENDERED COUNTRY SNAPSHOT");
+  expect(html).toContain("country-server-fallback");
+  expect(html).toContain("2026-01-20");
 });
 
 test("keeps the map tooltip inside a narrow pointer viewport", async ({
@@ -153,12 +192,19 @@ test("opens, restores, switches, and shows an explicit no-data country", async (
   await expect(
     page.getByRole("heading", { name: "适用司法辖区" }),
   ).toBeVisible();
-  await expect(page.getByText(/成员关系来源：/).first()).toBeVisible();
+  const jurisdictionSection = page.locator(
+    'section[aria-labelledby="country-jurisdictions"]',
+  );
+  await expect(jurisdictionSection.getByText(/成员关系来源：/).first())
+    .toBeVisible();
   await expect(
-    page
-      .getByRole("link", { name: /Fictional emissions bulletin/ })
+    jurisdictionSection
+      .getByText(/Fictional emissions bulletin（虚构证据，无外部链接）/)
       .first(),
-  ).toHaveAttribute("href", "https://example.invalid/demo/regulations");
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Fictional emissions bulletin/ }),
+  ).toHaveCount(0);
 
   await page.reload();
   await expect(page).toHaveURL(/\/countries\/CHN$/);
@@ -230,11 +276,13 @@ test("keeps AI access in the dedicated chat workspace", async ({ page }) => {
     "输入问题，可附上文件或图片…",
   );
   await expect(chatInput).toBeEditable();
-  await expect(chatInput).toBeFocused();
+  await expect(chatInput).not.toBeFocused();
   await expect(
     assistant.getByRole("button", { name: "发送问题" }),
   ).toBeDisabled();
-  await expect(assistant.getByRole("log", { name: "AI 对话记录" })).toBeVisible();
+  await expect(
+    assistant.getByRole("region", { name: "AI 对话记录" }),
+  ).toBeVisible();
 });
 
 test("carries explicit country filters into the chat workspace", async ({
@@ -283,6 +331,14 @@ test("carries explicit country filters into the chat workspace", async ({
   await page.goto(
     "/countries/CHN?applicationScope=non-road&asOf=2026-01-20&powerKw=100&productModelCode=DEMO-ENG-100",
   );
+  const applicabilitySummary = page.getByTestId(
+    "country-applicability-summary",
+  );
+  await expect(applicabilitySummary).toContainText(
+    "non-road · 100 kW · 截止 2026-01-20",
+  );
+  await expect(applicabilitySummary).toContainText("NOX：3.5 g/kWh");
+  await expect(applicabilitySummary).toContainText("功率带 [0, 560) kW");
   const filteredChatLink = page.getByRole("link", {
     name: "在对话中分析",
   });
@@ -403,6 +459,15 @@ test("country APIs return structured database-backed states", async ({
     status: "no_data",
   });
 
+  const unknownResponse = await request.get("/api/countries/ZZZ");
+  expect(unknownResponse.status()).toBe(404);
+  await expect(unknownResponse.json()).resolves.toEqual({
+    error: {
+      code: "COUNTRY_NOT_FOUND",
+      message: "未找到该 ISO3 对应的国家目录记录。",
+    },
+  });
+
   const badAsOfResponse = await request.get(
     "/api/countries/CHN?asOf=not-a-date",
   );
@@ -442,6 +507,42 @@ test("country APIs return structured database-backed states", async ({
     },
   });
   expect(blankPowerResponse.status()).toBe(400);
+});
+
+test("keeps a catalog country without geometry selectable and rejects unknown pages", async ({
+  page,
+}) => {
+  await page.goto("/map");
+
+  const countrySelect = page.getByLabel("选择国家");
+  await expect(countrySelect.locator('option[value="MUS"]')).toHaveText(
+    /Mauritius · MUS · 暂无地图边界/,
+  );
+  await countrySelect.selectOption("MUS");
+  await expect(page).toHaveURL(/\/countries\/MUS$/);
+  await expect(page.getByText(/该目录国家暂缺地图边界/)).toBeVisible();
+
+  await page.goto("/countries/ZZZ");
+  await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+  await expect(page.getByTestId("country-no-data")).toHaveCount(0);
+});
+
+test("shows an explicit homepage empty state when no reviewed country is public", async ({
+  page,
+}) => {
+  await page.route("**/api/countries", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({ countries: [], status: "ok" }),
+      contentType: "application/json",
+      status: 200,
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("暂无已核验国家入口")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "打开国家目录" }),
+  ).toHaveAttribute("href", "/map");
 });
 
 test("shared filter URLs reproduce the product-fit evaluation", async ({
@@ -509,6 +610,31 @@ test("keeps every product-fit control interactive inside the country drawer", as
   await expect(evaluationDate).toHaveValue("2026-01-20");
   await expect(page.getByRole("button", { name: "运行确定性匹配" })).toBeEnabled();
   await expect(page.getByRole("button", { name: "关闭国家详情" })).toBeEnabled();
+});
+
+test("moves focus into the country drawer and restores it after close", async ({
+  page,
+}) => {
+  await page.goto("/map");
+  const countrySelect = page.getByLabel("选择国家");
+  await countrySelect.focus();
+  await countrySelect.selectOption("CHN");
+
+  const closeButton = page.getByRole("button", { name: "关闭国家详情" });
+  await expect(closeButton).toBeFocused();
+  await closeButton.click();
+
+  await expect(page).toHaveURL(/\/map$/);
+  await expect(countrySelect).toBeFocused();
+
+  const chinaShortcut = page.getByRole("button", {
+    name: /China — demo fixture · CHN/,
+  });
+  await chinaShortcut.click();
+  await expect(closeButton).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(/\/map$/);
+  await expect(chinaShortcut).toBeFocused();
 });
 
 test("does not restore a previous country after a pending fit evaluation", async ({
@@ -602,6 +728,8 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   const countryRegulationCard = page
     .getByTestId("country-regulation-card")
     .first();
+  await expect(countryRegulationCard.getByText(/适用辖区：/)).toBeHidden();
+  await countryRegulationCard.getByText("完整追溯信息").click();
   await expect(countryRegulationCard.getByText(/适用辖区：/)).toBeVisible();
   await expect(countryRegulationCard.getByText(/辖区来源：/)).toBeVisible();
   await expect(
@@ -613,7 +741,9 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
     "role",
     "status",
   );
-  await expect(page.getByText("演示匹配", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("product-fit-status-fit")).toContainText(
+    "法规/认证适配：演示匹配",
+  );
   await expect(
     page.getByText("包含虚构 Demo 证据；不可用于报价、认证声明或销售承诺。"),
   ).toBeVisible();
@@ -621,7 +751,7 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await expect(page.getByText("产品记录追溯")).toBeVisible();
   const productTrace = page.getByTestId("product-record-trace");
   await expect(productTrace.getByText("产品供应期")).toBeVisible();
-  await expect(productTrace.getByText("2025-01-01 → 开放")).toBeVisible();
+  await expect(productTrace.getByText("2025-01-01 → 2030-01-01")).toBeVisible();
   await expect(page.getByText(/法规记录 ID/).first()).toBeVisible();
   await expect(page.getByText("适用性证据").first()).toBeVisible();
   await expect(page.getByText(/辖区来源：/).first()).toBeVisible();
@@ -630,9 +760,14 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await expect(
     page
       .getByTestId("product-fit-result")
-      .getByRole("link", { name: /Fictional emissions bulletin/ })
+      .getByText(/Fictional emissions bulletin（虚构证据，无外部链接）/)
       .first(),
-  ).toHaveAttribute("href", "https://example.invalid/demo/regulations");
+  ).toBeVisible();
+  await expect(
+    page
+      .getByTestId("product-fit-result")
+      .getByRole("link", { name: /Fictional emissions bulletin/ }),
+  ).toHaveCount(0);
 
   await page.getByLabel("产品型号").selectOption("DEMO-ENG-200");
   await expect(page.getByLabel("产品型号")).toHaveValue("DEMO-ENG-200");

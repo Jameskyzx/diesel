@@ -3,17 +3,18 @@
 import { Database, Globe2, LoaderCircle, RotateCcw } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
-import { CountryDetailDrawer } from "@/components/countries/country-detail-drawer";
 import { Button } from "@/components/ui/button";
 import {
-  countryGeoIndexSchema,
   countryMapResponseSchema,
-  type CountryGeoIndex,
+  type CountryDetailResponse,
+  type CountryDirectory,
+  type CountryMapResponse,
   type CountryMapSummary,
 } from "@/features/countries/schemas";
-import { hasDetailedCountryCoverage } from "@/features/database/schemas";
+import { selectCountryShortcuts } from "@/features/countries/country-shortcuts";
 import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
 import type { ProductFitInitialFilters } from "@/components/products/product-fit-panel";
 
@@ -21,18 +22,24 @@ type ExplorerData =
   | { status: "loading" }
   | { message: string; status: "error" }
   | {
-      countryIndex: CountryGeoIndex;
+      countryIndex: CountryDirectory;
       countries: CountryMapSummary[];
       status: "ready";
     };
 
 type CountryExplorerProps = {
+  initialCountryDetail?: CountryDetailResponse;
   initialCountryIso3?: string;
+  initialCountryIndex: CountryDirectory;
+  initialCountryPanel?: ReactNode;
   initialFilters?: ProductFitInitialFilters;
+  initialMapResponse?: CountryMapResponse;
 };
 
-const emptyCountryIndex: CountryGeoIndex = [];
 const emptyCountrySummaries: CountryMapSummary[] = [];
+const restoreCountrySelectFocusKey =
+  "diesel:restore-country-select-focus";
+const countryFocusTargetKey = "diesel:country-focus-target";
 
 function MapModuleLoading() {
   return (
@@ -65,12 +72,53 @@ const WorldMap = dynamic(
   },
 );
 
+function CountryDrawerLoading() {
+  return (
+    <aside
+      aria-busy="true"
+      aria-live="polite"
+      className="fixed inset-y-0 right-0 z-50 grid h-dvh w-[min(94vw,34rem)] place-items-center border-l bg-background p-6 shadow-2xl"
+      role="status"
+    >
+      <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+        <LoaderCircle
+          aria-hidden="true"
+          className="size-4 animate-spin motion-reduce:animate-none"
+        />
+        正在加载国家详情界面…
+      </span>
+    </aside>
+  );
+}
+
+const CountryDetailDrawer = dynamic(
+  async () => {
+    const drawerModule = await import(
+      "@/components/countries/country-detail-drawer"
+    );
+    return drawerModule.CountryDetailDrawer;
+  },
+  { loading: CountryDrawerLoading },
+);
+
 export function CountryExplorer({
+  initialCountryDetail,
   initialCountryIso3,
+  initialCountryIndex,
+  initialCountryPanel,
   initialFilters,
+  initialMapResponse,
 }: CountryExplorerProps) {
   const router = useRouter();
-  const [data, setData] = useState<ExplorerData>({ status: "loading" });
+  const [data, setData] = useState<ExplorerData>(() =>
+    initialMapResponse
+      ? {
+          countries: initialMapResponse.countries,
+          countryIndex: initialCountryIndex,
+          status: "ready",
+        }
+      : { status: "loading" },
+  );
   const [reloadKey, setReloadKey] = useState(0);
   const cancelPendingProductEvaluationRef = useRef<(() => void) | null>(null);
   const selectedIso3 = initialCountryIso3 ?? null;
@@ -87,33 +135,28 @@ export function CountryExplorer({
   );
 
   useEffect(() => {
+    if (initialMapResponse && reloadKey === 0) {
+      return;
+    }
+
     const abortController = new AbortController();
 
-    void Promise.all([
-      fetch("/api/countries", {
-        headers: { accept: "application/json" },
-        signal: abortController.signal,
-      }).then(async (response) => {
+    void fetch("/api/countries", {
+      headers: { accept: "application/json" },
+      signal: abortController.signal,
+    })
+      .then(async (response) => {
         if (!response.ok) {
           throw new Error(
             await parseApiErrorMessage(response, "国家摘要请求失败"),
           );
         }
         return countryMapResponseSchema.parse(await response.json());
-      }),
-      fetch("/geo/world-countries-index.json", {
-        signal: abortController.signal,
-      }).then(async (response) => {
-        if (!response.ok) {
-          throw new Error("国家索引请求失败");
-        }
-        return countryGeoIndexSchema.parse(await response.json());
-      }),
-    ])
-      .then(([mapResponse, countryIndex]) => {
+      })
+      .then((mapResponse) => {
         setData({
           countries: mapResponse.countries,
-          countryIndex,
+          countryIndex: initialCountryIndex,
           status: "ready",
         });
       })
@@ -131,11 +174,17 @@ export function CountryExplorer({
       });
 
     return () => abortController.abort();
-  }, [reloadKey]);
+  }, [initialCountryIndex, initialMapResponse, reloadKey]);
 
   const selectCountry = useCallback(
     (iso3: string) => {
       cancelPendingProductEvaluation();
+      const activeElement = document.activeElement;
+      const focusTarget =
+        activeElement instanceof HTMLElement && activeElement.id
+          ? activeElement.id
+          : "country-select";
+      sessionStorage.setItem(countryFocusTargetKey, focusTarget);
       router.push(`/countries/${iso3}`);
     },
     [cancelPendingProductEvaluation, router],
@@ -143,16 +192,44 @@ export function CountryExplorer({
 
   const closeCountry = useCallback(() => {
     cancelPendingProductEvaluation();
+    sessionStorage.setItem(restoreCountrySelectFocusKey, "true");
     router.push("/map");
   }, [cancelPendingProductEvaluation, router]);
 
   const countryIndex =
-    data.status === "ready" ? data.countryIndex : emptyCountryIndex;
+    data.status === "ready" ? data.countryIndex : initialCountryIndex;
   const countries =
     data.status === "ready" ? data.countries : emptyCountrySummaries;
   const selectedName =
     countryIndex.find(({ iso3 }) => iso3 === selectedIso3)?.name ??
     selectedIso3;
+  const selectedDirectoryEntry = countryIndex.find(
+    ({ iso3 }) => iso3 === selectedIso3,
+  );
+  const countryDetailContextAsOf =
+    initialCountryDetail?.status === "available"
+      ? initialCountryDetail.asOf
+      : (initialFilters?.asOf ?? "current");
+  const countryShortcuts = selectCountryShortcuts(countries);
+
+  useEffect(() => {
+    if (selectedIso3 !== null || data.status !== "ready") {
+      return;
+    }
+    if (sessionStorage.getItem(restoreCountrySelectFocusKey) !== "true") {
+      return;
+    }
+
+    sessionStorage.removeItem(restoreCountrySelectFocusKey);
+    const focusTarget =
+      sessionStorage.getItem(countryFocusTargetKey) ?? "country-select";
+    sessionStorage.removeItem(countryFocusTargetKey);
+    const frame = requestAnimationFrame(() => {
+      const target = document.getElementById(focusTarget);
+      (target ?? document.getElementById("country-select"))?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [data.status, selectedIso3]);
 
   return (
     <main className="page-shell py-8 sm:py-10">
@@ -193,6 +270,7 @@ export function CountryExplorer({
             {countryIndex.map((country) => (
               <option key={country.iso3} value={country.iso3}>
                 {country.name} · {country.iso3}
+                {country.hasGeometry ? "" : " · 暂无地图边界"}
               </option>
             ))}
           </select>
@@ -200,20 +278,17 @@ export function CountryExplorer({
       </section>
 
       <section
-        aria-label="已录入国家快捷入口"
+        aria-label="精选国家快捷入口"
         className="mb-5 flex min-h-10 items-center gap-2 overflow-x-auto pb-1"
       >
         <span className="mr-1 inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-emerald-900/65">
           <Database aria-hidden="true" className="size-3.5" />
-          已录入
+          精选入口
         </span>
-        {countries
-          .filter((country) =>
-            hasDetailedCountryCoverage(country.dataCoverageStatus),
-          )
-          .map((country) => (
+        {countryShortcuts.map((country) => (
             <Button
               aria-pressed={selectedIso3 === country.iso3}
+              id={`country-shortcut-${country.iso3}`}
               key={country.iso3}
               onClick={() => selectCountry(country.iso3)}
               size="sm"
@@ -227,11 +302,7 @@ export function CountryExplorer({
               {country.nameEn} · {country.iso3}
             </Button>
           ))}
-        {countries.length > 0 &&
-        countries.every(
-          (country) =>
-            !hasDetailedCountryCoverage(country.dataCoverageStatus),
-        ) ? (
+        {countries.length > 0 && countryShortcuts.length === 0 ? (
           <span className="text-xs text-muted-foreground">
             暂无已录入详情的国家
           </span>
@@ -291,19 +362,37 @@ export function CountryExplorer({
         边界数据：Natural Earth 1:110m（公共领域）。国家详情以 ISO3
         与数据库连接。
         {selectedName ? ` 当前选择：${selectedName}。` : ""}
+        {selectedDirectoryEntry && !selectedDirectoryEntry.hasGeometry
+          ? " 该目录国家暂缺地图边界，仍可通过选择器打开结构化详情。"
+          : ""}
       </p>
 
-      <CountryDetailDrawer
-        cancelPendingProductEvaluation={cancelPendingProductEvaluation}
-        countryIndex={countryIndex}
-        initialFilters={initialFilters}
-        iso3={selectedIso3}
-        onClose={closeCountry}
-        onSelectCountry={selectCountry}
-        registerProductFitNavigationGuard={
-          registerProductFitNavigationGuard
-        }
-      />
+      {selectedIso3 ? (
+        <CountryDetailDrawer
+          cancelPendingProductEvaluation={cancelPendingProductEvaluation}
+          countryIndex={countryIndex}
+          initialFilters={initialFilters}
+          initialResponse={initialCountryDetail}
+          iso3={selectedIso3}
+          key={`${selectedIso3}:${countryDetailContextAsOf}`}
+          onClose={closeCountry}
+          onSelectCountry={selectCountry}
+          registerProductFitNavigationGuard={
+            registerProductFitNavigationGuard
+          }
+        />
+      ) : null}
+
+      {selectedIso3 && initialCountryPanel ? (
+        <aside
+          aria-label="国家详情服务端初始快照"
+          className="country-server-fallback fixed inset-y-0 right-0 z-40 h-dvh w-[min(94vw,34rem)] overflow-y-auto border-l bg-background shadow-2xl"
+          data-testid="country-server-initial"
+          role="region"
+        >
+          {initialCountryPanel}
+        </aside>
+      ) : null}
     </main>
   );
 }

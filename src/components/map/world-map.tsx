@@ -15,12 +15,14 @@ import {
   NavigationControl,
 } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, LoaderCircle, RotateCcw } from "lucide-react";
 
 import {
   countryGeoFeaturePropertiesSchema,
   type CountryMapSummary,
 } from "@/features/countries/schemas";
 import { hasDetailedCountryCoverage } from "@/features/database/schemas";
+import { WORLD_COUNTRIES_GEOJSON_URL } from "@/lib/geo-assets";
 
 const COUNTRY_SOURCE = "world-countries";
 const COUNTRY_FILL_LAYER = "country-fill";
@@ -152,7 +154,10 @@ export function WorldMap({
   const hoveredRef = useRef<string | null>(null);
   const selectedRef = useRef<string | null>(selectedIso3);
   const onSelectRef = useRef(onSelectCountry);
-  const [mapReady, setMapReady] = useState(false);
+  const [loadState, setLoadState] = useState<
+    "error" | "loading" | "ready"
+  >("loading");
+  const [retryKey, setRetryKey] = useState(0);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   const countriesByIso3 = useMemo(
@@ -181,6 +186,13 @@ export function WorldMap({
       zoom: 1.15,
     });
     mapRef.current = map;
+    setLoadState("loading");
+    let sourceReady = false;
+    const loadTimeout = setTimeout(() => {
+      if (!sourceReady) {
+        setLoadState("error");
+      }
+    }, 15_000);
 
     map.addControl(
       new AttributionControl({
@@ -250,14 +262,29 @@ export function WorldMap({
         event.sourceId === COUNTRY_SOURCE &&
         map.isSourceLoaded(COUNTRY_SOURCE)
       ) {
-        setMapReady(true);
+        if (map.querySourceFeatures(COUNTRY_SOURCE).length === 0) {
+          clearTimeout(loadTimeout);
+          setLoadState("error");
+          return;
+        }
+        sourceReady = true;
+        clearTimeout(loadTimeout);
+        setLoadState("ready");
+      }
+    };
+
+    const handleMapError = () => {
+      if (!sourceReady) {
+        clearTimeout(loadTimeout);
+        setLoadState("error");
       }
     };
 
     map.on("sourcedata", handleSourceData);
+    map.on("error", handleMapError);
     map.on("load", () => {
       map.addSource(COUNTRY_SOURCE, {
-        data: "/geo/world-countries.geojson",
+        data: WORLD_COUNTRIES_GEOJSON_URL,
         promoteId: "ISO3",
         type: "geojson",
       });
@@ -279,10 +306,11 @@ export function WorldMap({
     });
 
     return () => {
+      clearTimeout(loadTimeout);
       map.remove();
       mapRef.current = null;
     };
-  }, [countries, countriesByIso3]);
+  }, [countries, countriesByIso3, retryKey]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -311,18 +339,58 @@ export function WorldMap({
     >
       <div
         className="!absolute inset-0 h-full w-full"
-        data-map-ready={mapReady}
+        data-map-ready={loadState === "ready"}
         data-testid="map-canvas-container"
         ref={containerRef}
       />
-      <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-wrap gap-2 text-xs sm:left-5 sm:top-5">
-        <span className="rounded-full border border-emerald-900/10 bg-[#173d31]/95 px-3.5 py-2 font-medium text-white shadow-sm backdrop-blur">
-          有数据（Demo / 已核验）
-        </span>
-        <span className="rounded-full border border-black/[0.06] bg-white/90 px-3.5 py-2 font-medium text-slate-600 shadow-sm backdrop-blur">
-          暂无数据
-        </span>
-      </div>
+      {loadState === "loading" ? (
+        <div
+          className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[#e9f2f3]/85 text-sm text-slate-600 backdrop-blur-sm"
+          role="status"
+        >
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 shadow-sm">
+            <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+            正在加载国家边界…
+          </span>
+        </div>
+      ) : null}
+      {loadState === "error" ? (
+        <div
+          className="absolute inset-0 z-30 grid place-items-center bg-[#f7f4ed] p-6 text-center"
+          role="alert"
+        >
+          <div className="max-w-sm">
+            <AlertTriangle
+              aria-hidden="true"
+              className="mx-auto size-8 text-amber-700"
+            />
+            <p className="mt-3 font-semibold text-slate-950">
+              国家边界加载失败
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              当前画布不能用于判断国家是否有数据，请重试加载边界资源。
+            </p>
+            <button
+              className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-4 text-sm font-semibold text-[#17382e] hover:bg-emerald-50"
+              onClick={() => setRetryKey((key) => key + 1)}
+              type="button"
+            >
+              <RotateCcw aria-hidden="true" className="size-4" />
+              重试加载地图
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {loadState === "ready" ? (
+        <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-wrap gap-2 text-xs sm:left-5 sm:top-5">
+          <span className="rounded-full border border-emerald-900/10 bg-[#173d31]/95 px-3.5 py-2 font-medium text-white shadow-sm backdrop-blur">
+            有可查看数据
+          </span>
+          <span className="rounded-full border border-black/[0.06] bg-white/90 px-3.5 py-2 font-medium text-slate-600 shadow-sm backdrop-blur">
+            暂无数据
+          </span>
+        </div>
+      ) : null}
       {tooltip ? (
         <div
           className="pointer-events-none absolute z-20 w-56 rounded-2xl border border-black/[0.08] bg-[#fffefa]/95 p-4 shadow-[0_20px_50px_rgb(24_53_44_/_0.2)] backdrop-blur"

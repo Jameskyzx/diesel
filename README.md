@@ -7,6 +7,7 @@
 [在线 Demo](https://jamesky.site) ·
 [全球地图](https://jamesky.site/map) ·
 [AI 分析工作区](https://jamesky.site/chat) ·
+[中英双语 FDE Case Study](docs/FDE_CASE_STUDY.md) ·
 [当前项目状态](docs/STATUS.md) ·
 [三角色模拟评估](docs/SIMULATED_USER_EVALUATION.md)
 
@@ -28,7 +29,7 @@
 
 1. 在[全球地图](https://jamesky.site/map)选择国家，得到可分享的 ISO3 URL。
 2. 在国家详情核对当前 `effective`、未来 `adopted`、来源和最近核验时间。
-3. 输入应用场景、功率和日期，运行 `product-fit-v1` 确定性适配判断。
+3. 输入应用场景、功率和日期，运行 `product-fit-v2`：分别查看法规/认证适配、查询日供应状态和组合后的商业准备度。
 4. 在[AI 工作区](https://jamesky.site/chat)请求比较或销售简报；事实、来源卡片与
    AI 解释分层显示。
 5. 对无数据、过期来源、proposed 法规或缺失认证明确返回缺口，不做乐观推断。
@@ -41,7 +42,8 @@
 
 - **怎样阻止 LLM“有礼貌地胡说”**：所有事实工具都使用 Zod 输入/输出；服务端在
   流级缓冲模型文本，任一工具 `no_data`、失败或证据不足时丢弃肯定文本，改为
-  可执行的证据缺口说明。
+  可执行的证据缺口说明。证据合同还会逐步缩小模型可见工具：缺什么只开放什么，
+  证据齐全或失败后停止工具循环。
 - **怎样正确处理法规时态**：状态、业务有效期、核验时间分别建模；查询统一使用
   `[from,to)`、ISO3、scope、功率和 `asOf`。服务端从 `asOf` 派生
   `statusAtAsOf` 并保留记录状态 `recordStatus`：现在已 superseded 的法规仍可在
@@ -80,6 +82,15 @@ CHN 的 non-road 100 kW 产品是否适配？
 ```
 
 面试讲解顺序、预期画面和失败场景见 [三分钟演示脚本](docs/DEMO.md)。
+
+需要演示数据接入与治理写入时，使用隔离的本地实施入口：
+
+```bash
+pnpm demo:fde
+```
+
+它只绑定 loopback，并持续显示 `LOCAL / MUTABLE / FICTIONAL`；固定向导覆盖错误 CSV
+Preview、Draft、Review/Publish、查询读回和 Archive，不会接触公开数据库。
 
 ## 架构
 
@@ -128,17 +139,31 @@ flowchart LR
 pnpm lint
 pnpm typecheck
 pnpm test
+pnpm test:coverage
+pnpm ai:eval
+pnpm ai:eval:live
 pnpm db:check
 pnpm build
 pnpm playwright test
+pnpm test:e2e:demo
+pnpm test:e2e:fde
+pnpm audit:security
 ```
+
+`pnpm ai:eval` 是不调用外部模型的对话 harness。`pnpm ai:eval:live` 使用隔离的
+PGlite 虚构事实串行运行 18 条版本化案例，并在 18 次请求、80,000 tokens 或单例 90 秒
+任一边界停止；脱敏报告不保存 prompt、完整模型文本或密钥。live eval 不进入普通 PR CI，
+未完整运行或未达阈值时必须保留为失败/部分报告，不能包装成模型成功率。
 
 GitHub CI 对每次 PR/`master` 推送执行：
 
-- ESLint、TypeScript strict、Vitest、Drizzle migration check、生产构建；
-- Chromium 桌面/移动关键流程；
-- gitleaks 全历史密钥扫描；
-- `pnpm audit --audit-level=critical`。
+- ESLint、TypeScript strict、分层 coverage、Drizzle migration check、生产构建；
+- Chromium 桌面/移动关键流程、WebKit + axe 核心 smoke，以及由正式 `pnpm demo`
+  入口启动的独立桌面/移动作品契约；
+- 真实 PostgreSQL + pgvector 空库 Migration 和上一版本脏数据升级 smoke；
+- gitleaks 全历史密钥扫描及不允许整文件绕过的回归；
+- 每周 Dependabot 与[限时依赖公告策略](docs/DEPENDENCY_SECURITY.md)：新 high、过期例外
+  或任一 critical 公告都会阻断。
 
 测试覆盖有效期与功率边界、proposed/effective 隔离、完整来源链、产品适配三态、
 AI 伪造事实对抗、请求体限制、错误脱敏、迟到响应竞态、治理权限与发布事务。
@@ -168,6 +193,8 @@ Copy-Item .env.example .env.local
 - `AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`：可选的服务端 OpenAI-compatible 文本模型；
 - `AI_MULTIMODAL_MODEL`：可选的同端点视觉模型；只有图片上传需要，且必须同时支持
   图片输入与 Function Calling；
+- `AI_CHAT_RATE_LIMIT_BACKEND`：生产使用 `postgres` 跨实例共享配额；`memory` 只用于
+  单进程开发、测试和离线 Demo；
 - `KNOWLEDGE_STORAGE_ROOT`：开发期 `.data` 下的文档目录；
 - `ADMIN_ROLE_BINDINGS_JSON`：受可信身份代理保护的管理角色映射。
 
@@ -175,6 +202,15 @@ Copy-Item .env.example .env.local
 
 ```bash
 pnpm exec tsx --env-file=.env.local scripts/db/ingest-accepted-fixtures.ts
+```
+
+本地文档存储可执行孤儿扫描；默认只报告至少 24 小时未被数据库引用的内容。共享或
+生产环境禁止直接向扫描命令传 `--delete`，只能使用取得治理维护锁的删除脚本；也可用
+`--minimum-age-hours=N` 调高保护窗口：
+
+```bash
+pnpm knowledge:orphans
+pnpm knowledge:orphans:delete --minimum-age-hours=48
 ```
 
 生产/共享环境不得使用本地文件存储、Demo 数据库或客户端伪造的身份 Header。完整

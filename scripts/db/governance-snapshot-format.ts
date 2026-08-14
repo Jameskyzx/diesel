@@ -2,6 +2,11 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 import { z } from "zod";
 
+import {
+  marketMetricDecimalSchema,
+  regulationLimitDecimalSchema,
+} from "../../src/features/database/schemas";
+
 export const governanceTableNames = [
   "countries",
   "country_jurisdictions",
@@ -10,6 +15,7 @@ export const governanceTableNames = [
   "data_sources",
   "jurisdictions",
   "market_import_batches",
+  "market_metrics",
   "regulation_limits",
   "regulations",
 ] as const;
@@ -74,7 +80,8 @@ const preciseTimestampConfig: Record<
     ]),
   },
   country_jurisdictions: {
-    key: (row) => `${String(row.countryIso3)}:${String(row.jurisdictionId)}`,
+    key: (row) =>
+      `${String(row.countryIso3)}:${String(row.jurisdictionId)}:${String(row.validFrom)}`,
     properties: new Set([
       "verifiedAt",
       "createdAt",
@@ -117,6 +124,15 @@ const preciseTimestampConfig: Record<
   market_import_batches: {
     key: (row) => String(row.id),
     properties: new Set(["committedAt", "createdAt"]),
+  },
+  market_metrics: {
+    key: (row) => String(row.id),
+    properties: new Set([
+      "verifiedAt",
+      "createdAt",
+      "updatedAt",
+      "archivedAt",
+    ]),
   },
   regulation_limits: {
     key: (row) => String(row.id),
@@ -326,10 +342,6 @@ const regulationRowSchema = z
     "Regulation validity end must follow its start",
   );
 
-const decimalSchema = z
-  .string()
-  .regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/, "Expected a non-negative decimal");
-
 const limitRowSchema = z
   .object({
     applicationScope: z.enum([
@@ -348,7 +360,7 @@ const limitRowSchema = z
     engineTypeCode: z.string(),
     id: uuidSchema,
     isDemo: z.boolean(),
-    limitValue: decimalSchema,
+    limitValue: regulationLimitDecimalSchema,
     measurementBasis: z.string().nullable(),
     pollutantCode: z.string(),
     powerMaxKw: z.number().nonnegative().nullable(),
@@ -440,6 +452,44 @@ const marketImportBatchRowSchema = z
     "Import batch counts must balance",
   );
 
+const marketMetricRowSchema = z
+  .object({
+    applicationScope: z
+      .enum([
+        "on-road",
+        "non-road",
+        "marine",
+        "generator-set",
+        "agriculture",
+        "construction",
+        "on-road-truck",
+        "on-road-bus",
+      ])
+      .nullable(),
+    archivedAt: nullableTimestampSchema,
+    countryIso3: iso3Schema,
+    createdAt: timestampSchema,
+    currencyCode: z.string().regex(/^[A-Z]{3}$/).nullable(),
+    dataSourceId: uuidSchema,
+    definition: z.string(),
+    id: uuidSchema,
+    isDemo: z.boolean(),
+    methodologyVersion: z.string(),
+    metricCode: z.string(),
+    metricName: z.string(),
+    periodEnd: dateSchema,
+    periodStart: dateSchema,
+    publishedOn: nullableDateSchema,
+    unitCode: z.string(),
+    updatedAt: timestampSchema,
+    valueNumeric: marketMetricDecimalSchema,
+    verifiedAt: timestampSchema,
+  })
+  .strict()
+  .refine((row) => row.periodEnd > row.periodStart, {
+    message: "Market metric period end must follow its start",
+  });
+
 const changeLogRowSchema = z
   .object({
     action: z.enum([
@@ -486,6 +536,7 @@ const tablesSchema = z
     data_sources: z.array(sourceRowSchema),
     jurisdictions: z.array(jurisdictionRowSchema),
     market_import_batches: z.array(marketImportBatchRowSchema),
+    market_metrics: z.array(marketMetricRowSchema),
     regulation_limits: z.array(limitRowSchema),
     regulations: z.array(regulationRowSchema),
   })
@@ -514,7 +565,7 @@ function reportDuplicateKeys(
 const governanceSnapshotSchema = z
   .object({
     exportedAt: timestampSchema,
-    formatVersion: z.literal(3),
+    formatVersion: z.literal(4),
     tableCounts: tableCountsSchema,
     tables: tablesSchema,
   })
@@ -562,13 +613,15 @@ const governanceSnapshotSchema = z
     );
     reportDuplicateKeys(
       snapshot.tables.country_jurisdictions,
-      (row) => `${String(row.countryIso3)}:${String(row.jurisdictionId)}`,
+      (row) =>
+        `${String(row.countryIso3)}:${String(row.jurisdictionId)}:${String(row.validFrom)}`,
       context,
       ["tables", "country_jurisdictions"],
     );
     for (const tableName of [
       "regulations",
       "regulation_limits",
+      "market_metrics",
       "data_governance_drafts",
       "market_import_batches",
       "data_change_logs",
@@ -593,6 +646,20 @@ const governanceSnapshotSchema = z
       (row) => `${String(row.jurisdictionId)}:${String(row.citationCode)}`,
       context,
       ["tables", "regulations"],
+    );
+    reportDuplicateKeys(
+      snapshot.tables.market_metrics,
+      (row) =>
+        [
+          row.countryIso3,
+          row.metricCode,
+          row.applicationScope ?? "<global>",
+          row.periodStart,
+          row.periodEnd,
+          row.dataSourceId,
+        ].join(":"),
+      context,
+      ["tables", "market_metrics"],
     );
 
     const sourceIds = new Set(snapshot.tables.data_sources.map((row) => row.id));
@@ -693,6 +760,20 @@ const governanceSnapshotSchema = z
       requireReference(
         sourceIds.has(row.dataSourceId),
         "regulation_limits",
+        index,
+        "dataSourceId",
+      );
+    });
+    snapshot.tables.market_metrics.forEach((row, index) => {
+      requireReference(
+        countryIds.has(row.countryIso3),
+        "market_metrics",
+        index,
+        "countryIso3",
+      );
+      requireReference(
+        sourceIds.has(row.dataSourceId),
+        "market_metrics",
         index,
         "dataSourceId",
       );

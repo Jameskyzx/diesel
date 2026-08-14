@@ -530,6 +530,12 @@ export function createKnowledgeRepository<
         .orderBy(desc(documents.createdAt))
         .limit(50);
     },
+    async listDocumentStoragePaths() {
+      return database
+        .select({ storagePath: documents.storagePath })
+        .from(documents)
+        .where(isNotNull(documents.storagePath));
+    },
     async listFilterOptions() {
       const [countryRows, jurisdictionRows] = await Promise.all([
         database
@@ -557,22 +563,26 @@ export function createKnowledgeRepository<
       };
     },
     async markDocumentFailed(documentId: string, message: string) {
-      await database
-        .update(documents)
-        .set({
-          processedAt: new Date(),
-          processingError: message,
-          processingStatus: "failed",
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(documents.id, documentId),
-            eq(documents.governanceStatus, "draft"),
-            eq(documents.processingStatus, "processing"),
-            isNull(documents.archivedAt),
-          ),
-        );
+      await database.transaction(async (transaction) => {
+        await assertGovernanceWriteAllowed(transaction);
+        const now = new Date();
+        await transaction
+          .update(documents)
+          .set({
+            processedAt: now,
+            processingError: message,
+            processingStatus: "failed",
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(documents.id, documentId),
+              eq(documents.governanceStatus, "draft"),
+              eq(documents.processingStatus, "processing"),
+              isNull(documents.archivedAt),
+            ),
+          );
+      });
     },
     async searchCandidates(
       query: HybridSearchQuery,

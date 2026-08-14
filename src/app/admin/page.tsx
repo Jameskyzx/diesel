@@ -7,6 +7,7 @@ import {
   AdminAuthorizationError,
   resolveAdminPrincipal,
 } from "@/server/auth/admin-auth";
+import { isFdeImplementationDemoMode } from "@/server/demo/fde-demo-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -27,5 +28,11 @@ async function getAdminPrincipal() {
 
 export default async function AdminPage() {
   const principal = await getAdminPrincipal();
-  return <AdminDashboard initialPrincipal={principal} />;
+  return (
+    <AdminDashboard
+      fdeDemoMode={isFdeImplementationDemoMode()}
+      initialPrincipal={principal}
+      initialUtcNow={new Date().toISOString()}
+    />
+  );
 }

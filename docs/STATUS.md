@@ -35,9 +35,11 @@
   统一 `verifiedAt=2026-08-10T23:08:11Z`。
 - 公开只读演示：<https://jamesky.site>。
 - 运行版本：由 <https://jamesky.site/api/health> 的 `version` 字段确定。
-- 生产运行版本：`20260812031745`（Git `a779901`），于 2026-08-12 完成版本化发布、
-  governance v3 快照/恢复演练、97 个唯一国家定向写入与公开读回。发布后独立复核
-  `/api/health`、PM2 降权进程、Nginx、共享环境文件权限及恢复 marker 均通过。
+- 生产运行版本：release `20260814144537`，来源 Git
+  `38541ac04c079afe03860db63af839a48d2cb740`，于 2026-08-14 完成仅代码的
+  版本化发布，不执行数据库写入。发布后独立读回复核 `/api/health`、PM2 降权进程、
+  PM2 systemd 复活链路、Nginx、首页、聊天页、代表国家页、地图 Demo 清理和公开产品
+  API 均通过；真实 AI 流式查询也完成模型、知识库工具、引用和最终回答的端到端读回。
 - 运行库覆盖数量：2026-08-12 04:36 CST 从公开 `/api/countries` 读回 178 个唯一
   ISO3，全部为 `covered`；本轮 97 个目标国家均完成目标图与 scope 验收。`covered`
   只表示已发布核验边界，不表示四个 scope 都存在数值法规。
@@ -50,6 +52,87 @@
 代码提交、公开站点和 PostgreSQL 治理发布是三个独立状态。站点运行相同代码并不
 保证目标数据库已经发布该提交中所有 accepted fixtures；因此 README 不再用历史
 Seed 计数代表线上覆盖。
+
+## 安全与演示加固（2026-08-14，代码已发布）
+
+- 公网走查曾发现运行库中的未签核真实产品会进入公开产品选项，且至少有一条
+  功率区间/来源关联异常。当前本地代码已在产品列表、点名适配与认证出口统一实施
+  fail-closed publication manifest；真实产品同时绑定实体、来源与规格版本，真实认证绑定
+  实体与来源，两份 manifest 当前均为空。公开 DTO 也拒绝空/倒置功率或供应期区间。
+- 首页原“结构化覆盖率”已改为“证据边界核验率”，并明示它不代表存在数值法规；
+  零配置 Demo 另显示为“虚构演示切片”。首页 API 或地图 GeoJSON 失败时现在有独立错误与
+  重试状态，不再继续显示“在线”或误导图例。
+- AI evidence contract 对带 scope/power 的 1–5 国法规查询统一要求
+  `compareRegulations`；同时询问法规与产品时必须分别取得法规比较与产品适配结果，
+  无关国家 profile 不能解锁模型文字。工具拒绝、错误或畸形结果也有终态 UI，不再无限显示
+  “正在执行”。AI 普通文本现以受限 GFM Markdown 渲染，支持标题、列表、表格、链接和
+  代码块；结构化工具结果仍优先使用可复核卡片，不退化为纯 Markdown。
+- 地图快捷入口上限为 8，国家抽屉打开时接管焦点，关闭/Escape 后返回实际触发控件；
+  Demo `.invalid` 来源保留标题但不再渲染为死链。三分钟脚本也已将安装/启动移到计时前，
+  并与公开 DTO 不展示 proposed 的实际边界对齐。
+
+上述代码已随 release `20260814144537` 发布。发布后 `/api/products` 只返回
+`DEMO-ENG-100` 与 `DEMO-ENG-200`，未签核真实产品不再进入公开出口；但运营层根因尚未
+关闭：目标 PostgreSQL 的同名 `products_power_check` 实际仍为
+`power_max_kw >= power_min_kw`，与仓库要求的严格 `>` 不一致，且 8 条未归档真实产品仍为
+等宽功率区间。仓库现已新增 Migration `0011_temporal_memberships_and_product_power`：它先
+检查脏数据，发现等宽/反向区间即以 SQLSTATE `23514` 原子失败，数据合规后才把目标约束
+收紧为严格 `>`；因此生产应用该 Migration 前仍必须由数据负责人确认并归档或纠正这 8 条
+产品及其来源关联。Migration 不猜测业务值，本次代码整改也没有擅自修改生产数据。
+
+## 地图 Demo 公共出口清理（2026-08-14，代码已发布）
+
+- 公开 PostgreSQL 国家地图与详情已排除 Demo 分类事实：Demo 国家摘要降为
+  `no_data`，Demo 国家详情失败关闭；非 Demo 国家中的 Demo 辖区、成员关系、法规、市场
+  指标或来源也不会进入国家详情及复用该 service 的 AI 国家画像。
+- `pnpm demo` 的 PGlite fixture 保留，求职者仍可离线演示完整流程；本次不删除或修改
+  生产数据库记录。地图图例改为中性的“有可查看数据”，不再把 Demo 与已核验数据并列。
+- 修改前公网基线：CHN 含 1 个 Demo 辖区、2 条 Demo 法规、1 条 Demo 市场指标；BRA 含
+  1 个 Demo 辖区、1 条 Demo 法规、1 条 Demo 市场指标。release `20260814144537` 已对
+  这两国以及 `/api/countries` 做公开读回，国家地图与详情不再返回 Demo 分类事实。
+
+## AI 证据边界加固（2026-08-15，本地待发布）
+
+- `sales-chat-system-v3` 把检索正文和其中 URL 明确标为不可信外部数据；知识查询主题词
+  必须与用户请求绑定，低相关度候选在 service 和工具结果两层失败关闭。
+- 模型 Markdown 外链只允许使用同一助手消息中的结构化 citation URL；站内链接仍可用。
+- 模型输出限制为 2048 tokens，证据边界最多缓冲 16000 字符；输入历史最多保留最近
+  12 条用户消息且总计 12000 字符。超限输出不向用户释放。
+- 以上是当前工作树状态，尚未部署到公网；发布后必须重新执行真实模型 SSE 与来源链接读回。
+
+## AI 对话 Harness 与循环工程（2026-08-14，代码已发布）
+
+- system instruction 已提取为 `sales-chat-system-v2`，以事实来源、工具路由、循环策略、
+  回答契约和附件边界分段；没有增加模型作为法规、产品、市场或评分事实来源的权限。
+- 工具循环现在按 evidence contract 动态收窄 active tools。缺少多项证据时只保留尚未满足
+  的工具并继续 required；证据齐全、失败/不足、执行异常、缺参或纯附件概述后关闭工具，
+  不继续消耗无关步骤。最终模型文字仍经过原有流级 evidence boundary。
+- 新增 `pnpm ai:eval` 离线 harness，当前 13 个 golden prompts 覆盖问候、缺参、单国/
+  跨国法规、市场、产品、混合意图、机会分、销售简报、来源、附件与空证据合同。它不调用
+  外部模型，不得表述为真实模型任务成功率。发布后已用公开 `/api/chat` 完成真实模型与
+  `searchKnowledgeBase` 的 SSE 读回；首次读回发现内部相对下载路径不能作为公开绝对来源
+  URL，已由 `38541ac` 改为仅暴露已核验外部来源 URL，再次读回为结构化 `ok`。
+- 当前质量门：`pnpm lint`、`pnpm typecheck`、48 个文件 / 944 条 Vitest、
+  `pnpm ai:eval` 14/14、`pnpm build` 全部通过；完整 Playwright 为 71 passed / 7 skipped
+  （桌面与 Pixel 7）。
+
+## FDE 作品强化（2026-08-15，本地待发布）
+
+- `product-fit-v2` 已把法规/认证适配与查询日供应状态拆成双轴，并按
+  `[availableFrom,availableTo)` 组合 `commercialReadiness`；销售简报只推荐 `ready`
+  产品，缺失或区间外供应证据进入风险/缺口。
+- AI 审计键加入服务端 turn/request ID 并改为 append-only；公共 API、管理写入和 AI
+  完成事件只输出 strict JSON 白名单字段，`X-Request-Id` 可用于故障关联。
+- 国家深链在 scope + power 齐全时服务端渲染确定性决策摘要；完整 UUID、辖区与来源
+  追溯默认折叠。`pnpm demo:fde` 可在隔离 PGlite 中演示 CSV → Draft → Review →
+  Publish → Query → Archive，始终标记 `LOCAL / MUTABLE / FICTIONAL`。
+- 最终 live eval 使用 `deepseek-v4-pro` 与隔离 PGlite 虚构事实完成 18/18 条、78,265
+  tokens；工具选择 94.44%、关键参数 100%、安全/证据失败关闭 100%，报告
+  `thresholdsPassed=true`。唯一失败单例为来源原文检索额外调用了国家画像工具；报告保留该
+  明细，不将 94.44% 写成 100%，也不把这次内部 eval 表述为客户效果。
+- 生产维护代码已具备精确 8 行 dry-run manifest、SHA/行漂移门、serializable 归档、逐
+  实体审计、`pg_dump -Fc` 0600 + SHA256 + `pg_restore --list` 和迁移后 readback；尚未在
+  生产执行，因此公开库脏数据与 Migration 0011/0012 仍不得标为已关闭。
 
 ## 三角色模拟评估与本地修复（2026-08-12）
 
@@ -71,11 +154,11 @@ Seed 计数代表线上覆盖。
   附件内容不参与契约推导。Demo 销售简报会从已校验结构化结果直接提取机会分、首要风险
   和第一行动；详情页刚完成的产品查询也会立即同步到对话链接。该上下文仅限当前页面会话，
   不是长期记忆。
-- 本轮质量门通过：`pnpm lint`、`pnpm typecheck`、893 条 Vitest、`pnpm build`；默认
-  Playwright 桌面/移动端 63 passed / 7 skipped，作品集 Demo 专属点名产品用例另有
-  2 passed。这些是工程回归结果，不是用户效果 KPI。
-- 以上本地改动不属于生产 release `20260812031745`。在新版本完成提交、部署和公开读回
-  前，公开站点的运行状态仍以本文件前述生产版本为准。
+- 本轮质量门通过：`pnpm lint`、`pnpm typecheck`、46 个文件 / 910 条 Vitest、
+  `pnpm build`；默认 Playwright 桌面/移动端 71 passed / 7 skipped，最终 Markdown
+  桌面/Pixel 7 聚焦回归另有 2 passed。这些是工程回归结果，不是用户效果 KPI。
+- 上述 AI 对话、证据门、详情链路、公开产品隔离和 Markdown 渲染已包含在当前在役
+  Git `a77631b…`；公开站点运行状态以本文件前述生产 release 为准。
 
 ## 代码与数据基线
 
@@ -116,7 +199,8 @@ Seed 计数代表线上覆盖。
   法规/认证/产品/市场事实意图分门，上传内容不能绕过事实证据门；
 - 文档导入、分块、元数据过滤和混合检索开发台；
 - Draft → Reviewed → Published、职责分离、CSV Preview、软归档和审计；
-- 治理数据 v3 快照、SHA/引用闭包 dry-run 与 serializable 单事务恢复；PGlite 已覆盖
+- 治理数据 v4 十表快照（含 `market_metrics`）、SHA/引用闭包 dry-run 与 serializable
+  单事务恢复；PGlite 已覆盖
   六位微秒、原始 JSONB 高精度数、目标自然键/外部副作用写前检查、advisory maintenance
   lock、物理精确恢复和中途失败整单回滚（ADR-132）；
 - CI、桌面/移动 Playwright、密钥扫描、依赖审计和部署代理边界。
@@ -127,7 +211,7 @@ Seed 计数代表线上覆盖。
 - 公开演示不是正式法规服务或业务生产环境；
 - 尚无外部法规专家独立签字和真实销售用户试点 KPI；
 - 三角色 subagent 模拟不能替代上述签字、试点或 KPI；
-- 正式 embedding 基准、私有对象存储、共享限流、监控、生产快照恢复与 Migration
+- 正式 embedding 基准、私有对象存储、监控、生产快照恢复与 Migration
   回滚演练仍待业务生产化；
 - source-only 覆盖不能描述成该国已经存在完整排放限值。
 

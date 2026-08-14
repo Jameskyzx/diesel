@@ -23,6 +23,7 @@ import {
   countryJurisdictions,
   dataSources,
   jurisdictions,
+  marketMetrics,
   regulationLimits,
   regulations,
 } from "../../src/server/db/schema";
@@ -821,10 +822,11 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
             .orderBy(
               asc(countryJurisdictions.countryIso3),
               asc(countryJurisdictions.jurisdictionId),
+              asc(countryJurisdictions.validFrom),
             );
           const timestamps = await db.execute(sql`
             select 'country_jurisdictions' as "tableName",
-                   country_iso3 || ':' || jurisdiction_id::text as "rowKey",
+                   country_iso3 || ':' || jurisdiction_id::text || ':' || valid_from::text as "rowKey",
                    jsonb_build_object(
                      'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
                      'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
@@ -832,14 +834,15 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                      'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
                    ) as timestamps
               from country_jurisdictions
-             order by country_iso3, jurisdiction_id
+             order by country_iso3, jurisdiction_id, valid_from
           `);
           return { rows, timestamps };
         });
         basePreciseTimestampRows.push(
           ...parseMatchingTimestampBatch(
             membershipBatch.rows.map(
-              (row) => `${row.countryIso3}:${row.jurisdictionId}`,
+              (row) =>
+                `${row.countryIso3}:${row.jurisdictionId}:${row.validFrom}`,
             ),
             membershipBatch.timestamps,
             "country_jurisdictions",
@@ -907,6 +910,46 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
               rows.map((row) => row.id),
               batch.timestamps,
               "regulation_limits",
+            );
+            basePreciseTimestampRows.push(...timestamps);
+            return rows;
+          },
+        );
+
+        const marketMetricRows = await collectGovernanceSnapshotRowsInBatches(
+          async (cursor, limit) => {
+            const batch = await read(async (transaction) => {
+              const db = transaction;
+              const rows = await db
+                .select()
+                .from(marketMetrics)
+                .where(
+                  cursor === null ? undefined : gt(marketMetrics.id, cursor),
+                )
+                .orderBy(asc(marketMetrics.id))
+                .limit(limit);
+              const timestamps = await db.execute(sql`
+                select 'market_metrics' as "tableName", id::text as "rowKey",
+                       jsonb_build_object(
+                         'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                         'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                         'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                         'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                       ) as timestamps
+                  from market_metrics
+                 where (${cursor}::uuid is null or id > ${cursor}::uuid)
+                 order by id
+                 limit ${limit}
+              `);
+              return { rows, timestamps };
+            });
+            const rows = governanceSnapshotBatchedRowSchema.array().parse(
+              batch.rows,
+            );
+            const timestamps = parseMatchingTimestampBatch(
+              rows.map((row) => row.id),
+              batch.timestamps,
+              "market_metrics",
             );
             basePreciseTimestampRows.push(...timestamps);
             return rows;
@@ -998,6 +1041,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
           data_sources: dataSourceBatch.rows,
           jurisdictions: jurisdictionBatch.rows,
           market_import_batches: marketImportBatchRows,
+          market_metrics: marketMetricRows,
           regulation_limits: limitRows,
           regulations: regulationBatch.rows,
         };
@@ -1075,7 +1119,7 @@ function prepareGovernanceSnapshot(acquired: AcquiredGovernanceSnapshotRows) {
     parseRawGovernanceJsonRows(acquired.rawJsonResult),
   );
   const snapshot = parseGovernanceSnapshot({
-    formatVersion: 3,
+    formatVersion: 4,
     exportedAt: new Date().toISOString(),
     tableCounts: createGovernanceTableCounts(tables),
     tables,

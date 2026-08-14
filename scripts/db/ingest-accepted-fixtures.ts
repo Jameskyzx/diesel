@@ -1658,7 +1658,7 @@ async function main(): Promise<void> {
           periodStart: metric.periodStart,
           publishedOn: metric.publishedOn ?? null,
           unitCode: metric.unitCode,
-          valueNumeric: Number(metric.valueNumeric),
+          valueNumeric: metric.valueNumeric,
           verifiedAt: requireVerifiedAt(
             metric.verifiedAt,
             `${metric.countryIso3}:${metric.metricCode}:${metric.applicationScope}:${metric.periodStart}`,
@@ -1916,7 +1916,7 @@ async function main(): Promise<void> {
           requireId(metric.id, metric.metricCode),
           {
             dataSourceId: metric.dataSourceId,
-            valueNumeric: Number(metric.valueNumeric),
+            valueNumeric: metric.valueNumeric,
           },
         ]),
       );
@@ -1955,7 +1955,7 @@ async function main(): Promise<void> {
           return (
             expected !== undefined &&
             expected.dataSourceId === row.dataSourceId &&
-            expected.valueNumeric === Number(row.valueNumeric) &&
+            expected.valueNumeric === row.valueNumeric &&
             row.sourceType !== "official-regulation"
           );
         });

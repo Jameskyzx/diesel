@@ -6,19 +6,21 @@ import {
 } from "@/features/product-fit/schemas";
 import { getErrorCode } from "@/lib/api-error";
 import { listProducts } from "@/server/services/product-fit-service";
+import { createApiRequestObserver } from "@/server/observability/structured-log";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  const observer = createApiRequestObserver("/api/products");
   try {
-    return NextResponse.json(
-      productListResponseSchema.parse(await listProducts()),
+    return observer.finish(
+      NextResponse.json(productListResponseSchema.parse(await listProducts())),
     );
   } catch (error) {
     console.error("Product list request failed", {
       errorCode: getErrorCode(error),
     });
-    return NextResponse.json(
+    return observer.finish(NextResponse.json(
       productFitApiErrorSchema.parse({
         error: {
           code: "INTERNAL_ERROR",
@@ -26,6 +28,6 @@ export async function GET() {
         },
       }),
       { status: 500 },
-    );
+    ), "INTERNAL_ERROR");
   }
 }

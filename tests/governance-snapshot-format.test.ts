@@ -17,12 +17,13 @@ function emptySnapshot() {
     data_sources: [],
     jurisdictions: [],
     market_import_batches: [],
+    market_metrics: [],
     regulation_limits: [],
     regulations: [],
   };
   return {
     exportedAt: "2026-08-11T00:00:00.000Z",
-    formatVersion: 3,
+    formatVersion: 4,
     tableCounts: Object.fromEntries(
       Object.keys(tables).map((tableName) => [tableName, 0]),
     ),
@@ -31,8 +32,8 @@ function emptySnapshot() {
 }
 
 describe("governance snapshot format", () => {
-  it("accepts the exact v3 table set and matching counts", () => {
-    expect(parseGovernanceSnapshot(emptySnapshot()).formatVersion).toBe(3);
+  it("accepts the exact v4 table set and matching counts", () => {
+    expect(parseGovernanceSnapshot(emptySnapshot()).formatVersion).toBe(4);
   });
 
   it("rejects a declared row count mismatch", () => {
@@ -76,7 +77,7 @@ describe("governance snapshot format", () => {
   });
 
   it("compares the SHA-256 over the exact file bytes", () => {
-    const content = Buffer.from('{"formatVersion":3}\n');
+    const content = Buffer.from('{"formatVersion":4}\n');
     const digest = calculateSha256(content);
     expect(assertSnapshotSha256(content, digest)).toBe(digest);
     expect(() => assertSnapshotSha256(content, "0".repeat(64))).toThrow(

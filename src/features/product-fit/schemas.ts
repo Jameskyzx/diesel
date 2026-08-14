@@ -11,6 +11,11 @@ const isoTimestampSchema = z.iso.datetime({ offset: true });
 
 export const productFitStatusSchema = z.enum(["fit", "not_fit", "unknown"]);
 export const productFitCheckStatusSchema = z.enum(["pass", "fail", "unknown"]);
+export const commercialReadinessSchema = z.enum([
+  "ready",
+  "not_ready",
+  "unknown",
+]);
 
 export const productFitReasonCodeSchema = z.enum([
   "PRODUCT_NOT_FOUND",
@@ -18,6 +23,10 @@ export const productFitReasonCodeSchema = z.enum([
   "APPLICATION_SCOPE_MISMATCH",
   "PRODUCT_POWER_MATCH",
   "PRODUCT_POWER_OUT_OF_RANGE",
+  "PRODUCT_AVAILABLE",
+  "PRODUCT_NOT_YET_AVAILABLE",
+  "PRODUCT_NO_LONGER_AVAILABLE",
+  "PRODUCT_AVAILABILITY_UNKNOWN",
   "NO_APPLICABLE_REGULATION_DATA",
   "CERTIFICATION_MATCH",
   "CERTIFICATION_MISSING",
@@ -82,7 +91,34 @@ export const productSummarySchema = z
     specificationVersion: z.string().trim().min(1),
     verifiedAt: isoTimestampSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((product, context) => {
+    if (product.powerMaxKw <= product.powerMinKw) {
+      context.addIssue({
+        code: "custom",
+        message: "powerMaxKw must be greater than powerMinKw",
+        path: ["powerMaxKw"],
+      });
+    }
+    if (product.availableTo && !product.availableFrom) {
+      context.addIssue({
+        code: "custom",
+        message: "availableFrom is required when availableTo is set",
+        path: ["availableFrom"],
+      });
+    }
+    if (
+      product.availableFrom &&
+      product.availableTo &&
+      product.availableTo <= product.availableFrom
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "availableTo must be after availableFrom",
+        path: ["availableTo"],
+      });
+    }
+  });
 
 export const certificationEvidenceSchema = z
   .object({
@@ -147,17 +183,19 @@ const regulationCheckSchema = z
 export const productFitEvaluationSchema = z
   .object({
     asOf: z.iso.date(),
+    commercialReadiness: commercialReadinessSchema,
     input: productFitQuerySchema,
     product: productSummarySchema.nullable(),
     productChecks: z
       .object({
         applicationScope: productCheckSchema,
+        availability: productCheckSchema,
         power: productCheckSchema,
       })
       .strict(),
     reasons: z.array(productCheckSchema).min(1),
     regulationChecks: z.array(regulationCheckSchema),
-    rulesetVersion: z.literal("product-fit-v1"),
+    rulesetVersion: z.literal("product-fit-v2"),
     sources: z.array(fitEvidenceSourceSchema),
     status: productFitStatusSchema,
   })

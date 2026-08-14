@@ -240,7 +240,7 @@
 
 ### ADR-032：阶段 6 使用可替换 AI provider 的单 Agent 与三个只读工具
 
-- 状态：Accepted
+- 状态：Superseded by ADR-142 and ADR-145
 - 日期：2026-07-29
 - 决策：Vercel AI SDK Core 默认通过 `AI_MODEL=provider/model` 调用 AI
   Gateway，并允许开发环境改用显式配置的 OpenAI-compatible provider；首版只注册
@@ -260,9 +260,9 @@
 - 验证方式：Vitest 使用 AI SDK mock model 验证强制工具、无证据和产品适配；
   Playwright 验证桌面/移动聊天面板与地图国家上下文。
 
-### ADR-046：对话采用请求级 BYOK
+### ADR-144：对话采用请求级 BYOK
 
-- 状态：Superseded by ADR-047
+- 状态：Superseded by ADR-145
 - 日期：2026-08-06
 - 决策：对话页由用户填写 OpenAI-compatible 的公开 HTTPS 地址、模型名和 API Key；
   配置只存在浏览器内存，并随每次同源 `/api/chat` 请求发送。服务端在请求内创建
@@ -272,7 +272,7 @@
   凭据。Key 不写 localStorage、数据库、日志、错误响应或 `modelId`。
 - 后果：刷新页面后需要重新输入配置；对话页必须显示未连接状态，未配置时不发送请求。
 
-### ADR-047：对话采用服务端环境配置
+### ADR-145：对话采用服务端环境配置
 
 - 状态：Accepted
 - 日期：2026-08-06
@@ -418,6 +418,10 @@
 - 国家画像 AI 工具把辖区实体和成员关系来源与国家、法规、市场来源一并生成 citation；
   Demo 告警和最近核验时间基于完整 citation 集合，避免非 Demo 国家基础记录掩盖 Demo
   子证据。
+- 2026-08-15 本地内容寻址写入改用临时文件加无覆盖 hard-link。同哈希并发导入中，先
+  落盘请求若建库失败不得即时删除共享文件，否则会让尚未提交的复用请求留下缺失引用；
+  失败路径只记脱敏告警，由默认 24 小时最小年龄的孤儿扫描统一判断。扫描默认 dry-run，
+  共享/生产删除必须显式执行治理维护锁包装入口。
 
 ### ADR-038：市场 CSV 使用持久化预览与原子确认
 
@@ -513,8 +517,11 @@
   的 `onError` 使用固定文案，不暴露 provider、模型或内部错误。
 - 理由：AI 路由是成本最高、最易被滥用的公开入口；M2 发布安全基线要求请求
   限制与错误脱敏，且未授权请求与日志不得泄露敏感信息。
-- 后果：计数为进程内固定窗口，多实例部署时按实例独立（有效上限 × 实例数），
-  共享计数留给生产基础设施决策；限流是滥用缓解而非访问控制，无代理直连时
+- 后果：开发、测试与离线 Demo 使用进程内固定窗口；生产强制 PostgreSQL 后端，以
+  `(scope, key_hash, window_start)` 原子 UPSERT 跨实例共享计数，原始客户端标识先做
+  SHA-256，过期桶按索引 TTL 清理。生产显式配置内存后端会失败关闭；数据库递增失败时
+  Route 在解析、审计或模型调用前返回脱敏 503，不允许请求绕过配额。限流仍是滥用缓解
+  而非访问控制，无代理直连时
   客户端可伪造 `x-forwarded-for`，公开部署必须位于可信代理之后（ADR-016/036）。
   配额在请求入口消耗（先于解析、配置与审计），无论请求是否成功，以保护后续
   数据库写入与模型调用；配置故障期间激进重试的客户端可能被限流至窗口结束，
@@ -522,7 +529,8 @@
   `InvalidArgumentError`/`MessageConversionError` 与 Zod/语法错误同归
   `INVALID_INPUT` 400，配置错误返回不含变量名的通用 503 文案。
 - 验证方式：限流器单元测试覆盖阈值边界、窗口滚动、键隔离与 `Retry-After`
-  计算；既有 AI mock model 测试与 e2e 在默认阈值下不回归。
+  计算；数据库集成测试用两个独立 limiter 实例锁定共享阈值、仅落盘 64 位哈希键及旧窗口
+  清理；既有 AI mock model 测试与 e2e 在默认阈值下不回归。
 - 2026-08-06 安全异常类型提取不再信任 `Error.name`，只接受白名单校验的构造类型；
   对象原型、构造器访问或 Proxy trap 自身抛错时统一回退 `UNKNOWN_ERROR`，保证日志
   最小化辅助函数不会让原 Route Handler 的固定错误响应再次逃逸。
@@ -2347,7 +2355,7 @@
   规范 HTTPS 域名，不接收明文附件。Nginx 在解析前对该精确路由执行
   每客户 3 / 全局 8 连接门并返回 429，应用再执行每客户 2 / 全局 4
   in-flight 门；后者只在响应流完成、失败或取消后释放，超额请求不进入附件解码。
-  多实例共享限流仍是业务生产化待办。
+  应用配额由 PostgreSQL 原子桶跨实例共享；数据库不可用时入口失败关闭。
 - 验证方式：Zod/路由测试覆盖远程 URL、结构/截断、历史附件、数量和大小边界；图片测试
   锁定“结构看似合法但像素不可解码”的伪造文件在 provider 调用前被拒绝；PDF
   测试使用真实最小文档，并以 mock stream 锁定顺序读取、增量预算、共享 deadline 和
@@ -2547,6 +2555,8 @@
 
 - 状态：Accepted
 - 日期：2026-08-11
+- 变更：本节的 v3/九表格式是当时的历史合同；自 2026-08-15 起由 ADR-146 的
+  v4/十表合同替代。锁、事务、SHA、写盘与恢复失败关闭边界继续有效。
 - 决策：治理快照使用固定 v3 格式，在 repeatable-read 只读事务中导出九张治理表；
   顶层 `timestamptz` 以 PostgreSQL UTC 六位微秒文本浅层覆盖，JSONB 列另以原始
   `jsonb::text` 保存，避免 JavaScript `Date` 截断与超过安全整数/高精度小数舍入，同时
@@ -2809,6 +2819,142 @@
   服务和 UI 回归锁定点名产品评分/简报、可复述 Demo 摘要、查询摘要、失败草稿恢复以及
   双击只发起一次请求。详情到对话的 E2E 还锁定未完成产品评估不会回写旧 URL，且刚完成
   的服务端规范化查询会立即进入对话链接。
+
+### ADR-140：助手解释支持安全 CommonMark/GFM 渲染
+
+- 状态：Accepted
+- 日期：2026-08-14
+- 决策：仅对 assistant text part 使用 `react-markdown` 与 `remark-gfm`，支持标题、
+  强调、列表、引用、代码、表格、任务列表和删除线。用户输入保持纯文本，工具 JSON 继续只由
+  结构化卡片渲染，不进入 Markdown 解析。
+- 安全边界：不引入 `rehype-raw`，并显式设置 `skipHtml`；模型图片语法只显示隐藏提示，
+  不加载远程资源。URL transform 只允许 HTTP(S)、单斜线站内路径、查询串和锚点；
+  外部链接使用新窗口与 `noopener noreferrer`。Markdown 只改变排版，不提升模型文字的事实等级。
+- 依赖理由：CommonMark/GFM 对嵌套、代码块和表格有大量边界语法，自建部分解析器会带来
+  兼容性与 XSS 风险。`react-markdown` 承担 React AST 渲染，`remark-gfm` 只扩展 GFM 语法；
+  两者都运行于现有聊天客户端边界，不进入 Repository、工具或事实计算。
+- 验证方式：组件回归覆盖标题、强调、行内代码、任务列表、表格和外链；
+  安全反例覆盖 raw `<script>`、`javascript:` / `data:` URL、协议相对 URL 与远程图片。
+
+### ADR-141：公开国家地图与详情排除 Demo 分类事实
+
+- 状态：Accepted
+- 日期：2026-08-14
+- 决策：PostgreSQL 公开模式下，Demo 国家摘要保留目录位置但统一降为 `no_data`；Demo
+  国家不返回详情。非 Demo 国家详情对辖区实体、成员关系、法规、市场指标及各自来源执行
+  完整分类过滤，任一依赖节点为 Demo 即排除整条事实。`pglite-demo` 继续保留原 fixture，
+  以便零配置作品演示和 Playwright 验证完整证据链。
+- 理由：公开地图的颜色和国家详情首先承担已核验事实入口，不应在同一业务路径混入虚构
+  fixture；仅靠“虚构 Demo”徽标仍会增加误读风险。保留离线 Demo 则维持求职项目的可运行性。
+- 后果：公开国家画像与调用该 service 的 AI profile 不再返回 Demo 法规、辖区或市场指标；
+  产品适配的独立 Demo 产品边界不在本 ADR 范围内。数据库记录不做破坏性删除，后续可按
+  治理流程归档。
+- 验证方式：表驱动测试覆盖国家状态/来源、辖区/成员关系、法规完整适用链与市场来源的
+  每个 Demo 分类入口；现有 `pglite-demo` 国家测试继续证明离线 Demo 未被破坏，地图 E2E
+  锁定中性“有可查看数据”图例。
+
+### ADR-142：销售对话采用版本化提示、证据驱动循环与离线 Harness
+
+- 状态：Accepted
+- 日期：2026-08-14
+- 决策：system instruction 提取为 `sales-chat-system-v2`，按事实来源、工具路由、循环
+  策略、回答契约和未核验附件边界分段。每个模型步骤从 evidence contract 和已完成的
+  结构化结果计算剩余工具：证据未齐时只开放能满足剩余 requirement 的工具并强制调用；
+  全部满足、任一结果失败/不足、执行错误、缺参或纯附件概述时关闭工具并进入终态。工具
+  定义保持固定顺序，总步骤上限仍为 5。
+- 理由：只在 prompt 中要求模型“正确选工具、及时停止”不可测试，也会让七个工具在每一步
+  互相干扰。服务端 loop policy 能把模型自由度限制在当前证据缺口内，同时保留 evidence
+  boundary 作为最终失败关闭层。
+- Harness：新增 `pnpm ai:eval`，以版本化 golden prompts 离线检查直接分流、缺参、证据
+  requirement、初始工具集合、附件边界和停止阶段，不调用模型 API 或数据库。该结果只证明
+  确定性编排合同，没有真实 provider 的工具选择准确率、延迟或成本含义；正式模型验收仍需
+  另建带模型版本和运行日期的 live eval。
+- 验证方式：13 个 golden cases 锁定主要意图与失败路径；AI SDK mock 回归锁定工具逐步
+  收窄、证据未齐继续 required、证据齐全切换 none，以及畸形/不足结果失败关闭。
+
+### ADR-143：知识检索和模型解释采用双层相关度与不可信内容边界
+
+- 状态：Accepted
+- 日期：2026-08-15
+- 决策：混合检索候选必须达到固定最终分门槛，并具有关键词命中或强向量信号；service
+  与 AI 工具结果各自校验一次。`sales-chat-system-v3` 将检索正文、metadata 和正文 URL
+  统一视为不可信数据，知识 query 还必须与用户请求主题词匹配。模型 Markdown 外链只允许
+  与同一消息结构化 citation URL 完全匹配。模型输出、证据缓冲区和用户历史分别设置硬上限。
+- 理由：只有 metadata 和“非空结果”不能证明片段相关，也不能阻止文档内提示注入、模型
+  生成无来源链接或客户端用超长历史放大费用。相关度、意图、链接和资源四层都应失败关闭。
+- 后果：近似但弱相关的搜索可能返回 `no_data`，调用方需要缩小法规名称、污染物、章节或
+  日期；未来替换正式 embedding 时必须用代表性语料重新校准门槛，而不是沿用当前数值。
+- 验证方式：单元测试覆盖弱分过滤、低分工具结果二次过滤、检索内容边界、无关 query
+  拒绝、citation 外链白名单、历史裁剪、output token 参数和缓冲区超限丢弃。
+
+### ADR-146：治理快照 v4 将市场事实纳入同一原子恢复边界
+
+- 状态：Accepted
+- 日期：2026-08-15
+- 决策：当前治理导出与恢复只接受严格 `formatVersion: 4`，在 ADR-132 的同一 MVCC
+  锚点中覆盖十张表：`countries`、`country_jurisdictions`、`data_change_logs`、
+  `data_governance_drafts`、`data_sources`、`jurisdictions`、
+  `market_import_batches`、`market_metrics`、`regulation_limits`、`regulations`。
+  `market_metrics.value_numeric` 以数据库精确 decimal 字符串保存；恢复同时校验其国家、
+  来源、期间与 null-safe 自然键闭包，并在反向外键顺序中恢复或删除市场观察值。
+  `country_jurisdictions` 的行键包含 `valid_from`，以保留退出后重新加入的不同有效期。
+- 替代范围：ADR-132 与 ADR-137 中 v3/九表文字保留为当时格式和生产执行记录，不可作为
+  当前命令输入。当前导出、dry-run、`--apply`、恢复后重导与深比较均必须使用 v4/十表；
+  v3 文件由严格 schema 失败关闭，不能静默升级或遗漏市场事实。
+- 理由：市场发布和治理日志同属可变的结构化事实。九表恢复会保留发布后新增或修改的
+  `market_metrics`，使“恢复成功”与真实数据库状态不一致；JavaScript Number 还会破坏
+  超过安全整数范围或含六位小数的指标值。
+- 验证方式：格式测试锁定 v4、十表计数、市场自然键和引用闭包；PGlite 集成测试锁定超出
+  `2^53` 的六位小数原样往返、已修改及新插入市场观察的物理精确恢复，并证明恢复中途
+  失败时市场行与其余治理表在同一事务回滚。
+
+### ADR-147：产品合规适配与查询日供应状态采用双轴语义
+
+- 状态：Accepted
+- 日期：2026-08-15
+- 决策：`product-fit-v2` 保留 `status=fit/not_fit/unknown` 作为法规与认证适配轴，
+  新增按 `[availableFrom, availableTo)` 计算的供应检查，以及
+  `commercialReadiness=ready/not_ready/unknown`。端点证据不完整时供应状态失败关闭为
+  unknown；只有合规 fit 且供应 pass 才为 ready，任一明确不适配或不可供应为 not_ready。
+  `opportunity-score-v2` 的产品准备度使用商业准备度，法规覆盖仍只使用法规/认证检查。
+- 理由：合规适配不等于查询日可售。把供应期只展示在追溯区会允许已停售、尚未上市或
+  供应证据不足的产品进入销售推荐；反过来把供应失败改写成 not_fit 又会污染合规语义。
+- 后果：确定性销售简报只推荐 ready 产品；合规 fit 但供应 fail/unknown 的产品进入风险/
+  缺口，且不生成销售准备动作。该规则只证明已记录产品供应期，不代表库存、交期、价格或
+  真实商业承诺。该 ADR supersede ADR-030/034/035 中关于 v1 和 fit-only 推荐的当前行为，
+  历史文本继续保留。
+- 验证方式：单元测试覆盖供应期上下界、未上市、已停售、缺失端点和组合真值；服务测试
+  锁定机会分使用 ready/not_ready、销售简报排除 unavailable 产品，产品页与 AI 卡片同时
+  展示合规轴和供应轴。
+
+### ADR-148：AI 工具审计按请求轮次 append-only，公共请求使用脱敏结构化日志
+
+- 状态：Accepted
+- 日期：2026-08-15
+- 决策：每个 `/api/chat` 请求由服务端生成 request/turn ID，并将审计键写为
+  `${turnId}:${providerToolCallId}`。AI tool call 与 citations 只插入；重复键视为审计异常，
+  不更新旧记录、不删除旧引用。公共 API 和管理写入统一记录 requestId、route、status、
+  durationMs、errorCode；AI 完成事件另记录 modelId、工具数、loop steps、证据结果和
+  token usage。
+- 隐私边界：日志 schema 为 strict；prompt、附件正文、身份 Header、IP、数据库 URL、
+  API Key 和上游错误正文都不是合法字段。响应返回 `X-Request-Id` 供故障关联。
+- 验证方式：集成测试连续两轮相同 provider tool call 保留两条调用及各自 citation，精确
+  重复键失败关闭；日志测试拒绝额外敏感字段。
+
+### ADR-149：实施写入只在本地隔离 Demo 开放，真实模型质量由预算受限 eval 衡量
+
+- 状态：Accepted
+- 日期：2026-08-15
+- 决策：`pnpm demo:fde` 仅允许 loopback + development + PGlite + 显式 Demo 标志，
+  每次启动新建进程内数据库并显示 `LOCAL / MUTABLE / FICTIONAL`。本地 persona cookie
+  只由 Demo server 映射为测试身份；生产认证和公网 `/admin` 阻断不变。
+- Eval：`pnpm ai:eval:live` 使用 18 条版本化虚构案例与当前 OpenAI-compatible 文本模型，
+  串行记录工具、关键参数、证据、延迟和 token。达到请求、token 或单例时间门立即保存
+  部分报告；未完整或低于安全 100%、工具/参数 90% 不得标为通过，也不进入普通 PR CI。
+- 理由：招聘演示需要可操作的实施闭环和真实模型证据，但二者都不应扩大生产写权限、
+  暴露真实资料或伪造客户反馈。
+- 验证方式：桌面 E2E 完成 CSV → Draft → Review → Publish → Query → Archive；移动端
+  覆盖 persona/Preview。live eval 评分、脱敏和预算停止由单元测试约束。
 
 ## 4. 暂不决策
 

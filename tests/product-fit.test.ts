@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { evaluateProductFit } from "@/domain/product-fit/evaluate-product-fit";
 import type { ProductFitQuery } from "@/features/database/schemas";
-import type {
-  CertificationEvidence,
-  ProductSummary,
-  RegulationEvidence,
+import {
+  productSummarySchema,
+  type CertificationEvidence,
+  type ProductSummary,
+  type RegulationEvidence,
 } from "@/features/product-fit/schemas";
 
 const verifiedAt = "2026-01-15T00:00:00.000Z";
@@ -69,7 +70,7 @@ const query: ProductFitQuery = {
 const product: ProductSummary = {
   applicationScopes: ["non-road", "construction"],
   availableFrom: "2025-01-01",
-  availableTo: null,
+  availableTo: "2026-12-31",
   id: "00000000-0000-4000-8000-000000000201",
   isDemo: true,
   modelCode: "DEMO-ENG-100",
@@ -141,14 +142,35 @@ function evaluate(
 }
 
 describe("deterministic product-fit rules", () => {
+  it("rejects invalid product power and availability intervals at the public DTO boundary", () => {
+    expect(
+      productSummarySchema.safeParse({
+        ...product,
+        powerMaxKw: product.powerMinKw,
+      }).success,
+    ).toBe(false);
+    expect(
+      productSummarySchema.safeParse({
+        ...product,
+        availableFrom: null,
+        availableTo: "2026-01-01",
+      }).success,
+    ).toBe(false);
+  });
+
   it("includes the lower power boundary and returns traceable fit evidence", () => {
     const result = evaluate({ ...query, powerKw: 50 });
 
     expect(result.status).toBe("fit");
+    expect(result.commercialReadiness).toBe("ready");
+    expect(result.productChecks.availability).toMatchObject({
+      code: "PRODUCT_AVAILABLE",
+      status: "pass",
+    });
     expect(result.productChecks.power.status).toBe("pass");
     expect(result.product).toMatchObject({
       availableFrom: "2025-01-01",
-      availableTo: null,
+      availableTo: "2026-12-31",
     });
     expect(result.regulationChecks[0]).toMatchObject({
       regulation: { regulationId: regulation.regulationId },
@@ -160,6 +182,68 @@ describe("deterministic product-fit rules", () => {
     expect(result.sources).toContainEqual(regulationLimitSource);
     expect(result.sources).toContainEqual(jurisdictionSource);
     expect(result.sources).toContainEqual(membershipSource);
+  });
+
+  it("uses a half-open product availability period", () => {
+    const lowerBoundary = evaluateProductFit({
+      applicableRegulations: [regulation],
+      certifications: [certification],
+      product,
+      query: { ...query, asOf: product.availableFrom! },
+    });
+    const upperBoundary = evaluateProductFit({
+      applicableRegulations: [regulation],
+      certifications: [certification],
+      product,
+      query: { ...query, asOf: product.availableTo! },
+    });
+
+    expect(lowerBoundary.productChecks.availability).toMatchObject({
+      code: "PRODUCT_AVAILABLE",
+      status: "pass",
+    });
+    expect(lowerBoundary.commercialReadiness).toBe("ready");
+    expect(upperBoundary.status).toBe("fit");
+    expect(upperBoundary.productChecks.availability).toMatchObject({
+      code: "PRODUCT_NO_LONGER_AVAILABLE",
+      status: "fail",
+    });
+    expect(upperBoundary.commercialReadiness).toBe("not_ready");
+  });
+
+  it("separates not-yet-available products from compliance fit", () => {
+    const result = evaluateProductFit({
+      applicableRegulations: [regulation],
+      certifications: [certification],
+      product: { ...product, availableFrom: "2026-09-01" },
+      query,
+    });
+
+    expect(result.status).toBe("fit");
+    expect(result.productChecks.availability).toMatchObject({
+      code: "PRODUCT_NOT_YET_AVAILABLE",
+      status: "fail",
+    });
+    expect(result.commercialReadiness).toBe("not_ready");
+  });
+
+  it.each([
+    { availableFrom: null, availableTo: null },
+    { availableFrom: "2025-01-01", availableTo: null },
+  ])("keeps incomplete availability evidence unknown", (availability) => {
+    const result = evaluateProductFit({
+      applicableRegulations: [regulation],
+      certifications: [certification],
+      product: { ...product, ...availability },
+      query,
+    });
+
+    expect(result.status).toBe("fit");
+    expect(result.productChecks.availability).toMatchObject({
+      code: "PRODUCT_AVAILABILITY_UNKNOWN",
+      status: "unknown",
+    });
+    expect(result.commercialReadiness).toBe("unknown");
   });
 
   it("excludes the upper product power boundary", () => {

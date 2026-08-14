@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { Bot, FileCheck2, Map } from "lucide-react";
 import Link from "next/link";
-import { z } from "zod";
+import { redirect } from "next/navigation";
 
 import { SalesChat } from "@/components/ai/sales-chat";
 import {
-  applicationScopeSchema,
-  iso3Schema,
-  isoDateSchema,
-  powerKwSchema,
-} from "@/features/database/schemas";
+  parseChatUrlContext,
+  type ChatUrlContext,
+} from "@/features/ai/chat-url-context";
 import {
   isServerAiConfigured,
   isServerMultimodalAiConfigured,
@@ -24,42 +22,8 @@ type ChatPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const chatContextSchema = z.object({
-  applicationScope: applicationScopeSchema.optional(),
-  asOf: isoDateSchema.optional(),
-  countryIso3: iso3Schema.optional(),
-  powerKw: powerKwSchema.optional(),
-  productModelCode: z
-    .string()
-    .trim()
-    .min(1)
-    .max(100)
-    .transform((value) => value.toUpperCase())
-    .optional(),
-});
-
-function firstParam(
-  value: string | string[] | undefined,
-): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function parseChatContext(
-  raw: Record<string, string | string[] | undefined>,
-) {
-  const parsed = chatContextSchema.safeParse({
-    applicationScope: firstParam(raw.applicationScope),
-    asOf: firstParam(raw.asOf),
-    countryIso3: firstParam(raw.countryIso3),
-    powerKw: firstParam(raw.powerKw),
-    productModelCode: firstParam(raw.productModelCode),
-  });
-
-  return parsed.success ? parsed.data : {};
-}
-
 function initialPromptForContext(
-  context: z.infer<typeof chatContextSchema>,
+  context: ChatUrlContext,
 ): string {
   if (!context.countryIso3) {
     return "";
@@ -79,7 +43,21 @@ function initialPromptForContext(
 
 export default async function ChatPage({ searchParams }: ChatPageProps) {
   const demoMode = isPortfolioDemoMode();
-  const context = parseChatContext(await searchParams);
+  const { canonicalQuery, context, needsRedirect } = parseChatUrlContext(
+    await searchParams,
+  );
+  if (needsRedirect) {
+    redirect(canonicalQuery ? `/chat?${canonicalQuery}` : "/chat");
+  }
+  const conversationStarters = [
+    "CHN 目前有哪些有效法规？",
+    demoMode
+      ? "CHN 的 non-road 100 kW 产品是否适配？"
+      : "比较 JPN 和 KOR 的 non-road 120 kW 排放要求。",
+    demoMode
+      ? "比较 CHN 和 BRA 的 non-road 100 kW 法规。"
+      : "为 AUS 与 CHN 的 non-road 120 kW 生成销售简报，目标市场 AUS。",
+  ];
 
   return (
     <main className="page-shell flex min-h-[calc(100dvh-4.5rem)] flex-col py-8 sm:py-10">
@@ -102,11 +80,14 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
           imageUploadsEnabled={isServerMultimodalAiConfigured()}
           initialPrompt={initialPromptForContext(context)}
           selectedCountryIso3={context.countryIso3 ?? null}
+          suggestedPrompts={conversationStarters}
         />
         <aside className="surface-panel hidden rounded-[1.75rem] p-6 lg:block">
           <p className="section-kicker">Conversation starters</p>
           <h2 className="display-title mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#17382e]">可以这样问</h2>
-          <div className="mt-6 space-y-3 text-sm leading-6 text-slate-700"><p className="rounded-2xl border border-black/[0.05] bg-[#f5f7f1] px-4 py-3">CHN 目前有哪些有效法规？</p><p className="rounded-2xl border border-black/[0.05] bg-[#f5f7f1] px-4 py-3">{demoMode ? "CHN 的 non-road 100 kW 产品是否适配？" : "比较 JPN 和 KOR 的 non-road 120 kW 排放要求。"}</p><p className="rounded-2xl border border-black/[0.05] bg-[#f5f7f1] px-4 py-3">{demoMode ? "比较 CHN 和 BRA 的 non-road 100 kW 法规。" : "为 AUS 与 CHN 的 non-road 120 kW 生成销售简报，目标市场 AUS。"}</p></div>
+          <p className="mt-6 rounded-2xl border border-black/[0.05] bg-[#f5f7f1] px-4 py-3 text-sm leading-6 text-slate-700">
+            从左侧的快捷问题一键预填，也可以从国家详情把刚完成的查询带入对话。
+          </p>
           <div className="mt-7 border-t border-black/[0.07] pt-5 text-xs leading-5 text-slate-500">事实来自确定性工具；解释与建议会与证据层分开呈现。</div>
         </aside>
       </section>

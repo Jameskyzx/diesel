@@ -163,7 +163,7 @@ export function selectPortfolioDemoTool(
 
   if (
     context.activeTask === "regulation_compare" &&
-    countries.length >= 2 &&
+    countries.length >= 1 &&
     applicationScope !== null &&
     powerKw !== null
   ) {
@@ -293,7 +293,7 @@ function toolSummary(
   prompt: unknown,
 ): string {
   if (toolName === "findCompatibleProducts") {
-    return "已运行 product-fit-v1 确定性匹配。适配状态、逐项理由和证据以结构化卡片为准；离线 Demo 只使用明确标记的虚构产品与认证 fixture。\n\n信息参考，不替代正式认证或法律意见";
+    return "已运行 product-fit-v2 确定性匹配。法规/认证适配、查询日供应状态和商业准备度以结构化卡片为准；离线 Demo 只使用明确标记的虚构产品与认证 fixture。\n\n信息参考，不替代正式认证或法律意见";
   }
   if (toolName === "compareRegulations") {
     return "已按同一场景、功率和日期完成法规比较。状态、限值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。\n\n信息参考，不替代正式认证或法律意见";
@@ -302,7 +302,7 @@ function toolSummary(
     return "已按一致口径查询结构化市场指标。可比性、观测值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。";
   }
   if (toolName === "calculateOpportunityScore") {
-    return "已运行 opportunity-score-v1 确定性评分。分数、权重、数据覆盖率和缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。";
+    return "已运行 opportunity-score-v2 确定性评分。产品准备度同时使用合规适配和查询日供应状态；分数、权重、数据覆盖率和缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。";
   }
   if (toolName === "generateSalesBrief") {
     return (

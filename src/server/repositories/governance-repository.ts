@@ -5,10 +5,12 @@ import {
   eq,
   inArray,
   isNull,
+  or,
   sql,
 } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
+import { findOverlappingMembershipIndexes } from "@/domain/admin/jurisdiction-membership";
 import {
   countryDraftPayloadSchema,
   dataSourceDraftPayloadSchema,
@@ -52,6 +54,80 @@ type ImportValidationError = {
   rowNumber: number;
 };
 
+type GovernanceReviewDependencyKind =
+  | "country"
+  | "jurisdiction"
+  | "product"
+  | "regulation"
+  | "source";
+
+type GovernanceReviewReference = {
+  kind: GovernanceReviewDependencyKind;
+  path: string;
+  value: string;
+};
+
+type GovernanceReviewDraft = {
+  entityKey: string;
+  entityType: GovernedEntityType;
+  id: string;
+  payload: GovernanceJson;
+  version: number;
+};
+
+const governanceDependencyKinds = {
+  countryIso3: "country",
+  dataSourceId: "source",
+  jurisdictionId: "jurisdiction",
+  productId: "product",
+  regulationId: "regulation",
+  sourceId: "source",
+} as const satisfies Record<string, GovernanceReviewDependencyKind>;
+
+function collectGovernanceReviewReferences(
+  value: unknown,
+  path = "$",
+  result: GovernanceReviewReference[] = [],
+): GovernanceReviewReference[] {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      collectGovernanceReviewReferences(item, `${path}[${index}]`, result),
+    );
+    return result;
+  }
+  if (value === null || typeof value !== "object") {
+    return result;
+  }
+
+  for (const [key, item] of Object.entries(value)) {
+    const nextPath = `${path}.${key}`;
+    const kind =
+      governanceDependencyKinds[
+        key as keyof typeof governanceDependencyKinds
+      ];
+    if (kind && typeof item === "string" && item.trim()) {
+      result.push({ kind, path: nextPath, value: item });
+    }
+    collectGovernanceReviewReferences(item, nextPath, result);
+  }
+
+  return Array.from(
+    new Map(
+      result.map((reference) => [
+        `${reference.kind}:${reference.value}`,
+        reference,
+      ]),
+    ).values(),
+  );
+}
+
+function governanceEntityIdentity(
+  entityType: GovernedEntityType,
+  entityKey: string,
+): string {
+  return `${entityType}:${entityKey}`;
+}
+
 export class GovernanceConflictError extends Error {
   constructor(message: string) {
     super(message);
@@ -66,6 +142,20 @@ function requiredId(id: string | undefined, entityType: string): string {
     );
   }
   return id;
+}
+
+function assertMembershipPeriodsDoNotOverlap(
+  memberships: readonly {
+    countryIso3: string;
+    validFrom: string;
+    validTo?: string | null;
+  }[],
+): void {
+  if (findOverlappingMembershipIndexes(memberships).length > 0) {
+    throw new GovernanceConflictError(
+      "Jurisdiction membership periods for one country must not overlap.",
+    );
+  }
 }
 
 function getDraftPayloadEntityKey(
@@ -975,6 +1065,405 @@ export function createGovernanceRepository<
         .limit(100);
     },
 
+    async getDraftReviewContexts(drafts: GovernanceReviewDraft[]) {
+      if (drafts.length === 0) {
+        return [];
+      }
+
+      const referencesByDraftId = new Map(
+        drafts.map((draft) => [
+          draft.id,
+          collectGovernanceReviewReferences(draft.payload),
+        ]),
+      );
+      const references = Array.from(referencesByDraftId.values()).flat();
+      const uniqueValues = (values: string[]) => Array.from(new Set(values));
+      const referencedValues = (kind: GovernanceReviewDependencyKind) =>
+        references
+          .filter((reference) => reference.kind === kind)
+          .map((reference) => reference.value);
+      const targetValues = (entityType: GovernedEntityType) =>
+        drafts
+          .filter((draft) => draft.entityType === entityType)
+          .map((draft) => draft.entityKey);
+      const sourceIds = uniqueValues([
+        ...referencedValues("source"),
+        ...targetValues("data_source"),
+      ]);
+      const countryIds = uniqueValues([
+        ...referencedValues("country"),
+        ...targetValues("country"),
+      ]);
+      const jurisdictionIds = uniqueValues([
+        ...referencedValues("jurisdiction"),
+        ...targetValues("jurisdiction"),
+      ]);
+      const productIds = uniqueValues([
+        ...referencedValues("product"),
+        ...targetValues("product"),
+      ]);
+      const regulationIds = uniqueValues([
+        ...referencedValues("regulation"),
+        ...targetValues("regulation"),
+      ]);
+      const certificationIds = uniqueValues(
+        targetValues("product_certification"),
+      );
+      const marketMetricIds = uniqueValues(targetValues("market_metric"));
+      const documentIds = uniqueValues(targetValues("document"));
+
+      const identityPredicates = Array.from(
+        new Map(
+          drafts.map((draft) => [
+            governanceEntityIdentity(draft.entityType, draft.entityKey),
+            and(
+              eq(dataGovernanceDrafts.entityType, draft.entityType),
+              eq(dataGovernanceDrafts.entityKey, draft.entityKey),
+            ),
+          ]),
+        ).values(),
+      );
+
+      const [
+        publishedDrafts,
+        sourceRows,
+        countryRows,
+        jurisdictionRows,
+        productRows,
+        regulationRows,
+        certificationRows,
+        marketMetricRows,
+        documentRows,
+      ] = await Promise.all([
+        database
+          .select()
+          .from(dataGovernanceDrafts)
+          .where(
+            and(
+              eq(dataGovernanceDrafts.workflowStatus, "published"),
+              isNull(dataGovernanceDrafts.archivedAt),
+              or(...identityPredicates),
+            ),
+          )
+          .orderBy(desc(dataGovernanceDrafts.version)),
+        sourceIds.length > 0
+          ? database
+              .select({
+                archivedAt: dataSources.archivedAt,
+                id: dataSources.id,
+                isDemo: dataSources.isDemo,
+                label: dataSources.title,
+                url: dataSources.url,
+                verifiedAt: dataSources.verifiedAt,
+              })
+              .from(dataSources)
+              .where(inArray(dataSources.id, sourceIds))
+          : Promise.resolve([]),
+        countryIds.length > 0
+          ? database
+              .select({
+                archivedAt: countries.archivedAt,
+                id: countries.iso3,
+                isDemo: countries.isDemo,
+                label: countries.nameEn,
+                sourceArchivedAt: dataSources.archivedAt,
+                verifiedAt: countries.verifiedAt,
+              })
+              .from(countries)
+              .innerJoin(dataSources, eq(countries.dataSourceId, dataSources.id))
+              .where(inArray(countries.iso3, countryIds))
+          : Promise.resolve([]),
+        jurisdictionIds.length > 0
+          ? database
+              .select({
+                archivedAt: jurisdictions.archivedAt,
+                id: jurisdictions.id,
+                isDemo: jurisdictions.isDemo,
+                label: jurisdictions.name,
+                sourceArchivedAt: dataSources.archivedAt,
+                url: jurisdictions.websiteUrl,
+                verifiedAt: jurisdictions.verifiedAt,
+              })
+              .from(jurisdictions)
+              .innerJoin(
+                dataSources,
+                eq(jurisdictions.dataSourceId, dataSources.id),
+              )
+              .where(inArray(jurisdictions.id, jurisdictionIds))
+          : Promise.resolve([]),
+        productIds.length > 0
+          ? database
+              .select({
+                archivedAt: products.archivedAt,
+                id: products.id,
+                isDemo: products.isDemo,
+                label: products.name,
+                sourceArchivedAt: dataSources.archivedAt,
+                verifiedAt: products.verifiedAt,
+              })
+              .from(products)
+              .innerJoin(dataSources, eq(products.dataSourceId, dataSources.id))
+              .where(inArray(products.id, productIds))
+          : Promise.resolve([]),
+        regulationIds.length > 0
+          ? database
+              .select({
+                archivedAt: regulations.archivedAt,
+                id: regulations.id,
+                isDemo: regulations.isDemo,
+                label: regulations.canonicalName,
+                sourceArchivedAt: dataSources.archivedAt,
+                verifiedAt: regulations.verifiedAt,
+              })
+              .from(regulations)
+              .innerJoin(
+                dataSources,
+                eq(regulations.dataSourceId, dataSources.id),
+              )
+              .where(inArray(regulations.id, regulationIds))
+          : Promise.resolve([]),
+        certificationIds.length > 0
+          ? database
+              .select({
+                archivedAt: productCertifications.archivedAt,
+                id: productCertifications.id,
+                sourceArchivedAt: dataSources.archivedAt,
+              })
+              .from(productCertifications)
+              .innerJoin(
+                dataSources,
+                eq(productCertifications.dataSourceId, dataSources.id),
+              )
+              .where(inArray(productCertifications.id, certificationIds))
+          : Promise.resolve([]),
+        marketMetricIds.length > 0
+          ? database
+              .select({
+                archivedAt: marketMetrics.archivedAt,
+                id: marketMetrics.id,
+                sourceArchivedAt: dataSources.archivedAt,
+              })
+              .from(marketMetrics)
+              .innerJoin(
+                dataSources,
+                eq(marketMetrics.dataSourceId, dataSources.id),
+              )
+              .where(inArray(marketMetrics.id, marketMetricIds))
+          : Promise.resolve([]),
+        documentIds.length > 0
+          ? database
+              .select({
+                archivedAt: documents.archivedAt,
+                governanceStatus: documents.governanceStatus,
+                id: documents.id,
+                sourceArchivedAt: dataSources.archivedAt,
+              })
+              .from(documents)
+              .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+              .where(inArray(documents.id, documentIds))
+          : Promise.resolve([]),
+      ]);
+
+      const publishedBaselineByIdentity = new Map<
+        string,
+        (typeof publishedDrafts)[number]
+      >();
+      for (const publishedDraft of publishedDrafts) {
+        const identity = governanceEntityIdentity(
+          publishedDraft.entityType,
+          publishedDraft.entityKey,
+        );
+        if (!publishedBaselineByIdentity.has(identity)) {
+          publishedBaselineByIdentity.set(identity, publishedDraft);
+        }
+      }
+
+      type RootState = "active" | "archived" | "unpublished";
+      const rootStateByIdentity = new Map<string, RootState>();
+      const dependencyByIdentity = new Map<
+        string,
+        {
+          isDemo: boolean;
+          label: string;
+          state: "active" | "archived";
+          url: string | null;
+          verifiedAt: Date;
+        }
+      >();
+      const rowState = (
+        archivedAt: Date | null,
+        sourceArchivedAt?: Date | null,
+      ): "active" | "archived" =>
+        archivedAt || sourceArchivedAt ? "archived" : "active";
+
+      for (const row of sourceRows) {
+        const state = rowState(row.archivedAt);
+        rootStateByIdentity.set(
+          governanceEntityIdentity("data_source", row.id),
+          state,
+        );
+        dependencyByIdentity.set(`source:${row.id}`, {
+          isDemo: row.isDemo,
+          label: row.label,
+          state,
+          url: row.url,
+          verifiedAt: row.verifiedAt,
+        });
+      }
+      for (const row of countryRows) {
+        const state = rowState(row.archivedAt, row.sourceArchivedAt);
+        rootStateByIdentity.set(
+          governanceEntityIdentity("country", row.id),
+          state,
+        );
+        dependencyByIdentity.set(`country:${row.id}`, {
+          isDemo: row.isDemo,
+          label: row.label,
+          state,
+          url: null,
+          verifiedAt: row.verifiedAt,
+        });
+      }
+      for (const row of jurisdictionRows) {
+        const state = rowState(row.archivedAt, row.sourceArchivedAt);
+        rootStateByIdentity.set(
+          governanceEntityIdentity("jurisdiction", row.id),
+          state,
+        );
+        dependencyByIdentity.set(`jurisdiction:${row.id}`, {
+          isDemo: row.isDemo,
+          label: row.label,
+          state,
+          url: row.url,
+          verifiedAt: row.verifiedAt,
+        });
+      }
+      for (const row of productRows) {
+        const state = rowState(row.archivedAt, row.sourceArchivedAt);
+        rootStateByIdentity.set(
+          governanceEntityIdentity("product", row.id),
+          state,
+        );
+        dependencyByIdentity.set(`product:${row.id}`, {
+          isDemo: row.isDemo,
+          label: row.label,
+          state,
+          url: null,
+          verifiedAt: row.verifiedAt,
+        });
+      }
+      for (const row of regulationRows) {
+        const state = rowState(row.archivedAt, row.sourceArchivedAt);
+        rootStateByIdentity.set(
+          governanceEntityIdentity("regulation", row.id),
+          state,
+        );
+        dependencyByIdentity.set(`regulation:${row.id}`, {
+          isDemo: row.isDemo,
+          label: row.label,
+          state,
+          url: null,
+          verifiedAt: row.verifiedAt,
+        });
+      }
+      for (const row of certificationRows) {
+        rootStateByIdentity.set(
+          governanceEntityIdentity("product_certification", row.id),
+          rowState(row.archivedAt, row.sourceArchivedAt),
+        );
+      }
+      for (const row of marketMetricRows) {
+        rootStateByIdentity.set(
+          governanceEntityIdentity("market_metric", row.id),
+          rowState(row.archivedAt, row.sourceArchivedAt),
+        );
+      }
+      for (const row of documentRows) {
+        rootStateByIdentity.set(
+          governanceEntityIdentity("document", row.id),
+          row.archivedAt || row.sourceArchivedAt
+            ? "archived"
+            : row.governanceStatus === "published"
+              ? "active"
+              : "unpublished",
+        );
+      }
+
+      return drafts.map((draft) => {
+        const identity = governanceEntityIdentity(
+          draft.entityType,
+          draft.entityKey,
+        );
+        const publishedBaseline =
+          publishedBaselineByIdentity.get(identity) ?? null;
+        const rootState = rootStateByIdentity.get(identity);
+        const baselineStatus = publishedBaseline
+          ? rootState === "active"
+            ? ("active" as const)
+            : rootState === "archived"
+              ? ("archived" as const)
+              : ("missing" as const)
+          : draft.version === 1
+            ? rootState === "archived"
+              ? ("archived" as const)
+              : ("first_revision" as const)
+            : ("missing" as const);
+        const dependencies = (referencesByDraftId.get(draft.id) ?? []).map(
+          (reference) => {
+            const resolved = dependencyByIdentity.get(
+              `${reference.kind}:${reference.value}`,
+            );
+            return {
+              isDemo: resolved?.isDemo ?? null,
+              kind: reference.kind,
+              label: resolved?.label ?? null,
+              path: reference.path,
+              state: resolved?.state ?? ("missing" as const),
+              url: resolved?.url ?? null,
+              value: reference.value,
+              verifiedAt: resolved?.verifiedAt ?? null,
+            };
+          },
+        );
+        const blockingReasons: string[] = [];
+
+        if (baselineStatus === "missing") {
+          blockingReasons.push(
+            "缺少可核验的当前发布基线；为避免覆盖未知正式数据，当前禁止发布。",
+          );
+        } else if (baselineStatus === "archived") {
+          blockingReasons.push(
+            "该实体的最近发布版本已归档；恢复或重新发布前需要单独核验。",
+          );
+        }
+        if (
+          publishedBaseline &&
+          publishedBaseline.version > draft.version
+        ) {
+          blockingReasons.push(
+            `已有更新的 v${publishedBaseline.version} 发布版本，不能用 v${draft.version} 覆盖。`,
+          );
+        }
+        const unavailableDependencies = dependencies.filter(
+          ({ state }) => state !== "active",
+        );
+        if (unavailableDependencies.length > 0) {
+          blockingReasons.push(
+            `存在 ${unavailableDependencies.length} 个缺失或已归档的来源/依赖。`,
+          );
+        }
+
+        return {
+          baselineStatus,
+          blockingReasons,
+          dependencies,
+          draftId: draft.id,
+          publishedBaseline,
+          publishReady: blockingReasons.length === 0,
+        };
+      });
+    },
+
     async listImportBatches() {
       return database
         .select()
@@ -1026,12 +1515,13 @@ export function createGovernanceRepository<
         if (
           entityDrafts.some(
             (candidate) =>
-              candidate.version > draft.version &&
+              candidate.id !== draft.id &&
+              candidate.version >= draft.version &&
               candidate.workflowStatus === "published",
           )
         ) {
           throw new GovernanceConflictError(
-            "A newer revision has already been published; the older draft cannot replace it.",
+            "The same or a newer revision has already been published; this draft cannot replace it.",
           );
         }
         if (
@@ -1048,6 +1538,164 @@ export function createGovernanceRepository<
           entityType: draft.entityType,
           payload: draft.payload,
         });
+
+        type FormalEntityState =
+          | "active"
+          | "archived"
+          | "missing"
+          | "unpublished";
+        const rowState = (
+          row:
+            | {
+                archivedAt: Date | null;
+                sourceArchivedAt?: Date | null;
+              }
+            | undefined,
+        ): FormalEntityState =>
+          !row
+            ? "missing"
+            : row.archivedAt || row.sourceArchivedAt
+              ? "archived"
+              : "active";
+        let formalEntityState: FormalEntityState;
+
+        if (draft.entityType === "country") {
+          const [row] = await transaction
+            .select({
+              archivedAt: countries.archivedAt,
+              sourceArchivedAt: dataSources.archivedAt,
+            })
+            .from(countries)
+            .innerJoin(dataSources, eq(countries.dataSourceId, dataSources.id))
+            .where(eq(countries.iso3, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = rowState(row);
+        } else if (draft.entityType === "data_source") {
+          const [row] = await transaction
+            .select({ archivedAt: dataSources.archivedAt })
+            .from(dataSources)
+            .where(eq(dataSources.id, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = rowState(row);
+        } else if (draft.entityType === "jurisdiction") {
+          const [row] = await transaction
+            .select({
+              archivedAt: jurisdictions.archivedAt,
+              sourceArchivedAt: dataSources.archivedAt,
+            })
+            .from(jurisdictions)
+            .innerJoin(
+              dataSources,
+              eq(jurisdictions.dataSourceId, dataSources.id),
+            )
+            .where(eq(jurisdictions.id, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = rowState(row);
+        } else if (draft.entityType === "market_metric") {
+          const [row] = await transaction
+            .select({
+              archivedAt: marketMetrics.archivedAt,
+              sourceArchivedAt: dataSources.archivedAt,
+            })
+            .from(marketMetrics)
+            .innerJoin(
+              dataSources,
+              eq(marketMetrics.dataSourceId, dataSources.id),
+            )
+            .where(eq(marketMetrics.id, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = rowState(row);
+        } else if (draft.entityType === "product") {
+          const [row] = await transaction
+            .select({
+              archivedAt: products.archivedAt,
+              sourceArchivedAt: dataSources.archivedAt,
+            })
+            .from(products)
+            .innerJoin(dataSources, eq(products.dataSourceId, dataSources.id))
+            .where(eq(products.id, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = rowState(row);
+        } else if (draft.entityType === "product_certification") {
+          const [row] = await transaction
+            .select({
+              archivedAt: productCertifications.archivedAt,
+              sourceArchivedAt: dataSources.archivedAt,
+            })
+            .from(productCertifications)
+            .innerJoin(
+              dataSources,
+              eq(productCertifications.dataSourceId, dataSources.id),
+            )
+            .where(eq(productCertifications.id, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = rowState(row);
+        } else if (draft.entityType === "regulation") {
+          const [row] = await transaction
+            .select({
+              archivedAt: regulations.archivedAt,
+              sourceArchivedAt: dataSources.archivedAt,
+            })
+            .from(regulations)
+            .innerJoin(
+              dataSources,
+              eq(regulations.dataSourceId, dataSources.id),
+            )
+            .where(eq(regulations.id, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = rowState(row);
+        } else {
+          const [row] = await transaction
+            .select({
+              archivedAt: documents.archivedAt,
+              governanceStatus: documents.governanceStatus,
+              sourceArchivedAt: dataSources.archivedAt,
+            })
+            .from(documents)
+            .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+            .where(eq(documents.id, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = !row
+            ? "missing"
+            : row.archivedAt || row.sourceArchivedAt
+              ? "archived"
+              : row.governanceStatus === "published"
+                ? "active"
+                : "unpublished";
+        }
+
+        if (draft.version === 1) {
+          if (formalEntityState === "archived") {
+            throw new GovernanceConflictError(
+              "A first governance revision cannot revive an archived formal entity.",
+            );
+          }
+        } else {
+          const hasLowerPublishedBaseline = entityDrafts.some(
+            (candidate) =>
+              candidate.version < draft.version &&
+              candidate.workflowStatus === "published" &&
+              !candidate.archivedAt,
+          );
+          if (!hasLowerPublishedBaseline) {
+            throw new GovernanceConflictError(
+              `Revision v${draft.version} requires a lower published governance baseline.`,
+            );
+          }
+          if (formalEntityState !== "active") {
+            throw new GovernanceConflictError(
+              `Revision v${draft.version} requires an active formal entity; missing, archived, or unpublished entities cannot be recreated by an update.`,
+            );
+          }
+        }
 
         const now = new Date();
         let beforeData: GovernanceJson | null = null;
@@ -1759,7 +2407,7 @@ export function createGovernanceRepository<
                 ...limit,
                 dataSourceId: limit.dataSourceId,
                 id: requiredId(limit.id, "regulation_limit"),
-                limitValue: limit.limitValue.toFixed(6),
+                limitValue: limit.limitValue,
                 measurementBasis: limit.measurementBasis ?? null,
                 powerMaxKw: limit.powerMaxKw ?? null,
                 powerMinKw: limit.powerMinKw ?? null,
@@ -1971,7 +2619,7 @@ export function createGovernanceRepository<
                 currencyCode: payload.currencyCode ?? null,
                 id,
                 publishedOn: payload.publishedOn ?? null,
-                valueNumeric: payload.valueNumeric.toFixed(6),
+                valueNumeric: payload.valueNumeric,
                 verifiedAt: new Date(payload.verifiedAt),
               })
               .onConflictDoUpdate({
@@ -1991,7 +2639,7 @@ export function createGovernanceRepository<
                   publishedOn: payload.publishedOn ?? null,
                   unitCode: payload.unitCode,
                   updatedAt: now,
-                  valueNumeric: payload.valueNumeric.toFixed(6),
+                  valueNumeric: payload.valueNumeric,
                   verifiedAt: new Date(payload.verifiedAt),
                 },
                 target: marketMetrics.id,
@@ -2060,20 +2708,6 @@ export function createGovernanceRepository<
             );
             await requireDemoJurisdictionHasNoNonDemoDependents(id);
           }
-          const beforeMemberships = before
-            ? await transaction
-                .select()
-                .from(countryJurisdictions)
-                .where(
-                  and(
-                    eq(countryJurisdictions.jurisdictionId, id),
-                    isNull(countryJurisdictions.archivedAt),
-                  ),
-                )
-            : [];
-          beforeData = before
-            ? { jurisdiction: before, memberships: beforeMemberships }
-            : null;
           await transaction
             .insert(jurisdictions)
             .values({
@@ -2099,18 +2733,36 @@ export function createGovernanceRepository<
               },
               target: jurisdictions.id,
             });
-          // 国家成员关系更新：payload 中不存在的活跃成员归档（移除），
-          // payload 成员按复合主键（country_iso3, jurisdiction_id）upsert，
-          // 重发布因此幂等；before/after 审计快照保留历史。
+          const beforeMemberships = await transaction
+            .select()
+            .from(countryJurisdictions)
+            .where(
+              and(
+                eq(countryJurisdictions.jurisdictionId, id),
+                isNull(countryJurisdictions.archivedAt),
+              ),
+            )
+            .for("update");
+          assertMembershipPeriodsDoNotOverlap(payload.memberships);
+          beforeData = before
+            ? { jurisdiction: before, memberships: beforeMemberships }
+            : null;
+          // 国家成员关系更新：同一国家可有多个互不重叠的有效期，
+          // payload 中不存在的活跃区间归档，精确区间键重发布保持幂等。
           const memberships = payload.memberships;
-          const payloadCountries = new Set(
-            memberships.map((membership) => membership.countryIso3),
+          const payloadMembershipKeys = new Set(
+            memberships.map(
+              (membership) =>
+                `${membership.countryIso3}\u0000${membership.validFrom}`,
+            ),
           );
           const toArchive = beforeMemberships
             .filter(
-              (membership) => !payloadCountries.has(membership.countryIso3),
-            )
-            .map((membership) => membership.countryIso3);
+              (membership) =>
+                !payloadMembershipKeys.has(
+                  `${membership.countryIso3}\u0000${membership.validFrom}`,
+                ),
+            );
           if (toArchive.length > 0) {
             await transaction
               .update(countryJurisdictions)
@@ -2119,7 +2771,20 @@ export function createGovernanceRepository<
                 and(
                   eq(countryJurisdictions.jurisdictionId, id),
                   isNull(countryJurisdictions.archivedAt),
-                  inArray(countryJurisdictions.countryIso3, toArchive),
+                  or(
+                    ...toArchive.map((membership) =>
+                      and(
+                        eq(
+                          countryJurisdictions.countryIso3,
+                          membership.countryIso3,
+                        ),
+                        eq(
+                          countryJurisdictions.validFrom,
+                          membership.validFrom,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               );
           }
@@ -2143,13 +2808,13 @@ export function createGovernanceRepository<
                   dataSourceId: sql`excluded.data_source_id`,
                   isDemo: sql`excluded.is_demo`,
                   updatedAt: now,
-                  validFrom: sql`excluded.valid_from`,
                   validTo: sql`excluded.valid_to`,
                   verifiedAt: sql`excluded.verified_at`,
                 },
                 target: [
                   countryJurisdictions.countryIso3,
                   countryJurisdictions.jurisdictionId,
+                  countryJurisdictions.validFrom,
                 ],
               });
           }

@@ -6,6 +6,11 @@ import {
   httpUrlSchema,
   iso3Schema,
 } from "@/features/database/schemas";
+import {
+  analysisSourceSchema,
+  compareRegulationsInputSchema,
+  regulationCountryComparisonSchema,
+} from "@/features/marketing/schemas";
 
 const isoTimestampSchema = z.iso.datetime({ offset: true });
 
@@ -17,6 +22,16 @@ export const countryGeoIndexSchema = z.array(
     })
     .strict(),
 );
+
+export const countryDirectoryEntrySchema = z
+  .object({
+    hasGeometry: z.boolean(),
+    iso3: iso3Schema,
+    name: z.string().trim().min(1),
+  })
+  .strict();
+
+export const countryDirectorySchema = z.array(countryDirectoryEntrySchema);
 
 export const countryGeoFeaturePropertiesSchema = z
   .object({
@@ -161,9 +176,20 @@ const countryDetailSchema = countryMapSummarySchema
   })
   .strict();
 
+export const countryApplicabilitySummarySchema = z
+  .object({
+    country: regulationCountryComparisonSchema,
+    lastVerifiedAt: isoTimestampSchema.nullable(),
+    missingData: z.array(z.string()),
+    query: compareRegulationsInputSchema,
+    sources: z.array(analysisSourceSchema),
+  })
+  .strict();
+
 export const countryDetailResponseSchema = z.discriminatedUnion("status", [
   z
     .object({
+      applicabilitySummary: countryApplicabilitySummarySchema.nullable(),
       asOf: z.iso.date(),
       country: countryDetailSchema,
       status: z.literal("available"),
@@ -181,7 +207,13 @@ export const countryApiErrorSchema = z
   .object({
     error: z
       .object({
-        code: z.enum(["INVALID_ISO3", "INVALID_AS_OF", "INTERNAL_ERROR"]),
+        code: z.enum([
+          "COUNTRY_NOT_FOUND",
+          "INVALID_ISO3",
+          "INVALID_AS_OF",
+          "INVALID_FILTER",
+          "INTERNAL_ERROR",
+        ]),
         message: z.string(),
       })
       .strict(),
@@ -191,6 +223,7 @@ export const countryApiErrorSchema = z
 export type CountryDetailResponse = z.infer<
   typeof countryDetailResponseSchema
 >;
+export type CountryDirectory = z.infer<typeof countryDirectorySchema>;
 export type CountryGeoIndex = z.infer<typeof countryGeoIndexSchema>;
 export type CountryMapResponse = z.infer<typeof countryMapResponseSchema>;
 export type CountryMapSummary = z.infer<typeof countryMapSummarySchema>;

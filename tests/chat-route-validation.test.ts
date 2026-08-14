@@ -55,6 +55,9 @@ describe("POST /api/chat validation ordering", () => {
     );
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("x-request-id")).toMatch(
+      /^[0-9a-f-]{36}$/u,
+    );
     expect(await response.text()).toContain("结构化事实和可追溯来源");
     expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
     expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();

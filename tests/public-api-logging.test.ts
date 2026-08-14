@@ -136,6 +136,22 @@ describe("public API error logging", () => {
     expect(mocks.getCountryDetails).not.toHaveBeenCalled();
   });
 
+  it("returns 404 for an unknown three-letter country without calling the service", async () => {
+    const response = await getCountry(
+      new Request("http://localhost/api/countries/ZZZ"),
+      { params: Promise.resolve({ iso3: "ZZZ" }) },
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "COUNTRY_NOT_FOUND",
+        message: "未找到该 ISO3 对应的国家目录记录。",
+      },
+    });
+    expect(mocks.getCountryDetails).not.toHaveBeenCalled();
+  });
+
   it("returns a safe error when country route parameters cannot be resolved", async () => {
     const error = new Error(`Route params failed at ${sensitiveText}`);
     error.name = sensitiveText;

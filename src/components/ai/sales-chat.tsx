@@ -28,7 +28,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { AssistantMarkdown } from "@/components/ai/assistant-markdown";
+import { unwrapUntrustedKnowledgeExcerpt } from "@/domain/knowledge/retrieval-policy";
 import { Button } from "@/components/ui/button";
+import { isNavigableEvidenceUrl } from "@/lib/source-link";
 import {
   CHAT_ATTACHMENT_ACCEPT,
   CHAT_DOCUMENT_ATTACHMENT_ACCEPT,
@@ -47,10 +50,10 @@ import {
   MIN_CHAT_IMAGE_DIMENSION,
 } from "@/features/ai/image-attachments";
 import {
-  clientAiToolResultSchema,
   type ClientAiCitation,
   type ClientAiToolResult,
 } from "@/features/ai/client-schemas";
+import { toolPartPresentation } from "@/features/ai/tool-part-presentation";
 import { MAX_CHAT_USER_MESSAGE_CHARACTERS } from "@/features/ai/constants";
 import { parseSerializedApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
@@ -61,6 +64,7 @@ type SalesChatProps = {
   imageUploadsEnabled: boolean;
   initialPrompt?: string;
   selectedCountryIso3: string | null;
+  suggestedPrompts?: readonly string[];
 };
 
 type PendingAttachment = {
@@ -299,7 +303,7 @@ function CitationList({
                 {citation.sourceTitle} · {citationLocator(citation)}
               </p>
             </div>
-            {citation.sourceUrl ? (
+            {isNavigableEvidenceUrl(citation.sourceUrl) ? (
               <a
                 aria-label={`打开来源：${citation.sourceTitle}`}
                 className="shrink-0 text-primary hover:underline"
@@ -309,6 +313,10 @@ function CitationList({
               >
                 <ExternalLink aria-hidden="true" className="size-3.5" />
               </a>
+            ) : citation.isDemo ? (
+              <span className="shrink-0 text-[10px] text-amber-800">
+                虚构证据，无外部链接
+              </span>
             ) : null}
           </div>
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
@@ -508,7 +516,7 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
               #{item.rank} {item.document.title}
             </p>
             <p className="mt-1 line-clamp-2 text-muted-foreground">
-              {item.content}
+              {unwrapUntrustedKnowledgeExcerpt(item.content)}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
               最终得分 {item.finalScore.toFixed(3)}
@@ -548,8 +556,19 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
                 {fitStatusLabels[evaluation.status]}
               </span>
             </div>
+            <p className="mt-1 font-medium">
+              法规/认证适配：{fitStatusLabels[evaluation.status]} · 商业准备度：
+              {evaluation.commercialReadiness === "ready"
+                ? "就绪"
+                : evaluation.commercialReadiness === "not_ready"
+                  ? "未就绪"
+                  : "未知"}
+            </p>
             <p className="mt-1 text-muted-foreground">
               {evaluation.reasons.map(({ message }) => message).join("；")}
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              查询日供应状态：{evaluation.productChecks.availability.message}
             </p>
             {evaluation.product ? (
               <p className="mt-1 text-[11px] text-muted-foreground">
@@ -697,7 +716,7 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
         <div className="mt-2 space-y-1">
           {brief.recommendedProducts.map((product) => (
             <p key={product.modelCode}>
-              规则匹配：{product.modelCode} · {product.name} · 供应期
+              商业就绪：{product.modelCode} · {product.name} · 法规/认证 fit · 查询日供应 pass · 供应期
               {product.availableFrom === null && product.availableTo === null
                 ? "未记录"
                 : `${product.availableFrom ?? "未记录"} → ${product.availableTo ?? "开放"}`}
@@ -804,6 +823,27 @@ function ToolResultCard({ result }: { result: ClientAiToolResult }) {
 
 type ChatMessagePart = UIMessage["parts"][number];
 
+function citationUrlsForMessage(parts: readonly ChatMessagePart[]): string[] {
+  const urls = new Set<string>();
+
+  for (const part of parts) {
+    if (!isToolUIPart(part)) {
+      continue;
+    }
+    const presentation = toolPartPresentation(part);
+    if (presentation.kind !== "result") {
+      continue;
+    }
+    for (const citation of presentation.result.citations) {
+      if (isNavigableEvidenceUrl(citation.sourceUrl)) {
+        urls.add(citation.sourceUrl);
+      }
+    }
+  }
+
+  return Array.from(urls);
+}
+
 function AttachmentPart({ part }: { part: FileUIPart }) {
   const filename = part.filename ?? "未命名附件";
 
@@ -838,11 +878,20 @@ function ToolPart({ part }: { part: ChatMessagePart }) {
   if (!isToolUIPart(part)) {
     return null;
   }
-  if ("output" in part) {
-    const parsed = clientAiToolResultSchema.safeParse(part.output);
-    if (parsed.success) {
-      return <ToolResultCard result={parsed.data} />;
-    }
+  const presentation = toolPartPresentation(part);
+  if (presentation.kind === "result") {
+    return <ToolResultCard result={presentation.result} />;
+  }
+  if (presentation.kind === "error") {
+    return (
+      <div
+        className="my-2 flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+        role="alert"
+      >
+        <AlertTriangle aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+        {presentation.message}
+      </div>
+    );
   }
 
   return (
@@ -859,6 +908,7 @@ export function SalesChat({
   imageUploadsEnabled,
   initialPrompt = "",
   selectedCountryIso3,
+  suggestedPrompts = [],
 }: SalesChatProps) {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [input, setInput] = useState(initialPrompt);
@@ -946,17 +996,22 @@ export function SalesChat({
     },
     transport,
   });
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageLogRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
   const waiting = status === "submitted" || status === "streaming";
   const recoveryPending = error !== undefined && failedSubmission !== null;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ block: "end" });
-  }, [messages, status]);
+    const messageLog = messageLogRef.current;
+    if (!messageLog || !shouldAutoScrollRef.current) {
+      return;
+    }
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    const frame = requestAnimationFrame(() => {
+      messageLog.scrollTop = messageLog.scrollHeight;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [messages, status]);
 
   async function selectAttachments(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.currentTarget.files ?? []);
@@ -1215,12 +1270,29 @@ export function SalesChat({
         </div>
       </header>
 
+      <p aria-live="polite" className="sr-only" role="status">
+        {status === "submitted"
+          ? "问题已发送，正在选择确定性工具。"
+          : status === "streaming"
+            ? "正在生成回答。"
+            : status === "ready" && messages.length > 0
+              ? "回答已完成。"
+              : ""}
+      </p>
+
       <div
         aria-label="AI 对话记录"
-        aria-live="polite"
-        aria-relevant="additions text"
         className="min-h-56 flex-1 space-y-4 overflow-y-auto bg-[#fafaf6]/65 p-4 sm:p-6"
-        role="log"
+        onScroll={(event) => {
+          const messageLog = event.currentTarget;
+          shouldAutoScrollRef.current =
+            messageLog.scrollHeight -
+              messageLog.scrollTop -
+              messageLog.clientHeight <
+            80;
+        }}
+        ref={messageLogRef}
+        role="region"
       >
         {messages.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-emerald-900/15 bg-[#f1f5ec] p-5 text-sm">
@@ -1229,11 +1301,34 @@ export function SalesChat({
                 ? "离线 Demo 可尝试：“CHN 目前有哪些有效法规？”或“CHN 的 non-road 100 kW 产品是否适配？”；只查询明确标记的虚构 fixture。"
                 : "例如：“CHN 目前有哪些有效法规？”或“DEU 的 non-road 120 kW 产品是否适配？”也可以比较 CHN 与 BRA 并生成结构化销售简报。"}
             </p>
+            {suggestedPrompts.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {suggestedPrompts.map((prompt) => (
+                  <button
+                    className="rounded-full border border-emerald-900/10 bg-white px-3 py-1.5 text-left text-xs font-medium text-emerald-900 transition-colors hover:bg-emerald-50"
+                    key={prompt}
+                    onClick={() => {
+                      setInput(prompt);
+                      inputRef.current?.focus();
+                    }}
+                    type="button"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
-        {messages.map((message) => (
-          <article
+        {messages.map((message) => {
+          const allowedExternalUrls =
+            message.role === "assistant"
+              ? citationUrlsForMessage(message.parts)
+              : [];
+
+          return (
+            <article
             className={cn(
               "rounded-2xl px-4 py-3 text-sm shadow-sm",
               message.role === "user"
@@ -1257,9 +1352,16 @@ export function SalesChat({
                         AI 解释/建议（非事实层）
                       </p>
                     ) : null}
-                    <p className="whitespace-pre-wrap leading-6">
-                      {part.text}
-                    </p>
+                    {message.role === "assistant" ? (
+                      <AssistantMarkdown
+                        allowedExternalUrls={allowedExternalUrls}
+                        content={part.text}
+                      />
+                    ) : (
+                      <p className="whitespace-pre-wrap leading-6">
+                        {part.text}
+                      </p>
+                    )}
                   </div>
                 );
               }
@@ -1280,8 +1382,9 @@ export function SalesChat({
                 />
               );
             })}
-          </article>
-        ))}
+            </article>
+          );
+        })}
 
         {status === "submitted" ? (
           <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
@@ -1339,7 +1442,6 @@ export function SalesChat({
             ) : null}
           </div>
         ) : null}
-        <div ref={messagesEndRef} />
       </div>
 
       <div className="border-t border-black/[0.06] bg-[#f2f4ee] p-3 sm:p-4">

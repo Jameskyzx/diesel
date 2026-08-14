@@ -1,3 +1,4 @@
+import { PgDialect } from "drizzle-orm/pg-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -7,6 +8,10 @@ import {
   parseGovernanceSnapshot,
 } from "../scripts/db/governance-snapshot-format";
 import {
+  assertNoMarketMetricTargetNaturalKeyConflicts,
+  GOVERNANCE_PREFLIGHT_BIND_PARAMETER_BUDGET,
+  MARKET_METRIC_NATURAL_KEY_PARAMETERS_PER_ROW,
+  POSTGRES_MAX_BIND_PARAMETERS,
   restoreGovernanceSnapshotInAuthorizedTransaction,
   restoreGovernanceSnapshotInTransaction,
 } from "../scripts/db/governance-snapshot-restore";
@@ -24,11 +29,13 @@ const ids = {
   extraJurisdiction: "00000000-0000-4000-8000-000000000093",
   extraLimit: "00000000-0000-4000-8000-000000000091",
   extraLog: "00000000-0000-4000-8000-000000000097",
+  extraMarketMetric: "00000000-0000-4000-8000-000000000088",
   extraRegulation: "00000000-0000-4000-8000-000000000092",
   extraSource: "00000000-0000-4000-8000-000000000099",
   jurisdiction: "00000000-0000-4000-8000-000000000003",
   limit: "00000000-0000-4000-8000-000000000005",
   log: "00000000-0000-4000-8000-000000000009",
+  marketMetric: "00000000-0000-4000-8000-000000000006",
   regulation: "00000000-0000-4000-8000-000000000004",
   source: "00000000-0000-4000-8000-000000000001",
 } as const;
@@ -151,6 +158,29 @@ function buildSnapshot(): GovernanceSnapshot {
         validRows: 0,
       },
     ],
+    market_metrics: [
+      {
+        applicationScope: null,
+        archivedAt: null,
+        countryIso3: "ZZZ",
+        createdAt: timestamp,
+        currencyCode: null,
+        dataSourceId: ids.source,
+        definition: "Snapshot market metric",
+        id: ids.marketMetric,
+        isDemo: false,
+        methodologyVersion: "snapshot-v1",
+        metricCode: "SNAPSHOT_MARKET",
+        metricName: "Snapshot market metric",
+        periodEnd: "2026-01-01",
+        periodStart: "2025-01-01",
+        publishedOn: "2026-02-01",
+        unitCode: "count",
+        updatedAt: timestamp,
+        valueNumeric: "9007199254740993.000001",
+        verifiedAt: timestamp,
+      },
+    ],
     regulation_limits: [
       {
         applicationScope: "on-road",
@@ -197,7 +227,7 @@ function buildSnapshot(): GovernanceSnapshot {
   };
   return parseGovernanceSnapshot({
     exportedAt: timestamp,
-    formatVersion: 3,
+    formatVersion: 4,
     tableCounts: Object.fromEntries(
       Object.entries(tables).map(([tableName, rows]) => [
         tableName,
@@ -315,7 +345,7 @@ async function seedRowsOutsideSnapshot(
 const physicalStateQueries = [
   { orderBy: "iso3", tableName: "countries" },
   {
-    orderBy: "country_iso3, jurisdiction_id",
+    orderBy: "country_iso3, jurisdiction_id, valid_from",
     tableName: "country_jurisdictions",
   },
   { orderBy: "id", tableName: "data_change_logs" },
@@ -323,6 +353,7 @@ const physicalStateQueries = [
   { orderBy: "id", tableName: "data_sources" },
   { orderBy: "id", tableName: "jurisdictions" },
   { orderBy: "id", tableName: "market_import_batches" },
+  { orderBy: "id", tableName: "market_metrics" },
   { orderBy: "id", tableName: "regulation_limits" },
   { orderBy: "id", tableName: "regulations" },
 ] as const;
@@ -391,6 +422,45 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     value.tableCounts.regulations += 1;
 
     expect(() => parseGovernanceSnapshot(value)).toThrow("Duplicate snapshot key");
+  });
+
+  it("preflights market natural keys above PostgreSQL's parameter limit in safe batches", async () => {
+    const baseRow = buildSnapshot().tables.market_metrics[0]!;
+    const rowCount =
+      Math.floor(
+        POSTGRES_MAX_BIND_PARAMETERS /
+          MARKET_METRIC_NATURAL_KEY_PARAMETERS_PER_ROW,
+      ) + 1;
+    const rows = Array.from({ length: rowCount }, (_, index) => ({
+      ...baseRow,
+      id: `market-metric-${index}`,
+      metricCode: `SNAPSHOT_MARKET_${index}`,
+    }));
+    const execute = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ conflict: true }]);
+
+    await expect(
+      assertNoMarketMetricTargetNaturalKeyConflicts({ execute }, rows),
+    ).rejects.toThrow("market_metrics observation");
+
+    expect(execute).toHaveBeenCalledTimes(2);
+    const dialect = new PgDialect();
+    const queries = execute.mock.calls.map(([query]) =>
+      dialect.sqlToQuery(query),
+    );
+    expect(
+      queries.every(
+        ({ params, sql }) =>
+          params.length <= GOVERNANCE_PREFLIGHT_BIND_PARAMETER_BUDGET &&
+          params.length < POSTGRES_MAX_BIND_PARAMETERS &&
+          sql.trimStart().startsWith("with incoming"),
+      ),
+    ).toBe(true);
+    expect(
+      queries.reduce((count, { params }) => count + params.length, 0),
+    ).toBe(rowCount * MARKET_METRIC_NATURAL_KEY_PARAMETERS_PER_ROW);
   });
 
   it(
@@ -546,6 +616,48 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     expect(after.rows[0]).toEqual(exactState);
   });
 
+  it("rolls back changed and newly inserted market observations exactly", async () => {
+    const { client, database } = await createTestDatabase();
+    openClients.push(client);
+    const snapshot = buildSnapshot();
+    await database.transaction((transaction) =>
+      restoreGovernanceSnapshotInTransaction(transaction, snapshot),
+    );
+    await client.query(
+      "update market_metrics set value_numeric = '1.000000' where id = $1",
+      [ids.marketMetric],
+    );
+    await client.query(
+      `insert into market_metrics
+         (id, country_iso3, metric_code, metric_name, definition,
+          period_start, period_end, value_numeric, unit_code,
+          methodology_version, data_source_id, verified_at, is_demo,
+          created_at, updated_at)
+       values ($1, 'ZZZ', 'SNAPSHOT_EXTRA', 'Snapshot extra', 'Must roll back',
+               '2025-01-01', '2026-01-01', '2.000000', 'count', 'snapshot-v1',
+               $2, $3, false, $3, $3)`,
+      [ids.extraMarketMetric, ids.source, timestamp],
+    );
+
+    await database.transaction((transaction) =>
+      restoreGovernanceSnapshotInTransaction(transaction, snapshot),
+    );
+
+    const state = await client.query<{
+      extraCount: number;
+      restoredValue: string;
+    }>(
+      `select
+         (select value_numeric::text from market_metrics where id = $1) as "restoredValue",
+         (select count(*)::int from market_metrics where id = $2) as "extraCount"`,
+      [ids.marketMetric, ids.extraMarketMetric],
+    );
+    expect(state.rows[0]).toEqual({
+      extraCount: 0,
+      restoredValue: "9007199254740993.000001",
+    });
+  });
+
   it("fails the whole restore when an external foreign key blocks physical deletion", async () => {
     const { client, database } = await createTestDatabase();
     openClients.push(client);
@@ -575,34 +687,35 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     });
   });
 
-  it("rejects snapshot-external country cascades before any restore writes", async () => {
+  it("restores market metrics and deletes snapshot-external observations", async () => {
     const { client, database } = await createTestDatabase();
     openClients.push(client);
     await seedRowsOutsideSnapshot(client, {
       withExternalCountryReference: true,
     });
 
-    await expect(
-      database.transaction((transaction) =>
-        restoreGovernanceSnapshotInTransaction(transaction, buildSnapshot()),
-      ),
-    ).rejects.toThrow("references outside the governance snapshot");
+    await database.transaction((transaction) =>
+      restoreGovernanceSnapshotInTransaction(transaction, buildSnapshot()),
+    );
 
     const state = await client.query<{
       extraCountry: number;
       marketMetrics: number;
+      snapshotMetric: string;
       snapshotSource: number;
     }>(
       `select
          (select count(*)::int from data_sources where id = $1) as "snapshotSource",
          (select count(*)::int from countries where iso3 = 'YYY') as "extraCountry",
-         (select count(*)::int from market_metrics where country_iso3 = 'YYY') as "marketMetrics"`,
-      [ids.source],
+         (select count(*)::int from market_metrics where country_iso3 = 'YYY') as "marketMetrics",
+         (select value_numeric::text from market_metrics where id = $2) as "snapshotMetric"`,
+      [ids.source, ids.marketMetric],
     );
     expect(state.rows[0]).toEqual({
-      extraCountry: 1,
-      marketMetrics: 1,
-      snapshotSource: 0,
+      extraCountry: 0,
+      marketMetrics: 0,
+      snapshotMetric: "9007199254740993.000001",
+      snapshotSource: 1,
     });
   });
 
@@ -722,6 +835,7 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
       data_sources: [],
       jurisdictions: [],
       market_import_batches: [],
+      market_metrics: [],
       regulation_limits: [],
       regulations: [],
     };
@@ -740,7 +854,7 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     ]);
     const snapshot = parseGovernanceSnapshot({
       exportedAt: timestamp,
-      formatVersion: 3,
+      formatVersion: 4,
       tableCounts: createGovernanceTableCounts(exportedTables),
       tables: exportedTables,
     });

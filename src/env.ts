@@ -24,6 +24,9 @@ const optionalBoolean = z.preprocess(
 );
 
 const serverEnvSchema = z.object({
+  AI_CHAT_RATE_LIMIT_BACKEND: z
+    .enum(["memory", "postgres"])
+    .optional(),
   AI_CHAT_RATE_LIMIT_PER_HOUR: z.preprocess(
     (value) => (value === "" ? undefined : value),
     z.coerce
@@ -69,6 +72,7 @@ const serverEnvSchema = z.object({
 });
 
 export const env = serverEnvSchema.parse({
+  AI_CHAT_RATE_LIMIT_BACKEND: process.env.AI_CHAT_RATE_LIMIT_BACKEND,
   AI_CHAT_RATE_LIMIT_PER_HOUR: process.env.AI_CHAT_RATE_LIMIT_PER_HOUR,
   AI_API_KEY: process.env.AI_API_KEY,
   AI_BASE_URL: process.env.AI_BASE_URL,

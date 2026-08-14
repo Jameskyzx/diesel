@@ -62,7 +62,7 @@ const regulationPayload = {
       engineTypeCode: "CI",
       id: "00000000-0000-4000-8000-000000000501",
       isDemo: false,
-      limitValue: 1,
+      limitValue: "1",
       measurementBasis: null,
       pollutantCode: "NOX",
       powerMaxKw: 300,
@@ -95,7 +95,7 @@ const marketMetricPayload = {
   periodStart: "2025-01-01",
   publishedOn: null,
   unitCode: "USD",
-  valueNumeric: 1,
+  valueNumeric: "1",
   verifiedAt: "2026-08-05T13:00:00.000Z",
 } as const;
 
@@ -185,7 +185,7 @@ describe("admin product governance schemas", () => {
   });
 
   it("rejects non-numeric JSON types instead of applying JavaScript coercion", () => {
-    for (const valueNumeric of [true, false, [], [1]]) {
+    for (const valueNumeric of [true, false, [], [1], 1]) {
       const result = marketMetricDraftPayloadSchema.safeParse({
         ...marketMetricPayload,
         valueNumeric,
@@ -211,6 +211,50 @@ describe("admin product governance schemas", () => {
       expect(issuePaths(marketResult)).toContain("valueNumeric");
       expect(productResult.success).toBe(false);
       expect(issuePaths(productResult)).toContain("powerMinKw");
+    }
+  });
+
+  it("retains exact database decimals as canonical fixed-scale strings", () => {
+    const regulation = regulationDraftPayloadSchema.parse({
+      ...regulationPayload,
+      limits: [
+        {
+          ...regulationPayload.limits[0],
+          limitValue: "123456789012.123456",
+        },
+      ],
+    });
+    const market = marketMetricDraftPayloadSchema.parse({
+      ...marketMetricPayload,
+      valueNumeric: "9007199254740993.000001",
+    });
+
+    expect(regulation.limits[0]?.limitValue).toBe(
+      "123456789012.123456",
+    );
+    expect(market.valueNumeric).toBe("9007199254740993.000001");
+  });
+
+  it("rejects decimal precision or scale outside the database columns", () => {
+    for (const limitValue of ["1234567890123", "1.0000001", "1e3"]) {
+      expect(
+        regulationDraftPayloadSchema.safeParse({
+          ...regulationPayload,
+          limits: [{ ...regulationPayload.limits[0], limitValue }],
+        }).success,
+      ).toBe(false);
+    }
+    for (const valueNumeric of [
+      "1234567890123456789",
+      "1.0000001",
+      "1e3",
+    ]) {
+      expect(
+        marketMetricDraftPayloadSchema.safeParse({
+          ...marketMetricPayload,
+          valueNumeric,
+        }).success,
+      ).toBe(false);
     }
   });
 });
@@ -353,14 +397,45 @@ describe("admin jurisdiction governance schemas", () => {
     expect(issuePaths(result)).toContain("memberships");
   });
 
-  it("rejects duplicate countries in a membership snapshot", () => {
+  it("rejects overlapping periods for one country in a membership snapshot", () => {
     const result = jurisdictionDraftPayloadSchema.safeParse({
       ...jurisdictionPayload,
       memberships: [membership, membership],
     });
 
     expect(result.success).toBe(false);
-    expect(issuePaths(result)).toContain("memberships.1.countryIso3");
+    expect(issuePaths(result)).toContain("memberships.1.validFrom");
+  });
+
+  it("accepts disjoint exit and re-entry periods for one country", () => {
+    const result = jurisdictionDraftPayloadSchema.safeParse({
+      ...jurisdictionPayload,
+      memberships: [
+        { ...membership, validFrom: "2020-01-01", validTo: "2022-01-01" },
+        { ...membership, validFrom: "2024-01-01", validTo: null },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects periods nested inside an earlier long-running membership", () => {
+    const result = jurisdictionDraftPayloadSchema.safeParse({
+      ...jurisdictionPayload,
+      memberships: [
+        { ...membership, validFrom: "2020-01-01", validTo: "2030-01-01" },
+        { ...membership, validFrom: "2021-01-01", validTo: "2022-01-01" },
+        { ...membership, validFrom: "2023-01-01", validTo: "2024-01-01" },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+    expect(issuePaths(result)).toEqual(
+      expect.arrayContaining([
+        "memberships.1.validFrom",
+        "memberships.2.validFrom",
+      ]),
+    );
   });
 
   it("requires a country jurisdiction to have one matching membership", () => {

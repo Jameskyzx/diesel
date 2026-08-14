@@ -35,6 +35,7 @@ describe("country coverage gating (ADR-040)", () => {
 
       expect(china.status).toBe("available");
       if (china.status === "available") {
+        expect(china.applicabilitySummary).toBeNull();
         expect(china.country.iso3).toBe("CHN");
         expect(china.country.isDemo).toBe(true);
         expect(china.country.jurisdictions[0]?.source.title).toContain(
@@ -174,6 +175,41 @@ describe("country coverage gating (ADR-040)", () => {
     },
     30_000,
   );
+
+  it("returns a deterministic single-country applicability summary when scope and power are provided", async () => {
+    const china = await getCountryDetails({
+      applicationScope: "non-road",
+      asOf: "2026-01-20",
+      iso3: "CHN",
+      powerKw: 100,
+    });
+
+    expect(china.status).toBe("available");
+    if (china.status !== "available") {
+      throw new Error("Expected an available CHN country detail.");
+    }
+    expect(china.applicabilitySummary?.query).toEqual({
+      applicationScope: "non-road",
+      asOf: "2026-01-20",
+      countryIso3s: ["CHN"],
+      powerKw: 100,
+    });
+    expect(
+      china.applicabilitySummary?.country.currentEffectiveRegulations[0],
+    ).toMatchObject({
+      limits: expect.arrayContaining([
+        expect.objectContaining({
+          limitValue: "3.500000",
+          pollutantCode: "NOX",
+          powerMaxKw: 560,
+          powerMinKw: 0,
+        }),
+      ]),
+      status: "effective",
+    });
+    expect(china.applicabilitySummary?.lastVerifiedAt).not.toBeNull();
+    expect(china.applicabilitySummary?.sources.length).toBeGreaterThan(0);
+  });
 
   it(
     "keeps planned and no-data catalog countries on the exact no_data contract",
@@ -398,7 +434,12 @@ describe("country regulation status grouping", () => {
   it("fails closed when adoption timing or supersession end is unknown", () => {
     expect(
       isFutureAdoptedRegulation(
-        { adoptedOn: null, effectiveFrom: null, status: "adopted" },
+        {
+          adoptedOn: null,
+          effectiveFrom: null,
+          effectiveTo: null,
+          status: "adopted",
+        },
         "2026-08-05",
       ),
     ).toBe(false);
@@ -407,6 +448,7 @@ describe("country regulation status grouping", () => {
         {
           adoptedOn: "2026-01-01",
           effectiveFrom: null,
+          effectiveTo: null,
           status: "adopted",
         },
         "2026-08-05",
@@ -417,6 +459,7 @@ describe("country regulation status grouping", () => {
         {
           adoptedOn: "2026-01-01",
           effectiveFrom: "2027-01-01",
+          effectiveTo: null,
           status: "adopted",
         },
         "2026-08-05",
@@ -427,6 +470,7 @@ describe("country regulation status grouping", () => {
         {
           adoptedOn: "2025-01-01",
           effectiveFrom: "2026-01-01",
+          effectiveTo: null,
           status: "adopted",
         },
         "2026-08-05",
@@ -454,7 +498,12 @@ describe("country regulation status grouping", () => {
     ).toBe(true);
     expect(
       isFutureAdoptedRegulation(
-        { adoptedOn: null, effectiveFrom: null, status: "effective" },
+        {
+          adoptedOn: null,
+          effectiveFrom: null,
+          effectiveTo: null,
+          status: "effective",
+        },
         "2026-08-05",
       ),
     ).toBe(false);
@@ -463,9 +512,21 @@ describe("country regulation status grouping", () => {
         {
           adoptedOn: "2026-01-10",
           effectiveFrom: "2030-01-01",
+          effectiveTo: null,
           status: "adopted",
         },
         "2024-12-31",
+      ),
+    ).toBe(false);
+    expect(
+      isFutureAdoptedRegulation(
+        {
+          adoptedOn: "2026-01-10",
+          effectiveFrom: "2030-01-01",
+          effectiveTo: null,
+          status: "superseded",
+        },
+        "2026-08-05",
       ),
     ).toBe(false);
   });

@@ -11,6 +11,10 @@ export type GovernanceSqlExecutor = {
   execute(query: SQL): Promise<unknown>;
 };
 
+export const POSTGRES_MAX_BIND_PARAMETERS = 65_535;
+export const GOVERNANCE_PREFLIGHT_BIND_PARAMETER_BUDGET = 60_000;
+export const MARKET_METRIC_NATURAL_KEY_PARAMETERS_PER_ROW = 7;
+
 type ColumnSpec = {
   json?: boolean;
   name: string;
@@ -89,6 +93,7 @@ const tableSpecs: Record<GovernanceTableName, TableSpec> = {
     keyColumns: [
       { name: "country_iso3", property: "countryIso3" },
       { name: "jurisdiction_id", property: "jurisdictionId" },
+      { name: "valid_from", property: "validFrom" },
     ],
     name: "country_jurisdictions",
   },
@@ -173,6 +178,26 @@ const tableSpecs: Record<GovernanceTableName, TableSpec> = {
     keyColumns: [{ name: "id", property: "id" }],
     name: "market_import_batches",
   },
+  market_metrics: {
+    columns: [
+      { name: "id", property: "id" },
+      { name: "country_iso3", property: "countryIso3" },
+      { name: "metric_code", property: "metricCode" },
+      { name: "metric_name", property: "metricName" },
+      { name: "definition", property: "definition" },
+      { name: "application_scope", property: "applicationScope" },
+      { name: "period_start", property: "periodStart" },
+      { name: "period_end", property: "periodEnd" },
+      { name: "value_numeric", property: "valueNumeric" },
+      { name: "unit_code", property: "unitCode" },
+      { name: "currency_code", property: "currencyCode" },
+      { name: "methodology_version", property: "methodologyVersion" },
+      { name: "published_on", property: "publishedOn" },
+      ...commonGovernedColumns,
+    ],
+    keyColumns: [{ name: "id", property: "id" }],
+    name: "market_metrics",
+  },
   data_change_logs: {
     columns: [
       { name: "id", property: "id" },
@@ -200,6 +225,7 @@ const restoreOrder = [
   "country_jurisdictions",
   "regulations",
   "regulation_limits",
+  "market_metrics",
   "data_governance_drafts",
   "market_import_batches",
   "data_change_logs",
@@ -207,6 +233,7 @@ const restoreOrder = [
 
 const deleteOrder = [
   "data_change_logs",
+  "market_metrics",
   "regulation_limits",
   "country_jurisdictions",
   "regulations",
@@ -242,6 +269,60 @@ function queryCount(result: unknown): number {
     throw new Error("Could not validate restored table counts");
   }
   return count;
+}
+
+function parameterSafeBatches<T>(
+  rows: readonly T[],
+  parametersPerRow: number,
+): T[][] {
+  const rowsPerBatch = Math.floor(
+    GOVERNANCE_PREFLIGHT_BIND_PARAMETER_BUDGET / parametersPerRow,
+  );
+  const batches: T[][] = [];
+
+  for (let start = 0; start < rows.length; start += rowsPerBatch) {
+    batches.push(rows.slice(start, start + rowsPerBatch));
+  }
+
+  return batches;
+}
+
+export async function assertNoMarketMetricTargetNaturalKeyConflicts(
+  transaction: GovernanceSqlExecutor,
+  rows: GovernanceSnapshot["tables"]["market_metrics"],
+): Promise<void> {
+  for (const batch of parameterSafeBatches(
+    rows,
+    MARKET_METRIC_NATURAL_KEY_PARAMETERS_PER_ROW,
+  )) {
+    const incoming = sql.join(
+      batch.map(
+        (row) =>
+          sql`(${row.id}::uuid, ${row.countryIso3}::text, ${row.metricCode}::text, ${row.applicationScope}::text, ${row.periodStart}::date, ${row.periodEnd}::date, ${row.dataSourceId}::uuid)`,
+      ),
+      sql.raw(", "),
+    );
+    const result = await transaction.execute(sql`
+      with incoming(
+        id, country_iso3, metric_code, application_scope,
+        period_start, period_end, data_source_id
+      ) as (values ${incoming})
+      select 1
+        from market_metrics existing
+        join incoming
+          on incoming.country_iso3 = existing.country_iso3
+         and incoming.metric_code = existing.metric_code
+         and incoming.application_scope is not distinct from existing.application_scope::text
+         and incoming.period_start = existing.period_start
+         and incoming.period_end = existing.period_end
+         and incoming.data_source_id = existing.data_source_id
+       where existing.id <> incoming.id
+       limit 1
+    `);
+    if (queryReturnedRows(result)) {
+      throw new Error("Target natural key conflict: market_metrics observation");
+    }
+  }
 }
 
 async function assertNoTargetNaturalKeyConflicts(
@@ -341,6 +422,11 @@ async function assertNoTargetNaturalKeyConflicts(
       );
     }
   }
+
+  await assertNoMarketMetricTargetNaturalKeyConflicts(
+    transaction,
+    snapshot.tables.market_metrics,
+  );
 }
 
 function asRecord(value: object): Record<string, unknown> {
@@ -463,10 +549,9 @@ async function assertNoExternalDeleteEffects(
   transaction: GovernanceSqlExecutor,
   snapshot: GovernanceSnapshot,
 ) {
-  // Other references from outside these nine tables use RESTRICT and therefore
-  // abort the transaction. Country and jurisdiction references need explicit
-  // preflights because metrics cascade and chunks/citations otherwise become
-  // null.
+  // Other references from outside the snapshot tables use RESTRICT and
+  // therefore abort the transaction. Country and jurisdiction references need
+  // explicit preflights because chunks/citations otherwise become null.
   const predicate = buildOutsideSnapshotPredicate(
     tableSpecs.countries,
     snapshot.tables.countries,
@@ -477,10 +562,6 @@ async function assertNoExternalDeleteEffects(
      where ${predicate ?? sql`true`}
        and (
          exists (
-           select 1 from market_metrics metric
-            where metric.country_iso3 = existing.iso3
-         )
-         or exists (
            select 1 from document_chunks chunk
             where chunk.country_iso3 = existing.iso3
          )

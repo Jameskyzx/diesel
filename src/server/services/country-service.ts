@@ -8,6 +8,13 @@ import {
   type CountryMapResponse,
 } from "@/features/countries/schemas";
 import {
+  isDemoCountryProfile,
+  isDemoJurisdiction,
+  isDemoMarketMetric,
+  isDemoRegulation,
+  publicMapClassification,
+} from "@/features/countries/publication";
+import {
   countryDetailQuerySchema,
   hasDetailedCountryCoverage,
 } from "@/features/database/schemas";
@@ -15,6 +22,7 @@ import { getDatabase } from "@/server/db/client";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { getDatabaseMode } from "@/server/db/environment";
 import { createCountryRepository } from "@/server/repositories/country-repository";
+import { compareRegulations } from "@/server/services/marketing-analysis-service";
 
 function serializeDate(value: Date): string {
   return value.toISOString();
@@ -47,14 +55,18 @@ export function isFutureAdoptedRegulation(
   regulation: {
     adoptedOn: string | null;
     effectiveFrom: string | null;
+    effectiveTo: string | null;
     status: string;
   },
   asOf: string,
 ): boolean {
   const adoptionWasKnown =
     regulation.adoptedOn !== null && regulation.adoptedOn <= asOf;
+  const lifecycleIsUsable =
+    regulation.status !== "superseded" || regulation.effectiveTo !== null;
 
   return regulation.status !== "proposed" &&
+    lifecycleIsUsable &&
     adoptionWasKnown &&
     (regulation.effectiveFrom === null || regulation.effectiveFrom > asOf);
 }
@@ -88,12 +100,18 @@ export async function listCountryMapSummaries(): Promise<CountryMapResponse> {
   const repository = await getCountryRepository();
   const rows = await repository.listMapSummaries();
   const nowIso = new Date().toISOString();
+  const includeDemoData = getDatabaseMode() === "pglite-demo";
 
   return countryMapResponseSchema.parse({
     countries: rows.map((country) => {
       const verifiedAt = serializeDate(country.verifiedAt);
+      const classification = publicMapClassification(
+        country,
+        includeDemoData,
+      );
       return {
         ...country,
+        ...classification,
         isStale: isStaleVerification(
           verifiedAt,
           nowIso,
@@ -109,14 +127,24 @@ export async function listCountryMapSummaries(): Promise<CountryMapResponse> {
 export async function getCountryDetails(
   input: unknown,
 ): Promise<CountryDetailResponse> {
-  const { asOf = currentUtcDate(), iso3 } =
+  const {
+    applicationScope,
+    asOf = currentUtcDate(),
+    iso3,
+    powerKw,
+  } =
     countryDetailQuerySchema.parse(input);
   const repository = await getCountryRepository();
+  const includeDemoData = getDatabaseMode() === "pglite-demo";
   const profile = await repository.findByIso3({ iso3 });
 
   // ADR-040：目录国家（planned/no_data/none）没有详情数据，保持 ADR-029
   // 的精确 no_data 契约；只有详情可见的覆盖状态才进入完整查询。
-  if (!profile || !hasDetailedCountryCoverage(profile.dataCoverageStatus)) {
+  if (
+    !profile ||
+    (!includeDemoData && isDemoCountryProfile(profile)) ||
+    !hasDetailedCountryCoverage(profile.dataCoverageStatus)
+  ) {
     return countryDetailResponseSchema.parse({
       iso3,
       status: "no_data",
@@ -136,7 +164,12 @@ export async function getCountryDetails(
     regulations: countryRegulationRows,
     ...countryWithoutRegulations
   } = country;
-  const regulations = countryRegulationRows.map((regulation) => ({
+  const visibleCountryRegulationRows = includeDemoData
+    ? countryRegulationRows
+    : countryRegulationRows.filter(
+        (regulation) => !isDemoRegulation(regulation),
+      );
+  const regulations = visibleCountryRegulationRows.map((regulation) => ({
     ...regulation,
     applicability: {
       countryIso3: regulation.applicability.countryIso3,
@@ -187,7 +220,12 @@ export async function getCountryDetails(
     },
     verifiedAt: serializeDate(regulation.verifiedAt),
   }));
-  const marketMetrics = country.marketMetrics.map((metric) => ({
+  const visibleMarketMetricRows = includeDemoData
+    ? country.marketMetrics
+    : country.marketMetrics.filter(
+        (metric) => !isDemoMarketMetric(metric),
+      );
+  const marketMetrics = visibleMarketMetricRows.map((metric) => ({
     ...metric,
     source: {
       ...metric.source,
@@ -195,7 +233,12 @@ export async function getCountryDetails(
     },
     verifiedAt: serializeDate(metric.verifiedAt),
   }));
-  const jurisdictions = country.jurisdictions.map((jurisdiction) => ({
+  const visibleJurisdictionRows = includeDemoData
+    ? country.jurisdictions
+    : country.jurisdictions.filter(
+        (jurisdiction) => !isDemoJurisdiction(jurisdiction),
+      );
+  const jurisdictions = visibleJurisdictionRows.map((jurisdiction) => ({
     ...jurisdiction,
     jurisdictionVerifiedAt: serializeDate(
       jurisdiction.jurisdictionVerifiedAt,
@@ -253,8 +296,36 @@ export async function getCountryDetails(
     ...marketMetrics.map(({ verifiedAt }) => verifiedAt),
     ...sources.map(({ verifiedAt }) => verifiedAt),
   ]);
+  const applicabilitySummary =
+    applicationScope !== undefined && powerKw !== undefined
+      ? await compareRegulations({
+          applicationScope,
+          asOf,
+          countryIso3s: [iso3],
+          powerKw,
+        }).then((comparison) => {
+          const countryComparison = comparison.countries[0];
+          if (!countryComparison) {
+            throw new Error("Single-country applicability result was not produced.");
+          }
+          const verificationDates = comparison.sources.map(
+            ({ verifiedAt }) => verifiedAt,
+          );
+          return {
+            country: countryComparison,
+            lastVerifiedAt:
+              verificationDates.length > 0
+                ? latestTimestamp(verificationDates)
+                : null,
+            missingData: comparison.missingData,
+            query: comparison.query,
+            sources: comparison.sources,
+          };
+        })
+      : null;
 
   return countryDetailResponseSchema.parse({
+    applicabilitySummary,
     asOf,
     country: {
       ...countryWithoutRegulations,

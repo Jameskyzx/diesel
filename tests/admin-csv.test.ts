@@ -21,7 +21,7 @@ describe("market-metric CSV parsing", () => {
       definition: "DEMO ONLY, fictional.",
       isDemo: true,
       metricName: "Pipeline, demo",
-      valueNumeric: 42,
+      valueNumeric: "42.000000",
     });
   });
 

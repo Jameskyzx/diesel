@@ -912,6 +912,9 @@ describe("repositories", () => {
 
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0]?.definition.replaceAll('"', "")).toContain(
+      "archived_at IS NOT NULL",
+    );
+    expect(result.rows[0]?.definition.replaceAll('"', "")).toContain(
       "power_max_kw > power_min_kw",
     );
   });

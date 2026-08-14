@@ -72,13 +72,13 @@ Seed 计数代表线上覆盖。
   并与公开 DTO 不展示 proposed 的实际边界对齐。
 
 上述代码已随 release `20260814144537` 发布。发布后 `/api/products` 只返回
-`DEMO-ENG-100` 与 `DEMO-ENG-200`，未签核真实产品不再进入公开出口；但运营层根因尚未
-关闭：目标 PostgreSQL 的同名 `products_power_check` 实际仍为
-`power_max_kw >= power_min_kw`，与仓库要求的严格 `>` 不一致，且 8 条未归档真实产品仍为
-等宽功率区间。仓库现已新增 Migration `0011_temporal_memberships_and_product_power`：它先
-检查脏数据，发现等宽/反向区间即以 SQLSTATE `23514` 原子失败，数据合规后才把目标约束
-收紧为严格 `>`；因此生产应用该 Migration 前仍必须由数据负责人确认并归档或纠正这 8 条
-产品及其来源关联。Migration 不猜测业务值，本次代码整改也没有擅自修改生产数据。
+`DEMO-ENG-100` 与 `DEMO-ENG-200`，未签核真实产品不再进入公开出口。2026-08-15 的生产
+维护又在 PG17 custom-format 全量备份、SHA256/catalog 校验和精确 dry-run 后，原样归档了
+8 条等宽功率的未签核真实产品并逐条写入治理审计；没有改写规格或归档来源。Migration
+`0011_temporal_memberships_and_product_power` 会对所有活动产品强制
+`power_max_kw > power_min_kw`，仅允许已归档的历史脏记录保留原值；`0013` 让已经应用旧版
+0011 的环境收敛到同一最终约束。目标库是否完成迁移必须以版本化 production readback 的
+迁移总数、约束定义和零条活动非法产品为准，不能只依赖本文描述。
 
 ## 地图 Demo 公共出口清理（2026-08-14，代码已发布）
 
@@ -130,9 +130,9 @@ Seed 计数代表线上覆盖。
   tokens；工具选择 94.44%、关键参数 100%、安全/证据失败关闭 100%，报告
   `thresholdsPassed=true`。唯一失败单例为来源原文检索额外调用了国家画像工具；报告保留该
   明细，不将 94.44% 写成 100%，也不把这次内部 eval 表述为客户效果。
-- 生产维护代码已具备精确 8 行 dry-run manifest、SHA/行漂移门、serializable 归档、逐
-  实体审计、`pg_dump -Fc` 0600 + SHA256 + `pg_restore --list` 和迁移后 readback；尚未在
-  生产执行，因此公开库脏数据与 Migration 0011/0012 仍不得标为已关闭。
+- 生产已用精确 8 行 dry-run manifest、SHA/行漂移门和 serializable 事务完成归档与逐实体
+  审计；执行前的 `pg_dump -Fc` 备份为 0600，SHA256 与 `pg_restore --list` 均通过。
+  Migration 0011–0013 的最终状态仍以部署时的版本化 production readback 为唯一判据。
 
 ## 三角色模拟评估与本地修复（2026-08-12）
 

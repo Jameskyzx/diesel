@@ -91,6 +91,7 @@ async function main(): Promise<void> {
     const normalizedProductConstraint =
       normalizePostgresConstraintDefinition(productPowerConstraint);
     if (
+      !normalizedProductConstraint.includes("archived_atisnotnull") ||
       !normalizedProductConstraint.includes("power_min_kw>=0") ||
       !normalizedProductConstraint.includes("power_max_kw>power_min_kw") ||
       normalizedProductConstraint.includes("power_max_kw>=power_min_kw")

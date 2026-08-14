@@ -142,7 +142,7 @@ async function main(): Promise<void> {
 
     await client`
       update products
-      set power_max_kw = 11
+      set archived_at = now()
       where model_code = 'UPGRADE-SMOKE'
     `;
 
@@ -280,11 +280,40 @@ async function main(): Promise<void> {
       "products_power_check",
     );
     if (
+      !strictProductConstraint.includes("archived_atisnotnull") ||
       !strictProductConstraint.includes("power_min_kw>=0") ||
       !strictProductConstraint.includes("power_max_kw>power_min_kw") ||
       strictProductConstraint.includes("power_max_kw>=power_min_kw")
     ) {
       throw new Error("0011 strict product constraint readback failed");
+    }
+    const archivedDirtyRows = await client<{ count: number }[]>`
+      select count(*)::int as count
+      from products
+      where model_code = 'UPGRADE-SMOKE'
+        and archived_at is not null
+        and power_min_kw = power_max_kw
+    `;
+    if (archivedDirtyRows[0]?.count !== 1) {
+      throw new Error("0011 did not preserve the archived legacy product verbatim");
+    }
+    let activeDirtyProductBlocked = false;
+    try {
+      await client`
+        insert into products
+          (id, model_code, name, application_scopes, power_min_kw, power_max_kw,
+           specification_version, data_source_id, verified_at, is_demo)
+        values
+          ('00000000-0000-4000-8000-000000000004', 'ACTIVE-DIRTY-SMOKE',
+           'Active dirty smoke product', array['non-road']::application_scope[],
+           20, 20, 'post-0011', '00000000-0000-4000-8000-000000000001',
+           now(), false)
+      `;
+    } catch {
+      activeDirtyProductBlocked = true;
+    }
+    if (!activeDirtyProductBlocked) {
+      throw new Error("0011 accepted a new active equal-width product");
     }
     const temporalMembershipPrimaryKey = await constraintDefinition(
       client,

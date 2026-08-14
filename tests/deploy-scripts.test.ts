@@ -145,7 +145,7 @@ describe("versioned deployment scripts", () => {
     },
   );
 
-  it("keeps tracked release inputs root-owned and preflights fresh outputs", async () => {
+  it("keeps tracked release inputs root-owned and builds in an isolated writable copy", async () => {
     const buildScript = await readFile(
       resolve(process.cwd(), "scripts/deploy/build-release.sh"),
       "utf8",
@@ -170,9 +170,21 @@ describe("versioned deployment scripts", () => {
       "for build_output in node_modules .next .build-complete; do",
     );
     expect(runbook).toContain('test ! -L "${build_output}"');
-    expect(runbook).toContain('chown -hR root:diesel-build "${release_dir}"');
+    expect(runbook).not.toContain('chown -hR root:diesel-build "${release_dir}"');
     expect(runbook).toContain(
-      'chown -hR root:diesel "${release_dir}/node_modules" "${release_dir}/.next"',
+      'build_workspace="${build_workspace_root}/${release_id}"',
+    );
+    expect(runbook).toContain(
+      'cp -a "${release_dir}/." "${build_workspace}/"',
+    );
+    expect(runbook).toContain(
+      'chown -hR diesel-build:diesel-build "${build_workspace}"',
+    );
+    expect(runbook).toContain(
+      'mv "${build_workspace}/${build_output}" "${release_dir}/${build_output}"',
+    );
+    expect(runbook).toContain(
+      'chown -hR root:diesel "${release_dir}"',
     );
   });
 });

@@ -213,11 +213,20 @@ describe("jamesky.site Nginx boundary", () => {
     expect(deploymentRunbook).not.toContain(
       'chown -R diesel-build:diesel "${release_dir}"',
     );
-    expect(deploymentRunbook).toContain(
+    expect(deploymentRunbook).not.toContain(
       'chown -hR root:diesel-build "${release_dir}"',
     );
     expect(deploymentRunbook).toContain(
-      '"${release_dir}/node_modules" "${release_dir}/.next"',
+      '"${build_workspace}/node_modules" "${build_workspace}/.next"',
+    );
+    expect(deploymentRunbook).toContain(
+      'cp -a "${release_dir}/." "${build_workspace}/"',
+    );
+    expect(deploymentRunbook).toContain(
+      'chown -hR diesel-build:diesel-build "${build_workspace}"',
+    );
+    expect(deploymentRunbook).toContain(
+      'mv "${build_workspace}/${build_output}" "${release_dir}/${build_output}"',
     );
     expect(deploymentRunbook).not.toContain("npm_config_registry");
     expect(deploymentRunbook).not.toContain("pnpm config set registry");

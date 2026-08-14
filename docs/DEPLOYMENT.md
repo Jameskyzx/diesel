@@ -251,7 +251,10 @@ Migration、严格功率 CHECK、活动成员 exclusion、共享限流表和零�
 最终 release 目录必须此前不存在；远端使用不带 `-p` 的 `mkdir` 原子创建并确认目录为空，
 同名目录或任何残留内容都必须让发布立即失败，不能复用失败发布的目录。空目录通过检查后、
 rsync 前必须确认 `diesel` 组存在，并把 release 根目录固定为 `root:diesel` 0750；传输后
-由独立、无生产密钥读取权限的 `diesel-build` 用户构建，再把成品恢复为 `root:diesel`。
+保持 release 内受跟踪输入为 `root:diesel` 只读，复制到隔离、可写的 build workspace，
+由无生产密钥读取权限的 `diesel-build` 用户构建，再只把构建产物移回 release 并恢复为
+`root:diesel`。不能让构建用户获得 release 根目录写权限；pnpm 11 会在工作目录创建原子
+临时文件，直接在 `root:diesel-build:750` 的 release 根目录运行会以 `EACCES` 失败。
 运行用户 `diesel` 与构建用户不得属于彼此的主组：
 
 ```bash
@@ -511,13 +514,15 @@ set -euo pipefail
 release_id="<与工作站相同的 release-id>"
 release_dir="/opt/diesel/releases/${release_id}"
 deployment_state_dir="/opt/diesel/backups/${release_id}"
+build_workspace_root="/opt/diesel/build/releases"
+build_workspace="${build_workspace_root}/${release_id}"
 test "$(stat -c '%U:%G:%a' /opt/diesel/shared)" = "root:diesel:750"
 test "$(stat -c '%U:%G:%a' /opt/diesel/shared/.data)" = "diesel:diesel:750"
 test "$(stat -c '%U:%G:%a' /opt/diesel/shared/.env.production.local)" = "root:diesel:640"
 test "$(stat -c '%U:%G:%a' "${deployment_state_dir}/env.production.local.pre-switch")" = "root:root:600"
 
-cd "${release_dir}"
 export PATH="/opt/node-v22.22.3-linux-x64/bin:${PATH}"
+cd "${release_dir}"
 test ! -e .env.local
 test ! -e .env.production
 test ! -e .env.production.local
@@ -526,25 +531,40 @@ for build_output in node_modules .next .build-complete; do
   test ! -e "${build_output}"
   test ! -L "${build_output}"
 done
-chown -hR root:diesel-build "${release_dir}"
+chown -hR root:diesel "${release_dir}"
 chmod -R u=rwX,g=rX,o= "${release_dir}"
-install -d -m 0750 -o diesel-build -g diesel-build \
-  "${release_dir}/node_modules" "${release_dir}/.next"
+
+install -d -m 0700 -o diesel-build -g diesel-build "${build_workspace_root}"
+test ! -e "${build_workspace}"
+install -d -m 0700 -o diesel-build -g diesel-build "${build_workspace}"
+cp -a "${release_dir}/." "${build_workspace}/"
+chown -hR diesel-build:diesel-build "${build_workspace}"
+chmod -R u=rwX,g=,o= "${build_workspace}"
+install -d -m 0700 -o diesel-build -g diesel-build \
+  "${build_workspace}/node_modules" "${build_workspace}/.next"
 install -m 0600 -o diesel-build -g diesel-build /dev/null \
-  "${release_dir}/.build-complete"
+  "${build_workspace}/.build-complete"
 runuser -u diesel-build -- env -i \
   HOME=/opt/diesel/build \
   PATH="${PATH}" \
   BUILD_HOME=/opt/diesel/build \
   BUILD_RELEASE_ID="${release_id}" \
   PNPM_REGISTRY="${PNPM_REGISTRY:-https://registry.npmjs.org}" \
-  bash scripts/deploy/build-release.sh
-test "$(cat .build-complete)" = "${release_id}"
-chown -hR root:diesel "${release_dir}/node_modules" "${release_dir}/.next"
-chown root:diesel "${release_dir}/.build-complete"
-chgrp -hR diesel "${release_dir}"
-chown root:diesel "${release_dir}"
-chown -hR root:diesel "${release_dir}/.next"
+  bash -c 'cd "$1" && exec bash scripts/deploy/build-release.sh' bash \
+  "${build_workspace}"
+test "$(cat "${build_workspace}/.build-complete")" = "${release_id}"
+for build_output in node_modules .next .build-complete; do
+  test ! -e "${release_dir}/${build_output}"
+  test ! -L "${build_workspace}/${build_output}"
+  mv "${build_workspace}/${build_output}" "${release_dir}/${build_output}"
+done
+case "${build_workspace}" in
+  "/opt/diesel/build/releases/${release_id}") ;;
+  *) echo "Refusing to remove an unexpected build workspace" >&2; exit 1 ;;
+esac
+rm -rf -- "${build_workspace}"
+chown -hR root:diesel "${release_dir}"
+chmod -R u=rwX,g=rX,o= "${release_dir}"
 chmod -R u=rwX,g=rX,o= "${release_dir}/.next"
 install -d -o diesel -g diesel "${release_dir}/.next/cache"
 chown -R diesel:diesel "${release_dir}/.next/cache"

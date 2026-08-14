@@ -1,5 +1,28 @@
 import { expect, test } from "@playwright/test";
 
+test("shows an explicit error and recovers when country geometry fails", async ({
+  page,
+}) => {
+  await page.route("**/geo/world-countries.geojson", async (route) => {
+    await route.fulfill({ body: "upstream unavailable", status: 503 });
+  });
+  await page.goto("/map");
+
+  await expect(
+    page.getByRole("alert").filter({ hasText: "国家边界加载失败" }),
+  ).toBeVisible();
+  await expect(page.getByText("有数据（Demo / 已核验）")).toHaveCount(0);
+
+  await page.unroute("**/geo/world-countries.geojson");
+  await page.getByRole("button", { name: "重试加载地图" }).click();
+
+  await expect(page.getByTestId("map-canvas-container")).toHaveAttribute(
+    "data-map-ready",
+    "true",
+  );
+  await expect(page.getByText("有数据（Demo / 已核验）")).toBeVisible();
+});
+
 test("opens a shareable country URL by clicking the map polygon", async ({
   page,
 }, testInfo) => {
@@ -155,10 +178,11 @@ test("opens, restores, switches, and shows an explicit no-data country", async (
   ).toBeVisible();
   await expect(page.getByText(/成员关系来源：/).first()).toBeVisible();
   await expect(
-    page
-      .getByRole("link", { name: /Fictional emissions bulletin/ })
-      .first(),
-  ).toHaveAttribute("href", "https://example.invalid/demo/regulations");
+    page.getByText(/Fictional emissions bulletin（虚构证据，无外部链接）/).first(),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Fictional emissions bulletin/ }),
+  ).toHaveCount(0);
 
   await page.reload();
   await expect(page).toHaveURL(/\/countries\/CHN$/);
@@ -511,6 +535,31 @@ test("keeps every product-fit control interactive inside the country drawer", as
   await expect(page.getByRole("button", { name: "关闭国家详情" })).toBeEnabled();
 });
 
+test("moves focus into the country drawer and restores it after close", async ({
+  page,
+}) => {
+  await page.goto("/map");
+  const countrySelect = page.getByLabel("选择国家");
+  await countrySelect.focus();
+  await countrySelect.selectOption("CHN");
+
+  const closeButton = page.getByRole("button", { name: "关闭国家详情" });
+  await expect(closeButton).toBeFocused();
+  await closeButton.click();
+
+  await expect(page).toHaveURL(/\/map$/);
+  await expect(countrySelect).toBeFocused();
+
+  const chinaShortcut = page.getByRole("button", {
+    name: /China — demo fixture · CHN/,
+  });
+  await chinaShortcut.click();
+  await expect(closeButton).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(/\/map$/);
+  await expect(chinaShortcut).toBeFocused();
+});
+
 test("does not restore a previous country after a pending fit evaluation", async ({
   page,
 }) => {
@@ -630,9 +679,14 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await expect(
     page
       .getByTestId("product-fit-result")
-      .getByRole("link", { name: /Fictional emissions bulletin/ })
+      .getByText(/Fictional emissions bulletin（虚构证据，无外部链接）/)
       .first(),
-  ).toHaveAttribute("href", "https://example.invalid/demo/regulations");
+  ).toBeVisible();
+  await expect(
+    page
+      .getByTestId("product-fit-result")
+      .getByRole("link", { name: /Fictional emissions bulletin/ }),
+  ).toHaveCount(0);
 
   await page.getByLabel("产品型号").selectOption("DEMO-ENG-200");
   await expect(page.getByLabel("产品型号")).toHaveValue("DEMO-ENG-200");

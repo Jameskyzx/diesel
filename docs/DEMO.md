@@ -3,6 +3,13 @@
 这份脚本用于 FDE 面试或招聘方自行验收。它优先展示用户问题、证据边界和工程取舍，
 不把时间花在逐页介绍功能上。
 
+## 演示前准备（不计入三分钟）
+
+- 托管版：预先打开 [首页](https://jamesky.site)、[中国 100 kW 深链](https://jamesky.site/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13)
+  和 [AI 工作区](https://jamesky.site/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13)。
+- 零配置本地版：提前执行 `pnpm install` 和 `pnpm demo`，并打开
+  <http://127.0.0.1:3000>。安装与启动时间不属于演示计时。
+
 ## 0:00–0:30：先讲业务问题
 
 打开 <https://jamesky.site>：
@@ -16,8 +23,9 @@
 
 ## 0:30–1:20：走黄金流程
 
-1. 打开地图，选择 CHN，说明 ISO3 可分享 URL。
-2. 在国家详情区分当前 effective、未来 adopted、proposed 和最近核验时间。
+1. 打开预备好的 CHN 深链，说明 ISO3 与查询参数可分享。
+2. 在国家详情区分当前 effective、未来 adopted 和最近核验时间；指出
+   proposed 被公开 DTO 排除，不会被当成当前要求。
 3. 选择 non-road、100 kW 和评估日期，运行产品适配。
 4. 指出结果的法规、功率区间、认证和引用；缺失认证时保持 `unknown`，不把未知当通过。
 
@@ -41,22 +49,16 @@
 
 ## 2:20–3:00：证明可复现
 
-在本地运行：
-
-```bash
-pnpm install
-pnpm demo
-```
-
-打开 <http://127.0.0.1:3000/chat>，提问：
+切换到预先启动的 <http://127.0.0.1:3000/chat>，点击快捷问题或提问：
 
 ```text
 CHN 目前有哪些有效法规？
 ```
 
-解释该入口无需 `.env.local`、PostgreSQL、Docker 或 AI Key，但仍执行真实 Migration、
+解释 `pnpm demo` 无需 `.env.local`、PostgreSQL、Docker 或 AI Key，但仍执行真实 Migration、
 Repository、service、Zod 工具、引用与证据门。数据和回答均显式标记 Demo；它验证的是
-工程链路，不代表生产数据、外部模型质量或真实产品认证。
+工程链路，不代表生产数据、外部模型质量或真实产品认证。Demo 的 `.invalid`
+来源只显示为“虚构证据，无外部链接”，不伪装成可访问的政府来源。
 
 ## 建议准备的追问
 

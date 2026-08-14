@@ -38,6 +38,7 @@ import {
   type ProductFitInitialFilters,
 } from "@/components/products/product-fit-panel";
 import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
+import { isNavigableEvidenceUrl } from "@/lib/source-link";
 import { cn } from "@/lib/utils";
 
 type DetailState =
@@ -208,9 +209,9 @@ export function CountryDetailDrawer({
 
   return (
     <Drawer
+      autoFocus
       direction="right"
       dismissible
-      handleOnly
       modal={false}
       onOpenChange={(open) => {
         if (!open) {
@@ -760,8 +761,13 @@ function DataClassificationBadge({ isDemo }: { isDemo: boolean }) {
 type CountrySource = AvailableCountryResponse["country"]["sources"][number];
 
 function SourceLink({ source }: { source: CountrySource }) {
-  if (!source.url) {
-    return source.title;
+  if (!isNavigableEvidenceUrl(source.url)) {
+    return (
+      <span>
+        {source.title}
+        {source.isDemo ? "（虚构证据，无外部链接）" : ""}
+      </span>
+    );
   }
 
   return (

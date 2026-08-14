@@ -2810,6 +2810,22 @@
   双击只发起一次请求。详情到对话的 E2E 还锁定未完成产品评估不会回写旧 URL，且刚完成
   的服务端规范化查询会立即进入对话链接。
 
+### ADR-140：助手解释支持安全 CommonMark/GFM 渲染
+
+- 状态：Accepted
+- 日期：2026-08-14
+- 决策：仅对 assistant text part 使用 `react-markdown` 与 `remark-gfm`，支持标题、
+  强调、列表、引用、代码、表格、任务列表和删除线。用户输入保持纯文本，工具 JSON 继续只由
+  结构化卡片渲染，不进入 Markdown 解析。
+- 安全边界：不引入 `rehype-raw`，并显式设置 `skipHtml`；模型图片语法只显示隐藏提示，
+  不加载远程资源。URL transform 只允许 HTTP(S)、单斜线站内路径、查询串和锚点；
+  外部链接使用新窗口与 `noopener noreferrer`。Markdown 只改变排版，不提升模型文字的事实等级。
+- 依赖理由：CommonMark/GFM 对嵌套、代码块和表格有大量边界语法，自建部分解析器会带来
+  兼容性与 XSS 风险。`react-markdown` 承担 React AST 渲染，`remark-gfm` 只扩展 GFM 语法；
+  两者都运行于现有聊天客户端边界，不进入 Repository、工具或事实计算。
+- 验证方式：组件回归覆盖标题、强调、行内代码、任务列表、表格和外链；
+  安全反例覆盖 raw `<script>`、`javascript:` / `data:` URL、协议相对 URL 与远程图片。
+
 ## 4. 暂不决策
 
 以下问题在 MVP 出现明确需求或数据证据前不提前设计：

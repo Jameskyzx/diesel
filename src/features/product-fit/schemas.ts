@@ -82,7 +82,34 @@ export const productSummarySchema = z
     specificationVersion: z.string().trim().min(1),
     verifiedAt: isoTimestampSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((product, context) => {
+    if (product.powerMaxKw <= product.powerMinKw) {
+      context.addIssue({
+        code: "custom",
+        message: "powerMaxKw must be greater than powerMinKw",
+        path: ["powerMaxKw"],
+      });
+    }
+    if (product.availableTo && !product.availableFrom) {
+      context.addIssue({
+        code: "custom",
+        message: "availableFrom is required when availableTo is set",
+        path: ["availableFrom"],
+      });
+    }
+    if (
+      product.availableFrom &&
+      product.availableTo &&
+      product.availableTo <= product.availableFrom
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "availableTo must be after availableFrom",
+        path: ["availableTo"],
+      });
+    }
+  });
 
 export const certificationEvidenceSchema = z
   .object({

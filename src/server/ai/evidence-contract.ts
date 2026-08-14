@@ -296,16 +296,14 @@ export function buildSalesChatEvidenceContract(input: {
         for (const countryIso3 of singleCountryRegulations.length > 0
           ? singleCountryRegulations
           : [null]) {
+          const hasExactRegulationFilters =
+            context.applicationScope !== null && context.powerKw !== null;
           requirements.push({
             acceptedTools:
               activeTask === "country_profile" && !asksForRegulation
                 ? ["getCountryProfile"]
-                : asksForProductFit
-                  ? [
-                      "getCountryProfile",
-                      "searchKnowledgeBase",
-                      "findCompatibleProducts",
-                    ]
+                : hasExactRegulationFilters
+                  ? ["compareRegulations"]
                   : ["getCountryProfile", "searchKnowledgeBase"],
             query: {
               applicationScope: context.applicationScope,
@@ -316,10 +314,14 @@ export function buildSalesChatEvidenceContract(input: {
                 ? { productModelCode: context.productModelCode }
                 : {}),
             },
-            requiredProfileTopics:
-              activeTask === "country_profile" && !asksForRegulation
-                ? context.profileTopics
-                : ["regulations"],
+            ...(hasExactRegulationFilters
+              ? {}
+              : {
+                  requiredProfileTopics:
+                    activeTask === "country_profile" && !asksForRegulation
+                      ? context.profileTopics
+                      : (["regulations"] as const),
+                }),
           });
         }
       }

@@ -16,6 +16,13 @@ test("renders the operational home entry and primary navigation", async ({ page 
     }),
   ).toBeVisible();
   await expect(page.getByText("面向海外销售与产品团队")).toBeVisible();
+  await expect(page.getByText("证据边界核验率")).toBeVisible();
+  await expect(
+    page.getByText(
+      "已核验表示来源边界和数据缺口经过审阅，不代表该国存在数值法规。",
+    ),
+  ).toBeVisible();
+  await expect(page.getByText("结构化覆盖率")).toHaveCount(0);
   await expect(page.getByText("EVIDENCE CONTRACT")).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible();
   await expect(page.getByRole("link", { exact: true, name: "首页" })).toHaveAttribute("aria-current", "page");
@@ -29,6 +36,24 @@ test("renders the operational home entry and primary navigation", async ({ page 
   await page.getByRole("link", { exact: true, name: "地图" }).click();
   await expect(page).toHaveURL(/\/map$/);
   await expect(page.getByTestId("world-map")).toBeVisible();
+});
+
+test("does not claim the home data is online when the country summary fails", async ({
+  page,
+}) => {
+  await page.route("**/api/countries", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({ error: { code: "INTERNAL_ERROR" } }),
+      contentType: "application/json",
+      status: 500,
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.getByText("数据不可用")).toBeVisible();
+  await expect(page.getByText("在线", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "重试" })).toBeVisible();
 });
 
 test("opens the dedicated chat workspace from primary navigation", async ({ page }) => {
@@ -46,6 +71,29 @@ test("opens the dedicated chat workspace from primary navigation", async ({ page
     page.getByText("信息参考，不替代正式认证或法律意见"),
   ).toHaveCount(0);
   await expect(page.getByText(/扫描版 PDF 请上传清晰页面截图/)).toHaveCount(0);
+
+  const starter = page.getByRole("button", {
+    name: "CHN 目前有哪些有效法规？",
+  });
+  await starter.click();
+  await expect(page.getByPlaceholder("输入问题，可附上文件或图片…")).toHaveValue(
+    "CHN 目前有哪些有效法规？",
+  );
+});
+
+test("preserves valid chat context while removing one invalid shared parameter", async ({
+  page,
+}) => {
+  await page.goto(
+    "/chat?countryIso3=chn&applicationScope=non-road&powerKw=100.0&asOf=bad&productModelCode=demo-eng-100&utm_source=e2e",
+  );
+
+  await expect(page).toHaveURL(
+    /\/chat\?applicationScope=non-road&countryIso3=CHN&powerKw=100&productModelCode=DEMO-ENG-100&utm_source=e2e$/,
+  );
+  await expect(page.getByPlaceholder("输入问题，可附上文件或图片…")).toHaveValue(
+    /CHN.*non-road 100 kW.*DEMO-ENG-100/,
+  );
 });
 
 test("answers a capability question without forcing a fact tool", async ({ page }) => {
@@ -62,6 +110,9 @@ test("answers a capability question without forcing a fact tool", async ({ page 
   const conversation = assistant.getByRole("log", { name: "AI 对话记录" });
   await expect(conversation).toContainText("结构化事实和可追溯来源");
   await expect(conversation).toContainText("比较 2–5 个国家");
+  const markdown = conversation.getByTestId("assistant-markdown");
+  await expect(markdown.getByRole("list")).toBeVisible();
+  await expect(markdown.getByRole("listitem")).toHaveCount(4);
   await expect(conversation).not.toContainText("没有足够证据");
   await expect(conversation).not.toContainText("正在执行确定性查询");
   await expect(conversation).not.toContainText("国家与法规资料");
@@ -338,7 +389,6 @@ test("serves browser and Apple touch icons without 404s", async ({ request }) =>
   for (const path of [
     "/icon.svg",
     "/apple-touch-icon.png",
-    "/apple-touch-icon-precomposed.png",
   ]) {
     const response = await request.get(path);
 

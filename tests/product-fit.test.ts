@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { evaluateProductFit } from "@/domain/product-fit/evaluate-product-fit";
 import type { ProductFitQuery } from "@/features/database/schemas";
-import type {
-  CertificationEvidence,
-  ProductSummary,
-  RegulationEvidence,
+import {
+  productSummarySchema,
+  type CertificationEvidence,
+  type ProductSummary,
+  type RegulationEvidence,
 } from "@/features/product-fit/schemas";
 
 const verifiedAt = "2026-01-15T00:00:00.000Z";
@@ -141,6 +142,22 @@ function evaluate(
 }
 
 describe("deterministic product-fit rules", () => {
+  it("rejects invalid product power and availability intervals at the public DTO boundary", () => {
+    expect(
+      productSummarySchema.safeParse({
+        ...product,
+        powerMaxKw: product.powerMinKw,
+      }).success,
+    ).toBe(false);
+    expect(
+      productSummarySchema.safeParse({
+        ...product,
+        availableFrom: null,
+        availableTo: "2026-01-01",
+      }).success,
+    ).toBe(false);
+  });
+
   it("includes the lower power boundary and returns traceable fit evidence", () => {
     const result = evaluate({ ...query, powerKw: 50 });
 

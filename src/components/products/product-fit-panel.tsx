@@ -26,6 +26,7 @@ import {
   type ProductSummary,
 } from "@/features/product-fit/schemas";
 import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
+import { isNavigableEvidenceUrl } from "@/lib/source-link";
 
 export type ProductFitInitialFilters = {
   applicationScope?: ApplicationScope;
@@ -899,7 +900,7 @@ function SourceReference({
   return (
     <p className={`${className ?? ""} text-xs text-muted-foreground`}>
       {label}：
-      {source.url ? (
+      {isNavigableEvidenceUrl(source.url) ? (
         <a
           className="inline-flex items-center gap-1 text-primary hover:underline"
           href={source.url}
@@ -910,7 +911,10 @@ function SourceReference({
           <ExternalLink aria-hidden="true" className="size-3" />
         </a>
       ) : (
-        source.title
+        <span>
+          {source.title}
+          {source.isDemo ? "（虚构证据，无外部链接）" : ""}
+        </span>
       )}
       {source.publishedOn ? ` · 发布 ${source.publishedOn}` : ""} · 核验{" "}
       {source.verifiedAt.slice(0, 10)}

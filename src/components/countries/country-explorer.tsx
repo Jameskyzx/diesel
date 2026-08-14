@@ -13,7 +13,7 @@ import {
   type CountryGeoIndex,
   type CountryMapSummary,
 } from "@/features/countries/schemas";
-import { hasDetailedCountryCoverage } from "@/features/database/schemas";
+import { selectCountryShortcuts } from "@/features/countries/country-shortcuts";
 import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
 import type { ProductFitInitialFilters } from "@/components/products/product-fit-panel";
 
@@ -33,6 +33,9 @@ type CountryExplorerProps = {
 
 const emptyCountryIndex: CountryGeoIndex = [];
 const emptyCountrySummaries: CountryMapSummary[] = [];
+const restoreCountrySelectFocusKey =
+  "diesel:restore-country-select-focus";
+const countryFocusTargetKey = "diesel:country-focus-target";
 
 function MapModuleLoading() {
   return (
@@ -136,6 +139,12 @@ export function CountryExplorer({
   const selectCountry = useCallback(
     (iso3: string) => {
       cancelPendingProductEvaluation();
+      const activeElement = document.activeElement;
+      const focusTarget =
+        activeElement instanceof HTMLElement && activeElement.id
+          ? activeElement.id
+          : "country-select";
+      sessionStorage.setItem(countryFocusTargetKey, focusTarget);
       router.push(`/countries/${iso3}`);
     },
     [cancelPendingProductEvaluation, router],
@@ -143,6 +152,7 @@ export function CountryExplorer({
 
   const closeCountry = useCallback(() => {
     cancelPendingProductEvaluation();
+    sessionStorage.setItem(restoreCountrySelectFocusKey, "true");
     router.push("/map");
   }, [cancelPendingProductEvaluation, router]);
 
@@ -153,6 +163,26 @@ export function CountryExplorer({
   const selectedName =
     countryIndex.find(({ iso3 }) => iso3 === selectedIso3)?.name ??
     selectedIso3;
+  const countryShortcuts = selectCountryShortcuts(countries);
+
+  useEffect(() => {
+    if (selectedIso3 !== null || data.status !== "ready") {
+      return;
+    }
+    if (sessionStorage.getItem(restoreCountrySelectFocusKey) !== "true") {
+      return;
+    }
+
+    sessionStorage.removeItem(restoreCountrySelectFocusKey);
+    const focusTarget =
+      sessionStorage.getItem(countryFocusTargetKey) ?? "country-select";
+    sessionStorage.removeItem(countryFocusTargetKey);
+    const frame = requestAnimationFrame(() => {
+      const target = document.getElementById(focusTarget);
+      (target ?? document.getElementById("country-select"))?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [data.status, selectedIso3]);
 
   return (
     <main className="page-shell py-8 sm:py-10">
@@ -200,20 +230,17 @@ export function CountryExplorer({
       </section>
 
       <section
-        aria-label="已录入国家快捷入口"
+        aria-label="精选国家快捷入口"
         className="mb-5 flex min-h-10 items-center gap-2 overflow-x-auto pb-1"
       >
         <span className="mr-1 inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-emerald-900/65">
           <Database aria-hidden="true" className="size-3.5" />
-          已录入
+          精选入口
         </span>
-        {countries
-          .filter((country) =>
-            hasDetailedCountryCoverage(country.dataCoverageStatus),
-          )
-          .map((country) => (
+        {countryShortcuts.map((country) => (
             <Button
               aria-pressed={selectedIso3 === country.iso3}
+              id={`country-shortcut-${country.iso3}`}
               key={country.iso3}
               onClick={() => selectCountry(country.iso3)}
               size="sm"
@@ -227,11 +254,7 @@ export function CountryExplorer({
               {country.nameEn} · {country.iso3}
             </Button>
           ))}
-        {countries.length > 0 &&
-        countries.every(
-          (country) =>
-            !hasDetailedCountryCoverage(country.dataCoverageStatus),
-        ) ? (
+        {countries.length > 0 && countryShortcuts.length === 0 ? (
           <span className="text-xs text-muted-foreground">
             暂无已录入详情的国家
           </span>

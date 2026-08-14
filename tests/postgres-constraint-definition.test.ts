@@ -25,4 +25,17 @@ describe("normalizePostgresConstraintDefinition", () => {
       "checkpower_min_kw>=0::numericandpower_max_kw>power_min_kw",
     );
   });
+
+  it.each([
+    [
+      "PRIMARY KEY (country_iso3, jurisdiction_id, valid_from)",
+      "primarykeycountry_iso3,jurisdiction_id,valid_from",
+    ],
+    [
+      'PRIMARY KEY ((("country_iso3"), ("jurisdiction_id"), ("valid_from")))',
+      "primarykeycountry_iso3,jurisdiction_id,valid_from",
+    ],
+  ])("normalizes temporal membership primary keys", (input, expected) => {
+    expect(normalizePostgresConstraintDefinition(input)).toBe(expected);
+  });
 });

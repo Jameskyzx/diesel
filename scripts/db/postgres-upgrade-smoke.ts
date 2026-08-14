@@ -127,7 +127,7 @@ async function main(): Promise<void> {
     );
     if (
       legacyMembershipPrimaryKey !==
-      "primarykey(country_iso3,jurisdiction_id)"
+      "primarykeycountry_iso3,jurisdiction_id"
     ) {
       throw new Error("failed 0011 attempt partially changed the membership key");
     }
@@ -258,7 +258,7 @@ async function main(): Promise<void> {
     }
     if (
       (await constraintDefinition(client, "country_jurisdictions_pk")) !==
-      "primarykey(country_iso3,jurisdiction_id,valid_from)"
+      "primarykeycountry_iso3,jurisdiction_id,valid_from"
     ) {
       throw new Error("overlap-blocked 0011 attempt partially changed the key");
     }
@@ -292,7 +292,7 @@ async function main(): Promise<void> {
     );
     if (
       temporalMembershipPrimaryKey !==
-      "primarykey(country_iso3,jurisdiction_id,valid_from)"
+      "primarykeycountry_iso3,jurisdiction_id,valid_from"
     ) {
       throw new Error("0011 temporal membership key readback failed");
     }

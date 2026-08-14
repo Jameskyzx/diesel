@@ -30,7 +30,7 @@ jobs:
       # 版本（pnpm@11.9.0），必须先于 setup-node，使 pnpm 缓存键与 store
       # 路径来自同一版本。
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -91,7 +91,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -125,7 +125,7 @@ jobs:
       # 版本（pnpm@11.9.0），必须先于 setup-node，使 pnpm 缓存键与 store
       # 路径来自同一版本。
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -171,7 +171,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -249,7 +249,7 @@ jobs:
       # 版本（pnpm@11.9.0），必须先于 setup-node，使 pnpm 缓存键与 store
       # 路径来自同一版本。
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       # 该 job 只安装执行 TypeScript 策略所需的锁定依赖，不运行生命周期脚本；
       # 不启用 setup-node 缓存，避免独立 scheduled job 的 store 保存噪声。

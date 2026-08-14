@@ -5,6 +5,7 @@ import {
   mkdtemp,
   readFile,
   rm,
+  stat,
   symlink,
   writeFile,
 } from "node:fs/promises";
@@ -50,6 +51,11 @@ async function createBuildFixture(
 }
 
 describe("versioned deployment scripts", () => {
+  it.each(deployScripts)("%s is executable in release archives", async (name) => {
+    const metadata = await stat(resolve(process.cwd(), "scripts/deploy", name));
+    expect(metadata.mode & 0o100).toBe(0o100);
+  });
+
   it.each(deployScripts)("%s passes Bash syntax validation", async (name) => {
     await expect(
       execFileAsync("bash", [

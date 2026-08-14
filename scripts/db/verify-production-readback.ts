@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -5,9 +6,29 @@ import postgres from "postgres";
 import { z } from "zod";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
-import { assertProductionReadback } from "./production-readback";
+import {
+  assertProductionMigrationLineage,
+  assertProductionReadback,
+  type MigrationIdentity,
+} from "./production-readback";
 
-const journalSchema = z.object({ entries: z.array(z.object({ tag: z.string() })) });
+const journalSchema = z.object({
+  entries: z.array(z.object({
+    tag: z.string(),
+    when: z.number().int().nonnegative(),
+  })),
+});
+
+async function expectedMigrationIdentities(
+  entries: readonly { tag: string; when: number }[],
+): Promise<MigrationIdentity[]> {
+  return Promise.all(entries.map(async (entry) => ({
+    createdAt: String(entry.when),
+    hash: createHash("sha256").update(await readFile(
+      resolve(process.cwd(), "drizzle", `${entry.tag}.sql`),
+    )).digest("hex"),
+  })));
+}
 
 async function main(): Promise<void> {
   const journal = journalSchema.parse(JSON.parse(await readFile(
@@ -16,6 +37,15 @@ async function main(): Promise<void> {
   )));
   const sql = postgres(getDatabaseUrl(), { max: 1, prepare: false });
   try {
+    const actualMigrations = await sql<MigrationIdentity[]>`
+      select created_at::text as "createdAt", hash
+      from drizzle.__drizzle_migrations
+      order by created_at, id
+    `;
+    const migrationLineage = assertProductionMigrationLineage({
+      actual: actualMigrations,
+      expected: await expectedMigrationIdentities(journal.entries),
+    });
     const [row] = await sql<{
       activeInvalidProducts: number;
       apiRateLimitTableExists: boolean;
@@ -47,11 +77,18 @@ async function main(): Promise<void> {
     assertProductionReadback({
       ...row,
       expectedMigrationCount: journal.entries.length,
+      recognizedLegacyMigrationCount:
+        migrationLineage.recognizedLegacyMigrationCount,
     });
     process.stdout.write(`${JSON.stringify({
       activeInvalidProducts: row.activeInvalidProducts,
       apiRateLimitTableExists: row.apiRateLimitTableExists,
+      expectedMigrationCount: journal.entries.length,
       migrationCount: row.migrationCount,
+      recognizedLegacyHashAliases:
+        migrationLineage.recognizedLegacyHashAliases,
+      recognizedLegacyMigrationCount:
+        migrationLineage.recognizedLegacyMigrationCount,
       status: "verified",
     })}\n`);
   } finally {

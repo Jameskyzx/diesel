@@ -191,7 +191,9 @@ Migration 必须先通过 CI 的空库 pgvector smoke 与上一版本脏数据 u
 
 ### 4.1.1 Migration `0011` / `0012` 前的非法产品精确归档
 
-`0011` 会在存在 `power_max_kw <= power_min_kw` 的产品时原子停止。当前已知运营修复
+`0011` 会在存在未归档且 `power_max_kw <= power_min_kw` 的产品时原子停止。已归档记录
+作为审计历史保留原始规格；数据库 CHECK 只允许这类历史记录例外，所有活动产品仍必须
+满足严格的 `power_max_kw > power_min_kw`。当前已知运营修复
 只能归档 dry-run 精确确认的 8 条未签核、非 Demo、未归档产品及其活动认证；不得改写
 功率、来源或规格，也不得归档来源。必须在同一受控发布会话按以下顺序执行：
 
@@ -233,8 +235,9 @@ node --conditions=react-server --import tsx --env-file=.env.production.local \
 ```
 
 Apply 使用 serializable transaction，先归档认证再归档产品并逐实体追加治理审计；任何
-affected ID 漂移或归档后仍有非法活动产品都会 rollback。最终读回必须同时证明 13 条
-Migration、严格功率 CHECK、活动成员 exclusion、共享限流表和零条活动非法产品。
+affected ID 漂移或归档后仍有非法活动产品都会 rollback。最终读回必须同时证明 14 条
+Migration、仅对已归档历史开放例外的严格活动产品功率 CHECK、活动成员 exclusion、
+共享限流表和零条活动非法产品。
 
 ### 4.2 VPS 版本化发布与回滚
 

@@ -18,6 +18,7 @@ export function assertProductionReadback(input: ProductionReadback): void {
     input.productPowerDefinition,
   );
   if (
+    !productPower.includes("archived_atisnotnull") ||
     !productPower.includes("power_min_kw>=0") ||
     !productPower.includes("power_max_kw>power_min_kw") ||
     productPower.includes("power_max_kw>=power_min_kw")

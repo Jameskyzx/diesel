@@ -47,6 +47,10 @@ const clientAnalysisQuerySchema = z
   })
   .passthrough();
 
+const clientRegulationQuerySchema = clientAnalysisQuerySchema.extend({
+  countryIso3s: z.array(z.string()).min(1).max(5),
+});
+
 const clientCountryRegulationSchema = z
   .object({
     applicability: z
@@ -236,7 +240,7 @@ const clientRegulationComparisonResultSchema = clientToolResultBase
             .passthrough(),
         ),
         missingData: z.array(z.string()),
-        query: clientAnalysisQuerySchema,
+        query: clientRegulationQuerySchema,
       })
       .passthrough(),
     tool: z.literal("compareRegulations"),

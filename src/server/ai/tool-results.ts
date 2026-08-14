@@ -107,11 +107,18 @@ export function buildRegulationComparisonResult(input: {
   informationAsOf: string;
 }): CompareRegulationsResult {
   const citations = citationsFromAnalysisSources(input.comparison.sources);
-  const evidenceSufficient = input.comparison.countries.filter(
+  const countriesWithEvidence = input.comparison.countries.filter(
     (country) =>
       country.currentEffectiveRegulations.length > 0 ||
       country.futureAdoptedRegulations.length > 0,
-  ).length >= 2;
+  ).length;
+  const requiredCountriesWithEvidence = Math.min(
+    2,
+    input.comparison.query.countryIso3s.length,
+  );
+  const evidenceSufficient =
+    requiredCountriesWithEvidence > 0 &&
+    countriesWithEvidence >= requiredCountriesWithEvidence;
 
   return compareRegulationsResultSchema.parse({
     citations,

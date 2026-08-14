@@ -28,7 +28,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { AssistantMarkdown } from "@/components/ai/assistant-markdown";
 import { Button } from "@/components/ui/button";
+import { isNavigableEvidenceUrl } from "@/lib/source-link";
 import {
   CHAT_ATTACHMENT_ACCEPT,
   CHAT_DOCUMENT_ATTACHMENT_ACCEPT,
@@ -47,10 +49,10 @@ import {
   MIN_CHAT_IMAGE_DIMENSION,
 } from "@/features/ai/image-attachments";
 import {
-  clientAiToolResultSchema,
   type ClientAiCitation,
   type ClientAiToolResult,
 } from "@/features/ai/client-schemas";
+import { toolPartPresentation } from "@/features/ai/tool-part-presentation";
 import { MAX_CHAT_USER_MESSAGE_CHARACTERS } from "@/features/ai/constants";
 import { parseSerializedApiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
@@ -61,6 +63,7 @@ type SalesChatProps = {
   imageUploadsEnabled: boolean;
   initialPrompt?: string;
   selectedCountryIso3: string | null;
+  suggestedPrompts?: readonly string[];
 };
 
 type PendingAttachment = {
@@ -299,7 +302,7 @@ function CitationList({
                 {citation.sourceTitle} · {citationLocator(citation)}
               </p>
             </div>
-            {citation.sourceUrl ? (
+            {isNavigableEvidenceUrl(citation.sourceUrl) ? (
               <a
                 aria-label={`打开来源：${citation.sourceTitle}`}
                 className="shrink-0 text-primary hover:underline"
@@ -309,6 +312,10 @@ function CitationList({
               >
                 <ExternalLink aria-hidden="true" className="size-3.5" />
               </a>
+            ) : citation.isDemo ? (
+              <span className="shrink-0 text-[10px] text-amber-800">
+                虚构证据，无外部链接
+              </span>
             ) : null}
           </div>
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
@@ -838,11 +845,20 @@ function ToolPart({ part }: { part: ChatMessagePart }) {
   if (!isToolUIPart(part)) {
     return null;
   }
-  if ("output" in part) {
-    const parsed = clientAiToolResultSchema.safeParse(part.output);
-    if (parsed.success) {
-      return <ToolResultCard result={parsed.data} />;
-    }
+  const presentation = toolPartPresentation(part);
+  if (presentation.kind === "result") {
+    return <ToolResultCard result={presentation.result} />;
+  }
+  if (presentation.kind === "error") {
+    return (
+      <div
+        className="my-2 flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+        role="alert"
+      >
+        <AlertTriangle aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+        {presentation.message}
+      </div>
+    );
   }
 
   return (
@@ -859,6 +875,7 @@ export function SalesChat({
   imageUploadsEnabled,
   initialPrompt = "",
   selectedCountryIso3,
+  suggestedPrompts = [],
 }: SalesChatProps) {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [input, setInput] = useState(initialPrompt);
@@ -1229,6 +1246,23 @@ export function SalesChat({
                 ? "离线 Demo 可尝试：“CHN 目前有哪些有效法规？”或“CHN 的 non-road 100 kW 产品是否适配？”；只查询明确标记的虚构 fixture。"
                 : "例如：“CHN 目前有哪些有效法规？”或“DEU 的 non-road 120 kW 产品是否适配？”也可以比较 CHN 与 BRA 并生成结构化销售简报。"}
             </p>
+            {suggestedPrompts.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {suggestedPrompts.map((prompt) => (
+                  <button
+                    className="rounded-full border border-emerald-900/10 bg-white px-3 py-1.5 text-left text-xs font-medium text-emerald-900 transition-colors hover:bg-emerald-50"
+                    key={prompt}
+                    onClick={() => {
+                      setInput(prompt);
+                      inputRef.current?.focus();
+                    }}
+                    type="button"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -1257,9 +1291,13 @@ export function SalesChat({
                         AI 解释/建议（非事实层）
                       </p>
                     ) : null}
-                    <p className="whitespace-pre-wrap leading-6">
-                      {part.text}
-                    </p>
+                    {message.role === "assistant" ? (
+                      <AssistantMarkdown content={part.text} />
+                    ) : (
+                      <p className="whitespace-pre-wrap leading-6">
+                        {part.text}
+                      </p>
+                    )}
                   </div>
                 );
               }

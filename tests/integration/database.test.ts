@@ -1072,6 +1072,79 @@ describe("repositories", () => {
     expect(evidence.certifications[0]?.source.title).toContain("DEMO ONLY");
   });
 
+  it("fails closed for real products and certifications without publication approval", async () => {
+    const repository = createProductRepository(testDatabase.database);
+    const unapprovedProductId = "10000000-0000-4000-8000-000000000601";
+    const unapprovedCertificationId =
+      "10000000-0000-4000-8000-000000000602";
+
+    await testDatabase.database.insert(products).values({
+      applicationScopes: ["non-road"],
+      availableFrom: "2025-01-01",
+      availableTo: null,
+      dataSourceId: demoIds.source.countryDirectory,
+      id: unapprovedProductId,
+      isDemo: false,
+      modelCode: "UNAPPROVED-REAL-100",
+      name: "Unapproved real product",
+      powerMaxKw: 150,
+      powerMinKw: 50,
+      specificationVersion: "unapproved-v1",
+      verifiedAt: new Date("2026-01-15T00:00:00.000Z"),
+    });
+    await testDatabase.database.insert(productCertifications).values({
+      applicationScope: "non-road",
+      certificateNumber: "UNAPPROVED-CERT-100",
+      dataSourceId: demoIds.source.countryDirectory,
+      id: unapprovedCertificationId,
+      isDemo: false,
+      powerMaxKw: 150,
+      powerMinKw: 50,
+      productId: demoIds.product.certified,
+      regulationId: demoIds.regulation.chinaEffective,
+      status: "active",
+      validFrom: "2025-01-01",
+      validTo: null,
+      verifiedAt: new Date("2026-01-15T00:00:00.000Z"),
+    });
+
+    try {
+      const listedProducts = await repository.listProducts();
+      const unapprovedProductEvidence = await repository.findFitEvidence({
+        applicationScope: "non-road",
+        asOf: "2026-07-29",
+        countryIso3: "CHN",
+        powerKw: 100,
+        productModelCode: "UNAPPROVED-REAL-100",
+      });
+      const demoProductEvidence = await repository.findFitEvidence({
+        applicationScope: "non-road",
+        asOf: "2026-07-29",
+        countryIso3: "CHN",
+        powerKw: 100,
+        productModelCode: "DEMO-ENG-100",
+      });
+
+      expect(
+        listedProducts.some(({ id }) => id === unapprovedProductId),
+      ).toBe(false);
+      expect(unapprovedProductEvidence.product).toBeNull();
+      expect(
+        demoProductEvidence.certifications.some(
+          ({ id }) => id === unapprovedCertificationId,
+        ),
+      ).toBe(false);
+      expect(demoProductEvidence.certifications).toHaveLength(1);
+    } finally {
+      await testDatabase.database
+        .delete(productCertifications)
+        .where(eq(productCertifications.id, unapprovedCertificationId));
+      await testDatabase.database
+        .delete(products)
+        .where(eq(products.id, unapprovedProductId));
+    }
+  });
+
   it("preserves demo classification when a demo limit uses a public source", async () => {
     const repository = createProductRepository(testDatabase.database);
 

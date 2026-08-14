@@ -24,6 +24,7 @@ import { getDemoDatabase } from "@/server/db/demo-client";
 import { marketMetrics } from "@/server/db/schema";
 import { demoIds } from "@/server/db/seed/demo-data";
 import { evaluateProductFit } from "@/server/services/product-fit-service";
+import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
 
@@ -377,6 +378,22 @@ describe("marketing analysis service", () => {
       evidenceSufficient: false,
       status: "no_data",
     });
+  });
+
+  it("accepts one exact country regulation query as sufficient evidence", async () => {
+    const comparison = await compareRegulations({
+      applicationScope: input.applicationScope,
+      asOf: input.asOf,
+      countryIso3s: ["CHN"],
+      powerKw: input.powerKw,
+    });
+    const result = buildRegulationComparisonResult({
+      comparison,
+      informationAsOf: input.asOf,
+    });
+
+    expect(result).toMatchObject({ evidenceSufficient: true, status: "ok" });
+    expect(clientAiToolResultSchema.safeParse(result).success).toBe(true);
   });
 
   it("prefers the market fact publication date in analysis sources", async () => {

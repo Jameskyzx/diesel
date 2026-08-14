@@ -730,14 +730,19 @@ function createCompatibleProductEvidence(input: {
   });
 }
 
-function createCountryProfileEvidence(countryIso3: string): AiToolResult {
+function createCountryProfileEvidence(
+  countryIso3: string,
+  requestedTopics: ("country" | "market" | "regulations")[] = [
+    "regulations",
+  ],
+): AiToolResult {
   return {
     citations: [],
     evidenceSufficient: true,
     informationAsOf: currentUtcDate(),
     latestVerifiedAt: null,
     profile: null,
-    requestedTopics: ["regulations"],
+    requestedTopics,
     resolvedCountryIso3: countryIso3,
     status: "ok",
     tool: "getCountryProfile",
@@ -745,7 +750,9 @@ function createCountryProfileEvidence(countryIso3: string): AiToolResult {
   };
 }
 
-function createRegulationComparisonEvidence(): AiToolResult {
+function createRegulationComparisonEvidence(
+  countryIso3s: string[] = ["CHN", "BRA"],
+): AiToolResult {
   return {
     citations: [],
     comparison: {
@@ -754,7 +761,7 @@ function createRegulationComparisonEvidence(): AiToolResult {
       query: {
         applicationScope: "non-road",
         asOf: currentUtcDate(),
-        countryIso3s: ["CHN", "BRA"],
+        countryIso3s,
         powerKw: 100,
       },
       sources: [],
@@ -1080,11 +1087,11 @@ describe("single-agent sales chat", () => {
     });
     const correctResults = [
       createCompatibleProductEvidence({ countryIso3: "CHN" }),
-      createCountryProfileEvidence("BRA"),
+      createRegulationComparisonEvidence(["BRA"]),
     ];
     const swappedResults = [
       createCompatibleProductEvidence({ countryIso3: "BRA" }),
-      createCountryProfileEvidence("CHN"),
+      createRegulationComparisonEvidence(["CHN"]),
     ];
 
     expect(evidenceContractAllowsModelText(contract, correctResults)).toBe(
@@ -1093,6 +1100,58 @@ describe("single-agent sales chat", () => {
     expect(evidenceContractAllowsModelText(contract, swappedResults)).toBe(
       false,
     );
+  });
+
+  it("does not let an unfiltered country profile satisfy scoped regulation evidence", () => {
+    const contract = buildSalesChatEvidenceContract({
+      selectedCountryIso3: null,
+      userTexts: ["核对 BRA non-road 100 kW 法规。"],
+    });
+
+    expect(contract.requirements).toEqual([
+      expect.objectContaining({ acceptedTools: ["compareRegulations"] }),
+    ]);
+    expect(
+      evidenceContractAllowsModelText(contract, [
+        createCountryProfileEvidence("BRA"),
+      ]),
+    ).toBe(false);
+    expect(
+      evidenceContractAllowsModelText(contract, [
+        createRegulationComparisonEvidence(["BRA"]),
+      ]),
+    ).toBe(true);
+  });
+
+  it("requires independent exact regulation evidence for same-country mixed intent", () => {
+    const contract = buildSalesChatEvidenceContract({
+      selectedCountryIso3: null,
+      userTexts: [
+        "核对 CHN non-road 100 kW 法规，并推荐 CHN 适配产品。",
+      ],
+    });
+    const productEvidence = createCompatibleProductEvidence({
+      countryIso3: "CHN",
+    });
+
+    expect(contract.requirements).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ acceptedTools: ["findCompatibleProducts"] }),
+        expect.objectContaining({ acceptedTools: ["compareRegulations"] }),
+      ]),
+    );
+    expect(
+      evidenceContractAllowsModelText(contract, [
+        productEvidence,
+        createCountryProfileEvidence("CHN", ["market"]),
+      ]),
+    ).toBe(false);
+    expect(
+      evidenceContractAllowsModelText(contract, [
+        productEvidence,
+        createRegulationComparisonEvidence(["CHN"]),
+      ]),
+    ).toBe(true);
   });
 
   it("fails closed before tools when structured analysis lacks context", () => {

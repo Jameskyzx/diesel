@@ -320,6 +320,9 @@ Repository 负责按成员期、法规期、限值期、scope 和功率形成候
 结果。两者都保留产品供应期，产品追溯卡、AI 产品卡和销售简报直接展示该事实；
 UI 也显示辖区 ID、法规 ID、认证 ID、适用性来源和核验日期。AI
 `findCompatibleProducts` 引用辖区实体与国家成员关系来源，不使用 LLM 修订结论。
+所有公开产品消费者都通过 Product Repository 的 publication manifest 边界：Demo 实体和来源
+必须同时为 Demo；真实产品必须匹配已签核的实体 ID、来源 ID 与规格版本，真实认证必须匹配
+实体 ID 与来源 ID。缺少或漂移均失败关闭。
 供应期当前只用于追溯，不改变 `fit/not_fit/unknown`；是否把商业可售性、库存或
 供应期纳入适配规则仍需 ADR-021 批准。本规则也不判断完整发动机配置或营销机会评分。
 
@@ -442,6 +445,9 @@ MVP 采用“结构化结果优先”：
   主题；工具按所请求主题逐项检查结构化证据。国家记录存在但所问法规或市场数组为空
   时仍返回 profile 卡片，但外层为 `no_data/evidenceSufficient=false`，不能用国家基础
   元数据替缺失主题放行自然语言。
+- 无 scope/power 的单国概览可使用 `getCountryProfile`；带精确 scope/power 的
+  1–5 国法规查询统一使用 `compareRegulations`。同一问题同时要求法规核对与产品推荐时，
+  evidence contract 要求法规比较与产品适配两份独立结构化结果。
 - 聊天请求通过消息白名单后，先执行保守的确定性对话分流。问候、能力询问、致谢、
   模糊分析请求，以及明显缺少场景/功率/第二国家的适配或比较请求，直接返回能力说明
   或缺参追问，不初始化模型和审计会话，也不会制造空工具卡片；该路径仍受统一入口
@@ -455,6 +461,9 @@ MVP 采用“结构化结果优先”：
 - 地图 ISO3 只作为工具参数缺省值；工具参数中的明确 ISO3 优先。
 - UI message 中的工具输出经 Zod 再校验后渲染为结构化卡片。来源、页码/章节、
   法规状态、查询基准与最近核验时间来自工具结果，不从自然语言中提取。
+- 助手自然语言支持 CommonMark 与 GFM 排版，但仍标为“AI 解释/建议（非事实层）”。
+  浏览器不渲染模型原始 HTML 或远程图片，Markdown 链接仅允许 HTTP(S)、站内路径、查询串与锚点。
+  用户输入继续按纯文本显示，结构化工具卡不经 Markdown 二次解释。
 - 单次回答调用多个工具时，只有全部工具结果都通过 Zod、`status=ok` 且
   `evidenceSufficient=true` 才放行模型自然语言；任一工具 `no_data/error`、证据不足
   或输出畸形都会把整段模型文本替换为固定的证据不足声明，工具卡片仍逐项保留。
@@ -485,8 +494,8 @@ MVP 采用“结构化结果优先”：
 - `compareMarkets` 只读取 `market_metrics`，逐指标检查国家覆盖、重复最新观测、
   scope、单位、币种、methodology 和 period。第一版不换汇、不换单位、不跨期间
   推算。
-- 比较工具把“返回了零散事实”和“证据足以比较”分开：法规比较至少需要两个国家
-  有当前/未来可见法规，市场比较至少需要一个指标通过全部可比性检查；否则外层
+- 比较工具把“返回了零散事实”和“证据足以回答”分开：单国精确法规查询需要该国有
+  当前/未来可见法规，多国法规比较至少需要两国有证据；市场比较至少需要一个指标通过全部可比性检查；否则外层
   `status=no_data`、`evidenceSufficient=false`，但结构化结果仍保留事实和缺失原因。
 - `calculateOpportunityScore` 调用版本化纯函数
   `opportunity-score-v1`。三个维度为市场潜力、产品准备度和法规认证覆盖，默认
@@ -863,6 +872,7 @@ HTTP IP/备用域名不承载
 | Drizzle ORM | 类型化查询和迁移 |
 | Supabase PostgreSQL | 结构化数据、全文检索、pgvector、PostGIS |
 | Vercel AI SDK | 单 Agent、工具调用和流式输出 |
+| react-markdown / remark-gfm | 仅在客户端将助手解释文本渲染为安全 CommonMark/GFM；不启用原始 HTML |
 | unpdf | 仅服务端、受页数与字符预算约束的 PDF 文本提取；不参与浏览器 bundle |
 | sharp | 仅服务端核验 PNG/JPEG/WebP 真实格式、尺寸并强制解码压缩像素流；不参与浏览器 bundle |
 | Zod | 边界输入、环境和工具契约 |

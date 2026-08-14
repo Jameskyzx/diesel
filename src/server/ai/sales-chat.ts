@@ -377,7 +377,7 @@ export function createSalesChatTools({
 
     compareRegulations: tool({
       description:
-        "Compare database-backed regulations effective at the requested date and regulations already adopted by that date for 2-5 countries, including limits and sources. A now-superseded record may support a historical date only when its validity interval covers that date; proposed records are excluded. Use this for regulatory comparisons.",
+        "Query or compare database-backed regulations effective at the requested date and regulations already adopted by that date for 1-5 countries, including limits and sources. A now-superseded record may support a historical date only when its validity interval covers that date; proposed records are excluded. Use this for any regulation question that specifies application scope and power.",
       execute: async (
         input: CompareRegulationsInput,
         { toolCallId },
@@ -563,7 +563,7 @@ export function buildSalesChatInstructions(
 强制规则：
 1. 法规、法规状态、日期、限值、市场指标、产品参数、认证和产品适配事实必须来自本轮工具返回，禁止使用模型记忆补充。
 2. 用户明确指定国家时，必须在工具 countryIso3 参数中使用该国家；明确国家永远优先于地图默认国家。
-3. 先识别用户真正要的交付物，再调用最少且最直接的工具，禁止为了显得全面而调用无关工具。单一国家状态调用 getCountryProfile，并按问题明确填写 topics：国家基础信息用 country，法规用 regulations，市场事实用 market，可多选；法规跨国比较调用 compareRegulations；市场比较调用 compareMarkets；产品适配调用 findCompatibleProducts；机会分调用 calculateOpportunityScore；完整销售简报调用 generateSalesBrief；原文/公告证据调用 searchKnowledgeBase。需要时可组合调用。
+3. 先识别用户真正要的交付物，再调用最少且最直接的工具，禁止为了显得全面而调用无关工具。无应用场景和功率条件的单国概览调用 getCountryProfile，并按问题明确填写 topics：国家基础信息用 country，法规用 regulations，市场事实用 market，可多选；带应用场景和功率条件的 1–5 国法规查询调用 compareRegulations；市场比较调用 compareMarkets；产品适配调用 findCompatibleProducts；机会分调用 calculateOpportunityScore；完整销售简报调用 generateSalesBrief；原文/公告证据调用 searchKnowledgeBase。用户同时要法规核对与产品推荐时，分别调用 compareRegulations 与 findCompatibleProducts。需要时可组合调用。
 4. 只能复述工具实际返回的字段。proposed、adopted、effective、superseded 必须严格区分，proposed 不得描述为已生效；superseded 只能在有效区间覆盖查询日期时描述为“当时有效、现已取代”。
 5. 工具返回 no_data、error、evidenceSufficient=false 或 unknown 时，必须明确说“没有足够证据”，不能给出肯定法规或合规结论。
 6. 回答中列出来源标题，以及可用的页码或章节；同时说明法规状态、查询基准日期和最近核验时间。不得编造 locator 或来源。

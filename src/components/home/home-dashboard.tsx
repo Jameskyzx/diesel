@@ -28,16 +28,16 @@ type DashboardState =
   | { status: "ready"; data: CountryMapResponse };
 
 type DashboardMetrics = {
-  covered: number;
-  fresh: number;
+  evidenceReviewed: number;
+  evidenceReviewFresh: number;
   total: number;
 };
 
 const initialState: DashboardState = { status: "loading" };
 
 const emptyMetrics: DashboardMetrics = {
-  covered: 0,
-  fresh: 0,
+  evidenceReviewed: 0,
+  evidenceReviewFresh: 0,
   total: 0,
 };
 
@@ -82,8 +82,8 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
       (result, country) => {
         result.total += 1;
         if (hasDetailedCountryCoverage(country.dataCoverageStatus)) {
-          result.covered += 1;
-          if (!country.isStale) result.fresh += 1;
+          result.evidenceReviewed += 1;
+          if (!country.isStale) result.evidenceReviewFresh += 1;
         }
         return result;
       },
@@ -91,7 +91,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
     );
   }, [state]);
 
-  const coveredCountries = useMemo(() => {
+  const evidenceReviewedCountries = useMemo(() => {
     if (state.status !== "ready") return [];
 
     return state.data.countries
@@ -106,14 +106,14 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
       });
   }, [state]);
 
-  const featuredCountries = coveredCountries.slice(0, 6);
-  const productFitHref = coveredCountries[0]
+  const featuredCountries = evidenceReviewedCountries.slice(0, 6);
+  const productFitHref = evidenceReviewedCountries[0]
     ? demoMode
-      ? `/countries/${coveredCountries[0].iso3}?applicationScope=non-road&powerKw=100&productModelCode=DEMO-ENG-100`
-      : `/countries/${coveredCountries[0].iso3}`
+      ? `/countries/${evidenceReviewedCountries[0].iso3}?applicationScope=non-road&powerKw=100&productModelCode=DEMO-ENG-100`
+      : `/countries/${evidenceReviewedCountries[0].iso3}`
     : "/map";
-  const coverageRate = metrics.total
-    ? Math.round((metrics.covered / metrics.total) * 100)
+  const evidenceReviewRate = metrics.total
+    ? Math.round((metrics.evidenceReviewed / metrics.total) * 100)
     : null;
   const latestVerifiedAt =
     state.status === "ready"
@@ -122,6 +122,20 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
           .toSorted()
           .at(-1)
       : null;
+  const coverageKicker = demoMode ? "Fictional demo slice" : "Evidence boundary";
+  const coverageTitle = demoMode ? "虚构演示切片" : "全球证据网络";
+  const coverageRateLabel = demoMode ? "虚构演示切片率" : "证据边界核验率";
+  const reviewedLabel = demoMode ? "已加载演示切片" : "证据边界已核验";
+  const freshLabel = demoMode ? "演示记录在设定核验期" : "核验仍在时效期";
+  const latestVerificationLabel =
+    state.status === "ready"
+      ? (latestVerifiedAt ?? "无核验记录")
+      : state.status === "error"
+        ? "不可用"
+        : "同步中";
+  const coverageExplanation = demoMode
+    ? "仅表示虚构 fixture 可运行完整流程，不代表真实法规覆盖或外部来源核验。"
+    : "已核验表示来源边界和数据缺口经过审阅，不代表该国存在数值法规。";
 
   return (
     <main className="page-shell py-8 sm:py-12 lg:py-16">
@@ -169,40 +183,56 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
             <div className="relative flex items-center justify-between border-b border-white/10 pb-5">
               <div>
                 <p className="text-[10px] font-semibold tracking-[0.2em] text-emerald-200/70 uppercase">
-                  Live coverage
+                  {coverageKicker}
                 </p>
-                <p className="display-title mt-1 text-xl font-semibold">全球证据网络</p>
+                <p className="display-title mt-1 text-xl font-semibold">{coverageTitle}</p>
               </div>
               <span className="flex items-center gap-2 text-xs text-emerald-100">
-                <span className="size-2 rounded-full bg-[#cce878] shadow-[0_0_0_5px_rgb(204_232_120_/_0.1)]" />
-                在线
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    state.status === "ready"
+                      ? "bg-[#cce878] shadow-[0_0_0_5px_rgb(204_232_120_/_0.1)]"
+                      : state.status === "error"
+                        ? "bg-rose-300"
+                        : "animate-pulse bg-white/45",
+                  )}
+                />
+                {state.status === "ready"
+                  ? "在线"
+                  : state.status === "error"
+                    ? "数据不可用"
+                    : "同步中"}
               </span>
             </div>
             <div className="relative grid gap-8 py-8 sm:grid-cols-[1fr_1.1fr] sm:items-end">
               <div>
                 <p className="display-title text-7xl leading-none font-semibold tracking-[-0.06em] text-[#dbf1a2]">
-                  {coverageRate === null ? "—" : `${coverageRate}%`}
+                  {evidenceReviewRate === null ? "—" : `${evidenceReviewRate}%`}
                 </p>
-                <p className="mt-3 text-sm text-emerald-100/70">结构化覆盖率</p>
+                <p className="mt-3 text-sm text-emerald-100/70">{coverageRateLabel}</p>
               </div>
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-1">
                 <SignalRow label="国家目录" value={state.status === "ready" ? metrics.total : null} />
-                <SignalRow label="结构化覆盖" value={state.status === "ready" ? metrics.covered : null} />
-                <SignalRow label="来源在新鲜期" value={state.status === "ready" ? metrics.fresh : null} />
+                <SignalRow label={reviewedLabel} value={state.status === "ready" ? metrics.evidenceReviewed : null} />
+                <SignalRow label={freshLabel} value={state.status === "ready" ? metrics.evidenceReviewFresh : null} />
               </div>
             </div>
             <div className="relative flex items-center justify-between border-t border-white/10 pt-5 text-xs text-emerald-100/60">
               <span>最近核验</span>
-              <span className="font-medium text-white">{latestVerifiedAt ?? "同步中"}</span>
+              <span className="font-medium text-white">{latestVerificationLabel}</span>
             </div>
+            <p className="relative mt-3 text-[11px] leading-5 text-emerald-100/55">
+              {coverageExplanation}
+            </p>
           </div>
         </div>
       </section>
 
       <section aria-label="覆盖概览" className="mt-14 grid gap-px overflow-hidden rounded-[1.5rem] border border-black/[0.06] bg-black/[0.06] sm:grid-cols-3">
         <MetricCard icon={Globe2} label="国家目录" loading={state.status === "loading"} value={state.status === "ready" ? metrics.total : null} />
-        <MetricCard icon={MapIcon} label="结构化覆盖" loading={state.status === "loading"} value={state.status === "ready" ? metrics.covered : null} />
-        <MetricCard icon={FileCheck2} label="来源在新鲜期" loading={state.status === "loading"} value={state.status === "ready" ? metrics.fresh : null} />
+        <MetricCard icon={MapIcon} label={reviewedLabel} loading={state.status === "loading"} value={state.status === "ready" ? metrics.evidenceReviewed : null} />
+        <MetricCard icon={FileCheck2} label={freshLabel} loading={state.status === "loading"} value={state.status === "ready" ? metrics.evidenceReviewFresh : null} />
       </section>
 
       <section className="py-20 sm:py-24" aria-labelledby="missions-title">

@@ -163,7 +163,7 @@ export function selectPortfolioDemoTool(
 
   if (
     context.activeTask === "regulation_compare" &&
-    countries.length >= 2 &&
+    countries.length >= 1 &&
     applicationScope !== null &&
     powerKw !== null
   ) {

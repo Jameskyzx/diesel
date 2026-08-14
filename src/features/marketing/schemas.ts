@@ -33,6 +33,19 @@ export const countryComparisonListSchema = z
     }
   });
 
+export const regulationCountryListSchema = z
+  .array(iso3Schema)
+  .min(1)
+  .max(5)
+  .superRefine((countries, context) => {
+    if (new Set(countries).size !== countries.length) {
+      context.addIssue({
+        code: "custom",
+        message: "countryIso3s must not contain duplicates",
+      });
+    }
+  });
+
 export const metricCodeSchema = z
   .string()
   .trim()
@@ -45,7 +58,7 @@ export const compareRegulationsInputSchema = z
   .object({
     applicationScope: applicationScopeSchema,
     asOf: isoDateSchema,
-    countryIso3s: countryComparisonListSchema,
+    countryIso3s: regulationCountryListSchema,
     powerKw: powerKwSchema,
   })
   .strict();
@@ -61,6 +74,7 @@ export const compareMarketsInputSchema = z
 export const calculateOpportunityScoreInputSchema =
   compareRegulationsInputSchema
     .extend({
+      countryIso3s: countryComparisonListSchema,
       metricCodes: z.array(metricCodeSchema).min(1).max(8).optional(),
       productModelCode: z
         .string()

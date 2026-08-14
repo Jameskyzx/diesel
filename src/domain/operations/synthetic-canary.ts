@@ -1,3 +1,8 @@
+import {
+  healthResponseSchema,
+  readinessResponseSchema,
+} from "@/lib/health";
+
 export type CanaryErrorCode =
   | "CONTENT_TYPE_MISMATCH"
   | "INVALID_RESPONSE"
@@ -40,10 +45,13 @@ export function validateCanaryJson(
     return false;
   }
   if (shape === "liveness") {
-    return value.status === "live";
+    return healthResponseSchema.safeParse(value).success;
   }
   if (shape === "readiness") {
-    return value.status === "ready";
+    const parsed = readinessResponseSchema.safeParse(value);
+    return parsed.success &&
+      parsed.data.status === "ok" &&
+      parsed.data.checks.database === "ok";
   }
   if (shape === "country-summary") {
     return value.status === "available" && isRecord(value.applicabilitySummary);

@@ -78,7 +78,9 @@ Seed 计数代表线上覆盖。
 `0011_temporal_memberships_and_product_power` 会对所有活动产品强制
 `power_max_kw > power_min_kw`，仅允许已归档的历史脏记录保留原值；`0013` 让已经应用旧版
 0011 的环境收敛到同一最终约束。目标库是否完成迁移必须以版本化 production readback 的
-迁移总数、约束定义和零条活动非法产品为准，不能只依赖本文描述。
+完整时间/hash lineage、约束定义和零条活动非法产品为准，不能只依赖本文描述。目标 journal
+还保留一条 2026-08-03 放宽为 `>=` 的孤儿迁移审计记录；readback 只接受该精确时间/hash，
+不删除历史，也不把任意额外 migration 当作正常状态。
 
 ## 地图 Demo 公共出口清理（2026-08-14，代码已发布）
 

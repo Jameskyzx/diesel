@@ -236,8 +236,10 @@ node --conditions=react-server --import tsx --env-file=.env.production.local \
 
 Apply 使用 serializable transaction，先归档认证再归档产品并逐实体追加治理审计；任何
 affected ID 漂移或归档后仍有非法活动产品都会 rollback。最终读回必须同时证明 14 条
-Migration、仅对已归档历史开放例外的严格活动产品功率 CHECK、活动成员 exclusion、
-共享限流表和零条活动非法产品。
+repository Migration、仅对已归档历史开放例外的严格活动产品功率 CHECK、活动成员
+exclusion、共享限流表和零条活动非法产品。生产 journal 可额外保留 2026-08-03 已审计的
+`products_power_check >=` 孤儿迁移，但 readback 必须同时精确匹配它的时间与 SHA256；
+未知额外 migration、已知时间上的未知 hash 或任一 repository migration 缺失仍失败关闭。
 
 ### 4.2 VPS 版本化发布与回滚
 

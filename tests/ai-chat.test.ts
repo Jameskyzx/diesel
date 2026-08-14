@@ -2284,4 +2284,67 @@ describe("single-agent sales chat", () => {
       expect.arrayContaining([expect.stringContaining("Demo")]),
     );
   });
+
+  it("does not expose an internal document download as a public citation URL", () => {
+    const search = hybridSearchResponseSchema.parse({
+      embeddingModel: "local-hash-embedding-v1",
+      filters: {
+        applicationScope: null,
+        asOf: "2026-08-14",
+        countryIso3: "CHN",
+        jurisdictionId: null,
+        limit: 1,
+      },
+      query: "法规原文",
+      results: [
+        {
+          applicationScope: null,
+          chunkId: "00000000-0000-4000-8000-000000000611",
+          content: "Published evidence",
+          countryIso3: "CHN",
+          document: {
+            downloadUrl:
+              "/api/dev/knowledge/documents/00000000-0000-4000-8000-000000000612/file",
+            id: "00000000-0000-4000-8000-000000000612",
+            originalFilename: "regulation.txt",
+            publishedOn: "2025-02-01",
+            source: {
+              id: "00000000-0000-4000-8000-000000000613",
+              isDemo: false,
+              publishedOn: "2025-01-15",
+              publisher: "Verified publisher",
+              title: "Verified source without a public URL",
+              url: null,
+              verifiedAt: "2026-01-15T00:00:00.000Z",
+            },
+            title: "Published regulation document",
+          },
+          finalScore: 0.8,
+          headingPath: ["Section 1"],
+          jurisdiction: null,
+          keywordScore: 0.8,
+          pageFrom: 1,
+          pageTo: 1,
+          rank: 1,
+          sectionLocator: "§1",
+          validFrom: "2025-01-01",
+          validTo: null,
+          vectorScore: 0.8,
+          warnings: [],
+        },
+      ],
+      scoring: { keywordWeight: 0.5, vectorWeight: 0.5 },
+      status: "ok",
+    });
+
+    const result = buildKnowledgeResult({
+      informationAsOf: "2026-08-14",
+      resolvedCountryIso3: "CHN",
+      search,
+    });
+
+    expect(result.status).toBe("ok");
+    expect(result.citations).toHaveLength(1);
+    expect(result.citations[0]?.sourceUrl).toBeNull();
+  });
 });

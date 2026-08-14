@@ -74,6 +74,7 @@ import {
   resolveSalesChatLoopPolicy,
   SALES_CHAT_TOOL_ORDER,
 } from "@/server/ai/sales-chat-loop";
+import { emitAiCompletionLog } from "@/server/observability/structured-log";
 
 export const MAX_AI_TOOL_STEPS = 5;
 const regulatoryDisclaimer = "信息参考，不替代正式认证或法律意见";
@@ -93,7 +94,15 @@ type CreateSalesChatToolsInput = {
   selectedCountryIso3: string | null;
   services?: Partial<SalesChatToolServices>;
   sessionId: string;
+  turnId?: string;
 };
+
+export function buildAuditToolCallId(
+  turnId: string,
+  providerToolCallId: string,
+): string {
+  return `${turnId}:${providerToolCallId}`;
+}
 
 const defaultServices: SalesChatToolServices = {
   calculateOpportunityScore,
@@ -328,6 +337,7 @@ export function createSalesChatTools({
   selectedCountryIso3,
   services = defaultServices,
   sessionId,
+  turnId = crypto.randomUUID(),
 }: CreateSalesChatToolsInput) {
   const resolvedServices: SalesChatToolServices = {
     ...defaultServices,
@@ -337,7 +347,7 @@ export function createSalesChatTools({
   return {
     calculateOpportunityScore: tool({
       description:
-        "Calculate deterministic opportunity scores for a 2-5 country comparison cohort. The code-owned opportunity-score-v1 weights and structured database facts are authoritative; unknown or missing inputs are excluded rather than scored as zero. Use this for any opportunity score or ranking request. Preserve an explicitly named productModelCode instead of broadening to the full catalog. Never calculate or modify a score yourself.",
+        "Return code-owned opportunity-score-v2 results for 2-5 countries. Product readiness includes query-date availability; missing inputs stay unknown. Preserve an explicit productModelCode; never recalculate scores.",
       execute: async (
         input: CalculateOpportunityScoreInput,
         { toolCallId },
@@ -353,7 +363,7 @@ export function createSalesChatTools({
           fallbackAsOf: input.asOf,
           input,
           sessionId,
-          toolCallId,
+          toolCallId: buildAuditToolCallId(turnId, toolCallId),
           toolName: "calculateOpportunityScore",
         }).then((result) =>
           calculateOpportunityScoreResultSchema.parse(result),
@@ -364,7 +374,7 @@ export function createSalesChatTools({
 
     compareMarkets: tool({
       description:
-        "Compare only structured market_metrics records across 2-5 countries. It checks period, unit, currency, methodology and application-scope comparability and performs no implicit conversion. Use this for market facts and comparisons.",
+        "Compare structured market metrics for 2-5 countries, including period, unit, currency, methodology and scope comparability. No implicit conversion.",
       execute: async (input: CompareMarketsInput, { toolCallId }) => {
         const informationAsOf = currentUtcDate();
         return executeAuditedTool({
@@ -377,7 +387,7 @@ export function createSalesChatTools({
           fallbackAsOf: informationAsOf,
           input,
           sessionId,
-          toolCallId,
+          toolCallId: buildAuditToolCallId(turnId, toolCallId),
           toolName: "compareMarkets",
         }).then((result) => compareMarketsResultSchema.parse(result));
       },
@@ -387,7 +397,7 @@ export function createSalesChatTools({
 
     compareRegulations: tool({
       description:
-        "Query or compare database-backed regulations effective at the requested date and regulations already adopted by that date for 1-5 countries, including limits and sources. A now-superseded record may support a historical date only when its validity interval covers that date; proposed records are excluded. Use this for any regulation question that specifies application scope and power.",
+        "Query 1-5 countries by date, application scope and power. Returns applicable effective/historical regulations, future adopted rules, limits and sources; excludes proposed rules.",
       execute: async (
         input: CompareRegulationsInput,
         { toolCallId },
@@ -403,7 +413,7 @@ export function createSalesChatTools({
           fallbackAsOf: input.asOf,
           input,
           sessionId,
-          toolCallId,
+          toolCallId: buildAuditToolCallId(turnId, toolCallId),
           toolName: "compareRegulations",
         }).then((result) =>
           compareRegulationsResultSchema.parse(result),
@@ -414,7 +424,7 @@ export function createSalesChatTools({
 
     findCompatibleProducts: tool({
       description:
-        "Deterministically evaluate a named product, or every catalog product when no model is named, against the effective regulations and certification records for a country, application scope, power and date. Use this for all product compatibility or compliance questions. Preserve an explicitly named productModelCode. An explicitly named country must be passed and overrides map context.",
+        "Evaluate product compliance, certification and query-date availability for one country, scope, power and date. Preserve an explicit productModelCode and country; otherwise evaluate the public catalog.",
       execute: async (
         input: FindCompatibleProductsInput,
         { toolCallId },
@@ -448,7 +458,7 @@ export function createSalesChatTools({
           fallbackAsOf: input.asOf,
           input,
           sessionId,
-          toolCallId,
+          toolCallId: buildAuditToolCallId(turnId, toolCallId),
           toolName: "findCompatibleProducts",
         }).then((result) =>
           findCompatibleProductsResultSchema.parse(result),
@@ -459,7 +469,7 @@ export function createSalesChatTools({
 
     getCountryProfile: tool({
       description:
-        "Get structured country facts, current effective regulations, future adopted regulations, market metrics, source dates and last verification time. The required topics array must match the user's requested evidence domains; missing requested regulation or market evidence returns no_data. Use this for single-country country, regulation-status, or market-fact questions. An explicitly named country must be passed and overrides map context.",
+        "Get one country's requested structured topics, sources and verification dates. topics must contain only the explicit domains: country, regulations and/or market. An explicit country overrides map context.",
       execute: async (input: GetCountryProfileInput, { toolCallId }) =>
         executeAuditedTool({
           auditRepository,
@@ -487,7 +497,7 @@ export function createSalesChatTools({
           fallbackAsOf: input.asOf ?? currentUtcDate(),
           input,
           sessionId,
-          toolCallId,
+          toolCallId: buildAuditToolCallId(turnId, toolCallId),
           toolName: "getCountryProfile",
         }).then((result) => getCountryProfileResultSchema.parse(result)),
       inputSchema: getCountryProfileInputSchema,
@@ -496,7 +506,7 @@ export function createSalesChatTools({
 
     searchKnowledgeBase: tool({
       description:
-        "Search traceable source-document evidence with metadata filters and return document, source, section/page, validity and scores. Use this for regulatory wording, explanations and source-document evidence. An explicitly named country must be passed and overrides map context.",
+        "Search traceable source documents with metadata filters, section/page locators, validity and scores. Preserve explicit topic terms and country.",
       execute: async (input: SearchKnowledgeBaseInput, { toolCallId }) =>
         executeAuditedTool({
           auditRepository,
@@ -524,7 +534,7 @@ export function createSalesChatTools({
           fallbackAsOf: input.asOf ?? currentUtcDate(),
           input,
           sessionId,
-          toolCallId,
+          toolCallId: buildAuditToolCallId(turnId, toolCallId),
           toolName: "searchKnowledgeBase",
         }).then((result) => searchKnowledgeBaseResultSchema.parse(result)),
       inputSchema: searchKnowledgeBaseInputSchema,
@@ -533,7 +543,7 @@ export function createSalesChatTools({
 
     generateSalesBrief: tool({
       description:
-        "Generate a deterministic structured JSON sales brief for one target country benchmarked against 1-4 other countries. It returns exactly the factual score, opportunities, risks, compatible products, rule-generated actions, missing data and sources. Use this for sales brief or sales strategy requests; preserve an explicitly named productModelCode instead of broadening to the full catalog, and explain the returned score without changing it.",
+        "Return a deterministic sales brief for one target and 1-4 benchmarks: score, opportunities, risks, ready products, rule actions, gaps and sources. Preserve an explicit productModelCode; never alter the score.",
       execute: async (
         input: GenerateSalesBriefInput,
         { toolCallId },
@@ -548,7 +558,7 @@ export function createSalesChatTools({
           fallbackAsOf: input.asOf,
           input,
           sessionId,
-          toolCallId,
+          toolCallId: buildAuditToolCallId(turnId, toolCallId),
           toolName: "generateSalesBrief",
         }).then((result) =>
           generateSalesBriefResultSchema.parse(result),
@@ -850,11 +860,42 @@ export function streamSalesChat(input: {
   hasUnverifiedAttachments?: boolean;
   messages: ModelMessage[];
   model: LanguageModel;
+  modelId?: string;
+  requestId?: string;
+  requestStartedAtMs?: number;
   selectedCountryIso3: string | null;
   sessionId: string;
   tools: SalesChatTools;
   trustedUserTexts: readonly string[];
+  turnId?: string;
 }) {
+  const turnId = input.turnId ?? crypto.randomUUID();
+  let completionLogged = false;
+  const emitCompletion = (completion: {
+    errorCode: "MODEL_STREAM_ERROR" | null;
+    evidenceResult: "sufficient" | "insufficient" | "error" | "not_applicable";
+    inputTokens: number | null;
+    loopSteps: number;
+    outputTokens: number | null;
+    toolCount: number;
+    totalTokens: number | null;
+  }) => {
+    if (
+      completionLogged ||
+      !input.modelId ||
+      !input.requestId ||
+      input.requestStartedAtMs === undefined
+    ) {
+      return;
+    }
+    completionLogged = true;
+    emitAiCompletionLog({
+      ...completion,
+      durationMs: Math.max(0, performance.now() - input.requestStartedAtMs),
+      modelId: input.modelId,
+      requestId: input.requestId,
+    });
+  };
   const evidenceContract = buildSalesChatEvidenceContract({
     selectedCountryIso3: input.selectedCountryIso3,
     userTexts: input.trustedUserTexts,
@@ -874,6 +915,43 @@ export function streamSalesChat(input: {
     maxOutputTokens: MAX_AI_OUTPUT_TOKENS,
     messages: input.messages,
     model: input.model,
+    onEnd: ({ steps, toolCalls, toolResults, usage }) => {
+      const parsedResults = toolResults.map(({ output }) =>
+        aiToolResultSchema.safeParse(output),
+      );
+      const evidenceResult =
+        parsedResults.length === 0
+          ? "not_applicable"
+          : parsedResults.some(
+                (result) => !result.success || result.data.status === "error",
+              )
+            ? "error"
+            : parsedResults.every(
+                  (result) => result.success && result.data.evidenceSufficient,
+                )
+              ? "sufficient"
+              : "insufficient";
+      emitCompletion({
+        errorCode: null,
+        evidenceResult,
+        inputTokens: usage.inputTokens ?? null,
+        loopSteps: steps.length,
+        outputTokens: usage.outputTokens ?? null,
+        toolCount: toolCalls.length,
+        totalTokens: usage.totalTokens ?? null,
+      });
+    },
+    onError: () => {
+      emitCompletion({
+        errorCode: "MODEL_STREAM_ERROR",
+        evidenceResult: "error",
+        inputTokens: null,
+        loopSteps: 0,
+        outputTokens: null,
+        toolCount: 0,
+        totalTokens: null,
+      });
+    },
     prepareStep: ({ steps }) => {
       const stepEvidence = collectSalesChatStepEvidence(steps);
       const policy = resolveSalesChatLoopPolicy({
@@ -903,7 +981,7 @@ export function streamSalesChat(input: {
         auditRepository: input.auditRepository,
         error,
         sessionId: input.sessionId,
-        toolCallId: toolCall.toolCallId,
+        toolCallId: buildAuditToolCallId(turnId, toolCall.toolCallId),
         toolName: toolName.data,
       });
       return null;

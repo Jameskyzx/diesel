@@ -556,8 +556,19 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
                 {fitStatusLabels[evaluation.status]}
               </span>
             </div>
+            <p className="mt-1 font-medium">
+              法规/认证适配：{fitStatusLabels[evaluation.status]} · 商业准备度：
+              {evaluation.commercialReadiness === "ready"
+                ? "就绪"
+                : evaluation.commercialReadiness === "not_ready"
+                  ? "未就绪"
+                  : "未知"}
+            </p>
             <p className="mt-1 text-muted-foreground">
               {evaluation.reasons.map(({ message }) => message).join("；")}
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              查询日供应状态：{evaluation.productChecks.availability.message}
             </p>
             {evaluation.product ? (
               <p className="mt-1 text-[11px] text-muted-foreground">
@@ -705,7 +716,7 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
         <div className="mt-2 space-y-1">
           {brief.recommendedProducts.map((product) => (
             <p key={product.modelCode}>
-              规则匹配：{product.modelCode} · {product.name} · 供应期
+              商业就绪：{product.modelCode} · {product.name} · 法规/认证 fit · 查询日供应 pass · 供应期
               {product.availableFrom === null && product.availableTo === null
                 ? "未记录"
                 : `${product.availableFrom ?? "未记录"} → ${product.availableTo ?? "开放"}`}

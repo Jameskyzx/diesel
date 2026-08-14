@@ -782,7 +782,7 @@ export function buildToolErrorResult(
       ...common,
       scorecard: {
         query: input,
-        rulesetVersion: "opportunity-score-v1",
+        rulesetVersion: "opportunity-score-v2",
         scores: input.countryIso3s.map((countryIso3) => ({
           components: [
             "marketPotential",

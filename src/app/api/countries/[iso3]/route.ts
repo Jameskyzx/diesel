@@ -9,6 +9,7 @@ import {
 import { getErrorCode } from "@/lib/api-error";
 import { isKnownCountryIso3 } from "@/server/services/country-directory";
 import { getCountryDetails } from "@/server/services/country-service";
+import { createApiRequestObserver } from "@/server/observability/structured-log";
 
 export const runtime = "nodejs";
 
@@ -32,17 +33,24 @@ function internalErrorResponse(error: unknown) {
 }
 
 export async function GET(request: Request, context: CountryRouteContext) {
+  const observer = createApiRequestObserver("/api/countries/:iso3");
   let input: CountryDetailQuery;
 
   try {
     const { iso3 } = await context.params;
-    const asOf = new URL(request.url).searchParams.get("asOf") ?? undefined;
-    input = countryDetailQuerySchema.parse({ asOf, iso3 });
+    const searchParams = new URL(request.url).searchParams;
+    input = countryDetailQuerySchema.parse({
+      applicationScope:
+        searchParams.get("applicationScope") ?? undefined,
+      asOf: searchParams.get("asOf") ?? undefined,
+      iso3,
+      powerKw: searchParams.get("powerKw") ?? undefined,
+    });
   } catch (error) {
     if (error instanceof ZodError) {
       const failedField = String(error.issues[0]?.path[0] ?? "");
       if (failedField === "asOf") {
-        return NextResponse.json(
+        return observer.finish(NextResponse.json(
           countryApiErrorSchema.parse({
             error: {
               code: "INVALID_AS_OF",
@@ -50,10 +58,10 @@ export async function GET(request: Request, context: CountryRouteContext) {
             },
           }),
           { status: 400 },
-        );
+        ), "INVALID_AS_OF");
       }
       if (failedField === "iso3") {
-        return NextResponse.json(
+        return observer.finish(NextResponse.json(
           countryApiErrorSchema.parse({
             error: {
               code: "INVALID_ISO3",
@@ -61,15 +69,26 @@ export async function GET(request: Request, context: CountryRouteContext) {
             },
           }),
           { status: 400 },
-        );
+        ), "INVALID_ISO3");
+      }
+      if (failedField === "applicationScope" || failedField === "powerKw") {
+        return observer.finish(NextResponse.json(
+          countryApiErrorSchema.parse({
+            error: {
+              code: "INVALID_FILTER",
+              message: "应用场景或功率参数无效。",
+            },
+          }),
+          { status: 400 },
+        ), "INVALID_FILTER");
       }
     }
 
-    return internalErrorResponse(error);
+    return observer.finish(internalErrorResponse(error), "INTERNAL_ERROR");
   }
 
   if (!isKnownCountryIso3(input.iso3)) {
-    return NextResponse.json(
+    return observer.finish(NextResponse.json(
       countryApiErrorSchema.parse({
         error: {
           code: "COUNTRY_NOT_FOUND",
@@ -77,12 +96,12 @@ export async function GET(request: Request, context: CountryRouteContext) {
         },
       }),
       { status: 404 },
-    );
+    ), "COUNTRY_NOT_FOUND");
   }
 
   try {
-    return NextResponse.json(await getCountryDetails(input));
+    return observer.finish(NextResponse.json(await getCountryDetails(input)));
   } catch (error) {
-    return internalErrorResponse(error);
+    return observer.finish(internalErrorResponse(error), "INTERNAL_ERROR");
   }
 }

@@ -172,8 +172,10 @@ export default async function CountryPage({
   const [initialMapResponse, initialCountryDetail] = await Promise.all([
     listCountryMapSummaries(),
     getCountryDetails({
+      applicationScope: filters.applicationScope,
       asOf: filters.asOf,
       iso3: parsed.data,
+      powerKw: filters.powerKw,
     }),
   ]);
   const countryDirectory = getCountryDirectory();

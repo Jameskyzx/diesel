@@ -77,6 +77,21 @@ const fitPresentation = {
   },
 } as const;
 
+const readinessPresentation = {
+  not_ready: {
+    className: "border-rose-300 bg-rose-50 text-rose-950",
+    label: "商业未就绪",
+  },
+  ready: {
+    className: "border-emerald-300 bg-emerald-50 text-emerald-950",
+    label: "商业就绪",
+  },
+  unknown: {
+    className: "border-amber-300 bg-amber-50 text-amber-950",
+    label: "商业准备度未知",
+  },
+} as const;
+
 function formatRange(minimum: number | null, maximum: number | null): string {
   if (minimum !== null && maximum !== null) {
     return `${minimum} kW（含）至 ${maximum} kW（不含），即 [${minimum}, ${maximum}) kW`;
@@ -364,7 +379,7 @@ export function ProductFitPanel({
         </h2>
       </div>
       <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-        由 product-fit-v1 确定性规则计算；大模型不参与合规判断。
+        由 product-fit-v2 确定性规则分别计算法规/认证适配与查询日供应状态；大模型不参与判断。
       </p>
 
       <form
@@ -537,6 +552,7 @@ function ProductFitResult({
   evaluation: ProductFitEvaluation;
 }) {
   const presentation = fitPresentation[evaluation.status];
+  const readiness = readinessPresentation[evaluation.commercialReadiness];
   const StatusIcon = presentation.icon;
   const isDemoFit =
     evaluation.status === "fit" &&
@@ -552,7 +568,7 @@ function ProductFitResult({
       >
         <div className="flex items-center gap-2 font-semibold">
           <StatusIcon aria-hidden="true" className="size-5" />
-          {isDemoFit ? "演示匹配" : presentation.label}
+          法规/认证适配：{isDemoFit ? "演示匹配" : presentation.label}
         </div>
         {isDemoFit ? (
           <p className="mt-2 rounded-lg border border-amber-400/70 bg-amber-100/80 px-3 py-2 text-xs font-semibold leading-5 text-amber-950">
@@ -567,11 +583,21 @@ function ProductFitResult({
         </p>
       </div>
 
+      <div
+        className={`rounded-2xl border p-4 ${readiness.className}`}
+        data-testid={`commercial-readiness-${evaluation.commercialReadiness}`}
+      >
+        <p className="font-semibold">{readiness.label}</p>
+        <p className="mt-2 text-sm leading-6">
+          查询日供应状态：{evaluation.productChecks.availability.message}
+        </p>
+      </div>
+
       {evaluation.status === "unknown" ? (
         <DataGapCopyAction evaluation={evaluation} />
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 text-xs">
+      <div className="grid gap-2 text-xs sm:grid-cols-3">
         <TraceCheck
           label="应用场景"
           message={evaluation.productChecks.applicationScope.message}
@@ -581,6 +607,11 @@ function ProductFitResult({
           label="产品功率"
           message={evaluation.productChecks.power.message}
           status={evaluation.productChecks.power.status}
+        />
+        <TraceCheck
+          label="查询日供应"
+          message={evaluation.productChecks.availability.message}
+          status={evaluation.productChecks.availability.status}
         />
       </div>
 

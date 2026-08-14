@@ -6,6 +6,11 @@ import {
   httpUrlSchema,
   iso3Schema,
 } from "@/features/database/schemas";
+import {
+  analysisSourceSchema,
+  compareRegulationsInputSchema,
+  regulationCountryComparisonSchema,
+} from "@/features/marketing/schemas";
 
 const isoTimestampSchema = z.iso.datetime({ offset: true });
 
@@ -171,9 +176,20 @@ const countryDetailSchema = countryMapSummarySchema
   })
   .strict();
 
+export const countryApplicabilitySummarySchema = z
+  .object({
+    country: regulationCountryComparisonSchema,
+    lastVerifiedAt: isoTimestampSchema.nullable(),
+    missingData: z.array(z.string()),
+    query: compareRegulationsInputSchema,
+    sources: z.array(analysisSourceSchema),
+  })
+  .strict();
+
 export const countryDetailResponseSchema = z.discriminatedUnion("status", [
   z
     .object({
+      applicabilitySummary: countryApplicabilitySummarySchema.nullable(),
       asOf: z.iso.date(),
       country: countryDetailSchema,
       status: z.literal("available"),
@@ -195,6 +211,7 @@ export const countryApiErrorSchema = z
           "COUNTRY_NOT_FOUND",
           "INVALID_ISO3",
           "INVALID_AS_OF",
+          "INVALID_FILTER",
           "INTERNAL_ERROR",
         ]),
         message: z.string(),

@@ -255,6 +255,36 @@ export function evaluateProductFit(
         )
     : check("unknown", "PRODUCT_NOT_FOUND", "缺少产品记录，无法核对功率范围。");
 
+  const availabilityCheck = product
+    ? product.availableFrom === null || product.availableTo === null
+      ? check(
+          "unknown",
+          "PRODUCT_AVAILABILITY_UNKNOWN",
+          "产品供应期的开始或结束日期证据不足，无法判断查询日是否可供应。",
+        )
+      : query.asOf < product.availableFrom
+        ? check(
+            "fail",
+            "PRODUCT_NOT_YET_AVAILABLE",
+            `产品自 ${product.availableFrom} 起供应，晚于查询日 ${query.asOf}。`,
+          )
+        : query.asOf >= product.availableTo
+          ? check(
+              "fail",
+              "PRODUCT_NO_LONGER_AVAILABLE",
+              `产品供应期截止 ${product.availableTo}（不含当日），查询日为 ${query.asOf}。`,
+            )
+          : check(
+              "pass",
+              "PRODUCT_AVAILABLE",
+              `查询日 ${query.asOf} 位于产品供应期 [${product.availableFrom}, ${product.availableTo}) 内。`,
+            )
+    : check(
+        "unknown",
+        "PRODUCT_NOT_FOUND",
+        "缺少产品记录，无法核对查询日供应状态。",
+      );
+
   const regulationChecks = applicableRegulations.map((regulation) => {
     const certificationChecks = certifications
       .filter(({ regulationId }) => regulationId === regulation.regulationId)
@@ -357,17 +387,26 @@ export function evaluateProductFit(
     );
   }
 
+  const commercialReadiness: ProductFitEvaluation["commercialReadiness"] =
+    status === "not_fit" || availabilityCheck.status === "fail"
+      ? "not_ready"
+      : status === "fit" && availabilityCheck.status === "pass"
+        ? "ready"
+        : "unknown";
+
   return productFitEvaluationSchema.parse({
     asOf: query.asOf,
+    commercialReadiness,
     input: query,
     product,
     productChecks: {
       applicationScope: applicationScopeCheck,
+      availability: availabilityCheck,
       power: powerCheck,
     },
     reasons: [summary],
     regulationChecks,
-    rulesetVersion: "product-fit-v1",
+    rulesetVersion: "product-fit-v2",
     sources: uniqueSources(product, applicableRegulations, certifications),
     status,
   });

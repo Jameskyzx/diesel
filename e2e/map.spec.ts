@@ -192,9 +192,15 @@ test("opens, restores, switches, and shows an explicit no-data country", async (
   await expect(
     page.getByRole("heading", { name: "适用司法辖区" }),
   ).toBeVisible();
-  await expect(page.getByText(/成员关系来源：/).first()).toBeVisible();
+  const jurisdictionSection = page.locator(
+    'section[aria-labelledby="country-jurisdictions"]',
+  );
+  await expect(jurisdictionSection.getByText(/成员关系来源：/).first())
+    .toBeVisible();
   await expect(
-    page.getByText(/Fictional emissions bulletin（虚构证据，无外部链接）/).first(),
+    jurisdictionSection
+      .getByText(/Fictional emissions bulletin（虚构证据，无外部链接）/)
+      .first(),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: /Fictional emissions bulletin/ }),
@@ -325,6 +331,14 @@ test("carries explicit country filters into the chat workspace", async ({
   await page.goto(
     "/countries/CHN?applicationScope=non-road&asOf=2026-01-20&powerKw=100&productModelCode=DEMO-ENG-100",
   );
+  const applicabilitySummary = page.getByTestId(
+    "country-applicability-summary",
+  );
+  await expect(applicabilitySummary).toContainText(
+    "non-road · 100 kW · 截止 2026-01-20",
+  );
+  await expect(applicabilitySummary).toContainText("NOX：3.5 g/kWh");
+  await expect(applicabilitySummary).toContainText("功率带 [0, 560) kW");
   const filteredChatLink = page.getByRole("link", {
     name: "在对话中分析",
   });
@@ -714,6 +728,8 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   const countryRegulationCard = page
     .getByTestId("country-regulation-card")
     .first();
+  await expect(countryRegulationCard.getByText(/适用辖区：/)).toBeHidden();
+  await countryRegulationCard.getByText("完整追溯信息").click();
   await expect(countryRegulationCard.getByText(/适用辖区：/)).toBeVisible();
   await expect(countryRegulationCard.getByText(/辖区来源：/)).toBeVisible();
   await expect(
@@ -725,7 +741,9 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
     "role",
     "status",
   );
-  await expect(page.getByText("演示匹配", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("product-fit-status-fit")).toContainText(
+    "法规/认证适配：演示匹配",
+  );
   await expect(
     page.getByText("包含虚构 Demo 证据；不可用于报价、认证声明或销售承诺。"),
   ).toBeVisible();
@@ -733,7 +751,7 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await expect(page.getByText("产品记录追溯")).toBeVisible();
   const productTrace = page.getByTestId("product-record-trace");
   await expect(productTrace.getByText("产品供应期")).toBeVisible();
-  await expect(productTrace.getByText("2025-01-01 → 开放")).toBeVisible();
+  await expect(productTrace.getByText("2025-01-01 → 2030-01-01")).toBeVisible();
   await expect(page.getByText(/法规记录 ID/).first()).toBeVisible();
   await expect(page.getByText("适用性证据").first()).toBeVisible();
   await expect(page.getByText(/辖区来源：/).first()).toBeVisible();

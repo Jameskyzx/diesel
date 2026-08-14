@@ -21,7 +21,7 @@ import {
   generateSalesBrief,
 } from "@/server/services/marketing-analysis-service";
 import { getDemoDatabase } from "@/server/db/demo-client";
-import { marketMetrics } from "@/server/db/schema";
+import { marketMetrics, products } from "@/server/db/schema";
 import { demoIds } from "@/server/db/seed/demo-data";
 import { evaluateProductFit } from "@/server/services/product-fit-service";
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
@@ -40,7 +40,7 @@ afterAll(() => {
   }
 });
 
-describe("opportunity-score-v1 pure rules", () => {
+describe("opportunity-score-v2 pure rules", () => {
   const weights = {
     marketPotential: 0.5,
     productReadiness: 0.3,
@@ -148,7 +148,8 @@ describe("opportunity-score-v1 pure rules", () => {
   });
 
   it("keeps unknown product and certification evidence out of zero scores", () => {
-    expect(calculateProductReadiness(["fit", "unknown"])).toBe(100);
+    expect(calculateProductReadiness(["ready", "unknown"])).toBe(100);
+    expect(calculateProductReadiness(["ready", "not_ready"])).toBe(50);
     expect(calculateProductReadiness(["unknown", "unknown"])).toBeNull();
     expect(
       calculateRegulatoryCoverage([
@@ -514,8 +515,8 @@ describe("marketing analysis service", () => {
         ({ key }) => key === "productReadiness",
       );
       expect(readiness?.inputFacts).toEqual([
-        "fit=0",
-        "not_fit=0",
+        "ready=0",
+        "not_ready=0",
         "unknown=1",
       ]);
     }
@@ -549,7 +550,9 @@ describe("marketing analysis service", () => {
       expect.arrayContaining([
         expect.objectContaining({
           availableFrom: "2025-01-01",
-          availableTo: null,
+          availableTo: "2030-01-01",
+          availabilityStatus: "pass",
+          commercialReadiness: "ready",
           modelCode: "DEMO-ENG-100",
           status: "fit",
         }),
@@ -560,7 +563,7 @@ describe("marketing analysis service", () => {
         ({ entityId, entityType }) =>
           entityType === "product" && entityId === demoIds.product.certified,
       )?.locator,
-    ).toContain("availability 2025-01-01–open");
+    ).toContain("availability 2025-01-01–2030-01-01");
     expect(brief.risks.map(({ title }) => title)).toContain(
       "未来已通过法规",
     );
@@ -579,6 +582,36 @@ describe("marketing analysis service", () => {
     expect(brief.query.productModelCode).toBe("DEMO-ENG-200");
     expect(brief.recommendedProducts).toEqual([]);
     expect(brief.risks.map(({ title }) => title)).toContain("产品证据缺口");
+  });
+
+  it("does not recommend a compliance-fit product outside its supply period", async () => {
+    const database = await getDemoDatabase();
+    await database
+      .update(products)
+      .set({ availableTo: "2026-01-01" })
+      .where(eq(products.id, demoIds.product.certified));
+
+    try {
+      const brief = await generateSalesBrief({
+        ...input,
+        targetCountryIso3: "CHN",
+      });
+
+      expect(brief.recommendedProducts).toEqual([]);
+      expect(brief.risks.map(({ title }) => title)).toContain(
+        "适配产品当前不可供应",
+      );
+      expect(
+        brief.salesActions.some(({ action }) =>
+          action.includes("准备法规与认证证据包"),
+        ),
+      ).toBe(false);
+    } finally {
+      await database
+        .update(products)
+        .set({ availableTo: "2030-01-01" })
+        .where(eq(products.id, demoIds.product.certified));
+    }
   });
 
   it("rejects matching metric codes whose definitions differ", async () => {

@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 import type {
@@ -70,28 +69,11 @@ export function createAiAuditRepository<
             toolCallId: input.toolCallId,
             toolName: input.toolName,
           })
-          .onConflictDoUpdate({
-            set: {
-              completedAt: input.completedAt,
-              durationMs: input.durationMs,
-              errorCode: input.errorCode,
-              input: input.input,
-              resultSummary: input.resultSummary,
-              startedAt: input.startedAt,
-              status: input.status,
-              toolName: input.toolName,
-            },
-            target: [aiToolCalls.sessionId, aiToolCalls.toolCallId],
-          })
           .returning({ id: aiToolCalls.id });
 
         if (!toolCall) {
           throw new Error("AI tool-call audit row was not returned.");
         }
-
-        await transaction
-          .delete(aiCitations)
-          .where(eq(aiCitations.toolCallAuditId, toolCall.id));
 
         if (input.citations.length > 0) {
           await transaction.insert(aiCitations).values(

@@ -31,7 +31,10 @@ import { createCountryRepository } from "@/server/repositories/country-repositor
 import { createProductRepository } from "@/server/repositories/product-repository";
 import { createRegulationRepository } from "@/server/repositories/regulation-repository";
 import { createKnowledgeRepository } from "@/server/repositories/knowledge-repository";
-import { createAiAuditRepository } from "@/server/repositories/ai-audit-repository";
+import {
+  createAiAuditRepository,
+  type AiToolCallAuditInput,
+} from "@/server/repositories/ai-audit-repository";
 import { createMarketRepository } from "@/server/repositories/market-repository";
 import { createGovernanceRepository } from "@/server/repositories/governance-repository";
 import { createRateLimitRepository } from "@/server/repositories/rate-limit-repository";
@@ -333,7 +336,7 @@ describe("database migration and demo seed", () => {
       selectedCountryIso3: "CHN",
       sessionId,
     });
-    await repository.recordToolCall({
+    const firstAudit = {
       citations: [
         {
           chunkId: demoIds.documentChunk.regulation,
@@ -367,19 +370,28 @@ describe("database migration and demo seed", () => {
       sessionId,
       startedAt: new Date("2026-01-15T00:00:00.000Z"),
       status: "success",
-      toolCallId: "tool-call-1",
+      toolCallId: "turn-1:provider-tool-call",
       toolName: "generateSalesBrief",
+    } satisfies AiToolCallAuditInput;
+    await repository.recordToolCall(firstAudit);
+    await repository.recordToolCall({
+      ...firstAudit,
+      completedAt: new Date("2026-01-15T00:00:01.025Z"),
+      startedAt: new Date("2026-01-15T00:00:01.000Z"),
+      toolCallId: "turn-2:provider-tool-call",
     });
+
+    await expect(repository.recordToolCall(firstAudit)).rejects.toThrow();
 
     const [session] = await testDatabase.database
       .select()
       .from(aiChatSessions)
       .where(eq(aiChatSessions.id, sessionId));
-    const [toolCall] = await testDatabase.database
+    const toolCalls = await testDatabase.database
       .select()
       .from(aiToolCalls)
       .where(eq(aiToolCalls.sessionId, sessionId));
-    const [citation] = await testDatabase.database
+    const citations = await testDatabase.database
       .select()
       .from(aiCitations)
       .where(eq(aiCitations.sessionId, sessionId));
@@ -388,16 +400,26 @@ describe("database migration and demo seed", () => {
       modelId: "mock/test-model",
       selectedCountryIso3: "CHN",
     });
-    expect(toolCall).toMatchObject({
-      status: "success",
-      toolCallId: "tool-call-1",
-      toolName: "generateSalesBrief",
-    });
-    expect(citation).toMatchObject({
-      chunkId: demoIds.documentChunk.regulation,
-      regulationStatus: "effective",
-      sourceId: demoIds.source.regulation,
-    });
+    expect(toolCalls).toHaveLength(2);
+    expect(toolCalls.map(({ toolCallId }) => toolCallId).sort()).toEqual([
+      "turn-1:provider-tool-call",
+      "turn-2:provider-tool-call",
+    ]);
+    expect(
+      toolCalls.every(
+        ({ status, toolName }) =>
+          status === "success" && toolName === "generateSalesBrief",
+      ),
+    ).toBe(true);
+    expect(citations).toHaveLength(2);
+    expect(
+      citations.every(
+        ({ chunkId, regulationStatus, sourceId }) =>
+          chunkId === demoIds.documentChunk.regulation &&
+          regulationStatus === "effective" &&
+          sourceId === demoIds.source.regulation,
+      ),
+    ).toBe(true);
   });
 
   it("installs pgvector and adds processing, full-text, and embedding fields", async () => {
@@ -1376,7 +1398,7 @@ describe("repositories", () => {
 
     expect(evidence.product).toMatchObject({
       availableFrom: "2025-01-01",
-      availableTo: null,
+      availableTo: "2030-01-01",
       isDemo: true,
       modelCode: "DEMO-ENG-100",
     });

@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <main
+    <div
       aria-busy="true"
       aria-live="polite"
       className="mx-auto w-full max-w-7xl px-6 py-12 lg:px-8"
@@ -22,6 +22,6 @@ export default function Loading() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import { LoaderCircle } from "lucide-react";
 
 export default function KnowledgeDebugLoading() {
   return (
-    <main
+    <div
       aria-busy="true"
       aria-live="polite"
       className="grid min-h-[70dvh] place-items-center px-6 text-center"
@@ -17,6 +17,6 @@ export default function KnowledgeDebugLoading() {
           正在加载知识库调试工具…
         </p>
       </div>
-    </main>
+    </div>
   );
 }

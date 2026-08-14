@@ -35,6 +35,7 @@ describe("country coverage gating (ADR-040)", () => {
 
       expect(china.status).toBe("available");
       if (china.status === "available") {
+        expect(china.applicabilitySummary).toBeNull();
         expect(china.country.iso3).toBe("CHN");
         expect(china.country.isDemo).toBe(true);
         expect(china.country.jurisdictions[0]?.source.title).toContain(
@@ -174,6 +175,41 @@ describe("country coverage gating (ADR-040)", () => {
     },
     30_000,
   );
+
+  it("returns a deterministic single-country applicability summary when scope and power are provided", async () => {
+    const china = await getCountryDetails({
+      applicationScope: "non-road",
+      asOf: "2026-01-20",
+      iso3: "CHN",
+      powerKw: 100,
+    });
+
+    expect(china.status).toBe("available");
+    if (china.status !== "available") {
+      throw new Error("Expected an available CHN country detail.");
+    }
+    expect(china.applicabilitySummary?.query).toEqual({
+      applicationScope: "non-road",
+      asOf: "2026-01-20",
+      countryIso3s: ["CHN"],
+      powerKw: 100,
+    });
+    expect(
+      china.applicabilitySummary?.country.currentEffectiveRegulations[0],
+    ).toMatchObject({
+      limits: expect.arrayContaining([
+        expect.objectContaining({
+          limitValue: "3.500000",
+          pollutantCode: "NOX",
+          powerMaxKw: 560,
+          powerMinKw: 0,
+        }),
+      ]),
+      status: "effective",
+    });
+    expect(china.applicabilitySummary?.lastVerifiedAt).not.toBeNull();
+    expect(china.applicabilitySummary?.sources.length).toBeGreaterThan(0);
+  });
 
   it(
     "keeps planned and no-data catalog countries on the exact no_data contract",

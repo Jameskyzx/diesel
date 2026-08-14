@@ -15,7 +15,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -198,11 +198,19 @@ export function CountryDetailDrawer({
     }
 
     const abortController = new AbortController();
-    const asOfParam = fetchAsOf
-      ? `?asOf=${encodeURIComponent(fetchAsOf)}`
-      : "";
+    const detailParams = new URLSearchParams();
+    if (fetchAsOf) {
+      detailParams.set("asOf", fetchAsOf);
+    }
+    if (initialFilters?.applicationScope) {
+      detailParams.set("applicationScope", initialFilters.applicationScope);
+    }
+    if (initialFilters?.powerKw !== undefined) {
+      detailParams.set("powerKw", String(initialFilters.powerKw));
+    }
+    const detailQuery = detailParams.size > 0 ? `?${detailParams}` : "";
 
-    void fetch(`/api/countries/${iso3}${asOfParam}`, {
+    void fetch(`/api/countries/${iso3}${detailQuery}`, {
       headers: {
         accept: "application/json",
       },
@@ -242,7 +250,14 @@ export function CountryDetailDrawer({
     return () => {
       abortController.abort();
     };
-  }, [fetchAsOf, initialResponse, iso3, reloadKey]);
+  }, [
+    fetchAsOf,
+    initialFilters?.applicationScope,
+    initialFilters?.powerKw,
+    initialResponse,
+    iso3,
+    reloadKey,
+  ]);
 
   return (
     <Drawer
@@ -413,15 +428,88 @@ function CountryDetailContent({
     contextKey: string;
     filters: ProductFitCommittedFilters;
   } | null>(null);
+  const [refreshedSummary, setRefreshedSummary] = useState<{
+    contextKey: string;
+    summary: typeof response.applicabilitySummary;
+  } | null>(null);
+  const [summaryErrorState, setSummaryErrorState] = useState<{
+    contextKey: string;
+    message: string;
+  } | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const summaryAbortController = useRef<AbortController | null>(null);
   const chatFilters =
     committedFilters?.contextKey === contextKey
       ? committedFilters.filters
       : initialFilters;
+  const applicabilitySummary =
+    refreshedSummary?.contextKey === contextKey
+      ? refreshedSummary.summary
+      : response.applicabilitySummary;
+  const summaryError =
+    summaryErrorState?.contextKey === contextKey
+      ? summaryErrorState.message
+      : null;
+
+  useEffect(
+    () => () => {
+      summaryAbortController.current?.abort();
+    },
+    [],
+  );
+
   const handleEvaluationCommitted = useCallback(
     (filters: ProductFitCommittedFilters) => {
       setCommittedFilters({ contextKey, filters });
+      summaryAbortController.current?.abort();
+      const abortController = new AbortController();
+      summaryAbortController.current = abortController;
+      const params = new URLSearchParams({
+        applicationScope: filters.applicationScope,
+        asOf: filters.asOf,
+        powerKw: String(filters.powerKw),
+      });
+      setSummaryLoading(true);
+      setSummaryErrorState(null);
+      void fetch(`/api/countries/${country.iso3}?${params}`, {
+        headers: { accept: "application/json" },
+        signal: abortController.signal,
+      })
+        .then(async (result) => {
+          if (!result.ok) {
+            throw new Error(
+              await parseApiErrorMessage(result, "决策摘要请求失败"),
+            );
+          }
+          return countryDetailResponseSchema.parse(await result.json());
+        })
+        .then((result) => {
+          if (result.status === "available") {
+            setRefreshedSummary({
+              contextKey,
+              summary: result.applicabilitySummary,
+            });
+          }
+        })
+        .catch((error: unknown) => {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            return;
+          }
+          setSummaryErrorState({
+            contextKey,
+            message: toUserFacingErrorMessage(
+              error,
+              "决策摘要暂时无法刷新。",
+            ),
+          });
+        })
+        .finally(() => {
+          if (!abortController.signal.aborted) {
+            setSummaryLoading(false);
+          }
+        });
     },
-    [contextKey],
+    [contextKey, country.iso3],
   );
 
   return (
@@ -437,6 +525,12 @@ function CountryDetailContent({
           </p>
         </div>
       ) : null}
+
+      <ApplicabilitySummarySection
+        error={summaryError}
+        loading={summaryLoading}
+        summary={applicabilitySummary}
+      />
 
       <section aria-labelledby="country-basics">
         <div className="flex items-center gap-2">
@@ -678,6 +772,152 @@ type AvailableCountryResponse = Extract<
   CountryDetailResponse,
   { status: "available" }
 >;
+type ApplicabilitySummary = NonNullable<
+  AvailableCountryResponse["applicabilitySummary"]
+>;
+
+function formatPowerBand(
+  minimum: number | null,
+  maximum: number | null,
+): string {
+  return `[${minimum ?? "未知"}, ${maximum ?? "开放"}) kW`;
+}
+
+function ApplicabilitySummarySection({
+  error,
+  loading,
+  summary,
+}: {
+  error: string | null;
+  loading: boolean;
+  summary: ApplicabilitySummary | null;
+}) {
+  if (loading) {
+    return (
+      <section
+        aria-live="polite"
+        className="rounded-2xl border bg-primary/5 p-4 text-sm"
+        role="status"
+      >
+        正在按新场景与功率刷新国家决策摘要…
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section
+        className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
+        role="alert"
+      >
+        {error}
+      </section>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <section className="rounded-2xl border border-dashed bg-muted/30 p-4">
+        <h2 className="font-semibold">国家决策摘要</h2>
+        <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+          选择应用场景和功率并运行产品评估后，这里会用同一组确定性查询显示命中法规、功率带、限值和来源。
+        </p>
+      </section>
+    );
+  }
+
+  const current = summary.country.currentEffectiveRegulations;
+  const future = summary.country.futureAdoptedRegulations;
+
+  return (
+    <section
+      aria-labelledby="country-applicability-summary"
+      className="rounded-2xl border border-primary/25 bg-primary/5 p-4"
+      data-testid="country-applicability-summary"
+    >
+      <h2 className="font-semibold" id="country-applicability-summary">
+        国家决策摘要
+      </h2>
+      <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+        查询条件：{summary.query.applicationScope} · {summary.query.powerKw} kW · 截止 {summary.query.asOf}
+      </p>
+
+      {current.length > 0 ? (
+        <div className="mt-3 space-y-3">
+          {current.map((regulation) => (
+            <article className="rounded-xl border bg-background p-3" key={regulation.id}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">
+                  {regulation.canonicalName}
+                </h3>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-900">
+                  当前适用
+                </span>
+              </div>
+              <div className="mt-2 space-y-1 text-xs">
+                {regulation.limits.map((limit) => (
+                  <p key={limit.id}>
+                    {limit.pollutantCode}：{formatDecimalForDisplay(limit.limitValue)} {limit.unitCode} · 功率带 {formatPowerBand(limit.powerMinKw, limit.powerMaxKw)} · 限值期 {limit.validFrom} → {limit.validTo ?? "开放"}
+                  </p>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-3 rounded-xl border border-dashed bg-background/70 p-3 text-xs leading-5 text-muted-foreground">
+          没有可证明覆盖本次场景、功率和日期的当前有效法规；系统不会据此推断“没有要求”。
+        </div>
+      )}
+
+      {future.length > 0 ? (
+        <div className="mt-3 text-xs leading-5">
+          <p className="font-semibold">未来已通过</p>
+          {future.map((regulation) => (
+            <p key={regulation.id}>
+              {regulation.canonicalName} · 预计生效 {regulation.effectiveFrom ?? "未知"}
+            </p>
+          ))}
+        </div>
+      ) : null}
+
+      {summary.missingData.length > 0 ? (
+        <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
+          <p className="font-semibold">No-data / 证据缺口</p>
+          {summary.missingData.map((message) => (
+            <p key={message}>{message}</p>
+          ))}
+        </div>
+      ) : null}
+
+      <details className="mt-3 rounded-xl border bg-background/70 p-3 text-xs">
+        <summary className="cursor-pointer font-semibold">
+          来源与核验信息（{summary.sources.length}）
+        </summary>
+        <div className="mt-2 space-y-1 text-muted-foreground">
+          <p>最近核验：{summary.lastVerifiedAt?.slice(0, 10) ?? "未记录"}</p>
+          {summary.sources.map((source) => (
+            <p key={`${source.entityType}:${source.entityId}:${source.sourceId}`}>
+              {isNavigableEvidenceUrl(source.sourceUrl) ? (
+                <a
+                  className="underline underline-offset-2"
+                  href={source.sourceUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {source.sourceTitle}
+                </a>
+              ) : (
+                source.sourceTitle
+              )} · {source.locator ?? "未提供章节定位"} · 核验 {source.verifiedAt.slice(0, 10)}
+            </p>
+          ))}
+        </div>
+      </details>
+    </section>
+  );
+}
+
 type DisplayedRegulation =
   | AvailableCountryResponse["country"]["currentEffectiveRegulations"][number]
   | AvailableCountryResponse["country"]["futureAdoptedRegulations"][number];
@@ -737,14 +977,16 @@ function RegulationSection({
                   value={formatDate(regulation.effectiveTo)}
                 />
               </dl>
-              <p className="mt-3 text-xs text-muted-foreground">
-                法规记录 ID：{regulation.id}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                来源：<SourceLink source={regulation.source} /> · 核验：
-                {regulation.source.verifiedAt.slice(0, 10)}
-              </p>
-              <div className="mt-3 border-t pt-3 text-xs text-muted-foreground">
+              <details className="mt-3 border-t pt-3 text-xs text-muted-foreground">
+                <summary className="cursor-pointer font-semibold text-foreground">
+                  完整追溯信息
+                </summary>
+                <div className="mt-2">
+                  <p>法规记录 ID：{regulation.id}</p>
+                  <p className="mt-1">
+                    来源：<SourceLink source={regulation.source} /> · 核验：
+                    {regulation.source.verifiedAt.slice(0, 10)}
+                  </p>
                 <p>
                   适用辖区：
                   {regulation.applicability.jurisdiction.name}（
@@ -764,7 +1006,8 @@ function RegulationSection({
                     source={regulation.applicability.membership.source}
                   />
                 </p>
-              </div>
+                </div>
+              </details>
             </article>
           ))}
         </div>

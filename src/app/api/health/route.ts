@@ -1,11 +1,13 @@
 import { env } from "@/env";
 import { createHealthPayload } from "@/lib/health";
+import { createApiRequestObserver } from "@/server/observability/structured-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export function GET(): Response {
-  return Response.json(
+  const observer = createApiRequestObserver("/api/health");
+  return observer.finish(Response.json(
     createHealthPayload({
       version: env.APP_VERSION,
     }),
@@ -14,5 +16,5 @@ export function GET(): Response {
         "Cache-Control": "no-store",
       },
     },
-  );
+  ));
 }

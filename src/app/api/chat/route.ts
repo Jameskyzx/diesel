@@ -54,6 +54,7 @@ import {
   allowsToolFreeAttachmentResponse,
   buildDirectChatResponse,
 } from "@/server/ai/chat-turn-guidance";
+import { createApiRequestObserver } from "@/server/observability/structured-log";
 
 export const runtime = "nodejs";
 
@@ -111,7 +112,11 @@ function directChatResponse(text: string): Response {
   return createUIMessageStreamResponse({ stream });
 }
 
-async function processChatRequest(request: Request): Promise<Response> {
+async function processChatRequest(
+  request: Request,
+  requestId: string,
+  requestStartedAtMs: number,
+): Promise<Response> {
   try {
     const body = chatRequestSchema.parse(
       await readJsonRequest(
@@ -187,6 +192,7 @@ async function processChatRequest(request: Request): Promise<Response> {
       auditRepository,
       selectedCountryIso3: body.selectedCountryIso3,
       sessionId: body.sessionId,
+      turnId: requestId,
     });
     await auditRepository.ensureSession({
       modelId,
@@ -199,10 +205,14 @@ async function processChatRequest(request: Request): Promise<Response> {
       hasUnverifiedAttachments: hasAttachments,
       messages: await convertToModelMessages(modelUiMessages, { tools }),
       model,
+      modelId,
+      requestId,
+      requestStartedAtMs,
       selectedCountryIso3: body.selectedCountryIso3,
       sessionId: body.sessionId,
       tools,
       trustedUserTexts: userTexts,
+      turnId: requestId,
     });
 
     return result.toUIMessageStreamResponse({
@@ -328,6 +338,10 @@ function holdLeaseUntilResponseCompletes(
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const observer = createApiRequestObserver("/api/chat");
+  const { requestId } = observer;
+  const respond = (response: Response, errorCode?: string | null) =>
+    observer.finish(response, errorCode);
   const clientIdentifier = extractClientIdentifier(request.headers);
   let rateDecision;
   try {
@@ -336,38 +350,40 @@ export async function POST(request: Request): Promise<Response> {
     console.error("AI chat rate limiter unavailable", {
       errorCode: getErrorCode(error),
     });
-    return errorResponse(
+    return respond(errorResponse(
       "INTERNAL_ERROR",
       "AI 聊天服务暂时不可用，请稍后重试。",
       503,
       { "Retry-After": "60" },
-    );
+    ), "RATE_LIMIT_UNAVAILABLE");
   }
   if (!rateDecision.allowed) {
-    return errorResponse(
+    return respond(errorResponse(
       "RATE_LIMITED",
       "AI 聊天请求过于频繁，请稍后重试。",
       429,
       {
         "Retry-After": String(rateDecision.retryAfterSeconds),
       },
-    );
+    ), "RATE_LIMITED");
   }
 
   const lease = getAiChatInFlightGate().tryAcquire(clientIdentifier);
   if (!lease) {
-    return errorResponse(
+    return respond(errorResponse(
       "RATE_LIMITED",
       "AI 聊天并发请求过多，请等待当前请求完成后重试。",
       429,
       { "Retry-After": "1" },
-    );
+    ), "RATE_LIMITED");
   }
 
   try {
-    return holdLeaseUntilResponseCompletes(
-      await processChatRequest(request),
-      lease.release,
+    return respond(
+      holdLeaseUntilResponseCompletes(
+        await processChatRequest(request, requestId, observer.startedAtMs),
+        lease.release,
+      ),
     );
   } catch (error: unknown) {
     lease.release();

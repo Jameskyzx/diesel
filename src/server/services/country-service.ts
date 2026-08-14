@@ -22,6 +22,7 @@ import { getDatabase } from "@/server/db/client";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { getDatabaseMode } from "@/server/db/environment";
 import { createCountryRepository } from "@/server/repositories/country-repository";
+import { compareRegulations } from "@/server/services/marketing-analysis-service";
 
 function serializeDate(value: Date): string {
   return value.toISOString();
@@ -126,7 +127,12 @@ export async function listCountryMapSummaries(): Promise<CountryMapResponse> {
 export async function getCountryDetails(
   input: unknown,
 ): Promise<CountryDetailResponse> {
-  const { asOf = currentUtcDate(), iso3 } =
+  const {
+    applicationScope,
+    asOf = currentUtcDate(),
+    iso3,
+    powerKw,
+  } =
     countryDetailQuerySchema.parse(input);
   const repository = await getCountryRepository();
   const includeDemoData = getDatabaseMode() === "pglite-demo";
@@ -290,8 +296,36 @@ export async function getCountryDetails(
     ...marketMetrics.map(({ verifiedAt }) => verifiedAt),
     ...sources.map(({ verifiedAt }) => verifiedAt),
   ]);
+  const applicabilitySummary =
+    applicationScope !== undefined && powerKw !== undefined
+      ? await compareRegulations({
+          applicationScope,
+          asOf,
+          countryIso3s: [iso3],
+          powerKw,
+        }).then((comparison) => {
+          const countryComparison = comparison.countries[0];
+          if (!countryComparison) {
+            throw new Error("Single-country applicability result was not produced.");
+          }
+          const verificationDates = comparison.sources.map(
+            ({ verifiedAt }) => verifiedAt,
+          );
+          return {
+            country: countryComparison,
+            lastVerifiedAt:
+              verificationDates.length > 0
+                ? latestTimestamp(verificationDates)
+                : null,
+            missingData: comparison.missingData,
+            query: comparison.query,
+            sources: comparison.sources,
+          };
+        })
+      : null;
 
   return countryDetailResponseSchema.parse({
+    applicabilitySummary,
     asOf,
     country: {
       ...countryWithoutRegulations,

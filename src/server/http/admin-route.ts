@@ -20,6 +20,7 @@ import {
   KnowledgeConflictError,
   KnowledgeInputError,
 } from "@/server/services/knowledge-service";
+import { createApiRequestObserver } from "@/server/observability/structured-log";
 
 function errorResponse(
   code: string,
@@ -49,46 +50,50 @@ export async function handleAdminRoute(
   minimumRole: AdminRole,
   handler: (principal: AdminPrincipal) => Promise<Response>,
 ): Promise<Response> {
+  const observer = createApiRequestObserver(new URL(request.url).pathname);
+  let errorCode: string | null = null;
+  let response: Response;
   try {
     const principal = requireAdminRole(request.headers, minimumRole);
-    return await handler(principal);
+    response = await handler(principal);
   } catch (error: unknown) {
     if (error instanceof AdminAuthorizationError) {
-      return errorResponse(error.code, error.message, error.status);
-    }
-    if (error instanceof GovernancePermissionError) {
-      return errorResponse("FORBIDDEN", error.message, 403);
-    }
-    if (error instanceof GovernanceConflictError) {
-      return errorResponse("CONFLICT", error.message, 409);
-    }
-    if (error instanceof GovernanceMaintenanceError) {
-      return errorResponse(
+      errorCode = error.code;
+      response = errorResponse(error.code, error.message, error.status);
+    } else if (error instanceof GovernancePermissionError) {
+      errorCode = "FORBIDDEN";
+      response = errorResponse("FORBIDDEN", error.message, 403);
+    } else if (error instanceof GovernanceConflictError) {
+      errorCode = "CONFLICT";
+      response = errorResponse("CONFLICT", error.message, 409);
+    } else if (error instanceof GovernanceMaintenanceError) {
+      errorCode = "GOVERNANCE_MAINTENANCE";
+      response = errorResponse(
         "GOVERNANCE_MAINTENANCE",
         "治理数据正在维护，请稍后重试。",
         503,
         { "Retry-After": "30" },
       );
-    }
-    if (error instanceof KnowledgeConflictError) {
-      return errorResponse("CONFLICT", error.message, 409);
-    }
-    if (error instanceof KnowledgeInputError) {
-      return errorResponse(
+    } else if (error instanceof KnowledgeConflictError) {
+      errorCode = "CONFLICT";
+      response = errorResponse("CONFLICT", error.message, 409);
+    } else if (error instanceof KnowledgeInputError) {
+      errorCode = error.code;
+      response = errorResponse(
         error.code,
         error.message,
         error.code === "FILE_TOO_LARGE" ? 413 : 400,
       );
-    }
-    if (error instanceof RequestBodyTooLargeError) {
-      return errorResponse(
+    } else if (error instanceof RequestBodyTooLargeError) {
+      errorCode = "PAYLOAD_TOO_LARGE";
+      response = errorResponse(
         "PAYLOAD_TOO_LARGE",
         "上传请求过大，请缩小文件或表单后重试。",
         413,
       );
-    }
-    if (error instanceof ZodError || error instanceof SyntaxError) {
-      return errorResponse(
+    } else if (error instanceof ZodError || error instanceof SyntaxError) {
+      errorCode = "INVALID_INPUT";
+      response = errorResponse(
         "INVALID_INPUT",
         error instanceof ZodError
           ? error.issues
@@ -97,15 +102,18 @@ export async function handleAdminRoute(
           : "请求体格式无效。",
         400,
       );
+    } else {
+      errorCode = "INTERNAL_ERROR";
+      console.error("Admin route failed", {
+        errorCode: getErrorCode(error),
+      });
+      response = errorResponse(
+        "INTERNAL_ERROR",
+        "管理操作暂时失败；没有报告为已完成。",
+        500,
+      );
     }
-
-    console.error("Admin route failed", {
-      errorCode: getErrorCode(error),
-    });
-    return errorResponse(
-      "INTERNAL_ERROR",
-      "管理操作暂时失败；没有报告为已完成。",
-      500,
-    );
   }
+
+  return observer.finish(response, errorCode);
 }

@@ -3,12 +3,16 @@ import { NextResponse } from "next/server";
 import { countryApiErrorSchema } from "@/features/countries/schemas";
 import { getErrorCode } from "@/lib/api-error";
 import { listCountryMapSummaries } from "@/server/services/country-service";
+import { createApiRequestObserver } from "@/server/observability/structured-log";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  const observer = createApiRequestObserver("/api/countries");
   try {
-    return NextResponse.json(await listCountryMapSummaries());
+    return observer.finish(
+      NextResponse.json(await listCountryMapSummaries()),
+    );
   } catch (error) {
     console.error("Country summary request failed", {
       errorCode: getErrorCode(error),
@@ -20,6 +24,9 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(response, { status: 500 });
+    return observer.finish(
+      NextResponse.json(response, { status: 500 }),
+      "INTERNAL_ERROR",
+    );
   }
 }

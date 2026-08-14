@@ -171,7 +171,9 @@ export const countryQuerySchema = z
   .strict();
 
 export const countryDetailQuerySchema = countryQuerySchema.extend({
+  applicationScope: applicationScopeSchema.optional(),
   asOf: isoDateSchema.optional(),
+  powerKw: powerKwSchema.optional(),
 });
 
 export const applicableRegulationsQuerySchema = z

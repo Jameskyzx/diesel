@@ -62,12 +62,12 @@ describe("sales chat offline harness", () => {
   it("versions and sections the system prompt", () => {
     const prompt = buildSalesChatInstructions("CHN");
 
-    expect(SALES_CHAT_SYSTEM_PROMPT_VERSION).toBe("sales-chat-system-v3");
+    expect(SALES_CHAT_SYSTEM_PROMPT_VERSION).toBe("sales-chat-system-v4");
     expect(SALES_CHAT_HARNESS_VERSION).toBe("sales-chat-harness-v1");
-    expect(prompt).toContain("<source_of_truth>");
-    expect(prompt).toContain("<tool_routing>");
-    expect(prompt).toContain("<loop_policy>");
-    expect(prompt).toContain("<answer_contract>");
-    expect(prompt).toContain("<untrusted_attachments>");
+    expect(prompt).toContain("<truth>");
+    expect(prompt).toContain("<routing>");
+    expect(prompt).toContain("<loop>");
+    expect(prompt).toContain("<answer>");
+    expect(prompt).toContain("<untrusted>");
   });
 });

@@ -309,7 +309,7 @@ export const countryOpportunityScoreSchema = z
 export const opportunityScorecardSchema = z
   .object({
     query: calculateOpportunityScoreInputSchema,
-    rulesetVersion: z.literal("opportunity-score-v1"),
+    rulesetVersion: z.literal("opportunity-score-v2"),
     scores: z.array(countryOpportunityScoreSchema),
     sources: z.array(analysisSourceSchema),
     weights: opportunityScoreWeightsSchema,
@@ -328,7 +328,9 @@ export const recommendedProductSchema = z
   .object({
     availableFrom: z.iso.date().nullable(),
     availableTo: z.iso.date().nullable(),
+    availabilityStatus: z.literal("pass"),
     certificationIds: z.array(z.uuid()),
+    commercialReadiness: z.literal("ready"),
     modelCode: z.string().trim().min(1),
     name: z.string().trim().min(1),
     reasons: z.array(z.string()),

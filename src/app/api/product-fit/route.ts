@@ -16,6 +16,7 @@ import {
 } from "@/server/http/request-body";
 import { evaluateProductFit } from "@/server/services/product-fit-service";
 import { MAX_PRODUCT_FIT_REQUEST_BYTES } from "@/server/http/request-limits";
+import { createApiRequestObserver } from "@/server/observability/structured-log";
 
 export const runtime = "nodejs";
 
@@ -47,6 +48,7 @@ function internalErrorResponse(error: unknown) {
 }
 
 export async function POST(request: Request) {
+  const observer = createApiRequestObserver("/api/product-fit");
   let input: ProductFitQuery;
 
   try {
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
-      return NextResponse.json(
+      return observer.finish(NextResponse.json(
         productFitApiErrorSchema.parse({
           error: {
             code: "PAYLOAD_TOO_LARGE",
@@ -63,19 +65,21 @@ export async function POST(request: Request) {
           },
         }),
         { status: 413 },
-      );
+      ), "PAYLOAD_TOO_LARGE");
     }
     if (error instanceof SyntaxError || error instanceof ZodError) {
-      return invalidInputResponse();
+      return observer.finish(invalidInputResponse(), "INVALID_INPUT");
     }
-    return internalErrorResponse(error);
+    return observer.finish(internalErrorResponse(error), "INTERNAL_ERROR");
   }
 
   try {
-    return NextResponse.json(
-      productFitEvaluationSchema.parse(await evaluateProductFit(input)),
+    return observer.finish(
+      NextResponse.json(
+        productFitEvaluationSchema.parse(await evaluateProductFit(input)),
+      ),
     );
   } catch (error) {
-    return internalErrorResponse(error);
+    return observer.finish(internalErrorResponse(error), "INTERNAL_ERROR");
   }
 }

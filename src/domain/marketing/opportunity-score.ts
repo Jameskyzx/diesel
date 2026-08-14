@@ -15,7 +15,7 @@ export type ComparableMetricValue = {
   value: string;
 };
 
-export type ProductReadinessStatus = "fit" | "not_fit" | "unknown";
+export type ProductReadinessStatus = "ready" | "not_ready" | "unknown";
 
 export type RegulationCoverageCheck = {
   regulationId: string;
@@ -100,8 +100,8 @@ export function calculateProductReadiness(
     return null;
   }
 
-  const fitCount = determined.filter((status) => status === "fit").length;
-  return round((fitCount / determined.length) * 100);
+  const readyCount = determined.filter((status) => status === "ready").length;
+  return round((readyCount / determined.length) * 100);
 }
 
 export function calculateRegulatoryCoverage(

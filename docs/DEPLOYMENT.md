@@ -45,6 +45,23 @@ pnpm demo
 结构化卡片、审计和证据失败关闭仍走正式应用链路。它不代表 PostgreSQL、外部模型、
 生产身份或真实产品认证已经完成，面试演示步骤见 [DEMO.md](DEMO.md)。
 
+### 1.2 本地 FDE 实施 Demo 与 synthetic canary
+
+`pnpm demo:fde` 在零配置 Demo 之上开放隔离的 Editor / Reviewer / Admin 实施向导；
+只允许 loopback、development、PGlite 和显式 FDE Demo 标志组合。身份由本地专用 cookie
+映射后在 server 内注入，不能复用到生产认证；公开 Nginx `/admin` 404 边界不变。
+
+部署前后可运行无外部监控依赖的 canary：
+
+```bash
+CANARY_BASE_URL=https://jamesky.site pnpm ops:canary
+CANARY_BASE_URL=https://jamesky.site CANARY_CHECK_AI=true pnpm ops:canary
+```
+
+默认只检查 liveness、readiness、CHN 决策摘要和公开产品列表；AI SSE 是显式付费选项。
+输出只含路径、状态、耗时、错误码和 request ID。故障预期与恢复命令见
+[INCIDENT_DRILL.md](INCIDENT_DRILL.md)。
+
 ## 2. 分支保护与合并门（仓库设置）
 
 CI 工作流（`.github/workflows/ci.yml`）提供四个检查：`Lint, typecheck, tests,
@@ -171,6 +188,53 @@ where is_demo <> (source_type = 'demo');
 查询、`pnpm db:check` 和目标库验收查询。公开作品库已经应用至 `0010`；新增
 Migration 必须先通过 CI 的空库 pgvector smoke 与上一版本脏数据 upgrade smoke，生产
 是否已应用以 `drizzle.__drizzle_migrations` 读回为准，不能沿用本文历史版本号推断。
+
+### 4.1.1 Migration `0011` / `0012` 前的非法产品精确归档
+
+`0011` 会在存在 `power_max_kw <= power_min_kw` 的产品时原子停止。当前已知运营修复
+只能归档 dry-run 精确确认的 8 条未签核、非 Demo、未归档产品及其活动认证；不得改写
+功率、来源或规格，也不得归档来源。必须在同一受控发布会话按以下顺序执行：
+
+```bash
+cd "${release_dir}"
+backup_path="/opt/diesel/backups/${release_id}/pre-0011.dump"
+manifest_path="/opt/diesel/backups/${release_id}/invalid-products.json"
+
+node --conditions=react-server --import tsx --env-file=.env.production.local \
+  scripts/db/backup-postgres.ts --output="${backup_path}"
+test "$(stat -c '%a' "${backup_path}")" = "600"
+test "$(stat -c '%a' "${backup_path}.sha256")" = "600"
+pg_restore --list "${backup_path}" >/dev/null
+sha256sum --check "${backup_path}.sha256"
+
+node --conditions=react-server --import tsx --env-file=.env.production.local \
+  scripts/db/archive-invalid-unpublished-products.ts \
+  --output="${manifest_path}"
+test "$(stat -c '%a' "${manifest_path}")" = "600"
+```
+
+由数据负责人离线确认 manifest 中恰好 8 个 product ID、型号、原始 numeric、产品来源
+和全部 certification/source；manifest SHA 不匹配、计数改变、任一实体进入公开批准清单
+或出现 Demo 分类都必须停止。确认后在治理维护锁内执行一次：
+
+```bash
+node --conditions=react-server --import tsx --env-file=.env.production.local \
+  scripts/db/with-governance-maintenance-lock.ts -- \
+  node --conditions=react-server --import tsx --env-file=.env.production.local \
+  scripts/db/archive-invalid-unpublished-products.ts --apply \
+  --manifest="${manifest_path}" \
+  --actor-email="<operator>" \
+  --reason="Archive eight unsigned invalid products confirmed by release dry-run"
+
+node --conditions=react-server --import tsx --env-file=.env.production.local \
+  scripts/db/migrate.ts
+node --conditions=react-server --import tsx --env-file=.env.production.local \
+  scripts/db/verify-production-readback.ts
+```
+
+Apply 使用 serializable transaction，先归档认证再归档产品并逐实体追加治理审计；任何
+affected ID 漂移或归档后仍有非法活动产品都会 rollback。最终读回必须同时证明 13 条
+Migration、严格功率 CHECK、活动成员 exclusion、共享限流表和零条活动非法产品。
 
 ### 4.2 VPS 版本化发布与回滚
 

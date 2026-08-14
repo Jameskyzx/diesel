@@ -34,6 +34,14 @@ const approvedRealCertifications: Readonly<
   Record<string, CertificationApproval>
 > = {};
 
+export function getApprovedRealProductIds(): readonly string[] {
+  return Object.keys(approvedRealProducts).sort();
+}
+
+export function getApprovedRealCertificationIds(): readonly string[] {
+  return Object.keys(approvedRealCertifications).sort();
+}
+
 export function isPublicProductApproved(
   product: ProductPublicationCandidate,
 ): boolean {

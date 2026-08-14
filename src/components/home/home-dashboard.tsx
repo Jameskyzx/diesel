@@ -316,7 +316,27 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
               </button>
             </div>
           ) : null}
-          {state.status === "ready" ? (
+          {state.status === "ready" && featuredCountries.length === 0 ? (
+            <div
+              className="m-5 rounded-xl border border-dashed bg-[#f7f8f3] p-6 text-center sm:m-7"
+              role="status"
+            >
+              <p className="font-semibold text-slate-900">
+                暂无已核验国家入口
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                当前公开数据没有可展示的国家摘要。可进入地图查看完整目录与明确的 no-data 状态。
+              </p>
+              <Link
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 underline-offset-4 hover:underline"
+                href="/map"
+              >
+                打开国家目录
+                <ArrowRight aria-hidden="true" className="size-3.5" />
+              </Link>
+            </div>
+          ) : null}
+          {state.status === "ready" && featuredCountries.length > 0 ? (
             <div className="grid gap-px bg-black/[0.06] sm:grid-cols-2 lg:grid-cols-3">
               {featuredCountries.map((country) => (
                 <Link
@@ -422,7 +442,7 @@ function MissionCard({
         <span className="grid size-11 place-items-center rounded-full bg-[#173d31] text-[#dcf39b] transition-transform duration-300 group-hover:scale-105">
           <Icon aria-hidden="true" className="size-4" />
         </span>
-        <span className="font-mono text-xs tracking-[0.16em] text-slate-400">
+        <span className="font-mono text-xs tracking-[0.16em] text-slate-600">
           {index}
         </span>
       </div>

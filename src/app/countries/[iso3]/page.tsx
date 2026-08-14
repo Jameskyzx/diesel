@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
 import { CountryExplorer } from "@/components/countries/country-explorer";
+import { CountryInitialPanel } from "@/components/countries/country-initial-panel";
 import type { ProductFitInitialFilters } from "@/components/products/product-fit-panel";
 import {
   applicationScopeSchema,
@@ -10,6 +11,14 @@ import {
   isoDateSchema,
   powerKwSchema,
 } from "@/features/database/schemas";
+import {
+  getCountryDirectory,
+  isKnownCountryIso3,
+} from "@/server/services/country-directory";
+import {
+  getCountryDetails,
+  listCountryMapSummaries,
+} from "@/server/services/country-service";
 
 type CountryPageProps = {
   params: Promise<{
@@ -145,6 +154,10 @@ export default async function CountryPage({
     notFound();
   }
 
+  if (!isKnownCountryIso3(parsed.data)) {
+    notFound();
+  }
+
   const raw = await searchParams;
   const { canonicalQuery, filters, needsRedirect } = parseCountryFilters(raw);
 
@@ -156,10 +169,31 @@ export default async function CountryPage({
     );
   }
 
+  const [initialMapResponse, initialCountryDetail] = await Promise.all([
+    listCountryMapSummaries(),
+    getCountryDetails({
+      asOf: filters.asOf,
+      iso3: parsed.data,
+    }),
+  ]);
+  const countryDirectory = getCountryDirectory();
+  const directoryEntry = countryDirectory.find(
+    ({ iso3: value }) => value === parsed.data,
+  );
+
   return (
     <CountryExplorer
+      initialCountryDetail={initialCountryDetail}
       initialCountryIso3={parsed.data}
+      initialCountryIndex={countryDirectory}
+      initialCountryPanel={
+        <CountryInitialPanel
+          detail={initialCountryDetail}
+          hasGeometry={directoryEntry?.hasGeometry ?? false}
+        />
+      }
       initialFilters={filters}
+      initialMapResponse={initialMapResponse}
     />
   );
 }

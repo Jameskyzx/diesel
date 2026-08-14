@@ -303,7 +303,11 @@ export const countryJurisdictions = pgTable(
   },
   (table) => [
     primaryKey({
-      columns: [table.countryIso3, table.jurisdictionId],
+      columns: [
+        table.countryIso3,
+        table.jurisdictionId,
+        table.validFrom,
+      ],
       name: "country_jurisdictions_pk",
     }),
     index("country_jurisdictions_jurisdiction_idx").on(table.jurisdictionId),
@@ -1044,6 +1048,48 @@ export const dataChangeLogs = pgTable(
     ),
     index("data_change_logs_draft_idx").on(table.draftId),
     index("data_change_logs_batch_idx").on(table.importBatchId),
+  ],
+);
+
+export const apiRateLimitBuckets = pgTable(
+  "api_rate_limit_buckets",
+  {
+    scope: varchar("scope", { length: 80 }).notNull(),
+    keyHash: varchar("key_hash", { length: 64 }).notNull(),
+    windowStart: timestamp("window_start", {
+      mode: "date",
+      withTimezone: true,
+    }).notNull(),
+    requestCount: integer("request_count").notNull(),
+    expiresAt: timestamp("expires_at", {
+      mode: "date",
+      withTimezone: true,
+    }).notNull(),
+    updatedAt: timestamp("updated_at", {
+      mode: "date",
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.scope, table.keyHash, table.windowStart],
+      name: "api_rate_limit_buckets_pk",
+    }),
+    index("api_rate_limit_buckets_expiry_idx").on(table.expiresAt),
+    check(
+      "api_rate_limit_buckets_key_hash_check",
+      sql`${table.keyHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "api_rate_limit_buckets_count_check",
+      sql`${table.requestCount} > 0`,
+    ),
+    check(
+      "api_rate_limit_buckets_expiry_check",
+      sql`${table.expiresAt} > ${table.windowStart}`,
+    ),
   ],
 );
 

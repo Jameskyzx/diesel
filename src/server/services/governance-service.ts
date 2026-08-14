@@ -166,15 +166,36 @@ export async function getGovernanceDashboard(input?: {
   status?: GovernanceWorkflowStatus;
 }) {
   const repository = await getGovernanceRepository();
+
+  return getGovernanceDashboardFromRepository(repository, input);
+}
+
+export async function getGovernanceDashboardFromRepository(
+  repository: ReturnType<typeof createGovernanceRepository>,
+  input?: { status?: GovernanceWorkflowStatus },
+) {
   const [drafts, importBatches, auditLogs] = await Promise.all([
     repository.listDrafts(input?.status),
     repository.listImportBatches(),
     repository.listAuditLogs(),
   ]);
+  const reviewContexts = await repository.getDraftReviewContexts(drafts);
+  const reviewContextByDraftId = new Map(
+    reviewContexts.map(({ draftId, ...reviewContext }) => [
+      draftId,
+      reviewContext,
+    ]),
+  );
 
   return {
     auditLogs,
-    drafts,
+    drafts: drafts.map((draft) => {
+      const reviewContext = reviewContextByDraftId.get(draft.id);
+      if (!reviewContext) {
+        throw new Error(`Missing governance review context for ${draft.id}.`);
+      }
+      return { ...draft, reviewContext };
+    }),
     importBatches,
   };
 }

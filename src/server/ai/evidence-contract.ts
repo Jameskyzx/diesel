@@ -1,5 +1,6 @@
 import "server-only";
 
+import { tokenizeKnowledgeText } from "@/domain/knowledge/embedding";
 import {
   aiToolNames,
   type AiToolName,
@@ -15,6 +16,7 @@ type EvidenceQueryExpectation = {
   applicationScope?: string | null;
   asOf?: string | null;
   countryIso3s?: readonly (string | null)[];
+  knowledgeTerms?: readonly string[];
   powerKw?: number;
   productModelCode?: string | null;
   targetCountryIso3?: string;
@@ -56,9 +58,57 @@ const salesBriefIntentPattern =
   /(?:销售简报|销售策略|sales\s+brief|sales\s+strategy)/iu;
 const intentClauseBoundaryPattern =
   /(?:[,，。;；\n]+|并且?|同时|然后|再|\b(?:and|then)\b)/giu;
+const knowledgeQueryStopTokens = new Set([
+  "a",
+  "an",
+  "and",
+  "citation",
+  "document",
+  "for",
+  "of",
+  "source",
+  "the",
+  "依",
+  "出",
+  "告",
+  "帮",
+  "我",
+  "据",
+  "文",
+  "原",
+  "来",
+  "查",
+  "源",
+  "看",
+  "码",
+  "章",
+  "节",
+  "请",
+  "页",
+]);
 
 function uniqueCountries(countries: readonly string[]): string[] {
   return Array.from(new Set(countries));
+}
+
+function knowledgeTermsIn(
+  value: string,
+  excludedCountryIso3s: readonly string[] = [],
+): string[] {
+  const excluded = new Set(
+    excludedCountryIso3s.map((countryIso3) => countryIso3.toLowerCase()),
+  );
+
+  return Array.from(
+    new Set(
+      tokenizeKnowledgeText(value).filter(
+        (token) =>
+          !knowledgeQueryStopTokens.has(token) &&
+          !excluded.has(token) &&
+          (/^\p{Script=Han}$/u.test(token) || token.length >= 2),
+      ),
+    ),
+  );
 }
 
 function intentClauses(text: string, intentPattern: RegExp): string[] {
@@ -232,6 +282,10 @@ export function buildSalesChatEvidenceContract(input: {
     }
 
     if (asksForSource || activeTask === "knowledge") {
+      const knowledgeTerms = knowledgeTermsIn(
+        latestUserText,
+        context.countryIso3s,
+      );
       const sourceCountries =
         sourceCountriesFromLatest.length > 0
           ? sourceCountriesFromLatest
@@ -245,6 +299,7 @@ export function buildSalesChatEvidenceContract(input: {
             applicationScope: context.applicationScope,
             asOf,
             countryIso3s: [countryIso3],
+            knowledgeTerms,
           },
         });
       }
@@ -394,6 +449,7 @@ type ResultQuery = {
   applicationScope?: string | null;
   asOf?: string | null;
   countryIso3s?: readonly (string | null)[];
+  knowledgeTerms?: readonly string[];
   powerKw?: number;
   productModelCode?: string;
   targetCountryIso3?: string;
@@ -405,6 +461,7 @@ function resultQuery(result: AiToolResult): ResultQuery {
       applicationScope: result.search.filters.applicationScope,
       asOf: result.search.filters.asOf,
       countryIso3s: [result.resolvedCountryIso3],
+      knowledgeTerms: knowledgeTermsIn(result.search.query),
     };
   }
   if (result.tool === "getCountryProfile") {
@@ -477,6 +534,19 @@ function queryMatchesExpectation(
       return false;
     }
     if (!sameCountrySet(query.countryIso3s, expectation.countryIso3s)) {
+      return false;
+    }
+  }
+  if (
+    expectation.knowledgeTerms !== undefined &&
+    expectation.knowledgeTerms.length > 0
+  ) {
+    if (
+      query.knowledgeTerms === undefined ||
+      !expectation.knowledgeTerms.some((term) =>
+        query.knowledgeTerms?.includes(term),
+      )
+    ) {
       return false;
     }
   }

@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
+  apiRateLimitBuckets,
   aiChatSessions,
   aiCitations,
   aiToolCalls,
@@ -33,6 +34,9 @@ import { createKnowledgeRepository } from "@/server/repositories/knowledge-repos
 import { createAiAuditRepository } from "@/server/repositories/ai-audit-repository";
 import { createMarketRepository } from "@/server/repositories/market-repository";
 import { createGovernanceRepository } from "@/server/repositories/governance-repository";
+import { createRateLimitRepository } from "@/server/repositories/rate-limit-repository";
+import { createPostgresRateLimiter } from "@/server/http/rate-limit";
+import { getGovernanceDashboardFromRepository } from "@/server/services/governance-service";
 import { createTestDatabase } from "../helpers/database";
 
 type TestDatabase = Awaited<ReturnType<typeof createTestDatabase>>;
@@ -60,6 +64,7 @@ describe("database migration and demo seed", () => {
       "ai_chat_sessions",
       "ai_citations",
       "ai_tool_calls",
+      "api_rate_limit_buckets",
       "countries",
       "country_jurisdictions",
       "data_change_logs",
@@ -75,6 +80,71 @@ describe("database migration and demo seed", () => {
       "regulation_limits",
       "regulations",
     ]);
+  });
+
+  it("shares hashed rate-limit buckets across limiter instances and expires old windows", async () => {
+    const scope = "integration-ai-chat";
+    const rawClientIdentifier = "203.0.113.77";
+    const requestLimit = 5;
+    const windowMs = 60_000;
+    const firstWindow = 1_700_000_040_000;
+    const firstLimiter = createPostgresRateLimiter({
+      limit: requestLimit,
+      repository: createRateLimitRepository(testDatabase.database),
+      scope,
+      windowMs,
+    });
+    const secondLimiter = createPostgresRateLimiter({
+      limit: requestLimit,
+      repository: createRateLimitRepository(testDatabase.database),
+      scope,
+      windowMs,
+    });
+
+    await testDatabase.database
+      .delete(apiRateLimitBuckets)
+      .where(eq(apiRateLimitBuckets.scope, scope));
+
+    try {
+      const decisions = await Promise.all(
+        Array.from({ length: requestLimit + 7 }, (_, index) =>
+          (index % 2 === 0 ? firstLimiter : secondLimiter).check(
+            rawClientIdentifier,
+            firstWindow + index,
+          ),
+        ),
+      );
+      expect(decisions.filter(({ allowed }) => allowed)).toHaveLength(
+        requestLimit,
+      );
+      expect(decisions.filter(({ allowed }) => !allowed)).toHaveLength(7);
+
+      const [sharedBucket] = await testDatabase.database
+        .select()
+        .from(apiRateLimitBuckets)
+        .where(eq(apiRateLimitBuckets.scope, scope));
+      expect(sharedBucket).toMatchObject({
+        requestCount: requestLimit + 1,
+        scope,
+      });
+      expect(sharedBucket?.keyHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(sharedBucket?.keyHash).not.toContain(rawClientIdentifier);
+
+      expect(
+        (await secondLimiter.check(rawClientIdentifier, firstWindow + windowMs))
+          .allowed,
+      ).toBe(true);
+      const currentBuckets = await testDatabase.database
+        .select()
+        .from(apiRateLimitBuckets)
+        .where(eq(apiRateLimitBuckets.scope, scope));
+      expect(currentBuckets).toHaveLength(1);
+      expect(currentBuckets[0]?.requestCount).toBe(1);
+    } finally {
+      await testDatabase.database
+        .delete(apiRateLimitBuckets)
+        .where(eq(apiRateLimitBuckets.scope, scope));
+    }
   });
 
   it("enforces one global-scope market observation per natural key", async () => {
@@ -387,6 +457,228 @@ describe("repositories", () => {
     await seedDemoData(testDatabase.database);
   });
 
+  it("loads a published review baseline even when it falls outside the 100-row dashboard window", async () => {
+    const governanceRepository = createGovernanceRepository(
+      testDatabase.database,
+    );
+    const createdBy = "dashboard-baseline-test@example.test";
+    const baselineId = "30000000-0000-4000-8000-000000000800";
+    const targetId = "30000000-0000-4000-8000-000000000801";
+    const entityKey = "QZZ";
+    const basePayload = {
+      dataCoverageStatus: "demo",
+      dataSourceId: demoIds.source.country,
+      isDemo: true,
+      iso2: "QZ",
+      iso3: entityKey,
+      nameEn: "DEMO ONLY — Dashboard baseline v1",
+      nameLocal: null,
+      regionCode: "DEMO",
+      subregionCode: "DEMO",
+      verifiedAt: "2026-07-29T00:00:00.000Z",
+    };
+
+    await testDatabase.database.insert(countries).values({
+      dataCoverageStatus: "demo",
+      dataSourceId: demoIds.source.country,
+      isDemo: true,
+      iso2: "QZ",
+      iso3: entityKey,
+      nameEn: basePayload.nameEn,
+      regionCode: "DEMO",
+      subregionCode: "DEMO",
+      verifiedAt: new Date(basePayload.verifiedAt),
+    });
+    await testDatabase.database.insert(dataGovernanceDrafts).values([
+      {
+        changeReason: "Historical published baseline.",
+        createdAt: new Date("2020-01-01T00:00:00.000Z"),
+        createdBy,
+        entityKey,
+        entityType: "country",
+        id: baselineId,
+        payload: basePayload,
+        publishedAt: new Date("2020-01-02T00:00:00.000Z"),
+        publishedBy: "reviewer@example.test",
+        reviewedAt: new Date("2020-01-01T12:00:00.000Z"),
+        reviewedBy: "reviewer@example.test",
+        updatedAt: new Date("2020-01-02T00:00:00.000Z"),
+        version: 1,
+        workflowStatus: "published",
+      },
+      ...Array.from({ length: 100 }, (_, index) => {
+        const id = `30000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
+        return {
+          changeReason: "Fill the dashboard history window.",
+          createdAt: new Date(Date.UTC(2099, 0, 1, 0, 0, index)),
+          createdBy,
+          entityKey: id,
+          entityType: "data_source" as const,
+          id,
+          payload: { id },
+          updatedAt: new Date(Date.UTC(2099, 0, 1, 0, 0, index)),
+          version: 1,
+          workflowStatus: "draft" as const,
+        };
+      }),
+      {
+        changeReason: "Review a revision whose baseline is outside the window.",
+        createdAt: new Date("2100-01-01T00:00:00.000Z"),
+        createdBy,
+        entityKey,
+        entityType: "country",
+        id: targetId,
+        payload: {
+          ...basePayload,
+          nameEn: "DEMO ONLY — Dashboard baseline v2",
+        },
+        reviewedAt: new Date("2100-01-01T00:00:00.000Z"),
+        reviewedBy: "reviewer@example.test",
+        updatedAt: new Date("2100-01-01T00:00:00.000Z"),
+        version: 2,
+        workflowStatus: "reviewed",
+      },
+    ]);
+
+    try {
+      const dashboard = await getGovernanceDashboardFromRepository(
+        governanceRepository,
+      );
+      const target = dashboard.drafts.find(({ id }) => id === targetId);
+
+      expect(dashboard.drafts).toHaveLength(100);
+      expect(
+        dashboard.drafts.some(({ id }) => id === baselineId),
+      ).toBe(false);
+      expect(target?.reviewContext).toMatchObject({
+        baselineStatus: "active",
+        blockingReasons: [],
+        publishedBaseline: { id: baselineId, version: 1 },
+        publishReady: true,
+      });
+    } finally {
+      await testDatabase.database
+        .delete(dataGovernanceDrafts)
+        .where(eq(dataGovernanceDrafts.createdBy, createdBy));
+      await testDatabase.database
+        .delete(countries)
+        .where(eq(countries.iso3, entityKey));
+    }
+  });
+
+  it("rejects v2 when the formal root entity source is archived", async () => {
+    const governanceRepository = createGovernanceRepository(
+      testDatabase.database,
+    );
+    const editor = {
+      email: "root-source-editor@example.test",
+      role: "editor" as const,
+    };
+    const reviewer = {
+      email: "root-source-reviewer@example.test",
+      role: "reviewer" as const,
+    };
+    const sourceId = "30000000-0000-4000-8000-000000000810";
+    const entityKey = "QZX";
+    const payload = {
+      dataCoverageStatus: "demo" as const,
+      dataSourceId: sourceId,
+      isDemo: true,
+      iso2: "QY",
+      iso3: entityKey,
+      nameEn: "DEMO ONLY — Active-root source baseline",
+      nameLocal: null,
+      regionCode: "DEMO",
+      subregionCode: "DEMO",
+      verifiedAt: "2026-07-29T00:00:00.000Z",
+    };
+
+    await testDatabase.database.insert(dataSources).values({
+      demoNotice: "DEMO ONLY — root source archival test.",
+      id: sourceId,
+      isDemo: true,
+      sourceType: "demo",
+      title: "DEMO ONLY — Root source archival test",
+      verifiedAt: new Date(payload.verifiedAt),
+    });
+
+    try {
+      const baseline = await governanceRepository.createDraft({
+        actor: editor,
+        changeReason: "Create the published baseline before source archival.",
+        entityKey,
+        entityType: "country",
+        payload,
+      });
+      await governanceRepository.reviewDraft({
+        actor: reviewer,
+        draftId: baseline.id,
+        reason: "Review the root-source baseline.",
+      });
+      await governanceRepository.publishDraft({
+        actor: reviewer,
+        draftId: baseline.id,
+        reason: "Publish the root-source baseline.",
+      });
+      const revision = await governanceRepository.createDraft({
+        actor: editor,
+        changeReason: "Create v2 before the parent source is archived.",
+        entityKey,
+        entityType: "country",
+        payload: {
+          ...payload,
+          nameEn: "DEMO ONLY — Must remain unpublished",
+        },
+      });
+      await governanceRepository.reviewDraft({
+        actor: reviewer,
+        draftId: revision.id,
+        reason: "Review v2 before simulating legacy source archival.",
+      });
+      await testDatabase.database
+        .update(dataSources)
+        .set({ archivedAt: new Date("2026-08-15T01:00:00.000Z") })
+        .where(eq(dataSources.id, sourceId));
+
+      await expect(
+        governanceRepository.publishDraft({
+          actor: reviewer,
+          draftId: revision.id,
+          reason: "Attempt a direct publish with an archived parent source.",
+        }),
+      ).rejects.toThrow("requires an active formal entity");
+
+      const [storedCountry] = await testDatabase.database
+        .select({ nameEn: countries.nameEn })
+        .from(countries)
+        .where(eq(countries.iso3, entityKey));
+      const [storedRevision] = await testDatabase.database
+        .select({ workflowStatus: dataGovernanceDrafts.workflowStatus })
+        .from(dataGovernanceDrafts)
+        .where(eq(dataGovernanceDrafts.id, revision.id));
+      expect(storedCountry?.nameEn).toBe(payload.nameEn);
+      expect(storedRevision?.workflowStatus).toBe("reviewed");
+    } finally {
+      await testDatabase.database
+        .delete(dataChangeLogs)
+        .where(eq(dataChangeLogs.entityKey, entityKey));
+      await testDatabase.database
+        .delete(dataGovernanceDrafts)
+        .where(
+          and(
+            eq(dataGovernanceDrafts.entityType, "country"),
+            eq(dataGovernanceDrafts.entityKey, entityKey),
+          ),
+        );
+      await testDatabase.database
+        .delete(countries)
+        .where(eq(countries.iso3, entityKey));
+      await testDatabase.database
+        .delete(dataSources)
+        .where(eq(dataSources.id, sourceId));
+    }
+  });
+
   it("finds a country by normalized ISO3 and returns its source", async () => {
     const repository = createCountryRepository(testDatabase.database);
 
@@ -587,6 +879,19 @@ describe("repositories", () => {
 
     expect(truckMetric?.applicationScope).toBe("on-road-truck");
     expect(busMetric?.applicationScope).toBe("on-road-bus");
+  });
+
+  it("reads back the strict product power constraint after migrations", async () => {
+    const result = await testDatabase.client.query<{ definition: string }>(
+      `select pg_get_constraintdef(oid) as definition
+       from pg_constraint
+       where conname = 'products_power_check'`,
+    );
+
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]?.definition.replaceAll('"', "")).toContain(
+      "power_max_kw > power_min_kw",
+    );
   });
 
   it("returns only effective regulations for the requested date and power", async () => {
@@ -996,6 +1301,35 @@ describe("repositories", () => {
       await testDatabase.database
         .update(regulations)
         .set({ effectiveTo: "2025-01-01" })
+        .where(eq(regulations.id, demoIds.regulation.chinaSuperseded));
+    }
+  });
+
+  it("fails closed for a future superseded comparison without a closing date", async () => {
+    const repository = createRegulationRepository(testDatabase.database);
+    await testDatabase.database
+      .update(regulations)
+      .set({ effectiveFrom: "2030-01-01", effectiveTo: null })
+      .where(eq(regulations.id, demoIds.regulation.chinaSuperseded));
+
+    try {
+      const rows = await repository.findForComparison({
+        applicationScope: "non-road",
+        asOf: "2026-07-29",
+        countryIso3s: ["CHN", "BRA"],
+        powerKw: 100,
+      });
+
+      expect(
+        rows.some(
+          ({ regulationId }) =>
+            regulationId === demoIds.regulation.chinaSuperseded,
+        ),
+      ).toBe(false);
+    } finally {
+      await testDatabase.database
+        .update(regulations)
+        .set({ effectiveFrom: "2020-01-01", effectiveTo: "2025-01-01" })
         .where(eq(regulations.id, demoIds.regulation.chinaSuperseded));
     }
   });
@@ -1911,6 +2245,107 @@ describe("repositories", () => {
     ).toHaveLength(1);
   });
 
+  it("preserves disjoint jurisdiction exit and re-entry periods", async () => {
+    const governanceRepository = createGovernanceRepository(
+      testDatabase.database,
+    );
+    const countryRepository = createCountryRepository(testDatabase.database);
+    const editor = {
+      email: "editor@example.test",
+      role: "editor" as const,
+    };
+    const reviewer = {
+      email: "reviewer@example.test",
+      role: "reviewer" as const,
+    };
+    const jurisdictionId = "10000000-0000-4000-8000-000000000924";
+    const draft = await governanceRepository.createDraft({
+      actor: editor,
+      changeReason: "Test disjoint jurisdiction membership periods.",
+      entityKey: jurisdictionId,
+      entityType: "jurisdiction",
+      payload: {
+        code: "TEST-REENTRY-JUR",
+        countryIso3: null,
+        dataSourceId: demoIds.source.country,
+        id: jurisdictionId,
+        isDemo: true,
+        memberships: [
+          {
+            countryIso3: "JPN",
+            dataSourceId: demoIds.source.country,
+            isDemo: true,
+            validFrom: "2000-01-01",
+            validTo: "2010-01-01",
+            verifiedAt: "2026-08-06T00:00:00.000Z",
+          },
+          {
+            countryIso3: "JPN",
+            dataSourceId: demoIds.source.country,
+            isDemo: true,
+            validFrom: "2020-01-01",
+            validTo: null,
+            verifiedAt: "2026-08-06T00:00:00.000Z",
+          },
+        ],
+        name: "DEMO ONLY — Re-entry jurisdiction",
+        type: "regional",
+        verifiedAt: "2026-08-06T00:00:00.000Z",
+        websiteUrl: null,
+      },
+    });
+    await governanceRepository.reviewDraft({
+      actor: reviewer,
+      draftId: draft.id,
+      reason: "Review disjoint jurisdiction membership periods.",
+    });
+    await governanceRepository.publishDraft({
+      actor: reviewer,
+      draftId: draft.id,
+      reason: "Publish disjoint jurisdiction membership periods.",
+    });
+
+    const [beforeExit, duringGap, afterReentry, storedMemberships] =
+      await Promise.all([
+        countryRepository.findDetailsByIso3({
+          asOf: "2009-12-31",
+          iso3: "JPN",
+        }),
+        countryRepository.findDetailsByIso3({
+          asOf: "2015-01-01",
+          iso3: "JPN",
+        }),
+        countryRepository.findDetailsByIso3({
+          asOf: "2026-01-01",
+          iso3: "JPN",
+        }),
+        testDatabase.database
+          .select({ validFrom: countryJurisdictions.validFrom })
+          .from(countryJurisdictions)
+          .where(
+            and(
+              eq(countryJurisdictions.jurisdictionId, jurisdictionId),
+              isNull(countryJurisdictions.archivedAt),
+            ),
+          ),
+      ]);
+
+    const hasReentryJurisdiction = (
+      details: Awaited<ReturnType<typeof countryRepository.findDetailsByIso3>>,
+    ) =>
+      details?.jurisdictions.some(
+        ({ code }) => code === "TEST-REENTRY-JUR",
+      ) ?? false;
+
+    expect(hasReentryJurisdiction(beforeExit)).toBe(true);
+    expect(hasReentryJurisdiction(duringGap)).toBe(false);
+    expect(hasReentryJurisdiction(afterReentry)).toBe(true);
+    expect(storedMemberships.map(({ validFrom }) => validFrom).sort()).toEqual([
+      "2000-01-01",
+      "2020-01-01",
+    ]);
+  });
+
   it("keeps draft and reviewed country revisions out of formal queries until publication", async () => {
     const governanceRepository = createGovernanceRepository(
       testDatabase.database,
@@ -2170,11 +2605,24 @@ describe("repositories", () => {
           verifiedAt: "2026-08-05T00:00:00.000Z",
         },
       });
-    const olderDraft = await createRevision(
+    const baselineDraft = await createRevision(
       "DEMO ONLY — Version ordering v1",
     );
-    const newerDraft = await createRevision(
+    await governanceRepository.reviewDraft({
+      actor: reviewer,
+      draftId: baselineDraft.id,
+      reason: "Review the version-ordering baseline.",
+    });
+    await governanceRepository.publishDraft({
+      actor: reviewer,
+      draftId: baselineDraft.id,
+      reason: "Publish the version-ordering baseline.",
+    });
+    const olderDraft = await createRevision(
       "DEMO ONLY — Version ordering v2",
+    );
+    const newerDraft = await createRevision(
+      "DEMO ONLY — Version ordering v3",
     );
     for (const draft of [olderDraft, newerDraft]) {
       await governanceRepository.reviewDraft({
@@ -2214,9 +2662,10 @@ describe("repositories", () => {
         ),
       );
 
-    expect(storedCountry?.nameEn).toBe("DEMO ONLY — Version ordering v2");
+    expect(storedCountry?.nameEn).toBe("DEMO ONLY — Version ordering v3");
     expect(storedDrafts).toEqual(
       expect.arrayContaining([
+        { id: baselineDraft.id, workflowStatus: "published" },
         { id: olderDraft.id, workflowStatus: "reviewed" },
         { id: newerDraft.id, workflowStatus: "published" },
       ]),
@@ -2691,7 +3140,7 @@ describe("repositories", () => {
         draftId: draft.id,
         reason: "Attempt to publish the archived ready document.",
       }),
-    ).rejects.toThrow("successfully processed document");
+    ).rejects.toThrow("cannot revive an archived formal entity");
 
     const [storedDraft] = await testDatabase.database
       .select({ workflowStatus: dataGovernanceDrafts.workflowStatus })
@@ -2856,7 +3305,9 @@ describe("repositories", () => {
         draftId: draft.id,
         reason: "Attempt publication with an archived source.",
       }),
-    ).rejects.toThrow("Referenced data sources are missing or archived");
+    ).rejects.toThrow(
+      "A first governance revision cannot revive an archived formal entity.",
+    );
 
     const [storedDocument] = await testDatabase.database
       .select({ governanceStatus: documents.governanceStatus })
@@ -3399,7 +3850,7 @@ describe("repositories", () => {
             periodStart: "2025-01-01",
             publishedOn: "2026-01-02",
             unitCode: "units",
-            valueNumeric: 12,
+            valueNumeric: "12",
             verifiedAt: "2026-07-29T00:00:00.000Z",
           },
           rowNumber: 2,
@@ -3477,7 +3928,7 @@ describe("repositories", () => {
         metricName: "DEMO ONLY — Conflicting natural-key observation",
         publishedOn: null,
         unitCode: "units",
-        valueNumeric: 99,
+        valueNumeric: "99",
         verifiedAt: "2026-08-05T00:00:00.000Z",
       },
     });
@@ -3544,7 +3995,7 @@ describe("repositories", () => {
             periodStart: "2025-01-01",
             publishedOn: null,
             unitCode: "units",
-            valueNumeric: 1,
+            valueNumeric: "1",
             verifiedAt: "2026-07-29T00:00:00.000Z",
           },
           rowNumber: 2,
@@ -3630,7 +4081,7 @@ describe("repositories", () => {
             engineTypeCode: "CI",
             id: "10000000-0000-4000-8000-000000000907",
             isDemo: true,
-            limitValue: 1,
+            limitValue: "1",
             measurementBasis: "DEMO ONLY",
             pollutantCode: "NOX",
             powerMaxKw: null,
@@ -3796,7 +4247,7 @@ describe("repositories", () => {
             engineTypeCode: "CI",
             id: "10000000-0000-4000-8000-000000000910",
             isDemo: true,
-            limitValue: 1,
+            limitValue: "1",
             measurementBasis: "DEMO ONLY",
             pollutantCode: "NOX",
             powerMaxKw: null,
@@ -3893,7 +4344,7 @@ describe("repositories", () => {
         periodStart: "2025-01-01",
         publishedOn: null,
         unitCode: "units",
-        valueNumeric: 1,
+        valueNumeric: "1",
         verifiedAt: "2026-08-05T00:00:00.000Z",
       },
     });
@@ -4016,7 +4467,7 @@ describe("repositories", () => {
         periodStart: "2023-01-01",
         publishedOn: null,
         unitCode: "vehicle",
-        valueNumeric: 1,
+        valueNumeric: "1",
         verifiedAt: "2026-08-05T00:00:00.000Z",
       },
     });
@@ -4073,7 +4524,7 @@ describe("repositories", () => {
         periodStart: "2025-01-01",
         publishedOn: null,
         unitCode: "units",
-        valueNumeric: 1,
+        valueNumeric: "1",
         verifiedAt: "2026-08-05T00:00:00.000Z",
       },
     });
@@ -4137,7 +4588,7 @@ describe("repositories", () => {
             engineTypeCode: "CI",
             id: "10000000-0000-4000-8000-000000000915",
             isDemo: false,
-            limitValue: 1,
+            limitValue: "1",
             measurementBasis: "Must not publish.",
             pollutantCode: "NOX",
             powerMaxKw: null,
@@ -4424,7 +4875,7 @@ describe("repositories", () => {
               engineTypeCode: "CI",
               id: "10000000-0000-4000-8000-000000000924",
               isDemo: true,
-              limitValue: 1,
+              limitValue: "1",
               measurementBasis: null,
               pollutantCode: "NOX",
               powerMaxKw: null,
@@ -4607,7 +5058,7 @@ describe("repositories", () => {
             engineTypeCode: "CI",
             id: "00000000-0000-4000-8000-000000000991",
             isDemo: true,
-            limitValue: 3.5,
+            limitValue: "3.5",
             measurementBasis: "DEMO ONLY — fictional test basis",
             pollutantCode: "NOX",
             powerMaxKw: 560,

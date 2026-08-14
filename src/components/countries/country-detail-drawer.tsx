@@ -30,14 +30,15 @@ import {
 import {
   countryDetailResponseSchema,
   type CountryDetailResponse,
-  type CountryGeoIndex,
+  type CountryDirectory,
 } from "@/features/countries/schemas";
-import {
-  ProductFitPanel,
-  type ProductFitCommittedFilters,
-  type ProductFitInitialFilters,
+import type {
+  ProductFitCommittedFilters,
+  ProductFitInitialFilters,
 } from "@/components/products/product-fit-panel";
+import dynamic from "next/dynamic";
 import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
+import { formatDecimalForDisplay } from "@/lib/decimal-format";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
 import { cn } from "@/lib/utils";
 
@@ -62,8 +63,9 @@ type CurrentDetailState =
 
 type CountryDetailDrawerProps = {
   cancelPendingProductEvaluation: () => void;
-  countryIndex: CountryGeoIndex;
+  countryIndex: CountryDirectory;
   initialFilters?: ProductFitInitialFilters;
+  initialResponse?: CountryDetailResponse;
   iso3: string | null;
   onClose: () => void;
   onSelectCountry: (iso3: string) => void;
@@ -71,6 +73,27 @@ type CountryDetailDrawerProps = {
     cancelPendingEvaluation: (() => void) | null,
   ) => void;
 };
+
+const ProductFitPanel = dynamic(
+  async () => {
+    const productModule = await import(
+      "@/components/products/product-fit-panel"
+    );
+    return productModule.ProductFitPanel;
+  },
+  {
+    loading: () => (
+      <div
+        aria-busy="true"
+        aria-live="polite"
+        className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground"
+        role="status"
+      >
+        正在加载确定性产品适配工具…
+      </div>
+    ),
+  },
+);
 
 const statusLabels = {
   adopted: "已采纳",
@@ -128,12 +151,22 @@ export function CountryDetailDrawer({
   cancelPendingProductEvaluation,
   countryIndex,
   initialFilters,
+  initialResponse,
   iso3,
   onClose,
   onSelectCountry,
   registerProductFitNavigationGuard,
 }: CountryDetailDrawerProps) {
-  const [detail, setDetail] = useState<DetailState>({ status: "idle" });
+  const [detail, setDetail] = useState<DetailState>(() =>
+    initialResponse && iso3
+      ? {
+          iso3,
+          requestedAsOf: initialFilters?.asOf ?? null,
+          response: initialResponse,
+          status: "ready",
+        }
+      : { status: "idle" },
+  );
   const [reloadKey, setReloadKey] = useState(0);
   const requestedAsOf = initialFilters?.asOf ?? null;
   const loadedResponseAlreadyMatchesRequestedAsOf =
@@ -157,6 +190,10 @@ export function CountryDetailDrawer({
 
   useEffect(() => {
     if (!iso3) {
+      return;
+    }
+
+    if (initialResponse && reloadKey === 0) {
       return;
     }
 
@@ -205,7 +242,7 @@ export function CountryDetailDrawer({
     return () => {
       abortController.abort();
     };
-  }, [fetchAsOf, iso3, reloadKey]);
+  }, [fetchAsOf, initialResponse, iso3, reloadKey]);
 
   return (
     <Drawer
@@ -262,6 +299,7 @@ export function CountryDetailDrawer({
             {countryIndex.map((country) => (
               <option key={country.iso3} value={country.iso3}>
                 {country.name} · {country.iso3}
+                {country.hasGeometry ? "" : " · 暂无地图边界"}
               </option>
             ))}
           </select>
@@ -324,7 +362,11 @@ export function CountryDetailDrawer({
                 {currentDetail.response.iso3} 暂无数据
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                地图中包含该国家边界，但数据库尚未录入国家资料。系统不会用空白内容或模型推测代替事实。
+                {countryIndex.find(({ iso3: value }) => value === iso3)
+                  ?.hasGeometry
+                  ? "地图中包含该国家边界，但数据库尚未录入可公开详情。"
+                  : "该国家属于目录，但当前地图资源暂缺其边界，数据库也尚未录入可公开详情。"}
+                系统不会用空白内容或模型推测代替事实。
               </p>
             </div>
           ) : null}
@@ -550,7 +592,7 @@ function CountryDetailContent({
                   </div>
                 </div>
                 <p className="mt-3 text-2xl font-semibold tracking-tight">
-                  {Number(metric.valueNumeric).toLocaleString()}{" "}
+                  {formatDecimalForDisplay(metric.valueNumeric)}{" "}
                   <span className="text-sm font-medium text-muted-foreground">
                     {metric.unitCode}
                   </span>

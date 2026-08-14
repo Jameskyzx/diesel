@@ -8,6 +8,7 @@ import {
   createLocalHashEmbedding,
   KNOWLEDGE_EMBEDDING_MODEL,
 } from "@/domain/knowledge/embedding";
+import { isKnowledgeResultRelevant } from "@/domain/knowledge/retrieval-policy";
 import { env } from "@/env";
 import {
   documentImportMetadataSchema,
@@ -32,6 +33,7 @@ import {
 } from "@/server/knowledge/document-file";
 import { getErrorCode } from "@/lib/api-error";
 import {
+  findOrphanedDocumentFiles,
   readDocumentFile,
   saveDocumentFile,
 } from "@/server/knowledge/local-document-storage";
@@ -220,18 +222,32 @@ export async function importKnowledgeDocument(input: {
     });
   }
 
-  const storagePath = await saveDocumentFile({
+  const savedFile = await saveDocumentFile({
     bytes: input.bytes,
     contentSha256,
   });
-  const creation = await repository.createProcessingDocument({
-    byteSize: input.bytes.byteLength,
-    contentSha256,
-    metadata,
-    mimeType: input.mimeType || "application/octet-stream",
-    originalFilename: input.fileName,
-    storagePath,
-  });
+  let creation;
+  try {
+    creation = await repository.createProcessingDocument({
+      byteSize: input.bytes.byteLength,
+      contentSha256,
+      metadata,
+      mimeType: input.mimeType || "application/octet-stream",
+      originalFilename: input.fileName,
+      storagePath: savedFile.storagePath,
+    });
+  } catch (error: unknown) {
+    if (savedFile.created) {
+      // Do not remove immediately: another same-hash request may have reused
+      // this file and still be between its filesystem write and DB commit.
+      // The age-gated orphan scanner reclaims it only after all such requests
+      // have had time to commit and the repository reference set is complete.
+      console.warn("Knowledge document orphan cleanup deferred", {
+        errorCode: getErrorCode(error),
+      });
+    }
+    throw error;
+  }
   if (!creation.created) {
     const summary = await repository.getDocumentSummary(
       creation.documentId,
@@ -295,6 +311,22 @@ export async function importKnowledgeDocument(input: {
   return documentImportResponseSchema.parse({
     document: toDocumentSummary(ready),
     status: "ready",
+  });
+}
+
+export async function findKnowledgeStorageOrphans(input?: {
+  minimumAgeMs?: number;
+}): Promise<string[]> {
+  const repository = await getKnowledgeRepository();
+  const referencedStoragePaths = new Set(
+    (await repository.listDocumentStoragePaths()).flatMap(
+      ({ storagePath }) => (storagePath ? [storagePath] : []),
+    ),
+  );
+
+  return findOrphanedDocumentFiles({
+    minimumAgeMs: input?.minimumAgeMs ?? 24 * 60 * 60 * 1000,
+    referencedStoragePaths,
   });
 }
 
@@ -437,6 +469,7 @@ export async function hybridSearchKnowledge(
         warnings,
       };
     })
+    .filter((candidate) => isKnowledgeResultRelevant(candidate))
     .sort(
       (left, right) =>
         right.finalScore - left.finalScore ||

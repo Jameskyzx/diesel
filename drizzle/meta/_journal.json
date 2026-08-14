@@ -78,6 +78,20 @@
       "when": 1785960023566,
       "tag": "0010_military_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786723485791,
+      "tag": "0011_temporal_memberships_and_product_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786724498567,
+      "tag": "0012_shared_api_rate_limit",
+      "breakpoints": true
     }
   ]
 }

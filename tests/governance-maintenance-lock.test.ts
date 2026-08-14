@@ -49,6 +49,9 @@ describe("governance maintenance advisory-lock protocol", () => {
     expect(source).toMatch(
       /async completeDocument\([\s\S]*?database\.transaction\(async \(transaction\) => \{\s*await assertGovernanceWriteAllowed\(transaction\);/,
     );
+    expect(source).toMatch(
+      /async markDocumentFailed\([\s\S]*?database\.transaction\(async \(transaction\) => \{\s*await assertGovernanceWriteAllowed\(transaction\);/,
+    );
   });
 
   it("uses the fixed shared transaction lock for ordinary writes", () => {

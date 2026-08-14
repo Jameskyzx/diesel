@@ -27,5 +27,10 @@ async function getAdminPrincipal() {
 
 export default async function AdminPage() {
   const principal = await getAdminPrincipal();
-  return <AdminDashboard initialPrincipal={principal} />;
+  return (
+    <AdminDashboard
+      initialPrincipal={principal}
+      initialUtcNow={new Date().toISOString()}
+    />
+  );
 }

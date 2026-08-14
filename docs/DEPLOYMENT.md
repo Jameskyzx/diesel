@@ -14,14 +14,24 @@
 | `DATABASE_MODE` | `postgres` | `pglite-demo`；仅 development、显式启用 | `pglite-demo`（e2e job） | `postgres`；两类部署均禁止 `pglite-demo` |
 | 数据库 | Supabase/PostgreSQL 开发库 | 进程内 PGlite + 真实 Migration | 进程内 PGlite + 真实 Migration | PostgreSQL；Migration 走受控步骤，应用不自动改 schema（ARCH §14） |
 | Seed | 只允许显式 Demo + Natural Earth 目录；真实数据经 Draft → Reviewed → Published | 自动运行显式虚构 Demo Seed | 自动运行 Demo Seed | 不运行 Demo Seed；记录按事实/来源逐条分类 |
-| AI provider | `gateway` 或 `openai-compatible` | 确定性离线模型；只选择已有只读工具 | 不调用外部模型 | 公开站仅处理已公开数据；业务生产仍需 ADR-017/023 批准 |
+| AI provider | `openai-compatible` | 确定性离线模型；只选择已有只读工具 | 不调用外部模型 | 公开站仅处理已公开数据；业务生产仍需 ADR-017/023 批准 |
 | AI 模型 | `AI_MODEL` 为文本模型；图片入口另配 `AI_MULTIMODAL_MODEL` | 不读取外部模型配置 | 测试替身 | 两个模型必须位于服务端；视觉模型须同时支持图片输入与 Function Calling（ADR-125） |
 | 密钥 | `.env.local`（gitignore） | 无，且不读取数据库或模型凭据 | GitHub Actions 隔离；gitleaks 扫描 | 只进平台 Secret Manager；不进仓库、日志或任务表 |
 | 身份 | `ADMIN_ROLE_BINDINGS_JSON` + 本地 Header 注入（仅受控环境，ADR-036） | 不暴露管理写入作为演示流程 | Playwright 注入测试身份 | 公开站反向代理阻断 `/admin`；业务管理端必须使用可信身份代理（ADR-016） |
 | 文档存储 | `.data/knowledge`（仅开发） | 临时 `.data/portfolio-demo-knowledge` | `e2e-knowledge` | 业务生产须用私有对象存储；ADR-031 替身不得用于生产 |
-| AI 速率限制 | 默认 30/小时/客户端，进程内固定窗口 | 同左 | 同左 | 同左；多实例按实例独立（见 §6） |
+| AI 速率限制 | 默认 30/小时/客户端，开发内存后端 | 内存后端 | 内存后端 | PostgreSQL 原子共享窗口；生产禁止内存后端（见 §6） |
 | 核验新鲜度 | 默认 90 天；超过阈值只告警 | 固定 3650 天，避免虚构 fixture 干扰流程演示 | `1`（确定性触发 stale 测试） | 按来源分级 SLA 仍待 ADR-019 签核 |
 | 错误脱敏 | 公开 API 只返回 schema 校验的通用错误；日志不保留上游原文（ADR-041） | 同左 | 同左 | 同左 |
+
+服务端环境枚举以代码 schema 为准：`AI_PROVIDER` 只接受
+`openai-compatible`；`DATABASE_MODE` 只接受 `postgres` / `pglite-demo`，且生产只允许
+前者；`AI_CHAT_RATE_LIMIT_BACKEND` 只接受 `memory` / `postgres`（生产强制后者）；
+`AI_ENABLE_THINKING` 与 `PORTFOLIO_DEMO_MODE` 只接受布尔值；
+`AI_CHAT_RATE_LIMIT_PER_HOUR` 为 1–10000 的整数；`COUNTRY_STALE_AFTER_DAYS` 为
+1–3650 的整数。`APP_VERSION`、`DATABASE_URL`、`KNOWLEDGE_STORAGE_ROOT`、
+`AI_BASE_URL`、`AI_MODEL`、`AI_MULTIMODAL_MODEL`、`AI_API_KEY`、三项
+`OPPORTUNITY_SCORE_*_WEIGHT` 与 `ADMIN_ROLE_BINDINGS_JSON` 的用途和非敏感示例见
+`.env.example`；生产值只进入受控服务端环境。
 
 ### 1.1 零配置作品 Demo
 
@@ -89,7 +99,7 @@ gh api -X PATCH repos/Jameskyzx/diesel \
 - [x] HTTPS 主站只对精确 `/api/chat` 设置 10 MiB、关闭请求体缓冲并承接应用 9 MiB
       流式门，其他路由保留较小默认上限；代理以 `$remote_addr` 覆盖
       客户端 `X-Forwarded-For`；IP/备用 HTTP 主机只 301 到规范 HTTPS 域名，不接收
-      明文附件。多实例共享计数仍是待办
+      明文附件；生产配额由 PostgreSQL 在实例间原子共享
 - [x] 对话附件数量、解码后字节、媒体类型/结构/像素、PDF 页数、15 秒解析 deadline
       与 30,000/40,000 增量字符预算；图片按需切换服务端视觉模型，纯附件意图与事实
       工具门分离，提取内容保持未核验信任边界（ADR-125）
@@ -101,7 +111,8 @@ gh api -X PATCH repos/Jameskyzx/diesel \
 - [x] `master` 分支保护与合并门（§2）+ GitHub 原生 Secret scanning（§3）
 - [ ] 生产身份代理接入：剥离客户端身份 Header、注入已认证邮箱；`/admin`
       不暴露公网（ADR-016/036）
-- [x] 治理数据 v3 快照：只读 repeatable-read 导出、六位微秒与原始 `jsonb::text`、
+- [x] 治理数据 v4 十表快照（含 `market_metrics`）：只读 repeatable-read 导出、六位
+      微秒与原始 `jsonb::text`、
       SHA-256/严格结构 dry-run、serializable 物理精确恢复与 PGlite 故障回滚演练
 - [ ] 生产数据库：责任人确认、生产快照恢复演练、Migration 回滚演练、数据纠错流程
 - [ ] 正式 AI 模型、区域、预算与保留策略批准（ADR-017/023）；真实法规文档
@@ -157,8 +168,9 @@ where is_demo <> (source_type = 'demo');
 ```
 
 通过预检后仍需先完成备份与恢复演练，再按顺序应用 Migration；应用后重新运行这些
-查询、`pnpm db:check` 和目标库验收查询。当前工作区仅生成并测试了 Migration，尚未
-对本地或远程 PostgreSQL 应用 `0007`–`0010`。
+查询、`pnpm db:check` 和目标库验收查询。公开作品库已经应用至 `0010`；新增
+Migration 必须先通过 CI 的空库 pgvector smoke 与上一版本脏数据 upgrade smoke，生产
+是否已应用以 `drizzle.__drizzle_migrations` 读回为准，不能沿用本文历史版本号推断。
 
 ### 4.2 VPS 版本化发布与回滚
 
@@ -174,8 +186,9 @@ where is_demo <> (source_type = 'demo');
 先在已通过完整门禁的工作站执行；`release_id` 不是秘密，后续 VPS shell 必须复用同一个值。
 最终 release 目录必须此前不存在；远端使用不带 `-p` 的 `mkdir` 原子创建并确认目录为空，
 同名目录或任何残留内容都必须让发布立即失败，不能复用失败发布的目录。空目录通过检查后、
-rsync 前必须确认 `diesel` 组存在，并把 release 根目录固定为 `root:diesel` 0750；否则后续
-降权为 `diesel` 的环境、构建产物和持久目录探针无法穿越 root 目录：
+rsync 前必须确认 `diesel` 组存在，并把 release 根目录固定为 `root:diesel` 0750；传输后
+由独立、无生产密钥读取权限的 `diesel-build` 用户构建，再把成品恢复为 `root:diesel`。
+运行用户 `diesel` 与构建用户不得属于彼此的主组：
 
 ```bash
 set -euo pipefail
@@ -216,6 +229,12 @@ fi
 if ! id -u diesel >/dev/null 2>&1; then
   useradd --system --gid diesel --home-dir /opt/diesel/shared --shell /usr/sbin/nologin diesel
 fi
+if ! getent group diesel-build >/dev/null 2>&1; then
+  groupadd --system diesel-build
+fi
+if ! id -u diesel-build >/dev/null 2>&1; then
+  useradd --system --gid diesel-build --home-dir /opt/diesel/build --shell /usr/sbin/nologin diesel-build
+fi
 export PATH="/opt/node-v22.22.3-linux-x64/bin:${PATH}"
 if ! systemctl cat pm2-root.service >/dev/null 2>&1; then
   env -i HOME=/root PATH="${PATH}" pm2 startup systemd -u root --hp /root
@@ -226,6 +245,7 @@ systemctl is-enabled --quiet pm2-root
 systemctl is-active --quiet pm2-root
 install -d -m 0750 -o root -g diesel /opt/diesel/shared
 install -d -m 0750 -o diesel -g diesel /opt/diesel/shared/.data
+install -d -m 0700 -o diesel-build -g diesel-build /opt/diesel/build
 test -f /opt/diesel/shared/.env.production.local
 test ! -L /opt/diesel/shared/.env.production.local
 chown root:diesel /opt/diesel/shared/.env.production.local
@@ -365,7 +385,7 @@ restore_precommit_host_state() (
     curl --connect-timeout 10 --fail --max-time 30 \
       --retry 10 --retry-connrefused --retry-delay 1 --retry-max-time 60 \
       --show-error --silent \
-      http://127.0.0.1:8788/api/health |
+      http://127.0.0.1:8788/api/health/ready |
       EXPECTED_APP_VERSION="${previous_app_version}" node -e '
         const chunks = [];
         process.stdin.on("data", (chunk) => chunks.push(chunk));
@@ -401,8 +421,10 @@ trap 'failure_status="$?"; if [ "${release_committed}" -ne 1 ]; then abort_relea
 
 上述保护段完成后，才由 root 受控编辑共享环境文件，确认它包含当前
 服务端数据库、模型和 `AI_MULTIMODAL_MODEL` 配置，并恢复/核对
-`root:diesel` 0640；不得在终端、日志或工单中打印其值。随后安装冻结依赖并
-在 release 内构建。从保护段到 §4.3 公开验收完成必须使用同一个 root shell；
+`root:diesel` 0640；不得在终端、日志或工单中打印其值。构建用户不属于 `diesel`
+组，因此不能读取该文件；release 在构建完成前也不得链接该文件或 `.data`。随后由
+版本化的 `scripts/deploy/build-release.sh` 在清空环境的 `diesel-build` 身份下安装冻结
+依赖并构建。从保护段到 §4.3 公开验收完成必须使用同一个 root shell；
 上述 trap 会在依赖安装、build、切换或验收的任一失败/中断/会话退出时，
 从持久化状态目录原子恢复发布前共享环境文件与被替换的 Nginx 配置，并依据
 `/opt/diesel/current` 的实际指向决定是否需要回切应用和重载旧 PM2。尚未切换
@@ -430,22 +452,40 @@ test "$(stat -c '%U:%G:%a' /opt/diesel/shared/.data)" = "diesel:diesel:750"
 test "$(stat -c '%U:%G:%a' /opt/diesel/shared/.env.production.local)" = "root:diesel:640"
 test "$(stat -c '%U:%G:%a' "${deployment_state_dir}/env.production.local.pre-switch")" = "root:root:600"
 
-ln -s /opt/diesel/shared/.env.production.local "${release_dir}/.env.production.local"
-ln -s /opt/diesel/shared/.data "${release_dir}/.data"
 cd "${release_dir}"
 export PATH="/opt/node-v22.22.3-linux-x64/bin:${PATH}"
-corepack pnpm --config.registry="${PNPM_REGISTRY:-https://registry.npmjs.org}" \
-  install --frozen-lockfile --trust-lockfile
-env -i \
-  HOME=/root \
+test ! -e .env.local
+test ! -e .env.production
+test ! -e .env.production.local
+test ! -e .data
+for build_output in node_modules .next .build-complete; do
+  test ! -e "${build_output}"
+  test ! -L "${build_output}"
+done
+chown -hR root:diesel-build "${release_dir}"
+chmod -R u=rwX,g=rX,o= "${release_dir}"
+install -d -m 0750 -o diesel-build -g diesel-build \
+  "${release_dir}/node_modules" "${release_dir}/.next"
+install -m 0600 -o diesel-build -g diesel-build /dev/null \
+  "${release_dir}/.build-complete"
+runuser -u diesel-build -- env -i \
+  HOME=/opt/diesel/build \
   PATH="${PATH}" \
-  APP_VERSION="${release_id}" \
-  NODE_ENV=production \
-  corepack pnpm build
-chown -R root:diesel "${release_dir}/.next"
+  BUILD_HOME=/opt/diesel/build \
+  BUILD_RELEASE_ID="${release_id}" \
+  PNPM_REGISTRY="${PNPM_REGISTRY:-https://registry.npmjs.org}" \
+  bash scripts/deploy/build-release.sh
+test "$(cat .build-complete)" = "${release_id}"
+chown -hR root:diesel "${release_dir}/node_modules" "${release_dir}/.next"
+chown root:diesel "${release_dir}/.build-complete"
+chgrp -hR diesel "${release_dir}"
+chown root:diesel "${release_dir}"
+chown -hR root:diesel "${release_dir}/.next"
 chmod -R u=rwX,g=rX,o= "${release_dir}/.next"
 install -d -o diesel -g diesel "${release_dir}/.next/cache"
 chown -R diesel:diesel "${release_dir}/.next/cache"
+ln -s /opt/diesel/shared/.env.production.local "${release_dir}/.env.production.local"
+ln -s /opt/diesel/shared/.data "${release_dir}/.data"
 runuser -u diesel -- test -r "${release_dir}/.env.production.local"
 runuser -u diesel -- test -w "${release_dir}/.data"
 runuser -u diesel -- sh -c 'probe="$(mktemp /opt/diesel/shared/.data/.write-probe.XXXXXX)" && rm -f "${probe}"'
@@ -513,7 +553,7 @@ test "$(ps -o uid= -p "${pm2_process_pid}" | tr -d '[:space:]')" = "$(id -u dies
 curl --connect-timeout 10 --fail --max-time 30 \
   --retry 10 --retry-connrefused --retry-delay 1 --retry-max-time 60 \
   --show-error --silent \
-  http://127.0.0.1:8788/api/health |
+  http://127.0.0.1:8788/api/health/ready |
   EXPECTED_APP_VERSION="${release_id}" node -e '
     const chunks = [];
     process.stdin.on("data", (chunk) => chunks.push(chunk));
@@ -544,12 +584,21 @@ PM2 进程定义，再从目标 ecosystem 启动；这是为了确保首次从�
 `pm2 startup systemd -u root --hp /root`；每次保存 dump 后都 fail-closed 确认该 unit
 同时 `enabled` 且 `active`，不得只生成 dump 却无主机重启复活链路。
 
-发布验收至少包括：内网与公网 `/api/health` 均返回 `ok` 和新 `APP_VERSION`，首页、
+发布验收至少包括：内网与公网 `/api/health/ready` 均返回数据库探针 `ok` 和新 `APP_VERSION`。readiness
+在数据库侧使用 2.5 秒 statement timeout，并在应用进程内对未完成探针 single-flight、对快速失败
+短暂冷却，避免公网重复健康请求在数据库故障时累积连接或查询。首页、
 `/chat`、代表国家页返回 200；HTTP IP/备用域名跳转到 `https://jamesky.site`；主域名
 发送超过 1 MiB 但仍在应用 9 MiB 上限内的合法附件时，请求必须到达应用而不是返回
 Nginx 413 HTML；1×1 图片应由应用返回结构化 400，至少 11×11 的有效图片必须进入已配置
 视觉模型路径；超限、损坏图片和超页 PDF 也应返回应用的结构化 4xx。法规数据发布还要
 完成 §4.3 的目标国四 scope 与公开 API 读回。
+
+基础应用验收统一调用版本化脚本：
+
+```bash
+scripts/deploy/verify-release.sh http://127.0.0.1:8788 "${release_id}"
+scripts/deploy/verify-release.sh https://jamesky.site "${release_id}"
+```
 
 任何一项失败都回滚应用和配置。将 `current` 原子指回持久化文件中的发布前
 release，原子恢复同一 `release_id` 状态目录中的共享环境文件与两份 Nginx
@@ -557,6 +606,14 @@ release，原子恢复同一 `release_id` 状态目录中的共享环境文件�
 PM2 delete+start 与 Nginx reload，并重新跑上述健康/页面检查。验收完成前不得删除前一
 release、共享环境备份或 Nginx 备份；数据库迁移和法规治理发布必须按各自备份/纠错流程回滚，不能靠
 应用软链接假装撤销数据库状态。
+
+host-only 回滚先用版本化脚本做无副作用预检，再显式应用；脚本在
+`PUBLISH_COMMITTED` 存在时拒绝执行，治理提交后的恢复必须走 §4.3 数据恢复协议：
+
+```bash
+scripts/deploy/rollback-host-release.sh "${release_id}" --check
+scripts/deploy/rollback-host-release.sh "${release_id}" --apply
+```
 
 ```bash
 set -euo pipefail
@@ -624,7 +681,7 @@ systemctl reload nginx
 curl --connect-timeout 10 --fail --max-time 30 \
   --retry 10 --retry-connrefused --retry-delay 1 --retry-max-time 60 \
   --show-error --silent \
-  http://127.0.0.1:8788/api/health |
+  http://127.0.0.1:8788/api/health/ready |
   EXPECTED_APP_VERSION="${previous_app_version}" node -e '
     const chunks = [];
     process.stdin.on("data", (chunk) => chunks.push(chunk));
@@ -727,7 +784,7 @@ pooling 端点。wrapper 只启用一个连接，关闭 idle/max-lifetime 回收
 `/opt/diesel/backups/**/RECOVERY_REQUIRED` 与 `PUBLISH_COMMITTED`，任意旧 marker 都会在
 fresh 快照前失败关闭。
 发布后公开验收函数同时保存为该 release 的 0700 脚本，仅供正常发布复用；人工恢复改用
-发布前 snapshot 的 v3 深比较契约，不得要求恢复后的旧状态满足 post-publish 覆盖数。
+发布前 snapshot 的 v4 十表深比较契约，不得要求恢复后的旧状态满足 post-publish 覆盖数。
 wrapper 非零且没有 `PUBLISH_COMMITTED` 表示它已尝试恢复治理快照；此时主机层仍必须独立
 读取切换前持久化状态，原子恢复 `current`、删除 PM2 同名进程并从旧 release ecosystem
 重新启动、恢复两份 Nginx 配置，重新
@@ -986,7 +1043,7 @@ curl_common=(
 )
 
 curl "${curl_common[@]}" \
-  "${public_origin}/api/health" |
+  "${public_origin}/api/health/ready" |
   node -e '
     const chunks = [];
     process.stdin.on("data", (chunk) => chunks.push(chunk));
@@ -1198,7 +1255,7 @@ if [ -e "${publish_commit_marker}" ]; then
   trap - ERR INT TERM HUP EXIT
   for committed_health_origin in http://127.0.0.1:8788 https://jamesky.site; do
     curl --connect-timeout 10 --fail --max-time 30 --retry 2 --show-error --silent \
-      "${committed_health_origin}/api/health" |
+      "${committed_health_origin}/api/health/ready" |
       EXPECTED_APP_VERSION="${release_id}" node -e '
         const chunks = [];
         process.stdin.on("data", (chunk) => chunks.push(chunk));
@@ -1233,7 +1290,7 @@ trap - ERR INT TERM HUP EXIT
 若 wrapper 被 `SIGKILL`、主机重启或 session heartbeat 失败而留下
 `RECOVERY_REQUIRED`，先停止管理写入，
 在对应 release 目录执行下列恢复。恢复目标是发布前快照，不能套用发布后的 178 国/97 国
-`covered` 验收；同一新维护锁会话必须在 restore 后重新导出 v3 快照，并对原 snapshot 的
+`covered` 验收；同一新维护锁会话必须在 restore 后重新导出 v4 十表快照，并对原 snapshot 的
 `tableCounts` 与 `tables` 做深比较，再确认当前在役应用健康及版本。全部成功后最后一条命令
 才可删除 marker；任一步失败均保留 marker，之后再决定重试发布或回滚应用。
 `expected_app_version` 从当前原子软链接取得，因此应用已回滚时也验证实际在役版本，而不是
@@ -1313,7 +1370,7 @@ node -e '
   }
 ' "${snapshot_path}" "${recovery_export_path}"
 curl --connect-timeout 10 --fail --max-time 30 --retry 2 --show-error --silent \
-  https://jamesky.site/api/health |
+  https://jamesky.site/api/health/ready |
   EXPECTED_APP_VERSION="${expected_app_version}" node -e '
     const chunks = [];
     process.stdin.on("data", (chunk) => chunks.push(chunk));
@@ -1670,14 +1727,15 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
   （LGPL-3.0-or-later，既供 Next 图像优化，也供聊天图片附件的服务端格式/尺寸核验与
   强制像素解码；原生二进制不进浏览器 bundle，自托管容器分发时按 LGPL 动态链接
   义务处理）。
-- **可访问性**：键盘国家选择器、焦点管理与触控流程已被 Playwright 覆盖；
-  发布前的专项 axe 审计仍列在 §4 检查单。
+- **可访问性**：键盘国家选择器、焦点管理与触控流程已被 Playwright 覆盖，首页与
+  对话核心页在 Chromium/WebKit 执行 axe serious/critical smoke；完整人工键盘与
+  屏幕阅读器审计仍是业务试点门。
 
 ## 6. 已知限制
 
-- 速率限制计数为进程内固定窗口：多实例部署时每个实例独立计数（有效上限 =
-  配置值 × 实例数）。共享计数（如 Upstash/Redis）属于生产基础设施决策，
-  不随本基线引入。
+- 开发、测试和作品 Demo 使用进程内固定窗口；生产强制 PostgreSQL 后端，以
+  `(scope, key_hash, window_start)` 原子共享多实例配额。数据库不可用时请求失败关闭，
+  因而限流可用性与主数据库 readiness 一致。
 - 限流按 `x-forwarded-for` 首段识别客户端：无代理直连时客户端可伪造该头
   绕过按客户端限流。限流是滥用缓解，不是访问控制；公开部署必须位于可信
   代理之后。
@@ -1687,8 +1745,8 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
   故障修复后仍被限流至多一小时，运维处置为临时调高
   `AI_CHAT_RATE_LIMIT_PER_HOUR` 或等待窗口滚动。无代理部署时所有无头
   客户端共享 `unknown-client` 单一配额桶。
-- gitleaks 与依赖审计使用固定版本/级别；新增公告由 audit job 在 critical
-  级别拦截，high 级工具链公告登记于 README 等待上游修复。
+- gitleaks 使用固定版本且只允许精确占位值；依赖门禁拒绝任一 critical、新 high
+  或已过期 high 例外，机器登记与处置时限见 `docs/DEPENDENCY_SECURITY.md`。
 
 ## 7. 最近一次代码发布记录
 

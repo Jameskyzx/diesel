@@ -4,7 +4,25 @@ import remarkGfm from "remark-gfm";
 
 const markdownPlugins = [remarkGfm];
 
-export function safeAssistantMarkdownUrl(value: string): string {
+function normalizedExternalUrl(value: string): string | null {
+  try {
+    const parsed = new URL(value);
+    return (
+      (parsed.protocol === "https:" || parsed.protocol === "http:") &&
+      !parsed.username &&
+      !parsed.password
+    )
+      ? parsed.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function safeAssistantMarkdownUrl(
+  value: string,
+  allowedExternalUrls: readonly string[] = [],
+): string {
   const url = value.trim();
   if (
     (url.startsWith("/") &&
@@ -16,18 +34,13 @@ export function safeAssistantMarkdownUrl(value: string): string {
     return url;
   }
 
-  try {
-    const parsed = new URL(url);
-    return (
-      (parsed.protocol === "https:" || parsed.protocol === "http:") &&
-      !parsed.username &&
-      !parsed.password
+  const normalized = normalizedExternalUrl(url);
+  return normalized !== null &&
+    allowedExternalUrls.some(
+      (allowedUrl) => normalizedExternalUrl(allowedUrl) === normalized,
     )
-      ? parsed.toString()
-      : "";
-  } catch {
-    return "";
-  }
+    ? normalized
+    : "";
 }
 
 const markdownComponents: Components = {
@@ -193,14 +206,22 @@ const markdownComponents: Components = {
   },
 };
 
-export function AssistantMarkdown({ content }: { content: string }) {
+export function AssistantMarkdown({
+  allowedExternalUrls = [],
+  content,
+}: {
+  allowedExternalUrls?: readonly string[];
+  content: string;
+}) {
   return (
     <div className="min-w-0 text-slate-700" data-testid="assistant-markdown">
       <ReactMarkdown
         components={markdownComponents}
         remarkPlugins={markdownPlugins}
         skipHtml
-        urlTransform={safeAssistantMarkdownUrl}
+        urlTransform={(value) =>
+          safeAssistantMarkdownUrl(value, allowedExternalUrls)
+        }
       >
         {content}
       </ReactMarkdown>

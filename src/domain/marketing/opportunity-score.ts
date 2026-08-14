@@ -12,7 +12,7 @@ export type ScoreComponentInput = {
 
 export type ComparableMetricValue = {
   countryIso3: string;
-  value: number;
+  value: string;
 };
 
 export type ProductReadinessStatus = "fit" | "not_fit" | "unknown";
@@ -27,6 +27,32 @@ function round(value: number, decimals = 2): number {
   return Math.round((value + Number.EPSILON) * factor) / factor;
 }
 
+function exactDecimalToScaledInteger(value: string): bigint {
+  const match = /^(-?)(\d+)(?:\.(\d{1,6}))?$/.exec(value);
+  if (!match) {
+    throw new Error("Comparable metric values must be decimal strings with at most six fractional digits.");
+  }
+
+  const magnitude =
+    BigInt(match[2]!) * 1_000_000n +
+    BigInt((match[3] ?? "").padEnd(6, "0"));
+  return match[1] === "-" ? -magnitude : magnitude;
+}
+
+function roundedPercentage(numerator: bigint, denominator: bigint): number {
+  if (numerator < 0n || denominator <= 0n || numerator > denominator) {
+    throw new Error("Comparable metric normalization received an invalid range.");
+  }
+
+  // A score has two decimal places. Calculate integer basis points and round
+  // half-up while values are still exact integers.
+  const scaledNumerator = numerator * 10_000n;
+  const quotient = scaledNumerator / denominator;
+  const remainder = scaledNumerator % denominator;
+  const basisPoints = quotient + (remainder * 2n >= denominator ? 1n : 0n);
+  return Number(basisPoints) / 100;
+}
+
 export function normalizeComparableMetric(
   values: ComparableMetricValue[],
   direction: "higher_is_better" | "lower_is_better",
@@ -35,20 +61,33 @@ export function normalizeComparableMetric(
     return new Map();
   }
 
-  const rawValues = values.map(({ value }) => value);
-  const minimum = Math.min(...rawValues);
-  const maximum = Math.max(...rawValues);
+  const exactValues = values.map(({ countryIso3, value }) => ({
+    countryIso3,
+    value: exactDecimalToScaledInteger(value),
+  }));
+  const minimum = exactValues.reduce(
+    (current, entry) => (entry.value < current ? entry.value : current),
+    exactValues[0]!.value,
+  );
+  const maximum = exactValues.reduce(
+    (current, entry) => (entry.value > current ? entry.value : current),
+    exactValues[0]!.value,
+  );
 
   return new Map(
-    values.map(({ countryIso3, value }) => {
+    exactValues.map(({ countryIso3, value }) => {
       if (maximum === minimum) {
         return [countryIso3, 50];
       }
 
-      const higherScore = ((value - minimum) / (maximum - minimum)) * 100;
-      const score =
-        direction === "higher_is_better" ? higherScore : 100 - higherScore;
-      return [countryIso3, round(score)];
+      const numerator =
+        direction === "higher_is_better"
+          ? value - minimum
+          : maximum - value;
+      return [
+        countryIso3,
+        roundedPercentage(numerator, maximum - minimum),
+      ];
     }),
   );
 }

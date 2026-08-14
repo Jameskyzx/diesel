@@ -2,8 +2,13 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { POST as archiveEntity } from "@/app/api/admin/entities/[entityType]/[entityKey]/archive/route";
 import { POST as uploadDocument } from "@/app/api/admin/documents/route";
+import { POST as reprocessDocument } from "@/app/api/admin/documents/[documentId]/reprocess/route";
+import { POST as createDraft } from "@/app/api/admin/drafts/route";
+import { POST as publishDraft } from "@/app/api/admin/drafts/[draftId]/publish/route";
 import { POST as reviewDraft } from "@/app/api/admin/drafts/[draftId]/review/route";
+import { POST as confirmMarketImport } from "@/app/api/admin/imports/market/[batchId]/confirm/route";
 import { POST as previewMarketImport } from "@/app/api/admin/imports/market/preview/route";
+import { POST as verifySource } from "@/app/api/admin/sources/[sourceId]/verify/route";
 import {
   MAX_DOCUMENT_UPLOAD_REQUEST_BYTES,
   MAX_MARKET_CSV_FILE_BYTES,
@@ -54,6 +59,87 @@ describe("admin route path validation", () => {
       adminRequest("reviewer@example.test"),
       { params: Promise.resolve({ draftId: "not-a-uuid" }) },
     );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "INVALID_INPUT" },
+    });
+  });
+
+  it("validates the publish route UUID before querying the database", async () => {
+    const response = await publishDraft(
+      adminRequest("reviewer@example.test"),
+      { params: Promise.resolve({ draftId: "not-a-uuid" }) },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "INVALID_INPUT" },
+    });
+  });
+
+  it("validates the market confirmation batch UUID before database access", async () => {
+    const response = await confirmMarketImport(
+      adminRequest("editor@example.test"),
+      { params: Promise.resolve({ batchId: "not-a-uuid" }) },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "INVALID_INPUT" },
+    });
+  });
+
+  it("validates the source verification UUID before database access", async () => {
+    const response = await verifySource(
+      new Request("http://localhost/api/admin/sources/not-a-uuid/verify", {
+        body: JSON.stringify({
+          reason: "Validate malformed route input.",
+          verifiedAt: "2026-08-15T00:00:00.000Z",
+        }),
+        headers: {
+          "content-type": "application/json",
+          "oai-authenticated-user-email": "editor@example.test",
+        },
+        method: "POST",
+      }),
+      { params: Promise.resolve({ sourceId: "not-a-uuid" }) },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "INVALID_INPUT" },
+    });
+  });
+
+  it("validates the document reprocess UUID before document storage access", async () => {
+    const body = new FormData();
+    body.set("documentType", "government-notice");
+    body.set("languageCode", "en");
+    body.set("reason", "Validate malformed route input.");
+    body.set("sourceTitle", "Route contract source");
+    body.set("sourceType", "government-notice");
+    body.set("title", "Route contract document");
+
+    const response = await reprocessDocument(
+      new Request("http://localhost/api/admin/documents/not-a-uuid/reprocess", {
+        body,
+        headers: {
+          "oai-authenticated-user-email": "editor@example.test",
+        },
+        method: "POST",
+      }),
+      { params: Promise.resolve({ documentId: "not-a-uuid" }) },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "INVALID_INPUT" },
+    });
+  });
+
+  it("rejects an invalid create-draft contract before database access", async () => {
+    const response = await createDraft(adminRequest("editor@example.test"));
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({

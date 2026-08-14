@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { findOverlappingMembershipIndexes } from "@/domain/admin/jurisdiction-membership";
 import {
   applicationScopeSchema,
   dataCoverageStatusSchema,
@@ -8,6 +9,8 @@ import {
   httpUrlSchema,
   iso3Schema,
   isoDateSchema,
+  marketMetricDecimalSchema,
+  regulationLimitDecimalSchema,
 } from "@/features/database/schemas";
 
 const isoTimestampSchema = z.iso.datetime({ offset: true });
@@ -24,7 +27,6 @@ const numberInputSchema = z
   .transform((value) =>
     typeof value === "number" ? value : Number(value),
   );
-const finiteNumberInputSchema = numberInputSchema.pipe(z.number().finite());
 const nonnegativeNumberInputSchema = numberInputSchema.pipe(
   z.number().finite().nonnegative(),
 );
@@ -152,7 +154,7 @@ export const regulationLimitDraftPayloadSchema = z
     engineTypeCode: z.string().trim().min(1).max(50).default("CI"),
     id: entityIdSchema,
     isDemo: z.boolean().default(false),
-    limitValue: nonnegativeNumberInputSchema,
+    limitValue: regulationLimitDecimalSchema,
     measurementBasis: nullableTextSchema,
     pollutantCode: z.string().trim().min(1).max(50),
     powerMaxKw: positiveNumberInputSchema.nullable().optional(),
@@ -410,7 +412,7 @@ const marketMetricDraftPayloadObjectSchema = z
     periodStart: isoDateSchema,
     publishedOn: isoDateSchema.nullable().optional(),
     unitCode: z.string().trim().min(1).max(80),
-    valueNumeric: finiteNumberInputSchema,
+    valueNumeric: marketMetricDecimalSchema,
     verifiedAt: verifiedTimestampSchema,
   })
   .strict();
@@ -458,17 +460,13 @@ export const jurisdictionDraftPayloadSchema = z
       .array(jurisdictionMembershipDraftPayloadSchema)
       .max(100)
       .superRefine((memberships, context) => {
-        const seen = new Set<string>();
-        memberships.forEach((membership, index) => {
-          if (seen.has(membership.countryIso3)) {
-            context.addIssue({
-              code: "custom",
-              message: "memberships must not repeat a country",
-              path: [index, "countryIso3"],
-            });
-          }
-          seen.add(membership.countryIso3);
-        });
+        for (const index of findOverlappingMembershipIndexes(memberships)) {
+          context.addIssue({
+            code: "custom",
+            message: "membership periods for a country must not overlap",
+            path: [index, "validFrom"],
+          });
+        }
       }),
     name: z.string().trim().min(1).max(300),
     type: z.enum(["country", "regional", "international"]),
@@ -633,6 +631,46 @@ export const governanceDraftSummarySchema = z
   })
   .strict();
 
+export const governanceReviewDependencySchema = z
+  .object({
+    isDemo: z.boolean().nullable(),
+    kind: z.enum([
+      "country",
+      "jurisdiction",
+      "product",
+      "regulation",
+      "source",
+    ]),
+    label: z.string().nullable(),
+    path: z.string(),
+    state: z.enum(["active", "archived", "missing"]),
+    url: z.string().nullable(),
+    value: z.string(),
+    verifiedAt: isoTimestampSchema.nullable(),
+  })
+  .strict();
+
+export const governanceDraftReviewContextSchema = z
+  .object({
+    baselineStatus: z.enum([
+      "active",
+      "archived",
+      "first_revision",
+      "missing",
+    ]),
+    blockingReasons: z.array(z.string()),
+    dependencies: z.array(governanceReviewDependencySchema),
+    publishedBaseline: governanceDraftSummarySchema.nullable(),
+    publishReady: z.boolean(),
+  })
+  .strict();
+
+export const governanceDashboardDraftSchema = governanceDraftSummarySchema
+  .extend({
+    reviewContext: governanceDraftReviewContextSchema,
+  })
+  .strict();
+
 export const adminDashboardResponseSchema = z
   .object({
     auditLogs: z.array(
@@ -649,7 +687,7 @@ export const adminDashboardResponseSchema = z
         })
         .passthrough(),
     ),
-    drafts: z.array(governanceDraftSummarySchema),
+    drafts: z.array(governanceDashboardDraftSchema),
     importBatches: z.array(
       z
         .object({

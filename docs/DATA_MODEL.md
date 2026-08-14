@@ -190,12 +190,16 @@ erDiagram
 | --- | --- | --- |
 | `jurisdiction_id` | FK | 联合主键之一 |
 | `country_iso3` | FK | 联合主键之一 |
-| `valid_from` | date NOT NULL | 成员关系起始 |
+| `valid_from` | date NOT NULL | 联合主键之一；成员关系起始 |
 | `valid_to` | date NULL | 上界不包含，NULL 表示开放 |
 | `source_document_id` | FK NULL | 成员关系证据 |
 | `verified_at` | timestamptz NOT NULL | |
 
-联合唯一约束需防止同一成员关系的重叠有效区间；可先以导入校验和集成测试保证，是否使用 exclusion constraint 由实施 ADR 决定。
+Migration `0011` 以 `(country_iso3, jurisdiction_id, valid_from)` 为联合主键，允许同一
+国家退出辖区后重新加入；真实 PostgreSQL 还使用 `btree_gist` 与半开 `daterange` partial
+exclusion constraint，禁止未归档有效期重叠。迁移先检查已有重复起始日和任意重叠（包括
+嵌套区间），存在脏数据即失败关闭，不猜测应保留哪段。PGlite 不支持 `btree_gist`，因此
+测试环境由 repository 在事务行锁后执行同一全区间重叠校验；生产约束仍以数据库为准。
 
 ## 5. 法规与要求
 
@@ -244,7 +248,9 @@ erDiagram
 | `verified_at` | timestamptz NOT NULL | |
 | `created_at/updated_at` | timestamptz NOT NULL | |
 
-功率 NULL 边界表示无界。应添加 `power_max_kw IS NULL OR power_min_kw IS NULL OR power_max_kw > power_min_kw`。
+功率 NULL 边界表示无界。`regulation_limits` 使用 `numeric(12,3)`；法规限值事实
+`limit_value` 使用 `numeric(18,6)` 并在管理输入、fixture、repository 与读回中保持精确
+字符串，不经过 JavaScript Number。
 
 ### 5.3 `emission_limits`
 
@@ -298,7 +304,7 @@ erDiagram
 | `metric_definition_id` | FK NOT NULL | |
 | `application_scope_code` | FK NULL | 可按场景细分 |
 | `period_start/period_end` | date NOT NULL | 统计期间，end 为不包含上界 |
-| `value_numeric` | numeric NOT NULL | |
+| `value_numeric` | numeric(24,6) NOT NULL | 精确字符串传输，不经过 JavaScript Number |
 | `unit_code` | FK NOT NULL | |
 | `currency_code` | text NULL | 金额类必填 |
 | `price_basis_date` | date NULL | 不变价/换算时使用 |
@@ -342,6 +348,10 @@ MVP 折叠表 `market_metrics` 用两个 PostgreSQL 12 兼容的部分唯一索�
 | `verified_at` | timestamptz NOT NULL | |
 
 若某参数成为筛选、fit 或评分的核心条件，应提升为结构化列或规范子表，不能长期只存在 JSONB。
+
+当前折叠表 `products` 的 `power_min_kw/power_max_kw` 都是必填 `numeric(12,3)`。
+Migration `0011` 先拒绝已有负下界或 `max <= min` 的记录，再追加数据库 CHECK；迁移不会
+为违规产品猜测或回填功率。
 
 ### 7.4 `product_applications`
 

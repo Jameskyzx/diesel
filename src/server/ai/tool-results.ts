@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  isKnowledgeResultRelevant,
+  wrapUntrustedKnowledgeExcerpt,
+} from "@/domain/knowledge/retrieval-policy";
 import type { CountryDetailResponse } from "@/features/countries/schemas";
 import {
   calculateOpportunityScoreResultSchema,
@@ -216,8 +220,19 @@ export function buildKnowledgeResult(input: {
   resolvedCountryIso3: string | null;
   search: HybridSearchResponse;
 }): SearchKnowledgeBaseResult {
+  const relevantResults = input.search.results
+    .filter((result) => isKnowledgeResultRelevant(result))
+    .map((result, index) => ({
+      ...result,
+      content: wrapUntrustedKnowledgeExcerpt(result.content),
+      rank: index + 1,
+    }));
+  const search = {
+    ...input.search,
+    results: relevantResults,
+  };
   const citations = uniqueCitations(
-    input.search.results.map((result) => ({
+    relevantResults.map((result) => ({
       chunkId: result.chunkId,
       countryIso3: result.countryIso3,
       documentId: result.document.id,
@@ -246,7 +261,9 @@ export function buildKnowledgeResult(input: {
       verifiedAt: result.document.source.verifiedAt,
     })),
   );
-  const evidenceSufficient = input.search.results.length > 0;
+  const evidenceSufficient = relevantResults.length > 0;
+  const removedLowRelevanceResults =
+    input.search.results.length - relevantResults.length;
 
   return searchKnowledgeBaseResultSchema.parse({
     citations,
@@ -254,13 +271,16 @@ export function buildKnowledgeResult(input: {
     informationAsOf: input.informationAsOf,
     latestVerifiedAt: latestVerifiedAt(citations),
     resolvedCountryIso3: input.resolvedCountryIso3,
-    search: input.search,
+    search,
     status: evidenceSufficient ? "ok" : "no_data",
     tool: "searchKnowledgeBase",
     warnings: [
       ...(evidenceSufficient
-        ? input.search.results.flatMap(({ warnings }) => warnings)
+        ? relevantResults.flatMap(({ warnings }) => warnings)
         : [insufficientEvidenceWarning]),
+      ...(removedLowRelevanceResults > 0
+        ? [`已排除 ${removedLowRelevanceResults} 个低相关度知识片段。`]
+        : []),
       ...demoWarning(citations),
     ],
   });

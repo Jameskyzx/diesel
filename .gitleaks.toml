@@ -7,10 +7,8 @@
 useDefault = true
 
 [allowlist]
-description = "项目允许清单：锁文件完整性哈希与环境变量示例占位值"
-paths = [
-  # 锁文件的 integrity hash 是 base64 摘要，不是密钥，会触发通用规则误报。
-  '''(^|/)pnpm-lock\.yaml$''',
-  # 示例文件只包含占位值；真实密钥只允许进入 .env.local 等被忽略文件。
-  '''(^|/)\.env\.example$''',
+description = "仅允许公开环境模板中的精确占位值；不跳过任何整文件"
+regexTarget = "line"
+regexes = [
+  '''^AI_API_KEY=replace-with-server-side-secret$''',
 ]

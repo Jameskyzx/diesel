@@ -24,6 +24,7 @@ delete process.env.ADMIN_ROLE_BINDINGS_JSON;
 delete process.env.DATABASE_URL;
 
 process.env.AI_PROVIDER = "openai-compatible";
+process.env.AI_CHAT_RATE_LIMIT_BACKEND = "memory";
 process.env.APP_VERSION = "portfolio-demo";
 process.env.COUNTRY_STALE_AFTER_DAYS = "3650";
 process.env.DATABASE_MODE = "pglite-demo";

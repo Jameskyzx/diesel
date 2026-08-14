@@ -11,7 +11,7 @@ test("shows an explicit error and recovers when country geometry fails", async (
   await expect(
     page.getByRole("alert").filter({ hasText: "国家边界加载失败" }),
   ).toBeVisible();
-  await expect(page.getByText("有数据（Demo / 已核验）")).toHaveCount(0);
+  await expect(page.getByText("有可查看数据")).toHaveCount(0);
 
   await page.unroute("**/geo/world-countries.geojson");
   await page.getByRole("button", { name: "重试加载地图" }).click();
@@ -20,7 +20,7 @@ test("shows an explicit error and recovers when country geometry fails", async (
     "data-map-ready",
     "true",
   );
-  await expect(page.getByText("有数据（Demo / 已核验）")).toBeVisible();
+  await expect(page.getByText("有可查看数据")).toBeVisible();
 });
 
 test("opens a shareable country URL by clicking the map polygon", async ({

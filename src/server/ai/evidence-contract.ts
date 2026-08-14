@@ -1,8 +1,9 @@
 import "server-only";
 
-import type {
-  AiToolName,
-  AiToolResult,
+import {
+  aiToolNames,
+  type AiToolName,
+  type AiToolResult,
 } from "@/features/ai/schemas";
 import {
   buildConversationBusinessContext,
@@ -549,6 +550,32 @@ function resultSatisfiesRequirement(
   }
 
   return true;
+}
+
+/** Returns only tools that can satisfy requirements not yet covered. */
+export function remainingEvidenceTools(
+  contract: SalesChatEvidenceContract,
+  results: readonly AiToolResult[],
+): AiToolName[] {
+  if (contract.missingRequiredParameters.length > 0) {
+    return [];
+  }
+
+  const sufficientResults = results.filter(
+    (result) => result.status === "ok" && result.evidenceSufficient,
+  );
+  const remainingToolNames = new Set(
+    contract.requirements
+      .filter(
+        (requirement) =>
+          !sufficientResults.some((result) =>
+            resultSatisfiesRequirement(requirement, result),
+          ),
+      )
+      .flatMap((requirement) => requirement.acceptedTools),
+  );
+
+  return aiToolNames.filter((toolName) => remainingToolNames.has(toolName));
 }
 
 /** A sufficient result is usable only when its tool and visible query match. */

@@ -205,6 +205,11 @@ flowchart TD
   当前选择和单个 Tooltip，不保存世界几何。
 - `/api/countries` 返回地图覆盖摘要，`/api/countries/[iso3]` 返回国家、司法
   辖区、法规状态/有效日期、来源和核验日期；二者均通过 Zod 输出 schema。
+- 国家地图与详情的公开 PostgreSQL 出口不发布 Demo 分类事实：Demo 国家摘要保留
+  ISO3 目录位置但降为 `no_data`，Demo 国家详情失败关闭；非 Demo 国家中的辖区、
+  成员关系、法规、市场指标或任一直接来源只要标为 Demo，整条依赖事实即从详情与
+  AI 国家画像中排除。只有显式 `DATABASE_MODE=pglite-demo` 的本地作品演示继续返回
+  Demo fixture，不能依靠前端徽标掩盖生产混合数据。
 - 国家详情 Repository 强制接收 `asOf`，辖区成员关系与法规均按 `[from,to)`
   有效期过滤。公开 DTO 只返回当前 `effective` 与未来 `adopted` 两组法规，来源和
   AI 引用也只从这两组可见事实生成，不暴露 `proposed`、`superseded` 或历史原始
@@ -452,8 +457,13 @@ MVP 采用“结构化结果优先”：
   模糊分析请求，以及明显缺少场景/功率/第二国家的适配或比较请求，直接返回能力说明
   或缺参追问，不初始化模型和审计会话，也不会制造空工具卡片；该路径仍受统一入口
   速率限制。任何可能需要法规、市场、产品或评分事实的问题都不得由分流层作答。
-- 进入事实查询后，第一模型步骤使用 `toolChoice=required`，最多执行 5 个工具步骤。
-  模型只解释工具结果；无结果、工具错误或全为 `unknown` 时返回证据不足。
+- 进入事实查询后，服务端从 evidence contract 计算尚未满足的 requirements，每一步
+  只向模型开放能满足这些 requirement 的工具并使用 `toolChoice=required`；证据齐全、
+  任一结果失败/不足、缺参或纯附件概述时切换为 `toolChoice=none`。工具顺序稳定，最多
+  执行 5 个工具步骤；模型不再依靠“自觉”决定是否继续或停止。
+- system instruction 以 `sales-chat-system-v2` 版本化，并按事实边界、工具路由、循环
+  策略、回答契约和附件边界分段。离线 `pnpm ai:eval` 用固定 golden prompts 检查分流、
+  缺参、初始工具集合和停止阶段，不调用外部模型；它不冒充真实 provider 成功率评估。
 - 流级 evidence boundary 跟踪本轮结构化工具结果；工具结果卡片继续即时流式输出，
   模型自然语言则缓冲到完整顺序/并行工具链结束后再判定。若证据不充分，丢弃已缓冲
   的结论文本并按失败工具生成具体缺口和下一步，同时输出法规免责声明；不得用统一

@@ -35,10 +35,11 @@
   统一 `verifiedAt=2026-08-10T23:08:11Z`。
 - 公开只读演示：<https://jamesky.site>。
 - 运行版本：由 <https://jamesky.site/api/health> 的 `version` 字段确定。
-- 生产运行版本：release `20260814103720`，来源 Git
-  `a77631bcdefbf5066dfc1b25082fd9c5f12afc2a`，于 2026-08-14 完成仅代码的
+- 生产运行版本：release `20260814144537`，来源 Git
+  `38541ac04c079afe03860db63af839a48d2cb740`，于 2026-08-14 完成仅代码的
   版本化发布，不执行数据库写入。发布后独立读回复核 `/api/health`、PM2 降权进程、
-  PM2 systemd 复活链路、Nginx、首页、聊天页、代表国家页和公开产品 API 均通过。
+  PM2 systemd 复活链路、Nginx、首页、聊天页、代表国家页、地图 Demo 清理和公开产品
+  API 均通过；真实 AI 流式查询也完成模型、知识库工具、引用和最终回答的端到端读回。
 - 运行库覆盖数量：2026-08-12 04:36 CST 从公开 `/api/countries` 读回 178 个唯一
   ISO3，全部为 `covered`；本轮 97 个目标国家均完成目标图与 scope 验收。`covered`
   只表示已发布核验边界，不表示四个 scope 都存在数值法规。
@@ -70,25 +71,25 @@ Seed 计数代表线上覆盖。
   Demo `.invalid` 来源保留标题但不再渲染为死链。三分钟脚本也已将安装/启动移到计时前，
   并与公开 DTO 不展示 proposed 的实际边界对齐。
 
-上述代码已随 release `20260814103720` 发布。发布后 `/api/products` 只返回
+上述代码已随 release `20260814144537` 发布。发布后 `/api/products` 只返回
 `DEMO-ENG-100` 与 `DEMO-ENG-200`，未签核真实产品不再进入公开出口；但运营层根因尚未
 关闭：目标 PostgreSQL 的同名 `products_power_check` 实际仍为
 `power_max_kw >= power_min_kw`，与仓库要求的严格 `>` 不一致，且 8 条未归档真实产品仍为
 等宽功率区间。后续仍需通过新 Migration 修正目标约束，并在确认业务语义后归档或纠正
 这些产品及其来源关联；本次代码发布没有擅自修改生产数据。
 
-## 地图 Demo 公共出口清理（2026-08-14，尚未发布）
+## 地图 Demo 公共出口清理（2026-08-14，代码已发布）
 
-- 当前工作树已让公开 PostgreSQL 国家地图与详情排除 Demo 分类事实：Demo 国家摘要降为
+- 公开 PostgreSQL 国家地图与详情已排除 Demo 分类事实：Demo 国家摘要降为
   `no_data`，Demo 国家详情失败关闭；非 Demo 国家中的 Demo 辖区、成员关系、法规、市场
   指标或来源也不会进入国家详情及复用该 service 的 AI 国家画像。
 - `pnpm demo` 的 PGlite fixture 保留，求职者仍可离线演示完整流程；本次不删除或修改
   生产数据库记录。地图图例改为中性的“有可查看数据”，不再把 Demo 与已核验数据并列。
 - 修改前公网基线：CHN 含 1 个 Demo 辖区、2 条 Demo 法规、1 条 Demo 市场指标；BRA 含
-  1 个 Demo 辖区、1 条 Demo 法规、1 条 Demo 市场指标。部署后需对这两国以及
-  `/api/countries` 做公开读回，确认所有国家详情的 Demo 事实计数为 0。
+  1 个 Demo 辖区、1 条 Demo 法规、1 条 Demo 市场指标。release `20260814144537` 已对
+  这两国以及 `/api/countries` 做公开读回，国家地图与详情不再返回 Demo 分类事实。
 
-## AI 对话 Harness 与循环工程（2026-08-14，尚未发布）
+## AI 对话 Harness 与循环工程（2026-08-14，代码已发布）
 
 - system instruction 已提取为 `sales-chat-system-v2`，以事实来源、工具路由、循环策略、
   回答契约和附件边界分段；没有增加模型作为法规、产品、市场或评分事实来源的权限。
@@ -97,9 +98,12 @@ Seed 计数代表线上覆盖。
   不继续消耗无关步骤。最终模型文字仍经过原有流级 evidence boundary。
 - 新增 `pnpm ai:eval` 离线 harness，当前 13 个 golden prompts 覆盖问候、缺参、单国/
   跨国法规、市场、产品、混合意图、机会分、销售简报、来源、附件与空证据合同。它不调用
-  外部模型，不得表述为真实模型任务成功率；发布后仍需完成公开聊天读回。
-- 当前工作树质量门：`pnpm lint`、`pnpm typecheck`、48 个文件 / 943 条 Vitest、
-  `pnpm build` 全部通过；完整 Playwright 为 71 passed / 7 skipped（桌面与 Pixel 7）。
+  外部模型，不得表述为真实模型任务成功率。发布后已用公开 `/api/chat` 完成真实模型与
+  `searchKnowledgeBase` 的 SSE 读回；首次读回发现内部相对下载路径不能作为公开绝对来源
+  URL，已由 `38541ac` 改为仅暴露已核验外部来源 URL，再次读回为结构化 `ok`。
+- 当前质量门：`pnpm lint`、`pnpm typecheck`、48 个文件 / 944 条 Vitest、
+  `pnpm ai:eval` 14/14、`pnpm build` 全部通过；完整 Playwright 为 71 passed / 7 skipped
+  （桌面与 Pixel 7）。
 
 ## 三角色模拟评估与本地修复（2026-08-12）
 

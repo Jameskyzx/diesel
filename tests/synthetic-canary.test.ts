@@ -26,8 +26,23 @@ describe("synthetic canary", () => {
   });
 
   it("validates each expected public JSON shape", () => {
-    expect(validateCanaryJson("liveness", { status: "live" })).toBe(true);
-    expect(validateCanaryJson("readiness", { status: "ready" })).toBe(true);
+    const baseHealth = {
+      service: "global-diesel-regulations",
+      status: "ok",
+      timestamp: "2026-08-15T00:00:00.000Z",
+      version: "release-sha",
+    };
+    expect(validateCanaryJson("liveness", baseHealth)).toBe(true);
+    expect(validateCanaryJson("readiness", {
+      ...baseHealth,
+      checks: { database: "ok" },
+    })).toBe(true);
+    expect(validateCanaryJson("readiness", {
+      ...baseHealth,
+      checks: { database: "unavailable" },
+      status: "unavailable",
+    })).toBe(false);
+    expect(validateCanaryJson("liveness", { status: "live" })).toBe(false);
     expect(validateCanaryJson("country-summary", {
       applicabilitySummary: {},
       status: "available",

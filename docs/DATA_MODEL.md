@@ -91,7 +91,8 @@ erDiagram
 - `regulation_status`: `proposed | adopted | effective | superseded`
 - `jurisdiction_type`: `country | regional | international`
 - `fit_status`（长期目标）: `fit | partial_fit | not_fit | unknown`；当前
-  `product-fit-v1` 只产生 `fit | not_fit | unknown`
+  `product-fit-v2` 的合规轴只产生 `fit | not_fit | unknown`，并另行输出供应检查与
+  `commercialReadiness=ready | not_ready | unknown`
 - `certification_status`: `pending | active | expired | withdrawn | unknown`
 - `document_type`: `regulation_text | government_notice | product_manual | industry_report | certificate | other`
 - `source_role`: `primary | amendment | implementation_guidance | supporting | methodology`
@@ -411,7 +412,7 @@ MVP 可以即时计算且不持久化自由文本解释；若存储结果，必�
 - `REGULATION_DATA_MISSING`
 - `SOURCE_STALE`
 
-### 8.3 `opportunity-score-v1`
+### 8.3 `opportunity-score-v2`
 
 阶段 7 接受一个受限、版本化的即时计算规则，不新增评分事实表：
 

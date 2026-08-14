@@ -293,7 +293,7 @@ Repository 负责按成员期、法规期、限值期、scope 和功率形成候
 
 `product configuration + target context -> specifications + application scopes + certifications + applicable requirements -> ruleset`
 
-阶段 4 已实现的 `product-fit-v1` 由纯 TypeScript 函数计算，Repository 只提供
+阶段 4 已实现的 `product-fit-v2` 由纯 TypeScript 函数计算，Repository 只提供
 候选事实，Route Handler 只接受 Zod 校验输入。当前输出包含：
 
 - 总结论：`fit | not_fit | unknown`；`partial_fit` 保留给未来经批准的细粒度
@@ -328,8 +328,11 @@ UI 也显示辖区 ID、法规 ID、认证 ID、适用性来源和核验日期�
 所有公开产品消费者都通过 Product Repository 的 publication manifest 边界：Demo 实体和来源
 必须同时为 Demo；真实产品必须匹配已签核的实体 ID、来源 ID 与规格版本，真实认证必须匹配
 实体 ID 与来源 ID。缺少或漂移均失败关闭。
-供应期当前只用于追溯，不改变 `fit/not_fit/unknown`；是否把商业可售性、库存或
-供应期纳入适配规则仍需 ADR-021 批准。本规则也不判断完整发动机配置或营销机会评分。
+`status=fit/not_fit/unknown` 仍只表达法规与认证适配，不把商业供应混入合规结论。
+供应期另以 `[availableFrom, availableTo)` 在查询日计算 `availability=pass/fail/unknown`：
+任一端点证据不足即为 unknown。两轴组合为 `commercialReadiness`：合规 fit 且供应 pass
+为 ready；合规 not_fit 或供应 fail 为 not_ready；其余为 unknown。该供应判断不代表库存、
+交付周期或报价承诺，本规则也不判断完整发动机配置。
 
 ## 9. 知识库与检索
 
@@ -450,7 +453,7 @@ MVP 采用“结构化结果优先”：
 - 只读工具固定为 `searchKnowledgeBase`、`getCountryProfile`、
   `findCompatibleProducts`、法规/市场比较、机会评分和销售简报。国家与知识工具复用
   既有 service；产品工具在未指定型号时遍历目录，收到 `productModelCode` 时只评估该
-  精确型号（包括保留 PRODUCT_NOT_FOUND/unknown），并逐项复用 `product-fit-v1`，不让
+  精确型号（包括保留 PRODUCT_NOT_FOUND/unknown），并逐项复用 `product-fit-v2`，不让
   LLM 计算合规结论。销售简报继续复用确定性比较、评分和产品适配结果。
 - `getCountryProfile` 输入必须声明本次需要的 `country`、`regulations`、`market`
   主题；工具按所请求主题逐项检查结构化证据。国家记录存在但所问法规或市场数组为空
@@ -520,11 +523,12 @@ MVP 采用“结构化结果优先”：
   当前/未来可见法规，多国法规比较至少需要两国有证据；市场比较至少需要一个指标通过全部可比性检查；否则外层
   `status=no_data`、`evidenceSufficient=false`，但结构化结果仍保留事实和缺失原因。
 - `calculateOpportunityScore` 调用版本化纯函数
-  `opportunity-score-v1`。三个维度为市场潜力、产品准备度和法规认证覆盖，默认
+  `opportunity-score-v2`。三个维度为市场潜力、产品准备度和法规认证覆盖，默认
   权重 `0.5/0.3/0.2`，只能从服务端环境配置读取。AI 外层只有在至少两个请求国家
   产生确定性 `overallScore` 时才视为足以解释排名；单国可评分时保留 scorecard 与
   缺失项，但返回 `no_data/evidenceSufficient=false`，不改变任何已计算分数。
-- `generateSalesBrief` 在服务端重用上述比较、评分和 `product-fit-v1`，返回
+- `generateSalesBrief` 在服务端重用上述比较、评分和 `product-fit-v2`，只把
+  `commercialReadiness=ready` 的产品放入推荐列表；合规 fit 但供应 fail/unknown 的产品进入风险或缺口。返回
   严格 Zod 校验的 JSON：`executiveSummary`、`marketScore`、
   `opportunities`、`risks`、`recommendedProducts`、`salesActions`、
   `missingData`、`sources`。

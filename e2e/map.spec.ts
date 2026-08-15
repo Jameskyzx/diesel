@@ -712,6 +712,44 @@ test("shows a stale verification badge under a small threshold", async ({
   await expect(page.getByTestId("country-stale-badge")).toBeVisible();
 });
 
+test("keeps the product selector usable inside the mobile country drawer", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "mobile-chromium",
+    "This regression covers the touch drawer width that hid the native select control.",
+  );
+
+  await page.goto("/countries/CHN");
+  await expect(page.getByTestId("country-detail")).toBeVisible();
+
+  const form = page.getByTestId("product-fit-form");
+  const productSelect = page.getByLabel("产品型号");
+  await expect(productSelect).toBeVisible();
+  await expect(productSelect).toBeEnabled();
+
+  const formBox = await form.boundingBox();
+  const selectBox = await productSelect.boundingBox();
+  expect(formBox).not.toBeNull();
+  expect(selectBox).not.toBeNull();
+  expect(selectBox?.x ?? 0).toBeGreaterThanOrEqual((formBox?.x ?? 0) - 1);
+  expect((selectBox?.x ?? 0) + (selectBox?.width ?? 0)).toBeLessThanOrEqual(
+    (formBox?.x ?? 0) + (formBox?.width ?? 0) + 1,
+  );
+
+  await productSelect.selectOption("DEMO-ENG-200");
+  await expect(productSelect).toHaveValue("DEMO-ENG-200");
+  await expect(
+    page.getByText("DEMO ONLY — Fictional Engine 200", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "运行确定性匹配" }).click();
+  await expect(page.getByTestId("product-fit-status-unknown")).toBeVisible();
+
+  await productSelect.selectOption("DEMO-ENG-100");
+  await page.getByRole("button", { name: "运行确定性匹配" }).click();
+  await expect(page.getByTestId("product-fit-status-fit")).toBeVisible();
+});
+
 test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   page,
 }) => {

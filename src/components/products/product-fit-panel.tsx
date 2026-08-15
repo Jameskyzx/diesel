@@ -59,6 +59,8 @@ const scopeLabels: Record<ApplicationScope, string> = {
   "on-road-truck": "卡车动力",
 };
 
+const quickPowerValues = [50, 100, 150, 300] as const;
+
 const fitPresentation = {
   fit: {
     className: "border-emerald-300 bg-emerald-50 text-emerald-950",
@@ -472,7 +474,7 @@ export function ProductFitPanel({
           </p>
         </fieldset>
 
-        <div className="grid min-w-0 grid-cols-2 gap-3">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="grid min-w-0 gap-1.5 text-xs font-medium">
             应用场景
             <select
@@ -496,11 +498,14 @@ export function ProductFitPanel({
             <input
               aria-label="功率（kW）"
               className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 text-sm"
+              inputMode="decimal"
               min="0"
+              onClick={(event) => event.currentTarget.select()}
               onChange={(event) => {
                 setPowerKw(event.target.value);
                 clearEvaluation();
               }}
+              onFocus={(event) => event.currentTarget.select()}
               required
               step="0.001"
               type="number"
@@ -508,6 +513,34 @@ export function ProductFitPanel({
             />
           </label>
         </div>
+
+        <fieldset className="min-w-0">
+          <legend className="text-[11px] font-medium text-muted-foreground">
+            快捷选择功率（kW）
+          </legend>
+          <div className="mt-1.5 grid grid-cols-4 gap-2">
+            {quickPowerValues.map((value) => {
+              const selected = powerKw === String(value);
+
+              return (
+                <Button
+                  aria-label={`功率 ${value} kW`}
+                  aria-pressed={selected}
+                  className="h-11 min-w-0 px-1.5 text-xs"
+                  key={value}
+                  onClick={() => {
+                    setPowerKw(String(value));
+                    clearEvaluation();
+                  }}
+                  type="button"
+                  variant={selected ? "default" : "outline"}
+                >
+                  {value}
+                </Button>
+              );
+            })}
+          </div>
+        </fieldset>
 
         <p className="text-[11px] leading-5 text-muted-foreground">
           功率范围采用下限包含、上限不包含；例如 [50, 150) kW 表示 50

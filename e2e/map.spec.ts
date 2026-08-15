@@ -372,7 +372,9 @@ test("uses a newly committed fit query in chat before the URL refresh completes"
   await page.goto("/countries/CHN");
   await expect(page.getByTestId("country-detail")).toBeVisible();
 
-  await page.getByLabel("产品型号").selectOption("DEMO-ENG-200");
+  await page
+    .getByRole("radio", { name: /^DEMO-ENG-200/ })
+    .check();
   await page.getByLabel("应用场景").selectOption("agriculture");
   await page.getByLabel("功率（kW）").fill("150");
   await page.getByLabel("评估日期").fill("2026-01-20");
@@ -586,14 +588,16 @@ test("keeps every product-fit control interactive inside the country drawer", as
   await page.goto("/countries/CHN");
   await expect(page.getByTestId("country-detail")).toBeVisible();
 
-  const productModel = page.getByLabel("产品型号");
+  const productModel = page.getByRole("radio", {
+    name: /^DEMO-ENG-200/,
+  });
   const applicationScope = page.getByLabel("应用场景");
   const powerKw = page.getByLabel("功率（kW）");
   const evaluationDate = page.getByLabel("评估日期");
 
   await productModel.click();
   await expect(productModel).toBeFocused();
-  await productModel.selectOption("DEMO-ENG-200");
+  await expect(productModel).toBeChecked();
   await applicationScope.click();
   await expect(applicationScope).toBeFocused();
   await applicationScope.selectOption("agriculture");
@@ -604,7 +608,6 @@ test("keeps every product-fit control interactive inside the country drawer", as
   await expect(evaluationDate).toBeFocused();
   await evaluationDate.fill("2026-01-20");
 
-  await expect(productModel).toHaveValue("DEMO-ENG-200");
   await expect(applicationScope).toHaveValue("agriculture");
   await expect(powerKw).toHaveValue("150");
   await expect(evaluationDate).toHaveValue("2026-01-20");
@@ -712,40 +715,48 @@ test("shows a stale verification badge under a small threshold", async ({
   await expect(page.getByTestId("country-stale-badge")).toBeVisible();
 });
 
-test("keeps the product selector usable inside the mobile country drawer", async ({
+test("lets touch users choose and re-evaluate product models without a native popup", async ({
   page,
 }, testInfo) => {
   test.skip(
     testInfo.project.name !== "mobile-chromium",
-    "This regression covers the touch drawer width that hid the native select control.",
+    "This regression covers the touch interaction that the old native select did not expose.",
   );
 
   await page.goto("/countries/CHN");
   await expect(page.getByTestId("country-detail")).toBeVisible();
 
   const form = page.getByTestId("product-fit-form");
-  const productSelect = page.getByLabel("产品型号");
-  await expect(productSelect).toBeVisible();
-  await expect(productSelect).toBeEnabled();
+  const product200 = page.getByRole("radio", { name: /^DEMO-ENG-200/ });
+  const product200Card = page.getByTestId(
+    "product-model-option-DEMO-ENG-200",
+  );
+  await expect(product200).toBeVisible();
+  await expect(product200).toBeEnabled();
 
   const formBox = await form.boundingBox();
-  const selectBox = await productSelect.boundingBox();
+  const productCardBox = await product200Card.boundingBox();
   expect(formBox).not.toBeNull();
-  expect(selectBox).not.toBeNull();
-  expect(selectBox?.x ?? 0).toBeGreaterThanOrEqual((formBox?.x ?? 0) - 1);
-  expect((selectBox?.x ?? 0) + (selectBox?.width ?? 0)).toBeLessThanOrEqual(
+  expect(productCardBox).not.toBeNull();
+  expect(productCardBox?.x ?? 0).toBeGreaterThanOrEqual((formBox?.x ?? 0) - 1);
+  expect(
+    (productCardBox?.x ?? 0) + (productCardBox?.width ?? 0),
+  ).toBeLessThanOrEqual(
     (formBox?.x ?? 0) + (formBox?.width ?? 0) + 1,
   );
 
-  await productSelect.selectOption("DEMO-ENG-200");
-  await expect(productSelect).toHaveValue("DEMO-ENG-200");
+  await product200.tap();
+  await expect(product200).toBeChecked();
   await expect(
     page.getByText("DEMO ONLY — Fictional Engine 200", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   await expect(page.getByTestId("product-fit-status-unknown")).toBeVisible();
 
-  await productSelect.selectOption("DEMO-ENG-100");
+  const product100 = page.getByRole("radio", { name: /^DEMO-ENG-100/ });
+  await product100.tap();
+  await expect(product100).toBeChecked();
+  await expect(page.getByTestId("product-fit-result")).toBeHidden();
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   await expect(page.getByTestId("product-fit-status-fit")).toBeVisible();
 });
@@ -807,8 +818,9 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
       .getByRole("link", { name: /Fictional emissions bulletin/ }),
   ).toHaveCount(0);
 
-  await page.getByLabel("产品型号").selectOption("DEMO-ENG-200");
-  await expect(page.getByLabel("产品型号")).toHaveValue("DEMO-ENG-200");
+  const product200 = page.getByRole("radio", { name: /^DEMO-ENG-200/ });
+  await product200.check();
+  await expect(product200).toBeChecked();
   await expect(page.getByTestId("product-fit-result")).toBeHidden();
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   await expect(page.getByTestId("product-fit-status-unknown")).toBeVisible();
@@ -822,7 +834,7 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
     page.getByText("仅复制到本机剪贴板，不会创建、发送或提交工单。"),
   ).toBeVisible();
 
-  await page.getByLabel("产品型号").selectOption("DEMO-ENG-100");
+  await page.getByRole("radio", { name: /^DEMO-ENG-100/ }).check();
   await page.getByLabel("功率（kW）").fill("150");
   await expect(page.getByTestId("product-fit-result")).toBeHidden();
   await page.getByRole("button", { name: "运行确定性匹配" }).click();

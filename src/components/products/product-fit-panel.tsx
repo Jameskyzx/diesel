@@ -383,18 +383,20 @@ export function ProductFitPanel({
       </p>
 
       <form
-        className="mt-3 grid gap-3 rounded-2xl border bg-card p-4"
+        className="mt-3 grid min-w-0 gap-3 rounded-2xl border bg-card p-4"
+        data-testid="product-fit-form"
         data-vaul-no-drag
         onSubmit={(event) => {
           event.preventDefault();
           void runEvaluation();
         }}
       >
-        <label className="grid gap-1.5 text-xs font-medium">
+        <label className="grid min-w-0 gap-1.5 text-xs font-medium">
           产品型号
           <select
+            aria-describedby="product-model-help"
             aria-label="产品型号"
-            className="h-10 rounded-lg border bg-background px-3 text-sm"
+            className="block h-10 w-full min-w-0 max-w-full rounded-lg border bg-background px-3 text-sm"
             disabled={
               productList.status !== "ready" ||
               (productList.status === "ready" &&
@@ -420,11 +422,26 @@ export function ProductFitPanel({
             {productList.status === "ready"
               ? productList.products.map((product) => (
                   <option key={product.id} value={product.modelCode}>
-                    {product.modelCode} · {product.name}
+                    {product.modelCode}
                   </option>
                 ))
               : null}
           </select>
+          <span
+            className="min-w-0 break-words text-[11px] font-normal leading-5 text-muted-foreground"
+            id="product-model-help"
+          >
+            <span className="block">
+              {productList.status === "ready"
+                ? (productList.products.find(
+                    (product) => product.modelCode === productModelCode,
+                  )?.name ?? "请选择产品型号")
+                : "产品目录加载完成后即可选择。"}
+            </span>
+            <span className="block">
+              切换型号后，点击下方“运行确定性匹配”更新结果。
+            </span>
+          </span>
         </label>
 
         <div className="grid grid-cols-2 gap-3">

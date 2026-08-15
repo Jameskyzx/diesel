@@ -391,65 +391,93 @@ export function ProductFitPanel({
           void runEvaluation();
         }}
       >
-        <label className="grid min-w-0 gap-1.5 text-xs font-medium">
-          产品型号
-          <select
-            aria-describedby="product-model-help"
-            aria-label="产品型号"
-            className="block h-10 w-full min-w-0 max-w-full rounded-lg border bg-background px-3 text-sm"
-            disabled={
-              productList.status !== "ready" ||
-              (productList.status === "ready" &&
-                productList.products.length === 0)
-            }
-            onChange={(event) => {
-              setProductModelCode(event.target.value);
-              clearEvaluation();
-            }}
-            required
-            value={productModelCode}
-          >
-            {productList.status === "loading" ? (
-              <option value="">正在加载产品…</option>
-            ) : null}
-            {productList.status === "error" ? (
-              <option value="">产品加载失败</option>
-            ) : null}
-            {productList.status === "ready" &&
-            productList.products.length === 0 ? (
-              <option value="">产品目录为空</option>
-            ) : null}
-            {productList.status === "ready"
-              ? productList.products.map((product) => (
-                  <option key={product.id} value={product.modelCode}>
-                    {product.modelCode}
-                  </option>
-                ))
-              : null}
-          </select>
-          <span
-            className="min-w-0 break-words text-[11px] font-normal leading-5 text-muted-foreground"
+        <fieldset
+          aria-describedby="product-model-help"
+          className="grid min-w-0 gap-1.5"
+          disabled={
+            productList.status !== "ready" ||
+            (productList.status === "ready" &&
+              productList.products.length === 0)
+          }
+        >
+          <legend className="text-xs font-medium">产品型号</legend>
+          {productList.status === "loading" ? (
+            <p className="rounded-xl border bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
+              正在加载产品…
+            </p>
+          ) : null}
+          {productList.status === "error" ? (
+            <p className="rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-3 text-xs text-destructive">
+              产品加载失败
+            </p>
+          ) : null}
+          {productList.status === "ready" &&
+          productList.products.length === 0 ? (
+            <p className="rounded-xl border bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
+              产品目录为空
+            </p>
+          ) : null}
+          {productList.status === "ready" &&
+          productList.products.length > 0 ? (
+            <div className="grid min-w-0 gap-2">
+              {productList.products.map((product) => {
+                const selected = product.modelCode === productModelCode;
+
+                return (
+                  <label
+                    className={`flex min-h-14 min-w-0 cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                      selected
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                        : "bg-background hover:border-primary/40"
+                    }`}
+                    data-testid={`product-model-option-${product.modelCode}`}
+                    key={product.id}
+                  >
+                    <input
+                      aria-label={`${product.modelCode} · ${product.name}`}
+                      checked={selected}
+                      className="mt-1 size-4 shrink-0 accent-primary"
+                      name="productModelCode"
+                      onChange={() => {
+                        setProductModelCode(product.modelCode);
+                        clearEvaluation();
+                      }}
+                      required
+                      type="radio"
+                      value={product.modelCode}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block break-all text-sm font-semibold">
+                        {product.modelCode}
+                      </span>
+                      <span className="mt-0.5 block break-words text-[11px] font-normal leading-4 text-muted-foreground">
+                        {product.name}
+                      </span>
+                    </span>
+                    {selected ? (
+                      <span className="shrink-0 text-[11px] font-medium text-primary">
+                        已选择
+                      </span>
+                    ) : null}
+                  </label>
+                );
+              })}
+            </div>
+          ) : null}
+          <p
+            className="text-[11px] font-normal leading-5 text-muted-foreground"
             id="product-model-help"
           >
-            <span className="block">
-              {productList.status === "ready"
-                ? (productList.products.find(
-                    (product) => product.modelCode === productModelCode,
-                  )?.name ?? "请选择产品型号")
-                : "产品目录加载完成后即可选择。"}
-            </span>
-            <span className="block">
-              切换型号后，点击下方“运行确定性匹配”更新结果。
-            </span>
-          </span>
-        </label>
+            点选型号后，再点击下方“运行确定性匹配”更新结果。
+          </p>
+        </fieldset>
 
-        <div className="grid grid-cols-2 gap-3">
-          <label className="grid gap-1.5 text-xs font-medium">
+        <div className="grid min-w-0 grid-cols-2 gap-3">
+          <label className="grid min-w-0 gap-1.5 text-xs font-medium">
             应用场景
             <select
               aria-label="应用场景"
-              className="h-10 rounded-lg border bg-background px-3 text-sm"
+              className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 text-sm"
               onChange={(event) => {
                 setApplicationScope(event.target.value as ApplicationScope);
                 clearEvaluation();
@@ -463,11 +491,11 @@ export function ProductFitPanel({
               ))}
             </select>
           </label>
-          <label className="grid gap-1.5 text-xs font-medium">
+          <label className="grid min-w-0 gap-1.5 text-xs font-medium">
             功率（kW）
             <input
               aria-label="功率（kW）"
-              className="h-10 rounded-lg border bg-background px-3 text-sm"
+              className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 text-sm"
               min="0"
               onChange={(event) => {
                 setPowerKw(event.target.value);
@@ -486,11 +514,11 @@ export function ProductFitPanel({
           kW 在范围内，150 kW 不在范围内。
         </p>
 
-        <label className="grid gap-1.5 text-xs font-medium">
+        <label className="grid min-w-0 gap-1.5 text-xs font-medium">
           评估日期
           <input
             aria-label="评估日期"
-            className="h-10 rounded-lg border bg-background px-3 text-sm"
+            className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 text-sm"
             onChange={(event) => {
               setEvaluationDate(event.target.value);
               clearEvaluation();

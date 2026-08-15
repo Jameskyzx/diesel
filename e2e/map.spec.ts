@@ -750,6 +750,17 @@ test("lets touch users choose and re-evaluate product models without a native po
   await expect(
     page.getByText("DEMO ONLY — Fictional Engine 200", { exact: true }),
   ).toBeVisible();
+
+  const applicationScope = page.getByLabel("应用场景");
+  const powerKw = page.getByLabel("功率（kW）");
+  await applicationScope.selectOption("construction");
+  await page.getByRole("button", { name: "功率 150 kW" }).tap();
+  await expect(powerKw).toHaveValue("150");
+
+  await powerKw.tap();
+  await page.keyboard.type("100");
+  await expect(powerKw).toHaveValue("100");
+  await applicationScope.selectOption("non-road");
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   await expect(page.getByTestId("product-fit-status-unknown")).toBeVisible();
 

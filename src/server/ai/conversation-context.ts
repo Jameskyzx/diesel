@@ -88,6 +88,8 @@ const scopeMatchers: ReadonlyArray<{
 ];
 const comparisonIntentPattern =
   /(?:比较|对比|排名|排行|哪个国家|哪个市场|compare|comparison|versus|\bvs\.?\b)/iu;
+const negatedComparisonIntentPattern =
+  /(?:不(?:做|进行|需要)?(?:任何)?(?:跨国|跨市场|国家间|市场间)?(?:比较|对比)|(?:无需|无须|不要|不必)(?:进行|做)?(?:任何)?(?:跨国|跨市场|国家间|市场间)?(?:比较|对比)|(?:without|no)\s+(?:cross[- ]country\s+|market\s+)?(?:comparison|compare))/giu;
 const targetCountryIntentPattern =
   /(?:目标(?:国家|市场)|(?:国家|市场).{0,6}作为目标|target\s+(?:country|market))/iu;
 const salesBriefIntentPattern =
@@ -97,6 +99,13 @@ const opportunityScoreIntentPattern =
 const productSubjectPattern = /(?:产品|发动机|型号|product|engine|model)/iu;
 const productFitActionPattern =
   /(?:适配|匹配|兼容|能用|合规|认证|推荐|fit|compatible|compliant|certif|recommend)/iu;
+const nonModelHyphenatedCodes = new Set([
+  "GENERATOR-SET",
+  "NON-ROAD",
+  "ON-ROAD",
+  "ON-ROAD-BUS",
+  "ON-ROAD-TRUCK",
+]);
 const deicticProductPattern =
   /(?:(?:这个|该|上述|前述)(?:产品|发动机|型号)|(?:this|the|that)\s+(?:product|engine|model))/iu;
 const regulationTopicPattern =
@@ -106,9 +115,9 @@ const marketTopicPattern =
 const knowledgeIntentPattern =
   /(?:原文|公告|文档|章节|条款|知识库|检索证据|来源|出处|页码|依据|source\s*document|original\s*(?:text|wording)|knowledge\s*base|citation|section|clause)/iu;
 const countryProfileIntentPattern =
-  /(?:国家概览|国家资料|国家信息|目前有哪些|当前有哪些|当前有效法规|市场数据|市场规模|country\s*profile|country\s*overview)/iu;
+  /(?:国家(?:基础)?概览|国家资料|国家信息|目前有哪些|当前有哪些|当前有效法规|市场数据|市场规模|country\s*profile|country\s*overview)/iu;
 const countryProfileBaseTopicPattern =
-  /(?:国家概览|国家资料|国家信息|country\s*profile|country\s*overview)/iu;
+  /(?:国家(?:基础)?概览|国家资料|国家信息|country\s*profile|country\s*overview)/iu;
 
 function literalMatches(
   text: string,
@@ -191,14 +200,18 @@ export function activeConversationTaskIn(
   }
   if (
     deicticProductPattern.test(text) ||
-    (productSubjectPattern.test(text) && productFitActionPattern.test(text))
+    (productSubjectPattern.test(text) && productFitActionPattern.test(text)) ||
+    (productModelCodeIn(text) !== null && productFitActionPattern.test(text))
   ) {
     return "product_fit";
   }
-  if (comparisonIntentPattern.test(text) && regulationTopicPattern.test(text)) {
+  if (
+    hasConversationComparisonIntent(text) &&
+    regulationTopicPattern.test(text)
+  ) {
     return "regulation_compare";
   }
-  if (comparisonIntentPattern.test(text) && marketTopicPattern.test(text)) {
+  if (hasConversationComparisonIntent(text) && marketTopicPattern.test(text)) {
     return "market_compare";
   }
   if (knowledgeIntentPattern.test(text)) {
@@ -215,7 +228,9 @@ export function activeConversationTaskIn(
 }
 
 export function hasConversationComparisonIntent(text: string): boolean {
-  return comparisonIntentPattern.test(text);
+  return comparisonIntentPattern.test(
+    text.replace(negatedComparisonIntentPattern, ""),
+  );
 }
 
 function countryProfileTopicsIn(text: string): CountryProfileTopic[] {
@@ -286,10 +301,12 @@ function productModelCodeIn(text: string): string | null {
   return (
     candidates.find(
       (candidate) =>
-        /\d/u.test(candidate) &&
-        /[A-Z]/u.test(candidate) &&
-        (/^[A-Z]{1,4}\d[A-Z0-9-]*$/u.test(candidate) ||
-          /^[A-Z][A-Z0-9]*-[A-Z0-9-]*\d[A-Z0-9-]*$/u.test(candidate)),
+        !nonModelHyphenatedCodes.has(candidate) &&
+        ((/\d/u.test(candidate) &&
+          /[A-Z]/u.test(candidate) &&
+          (/^[A-Z]{1,4}\d[A-Z0-9-]*$/u.test(candidate) ||
+            /^[A-Z][A-Z0-9]*-[A-Z0-9-]*\d[A-Z0-9-]*$/u.test(candidate))) ||
+          /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+){2,}$/u.test(candidate)),
     ) ?? null
   );
 }
@@ -328,7 +345,7 @@ export function buildConversationBusinessContext(
     const countries = countryIso3sIn(text).slice(0, 5);
     const powerKws = powerKwsIn(text);
     const explicitTargetCountryIso3 = explicitTargetCountryIso3In(text);
-    const isComparisonTurn = comparisonIntentPattern.test(text);
+    const isComparisonTurn = hasConversationComparisonIntent(text);
     const isTargetCountryTurn =
       explicitTargetCountryIso3 !== null ||
       targetCountryIntentPattern.test(text) ||

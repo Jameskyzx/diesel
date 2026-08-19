@@ -1,6 +1,6 @@
 import type { AiToolName } from "@/features/ai/schemas";
 
-export const SALES_CHAT_LIVE_EVAL_VERSION = "sales-chat-live-v1";
+export const SALES_CHAT_LIVE_EVAL_VERSION = "sales-chat-live-v2";
 
 export type SalesChatLiveCase = {
   expectedArgs: Partial<Record<AiToolName, Readonly<Record<string, unknown>>>>;
@@ -14,7 +14,13 @@ export type SalesChatLiveCase = {
 
 export const salesChatLiveCases = [
   {
-    expectedArgs: { getCountryProfile: { countryIso3: "CHN", topics: ["country"] } },
+    expectedArgs: {
+      getCountryProfile: {
+        asOf: "2026-08-13",
+        countryIso3: "CHN",
+        topics: ["country"],
+      },
+    },
     expectedEvidenceAllowed: true,
     expectedTools: ["getCountryProfile"],
     id: "country-overview-china",

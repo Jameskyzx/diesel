@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/i18n/locale-provider";
 import {
   countryMapResponseSchema,
   type CountryDetailResponse,
@@ -17,6 +18,8 @@ import {
 import { selectCountryShortcuts } from "@/features/countries/country-shortcuts";
 import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
 import type { ProductFitInitialFilters } from "@/components/products/product-fit-panel";
+import { interpolate } from "@/i18n/dictionaries";
+import { formatCountryDisplayName } from "@/i18n/country-name";
 
 type ExplorerData =
   | { status: "loading" }
@@ -42,6 +45,7 @@ const restoreCountrySelectFocusKey =
 const countryFocusTargetKey = "diesel:country-focus-target";
 
 function MapModuleLoading() {
+  const { dictionary } = useLocale();
   return (
     <div
       className="grid h-full min-h-[30rem] place-items-center rounded-[1.75rem] border border-black/[0.06] bg-[#edf3ef]"
@@ -54,7 +58,7 @@ function MapModuleLoading() {
           className="mx-auto size-8 animate-spin text-primary"
         />
         <p className="mt-3 text-sm text-muted-foreground">
-          正在初始化交互地图…
+          {dictionary.map.initializing}
         </p>
       </div>
     </div>
@@ -73,6 +77,7 @@ const WorldMap = dynamic(
 );
 
 function CountryDrawerLoading() {
+  const { dictionary } = useLocale();
   return (
     <aside
       aria-busy="true"
@@ -85,7 +90,7 @@ function CountryDrawerLoading() {
           aria-hidden="true"
           className="size-4 animate-spin motion-reduce:animate-none"
         />
-        正在加载国家详情界面…
+        {dictionary.map.loadingDetails}
       </span>
     </aside>
   );
@@ -109,6 +114,8 @@ export function CountryExplorer({
   initialFilters,
   initialMapResponse,
 }: CountryExplorerProps) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.map;
   const router = useRouter();
   const [data, setData] = useState<ExplorerData>(() =>
     initialMapResponse
@@ -148,7 +155,7 @@ export function CountryExplorer({
       .then(async (response) => {
         if (!response.ok) {
           throw new Error(
-            await parseApiErrorMessage(response, "国家摘要请求失败"),
+            await parseApiErrorMessage(response, copy.errorRequest),
           );
         }
         return countryMapResponseSchema.parse(await response.json());
@@ -167,14 +174,14 @@ export function CountryExplorer({
         setData({
           message: toUserFacingErrorMessage(
             error,
-            "地图数据暂时无法加载，请重试。",
+            copy.errorFallback,
           ),
           status: "error",
         });
       });
 
     return () => abortController.abort();
-  }, [initialCountryIndex, initialMapResponse, reloadKey]);
+  }, [copy.errorFallback, copy.errorRequest, initialCountryIndex, initialMapResponse, reloadKey]);
 
   const selectCountry = useCallback(
     (iso3: string) => {
@@ -200,12 +207,19 @@ export function CountryExplorer({
     data.status === "ready" ? data.countryIndex : initialCountryIndex;
   const countries =
     data.status === "ready" ? data.countries : emptyCountrySummaries;
-  const selectedName =
-    countryIndex.find(({ iso3 }) => iso3 === selectedIso3)?.name ??
-    selectedIso3;
   const selectedDirectoryEntry = countryIndex.find(
     ({ iso3 }) => iso3 === selectedIso3,
   );
+  const selectedName = selectedDirectoryEntry
+    ? formatCountryDisplayName(
+        {
+          iso2: selectedDirectoryEntry.iso2,
+          iso3: selectedDirectoryEntry.iso3,
+          nameEn: selectedDirectoryEntry.name,
+        },
+        locale,
+      )
+    : selectedIso3;
   const countryDetailContextAsOf =
     initialCountryDetail?.status === "available"
       ? initialCountryDetail.asOf
@@ -237,13 +251,13 @@ export function CountryExplorer({
         <div>
           <div className="section-kicker flex items-center gap-2">
             <Globe2 aria-hidden="true" className="size-4" />
-            GLOBAL COUNTRY INTELLIGENCE
+            {copy.kicker}
           </div>
           <h1 className="display-title mt-4 text-4xl font-semibold tracking-[-0.045em] text-[#142821] sm:text-5xl lg:text-6xl">
-            全球柴油机法规地图
+            {copy.heading}
           </h1>
           <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-            悬停查看覆盖，选择国家进入可分享、可追溯的法规与产品判断。
+            {copy.description}
           </p>
         </div>
 
@@ -252,10 +266,10 @@ export function CountryExplorer({
             className="text-[11px] font-semibold tracking-[0.12em] text-emerald-800 uppercase"
             htmlFor="country-select"
           >
-            快速选择国家
+            {copy.quickSelect}
           </label>
           <select
-            aria-label="选择国家"
+            aria-label={copy.countrySelect}
             className="h-12 rounded-xl border border-black/[0.08] bg-[#f7f8f3] px-3 text-sm font-medium text-[#17382e] shadow-none outline-none focus-visible:ring-[3px] focus-visible:ring-emerald-700/20"
             disabled={data.status !== "ready"}
             id="country-select"
@@ -266,11 +280,18 @@ export function CountryExplorer({
             }}
             value={selectedIso3 ?? ""}
           >
-            <option value="">请选择国家</option>
+            <option value="">{copy.optionPlaceholder}</option>
             {countryIndex.map((country) => (
               <option key={country.iso3} value={country.iso3}>
-                {country.name} · {country.iso3}
-                {country.hasGeometry ? "" : " · 暂无地图边界"}
+                {formatCountryDisplayName(
+                  {
+                    iso2: country.iso2,
+                    iso3: country.iso3,
+                    nameEn: country.name,
+                  },
+                  locale,
+                )} · {country.iso3}
+                {country.hasGeometry ? "" : ` · ${copy.boundaryMissingOption}`}
               </option>
             ))}
           </select>
@@ -278,12 +299,12 @@ export function CountryExplorer({
       </section>
 
       <section
-        aria-label="精选国家快捷入口"
+        aria-label={copy.featuredAria}
         className="mb-5 flex min-h-10 items-center gap-2 overflow-x-auto pb-1"
       >
         <span className="mr-1 inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-emerald-900/65">
           <Database aria-hidden="true" className="size-3.5" />
-          精选入口
+          {copy.featuredLabel}
         </span>
         {countryShortcuts.map((country) => (
             <Button
@@ -299,12 +320,12 @@ export function CountryExplorer({
                   : "rounded-full border-black/[0.07] bg-white/75 px-4 text-slate-600 hover:bg-emerald-50 hover:text-emerald-900"
               }
             >
-              {country.nameEn} · {country.iso3}
+              {formatCountryDisplayName(country, locale)} · {country.iso3}
             </Button>
           ))}
         {countries.length > 0 && countryShortcuts.length === 0 ? (
           <span className="text-xs text-muted-foreground">
-            暂无已录入详情的国家
+            {copy.noDetailedCountries}
           </span>
         ) : null}
       </section>
@@ -318,7 +339,7 @@ export function CountryExplorer({
                 className="mx-auto size-8 animate-spin text-primary"
               />
               <p className="mt-3 text-sm text-muted-foreground">
-                正在加载世界地图与国家摘要…
+                {copy.loading}
               </p>
             </div>
           </div>
@@ -330,7 +351,7 @@ export function CountryExplorer({
             role="alert"
           >
             <div>
-              <p className="font-semibold">地图加载失败</p>
+              <p className="font-semibold">{copy.loadErrorTitle}</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 {data.message}
               </p>
@@ -343,7 +364,7 @@ export function CountryExplorer({
                 variant="outline"
               >
                 <RotateCcw aria-hidden="true" className="size-4" />
-                重试
+                {copy.retryMap}
               </Button>
             </div>
           </div>
@@ -359,11 +380,12 @@ export function CountryExplorer({
       </section>
 
       <p className="mt-4 px-1 text-[11px] text-muted-foreground">
-        边界数据：Natural Earth 1:110m（公共领域）。国家详情以 ISO3
-        与数据库连接。
-        {selectedName ? ` 当前选择：${selectedName}。` : ""}
+        {copy.boundaryAttribution}
+        {selectedName
+          ? ` ${interpolate(copy.currentSelection, { name: selectedName })}`
+          : ""}
         {selectedDirectoryEntry && !selectedDirectoryEntry.hasGeometry
-          ? " 该目录国家暂缺地图边界，仍可通过选择器打开结构化详情。"
+          ? ` ${copy.boundaryMissingSelection}`
           : ""}
       </p>
 
@@ -385,7 +407,7 @@ export function CountryExplorer({
 
       {selectedIso3 && initialCountryPanel ? (
         <aside
-          aria-label="国家详情服务端初始快照"
+          aria-label={copy.serverSnapshotAria}
           className="country-server-fallback fixed inset-y-0 right-0 z-40 h-dvh w-[min(94vw,34rem)] overflow-y-auto border-l bg-background shadow-2xl"
           data-testid="country-server-initial"
           role="region"

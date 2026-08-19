@@ -21,6 +21,7 @@
     "test:watch": "vitest",
     "ai:eval": "vitest run tests/sales-chat-harness.test.ts --reporter=verbose",
     "ai:eval:live": "node --conditions=react-server --import tsx --env-file=.env.local scripts/ai/live-eval.ts",
+    "portfolio:verify": "node --conditions=react-server --import tsx scripts/portfolio/verify.ts",
     "test:e2e": "playwright test",
     "test:e2e:demo": "playwright test --config playwright.demo.config.ts",
     "test:e2e:fde": "playwright test --config playwright.fde.config.ts",

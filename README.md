@@ -1,139 +1,193 @@
-# 全球柴油机法规与市场分析平台
+# Global Diesel Regulatory Intelligence
 
-> A source-grounded diesel regulation and product-fit workspace built as a
-> Forward Deployed Engineer portfolio project.
+> A source-grounded regulation, product-fit, and market-analysis workspace built
+> as a Forward Deployed Engineer portfolio project.
 
 [![CI](https://github.com/Jameskyzx/diesel/actions/workflows/ci.yml/badge.svg)](https://github.com/Jameskyzx/diesel/actions/workflows/ci.yml)
-[在线 Demo](https://jamesky.site) ·
-[全球地图](https://jamesky.site/map) ·
-[AI 分析工作区](https://jamesky.site/chat) ·
-[中英双语 FDE Case Study](docs/FDE_CASE_STUDY.md) ·
-[当前项目状态](docs/STATUS.md) ·
-[三角色模拟评估](docs/SIMULATED_USER_EVALUATION.md)
 
-面向柴油机海外销售与法规协作场景，把国家法规、适用时间、功率范围、市场指标、
-产品认证和来源证据放进同一条可复核工作流。权威事实由结构化数据库和确定性代码
-提供；LLM 只能选择只读工具并解释结果，不能创造法规、认证或机会评分。
+[Live demo](https://jamesky.site) ·
+[World map](https://jamesky.site/map) ·
+[AI workspace](https://jamesky.site/chat) ·
+[FDE case study](docs/FDE_CASE_STUDY.md) ·
+[Current status](docs/STATUS.md) ·
+[中文 README](README.zh-CN.md)
 
-[![线上业务工作台](public/portfolio/live-dashboard.jpg)](https://jamesky.site)
+This project models the work behind an international diesel-engine sales
+decision: which rules apply to a country, date, application, and power band;
+whether product evidence supports a fit; whether market observations are
+comparable; and exactly which sources support each conclusion.
 
-## 三分钟看懂项目
+Structured data and deterministic application code own regulatory facts,
+product fit, availability, and scores. The LLM can select validated read-only
+tools and explain their output, but it cannot invent a regulation,
+certification, product specification, or opportunity score.
 
-### 用户问题
+The screenshot below is the English zero-configuration demo, not a claim that
+the current public release already contains these local changes:
 
-销售人员需要同时回答：目标国家当前执行什么法规、指定功率和用途是否适用、产品
-认证是否覆盖、市场数据是否同口径，以及每个结论来自哪里。任何一个日期、scope、
-状态或来源判断错误，都可能让后续产品推荐失真。
+![English zero-configuration evidence workspace](public/portfolio/live-dashboard.jpg)
 
-### 黄金工作流
+## Three-minute overview
 
-1. 在[全球地图](https://jamesky.site/map)选择国家，得到可分享的 ISO3 URL。
-2. 在国家详情核对当前 `effective`、未来 `adopted`、来源和最近核验时间。
-3. 输入应用场景、功率和日期，运行 `product-fit-v2`：分别查看法规/认证适配、查询日供应状态和组合后的商业准备度。
-4. 在[AI 工作区](https://jamesky.site/chat)请求比较或销售简报；事实、来源卡片与
-   AI 解释分层显示。
-5. 对无数据、过期来源、proposed 法规或缺失认证明确返回缺口，不做乐观推断。
+### The user problem
 
-离线 Demo 的真实证据卡片如下。它只使用显式标记的虚构 fixture，不会调用外部模型：
+A sales engineer usually has to reconcile regulatory status, applicability
+dates, power bands, application scope, product certification, commercial
+availability, market methodology, and source freshness. A mistake in any one
+of those dimensions can turn a plausible recommendation into an unsupported
+sales commitment.
 
-![离线 Demo 的结构化法规证据](public/portfolio/offline-evidence-chat.jpg)
+### The golden workflow
 
-### 三个关键工程问题
+1. Select a country on the [world map](https://jamesky.site/map); the ISO3 URL
+   is shareable.
+2. Review current `effective` rules, future `adopted` rules, source links, and
+   verification dates.
+3. Enter application, power, date, and optionally a model code. `product-fit-v2`
+   returns compliance fit, query-date availability, and combined commercial
+   readiness as separate deterministic fields.
+4. Ask the [AI workspace](https://jamesky.site/chat) for a comparison or sales
+   brief. Structured tool cards and citations remain distinct from model prose.
+5. Missing data, stale evidence, proposed rules, and absent certifications stay
+   explicit. The system does not make optimistic geographic or power-band
+   extrapolations.
 
-- **怎样阻止 LLM“有礼貌地胡说”**：所有事实工具都使用 Zod 输入/输出；服务端在
-  流级缓冲模型文本，任一工具 `no_data`、失败或证据不足时丢弃肯定文本，改为
-  可执行的证据缺口说明。证据合同还会逐步缩小模型可见工具：缺什么只开放什么，
-  证据齐全或失败后停止工具循环。
-- **怎样正确处理法规时态**：状态、业务有效期、核验时间分别建模；查询统一使用
-  `[from,to)`、ISO3、scope、功率和 `asOf`。服务端从 `asOf` 派生
-  `statusAtAsOf` 并保留记录状态 `recordStatus`：现在已 superseded 的法规仍可在
-  闭合的历史有效期返回；`adoptedOn` 必须已知且不得晚于查询日，缺失采纳日或
-  superseded 终止日的异常记录不会生成确定的查询日状态；proposed 永远不会被当作
-  effective。
-  这不是完整的 `knownAsOf` 双时态数据库。
-- **怎样让推荐可复现**：产品适配、市场可比性和机会评分都由版本化确定性代码
-  计算；缺失维度保持 `null` 并公开覆盖率，LLM 只能解释，不能改分。
+The offline demo uses clearly fictional fixtures and never calls an external
+model:
 
-## 一条命令本地体验
+![Structured evidence in the offline demo](public/portfolio/offline-evidence-chat.jpg)
 
-要求 Node.js 22+、pnpm 11：
+### Current evidence boundary
+
+- Reviewed publication closure: **97 jurisdictions, 28 regulations, 651 limits,
+  and 203 sources**.
+- Approved real-product and certification fixtures: **0**.
+- Country directory: **178 ISO3 entries**. A directory entry or published
+  evidence boundary does not mean that every application scope has a numeric
+  emissions limit.
+- Demo products: **2 fictional configurations**, used only to exercise
+  `fit / not_fit / unknown` and availability behavior.
+
+Live database state, code state, and historical measurements are deliberately
+kept separate in [STATUS.md](docs/STATUS.md).
+
+## Three engineering decisions
+
+### 1. Evidence-gated AI
+
+Every fact tool has Zod-validated input and structured output. The server builds
+an evidence contract from trusted user text and restricts each model step to the
+tools that can satisfy the remaining requirements. Tool progress can stream to
+the client, but model prose is buffered until the tool loop finishes and the
+complete evidence set has passed validation. If any required result is missing,
+malformed, or insufficient, the buffered prose is discarded and replaced with
+an actionable evidence-gap response.
+
+Provider reasoning is never sent to the browser. Enabling a thinking model only
+changes provider-side inference; it does not expose chain-of-thought through
+`/api/chat`.
+
+### 2. Regulatory time is explicit
+
+Record status, business validity, adoption date, and source verification time
+are modeled separately. Queries use ISO3, application scope, power, `asOf`, and
+half-open `[from,to)` intervals. `statusAtAsOf` is derived for the query date
+while `recordStatus` preserves the current record state. A now-superseded rule
+can still be returned for a closed historical period; a proposed rule is never
+treated as effective.
+
+This is not a complete bitemporal `knownAsOf` database, and the documentation
+does not claim otherwise.
+
+### 3. Recommendations are reproducible
+
+Product fit, market comparability, commercial readiness, and opportunity scores
+are calculated by versioned deterministic code. Missing dimensions remain
+`null` or `unknown`, coverage is visible, and the model can explain but cannot
+alter a score.
+
+## Run locally with one command
+
+Requirements: Node.js 22+ and pnpm 11.
 
 ```bash
 pnpm install
 pnpm demo
 ```
 
-打开 <http://127.0.0.1:3000>。不需要 `.env.local`、PostgreSQL、Docker 或 AI Key。
+Open <http://127.0.0.1:3000>. No `.env.local`, PostgreSQL, Docker, or AI key is
+required.
 
-`pnpm demo` 有意限制为开发环境：
+The demo is intentionally development-only:
 
-- 从真实 Drizzle Migration 创建进程内 PGlite；
-- 写入稳定 ID、`DEMO ONLY`、`.invalid` 来源的虚构 fixture；
-- 使用确定性离线 Demo 模型选择现有只读工具；
-- 仍经过原有审计、结构化卡片和证据失败关闭逻辑；
-- 不读取或发送开发者的数据库凭据、模型 Key 或私有文档。
+- it creates an in-process PGlite database from the tracked Drizzle migrations;
+- it inserts stable IDs and visibly fictional `DEMO ONLY` / `.invalid` sources;
+- a deterministic offline model selects the same read-only tools;
+- requests still cross the production repository, service, Zod, audit, and
+  evidence-boundary layers;
+- developer database credentials, model keys, and private documents are not
+  read or transmitted.
 
-推荐提问：
+Suggested questions:
 
 ```text
-CHN 目前有哪些有效法规？
-CHN 的 non-road 100 kW 产品是否适配？
-比较 CHN 和 BRA 的 non-road 100 kW 法规。
+Which regulations are effective in CHN today?
+Is DEMO-ENG-100 ready for CHN non-road use at 100 kW?
+Compare CHN and BRA non-road regulations at 100 kW.
 ```
 
-面试讲解顺序、预期画面和失败场景见 [三分钟演示脚本](docs/DEMO.md)。
+The failure-first interview walkthrough is in [DEMO.md](docs/DEMO.md).
 
-需要演示数据接入与治理写入时，使用隔离的本地实施入口：
+For a local, mutable implementation workflow, use:
 
 ```bash
 pnpm demo:fde
 ```
 
-它只绑定 loopback，并持续显示 `LOCAL / MUTABLE / FICTIONAL`；固定向导覆盖错误 CSV
-Preview、Draft、Review/Publish、查询读回和 Archive，不会接触公开数据库。
+It binds only to loopback, uses a fresh fictional PGlite database, and keeps a
+`LOCAL / MUTABLE / FICTIONAL` boundary visible while demonstrating CSV preview,
+draft, review/publish, query readback, and archive. It never touches the public
+database.
 
-## 架构
+## Architecture
 
 ```mermaid
 flowchart LR
-    User[销售 / 法规 / 数据用户] --> UI[Next.js UI]
+    User[Sales / regulatory / product user] --> UI[Next.js UI]
     UI --> Services[Application services]
-    UI --> Agent[受约束的单 Agent]
-    Agent --> Tools[Zod 只读工具]
+    UI --> Agent[Constrained single agent]
+    Agent --> Tools[Zod read-only tools]
     Tools --> Services
-    Services --> Rules[确定性 fit / compare / score]
+    Services --> Rules[Deterministic fit / compare / score]
     Services --> Repos[Repositories]
     Repos --> DB[(PostgreSQL + pgvector)]
-    Services --> Evidence[来源文档与 chunks]
-    Agent --> Model[服务端模型]
+    Services --> Evidence[Source documents and chunks]
+    Agent --> Model[Server-side model]
 ```
 
-- Client Components 只负责地图、筛选和流式交互。
-- Route Handler 校验外部输入后调用 service，不从 UI 直接查询 Supabase。
-- Repository 封装 Drizzle 查询；纯领域函数负责区间、适用性、fit 和 score。
-- AI 没有任意 SQL、事实写入、开放网络或子 Agent 能力。
+- Server Components handle read-first pages; Client Components are limited to
+  browser interaction such as MapLibre and chat.
+- Route handlers validate external input before invoking application services.
+- Database access stays behind repositories and services.
+- The AI has no arbitrary SQL, fact-writing, open-web, or sub-agent capability.
 
-更完整的边界与数据流见 [ARCHITECTURE.md](docs/ARCHITECTURE.md) 和
-[DATA_MODEL.md](docs/DATA_MODEL.md)。
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) and
+[DATA_MODEL.md](docs/DATA_MODEL.md) for the detailed boundaries.
 
-## 数据可信度边界
+## Data provenance
 
-本仓库同时存在两类记录，并在 API、UI 和引用中逐条标识：
+Public responses distinguish two categories record by record:
 
-- **虚构 Demo**：`is_demo=true`、`DEMO ONLY`、`example.invalid`，只验证产品流程；
-- **已核验公开来源 fixture**：经 Draft → Reviewed → Published 治理链发布，仍需
-  回看原文、适用范围和有效期，不构成法律、认证或销售建议。
+- **Fictional demo data**: `is_demo=true`, `DEMO ONLY`, and `.invalid` sources.
+- **Reviewed public-source fixtures**: published through the Draft → Reviewed →
+  Published governance path. They still require review of the original source,
+  scope, and validity period and are not legal or certification advice.
 
-当前已包含经签核的法规验收行和公开市场观测，但尚无获准公开发布的真实产品配置/
-认证 fixture；因此真实法规与 Demo 产品不能被描述成真实可售性结论。实时覆盖数量
-以[在线工作台](https://jamesky.site)为准，代码、运行库与历史测量的区别见
-[STATUS.md](docs/STATUS.md)。
+There is currently no approved real product master-data or certification
+fixture. Real regulation evidence must therefore never be combined with a demo
+product and described as a real commercial-availability conclusion.
 
-2026-08-12 的[三角色模拟评估](docs/SIMULATED_USER_EVALUATION.md)由 subagent 分别
-扮演海外销售、法规合规和产品应用工程师，用于发现交互与时态缺陷。它不是现实用户
-试点、外部法规专家签核或 KPI 结果，不得用来宣称客户验证或商业成效。
-
-## 工程质量
+## Verification
 
 ```bash
 pnpm lint
@@ -142,6 +196,7 @@ pnpm test
 pnpm test:coverage
 pnpm ai:eval
 pnpm ai:eval:live
+pnpm portfolio:verify
 pnpm db:check
 pnpm build
 pnpm playwright test
@@ -150,27 +205,21 @@ pnpm test:e2e:fde
 pnpm audit:security
 ```
 
-`pnpm ai:eval` 是不调用外部模型的对话 harness。`pnpm ai:eval:live` 使用隔离的
-PGlite 虚构事实串行运行 18 条版本化案例，并在 18 次请求、80,000 tokens 或单例 90 秒
-任一边界停止；脱敏报告不保存 prompt、完整模型文本或密钥。live eval 不进入普通 PR CI，
-未完整运行或未达阈值时必须保留为失败/部分报告，不能包装成模型成功率。
+`pnpm ai:eval` is a deterministic conversation harness and is not a live-model
+success rate. `pnpm ai:eval:live` runs 18 versioned fictional cases against an
+isolated PGlite database with explicit case, step, token, and timeout budgets.
+Every case asserts its expected evidence decision; a failed or incomplete run
+is retained as a failed report rather than repackaged as a success metric.
 
-GitHub CI 对每次 PR/`master` 推送执行：
+GitHub CI runs lint, strict TypeScript, coverage gates, migration checks, build,
+desktop/mobile Playwright, the zero-config demo contract, real PostgreSQL +
+pgvector migration smoke tests, full-history secret scanning, and the dependency
+advisory policy. A single `Required CI gate` aggregates every merge-blocking job
+that branch protection is intended to require, so the strongest database check
+cannot fail unnoticed. The workflow defines the gate; repository branch
+protection must still be configured and verified separately on GitHub.
 
-- ESLint、TypeScript strict、分层 coverage、Drizzle migration check、生产构建；
-- Chromium 桌面/移动关键流程、WebKit + axe 核心 smoke，以及由正式 `pnpm demo`
-  入口启动的独立桌面/移动作品契约；
-- 真实 PostgreSQL + pgvector 空库 Migration 和上一版本脏数据升级 smoke；
-- gitleaks 全历史密钥扫描及不允许整文件绕过的回归；
-- 每周 Dependabot 与[限时依赖公告策略](docs/DEPENDENCY_SECURITY.md)：新 high、过期例外
-  或任一 critical 公告都会阻断。
-
-测试覆盖有效期与功率边界、proposed/effective 隔离、完整来源链、产品适配三态、
-AI 伪造事实对抗、请求体限制、错误脱敏、迟到响应竞态、治理权限与发布事务。
-
-## 标准开发环境
-
-需要真实 PostgreSQL 或 Supabase PostgreSQL 时：
+## Standard development environment
 
 ```bash
 pnpm install
@@ -180,59 +229,37 @@ pnpm db:seed
 pnpm dev
 ```
 
-Windows PowerShell 使用：
+Important server-only configuration includes `DATABASE_URL`, `DATABASE_MODE`,
+`AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, `AI_MULTIMODAL_MODEL`,
+`AI_CHAT_RATE_LIMIT_BACKEND`, `KNOWLEDGE_STORAGE_ROOT`, and
+`ADMIN_ROLE_BINDINGS_JSON`. Complete production, proxy, backup, rollback, and
+canary boundaries are documented in [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-```powershell
-Copy-Item .env.example .env.local
-```
+## Review paths
 
-关键配置：
+- Why a modular monolith instead of microservices? See
+  [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- How does the evidence gate fail closed? See the sales-chat service and its
+  adversarial tests.
+- How are source validity and product availability queried? See
+  [DATA_MODEL.md](docs/DATA_MODEL.md).
+- Which data is real, reviewed, demo-only, or still absent? See
+  [STATUS.md](docs/STATUS.md), [ACCEPTANCE.md](docs/ACCEPTANCE.md), and
+  [PRODUCT_EVIDENCE.md](docs/PRODUCT_EVIDENCE.md).
+- What incremental development history survived the consolidated public
+  snapshot? See [DEVELOPMENT_HISTORY.md](docs/DEVELOPMENT_HISTORY.md).
 
-- `DATABASE_URL`：服务端 PostgreSQL 连接；
-- `DATABASE_MODE`：默认 `postgres`，`pglite-demo` 只允许测试/作品 Demo；
-- `AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`：可选的服务端 OpenAI-compatible 文本模型；
-- `AI_MULTIMODAL_MODEL`：可选的同端点视觉模型；只有图片上传需要，且必须同时支持
-  图片输入与 Function Calling；
-- `AI_CHAT_RATE_LIMIT_BACKEND`：生产使用 `postgres` 跨实例共享配额；`memory` 只用于
-  单进程开发、测试和离线 Demo；
-- `KNOWLEDGE_STORAGE_ROOT`：开发期 `.data` 下的文档目录；
-- `ADMIN_ROLE_BINDINGS_JSON`：受可信身份代理保护的管理角色映射。
+## AI-assisted development disclosure
 
-已签核公开事实通过治理脚本发布，Demo Seed 不会把它们伪装成真实数据：
+Coding agents assisted with implementation, mechanical organization, and
+adversarial review. The author owns problem framing, data boundaries, schema and
+ADR decisions, acceptance criteria, publication red lines, and final review.
+Agent output cannot bypass source readback, automated tests, migrations, or
+human approval.
 
-```bash
-pnpm exec tsx --env-file=.env.local scripts/db/ingest-accepted-fixtures.ts
-```
+## Disclaimer
 
-本地文档存储可执行孤儿扫描；默认只报告至少 24 小时未被数据库引用的内容。共享或
-生产环境禁止直接向扫描命令传 `--delete`，只能使用取得治理维护锁的删除脚本；也可用
-`--minimum-age-hours=N` 调高保护窗口：
-
-```bash
-pnpm knowledge:orphans
-pnpm knowledge:orphans:delete --minimum-age-hours=48
-```
-
-生产/共享环境不得使用本地文件存储、Demo 数据库或客户端伪造的身份 Header。完整
-配置、代理边界、回滚和待完成运维门见 [DEPLOYMENT.md](docs/DEPLOYMENT.md)。
-
-## 面试讨论索引
-
-- 为什么选择模块化单体，而不是微服务？见 [ARCHITECTURE.md](docs/ARCHITECTURE.md)。
-- 如何处理 AI 证据失败？见 `src/server/ai/sales-chat.ts` 与对应对抗测试。
-- 如何把法规有效期映射为确定性查询？见 [DATA_MODEL.md](docs/DATA_MODEL.md)。
-- 如何治理来源、草稿和发布？见 [DECISIONS.md](docs/DECISIONS.md)。
-- 哪些数据真实、哪些仍是 Demo？见 [STATUS.md](docs/STATUS.md)、
-  [ACCEPTANCE.md](docs/ACCEPTANCE.md)、[PRODUCT_EVIDENCE.md](docs/PRODUCT_EVIDENCE.md)。
-
-## AI 辅助开发说明
-
-本项目使用 AI 编程代理辅助实现、对抗评审和机械性数据整理。问题定义、数据边界、
-schema/ADR、验收预期、发布红线以及最终代码审查由项目作者负责。AI 生成内容不能
-跳过来源读回、自动化测试、Migration 或人工验收。
-
-## 免责声明
-
-这是公开求职作品，不代表任何柴油机制造商、监管机构或雇主的官方系统。所有信息
-仅供工程演示；使用前必须复核原始来源、适用范围、有效日期和正式认证，不构成法律、
-认证、销售或投资建议。
+This is a public portfolio project, not an official system of any engine
+manufacturer, regulator, or employer. Verify original sources, applicability,
+effective dates, and formal certifications before use. Nothing here constitutes
+legal, certification, sales, investment, or regulatory advice.

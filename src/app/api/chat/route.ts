@@ -54,7 +54,14 @@ import {
   allowsToolFreeAttachmentResponse,
   buildDirectChatResponse,
 } from "@/server/ai/chat-turn-guidance";
+import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
 import { createApiRequestObserver } from "@/server/observability/structured-log";
+import {
+  defaultLocale,
+  localeCookieName,
+  parseLocale,
+  type Locale,
+} from "@/i18n/locale";
 
 export const runtime = "nodejs";
 
@@ -117,6 +124,7 @@ async function processChatRequest(
   requestId: string,
   requestStartedAtMs: number,
 ): Promise<Response> {
+  let locale: Locale = defaultLocale;
   try {
     const body = chatRequestSchema.parse(
       await readJsonRequest(
@@ -125,6 +133,7 @@ async function processChatRequest(
         MAX_CHAT_REQUEST_BODY_READ_MS,
       ),
     );
+    locale = body.locale;
     const messageEnvelopes = z
       .array(chatMessageEnvelopeSchema)
       .parse(body.messages);
@@ -132,7 +141,9 @@ async function processChatRequest(
     if (!selectedUserMessages) {
       return errorResponse(
         "INVALID_INPUT",
-        "聊天请求格式无效，请检查消息和国家上下文。",
+        locale === "en"
+          ? "The chat request is invalid. Check the messages and country context."
+          : "聊天请求格式无效，请检查消息和国家上下文。",
         400,
       );
     }
@@ -158,6 +169,7 @@ async function processChatRequest(
     const directResponse = hasAttachments
       ? null
       : buildDirectChatResponse({
+          locale,
           selectedCountryIso3: body.selectedCountryIso3,
           text: latestUserText,
           userTexts,
@@ -188,8 +200,13 @@ async function processChatRequest(
       );
     }
     const auditRepository = await getAiAuditRepository();
+    const evidenceContract = buildSalesChatEvidenceContract({
+      selectedCountryIso3: body.selectedCountryIso3,
+      userTexts,
+    });
     const tools = createSalesChatTools({
       auditRepository,
+      ...(evidenceContract.asOf ? { defaultAsOf: evidenceContract.asOf } : {}),
       selectedCountryIso3: body.selectedCountryIso3,
       sessionId: body.sessionId,
       turnId: requestId,
@@ -213,25 +230,33 @@ async function processChatRequest(
       tools,
       trustedUserTexts: userTexts,
       turnId: requestId,
+      locale,
     });
 
     return result.toUIMessageStreamResponse({
       originalMessages: uiMessages,
       onError: () =>
-        "AI 服务暂时无法完成回答。工具事实不会被猜测补全，请稍后重试。",
+        locale === "en"
+          ? "The AI service could not complete this answer. Tool facts will not be guessed; please try again later."
+          : "AI 服务暂时无法完成回答。工具事实不会被猜测补全，请稍后重试。",
+      sendReasoning: false,
     });
   } catch (error: unknown) {
     if (error instanceof RequestBodyTooLargeError) {
       return errorResponse(
         "PAYLOAD_TOO_LARGE",
-        "聊天请求过大，请减少附件数量、缩小附件或缩短消息历史后重试。",
+        locale === "en"
+          ? "The chat request is too large. Remove attachments, reduce their size, or shorten the message history."
+          : "聊天请求过大，请减少附件数量、缩小附件或缩短消息历史后重试。",
         413,
       );
     }
     if (error instanceof RequestBodyTimeoutError) {
       return errorResponse(
         "REQUEST_TIMEOUT",
-        "聊天请求上传超时，请检查网络后重试。",
+        locale === "en"
+          ? "The chat upload timed out. Check the connection and try again."
+          : "聊天请求上传超时，请检查网络后重试。",
         408,
       );
     }
@@ -241,14 +266,18 @@ async function processChatRequest(
       });
       return errorResponse(
         "AI_NOT_CONFIGURED",
-        "AI 助手暂未启用，请稍后重试。",
+        locale === "en"
+          ? "The AI assistant is not configured. Please try again later."
+          : "AI 助手暂未启用，请稍后重试。",
         503,
       );
     }
     if (error instanceof ChatAttachmentProcessingError) {
       return errorResponse(
         "INVALID_INPUT",
-        error.publicMessage,
+        locale === "en"
+          ? "The attachment could not be processed. Check the file and try again."
+          : error.publicMessage,
         400,
       );
     }
@@ -261,7 +290,9 @@ async function processChatRequest(
     ) {
       return errorResponse(
         "INVALID_INPUT",
-        "聊天请求格式无效，请检查消息和国家上下文。",
+        locale === "en"
+          ? "The chat request is invalid. Check the messages and country context."
+          : "聊天请求格式无效，请检查消息和国家上下文。",
         400,
       );
     }
@@ -271,7 +302,9 @@ async function processChatRequest(
     });
     return errorResponse(
       "INTERNAL_ERROR",
-      "聊天服务暂时不可用，请稍后重试。",
+      locale === "en"
+        ? "The chat service is temporarily unavailable. Please try again later."
+        : "聊天服务暂时不可用，请稍后重试。",
       500,
     );
   }
@@ -337,7 +370,17 @@ function holdLeaseUntilResponseCompletes(
   });
 }
 
+function localeFromRequestCookie(request: Request): Locale {
+  const cookie = request.headers
+    .get("cookie")
+    ?.split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${localeCookieName}=`));
+  return parseLocale(cookie?.slice(localeCookieName.length + 1));
+}
+
 export async function POST(request: Request): Promise<Response> {
+  const requestLocale = localeFromRequestCookie(request);
   const observer = createApiRequestObserver("/api/chat");
   const { requestId } = observer;
   const respond = (response: Response, errorCode?: string | null) =>
@@ -352,7 +395,9 @@ export async function POST(request: Request): Promise<Response> {
     });
     return respond(errorResponse(
       "INTERNAL_ERROR",
-      "AI 聊天服务暂时不可用，请稍后重试。",
+      requestLocale === "en"
+        ? "The AI chat service is temporarily unavailable. Please try again later."
+        : "AI 聊天服务暂时不可用，请稍后重试。",
       503,
       { "Retry-After": "60" },
     ), "RATE_LIMIT_UNAVAILABLE");
@@ -360,7 +405,9 @@ export async function POST(request: Request): Promise<Response> {
   if (!rateDecision.allowed) {
     return respond(errorResponse(
       "RATE_LIMITED",
-      "AI 聊天请求过于频繁，请稍后重试。",
+      requestLocale === "en"
+        ? "AI chat requests are arriving too quickly. Please try again later."
+        : "AI 聊天请求过于频繁，请稍后重试。",
       429,
       {
         "Retry-After": String(rateDecision.retryAfterSeconds),
@@ -372,7 +419,9 @@ export async function POST(request: Request): Promise<Response> {
   if (!lease) {
     return respond(errorResponse(
       "RATE_LIMITED",
-      "AI 聊天并发请求过多，请等待当前请求完成后重试。",
+      requestLocale === "en"
+        ? "Too many AI chat requests are in flight. Wait for the current request to finish and retry."
+        : "AI 聊天并发请求过多，请等待当前请求完成后重试。",
       429,
       { "Retry-After": "1" },
     ), "RATE_LIMITED");

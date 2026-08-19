@@ -54,7 +54,20 @@ describe("assistant Markdown", () => {
     expect(html).not.toContain("javascript:");
     expect(html).not.toContain("<img");
     expect(html).not.toContain("src=");
+    expect(html).toContain("Model image hidden: tracking pixel");
+  });
+
+  it("localizes the blocked-model-image placeholder", () => {
+    const html = renderToStaticMarkup(
+      createElement(AssistantMarkdown, {
+        content: "![tracking pixel](https://evil.example/pixel.png)",
+        hiddenImage: "[已隐藏模型图片]",
+        hiddenImageWithAlt: "[已隐藏模型图片：{alt}]",
+      }),
+    );
+
     expect(html).toContain("已隐藏模型图片：tracking pixel");
+    expect(html).not.toContain("Model image hidden");
   });
 
   it("allows in-app links and only citation-approved external URLs", () => {

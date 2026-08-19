@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { defaultLocale, locales } from "@/i18n/locale";
+
 import { countryDetailResponseSchema } from "@/features/countries/schemas";
 import {
   applicationScopeSchema,
@@ -298,6 +300,7 @@ export const chatRequestSchema = z
   .object({
     // AI SDK DefaultChatTransport 信封字段（非业务输入，忽略但允许）。
     id: z.string().trim().min(1).max(100).optional(),
+    locale: z.enum(locales).optional().default(defaultLocale),
     messages: z.array(z.unknown()).min(1).max(40),
     messageId: z.string().trim().min(1).max(100).optional(),
     selectedCountryIso3: z

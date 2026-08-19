@@ -1,5 +1,15 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ baseURL, context }) => {
+  await context.addCookies([
+    {
+      name: "diesel_locale",
+      url: baseURL ?? "http://127.0.0.1:3100",
+      value: "zh-CN",
+    },
+  ]);
+});
+
 test("renders the operational home entry and primary navigation", async ({ page }) => {
   await page.goto("/");
 

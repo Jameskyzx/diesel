@@ -289,6 +289,7 @@ export function createCountryRepository<
         .select({
           dataCoverageStatus: countries.dataCoverageStatus,
           isDemo: sql<boolean>`${countries.isDemo} OR ${dataSources.isDemo}`,
+          iso2: countries.iso2,
           iso3: countries.iso3,
           nameEn: countries.nameEn,
           nameLocal: countries.nameLocal,

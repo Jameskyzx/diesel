@@ -6,6 +6,7 @@ import {
   selectJurisdictionMembershipsForIngest,
   signedPublishableRegulationIds,
 } from "../scripts/db/fixture-target-selection";
+import { portfolioReleaseCountryIso3s } from "../src/domain/portfolio-evidence";
 import {
   acceptanceFixtureIds,
   buildFixtureLimits,
@@ -15,106 +16,6 @@ import { CANADA_COMPLETENESS_SIGNOFF_ISO } from "../scripts/db/ingest-signoff";
 
 describe("accepted fixture target selection", () => {
   const limits = buildFixtureLimits();
-  const currentPendingCountryIso3s = [
-    "CRI",
-    "ECU",
-    "PAN",
-    "DOM",
-    "PHL",
-    "PAK",
-    "SAU",
-    "ARE",
-    "ISR",
-    "ZAF",
-    "EGY",
-    "GHA",
-    "KEN",
-    "RWA",
-    "TZA",
-    "ZMB",
-    "ZWE",
-    "CIV",
-    "DZA",
-    "TUN",
-    "ETH",
-    "CMR",
-    "SEN",
-    "NGA",
-    "UGA",
-    "BWA",
-    "NAM",
-    "SWZ",
-    "KHM",
-    "LAO",
-    "LKA",
-    "MMR",
-    "MNG",
-    "LIE",
-    "SGP",
-    "MAR",
-    "QAT",
-    "KWT",
-    "OMN",
-    "JOR",
-    "IRN",
-    "IRQ",
-    "LBN",
-    "SYR",
-    "GUY",
-    "HTI",
-    "JAM",
-    "BLZ",
-    "CUB",
-    "LBR",
-    "LBY",
-    "MLI",
-    "MRT",
-    "NER",
-    "GTM",
-    "HND",
-    "NIC",
-    "PRY",
-    "URY",
-    "PRK",
-    "PSE",
-    "SDN",
-    "PRI",
-    "NCL",
-    "ERI",
-    "GAB",
-    "GMB",
-    "GNB",
-    "GNQ",
-    "MOZ",
-    "LSO",
-    "MDG",
-    "MUS",
-    "FJI",
-    "CAF",
-    "COD",
-    "COG",
-    "GIN",
-    "DJI",
-    "AUS",
-    "PNG",
-    "BRN",
-    "BTN",
-    "SLB",
-    "TLS",
-    "MWI",
-    "SLE",
-    "SOM",
-    "SSD",
-    "TCD",
-    "SLV",
-    "SUR",
-    "TTO",
-    "CAN",
-    "USA",
-    "CHN",
-    "MLT",
-  ] as const;
-
   const twelveCountrySourceOnlyGraphs = [
     ["BRN", acceptanceFixtureIds.jurisdiction.brunei, acceptanceFixtureIds.source.bruneiEnvironment, acceptanceFixtureIds.source.bruneiTransport],
     ["BTN", acceptanceFixtureIds.jurisdiction.bhutan, acceptanceFixtureIds.source.bhutanEnvironment, acceptanceFixtureIds.source.bhutanTransport],
@@ -249,11 +150,11 @@ describe("accepted fixture target selection", () => {
   });
 
   it("keeps the current 97-country deployment queue unique and closed between target and full selection", () => {
-    const targets = currentPendingCountryIso3s.map((countryIso3) =>
+    const targets = portfolioReleaseCountryIso3s.map((countryIso3) =>
       buildTargetSelection(countryIso3, limits),
     );
     const full = buildFullIngestSelection(
-      currentPendingCountryIso3s,
+      portfolioReleaseCountryIso3s,
       limits,
     );
     const targetJurisdictionIds = new Set(
@@ -269,8 +170,8 @@ describe("accepted fixture target selection", () => {
       .flatMap((target) => target.limitRows.map((limit) => limit.id))
       .sort();
 
-    expect(currentPendingCountryIso3s).toHaveLength(97);
-    expect(new Set(currentPendingCountryIso3s).size).toBe(97);
+    expect(portfolioReleaseCountryIso3s).toHaveLength(97);
+    expect(new Set(portfolioReleaseCountryIso3s).size).toBe(97);
     expect(full.jurisdictionIds.size).toBe(97);
     expect(full.regulationIds.size).toBe(28);
     expect(full.limitRows).toHaveLength(651);

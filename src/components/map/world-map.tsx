@@ -17,12 +17,16 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, LoaderCircle, RotateCcw } from "lucide-react";
 
+import { useLocale } from "@/components/i18n/locale-provider";
 import {
   countryGeoFeaturePropertiesSchema,
   type CountryMapSummary,
 } from "@/features/countries/schemas";
 import { hasDetailedCountryCoverage } from "@/features/database/schemas";
 import { WORLD_COUNTRIES_GEOJSON_URL } from "@/lib/geo-assets";
+import type { Dictionary } from "@/i18n/dictionaries";
+import { formatCountryDisplayName } from "@/i18n/country-name";
+import { formatUtcDate } from "@/i18n/date";
 
 const COUNTRY_SOURCE = "world-countries";
 const COUNTRY_FILL_LAYER = "country-fill";
@@ -118,16 +122,19 @@ type WorldMapProps = {
   selectedIso3: string | null;
 };
 
-function tooltipCoverageText(summary: CountryMapSummary | null): string {
+function tooltipCoverageText(
+  summary: CountryMapSummary | null,
+  copy: Dictionary["map"],
+): string {
   if (!summary) {
-    return "暂无国家详情数据";
+    return copy.tooltipNoData;
   }
   if (!hasDetailedCountryCoverage(summary.dataCoverageStatus)) {
     return summary.dataCoverageStatus === "planned"
-      ? "计划覆盖，暂无核验数据"
-      : "暂无国家详情数据";
+      ? copy.tooltipPlanned
+      : copy.tooltipNoData;
   }
-  return summary.isDemo ? "有 Demo 数据，点击查看" : "有已核验数据，点击查看";
+  return summary.isDemo ? copy.tooltipDemo : copy.tooltipVerified;
 }
 
 function setCountryState(
@@ -149,6 +156,8 @@ export function WorldMap({
   onSelectCountry,
   selectedIso3,
 }: WorldMapProps) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.map;
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const hoveredRef = useRef<string | null>(null);
@@ -332,7 +341,7 @@ export function WorldMap({
 
   return (
     <div
-      aria-label="可交互世界国家地图。可点击国家打开详情。"
+      aria-label={copy.interactiveAria}
       className="relative h-full min-h-[30rem] overflow-hidden rounded-[1.75rem] border border-black/[0.07] bg-[#e9f2f3] shadow-[0_28px_80px_rgb(29_56_47_/_0.12)]"
       data-testid="world-map"
       role="region"
@@ -350,7 +359,7 @@ export function WorldMap({
         >
           <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 shadow-sm">
             <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-            正在加载国家边界…
+            {copy.geometryLoading}
           </span>
         </div>
       ) : null}
@@ -365,10 +374,10 @@ export function WorldMap({
               className="mx-auto size-8 text-amber-700"
             />
             <p className="mt-3 font-semibold text-slate-950">
-              国家边界加载失败
+              {copy.boundaryErrorTitle}
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              当前画布不能用于判断国家是否有数据，请重试加载边界资源。
+              {copy.boundaryErrorBody}
             </p>
             <button
               className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-4 text-sm font-semibold text-[#17382e] hover:bg-emerald-50"
@@ -376,7 +385,7 @@ export function WorldMap({
               type="button"
             >
               <RotateCcw aria-hidden="true" className="size-4" />
-              重试加载地图
+              {copy.retryMap}
             </button>
           </div>
         </div>
@@ -384,10 +393,10 @@ export function WorldMap({
       {loadState === "ready" ? (
         <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-wrap gap-2 text-xs sm:left-5 sm:top-5">
           <span className="rounded-full border border-emerald-900/10 bg-[#173d31]/95 px-3.5 py-2 font-medium text-white shadow-sm backdrop-blur">
-            有可查看数据
+            {copy.legendData}
           </span>
           <span className="rounded-full border border-black/[0.06] bg-white/90 px-3.5 py-2 font-medium text-slate-600 shadow-sm backdrop-blur">
-            暂无数据
+            {copy.legendNoData}
           </span>
         </div>
       ) : null}
@@ -423,21 +432,25 @@ export function WorldMap({
             ),
           }}
         >
-          <p className="display-title text-lg font-semibold text-[#17382e]">{tooltip.name}</p>
+          <p className="display-title text-lg font-semibold text-[#17382e]">
+            {tooltip.summary
+              ? formatCountryDisplayName(tooltip.summary, locale)
+              : tooltip.name}
+          </p>
           <p className="mt-0.5 text-[10px] font-semibold tracking-[0.16em] text-emerald-700">
             {tooltip.iso3}
           </p>
           <p className="mt-2 text-xs">
-            {tooltipCoverageText(tooltip.summary)}
+            {tooltipCoverageText(tooltip.summary, copy)}
           </p>
           {tooltip.summary ? (
             <p className="mt-1 text-[11px] text-muted-foreground">
-              核验：{tooltip.summary.verifiedAt.slice(0, 10)}
+              {copy.verification}: {formatUtcDate(tooltip.summary.verifiedAt, locale)}
               {tooltip.summary.isStale &&
               hasDetailedCountryCoverage(
                 tooltip.summary.dataCoverageStatus,
               )
-                ? "（可能过期）"
+                ? copy.tooltipStale
                 : ""}
             </p>
           ) : null}

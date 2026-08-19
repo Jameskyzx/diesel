@@ -18,6 +18,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { useLocale } from "@/components/i18n/locale-provider";
 import {
   Drawer,
   DrawerClose,
@@ -39,8 +40,25 @@ import type {
 import dynamic from "next/dynamic";
 import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
 import { formatDecimalForDisplay } from "@/lib/decimal-format";
+import { formatCountryDisplayName } from "@/i18n/country-name";
+import { formatOptionalUtcDate, formatUtcDate } from "@/i18n/date";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
 import { cn } from "@/lib/utils";
+
+function ProductFitLoading() {
+  const { dictionary } = useLocale();
+
+  return (
+    <div
+      aria-busy="true"
+      aria-live="polite"
+      className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground"
+      role="status"
+    >
+      {dictionary.country.productFitLoading}
+    </div>
+  );
+}
 
 type DetailState =
   | { status: "idle" }
@@ -82,42 +100,9 @@ const ProductFitPanel = dynamic(
     return productModule.ProductFitPanel;
   },
   {
-    loading: () => (
-      <div
-        aria-busy="true"
-        aria-live="polite"
-        className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground"
-        role="status"
-      >
-        正在加载确定性产品适配工具…
-      </div>
-    ),
+    loading: ProductFitLoading,
   },
 );
-
-const statusLabels = {
-  adopted: "已采纳",
-  effective: "已生效",
-  proposed: "拟议",
-  superseded: "已被取代",
-} as const;
-
-const statusAtAsOfLabels = {
-  adopted: "查询日已采纳",
-  effective: "查询日已生效",
-} as const;
-
-const coverageLabels = {
-  covered: "已发布证据边界",
-  demo: "虚构演示记录",
-  no_data: "暂无详情数据",
-  none: "未设置",
-  planned: "计划覆盖",
-} as const;
-
-function formatDate(value: string | null) {
-  return value ?? "未记录";
-}
 
 function buildChatHref({
   countryIso3,
@@ -157,6 +142,8 @@ export function CountryDetailDrawer({
   onSelectCountry,
   registerProductFitNavigationGuard,
 }: CountryDetailDrawerProps) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.country;
   const [detail, setDetail] = useState<DetailState>(() =>
     initialResponse && iso3
       ? {
@@ -219,7 +206,7 @@ export function CountryDetailDrawer({
       .then(async (response) => {
         if (!response.ok) {
           throw new Error(
-            await parseApiErrorMessage(response, "国家详情请求失败"),
+            await parseApiErrorMessage(response, copy.detailRequestError),
           );
         }
         return countryDetailResponseSchema.parse(await response.json());
@@ -240,7 +227,7 @@ export function CountryDetailDrawer({
           iso3,
           message: toUserFacingErrorMessage(
             error,
-            "国家详情暂时无法加载，请关闭后重试。",
+            copy.detailErrorFallback,
           ),
           requestedAsOf: fetchAsOf,
           status: "error",
@@ -252,6 +239,8 @@ export function CountryDetailDrawer({
     };
   }, [
     fetchAsOf,
+    copy.detailErrorFallback,
+    copy.detailRequestError,
     initialFilters?.applicationScope,
     initialFilters?.powerKw,
     initialResponse,
@@ -275,20 +264,20 @@ export function CountryDetailDrawer({
       <DrawerContent aria-describedby="country-drawer-description">
         <DrawerHeader className="relative pr-16">
           <p className="text-xs font-semibold tracking-[0.18em] text-primary">
-            COUNTRY PROFILE
+            {copy.profileKicker}
           </p>
           <DrawerTitle>
             {currentDetail.status === "ready" &&
             currentDetail.response.status === "available"
-              ? currentDetail.response.country.nameEn
-              : (iso3 ?? "国家详情")}
+              ? formatCountryDisplayName(currentDetail.response.country, locale)
+              : (iso3 ?? copy.unknownCountryTitle)}
           </DrawerTitle>
           <DrawerDescription id="country-drawer-description">
-            按查询日期展示结构化事实与来源；本页不会把 Demo 记录描述为真实法规。
+            {copy.baselineDescription}
           </DrawerDescription>
           <DrawerClose asChild>
             <Button
-              aria-label="关闭国家详情"
+              aria-label={dictionary.map.closeCountry}
               className="absolute right-5 top-5"
               size="sm"
               variant="outline"
@@ -303,7 +292,7 @@ export function CountryDetailDrawer({
             className="mb-1.5 block text-xs font-medium text-muted-foreground"
             htmlFor="drawer-country-select"
           >
-            切换国家
+            {copy.switchCountry}
           </label>
           <select
             className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
@@ -313,8 +302,17 @@ export function CountryDetailDrawer({
           >
             {countryIndex.map((country) => (
               <option key={country.iso3} value={country.iso3}>
-                {country.name} · {country.iso3}
-                {country.hasGeometry ? "" : " · 暂无地图边界"}
+                {formatCountryDisplayName(
+                  {
+                    iso2: country.iso2,
+                    iso3: country.iso3,
+                    nameEn: country.name,
+                  },
+                  locale,
+                )} · {country.iso3}
+                {country.hasGeometry
+                  ? ""
+                  : ` · ${dictionary.map.boundaryMissingOption}`}
               </option>
             ))}
           </select>
@@ -335,7 +333,7 @@ export function CountryDetailDrawer({
                   className="mx-auto size-7 animate-spin text-primary"
                 />
                 <p className="mt-3 text-sm text-muted-foreground">
-                  正在从国家 API 获取详情…
+                  {copy.detailsLoading}
                 </p>
               </div>
             </div>
@@ -350,7 +348,7 @@ export function CountryDetailDrawer({
                 aria-hidden="true"
                 className="size-5 text-destructive"
               />
-              <p className="mt-3 font-semibold">详情加载失败</p>
+              <p className="mt-3 font-semibold">{copy.detailError}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {currentDetail.message}
               </p>
@@ -361,7 +359,7 @@ export function CountryDetailDrawer({
                 variant="outline"
               >
                 <RotateCcw aria-hidden="true" className="size-3.5" />
-                重试
+                {dictionary.common.retry}
               </Button>
             </div>
           ) : null}
@@ -374,14 +372,13 @@ export function CountryDetailDrawer({
             >
               <MapPin aria-hidden="true" className="size-6 text-primary" />
               <h2 className="mt-4 text-lg font-semibold">
-                {currentDetail.response.iso3} 暂无数据
+                {currentDetail.response.iso3} {copy.noDataSuffix}
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {countryIndex.find(({ iso3: value }) => value === iso3)
                   ?.hasGeometry
-                  ? "地图中包含该国家边界，但数据库尚未录入可公开详情。"
-                  : "该国家属于目录，但当前地图资源暂缺其边界，数据库也尚未录入可公开详情。"}
-                系统不会用空白内容或模型推测代替事实。
+                  ? copy.geometryNoData
+                  : copy.missingGeometryNoData}
               </p>
             </div>
           ) : null}
@@ -401,7 +398,7 @@ export function CountryDetailDrawer({
 
         <DrawerFooter>
           <p className="text-xs leading-5 text-muted-foreground">
-            当前 URL 可直接复制分享；刷新后仍会恢复此国家。
+            {copy.shareableFooter}
           </p>
         </DrawerFooter>
       </DrawerContent>
@@ -422,6 +419,15 @@ function CountryDetailContent({
   ) => void;
   response: Extract<CountryDetailResponse, { status: "available" }>;
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.country;
+  const coverageLabels = {
+    covered: copy.coverageCovered,
+    demo: copy.coverageDemo,
+    no_data: copy.coverageNoData,
+    none: copy.coverageNone,
+    planned: copy.coveragePlanned,
+  } as const;
   const { country } = response;
   const contextKey = `${country.iso3}:${JSON.stringify(initialFilters ?? {})}`;
   const [committedFilters, setCommittedFilters] = useState<{
@@ -478,7 +484,7 @@ function CountryDetailContent({
         .then(async (result) => {
           if (!result.ok) {
             throw new Error(
-              await parseApiErrorMessage(result, "决策摘要请求失败"),
+              await parseApiErrorMessage(result, copy.decisionSummaryRequestError),
             );
           }
           return countryDetailResponseSchema.parse(await result.json());
@@ -499,7 +505,7 @@ function CountryDetailContent({
             contextKey,
             message: toUserFacingErrorMessage(
               error,
-              "决策摘要暂时无法刷新。",
+              copy.decisionSummaryErrorFallback,
             ),
           });
         })
@@ -509,7 +515,12 @@ function CountryDetailContent({
           }
         });
     },
-    [contextKey, country.iso3],
+    [
+      contextKey,
+      copy.decisionSummaryErrorFallback,
+      copy.decisionSummaryRequestError,
+      country.iso3,
+    ],
   );
 
   return (
@@ -518,10 +529,10 @@ function CountryDetailContent({
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
           <div className="flex items-center gap-2 font-semibold">
             <AlertTriangle aria-hidden="true" className="size-4" />
-            国家基础记录或其来源为虚构 Demo
+            {copy.demoCountryTitle}
           </div>
           <p className="mt-1.5 text-xs leading-5">
-            国家名称与基础资料用于测试交互；法规、市场、产品和来源请以每条卡片的分类徽标与核验日期为准。
+            {copy.demoCountryBody}
           </p>
         </div>
       ) : null}
@@ -536,31 +547,37 @@ function CountryDetailContent({
         <div className="flex items-center gap-2">
           <MapPin aria-hidden="true" className="size-4 text-primary" />
           <h2 className="font-semibold" id="country-basics">
-            国家概览
+            {copy.basics}
           </h2>
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-3">
           <DetailItem label="ISO3" value={country.iso3} />
           <DetailItem label="ISO2" value={country.iso2} />
-          <DetailItem label="本地名称" value={country.nameLocal ?? "未记录"} />
           <DetailItem
-            label="数据覆盖"
+            label={copy.localName}
+            value={country.nameLocal ?? dictionary.common.notRecorded}
+          />
+          <DetailItem
+            label={copy.coverage}
             value={coverageLabels[country.dataCoverageStatus]}
           />
-          <DetailItem label="区域" value={country.regionCode ?? "未记录"} />
           <DetailItem
-            label="子区域"
-            value={country.subregionCode ?? "未记录"}
+            label={copy.region}
+            value={country.regionCode ?? dictionary.common.notRecorded}
+          />
+          <DetailItem
+            label={copy.subregion}
+            value={country.subregionCode ?? dictionary.common.notRecorded}
           />
         </dl>
         <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
-          “已发布证据边界”只表示存在经治理发布、可追溯的资料，不保证每个应用场景都有数值；“最近核验”表示来源核对时间，不等于外部法规专家或法律签核。虚构 Demo 仅用于验证流程。
+          {copy.coverageSemantics}
         </p>
       </section>
 
       <RegulationSection
-        emptyMessage="在本次截止日期没有结构化的当前有效法规。"
-        heading="当前有效法规"
+        emptyMessage={copy.currentRegulationsEmpty}
+        heading={copy.currentRegulations}
         id="current-regulations"
         regulations={country.currentEffectiveRegulations}
       />
@@ -579,10 +596,10 @@ function CountryDetailContent({
         className="rounded-2xl border border-primary/20 bg-primary/5 p-4"
       >
         <h2 className="font-semibold" id="country-chat-analysis">
-          继续形成销售分析
+          {copy.chatTitle}
         </h2>
         <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-          将当前国家、用途、功率、日期及已选择的产品型号带入对话；对话结果仍需复核来源，不能替代正式认证或销售审批。
+          {copy.chatBody}
         </p>
         <a
           className={cn(buttonVariants(), "mt-3 w-full")}
@@ -594,13 +611,13 @@ function CountryDetailContent({
           onClick={cancelPendingProductEvaluation}
         >
           <MessageSquareText aria-hidden="true" className="size-4" />
-          在对话中分析
+          {copy.chatAction}
         </a>
       </section>
 
       <RegulationSection
-        emptyMessage="没有已通过且将在未来生效的结构化法规。拟议法规不会列入此处。"
-        heading="未来已通过法规"
+        emptyMessage={copy.futureRegulationsEmpty}
+        heading={copy.futureRegulations}
         id="future-regulations"
         regulations={country.futureAdoptedRegulations}
       />
@@ -609,7 +626,7 @@ function CountryDetailContent({
         <div className="flex items-center gap-2">
           <Landmark aria-hidden="true" className="size-4 text-primary" />
           <h2 className="font-semibold" id="country-jurisdictions">
-            适用司法辖区
+            {copy.jurisdiction}
           </h2>
         </div>
         {country.jurisdictions.length > 0 ? (
@@ -636,24 +653,24 @@ function CountryDetailContent({
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  编码：{jurisdiction.code} · 成员有效期：
-                  {jurisdiction.validFrom} → {jurisdiction.validTo ?? "开放"}
+                  {copy.code}{dictionary.common.labelSeparator}{jurisdiction.code} · {copy.membershipPeriod}{dictionary.common.labelSeparator}
+                  {formatUtcDate(jurisdiction.validFrom, locale)} → {formatOptionalUtcDate(jurisdiction.validTo, locale, dictionary.common.open)}
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  辖区来源：<SourceLink source={jurisdiction.source} /> · 核验{" "}
-                  {jurisdiction.jurisdictionVerifiedAt.slice(0, 10)}
+                  {copy.jurisdictionSource}{dictionary.common.labelSeparator}<SourceLink source={jurisdiction.source} /> · {copy.verifiedAt}{" "}
+                  {formatUtcDate(jurisdiction.jurisdictionVerifiedAt, locale)}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  成员关系来源：
-                  <SourceLink source={jurisdiction.membershipSource} /> · 核验{" "}
-                  {jurisdiction.verifiedAt.slice(0, 10)}
+                  {copy.membershipSource}{dictionary.common.labelSeparator}
+                  <SourceLink source={jurisdiction.membershipSource} /> · {copy.verifiedAt}{" "}
+                  {formatUtcDate(jurisdiction.verifiedAt, locale)}
                 </p>
               </article>
             ))}
           </div>
         ) : (
           <div className="mt-3 rounded-2xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-            当前截止日期没有可展示的适用司法辖区。
+            {copy.jurisdictionEmpty}
           </div>
         )}
       </section>
@@ -662,7 +679,7 @@ function CountryDetailContent({
         <div className="flex items-center gap-2">
           <BarChart3 aria-hidden="true" className="size-4 text-primary" />
           <h2 className="font-semibold" id="market-metrics">
-            市场指标
+            {copy.marketMetrics}
           </h2>
         </div>
         {country.marketMetrics.length > 0 ? (
@@ -681,7 +698,7 @@ function CountryDetailContent({
                       isDemo={metric.isDemo || metric.source.isDemo}
                     />
                     <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold">
-                      {metric.applicationScope ?? "全场景"}
+                      {metric.applicationScope ?? copy.allScopes}
                     </span>
                   </div>
                 </div>
@@ -695,22 +712,22 @@ function CountryDetailContent({
                   {metric.definition}
                 </p>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  期间：{metric.periodStart} → {metric.periodEnd} · 方法版本：
+                  {copy.period}{dictionary.common.labelSeparator}{formatUtcDate(metric.periodStart, locale)} → {formatUtcDate(metric.periodEnd, locale)} · {copy.methodology}{dictionary.common.labelSeparator}
                   {metric.methodologyVersion}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  指标发布：{metric.publishedOn ?? "未记录"}
+                  {copy.metricPublished}{dictionary.common.labelSeparator}{formatOptionalUtcDate(metric.publishedOn, locale, dictionary.common.notRecorded)}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  来源：<SourceLink source={metric.source} /> · 核验：
-                  {metric.source.verifiedAt.slice(0, 10)}
+                  {dictionary.common.source}{dictionary.common.labelSeparator}<SourceLink source={metric.source} /> · {copy.verifiedAt}{dictionary.common.labelSeparator}
+                  {formatUtcDate(metric.source.verifiedAt, locale)}
                 </p>
               </article>
             ))}
           </div>
         ) : (
           <div className="mt-3 rounded-2xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-            尚无可展示的结构化市场指标。
+            {copy.marketEmpty}
           </div>
         )}
       </section>
@@ -719,7 +736,7 @@ function CountryDetailContent({
         <div className="flex items-center gap-2">
           <Database aria-hidden="true" className="size-4 text-primary" />
           <h2 className="font-semibold" id="country-source">
-            数据来源与核验
+            {copy.dataSources}
           </h2>
         </div>
         <div className="mt-3 space-y-2">
@@ -735,11 +752,11 @@ function CountryDetailContent({
                 <DataClassificationBadge isDemo={source.isDemo} />
               </div>
               <p className="mt-1 text-muted-foreground">
-                {source.publisher ?? "未记录发布机构"}
+                {source.publisher ?? copy.noRecordPublisher}
               </p>
               <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <CalendarDays aria-hidden="true" className="size-3.5" />
-                最近核验：{source.verifiedAt.slice(0, 10)}
+                {copy.lastVerified}{dictionary.common.labelSeparator}{formatUtcDate(source.verifiedAt, locale)}
               </div>
             </article>
           ))}
@@ -747,11 +764,11 @@ function CountryDetailContent({
         <div className="mt-3 rounded-2xl bg-primary/5 p-4 text-sm">
           <div className="flex items-center gap-2 font-semibold">
             <Orbit aria-hidden="true" className="size-4 text-primary" />
-            详情核验时间
+            {copy.detailAsOf}
           </div>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            最近核验：{country.lastVerifiedAt.slice(0, 10)} ·
-            详情截止日期：{response.asOf}
+            {copy.lastVerified}{dictionary.common.labelSeparator}{formatUtcDate(country.lastVerifiedAt, locale)} ·{" "}
+            {copy.detailAsOf}{dictionary.common.labelSeparator}{formatUtcDate(response.asOf, locale)}
           </p>
           {country.isStale ? (
             <p
@@ -759,7 +776,7 @@ function CountryDetailContent({
               data-testid="country-stale-badge"
             >
               <AlertTriangle aria-hidden="true" className="size-3" />
-              核验可能过期，引用前请核实最新来源
+              {copy.staleBadge}
             </p>
           ) : null}
         </div>
@@ -779,8 +796,10 @@ type ApplicabilitySummary = NonNullable<
 function formatPowerBand(
   minimum: number | null,
   maximum: number | null,
+  unknown: string,
+  open: string,
 ): string {
-  return `[${minimum ?? "未知"}, ${maximum ?? "开放"}) kW`;
+  return `[${minimum ?? unknown}, ${maximum ?? open}) kW`;
 }
 
 function ApplicabilitySummarySection({
@@ -792,6 +811,9 @@ function ApplicabilitySummarySection({
   loading: boolean;
   summary: ApplicabilitySummary | null;
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.country;
+
   if (loading) {
     return (
       <section
@@ -799,7 +821,7 @@ function ApplicabilitySummarySection({
         className="rounded-2xl border bg-primary/5 p-4 text-sm"
         role="status"
       >
-        正在按新场景与功率刷新国家决策摘要…
+        {copy.applicabilitySummaryLoading}
       </section>
     );
   }
@@ -818,9 +840,9 @@ function ApplicabilitySummarySection({
   if (!summary) {
     return (
       <section className="rounded-2xl border border-dashed bg-muted/30 p-4">
-        <h2 className="font-semibold">国家决策摘要</h2>
+        <h2 className="font-semibold">{copy.applicabilitySummary}</h2>
         <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-          选择应用场景和功率并运行产品评估后，这里会用同一组确定性查询显示命中法规、功率带、限值和来源。
+          {copy.applicabilitySummaryEmpty}
         </p>
       </section>
     );
@@ -836,10 +858,10 @@ function ApplicabilitySummarySection({
       data-testid="country-applicability-summary"
     >
       <h2 className="font-semibold" id="country-applicability-summary">
-        国家决策摘要
+        {copy.applicabilitySummary}
       </h2>
       <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-        查询条件：{summary.query.applicationScope} · {summary.query.powerKw} kW · 截止 {summary.query.asOf}
+        {copy.queryConditions}{dictionary.common.labelSeparator}{summary.query.applicationScope} · {summary.query.powerKw} kW · {copy.queryAsOf} {formatUtcDate(summary.query.asOf, locale)}
       </p>
 
       {current.length > 0 ? (
@@ -851,13 +873,13 @@ function ApplicabilitySummarySection({
                   {regulation.canonicalName}
                 </h3>
                 <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-900">
-                  当前适用
+                  {copy.currentApplicable}
                 </span>
               </div>
               <div className="mt-2 space-y-1 text-xs">
                 {regulation.limits.map((limit) => (
                   <p key={limit.id}>
-                    {limit.pollutantCode}：{formatDecimalForDisplay(limit.limitValue)} {limit.unitCode} · 功率带 {formatPowerBand(limit.powerMinKw, limit.powerMaxKw)} · 限值期 {limit.validFrom} → {limit.validTo ?? "开放"}
+                    {limit.pollutantCode}{dictionary.common.labelSeparator}{formatDecimalForDisplay(limit.limitValue)} {limit.unitCode} · {copy.powerBand} {formatPowerBand(limit.powerMinKw, limit.powerMaxKw, dictionary.common.noData, dictionary.common.open)} · {copy.limitPeriod} {formatUtcDate(limit.validFrom, locale)} → {formatOptionalUtcDate(limit.validTo, locale, dictionary.common.open)}
                   </p>
                 ))}
               </div>
@@ -866,16 +888,16 @@ function ApplicabilitySummarySection({
         </div>
       ) : (
         <div className="mt-3 rounded-xl border border-dashed bg-background/70 p-3 text-xs leading-5 text-muted-foreground">
-          没有可证明覆盖本次场景、功率和日期的当前有效法规；系统不会据此推断“没有要求”。
+          {copy.decisionNoCurrent}
         </div>
       )}
 
       {future.length > 0 ? (
         <div className="mt-3 text-xs leading-5">
-          <p className="font-semibold">未来已通过</p>
+          <p className="font-semibold">{copy.futureAdopted}</p>
           {future.map((regulation) => (
             <p key={regulation.id}>
-              {regulation.canonicalName} · 预计生效 {regulation.effectiveFrom ?? "未知"}
+              {regulation.canonicalName} · {copy.effectiveDate} {formatOptionalUtcDate(regulation.effectiveFrom, locale, dictionary.common.noData)}
             </p>
           ))}
         </div>
@@ -883,7 +905,7 @@ function ApplicabilitySummarySection({
 
       {summary.missingData.length > 0 ? (
         <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
-          <p className="font-semibold">No-data / 证据缺口</p>
+          <p className="font-semibold">{copy.evidenceGap}</p>
           {summary.missingData.map((message) => (
             <p key={message}>{message}</p>
           ))}
@@ -892,10 +914,10 @@ function ApplicabilitySummarySection({
 
       <details className="mt-3 rounded-xl border bg-background/70 p-3 text-xs">
         <summary className="cursor-pointer font-semibold">
-          来源与核验信息（{summary.sources.length}）
+          {copy.sourceCount.replace("{count}", String(summary.sources.length))}
         </summary>
         <div className="mt-2 space-y-1 text-muted-foreground">
-          <p>最近核验：{summary.lastVerifiedAt?.slice(0, 10) ?? "未记录"}</p>
+          <p>{copy.lastVerified}{dictionary.common.labelSeparator}{formatOptionalUtcDate(summary.lastVerifiedAt, locale, dictionary.common.notRecorded)}</p>
           {summary.sources.map((source) => (
             <p key={`${source.entityType}:${source.entityId}:${source.sourceId}`}>
               {isNavigableEvidenceUrl(source.sourceUrl) ? (
@@ -909,7 +931,7 @@ function ApplicabilitySummarySection({
                 </a>
               ) : (
                 source.sourceTitle
-              )} · {source.locator ?? "未提供章节定位"} · 核验 {source.verifiedAt.slice(0, 10)}
+              )} · {source.locator ?? copy.noLocator} · {copy.verifiedAt} {formatUtcDate(source.verifiedAt, locale)}
             </p>
           ))}
         </div>
@@ -933,6 +955,19 @@ function RegulationSection({
   id: string;
   regulations: DisplayedRegulation[];
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.country;
+  const localizedStatusLabels = {
+    adopted: copy.statusAdopted,
+    effective: copy.statusEffective,
+    proposed: copy.statusProposed,
+    superseded: copy.statusSuperseded,
+  } as const;
+  const localizedStatusAtAsOfLabels = {
+    adopted: copy.statusAtAdopted,
+    effective: copy.statusAtEffective,
+  } as const;
+
   return (
     <section aria-labelledby={id}>
       <div className="flex items-center gap-2">
@@ -958,50 +993,50 @@ function RegulationSection({
                     isDemo={regulation.isDemo || regulation.source.isDemo}
                   />
                   <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold">
-                    {statusAtAsOfLabels[regulation.statusAtAsOf]}
+                    {localizedStatusAtAsOfLabels[regulation.statusAtAsOf]}
                   </span>
                   {regulation.status !== regulation.statusAtAsOf ? (
                     <span className="rounded-full border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-                      当前记录：{statusLabels[regulation.status]}
+                      {copy.archiveCurrent}{dictionary.common.labelSeparator}{localizedStatusLabels[regulation.status]}
                     </span>
                   ) : null}
                 </div>
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                 <DetailItem
-                  label="生效日期"
-                  value={formatDate(regulation.effectiveFrom)}
+                  label={copy.effectiveDate}
+                  value={formatOptionalUtcDate(regulation.effectiveFrom, locale, dictionary.common.notRecorded)}
                 />
                 <DetailItem
-                  label="结束日期"
-                  value={formatDate(regulation.effectiveTo)}
+                  label={copy.endDate}
+                  value={formatOptionalUtcDate(regulation.effectiveTo, locale, dictionary.common.notRecorded)}
                 />
               </dl>
               <details className="mt-3 border-t pt-3 text-xs text-muted-foreground">
                 <summary className="cursor-pointer font-semibold text-foreground">
-                  完整追溯信息
+                  {copy.formalTrace}
                 </summary>
                 <div className="mt-2">
-                  <p>法规记录 ID：{regulation.id}</p>
+                  <p>{copy.regulationId}{dictionary.common.labelSeparator}{regulation.id}</p>
                   <p className="mt-1">
-                    来源：<SourceLink source={regulation.source} /> · 核验：
-                    {regulation.source.verifiedAt.slice(0, 10)}
+                    {dictionary.common.source}{dictionary.common.labelSeparator}<SourceLink source={regulation.source} /> · {copy.verifiedAt}{dictionary.common.labelSeparator}
+                    {formatUtcDate(regulation.source.verifiedAt, locale)}
                   </p>
                 <p>
-                  适用辖区：
+                  {copy.applicableJurisdiction}{dictionary.common.labelSeparator}
                   {regulation.applicability.jurisdiction.name}（
-                  {regulation.applicability.jurisdiction.code}） · 成员有效期：
-                  {regulation.applicability.membership.validFrom} →{" "}
-                  {regulation.applicability.membership.validTo ?? "开放"}
+                  {regulation.applicability.jurisdiction.code}) · {copy.membershipPeriod}{dictionary.common.labelSeparator}
+                  {formatUtcDate(regulation.applicability.membership.validFrom, locale)} →{" "}
+                  {formatOptionalUtcDate(regulation.applicability.membership.validTo, locale, dictionary.common.open)}
                 </p>
                 <p className="mt-1">
-                  辖区来源：
+                  {copy.jurisdictionSource}{dictionary.common.labelSeparator}
                   <SourceLink
                     source={regulation.applicability.jurisdiction.source}
                   />
                 </p>
                 <p className="mt-1">
-                  成员关系来源：
+                  {copy.membershipSource}{dictionary.common.labelSeparator}
                   <SourceLink
                     source={regulation.applicability.membership.source}
                   />
@@ -1030,6 +1065,7 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 }
 
 function DataClassificationBadge({ isDemo }: { isDemo: boolean }) {
+  const { dictionary } = useLocale();
   return (
     <span
       className={
@@ -1038,7 +1074,7 @@ function DataClassificationBadge({ isDemo }: { isDemo: boolean }) {
           : "shrink-0 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-900"
       }
     >
-      {isDemo ? "虚构 Demo" : "已核验来源"}
+      {isDemo ? dictionary.country.demoBadge : dictionary.common.verifiedSource}
     </span>
   );
 }
@@ -1046,11 +1082,12 @@ function DataClassificationBadge({ isDemo }: { isDemo: boolean }) {
 type CountrySource = AvailableCountryResponse["country"]["sources"][number];
 
 function SourceLink({ source }: { source: CountrySource }) {
+  const { dictionary } = useLocale();
   if (!isNavigableEvidenceUrl(source.url)) {
     return (
       <span>
         {source.title}
-        {source.isDemo ? "（虚构证据，无外部链接）" : ""}
+        {source.isDemo ? dictionary.country.demoNoExternalSuffix : ""}
       </span>
     );
   }

@@ -1,6 +1,6 @@
 # 部署与运维基线（M2）
 
-本文件是发布前配置与检查的单一入口。红线以 `TASKS.md` §13.6 为准；本文件
+本文件是部署 runbook，不是当前 release 的事实来源。红线以 `TASKS.md` §13.6 为准；本文件
 把红线展开为可执行矩阵和检查单。
 
 > 当前代码、运行库与历史测量可能处于不同时间点。求职作品的最新可验证状态以
@@ -1533,8 +1533,9 @@ ties-to-even raw 查询端点纠错（560/560.001/560.500 kW 同属最高带，5
 - governance v3：fresh snapshot、SHA dry-run、serializable `--apply` 恢复演练、第二份
   snapshot 深比较、97 国逐项发布与目标图/scope 验收全部通过；跨域 commit marker 已
   原子提交并在公开验收后清理，未遗留 `RECOVERY_REQUIRED` 或 `PUBLISH_COMMITTED`。
-- 公网：178 个唯一国家目录均为 `covered`，97 个本轮目标国家页面/API 与代表性法规
-  语义通过；CHN 当前 3 条有效法规（含保留 Demo）及 CN-MEE/HJ 1014 来源链读回正确。
+- 公网：178 个唯一国家目录当时均返回 `covered`；该字段只表示已发布的目录/证据边界，
+  不表示 178 国均有数值法规。97 个本轮目标国家页面/API 与代表性法规语义通过；CHN
+  当时 3 条有效法规（含保留 Demo）及 CN-MEE/HJ 1014 来源链读回正确。
 - 运行：应用由 `diesel` uid 执行，Nginx 与 PM2 持久化检查通过；多模态边界及真实视觉
   流式请求通过。共享环境文件仍为 root 管理的 0640 普通文件，未输出任何秘密。
 
@@ -1839,7 +1840,10 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
 - gitleaks 使用固定版本且只允许精确占位值；依赖门禁拒绝任一 critical、新 high
   或已过期 high 例外，机器登记与处置时限见 `docs/DEPENDENCY_SECURITY.md`。
 
-## 7. 最近一次代码发布记录
+## 7. 2026-08-13 历史代码发布记录
+
+> 本节是带日期的历史记录，已被后续发布取代。当前生产 release ID 与 Git SHA
+> 只在 [STATUS.md](STATUS.md) 的 machine-readable snapshot 中维护。
 
 2026-08-13 已将 Git `832563d85ca42faf1bcf2fb26713224a088173e0` 版本化发布至
 `/opt/diesel/releases/832563d85ca42faf1bcf2fb26713224a088173e0`。该提交相对此前在役
@@ -1848,5 +1852,6 @@ Migration、fixture 或数据库写入，因此保留既有 PostgreSQL 治理图
 发布。发布过程创建 0600 的环境/Nginx/旧 release 回滚备份，远端冻结安装和生产构建通过，
 `current` 原子切换后 PM2 仅一个 `diesel-demo` 进程以 `diesel` uid 运行且零重启；内网与公网
 `/api/health` 均返回目标 Git 版本。公网 `/`、`/map`、`/chat`、`/countries/CHN` 为 200，
-`/api/countries` 返回 178 国且全部 `covered`，首页新标题读回成功；IP 与 VPS 内部备用 Host
+`/api/countries` 返回 178 个目录记录且当时全部标为 `covered`；这里的 `covered` 仅是
+目录/证据边界状态，不代表每国都有数值法规。首页新标题读回成功；IP 与 VPS 内部备用 Host
 均 301 到 `https://jamesky.site`，未遗留 `RECOVERY_REQUIRED` 或 `PUBLISH_COMMITTED`。

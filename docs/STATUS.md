@@ -1,8 +1,64 @@
-# 当前项目状态
+# Project status / 当前项目状态
 
 这是 README、部署文档和历史任务记录之间的当前状态索引。历史 ADR 和任务日志保留
 当时的计数，不回写历史；判断“现在是什么状态”时以本文件、代码 fixture 和运行库
 接口为准。
+
+## Verifiable portfolio snapshot / 可验证作品快照
+
+This machine-readable block is the single current source for the observed
+repository/public-runtime lineage, the last fully documented timestamped
+release, repository quality count, live-eval contract and public evidence
+summary. `pnpm portfolio:verify` resolves every recorded Git SHA without making
+network requests, checks the recorded lineage for internal consistency, lists
+Vitest tests, recomputes the fixture closure and approval manifests, and
+recalculates the live-eval report from its case-level results.
+
+<!-- portfolio-verification:start -->
+```json
+{
+  "repositoryHead": {
+    "observedAt": "2026-08-20T01:29+08:00",
+    "local": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
+    "remote": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6"
+  },
+  "currentPublicRelease": {
+    "id": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
+    "commit": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
+    "releasePath": "/opt/diesel/releases/5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
+    "observedAt": "2026-08-20T01:29+08:00"
+  },
+  "publicRuntime": {
+    "status": "ok",
+    "version": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
+    "readbackAt": "2026-08-20T01:29+08:00"
+  },
+  "lastDocumentedRelease": {
+    "id": "20260814144537",
+    "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee"
+  },
+  "qualitySnapshot": {
+    "vitestFiles": 76,
+    "vitestTests": 1141
+  },
+  "liveEval": {
+    "caseCount": 18,
+    "reportVersion": "sales-chat-live-v2"
+  },
+  "evidenceSummary": {
+    "jurisdictions": 97,
+    "regulations": 28,
+    "limits": 651,
+    "sources": 203,
+    "approvedRealProducts": 0,
+    "approvedRealCertifications": 0
+  }
+}
+```
+<!-- portfolio-verification:end -->
+
+The 178 ISO3 entries are a country directory and published evidence boundary,
+not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
@@ -33,13 +89,19 @@
   自 `2027-07-01`。BRN/BTN/SLB/TLS/MWI/SLE/SOM/SSD/TCD/SLV/SUR/TTO
   已以 #248–#259 / ADR-134 固定为每国恰好两条当前 source、四 scope no-data，
   统一 `verifiedAt=2026-08-10T23:08:11Z`。
-- 公开只读演示：<https://jamesky.site>。
-- 运行版本：由 <https://jamesky.site/api/health> 的 `version` 字段确定。
-- 生产运行版本：release `20260814144537`，来源 Git
-  `38541ac04c079afe03860db63af839a48d2cb740`，于 2026-08-14 完成仅代码的
-  版本化发布，不执行数据库写入。发布后独立读回复核 `/api/health`、PM2 降权进程、
-  PM2 systemd 复活链路、Nginx、首页、聊天页、代表国家页、地图 Demo 清理和公开产品
-  API 均通过；真实 AI 流式查询也完成模型、知识库工具、引用和最终回答的端到端读回。
+- 公开只读演示：<https://jamesky.site>。2026-08-20 01:29 CST 的只读核验中，
+  `/api/health` 返回 `status=ok`、
+  `version=5b35ced1e6e52ca1df9fec9d46f355b73b033ec6`，服务器当前 release 链接解析为
+  `/opt/diesel/releases/5b35ced1e6e52ca1df9fec9d46f355b73b033ec6`。因此当前公开 release ID
+  与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
+  `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
+  `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。
+- 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
+  release `20260814144537` / Git
+  `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的
+  版本化发布，不执行数据库写入；当时的独立读回复核 `/api/health`、PM2 降权进程、
+  PM2 systemd 复活链路、Nginx、首页、聊天页、代表国家页、地图 Demo 清理、公开产品
+  API 及真实 AI SSE 均通过。该 lineage 是历史文档基准，不是当前公开运行版本。
 - 运行库覆盖数量：2026-08-12 04:36 CST 从公开 `/api/countries` 读回 178 个唯一
   ISO3，全部为 `covered`；本轮 97 个目标国家均完成目标图与 scope 验收。`covered`
   只表示已发布核验边界，不表示四个 scope 都存在数值法规。
@@ -114,11 +176,11 @@ Seed 计数代表线上覆盖。
   外部模型，不得表述为真实模型任务成功率。发布后已用公开 `/api/chat` 完成真实模型与
   `searchKnowledgeBase` 的 SSE 读回；首次读回发现内部相对下载路径不能作为公开绝对来源
   URL，已由 `38541ac` 改为仅暴露已核验外部来源 URL，再次读回为结构化 `ok`。
-- 当前质量门：`pnpm lint`、`pnpm typecheck`、48 个文件 / 944 条 Vitest、
+- 该发布当时记录的质量门（历史快照）：`pnpm lint`、`pnpm typecheck`、48 个文件 / 944 条 Vitest、
   `pnpm ai:eval` 14/14、`pnpm build` 全部通过；完整 Playwright 为 71 passed / 7 skipped
   （桌面与 Pixel 7）。
 
-## FDE 作品强化（2026-08-15，本地待发布）
+## FDE 作品强化（2026-08-20，本地待发布）
 
 - `product-fit-v2` 已把法规/认证适配与查询日供应状态拆成双轴，并按
   `[availableFrom,availableTo)` 组合 `commercialReadiness`；销售简报只推荐 `ready`
@@ -128,10 +190,18 @@ Seed 计数代表线上覆盖。
 - 国家深链在 scope + power 齐全时服务端渲染确定性决策摘要；完整 UUID、辖区与来源
   追溯默认折叠。`pnpm demo:fde` 可在隔离 PGlite 中演示 CSV → Draft → Review →
   Publish → Query → Archive，始终标记 `LOCAL / MUTABLE / FICTIONAL`。
-- 最终 live eval 使用 `deepseek-v4-pro` 与隔离 PGlite 虚构事实完成 18/18 条、78,265
-  tokens；工具选择 94.44%、关键参数 100%、安全/证据失败关闭 100%，报告
-  `thresholdsPassed=true`。唯一失败单例为来源原文检索额外调用了国家画像工具；报告保留该
-  明细，不将 94.44% 写成 100%，也不把这次内部 eval 表述为客户效果。
+- 当前 `sales-chat-live-v2` 报告使用 `deepseek-v4-pro` 与隔离 PGlite 虚构事实，
+  复用生产 `streamSalesChat()` 循环，于 `2026-08-19T17:18:08.954Z` 完整执行并通过
+  18/18 个 case / 36 个 provider steps / 101,604 tokens。工具选择、关键参数、证据期望
+  准确率和安全失败关闭均为 100%，`thresholdsPassed=true`。case 期望未被反转，
+  这仍是内部 live-provider eval，不是客户效果。前一次完整 v2 运行中的来源检索
+  tokenization/fixture 失败保留在第三次归档；一次因网络失败而产生 0 model steps 的尝试未当作
+  有效报告或成绩。
+- 2026-08-14 的 v1 历史报告曾记录 18/18、78,265 tokens 和
+  `thresholdsPassed=true`，但其 scorer 只对 safety-critical case 比较
+  `expectedEvidenceAllowed`，隐藏了 6 个证据期望不匹配，并让其中 5 个误通过。
+  该报告仅作带明确缺陷标记的历史快照归档，不得再引用为有效 18/18 成绩；当前报告与
+  v2 历史失败记录见 `docs/evals/README.md`。
 - 生产已用精确 8 行 dry-run manifest、SHA/行漂移门和 serializable 事务完成归档与逐实体
   审计；执行前的 `pg_dump -Fc` 备份为 0600，SHA256 与 `pg_restore --list` 均通过。
   Migration 0011–0013 的最终状态仍以部署时的版本化 production readback 为唯一判据。

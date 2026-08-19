@@ -8,6 +8,7 @@ export default defineConfig([
   globalIgnores([
     ".next/**",
     ".next-e2e/**",
+    ".claude/worktrees/**",
     "coverage/**",
     "next-env.d.ts",
     "out/**",

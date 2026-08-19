@@ -1,5 +1,5 @@
 import { simulateReadableStream } from "ai";
-import { MockLanguageModelV3 } from "ai/test";
+import { MockLanguageModelV3, MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
 
 import { evaluateProductFit } from "@/domain/product-fit/evaluate-product-fit";
@@ -162,6 +162,73 @@ function noDataMockModel() {
               type: "text-delta" as const,
             },
             { id: "answer", type: "text-end" as const },
+            {
+              finishReason: { raw: undefined, unified: "stop" as const },
+              type: "finish" as const,
+              usage: emptyUsage,
+            },
+          ],
+        }),
+      },
+    ],
+  });
+}
+
+function noDataReasoningMockModel() {
+  return new MockLanguageModelV4({
+    modelId: "mock-reasoning-regulation-model",
+    provider: "mock",
+    doStream: [
+      {
+        stream: simulateReadableStream({
+          chunks: [
+            { type: "stream-start" as const, warnings: [] },
+            {
+              input: JSON.stringify({
+                countryIso3: "BRA",
+                topics: ["regulations"],
+              }),
+              toolCallId: "reasoning-country-profile-call",
+              toolName: "getCountryProfile",
+              type: "tool-call" as const,
+            },
+            {
+              finishReason: {
+                raw: undefined,
+                unified: "tool-calls" as const,
+              },
+              type: "finish" as const,
+              usage: emptyUsage,
+            },
+          ],
+        }),
+      },
+      {
+        stream: simulateReadableStream({
+          chunks: [
+            { type: "stream-start" as const, warnings: [] },
+            { id: "hidden-reasoning", type: "reasoning-start" as const },
+            {
+              delta: "REASONING-MOCK-FAKE-99",
+              id: "hidden-reasoning",
+              type: "reasoning-delta" as const,
+            },
+            { id: "hidden-reasoning", type: "reasoning-end" as const },
+            {
+              data: {
+                data: "UkVBU09OSU5HLUZJTEUtTU9DSy1GQUtFLTk5",
+                type: "data" as const,
+              },
+              mediaType: "text/plain",
+              type: "reasoning-file" as const,
+            },
+            { id: "reasoning-answer", type: "text-start" as const },
+            {
+              delta: "BRA 已生效法规是 MOCK-FAKE-99。",
+              id: "reasoning-answer",
+              type: "text-delta" as const,
+            },
+            { id: "reasoning-answer", type: "text-end" as const },
             {
               finishReason: { raw: undefined, unified: "stop" as const },
               type: "finish" as const,
@@ -1567,6 +1634,49 @@ describe("single-agent sales chat", () => {
     expect(model.doStreamCalls[0]?.maxOutputTokens).toBe(
       MAX_AI_OUTPUT_TOKENS,
     );
+  });
+
+  it("drops model reasoning before the evidence boundary reaches stream consumers", async () => {
+    const auditRepository = {
+      recordToolCall: vi.fn(async () => undefined),
+    };
+    const tools = createSalesChatTools({
+      auditRepository,
+      selectedCountryIso3: null,
+      services: {
+        getCountryDetails: async () => ({
+          iso3: "BRA",
+          status: "no_data" as const,
+        }),
+      },
+      sessionId: "00000000-0000-4000-8000-000000000921",
+    });
+    const result = streamSalesChat({
+      auditRepository,
+      messages: [
+        {
+          content: "BRA 当前有哪些柴油机排放法规？",
+          role: "user",
+        },
+      ],
+      model: noDataReasoningMockModel(),
+      selectedCountryIso3: null,
+      sessionId: "00000000-0000-4000-8000-000000000921",
+      tools,
+    });
+    const chunks = [];
+    for await (const chunk of result.fullStream) {
+      chunks.push(chunk);
+    }
+    const serialized = JSON.stringify(chunks);
+    const emittedText = chunks.flatMap((chunk) =>
+      chunk.type === "text-delta" ? [chunk.text] : []
+    ).join("");
+
+    expect(chunks.some(({ type }) => type.startsWith("reasoning"))).toBe(false);
+    expect(serialized).not.toContain("REASONING-MOCK-FAKE-99");
+    expect(serialized).not.toContain("BRA 已生效法规是 MOCK-FAKE-99");
+    expect(emittedText).toContain("没有足够证据");
   });
 
   it("allows attachment summaries behind an explicit unverified-content boundary", async () => {

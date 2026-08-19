@@ -60,7 +60,7 @@ export default defineConfig({
     },
     {
       name: "core-webkit",
-      testMatch: "accessibility.spec.ts",
+      testMatch: ["accessibility.spec.ts", "locale.spec.ts"],
       use: { ...devices["Desktop Safari"] },
     },
   ],

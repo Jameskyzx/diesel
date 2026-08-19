@@ -9,6 +9,7 @@ import {
 import {
   buildConversationBusinessContext,
   countryIso3sIn,
+  hasConversationComparisonIntent,
 } from "@/server/ai/conversation-context";
 import { currentUtcDate } from "@/server/ai/tool-results";
 
@@ -31,6 +32,7 @@ type EvidenceRequirement = {
 export type SalesChatEvidenceContract = {
   applicationScope: string | null;
   asOf: string | null;
+  blocksModelText: boolean;
   countryIso3s: string[];
   missingRequiredParameters: string[];
   powerKw: number | null;
@@ -44,12 +46,12 @@ const productFitIntentPattern =
   /(?:产品适配|适配产品|兼容产品|产品推荐|推荐.{0,6}(?:产品|型号)|型号.{0,8}(?:适配|匹配|兼容|能用|合规|认证)|(?:产品|发动机).{0,8}(?:适配|匹配|兼容|能用|合规|认证)|product\s*(?:fit|compatib))/iu;
 const regulationIntentPattern =
   /(?:法规|排放|限值|监管|合规|认证|标准|生效|采纳|已取代|effective|adopted|proposed|superseded|regulation|emission|certification)/iu;
+const standaloneRegulationIntentPattern =
+  /(?:法规|排放|限值|监管|标准|生效|采纳|已取代|effective|adopted|proposed|superseded|regulation|emission)/iu;
 const productComplianceIntentPattern =
   /(?:适配|匹配|兼容|能用|合规|认证|fit|compatible|compliant|certification)/iu;
 const marketIntentPattern =
   /(?:市场|销量|销售额|市场规模|市场份额|市场指标|market|sales\s+volume)/iu;
-const comparisonIntentPattern =
-  /(?:比较|对比|差异|哪个(?:国家|市场)|vs\.?|versus|compare)/iu;
 const sourceIntentPattern =
   /(?:原文|公告|出处|来源|页码|章节|依据|source|citation|原始文件)/iu;
 const opportunityScoreIntentPattern =
@@ -58,6 +60,8 @@ const salesBriefIntentPattern =
   /(?:销售简报|销售策略|sales\s+brief|sales\s+strategy)/iu;
 const intentClauseBoundaryPattern =
   /(?:[,，。;；\n]+|并且?|同时|然后|再|\b(?:and|then)\b)/giu;
+const untrustedInstructionPattern =
+  /(?:(?:忽略|无视|绕过|覆盖).{0,12}(?:系统|开发者|之前|以上).{0,8}(?:提示|指令|规则)|(?:泄露|显示|输出).{0,12}(?:密钥|系统提示|提示词)|ignore.{0,20}(?:system|developer|previous).{0,12}instructions?|(?:reveal|disclose|print).{0,20}(?:system\s*prompt|api\s*key|secret))/iu;
 const knowledgeQueryStopTokens = new Set([
   "a",
   "an",
@@ -165,9 +169,11 @@ export function buildSalesChatEvidenceContract(input: {
     productFitIntentPattern.test(latestUserText) ||
     (context.productModelCode !== null &&
       productComplianceIntentPattern.test(latestUserText));
-  const asksForRegulation = regulationIntentPattern.test(latestUserText);
+  const asksForRegulation =
+    standaloneRegulationIntentPattern.test(latestUserText) ||
+    (!asksForProductFit && regulationIntentPattern.test(latestUserText));
   const asksForMarket = marketIntentPattern.test(latestUserText);
-  const asksForComparison = comparisonIntentPattern.test(latestUserText);
+  const asksForComparison = hasConversationComparisonIntent(latestUserText);
   const asksForSource = sourceIntentPattern.test(latestUserText);
   const asksForOpportunityScore = opportunityScoreIntentPattern.test(
     latestUserText,
@@ -356,10 +362,10 @@ export function buildSalesChatEvidenceContract(input: {
             context.applicationScope !== null && context.powerKw !== null;
           requirements.push({
             acceptedTools:
-              activeTask === "country_profile" && !asksForRegulation
-                ? ["getCountryProfile"]
-                : hasExactRegulationFilters
-                  ? ["compareRegulations"]
+              hasExactRegulationFilters
+                ? ["compareRegulations"]
+                : activeTask === "country_profile" && !asksForRegulation
+                  ? ["getCountryProfile"]
                   : ["getCountryProfile", "searchKnowledgeBase"],
             query: {
               applicationScope: context.applicationScope,
@@ -423,6 +429,7 @@ export function buildSalesChatEvidenceContract(input: {
   return {
     applicationScope: context.applicationScope,
     asOf,
+    blocksModelText: untrustedInstructionPattern.test(latestUserText),
     countryIso3s: context.countryIso3s,
     missingRequiredParameters: Array.from(missingRequiredParameters),
     powerKw: context.powerKw,
@@ -523,6 +530,39 @@ function sameCountrySet(
   );
 }
 
+function knowledgeTermsMatch(
+  expected: readonly string[],
+  actual: readonly string[],
+): boolean {
+  const actualTerms = new Set(actual);
+  const sharedTerms = expected.filter((term) => actualTerms.has(term));
+  const conceptsIn = (terms: readonly string[]): Set<string> => {
+    const values = new Set(terms);
+    const concepts = new Set<string>();
+    const hasAll = (...tokens: string[]) => tokens.every((token) => values.has(token));
+    const hasAny = (...tokens: string[]) => tokens.some((token) => values.has(token));
+
+    if (hasAll("非", "道", "路") || hasAll("non", "road")) concepts.add("non-road");
+    if (hasAll("排", "放") || hasAny("emission", "emissions")) concepts.add("emissions");
+    if (hasAll("法", "规") || hasAny("regulation", "regulations", "rule", "rules")) concepts.add("regulation");
+    if (hasAll("原", "文") || hasAll("original", "text")) concepts.add("original-text");
+    if (hasAny("章", "节", "条", "款", "section", "sections", "clause", "clauses")) concepts.add("section");
+    if (hasAny("来", "证", "据", "source", "sources", "citation", "citations", "evidence")) concepts.add("source-evidence");
+    return concepts;
+  };
+  const expectedConcepts = conceptsIn(expected);
+  const actualConcepts = conceptsIn(actual);
+  const sharedConceptCount = [...expectedConcepts].filter((concept) =>
+    actualConcepts.has(concept),
+  ).length;
+
+  return (
+    sharedTerms.some((term) => !/^\p{Script=Han}$/u.test(term)) ||
+    sharedTerms.filter((term) => /^\p{Script=Han}$/u.test(term)).length >= 2 ||
+    sharedConceptCount >= 2
+  );
+}
+
 function queryMatchesExpectation(
   expectation: EvidenceQueryExpectation,
   result: AiToolResult,
@@ -543,9 +583,7 @@ function queryMatchesExpectation(
   ) {
     if (
       query.knowledgeTerms === undefined ||
-      !expectation.knowledgeTerms.some((term) =>
-        query.knowledgeTerms?.includes(term),
-      )
+      !knowledgeTermsMatch(expectation.knowledgeTerms, query.knowledgeTerms)
     ) {
       return false;
     }
@@ -653,6 +691,10 @@ export function evidenceContractAllowsModelText(
   contract: SalesChatEvidenceContract,
   results: readonly AiToolResult[],
 ): boolean {
+  if (contract.blocksModelText) {
+    return false;
+  }
+
   const sufficientResults = results.filter(
     (result) => result.status === "ok" && result.evidenceSufficient,
   );

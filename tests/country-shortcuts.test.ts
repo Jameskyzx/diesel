@@ -7,6 +7,9 @@ import {
 import type { CountryMapSummary } from "@/features/countries/schemas";
 
 function country(index: number): CountryMapSummary {
+  const iso2 = [Math.floor(index / 26) % 26, index % 26]
+    .map((digit) => String.fromCharCode("A".charCodeAt(0) + digit))
+    .join("");
   const iso3 = [
     Math.floor(index / (26 * 26)),
     Math.floor(index / 26) % 26,
@@ -18,6 +21,7 @@ function country(index: number): CountryMapSummary {
   return {
     dataCoverageStatus: "covered",
     isDemo: false,
+    iso2,
     iso3,
     isStale: false,
     nameEn: `Country ${String(index).padStart(3, "0")}`,

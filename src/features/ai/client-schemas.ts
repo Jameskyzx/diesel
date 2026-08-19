@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { httpUrlSchema } from "@/features/database/schemas";
+import { productFitReasonCodeSchema } from "@/features/product-fit/schemas";
 
 const clientCitationSchema = z
   .object({
@@ -158,7 +159,9 @@ const clientCompatibleProductsResultSchema = clientToolResultBase
           reasons: z.array(
             z
               .object({
+                code: productFitReasonCodeSchema,
                 message: z.string(),
+                status: z.enum(["pass", "fail", "unknown"]),
               })
               .passthrough(),
           ),
@@ -356,6 +359,7 @@ const clientSalesBriefResultSchema = clientToolResultBase
         opportunities: z.array(
           z
             .object({
+              evidenceIds: z.array(z.string()),
               text: z.string(),
               title: z.string(),
             })
@@ -381,6 +385,7 @@ const clientSalesBriefResultSchema = clientToolResultBase
         risks: z.array(
           z
             .object({
+              evidenceIds: z.array(z.string()),
               text: z.string(),
               title: z.string(),
             })

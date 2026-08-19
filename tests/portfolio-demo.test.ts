@@ -505,6 +505,18 @@ describe("portfolio demo structured sales-brief summary", () => {
     expect(summary).not.toContain("0/100");
   });
 
+  it("keeps the fixed English summary English without translating original card text", () => {
+    const summary = salesBriefSummaryFromPrompt(salesBriefPrompt(87), "en");
+
+    expect(summary).toContain("BRA has an overall opportunity score of 87/100");
+    expect(summary).toContain("identifies 1 risk(s)");
+    expect(summary).toContain("provides 1 rule-generated action(s)");
+    expect(summary).toContain(
+      "For information only; not a substitute for formal certification or legal advice.",
+    );
+    expect(summary).not.toMatch(/[\p{Script=Han}]/u);
+  });
+
   it("rejects a non-JSON or mismatched tool result", () => {
     expect(
       salesBriefSummaryFromPrompt([

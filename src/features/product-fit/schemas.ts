@@ -230,6 +230,9 @@ export type FitEvidenceSource = z.infer<typeof fitEvidenceSourceSchema>;
 export type ProductFitEvaluation = z.infer<
   typeof productFitEvaluationSchema
 >;
+export type ProductFitReasonCode = z.infer<
+  typeof productFitReasonCodeSchema
+>;
 export type ProductListResponse = z.infer<typeof productListResponseSchema>;
 export type ProductSummary = z.infer<typeof productSummarySchema>;
 export type RegulationEvidence = z.infer<typeof regulationEvidenceSchema>;

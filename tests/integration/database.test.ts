@@ -472,6 +472,29 @@ describe("database migration and demo seed", () => {
 
     expect(counts).toEqual([178, 2, 6, 2, 2, 2, 2, 1, 2, 6, 5]);
   });
+
+  it("seeds searchable embeddings for the Demo source-document fixture", async () => {
+    await seedDemoData(testDatabase.database);
+    const query = "CHN 非道路排放法规原文章节来源证据";
+    const repository = createKnowledgeRepository(testDatabase.database);
+    const rows = await repository.searchCandidates(
+      {
+        applicationScope: "non-road",
+        asOf: "2026-08-13",
+        countryIso3: "CHN",
+        jurisdictionId: demoIds.jurisdiction.china,
+        limit: 8,
+        query,
+      },
+      createLocalHashEmbedding(query),
+    );
+
+    expect(rows[0]).toMatchObject({
+      chunkId: demoIds.documentChunk.regulation,
+      countryIso3: "CHN",
+    });
+    expect(Number(rows[0]?.vectorDistance)).toBeLessThan(1);
+  });
 });
 
 describe("repositories", () => {

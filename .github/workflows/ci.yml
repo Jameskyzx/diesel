@@ -25,6 +25,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # portfolio:verify resolves both the current public runtime commit
+          # and the last fully documented release lineage.
+          fetch-depth: 0
 
       # pnpm/action-setup 从 package.json 的 packageManager 字段读取固定
       # 版本（pnpm@11.9.0），必须先于 setup-node，使 pnpm 缓存键与 store
@@ -49,6 +53,9 @@ jobs:
 
       - name: Unit and integration tests with coverage gate (PGlite)
         run: pnpm test:coverage
+
+      - name: Verify portfolio evidence snapshot
+        run: pnpm portfolio:verify
 
       - name: Drizzle migration check
         run: pnpm db:check
@@ -264,3 +271,33 @@ jobs:
       # 门禁与 high 级限时处置规则见 docs/DEPENDENCY_SECURITY.md。
       - name: Enforce dependency advisory policy
         run: pnpm audit:security
+
+  required:
+    name: Required CI gate
+    if: ${{ always() && github.event_name != 'schedule' }}
+    needs:
+      - quality
+      - postgres-migrations
+      - e2e
+      - portfolio-demo-e2e
+      - secrets
+      - audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every merge-blocking job to succeed
+        env:
+          AUDIT_RESULT: ${{ needs.audit.result }}
+          DEMO_RESULT: ${{ needs.portfolio-demo-e2e.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          POSTGRES_RESULT: ${{ needs.postgres-migrations.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          SECRETS_RESULT: ${{ needs.secrets.result }}
+        run: |
+          set -euo pipefail
+          test "${QUALITY_RESULT}" = "success"
+          test "${POSTGRES_RESULT}" = "success"
+          test "${E2E_RESULT}" = "success"
+          test "${DEMO_RESULT}" = "success"
+          test "${SECRETS_RESULT}" = "success"
+          test "${AUDIT_RESULT}" = "success"

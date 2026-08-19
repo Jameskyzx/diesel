@@ -9,10 +9,18 @@ type ToolPartLike = {
   state: DynamicToolUIPart["state"];
 };
 
+export type ToolPartErrorCode =
+  | "execution_error"
+  | "invalid_result"
+  | "permission_denied";
+
 export type ToolPartPresentation =
   | { kind: "loading" }
   | { kind: "result"; result: ClientAiToolResult }
-  | { kind: "error"; message: string };
+  | {
+      code: ToolPartErrorCode;
+      kind: "error";
+    };
 
 export function toolPartPresentation(
   part: ToolPartLike,
@@ -25,21 +33,21 @@ export function toolPartPresentation(
       return { kind: "loading" };
     case "output-error":
       return {
+        code: "execution_error",
         kind: "error",
-        message: "确定性查询失败，未生成事实结果。请重试本轮问题。",
       };
     case "output-denied":
       return {
+        code: "permission_denied",
         kind: "error",
-        message: "确定性查询未获执行许可，本轮没有可用事实结果。",
       };
     case "output-available": {
       const parsed = clientAiToolResultSchema.safeParse(part.output);
       return parsed.success
         ? { kind: "result", result: parsed.data }
         : {
+          code: "invalid_result",
           kind: "error",
-          message: "确定性查询返回了无法验证的结果，已停止展示该结果。",
         };
     }
     default: {

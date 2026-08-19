@@ -1,6 +1,8 @@
 import { LoaderCircle } from "lucide-react";
+import { getRequestDictionary } from "@/i18n/server";
 
-export default function CountryRouteLoading() {
+export default async function CountryRouteLoading() {
+  const copy = await getRequestDictionary();
   return (
     <div
       aria-busy="true"
@@ -14,7 +16,7 @@ export default function CountryRouteLoading() {
           className="mx-auto size-8 animate-spin text-primary motion-reduce:animate-none"
         />
         <p className="mt-3 text-sm text-muted-foreground">
-          正在恢复国家地图与详情…
+          {copy.map.loadingDetails}
         </p>
       </div>
     </div>

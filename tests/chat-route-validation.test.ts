@@ -58,7 +58,7 @@ describe("POST /api/chat validation ordering", () => {
     expect(response.headers.get("x-request-id")).toMatch(
       /^[0-9a-f-]{36}$/u,
     );
-    expect(await response.text()).toContain("结构化事实和可追溯来源");
+    expect(await response.text()).toContain("structured facts and traceable sources");
     expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
     expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();
     expect(mocks.ensureSession).not.toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe("POST /api/chat validation ordering", () => {
     expect(await response.json()).toMatchObject({
       error: {
         code: "INVALID_INPUT",
-        message: expect.stringContaining("无法安全读取"),
+        message: expect.stringContaining("could not be processed"),
       },
     });
     expect(mocks.getConfiguredAiModel).toHaveBeenCalledWith(undefined, {

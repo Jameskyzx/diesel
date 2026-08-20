@@ -11,6 +11,8 @@ import {
   isoDateSchema,
   powerKwSchema,
 } from "@/features/database/schemas";
+import { getDictionary } from "@/i18n/dictionaries";
+import { getRequestLocale } from "@/i18n/server";
 import {
   getCountryDirectory,
   isKnownCountryIso3,
@@ -34,7 +36,9 @@ export async function generateMetadata({
   const parsed = iso3Schema.safeParse(iso3);
 
   return {
-    title: parsed.success ? `${parsed.data} 国家详情` : "国家详情",
+    title: parsed.success
+      ? `${parsed.data} ${getDictionary(await getRequestLocale()).country.unknownCountryTitle}`
+      : getDictionary(await getRequestLocale()).country.unknownCountryTitle,
   };
 }
 
@@ -179,6 +183,8 @@ export default async function CountryPage({
     }),
   ]);
   const countryDirectory = getCountryDirectory();
+  const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
   const directoryEntry = countryDirectory.find(
     ({ iso3: value }) => value === parsed.data,
   );
@@ -191,7 +197,9 @@ export default async function CountryPage({
       initialCountryPanel={
         <CountryInitialPanel
           detail={initialCountryDetail}
+          dictionary={dictionary}
           hasGeometry={directoryEntry?.hasGeometry ?? false}
+          locale={locale}
         />
       }
       initialFilters={filters}

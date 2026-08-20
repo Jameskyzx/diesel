@@ -6,7 +6,7 @@ import {
   combineOpportunityScore,
   normalizeComparableMetric,
 } from "@/domain/marketing/opportunity-score";
-import type { ProductFitEvaluation } from "@/features/product-fit/schemas";
+import { OPPORTUNITY_SCORE_RULESET_VERSION } from "@/features/marketing/constants";
 import {
   compareMarketsInputSchema,
   compareRegulationsInputSchema,
@@ -21,6 +21,7 @@ import {
   type MarketObservation,
   type RegulationComparisonItem,
 } from "@/features/marketing/schemas";
+import type { ProductFitEvaluation } from "@/features/product-fit/schemas";
 import {
   getOpportunityScoreWeights,
   opportunityMetricDirections,
@@ -684,7 +685,7 @@ export async function calculateOpportunityScore(input: unknown) {
 
   return opportunityScorecardSchema.parse({
     query,
-    rulesetVersion: "opportunity-score-v2",
+    rulesetVersion: OPPORTUNITY_SCORE_RULESET_VERSION,
     scores,
     sources,
     weights,

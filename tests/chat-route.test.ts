@@ -308,7 +308,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
 
     // 普通问候走确定性引导，但仍在公共入口消耗一次配额。
     expect(first.status).toBe(200);
-    expect(await first.text()).toContain("结构化事实和可追溯来源");
+    expect(await first.text()).toContain("structured facts and traceable sources");
 
     const second = await routeModule.POST(chatRequest());
 
@@ -317,7 +317,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
     await expect(second.json()).resolves.toEqual({
       error: {
         code: "RATE_LIMITED",
-        message: "AI 聊天请求过于频繁，请稍后重试。",
+        message: "AI chat requests are arriving too quickly. Please try again later.",
       },
     });
   });
@@ -341,7 +341,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "INVALID_INPUT",
-        message: "聊天请求格式无效，请检查消息和国家上下文。",
+        message: "The chat request is invalid. Check the messages and country context.",
       },
     });
   });
@@ -370,7 +370,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
 
     // 信封通过校验，普通问候直接返回流式能力介绍，而不是进入模型配置。
     expect(response.status).toBe(200);
-    expect(await response.text()).toContain("结构化事实和可追溯来源");
+    expect(await response.text()).toContain("structured facts and traceable sources");
   });
 
   it("rejects a body that exceeds the server byte limit even when Content-Length is understated", async () => {
@@ -406,7 +406,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
       error: {
         code: "PAYLOAD_TOO_LARGE",
         message:
-          "聊天请求过大，请减少附件数量、缩小附件或缩短消息历史后重试。",
+          "The chat request is too large. Remove attachments, reduce their size, or shorten the message history.",
       },
     });
   });
@@ -458,7 +458,8 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
     await expect(third.json()).resolves.toEqual({
       error: {
         code: "RATE_LIMITED",
-        message: "AI 聊天并发请求过多，请等待当前请求完成后重试。",
+        message:
+          "Too many AI chat requests are in flight. Wait for the current request to finish and retry.",
       },
     });
 
@@ -518,7 +519,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
       await expect(response.json()).resolves.toEqual({
         error: {
           code: "REQUEST_TIMEOUT",
-          message: "聊天请求上传超时，请检查网络后重试。",
+          message: "The chat upload timed out. Check the connection and try again.",
         },
       });
       expect(cancel).toHaveBeenCalledOnce();

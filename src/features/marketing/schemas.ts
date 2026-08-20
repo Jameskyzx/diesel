@@ -7,6 +7,7 @@ import {
   isoDateSchema,
   powerKwSchema,
 } from "@/features/database/schemas";
+import { OPPORTUNITY_SCORE_RULESET_VERSION } from "@/features/marketing/constants";
 
 const isoTimestampSchema = z.iso.datetime({ offset: true });
 
@@ -309,7 +310,7 @@ export const countryOpportunityScoreSchema = z
 export const opportunityScorecardSchema = z
   .object({
     query: calculateOpportunityScoreInputSchema,
-    rulesetVersion: z.literal("opportunity-score-v2"),
+    rulesetVersion: z.literal(OPPORTUNITY_SCORE_RULESET_VERSION),
     scores: z.array(countryOpportunityScoreSchema),
     sources: z.array(analysisSourceSchema),
     weights: opportunityScoreWeightsSchema,

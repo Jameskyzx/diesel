@@ -1,4 +1,7 @@
-export default function Loading() {
+import { getRequestDictionary } from "@/i18n/server";
+
+export default async function Loading() {
+  const copy = (await getRequestDictionary()).state;
   return (
     <div
       aria-busy="true"
@@ -6,7 +9,7 @@ export default function Loading() {
       className="mx-auto w-full max-w-7xl px-6 py-12 lg:px-8"
       role="status"
     >
-      <span className="sr-only">正在加载页面</span>
+      <span className="sr-only">{copy.loading}</span>
       <div className="animate-pulse space-y-8 motion-reduce:animate-none">
         <div className="space-y-3">
           <div className="h-4 w-36 rounded-full bg-muted" />

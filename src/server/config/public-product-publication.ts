@@ -13,12 +13,12 @@ type ProductPublicationCandidate = PublicationCandidate & {
   specificationVersion: string;
 };
 
-type ProductApproval = {
+export type ProductApproval = {
   sourceId: string;
   specificationVersion: string;
 };
 
-type CertificationApproval = {
+export type CertificationApproval = {
   sourceId: string;
 };
 
@@ -42,14 +42,15 @@ export function getApprovedRealCertificationIds(): readonly string[] {
   return Object.keys(approvedRealCertifications).sort();
 }
 
-export function isPublicProductApproved(
+export function isProductApprovedByManifest(
   product: ProductPublicationCandidate,
+  approvals: Readonly<Record<string, ProductApproval>>,
 ): boolean {
   if (product.isDemo) {
     return product.source.isDemo;
   }
 
-  const approval = approvedRealProducts[product.id];
+  const approval = approvals[product.id];
   return (
     !product.source.isDemo &&
     approval?.sourceId === product.source.id &&
@@ -57,8 +58,9 @@ export function isPublicProductApproved(
   );
 }
 
-export function isPublicCertificationApproved(
+export function isCertificationApprovedByManifest(
   certification: PublicationCandidate,
+  approvals: Readonly<Record<string, CertificationApproval>>,
 ): boolean {
   if (certification.isDemo) {
     return certification.source.isDemo;
@@ -66,7 +68,21 @@ export function isPublicCertificationApproved(
 
   return (
     !certification.source.isDemo &&
-    approvedRealCertifications[certification.id]?.sourceId ===
-      certification.source.id
+    approvals[certification.id]?.sourceId === certification.source.id
+  );
+}
+
+export function isPublicProductApproved(
+  product: ProductPublicationCandidate,
+): boolean {
+  return isProductApprovedByManifest(product, approvedRealProducts);
+}
+
+export function isPublicCertificationApproved(
+  certification: PublicationCandidate,
+): boolean {
+  return isCertificationApprovedByManifest(
+    certification,
+    approvedRealCertifications,
   );
 }

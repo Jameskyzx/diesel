@@ -13,6 +13,13 @@ import {
 } from "@/features/marketing/schemas";
 
 const isoTimestampSchema = z.iso.datetime({ offset: true });
+const iso2Schema = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim().toUpperCase() : value),
+  z
+    .string()
+    .length(2)
+    .regex(/^[A-Z]{2}$/, "ISO2 must contain two uppercase ASCII letters"),
+);
 
 export const countryGeoIndexSchema = z.array(
   z
@@ -26,6 +33,7 @@ export const countryGeoIndexSchema = z.array(
 export const countryDirectoryEntrySchema = z
   .object({
     hasGeometry: z.boolean(),
+    iso2: iso2Schema,
     iso3: iso3Schema,
     name: z.string().trim().min(1),
   })
@@ -56,6 +64,7 @@ export const countryMapSummarySchema = z
   .object({
     dataCoverageStatus: dataCoverageStatusSchema,
     isDemo: z.boolean(),
+    iso2: iso2Schema,
     iso3: iso3Schema,
     isStale: z.boolean(),
     nameEn: z.string().trim().min(1),
@@ -165,7 +174,6 @@ const countryDetailSchema = countryMapSummarySchema
       currentEffectiveRegulationSummarySchema,
     ),
     futureAdoptedRegulations: z.array(futureAdoptedRegulationSummarySchema),
-    iso2: z.string().length(2),
     jurisdictions: z.array(jurisdictionSummarySchema),
     lastVerifiedAt: isoTimestampSchema,
     marketMetrics: z.array(marketMetricSchema),

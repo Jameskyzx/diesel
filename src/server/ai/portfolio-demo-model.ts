@@ -6,6 +6,7 @@ import { MockLanguageModelV3 } from "ai/test";
 import { generateSalesBriefResultSchema } from "@/features/ai/schemas";
 import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
 import { currentUtcDate } from "@/server/ai/tool-results";
+import type { Locale } from "@/i18n/locale";
 
 const emptyUsage = {
   inputTokens: {
@@ -224,7 +225,35 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export function salesBriefSummaryFromPrompt(prompt: unknown): string | null {
+function localeFromPrompt(prompt: unknown): Locale {
+  if (!Array.isArray(prompt)) {
+    return "zh-CN";
+  }
+  for (const message of prompt) {
+    if (!isRecord(message) || message.role !== "system") {
+      continue;
+    }
+    const texts = typeof message.content === "string"
+      ? [message.content]
+      : Array.isArray(message.content)
+        ? message.content.flatMap((part: unknown) =>
+            isRecord(part) && typeof part.text === "string" ? [part.text] : [],
+          )
+        : [];
+    const locale = texts.join("\n").match(
+      /<sales_chat_system_prompt\b[^>]*\blocale="(en|zh-CN)"/u,
+    )?.[1];
+    if (locale === "en" || locale === "zh-CN") {
+      return locale;
+    }
+  }
+  return "zh-CN";
+}
+
+export function salesBriefSummaryFromPrompt(
+  prompt: unknown,
+  locale: Locale = "zh-CN",
+): string | null {
   if (!Array.isArray(prompt)) {
     return null;
   }
@@ -272,16 +301,30 @@ export function salesBriefSummaryFromPrompt(prompt: unknown): string | null {
 
       const score =
         brief.marketScore.overallScore === null
-          ? `${brief.marketScore.countryIso3} 当前证据下不可评分`
-          : `${brief.marketScore.countryIso3} 总体机会分为 ${brief.marketScore.overallScore}/100`;
+          ? locale === "en"
+            ? `${brief.marketScore.countryIso3} cannot be scored with the current evidence`
+            : `${brief.marketScore.countryIso3} 当前证据下不可评分`
+          : locale === "en"
+            ? `${brief.marketScore.countryIso3} has an overall opportunity score of ${brief.marketScore.overallScore}/100`
+            : `${brief.marketScore.countryIso3} 总体机会分为 ${brief.marketScore.overallScore}/100`;
       const risk = brief.risks[0]
-        ? `首要风险：${brief.risks[0].title}：${brief.risks[0].text}。`
-        : "结构化简报未列出风险。";
+        ? locale === "en"
+          ? `The structured brief identifies ${brief.risks.length} risk(s); review the structured card for the original deterministic wording.`
+          : `首要风险：${brief.risks[0].title}：${brief.risks[0].text}。`
+        : locale === "en"
+          ? "The structured brief lists no risk."
+          : "结构化简报未列出风险。";
       const action = brief.salesActions[0]
-        ? `第一行动：${brief.salesActions[0].action}。`
-        : "结构化简报未列出行动。";
+        ? locale === "en"
+          ? `The structured brief provides ${brief.salesActions.length} rule-generated action(s); review priorities and rationale in the structured card.`
+          : `第一行动：${brief.salesActions[0].action}。`
+        : locale === "en"
+          ? "The structured brief lists no action."
+          : "结构化简报未列出行动。";
 
-      return `${score}（数据覆盖率 ${brief.marketScore.dataCoveragePct}%）。${risk}${action}\n\n离线 Demo 仅使用明确标记的虚构 fixture，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见`;
+      return locale === "en"
+        ? `${score} (data coverage ${brief.marketScore.dataCoveragePct}%). ${risk} ${action}\n\nThe offline demo uses explicitly fictional fixtures and cannot support quotes, certification claims, or sales commitments.\n\nFor information only; not a substitute for formal certification or legal advice.`
+        : `${score}（数据覆盖率 ${brief.marketScore.dataCoveragePct}%）。${risk}${action}\n\n离线 Demo 仅使用明确标记的虚构 fixture，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见`;
     }
   }
 
@@ -291,7 +334,30 @@ export function salesBriefSummaryFromPrompt(prompt: unknown): string | null {
 function toolSummary(
   toolName: PortfolioDemoToolCall["toolName"],
   prompt: unknown,
+  locale: Locale,
 ): string {
+  if (locale === "en") {
+    if (toolName === "findCompatibleProducts") {
+      return "The product-fit-v2 deterministic match is complete. Review regulatory/certification fit, query-date availability, and commercial readiness in the structured card. The offline demo uses explicitly fictional product and certification fixtures.\n\nFor information only; not a substitute for formal certification or legal advice.";
+    }
+    if (toolName === "compareRegulations") {
+      return "The regulations were compared under the same application, power, and date. Review statuses, limits, and sources in the structured card. The offline demo uses explicitly fictional fixtures.\n\nFor information only; not a substitute for formal certification or legal advice.";
+    }
+    if (toolName === "compareMarkets") {
+      return "Structured market metrics were queried using aligned methodology. Review comparability, observations, and sources in the structured card. The offline demo uses explicitly fictional fixtures.";
+    }
+    if (toolName === "calculateOpportunityScore") {
+      return "The opportunity-score-v2 deterministic calculation is complete. Product readiness includes both compliance fit and query-date availability. Review scores, weights, coverage, and gaps in the structured card; the offline demo uses explicitly fictional fixtures.";
+    }
+    if (toolName === "generateSalesBrief") {
+      return salesBriefSummaryFromPrompt(prompt, locale) ??
+        "The deterministic sales brief is complete. Review opportunities, risks, products, actions, and data gaps in the structured card. The offline demo uses explicitly fictional fixtures and cannot support quotes, certification claims, or sales commitments.\n\nFor information only; not a substitute for formal certification or legal advice.";
+    }
+    if (toolName === "searchKnowledgeBase") {
+      return "Traceable document evidence was searched. Review matched text, page or section, validity, and source in the structured card. The offline demo uses explicitly fictional fixtures.\n\nFor information only; not a substitute for formal certification or legal advice.";
+    }
+    return "The country profile was queried. Review current effective rules, future adopted rules, verification time, and sources in the structured card. The offline demo uses explicitly fictional fixtures.\n\nFor information only; not a substitute for formal certification or legal advice.";
+  }
   if (toolName === "findCompatibleProducts") {
     return "已运行 product-fit-v2 确定性匹配。法规/认证适配、查询日供应状态和商业准备度以结构化卡片为准；离线 Demo 只使用明确标记的虚构产品与认证 fixture。\n\n信息参考，不替代正式认证或法律意见";
   }
@@ -357,6 +423,7 @@ export function createPortfolioDemoModel() {
       const text = toolSummary(
         selectedTool?.toolName ?? "getCountryProfile",
         options.prompt,
+        localeFromPrompt(options.prompt),
       );
       return {
         stream: simulateReadableStream({

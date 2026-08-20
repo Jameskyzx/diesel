@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { interpolate } from "@/i18n/dictionaries";
 
 const markdownPlugins = [remarkGfm];
 
@@ -125,13 +126,6 @@ const markdownComponents: Components = {
   hr() {
     return <hr className="my-4 border-black/10" />;
   },
-  img({ alt }) {
-    return (
-      <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-900">
-        [已隐藏模型图片{alt ? `：${alt}` : ""}]
-      </span>
-    );
-  },
   input({ checked, type }) {
     if (type !== "checkbox") {
       return null;
@@ -209,14 +203,31 @@ const markdownComponents: Components = {
 export function AssistantMarkdown({
   allowedExternalUrls = [],
   content,
+  hiddenImage = "[Model image hidden]",
+  hiddenImageWithAlt = "[Model image hidden: {alt}]",
 }: {
   allowedExternalUrls?: readonly string[];
   content: string;
+  hiddenImage?: string;
+  hiddenImageWithAlt?: string;
 }) {
+  const components: Components = {
+    ...markdownComponents,
+    img({ alt }) {
+      return (
+        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-900">
+          {alt
+            ? interpolate(hiddenImageWithAlt, { alt })
+            : hiddenImage}
+        </span>
+      );
+    },
+  };
+
   return (
     <div className="min-w-0 text-slate-700" data-testid="assistant-markdown">
       <ReactMarkdown
-        components={markdownComponents}
+        components={components}
         remarkPlugins={markdownPlugins}
         skipHtml
         urlTransform={(value) =>

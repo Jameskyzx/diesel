@@ -449,7 +449,9 @@ MVP 采用“结构化结果优先”：
   `streamText` 调用服务端环境变量中的 OpenAI-compatible 配置。真实 Key 只从
   `.env.local` 或部署平台 Secret Manager 读取，不进入浏览器、审计、错误响应或
   `modelId`。接口地址仍经 Zod 校验并限定为公开 HTTPS，拒绝 localhost、私网、
-  link-local 和内嵌凭据地址。服务商支持时，服务端可配置 `enable_thinking` 扩展参数。
+  link-local 和内嵌凭据地址。服务商支持时，服务端可配置 `enable_thinking` 扩展参数；
+  该参数只影响模型内部生成，流级证据边界会丢弃全部 reasoning part，Route Handler 也
+  显式设置 `sendReasoning=false`，不会把模型推理文本发送到浏览器。
 - 只读工具固定为 `searchKnowledgeBase`、`getCountryProfile`、
   `findCompatibleProducts`、法规/市场比较、机会评分和销售简报。国家与知识工具复用
   既有 service；产品工具在未指定型号时遍历目录，收到 `productModelCode` 时只评估该
@@ -475,6 +477,10 @@ MVP 采用“结构化结果优先”：
   至少有一个有效重合；检索片段即使包含指令或 URL 也只能作为待解释数据。离线
   `pnpm ai:eval` 用固定 golden prompts 检查分流、
   缺参、初始工具集合和停止阶段，不调用外部模型；它不冒充真实 provider 成功率评估。
+- `pnpm ai:eval:live` v2 直接复用上述生产 `streamSalesChat`、独立多轮用户消息与最多五步
+  的动态工具循环。每条 case 都硬性核对 evidence allow/deny 期望，异常不能计为安全通过；
+  报告另外保存总模型步数、工具步数与 160,000 token 的 case 边界预算，不保存 prompt 或
+  完整模型输出。
 - 流级 evidence boundary 跟踪本轮结构化工具结果；工具结果卡片继续即时流式输出，
   模型自然语言则缓冲到完整顺序/并行工具链结束后再判定。若证据不充分，丢弃已缓冲
   的结论文本并按失败工具生成具体缺口和下一步，同时输出法规免责声明；不得用统一

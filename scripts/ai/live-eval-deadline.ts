@@ -4,8 +4,16 @@ type LiveEvalCaseDeadlineInput<T> = {
   timeoutMs: number;
 };
 
+export class LiveEvalCaseTimeoutError extends Error {
+  override readonly name = "LiveEvalCaseTimeoutError";
+
+  constructor() {
+    super("Live eval case exceeded its deadline.");
+  }
+}
+
 function deadlineError(): Error {
-  return new Error("Live eval case exceeded its deadline.");
+  return new LiveEvalCaseTimeoutError();
 }
 
 export async function runWithLiveEvalCaseDeadline<T>(

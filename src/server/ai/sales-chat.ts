@@ -964,6 +964,7 @@ export function streamSalesChat(input: {
   model: LanguageModel;
   modelId?: string;
   onStepMetrics?: (step: SalesChatStepObservation) => void;
+  onStreamError?: (error: unknown) => void;
   requestId?: string;
   requestStartedAtMs?: number;
   selectedCountryIso3: string | null;
@@ -1049,7 +1050,7 @@ export function streamSalesChat(input: {
         totalTokens: usage.totalTokens ?? null,
       });
     },
-    onError: () => {
+    onError: ({ error }) => {
       emitCompletion({
         errorCode: "MODEL_STREAM_ERROR",
         evidenceResult: "error",
@@ -1059,6 +1060,11 @@ export function streamSalesChat(input: {
         toolCount: 0,
         totalTokens: null,
       });
+      try {
+        input.onStreamError?.(error);
+      } catch {
+        // This optional observer must never change the user-facing stream.
+      }
     },
     onStepEnd: (step) => {
       input.onStepMetrics?.(toSalesChatStepObservation(step));

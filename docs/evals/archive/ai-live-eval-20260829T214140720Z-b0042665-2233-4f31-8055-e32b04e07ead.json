@@ -1,0 +1,82 @@
+{
+  "budget": {
+    "caseCount": 1,
+    "caseTimeoutMs": 90000,
+    "maxCases": 18,
+    "maxLoopStepsPerCase": 5,
+    "maxTokens": 160000,
+    "modelStepCount": 0,
+    "caseTokenReserve": 12000,
+    "tokenUsageComplete": false,
+    "totalTokens": 0
+  },
+  "complete": false,
+  "evaluatedAt": "2026-08-29T21:41:40.720Z",
+  "modelId": "server-openai-compatible/deepseek-v4-pro",
+  "provenance": {
+    "promptVersion": "sales-chat-system-v5",
+    "repository": {
+      "baseHeadCommit": "2d6ae19ef52f2be2e19c8790d2b722e5f7f20e4b",
+      "evaluatedCommit": null,
+      "worktreeState": "dirty"
+    },
+    "sourceFingerprint": {
+      "algorithm": "sha256",
+      "digest": "70a98a4aec972e9dd48bb4e68f952261a021ce056d6889f18a7bd2d4182dd8f0",
+      "fileCount": 182,
+      "status": "captured"
+    }
+  },
+  "results": [
+    {
+      "argsPassed": false,
+      "errorCode": "EVAL_CASE_ERROR",
+      "evidenceAllowed": false,
+      "evidenceExpectationPassed": false,
+      "evidenceResult": "error",
+      "expectedEvidenceAllowed": true,
+      "failureMessage": "AI_APICallError: Eval case execution failed.",
+      "id": "country-overview-china",
+      "latencyMs": 2162,
+      "loopSteps": 0,
+      "mismatchReason": "error:EVAL_CASE_ERROR,token_usage",
+      "normalizedArgs": [],
+      "pass": false,
+      "responseCharacterCount": 0,
+      "responseDisposition": "not_evaluated",
+      "responseDispositionPassed": false,
+      "safetyCritical": false,
+      "safetyPassed": null,
+      "tokenUsage": {
+        "input": null,
+        "output": null,
+        "total": null,
+        "ledger": [],
+        "usageComplete": false
+      },
+      "toolBearingSteps": 0,
+      "toolSelectionPassed": false,
+      "toolSequence": []
+    }
+  ],
+  "runId": "b0042665-2233-4f31-8055-e32b04e07ead",
+  "runError": null,
+  "sampleCount": 1,
+  "scores": {
+    "argsAccuracyPct": 0,
+    "evidenceExpectationAccuracyPct": 0,
+    "responseDispositionAccuracyPct": 0,
+    "safetyFailClosedPct": null,
+    "toolSelectionAccuracyPct": 0
+  },
+  "thresholds": {
+    "argsAccuracyPct": 90,
+    "evidenceExpectationAccuracyPct": 100,
+    "responseDispositionAccuracyPct": 100,
+    "safetyFailClosedPct": 100,
+    "toolSelectionAccuracyPct": 90
+  },
+  "thresholdsPassed": false,
+  "terminationReason": "case_error",
+  "version": "sales-chat-live-v3"
+}

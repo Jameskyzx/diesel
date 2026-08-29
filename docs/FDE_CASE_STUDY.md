@@ -112,17 +112,20 @@ stricter per-step usage-completeness marker, so it is not the current acceptance
 result and must not be cited as a current pass.
 
 The [current hardened v3 attempt](evals/ai-live-eval-latest.json), evaluated at
-`2026-08-29T21:24:34.023Z`, stopped on the first case: only `1/18` of the suite
+`2026-08-29T21:42:21.987Z`, stopped on the first case: only `1/18` of the suite
 was recorded (and it did not pass), with 0 provider steps and 0 known tokens.
 The token ledger is incomplete, so zero known tokens is not a claim of zero
 provider billing. The case ended with `EVAL_CASE_ERROR`; the run terminated as
 `case_error`, and the report records `complete=false` and
 `thresholdsPassed=false`. Tool selection, argument, evidence-expectation, and
 response-disposition scores are 0% for that single failed sample; safety is not
-applicable. With no usable provider step, this run cannot support a
-model-quality conclusion or a more specific provider root cause. The honest
-next action is to diagnose the case execution failure and run the full hardened
-suite again, not infer or backfill a successful result.
+applicable. The allowlisted diagnostic is `AI_APICallError (HTTP 403)`, reproduced
+outside the sandbox. That establishes a provider denial but does not distinguish
+credential permission, model entitlement, source-network policy, or regional
+policy. No raw provider message, body, URL, header, or request value is stored.
+With no usable provider step, this run cannot support a model-quality conclusion.
+The honest next action is to restore provider access and rerun the full hardened
+suite, not infer or backfill a successful result.
 
 This is a stronger FDE artifact than a polished but unauditable score: it shows
 the faulty measurement, the bounded failure evidence, the corrected contract,
@@ -249,14 +252,16 @@ case 必须产生有实质内容的 `answered` 回答；证据不允许的 case 
 更严格的逐 step usage 完整性字段，因此它不是当前验收结果，也不得引用为当前通过成绩。
 
 [当前 hardened v3 尝试](evals/ai-live-eval-latest.json)于
-`2026-08-29T21:24:34.023Z` 在第一条 case 即停止：只记录了 `1/18` 条（并非通过
+`2026-08-29T21:42:21.987Z` 在第一条 case 即停止：只记录了 `1/18` 条（并非通过
 1 条），provider steps 为 0，已知 tokens 为 0。Token ledger
 不完整，因此“已知 token 为 0”不代表 provider 账单一定为 0。该 case 以
 `EVAL_CASE_ERROR` 结束，整次运行以 `case_error` 终止；报告明确记录
 `complete=false` 和 `thresholdsPassed=false`。这个单条失败样本的工具选择、参数、
-证据期望和回答处置得分均为 0%，安全指标不适用。由于没有可用的 provider step，本次
-结果不能支撑模型质量结论，也不能证明更具体的 provider 根因。诚实的
-下一步是诊断 case 执行失败并重新运行完整 hardened suite，而不是推断或回填成功结果。
+证据期望和回答处置得分均为 0%，安全指标不适用。白名单诊断为
+`AI_APICallError (HTTP 403)`，并在沙箱外复现；这能证明 provider 拒绝请求，但不能区分
+凭据权限、模型 entitlement、来源网络或区域策略。报告不保存 provider 原始消息、响应体、
+URL、Header 或请求数据。由于没有可用的 provider step，本次结果不能支撑模型质量结论。
+诚实的下一步是恢复 provider 访问后重新运行完整 hardened suite，而不是推断或回填成功结果。
 
 与一份漂亮但不可审计的分数相比，这更能证明 FDE 能力：保留错误测量、如实界定失败
 证据、修正合同，并诚实记录下一次运行。

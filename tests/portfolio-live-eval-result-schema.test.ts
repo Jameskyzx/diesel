@@ -129,6 +129,22 @@ describe("portfolio live-eval result schema", () => {
     expect(liveEvalResultSchema.safeParse(result).success).toBe(false);
   });
 
+  it("accepts safe AI categories and HTTP status without raw provider text", () => {
+    const result = sourceResult();
+    result.errorCode = "EVAL_CASE_ERROR";
+    result.failureMessage =
+      "AI_RetryError (HTTP 429): Eval case execution failed.";
+    result.responseCharacterCount = 0;
+    result.responseDisposition = "not_evaluated";
+    result.responseDispositionPassed = false;
+    result.tokenUsage.usageComplete = false;
+
+    expect(liveEvalResultSchema.safeParse(result).success).toBe(true);
+    result.failureMessage =
+      "AI_RetryError (HTTP 429): sensitive upstream response";
+    expect(liveEvalResultSchema.safeParse(result).success).toBe(false);
+  });
+
   it("requires a tool-result error to remain not evaluated", () => {
     const result = sourceResult();
     result.errorCode = "TOOL_RESULT_ERROR";

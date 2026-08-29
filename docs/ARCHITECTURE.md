@@ -507,9 +507,10 @@ MVP 采用“结构化结果优先”：
   `pnpm ai:eval:live` 在门槛失败时保存真实结果并返回非零；`pnpm portfolio:verify` 独立重算
   ledger、known total、case 顺序、score、threshold 与 termination，可成功确认一份
   `thresholdsPassed=false` 报告自洽，但这种成功不代表 live eval 通过。当前 checked-in latest
-  是 `2026-08-29T21:24:34.023Z` 的 v3 hardened 失败：首条 case 以 `case_error` 结束，1/18、
-  0 completed steps、0 known tokens 且 usage incomplete；历史 18/18、101,604 aggregate token
-  结果只保留在 legacy archive，不满足当前 ledger/provenance gate。
+  是 `2026-08-29T21:42:21.987Z` 的 v3 hardened 失败：首条 case 以 `case_error` 结束，1/18、
+  0 completed steps、0 known tokens 且 usage incomplete；沙箱外安全诊断只记录
+  `AI_APICallError (HTTP 403)` 与固定文案，不持久化 provider 原始错误内容。历史 18/18、
+  101,604 aggregate token 结果只保留在 legacy archive，不满足当前 ledger/provenance gate。
 - 流级 evidence boundary 跟踪本轮结构化工具结果；工具结果卡片继续即时流式输出，
   模型自然语言则缓冲到完整顺序/并行工具链结束后再判定。若证据不充分，丢弃已缓冲
   的结论文本并按失败工具生成具体缺口和下一步，同时输出法规免责声明；不得用统一

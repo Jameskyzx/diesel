@@ -11,19 +11,19 @@
     "totalTokens": 0
   },
   "complete": false,
-  "evaluatedAt": "2026-08-29T21:24:34.023Z",
+  "evaluatedAt": "2026-08-29T21:42:21.987Z",
   "modelId": "server-openai-compatible/deepseek-v4-pro",
   "provenance": {
     "promptVersion": "sales-chat-system-v5",
     "repository": {
-      "baseHeadCommit": "7a4440a28a30fa5d25f800982b19f445e78198aa",
+      "baseHeadCommit": "2d6ae19ef52f2be2e19c8790d2b722e5f7f20e4b",
       "evaluatedCommit": null,
       "worktreeState": "dirty"
     },
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "7e07a8e55b30101eb586b8e558fd374cfb69bc45261f550d1fe3540fbdb5aa80",
-      "fileCount": 181,
+      "digest": "70a98a4aec972e9dd48bb4e68f952261a021ce056d6889f18a7bd2d4182dd8f0",
+      "fileCount": 182,
       "status": "captured"
     }
   },
@@ -35,9 +35,9 @@
       "evidenceExpectationPassed": false,
       "evidenceResult": "error",
       "expectedEvidenceAllowed": true,
-      "failureMessage": "Error: Eval case execution failed.",
+      "failureMessage": "AI_APICallError (HTTP 403): Eval case execution failed.",
       "id": "country-overview-china",
-      "latencyMs": 414,
+      "latencyMs": 331,
       "loopSteps": 0,
       "mismatchReason": "error:EVAL_CASE_ERROR,token_usage",
       "normalizedArgs": [],
@@ -59,7 +59,7 @@
       "toolSequence": []
     }
   ],
-  "runId": "e20cc023-893f-44ec-be2d-356d70b52fcf",
+  "runId": "cb2fd67b-230f-4f78-a062-fcdbf4c1c54e",
   "runError": null,
   "sampleCount": 1,
   "scores": {

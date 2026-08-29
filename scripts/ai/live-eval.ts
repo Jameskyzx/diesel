@@ -29,6 +29,10 @@ import type { SalesChatStepObservation } from "../../src/server/ai/sales-chat";
 import { buildLiveEvalCaseTokenUsage } from "./live-eval-token-usage";
 import { runWithLiveEvalCaseDeadline } from "./live-eval-deadline";
 import {
+  safeLiveEvalErrorName,
+  summarizeLiveEvalError,
+} from "./live-eval-error";
+import {
   captureLiveEvalRepositoryState,
   captureLiveEvalSourceFingerprint,
   persistLiveEvalReport,
@@ -97,15 +101,6 @@ const allowedReportArgKeys = new Set([
   "targetCountryIso3",
   "topics",
 ]);
-const safeEvalErrorNames = new Set([
-  "AiConfigurationError",
-  "Error",
-  "SyntaxError",
-  "TypeError",
-  "UnknownError",
-  "ZodError",
-]);
-
 function sanitizedArgs(input: unknown): Record<string, unknown> {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return {};
@@ -118,17 +113,6 @@ function sanitizedArgs(input: unknown): Record<string, unknown> {
 function sameTools(actual: readonly string[], expected: readonly string[]) {
   return JSON.stringify([...actual].sort()) ===
     JSON.stringify([...expected].sort());
-}
-
-function summarizeEvalError(error: unknown): string {
-  return `${safeEvalErrorName(error)}: Eval case execution failed.`;
-}
-
-function safeEvalErrorName(error: unknown): string {
-  if (!(error instanceof Error)) {
-    return "UnknownError";
-  }
-  return safeEvalErrorNames.has(error.name) ? error.name : "Error";
 }
 
 function markLiveEvalFailure(): void {
@@ -259,7 +243,7 @@ async function main(): Promise<void> {
   if (!initialized.ok) {
     const runError: LiveEvalRunError = {
       code: "INITIALIZATION_ERROR",
-      errorName: safeEvalErrorName(initialized.error),
+      errorName: safeLiveEvalErrorName(initialized.error),
       stage: initialized.stage,
     };
     const report = buildLiveEvalReport({
@@ -310,6 +294,7 @@ async function main(): Promise<void> {
     caseCount += 1;
     const startedAt = performance.now();
     const observedMetricSteps: SalesChatStepObservation[] = [];
+    let safeStreamFailureMessage: string | null = null;
 
     try {
       const auditRepository = {
@@ -340,6 +325,9 @@ async function main(): Promise<void> {
               })),
               model,
               onStepMetrics: (step) => observedMetricSteps.push(step),
+              onStreamError: (error) => {
+                safeStreamFailureMessage ??= summarizeLiveEvalError(error);
+              },
               selectedCountryIso3: testCase.selectedCountryIso3,
               sessionId,
               tools,
@@ -470,7 +458,8 @@ async function main(): Promise<void> {
         evidenceExpectationPassed: judgement.evidenceExpectationPassed,
         evidenceResult: "error",
         expectedEvidenceAllowed: testCase.expectedEvidenceAllowed,
-        failureMessage: summarizeEvalError(error),
+        failureMessage:
+          safeStreamFailureMessage ?? summarizeLiveEvalError(error),
         id: testCase.id,
         latencyMs: Math.round(performance.now() - startedAt),
         loopSteps: tokenUsage.ledger.length,
@@ -526,7 +515,7 @@ async function main(): Promise<void> {
 
 void main().catch((error: unknown) => {
   process.stderr.write(
-    `Live eval report persistence failed (${safeEvalErrorName(error)}).\n`,
+    `Live eval report persistence failed (${safeLiveEvalErrorName(error)}).\n`,
   );
   markLiveEvalFailure();
 });

@@ -16,6 +16,7 @@ import {
   compareRegulationsInputSchema,
   generateSalesBriefInputSchema,
 } from "../../src/features/marketing/schemas";
+import { SAFE_LIVE_EVAL_ERROR_NAMES } from "../ai/live-eval-error";
 
 const liveEvalToolNameSchema = z.enum([
   "calculateOpportunityScore",
@@ -55,7 +56,10 @@ const sanitizedLiveEvalArgsSchema = z
 const safeEvalFailureMessageSchema = z
   .string()
   .regex(
-    /^(?:AiConfigurationError|Error|SyntaxError|TypeError|UnknownError|ZodError): Eval case execution failed\.$/u,
+    new RegExp(
+      `^(?:${SAFE_LIVE_EVAL_ERROR_NAMES.join("|")})(?: \\(HTTP [45]\\d{2}\\))?: Eval case execution failed\\.$`,
+      "u",
+    ),
   )
   .nullable();
 const liveEvalToolInputSchemas = {

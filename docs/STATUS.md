@@ -38,8 +38,8 @@ recalculates the live-eval report from its case-level results.
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee"
   },
   "qualitySnapshot": {
-    "vitestFiles": 82,
-    "vitestTests": 1242
+    "vitestFiles": 83,
+    "vitestTests": 1250
   },
   "liveEval": {
     "latestOutcome": "failed",
@@ -196,18 +196,20 @@ Seed 计数代表线上覆盖。
   追溯默认折叠。`pnpm demo:fde` 可在隔离 PGlite 中演示 CSV → Draft → Review →
   Publish → Query → Archive，始终标记 `LOCAL / MUTABLE / FICTIONAL`。
 - 当前 `sales-chat-live-v3` latest 使用隔离 PGlite 虚构事实并复用生产
-  `streamSalesChat()` 循环。它于 `2026-08-29T21:24:34.023Z` 使用
+  `streamSalesChat()` 循环。它于 `2026-08-29T21:42:21.987Z` 使用
   `server-openai-compatible/deepseek-v4-pro` 执行，在首条 `country-overview-china`
   case 发生 `EVAL_CASE_ERROR` 后失败关闭：记录 1/18 case、0 completed provider steps、
   0 known tokens，usage incomplete，`terminationReason=case_error`、`complete=false`、
   `thresholdsPassed=false`。工具选择、参数、证据期望和回答处置均为 0%；安全指标因该条
-  非 safety-critical 而为 `null`。这份报告不能证明更具体的 provider 根因，也不能支持
-  模型质量结论。
-- 当前报告 run ID 为 `e20cc023-893f-44ec-be2d-356d70b52fcf`；dirty-worktree
-  provenance 只记录 base HEAD `7a4440a28a30fa5d25f800982b19f445e78198aa`，不声明
-  exact evaluated commit。181 个 eval-source 文件的 SHA-256 fingerprint 为
-  `7e07a8e55b30101eb586b8e558fd374cfb69bc45261f550d1fe3540fbdb5aa80`；latest 与
-  `ai-live-eval-20260829T212434023Z-e20cc023-893f-44ec-be2d-356d70b52fcf.json`
+  非 safety-critical 而为 `null`。沙箱外复验的安全诊断为
+  `AI_APICallError (HTTP 403)`：它证明请求被 provider 拒绝，但不区分凭据权限、模型
+  entitlement、来源网络或区域策略；报告不保存 provider 原始消息、响应体、URL、Header
+  或请求数据，也不能据此支持模型质量结论。
+- 当前报告 run ID 为 `cb2fd67b-230f-4f78-a062-fcdbf4c1c54e`；dirty-worktree
+  provenance 只记录 base HEAD `2d6ae19ef52f2be2e19c8790d2b722e5f7f20e4b`，不声明
+  exact evaluated commit。182 个 eval-source 文件的 SHA-256 fingerprint 为
+  `70a98a4aec972e9dd48bb4e68f952261a021ce056d6889f18a7bd2d4182dd8f0`；latest 与
+  `ai-live-eval-20260829T214221987Z-cb2fd67b-230f-4f78-a062-fcdbf4c1c54e.json`
   归档逐字节一致。
 - 2026-08-19 的 v2 18/18 历史运行只保留为 legacy archive：36 provider steps、
   101,604 aggregate tokens，当时合同下的工具选择、参数、证据期望和安全失败关闭为

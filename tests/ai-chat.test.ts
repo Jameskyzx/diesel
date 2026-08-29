@@ -142,6 +142,21 @@ function attachmentSummaryMockModel() {
   });
 }
 
+function streamErrorMockModel(error: Error) {
+  return new MockLanguageModelV3({
+    modelId: "mock-stream-error-model",
+    provider: "mock",
+    doStream: {
+      stream: simulateReadableStream({
+        chunks: [
+          { type: "stream-start" as const, warnings: [] },
+          { error, type: "error" as const },
+        ],
+      }),
+    },
+  });
+}
+
 function noDataMockModel() {
   return new MockLanguageModelV3({
     modelId: "mock-regulation-model",
@@ -930,6 +945,80 @@ describe("single-agent sales chat", () => {
       buildAuditToolCallId("turn-a", "provider-1"),
     );
   });
+
+  it("reports the underlying stream error to an opt-in server observer", async () => {
+    const streamError = new Error("sensitive provider response");
+    streamError.name = "AI_APICallError";
+    const onStreamError = vi.fn();
+    const auditRepository = {
+      recordToolCall: vi.fn(async () => undefined),
+    };
+    const sessionId = "00000000-0000-4000-8000-000000000940";
+    const result = streamSalesChat({
+      auditRepository,
+      messages: [{ content: "查询 CHN 当前法规。", role: "user" }],
+      model: streamErrorMockModel(streamError),
+      onStreamError,
+      selectedCountryIso3: null,
+      sessionId,
+      tools: createSalesChatTools({
+        auditRepository,
+        selectedCountryIso3: null,
+        sessionId,
+      }),
+    });
+
+    const text = await result.text;
+
+    expect(text).toContain("没有足够证据");
+    expect(text).not.toContain("sensitive provider response");
+    expect(onStreamError).toHaveBeenCalledOnce();
+    expect(onStreamError).toHaveBeenCalledWith(streamError);
+  });
+
+  it("isolates a throwing stream-error observer and logs completion once", async () => {
+    const consoleInfo = vi
+      .spyOn(console, "info")
+      .mockImplementation(() => undefined);
+    const auditRepository = {
+      recordToolCall: vi.fn(async () => undefined),
+    };
+    const sessionId = "00000000-0000-4000-8000-000000000941";
+
+    try {
+      const result = streamSalesChat({
+        auditRepository,
+        messages: [{ content: "查询 CHN 当前法规。", role: "user" }],
+        model: streamErrorMockModel(new Error("provider failure")),
+        modelId: "mock/stream-error",
+        onStreamError: () => {
+          throw new Error("observer failure");
+        },
+        requestId: "00000000-0000-4000-8000-000000000942",
+        requestStartedAtMs: performance.now(),
+        selectedCountryIso3: null,
+        sessionId,
+        tools: createSalesChatTools({
+          auditRepository,
+          selectedCountryIso3: null,
+          sessionId,
+        }),
+      });
+
+      await expect(result.text).resolves.toContain("没有足够证据");
+      expect(consoleInfo).toHaveBeenCalledOnce();
+      expect(JSON.parse(String(consoleInfo.mock.calls[0]?.[0]))).toEqual(
+        expect.objectContaining({
+          errorCode: "MODEL_STREAM_ERROR",
+          event: "ai.completion",
+          evidenceResult: "error",
+        }),
+      );
+    } finally {
+      consoleInfo.mockRestore();
+    }
+  });
+
   it("handles conversation and missing parameters before forcing a fact tool", () => {
     expect(
       buildDirectChatResponse({

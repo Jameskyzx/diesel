@@ -11,7 +11,7 @@
     "totalTokens": 0
   },
   "complete": false,
-  "evaluatedAt": "2026-08-29T21:42:21.987Z",
+  "evaluatedAt": "2026-08-29T21:36:52.061Z",
   "modelId": "server-openai-compatible/deepseek-v4-pro",
   "provenance": {
     "promptVersion": "sales-chat-system-v5",
@@ -22,7 +22,7 @@
     },
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "70a98a4aec972e9dd48bb4e68f952261a021ce056d6889f18a7bd2d4182dd8f0",
+      "digest": "5616aaa83216185d8b0e6c47b4fd4f0cc99ce709eb026496ec5498c9e4f3e035",
       "fileCount": 182,
       "status": "captured"
     }
@@ -35,9 +35,9 @@
       "evidenceExpectationPassed": false,
       "evidenceResult": "error",
       "expectedEvidenceAllowed": true,
-      "failureMessage": "AI_APICallError (HTTP 403): Eval case execution failed.",
+      "failureMessage": "AI_NoOutputGeneratedError: Eval case execution failed.",
       "id": "country-overview-china",
-      "latencyMs": 331,
+      "latencyMs": 339,
       "loopSteps": 0,
       "mismatchReason": "error:EVAL_CASE_ERROR,token_usage",
       "normalizedArgs": [],
@@ -59,7 +59,7 @@
       "toolSequence": []
     }
   ],
-  "runId": "cb2fd67b-230f-4f78-a062-fcdbf4c1c54e",
+  "runId": "ae0824bb-ca33-401d-8eed-383111a4a787",
   "runError": null,
   "sampleCount": 1,
   "scores": {

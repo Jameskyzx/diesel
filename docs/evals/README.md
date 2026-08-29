@@ -25,7 +25,7 @@ error/empty/count invariants; it does not claim to reconstruct the classifier's
 decision from discarded text.
 
 The checked-in latest observation is the `sales-chat-live-v3` report evaluated
-at `2026-08-29T21:24:34.023Z` with
+at `2026-08-29T21:42:21.987Z` with
 `server-openai-compatible/deepseek-v4-pro`. It stopped on the first of 18 cases
 with `terminationReason: "case_error"`, before any provider step completed:
 
@@ -39,18 +39,22 @@ with `terminationReason: "case_error"`, before any provider step completed:
   not safety-critical; and
 - `complete: false` and `thresholdsPassed: false`.
 
-The persisted error is deliberately sanitized to `EVAL_CASE_ERROR`; this
-report does not establish a more specific provider root cause. The invocation
-returned a non-zero exit code. Run ID
-`e20cc023-893f-44ec-be2d-356d70b52fcf` has the byte-matching archive
-`archive/ai-live-eval-20260829T212434023Z-e20cc023-893f-44ec-be2d-356d70b52fcf.json`.
+The persisted case code remains `EVAL_CASE_ERROR`; an allowlisted diagnostic
+adds only `AI_APICallError (HTTP 403)` and fixed text. The same result reproduced
+outside the filesystem/network sandbox, so this is a provider denial rather
+than the earlier sandbox connectivity symptom. It does not distinguish invalid
+or insufficient credentials, model entitlement, source-network policy, or
+regional policy. Raw provider messages, response bodies, URLs, headers, and
+request values are never persisted. The invocation returned a non-zero exit
+code. Run ID `cb2fd67b-230f-4f78-a062-fcdbf4c1c54e` has the byte-matching archive
+`archive/ai-live-eval-20260829T214221987Z-cb2fd67b-230f-4f78-a062-fcdbf4c1c54e.json`.
 It is a current-schema, self-consistent failed observation—not a v3 pass.
 
 The run used dirty-worktree provenance at base commit
-`7a4440a28a30fa5d25f800982b19f445e78198aa`, so
+`2d6ae19ef52f2be2e19c8790d2b722e5f7f20e4b`, so
 `evaluatedCommit` is `null`. It also captured a stable SHA-256 fingerprint of
-the 181 eval-relevant source files seen at both the start and end of the run:
-`7e07a8e55b30101eb586b8e558fd374cfb69bc45261f550d1fe3540fbdb5aa80`.
+the 182 eval-relevant source files seen at both the start and end of the run:
+`70a98a4aec972e9dd48bb4e68f952261a021ce056d6889f18a7bd2d4182dd8f0`.
 The fingerprint covers tracked and unignored untracked files under `evals/`,
 `src/`, `drizzle/`, and `scripts/ai/`, plus `package.json`, `pnpm-lock.yaml`,
 and `tsconfig.json`; it is not a fingerprint of every file in the repository.

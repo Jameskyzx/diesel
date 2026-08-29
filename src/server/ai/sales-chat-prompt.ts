@@ -1,9 +1,10 @@
 import "server-only";
 
+import { SALES_CHAT_SYSTEM_PROMPT_VERSION } from "@/features/ai/constants";
 import { currentUtcDate } from "@/server/ai/tool-results";
 import type { Locale } from "@/i18n/locale";
 
-export const SALES_CHAT_SYSTEM_PROMPT_VERSION = "sales-chat-system-v5";
+export { SALES_CHAT_SYSTEM_PROMPT_VERSION } from "@/features/ai/constants";
 
 export function buildSalesChatInstructions(
   selectedCountryIso3: string | null,

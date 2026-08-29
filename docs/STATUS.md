@@ -38,12 +38,14 @@ recalculates the live-eval report from its case-level results.
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee"
   },
   "qualitySnapshot": {
-    "vitestFiles": 76,
-    "vitestTests": 1141
+    "vitestFiles": 82,
+    "vitestTests": 1242
   },
   "liveEval": {
-    "caseCount": 18,
-    "reportVersion": "sales-chat-live-v2"
+    "latestOutcome": "failed",
+    "latestSampleCount": 1,
+    "reportVersion": "sales-chat-live-v3",
+    "suiteCaseCount": 18
   },
   "evidenceSummary": {
     "jurisdictions": 97,
@@ -155,14 +157,15 @@ Seed 计数代表线上覆盖。
   1 个 Demo 辖区、1 条 Demo 法规、1 条 Demo 市场指标。release `20260814144537` 已对
   这两国以及 `/api/countries` 做公开读回，国家地图与详情不再返回 Demo 分类事实。
 
-## AI 证据边界加固（2026-08-15，本地待发布）
+## AI 证据边界加固（2026-08-15 阶段记录；当前版本见下文）
 
 - `sales-chat-system-v3` 把检索正文和其中 URL 明确标为不可信外部数据；知识查询主题词
   必须与用户请求绑定，低相关度候选在 service 和工具结果两层失败关闭。
 - 模型 Markdown 外链只允许使用同一助手消息中的结构化 citation URL；站内链接仍可用。
 - 模型输出限制为 2048 tokens，证据边界最多缓冲 16000 字符；输入历史最多保留最近
   12 条用户消息且总计 12000 字符。超限输出不向用户释放。
-- 以上是当前工作树状态，尚未部署到公网；发布后必须重新执行真实模型 SSE 与来源链接读回。
+- 以上是 v3 阶段的历史边界记录；当前工作树继续继承这些约束，实际 prompt 版本与
+  待发布观测状态以“FDE 作品强化”一节为准。
 
 ## AI 对话 Harness 与循环工程（2026-08-14，代码已发布）
 
@@ -180,23 +183,42 @@ Seed 计数代表线上覆盖。
   `pnpm ai:eval` 14/14、`pnpm build` 全部通过；完整 Playwright 为 71 passed / 7 skipped
   （桌面与 Pixel 7）。
 
-## FDE 作品强化（2026-08-20，本地待发布）
+## FDE 作品强化（截至 2026-08-30，本地待发布）
 
 - `product-fit-v2` 已把法规/认证适配与查询日供应状态拆成双轴，并按
   `[availableFrom,availableTo)` 组合 `commercialReadiness`；销售简报只推荐 `ready`
   产品，缺失或区间外供应证据进入风险/缺口。
 - AI 审计键加入服务端 turn/request ID 并改为 append-only；公共 API、管理写入和 AI
   完成事件只输出 strict JSON 白名单字段，`X-Request-Id` 可用于故障关联。
+- 当前中英文等价 system instruction 已升级为 `sales-chat-system-v5`；v3 报告记录逐
+  provider-step token usage 完整性与最终回答处置字段。
 - 国家深链在 scope + power 齐全时服务端渲染确定性决策摘要；完整 UUID、辖区与来源
   追溯默认折叠。`pnpm demo:fde` 可在隔离 PGlite 中演示 CSV → Draft → Review →
   Publish → Query → Archive，始终标记 `LOCAL / MUTABLE / FICTIONAL`。
-- 当前 `sales-chat-live-v2` 报告使用 `deepseek-v4-pro` 与隔离 PGlite 虚构事实，
-  复用生产 `streamSalesChat()` 循环，于 `2026-08-19T17:18:08.954Z` 完整执行并通过
-  18/18 个 case / 36 个 provider steps / 101,604 tokens。工具选择、关键参数、证据期望
-  准确率和安全失败关闭均为 100%，`thresholdsPassed=true`。case 期望未被反转，
-  这仍是内部 live-provider eval，不是客户效果。前一次完整 v2 运行中的来源检索
-  tokenization/fixture 失败保留在第三次归档；一次因网络失败而产生 0 model steps 的尝试未当作
-  有效报告或成绩。
+- 当前 `sales-chat-live-v3` latest 使用隔离 PGlite 虚构事实并复用生产
+  `streamSalesChat()` 循环。它于 `2026-08-29T21:24:34.023Z` 使用
+  `server-openai-compatible/deepseek-v4-pro` 执行，在首条 `country-overview-china`
+  case 发生 `EVAL_CASE_ERROR` 后失败关闭：记录 1/18 case、0 completed provider steps、
+  0 known tokens，usage incomplete，`terminationReason=case_error`、`complete=false`、
+  `thresholdsPassed=false`。工具选择、参数、证据期望和回答处置均为 0%；安全指标因该条
+  非 safety-critical 而为 `null`。这份报告不能证明更具体的 provider 根因，也不能支持
+  模型质量结论。
+- 当前报告 run ID 为 `e20cc023-893f-44ec-be2d-356d70b52fcf`；dirty-worktree
+  provenance 只记录 base HEAD `7a4440a28a30fa5d25f800982b19f445e78198aa`，不声明
+  exact evaluated commit。181 个 eval-source 文件的 SHA-256 fingerprint 为
+  `7e07a8e55b30101eb586b8e558fd374cfb69bc45261f550d1fe3540fbdb5aa80`；latest 与
+  `ai-live-eval-20260829T212434023Z-e20cc023-893f-44ec-be2d-356d70b52fcf.json`
+  归档逐字节一致。
+- 2026-08-19 的 v2 18/18 历史运行只保留为 legacy archive：36 provider steps、
+  101,604 aggregate tokens，当时合同下的工具选择、参数、证据期望和安全失败关闭为
+  100%。它早于逐 step ledger、回答处置、run ID 与 provenance 门，不是当前通过成绩。
+- 160,000 token 是报告验收上限，不是 provider 账单级硬限额。通用 OpenAI-compatible
+  usage 在 step 完成后才返回；当前 12,000 token pre-case reserve 只能降低越界风险并在
+  usage 未知时停止。严格预消费上限仍需获批 provider 的账户预算或模型 tokenizer/preflight。
+- 本地待发布 runner 为每次运行生成 UUID，并绑定当前 prompt version 与运行前后复核的
+  Git provenance；无论初始化、case 或门槛结果如何，都会先保存不可覆盖的时间戳归档，再
+  原子更新 latest。稳定 clean 工作树才可声明精确 evaluated commit；dirty 只记录 base
+  HEAD，运行中 HEAD 漂移或 Git 不可用会标为 unavailable。
 - 2026-08-14 的 v1 历史报告曾记录 18/18、78,265 tokens 和
   `thresholdsPassed=true`，但其 scorer 只对 safety-critical case 比较
   `expectedEvidenceAllowed`，隐藏了 6 个证据期望不匹配，并让其中 5 个误通过。
@@ -205,6 +227,10 @@ Seed 计数代表线上覆盖。
 - 生产已用精确 8 行 dry-run manifest、SHA/行漂移门和 serializable 事务完成归档与逐实体
   审计；执行前的 `pg_dump -Fc` 备份为 0600，SHA256 与 `pg_restore --list` 均通过。
   Migration 0011–0013 的最终状态仍以部署时的版本化 production readback 为唯一判据。
+- CI 的唯一 `Required CI gate` 现汇总 quality、PostgreSQL migration smoke、
+  两套 Playwright、gitleaks 与 dependency audit。2026-08-30 已在线把 `master` 分支保护从
+  四个旧 context 迁移为只要求该 gate，并读回 strict=true、管理员同样受限、force-push
+  与 deletion 关闭；工作流改动仍随本地分支待合入。
 
 ## 三角色模拟评估与本地修复（2026-08-12）
 

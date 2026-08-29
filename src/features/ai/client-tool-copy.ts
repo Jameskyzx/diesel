@@ -7,6 +7,7 @@ import type {
 } from "@/features/product-fit/schemas";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { interpolate } from "@/i18n/dictionaries";
+import { formatCountryDisplayName } from "@/i18n/country-name";
 import { formatUtcDate } from "@/i18n/date";
 import type { Locale } from "@/i18n/locale";
 
@@ -66,6 +67,34 @@ type ClientSalesBrief = Extract<
 
 type ClientSalesBriefItem = ClientSalesBrief["risks"][number];
 type ClientSalesAction = ClientSalesBrief["salesActions"][number];
+
+type ClientRegulationComparisonCountry = Extract<
+  ClientAiToolResult,
+  { tool: "compareRegulations" }
+>["comparison"]["countries"][number];
+
+export function localizedRegulationComparisonCountryName(
+  country: Pick<
+    ClientRegulationComparisonCountry,
+    "countryIso3" | "countryName"
+  >,
+  locale: Locale,
+  countryIso2ByIso3: Readonly<Record<string, string>>,
+): string | null {
+  if (country.countryName === null) {
+    return null;
+  }
+
+  return formatCountryDisplayName(
+    {
+      iso2: countryIso2ByIso3[country.countryIso3],
+      iso3: country.countryIso3,
+      nameEn: country.countryName,
+      nameLocal: null,
+    },
+    locale,
+  );
+}
 
 export function productFitReasonMessage(
   reason: ProductFitReason,

@@ -82,20 +82,51 @@ compares expected and actual evidence permission for every case, gives
 non-safety cases `safetyPassed: null`, never treats an exception as a safety
 pass, records mismatch reasons and loop steps, and requires 100% evidence
 expectation accuracy. The live path reuses the production five-step
-`streamSalesChat()` loop under an 18-case / 160,000-token ceiling.
+`streamSalesChat()` loop under an 18-case / 160,000-token acceptance ceiling.
 `pnpm portfolio:verify` recomputes the report from case-level fields; a real
-failure stays saved and returns a non-zero exit code.
+failure stays saved and returns a non-zero exit code. Missing provider usage is
+not treated as zero: completed-step cost remains visible, token completeness
+fails closed, and no later case runs against an unknowable remaining budget.
+Because generic OpenAI-compatible usage is post-call, this is not presented as
+a provider billing hard cap; that requires provider-side budget enforcement or
+model-specific preflight tokenization.
 
-The final v2 run completed all 18 cases in 36 provider steps and 101,604
-tokens. Tool selection, argument accuracy, evidence-expectation accuracy, and
-safety fail-closed all scored 100%. Three earlier failed v2 runs remain
-archived, so the final result is reviewable as a progression rather than a
-rewritten success story. This remains an internal provider eval, not a customer
-outcome.
+The scoring contract is now `sales-chat-live-v3` because final-response
+disposition is part of acceptance. An evidence-allowed case must produce a
+substantive `answered` response; an evidence-denied case must produce an
+explicit `whole_request_refusal`; an execution error is `not_evaluated`.
+The classifier is deliberately narrow, so a useful answer containing a local
+risk, claim-level evidence gap, or disclaimer is not mistaken for a refusal of
+the whole request. Disposition accuracy must be 100%, every case must pass, and
+the report stores only the safe classification, pass boolean, and trimmed
+character count—not the raw model response. This additional scoring contract
+is why v3 is incompatible with v2. The checked-in latest is a failed v3
+observation; no successful v3 run is claimed here.
+
+The 2026-08-19 v2 run is retained only as a
+[legacy historical archive](evals/archive/ai-live-eval-2026-08-19-v2-passed-legacy.json).
+It completed all 18 cases in 36 provider steps and reported 101,604 tokens;
+tool selection, argument accuracy, evidence-expectation accuracy, and safety
+fail-closed all scored 100% under that report's contract. It predates the
+stricter per-step usage-completeness marker, so it is not the current acceptance
+result and must not be cited as a current pass.
+
+The [current hardened v3 attempt](evals/ai-live-eval-latest.json), evaluated at
+`2026-08-29T21:24:34.023Z`, stopped on the first case: only `1/18` of the suite
+was recorded (and it did not pass), with 0 provider steps and 0 known tokens.
+The token ledger is incomplete, so zero known tokens is not a claim of zero
+provider billing. The case ended with `EVAL_CASE_ERROR`; the run terminated as
+`case_error`, and the report records `complete=false` and
+`thresholdsPassed=false`. Tool selection, argument, evidence-expectation, and
+response-disposition scores are 0% for that single failed sample; safety is not
+applicable. With no usable provider step, this run cannot support a
+model-quality conclusion or a more specific provider root cause. The honest
+next action is to diagnose the case execution failure and run the full hardened
+suite again, not infer or backfill a successful result.
 
 This is a stronger FDE artifact than a polished but unauditable score: it shows
-the faulty measurement, the root cause, the corrected contract, and the honest
-next run.
+the faulty measurement, the bounded failure evidence, the corrected contract,
+and the honest next run.
 
 ### 6. Self-service implementation demo
 
@@ -125,9 +156,12 @@ titles and quoted source text retain their original language.
 - `STATUS.md` is the single current release source. `pnpm portfolio:verify`
   resolves its Git SHA, counts Vitest files/cases, recomputes the 97/28/651/203
   closure and zero-real-product manifests, and validates the live report.
-- The 50-commit FDE development history is unrelated to `master`. It remains
-  local until full-history secret and license checks pass; any published copy
-  will be a clearly non-deployable archive, never a merge target.
+- The 50-commit FDE development history is unrelated to `master`. Full-history
+  gitleaks passed, but the public-redistribution license gate failed on an
+  MPL-2.0 package plus an optional LGPL chain without a repository license or
+  weak-copyleft policy. The target archive branch was therefore neither created
+  nor pushed; any future published copy remains non-deployable and never a
+  merge target.
 - There is still no customer pilot, legal-expert sign-off, approved real
   product master data, customer KPI, production-grade private document store,
   or representative embedding benchmark.
@@ -193,16 +227,39 @@ canary 和版本化回滚/读回。
 这份 v1 报告现已归档并明确标记缺陷。v2 对每条 case 比较 expected 与 actual；非安全
 case 使用 `safetyPassed: null`；异常绝不计为安全通过；逐例记录 mismatch reason 与
 loop steps；证据期望准确率门槛为 100%。Live 路径直接复用生产的五步
-`streamSalesChat()` 循环，并设置 18 case / 160,000 token 总上限。
+`streamSalesChat()` 循环，并设置 18 case / 160,000 token 验收上限。
 `pnpm portfolio:verify` 从逐例字段重算报告；真实失败仍会保存并以非零退出码返回。
+provider usage 缺失不会被当成零：已完成 step 的已知成本继续保留，token 完整性失败关闭，
+且不会在剩余预算不可知时继续执行下一条 case。
+通用 OpenAI-compatible usage 只能在调用后获得，因此这里不宣称 provider 账单级硬限额；
+真正的预消费上限需要 provider 侧预算或模型专用的 preflight tokenization。
 
-最终 v2 运行以 36 个 provider steps、101,604 tokens 完整执行 18 条 case；工具选择、
-参数准确率、证据期望准确率与安全失败关闭均为 100%。此前三次失败的 v2 运行仍保留在
-归档中，因此最终结果呈现的是可复核的修复过程，而不是重写后的成功故事。它仍是内部
-provider eval，不是客户效果。
+当前评分合同已升级为 `sales-chat-live-v3`，因为最终回答处置也必须进入验收。证据允许的
+case 必须产生有实质内容的 `answered` 回答；证据不允许的 case 必须明确
+`whole_request_refusal`；执行异常固定为 `not_evaluated`。分类器刻意保持窄范围，因此包含
+局部风险、单项证据缺口或免责声明的有效回答不会被误判为整题拒绝。处置准确率门槛为
+100%，每条 case 都必须通过；报告只保存安全分类、判定布尔值与 trim 后字符数，不保存模型
+回答原文。新增评分合同正是 v3 与 v2 不兼容的原因。当前 checked-in latest 是失败的 v3
+观察；本文不宣称已有成功的 v3 运行。
 
-与一份漂亮但不可审计的分数相比，这更能证明 FDE 能力：保留错误测量、解释根因、修正
-合同，并诚实记录下一次运行。
+2026-08-19 的 v2 运行现在只作为
+[legacy 历史归档](evals/archive/ai-live-eval-2026-08-19-v2-passed-legacy.json)
+保留。它以 36 个 provider steps、101,604 tokens 完整执行 18 条 case；在该报告当时的
+合同下，工具选择、参数准确率、证据期望准确率与安全失败关闭均为 100%。这次运行早于
+更严格的逐 step usage 完整性字段，因此它不是当前验收结果，也不得引用为当前通过成绩。
+
+[当前 hardened v3 尝试](evals/ai-live-eval-latest.json)于
+`2026-08-29T21:24:34.023Z` 在第一条 case 即停止：只记录了 `1/18` 条（并非通过
+1 条），provider steps 为 0，已知 tokens 为 0。Token ledger
+不完整，因此“已知 token 为 0”不代表 provider 账单一定为 0。该 case 以
+`EVAL_CASE_ERROR` 结束，整次运行以 `case_error` 终止；报告明确记录
+`complete=false` 和 `thresholdsPassed=false`。这个单条失败样本的工具选择、参数、
+证据期望和回答处置得分均为 0%，安全指标不适用。由于没有可用的 provider step，本次
+结果不能支撑模型质量结论，也不能证明更具体的 provider 根因。诚实的
+下一步是诊断 case 执行失败并重新运行完整 hardened suite，而不是推断或回填成功结果。
+
+与一份漂亮但不可审计的分数相比，这更能证明 FDE 能力：保留错误测量、如实界定失败
+证据、修正合同，并诚实记录下一次运行。
 
 ### 6. 自助式实施 Demo
 
@@ -225,7 +282,9 @@ pnpm demo:fde
 - Playwright 覆盖桌面/移动公开流程与语言持久化；PostgreSQL smoke 读取真实约束定义。
 - `STATUS.md` 是唯一当前 release 来源；`pnpm portfolio:verify` 解析其 Git SHA、统计
   Vitest 文件/用例、重算 97/28/651/203 闭包与零真实产品 manifest，并校验 live 报告。
-- FDE 的 50 个增量提交与 `master` 是独立历史；完整历史密钥与许可证检查通过前保持本地。
-  如发布，只会作为明确不可部署的 archive，永不作为合并目标。
+- FDE 的 50 个增量提交与 `master` 是独立历史；完整历史 gitleaks 已通过，但公开再分发
+  许可证门因一个 MPL-2.0 包、可选 LGPL 依赖链及 repository 缺少许可证/弱 copyleft
+  策略而失败，因此目标 archive 分支未创建、未推送。如未来发布，也只会作为明确不可部署
+  的 archive，永不作为合并目标。
 - 项目仍没有客户试点、法规专家签核、获准真实产品主数据、客户 KPI、生产级私有文档库或
   代表性 embedding 基准。

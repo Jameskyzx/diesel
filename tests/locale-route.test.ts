@@ -11,7 +11,7 @@ function localeRequest(body: string): Request {
 }
 
 describe("POST /api/preferences/locale", () => {
-  it("sets a one-year HttpOnly SameSite locale cookie", async () => {
+  it("sets a one-year SameSite locale cookie readable by the global fallback", async () => {
     const response = await POST(
       localeRequest(JSON.stringify({ locale: "zh-CN" })),
     );
@@ -26,7 +26,7 @@ describe("POST /api/preferences/locale", () => {
     expect(cookie).toContain("diesel_locale=zh-CN");
     expect(cookie).toContain("Path=/");
     expect(cookie).toContain("Max-Age=31536000");
-    expect(cookie).toContain("HttpOnly");
+    expect(cookie).not.toContain("HttpOnly");
     expect(cookie).toContain("SameSite=lax");
   });
 

@@ -15,18 +15,30 @@ import {
   LIVE_EVAL_MAX_TOKENS,
   LIVE_EVAL_THRESHOLDS,
   judgeLiveEvalCase,
+  liveEvalResponseDispositionPassed,
   liveEvalThresholdsPassed,
   matchesExpectedArgs,
+  resolveLiveEvalStopReason,
   scoreLiveEval,
 } from "../../src/domain/ai/live-eval";
-import { MAX_AI_TOOL_STEPS } from "../../src/features/ai/constants";
+import {
+  MAX_AI_TOOL_STEPS,
+  SALES_CHAT_SYSTEM_PROMPT_VERSION,
+} from "../../src/features/ai/constants";
 import { portfolioReleaseCountryIso3s } from "../../src/domain/portfolio-evidence";
 import {
   getApprovedRealCertificationIds,
   getApprovedRealProductIds,
 } from "../../src/server/config/public-product-publication";
 import { buildFixtureLimits } from "../../src/server/db/seed/acceptance-fixtures";
+import {
+  captureLiveEvalSourceFingerprint,
+  verifyLiveEvalArchiveMatchesLatest,
+} from "../ai/live-eval-report";
+import { deriveLiveEvalReportState } from "./live-eval-report-state";
+import { liveEvalResultSchema } from "./live-eval-result-schema";
 import { buildFullIngestSelection } from "../db/fixture-target-selection";
+import { recomputeLiveEvalTokenLedger } from "./live-eval-token-ledger";
 
 const gitShaSchema = z.string().regex(/^[0-9a-f]{40}$/);
 const minutePrecisionTimestampSchema = z.string().regex(
@@ -49,8 +61,10 @@ const statusSnapshotSchema = z.object({
     sources: z.number().int().nonnegative(),
   }),
   liveEval: z.object({
-    caseCount: z.number().int().positive(),
+    latestOutcome: z.enum(["failed", "passed"]),
+    latestSampleCount: z.number().int().nonnegative(),
     reportVersion: z.string().min(1),
+    suiteCaseCount: z.number().int().positive(),
   }),
   lastDocumentedRelease: z.object({
     commit: gitShaSchema,
@@ -72,41 +86,58 @@ const statusSnapshotSchema = z.object({
   }),
 });
 
-const scoreSchema = z.object({
+const observedScoreSchema = z.object({
+  argsAccuracyPct: z.number().finite().nullable(),
+  evidenceExpectationAccuracyPct: z.number().finite().nullable(),
+  responseDispositionAccuracyPct: z.number().finite().nullable(),
+  safetyFailClosedPct: z.number().finite().nullable(),
+  toolSelectionAccuracyPct: z.number().finite().nullable(),
+}).strict();
+const thresholdSchema = z.object({
   argsAccuracyPct: z.number().finite(),
   evidenceExpectationAccuracyPct: z.number().finite(),
+  responseDispositionAccuracyPct: z.number().finite(),
   safetyFailClosedPct: z.number().finite(),
   toolSelectionAccuracyPct: z.number().finite(),
-});
+}).strict();
+const liveEvalRepositoryStateSchema = z.discriminatedUnion("worktreeState", [
+  z.object({
+    baseHeadCommit: gitShaSchema,
+    evaluatedCommit: gitShaSchema,
+    worktreeState: z.literal("clean"),
+  }).strict(),
+  z.object({
+    baseHeadCommit: gitShaSchema,
+    evaluatedCommit: z.null(),
+    worktreeState: z.literal("dirty"),
+  }).strict(),
+  z.object({
+    baseHeadCommit: z.null(),
+    evaluatedCommit: z.null(),
+    worktreeState: z.literal("unavailable"),
+  }).strict(),
+]);
 
-const liveEvalResultSchema = z.object({
-  argsPassed: z.boolean(),
-  errorCode: z.string().min(1).nullable(),
-  evidenceAllowed: z.boolean(),
-  evidenceExpectationPassed: z.boolean(),
-  evidenceResult: z.enum(["sufficient", "insufficient", "error"]),
-  expectedEvidenceAllowed: z.boolean(),
-  id: z.string().min(1),
-  latencyMs: z.number().int().nonnegative(),
-  loopSteps: z.number().int().nonnegative(),
-  mismatchReason: z.string().min(1).nullable(),
-  normalizedArgs: z.array(z.object({
-    args: z.record(z.string(), z.unknown()),
-    tool: z.string().min(1),
-  })),
-  pass: z.boolean(),
-  responseCharacterCount: z.number().int().nonnegative(),
-  safetyCritical: z.boolean(),
-  safetyPassed: z.boolean().nullable(),
-  tokenUsage: z.object({
-    input: z.number().int().nonnegative().nullable(),
-    output: z.number().int().nonnegative().nullable(),
-    total: z.number().int().nonnegative().nullable(),
-  }),
-  toolBearingSteps: z.number().int().nonnegative(),
-  toolSelectionPassed: z.boolean(),
-  toolSequence: z.array(z.string().min(1)),
-}).passthrough();
+const liveEvalSourceFingerprintSchema = z.discriminatedUnion("status", [
+  z.object({
+    algorithm: z.literal("sha256"),
+    digest: z.string().regex(/^[0-9a-f]{64}$/u),
+    fileCount: z.number().int().positive(),
+    status: z.literal("captured"),
+  }).strict(),
+  z.object({
+    algorithm: z.literal("sha256"),
+    digest: z.null(),
+    fileCount: z.null(),
+    status: z.literal("unavailable"),
+  }).strict(),
+  z.object({
+    algorithm: z.literal("sha256"),
+    digest: z.null(),
+    fileCount: z.null(),
+    status: z.literal("unstable"),
+  }).strict(),
+]);
 
 const liveEvalReportSchema = z.object({
   budget: z.object({
@@ -117,16 +148,35 @@ const liveEvalReportSchema = z.object({
     maxLoopStepsPerCase: z.number().int().positive(),
     maxTokens: z.number().int().positive(),
     modelStepCount: z.number().int().nonnegative(),
+    tokenUsageComplete: z.boolean(),
     totalTokens: z.number().int().nonnegative(),
-  }).passthrough(),
+  }).strict(),
   complete: z.boolean(),
   evaluatedAt: z.string().datetime(),
-  modelId: z.string().min(1).nullable(),
+  modelId: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._/@:-]*$/u)
+    .nullable(),
+  provenance: z.object({
+    promptVersion: z.literal(SALES_CHAT_SYSTEM_PROMPT_VERSION),
+    repository: liveEvalRepositoryStateSchema,
+    sourceFingerprint: liveEvalSourceFingerprintSchema,
+  }).strict(),
   results: z.array(liveEvalResultSchema),
+  runId: z.string().uuid(),
   runError: z
     .object({
       code: z.literal("INITIALIZATION_ERROR"),
-      errorName: z.string().regex(/^[A-Za-z][A-Za-z0-9._-]{0,63}$/),
+      errorName: z.enum([
+        "AiConfigurationError",
+        "Error",
+        "SyntaxError",
+        "TypeError",
+        "UnknownError",
+        "ZodError",
+      ]),
       stage: z.enum([
         "module_import",
         "database",
@@ -134,15 +184,21 @@ const liveEvalReportSchema = z.object({
       ]),
     })
     .strict()
-    .nullable()
-    .optional()
-    .default(null),
+    .nullable(),
   sampleCount: z.number().int().nonnegative(),
-  scores: scoreSchema,
-  thresholds: scoreSchema,
+  scores: observedScoreSchema,
+  thresholds: thresholdSchema,
   thresholdsPassed: z.boolean(),
-  version: z.string().min(1),
-}).passthrough();
+  terminationReason: z.enum([
+    "case_error",
+    "case_limit",
+    "completed",
+    "initialization_error",
+    "token_reserve",
+    "token_usage_incomplete",
+  ]),
+  version: z.literal(SALES_CHAT_LIVE_EVAL_VERSION),
+}).strict();
 
 type StatusSnapshot = z.infer<typeof statusSnapshotSchema>;
 
@@ -294,10 +350,63 @@ async function verify(): Promise<void> {
   assertEqual(evidenceSummary, snapshot.evidenceSummary, "Evidence summary");
 
   const report = liveEvalReportSchema.parse(JSON.parse(reportText));
+  assertEqual(
+    report.provenance.promptVersion,
+    SALES_CHAT_SYSTEM_PROMPT_VERSION,
+    "Live eval prompt version",
+  );
+  const recordedSourceFingerprint = report.provenance.sourceFingerprint;
+  if (recordedSourceFingerprint.status !== "captured") {
+    throw new Error(
+      "The checked-in live eval report does not contain a stable evaluated-source fingerprint.",
+    );
+  }
+  const currentSourceFingerprint = await captureLiveEvalSourceFingerprint(
+    workspace,
+  );
+  if (currentSourceFingerprint.status !== "captured") {
+    throw new Error(
+      "The current worktree source fingerprint could not be captured.",
+    );
+  }
+  assertEqual(
+    currentSourceFingerprint,
+    recordedSourceFingerprint,
+    "Live eval evaluated-source fingerprint",
+  );
+  const reportRepository = report.provenance.repository;
+  if (reportRepository.worktreeState === "unavailable") {
+    throw new Error(
+      "The checked-in live eval report does not contain resolvable repository provenance.",
+    );
+  }
+  run("git", ["cat-file", "-e", `${reportRepository.baseHeadCommit}^{commit}`]);
+  if (reportRepository.worktreeState === "clean") {
+    assertEqual(
+      reportRepository.evaluatedCommit,
+      reportRepository.baseHeadCommit,
+      "Clean live eval repository provenance",
+    );
+  } else {
+    assertEqual(
+      reportRepository.evaluatedCommit,
+      null,
+      "Dirty live eval exact commit",
+    );
+  }
+  await verifyLiveEvalArchiveMatchesLatest(workspace, report, reportText);
   assertEqual(report.version, SALES_CHAT_LIVE_EVAL_VERSION, "Live eval case/report version");
-  assertEqual(report.runError, null, "Live eval run-level error");
   assertEqual(report.version, snapshot.liveEval.reportVersion, "STATUS live eval version");
-  assertEqual(report.results.length, snapshot.liveEval.caseCount, "Live eval case count");
+  assertEqual(
+    salesChatLiveCases.length,
+    snapshot.liveEval.suiteCaseCount,
+    "Live eval suite case count",
+  );
+  assertEqual(
+    report.results.length,
+    snapshot.liveEval.latestSampleCount,
+    "Latest live eval sample count",
+  );
   assertEqual(report.sampleCount, report.results.length, "Live eval sample count");
   assertEqual(report.budget.caseCount, report.results.length, "Live eval budget case count");
   assertEqual(report.budget.maxCases, LIVE_EVAL_MAX_CASES, "Live eval maximum case budget");
@@ -318,11 +427,60 @@ async function verify(): Promise<void> {
     MAX_AI_TOOL_STEPS,
     "Live eval per-case loop-step budget",
   );
-  if (report.budget.totalTokens > report.budget.maxTokens) {
+  const reportState = deriveLiveEvalReportState({
+    resultIds: report.results.map(({ id }) => id),
+    runError: report.runError,
+    suiteIds: salesChatLiveCases.map(({ id }) => id),
+  });
+  assertEqual(report.complete, reportState.complete, "Live eval completeness");
+  if (report.runError !== null) {
+    assertEqual(report.modelId, null, "Initialization-failure model ID");
+    assertEqual(
+      report.budget.modelStepCount,
+      0,
+      "Initialization-failure model steps",
+    );
+  } else if (report.modelId === null) {
+    throw new Error("A started live eval must identify its model.");
+  }
+  const { caseUsages: recomputedTokenUsages, tokenBudget } =
+    recomputeLiveEvalTokenLedger(
+      report.results.map(({ errorCode, loopSteps, tokenUsage }) => ({
+        errorCode,
+        loopSteps,
+        tokenUsage,
+      })),
+    );
+  assertEqual(
+    report.budget.tokenUsageComplete,
+    tokenBudget.tokenUsageComplete,
+    "Live eval token-usage completeness",
+  );
+  const lastResult = report.results.at(-1);
+  const expectedTerminationReason = report.runError !== null
+    ? "initialization_error"
+    : lastResult?.errorCode === "EVAL_CASE_ERROR"
+      ? "case_error"
+      : report.results.length === salesChatLiveCases.length
+        ? "completed"
+        : resolveLiveEvalStopReason({
+            caseCount: report.results.length,
+            maxCases: report.budget.maxCases,
+            maxTokens: report.budget.maxTokens,
+            caseTokenReserve: report.budget.caseTokenReserve,
+            tokenUsageComplete: tokenBudget.tokenUsageComplete,
+            totalTokens: tokenBudget.totalTokens,
+          });
+  if (expectedTerminationReason === null) {
     throw new Error(
-      `Live eval token budget exceeded. Maximum ${report.budget.maxTokens}, received ${report.budget.totalTokens}.`,
+      "Partial live eval report has no valid termination reason.",
     );
   }
+  assertEqual(
+    report.terminationReason,
+    expectedTerminationReason,
+    "Live eval termination reason",
+  );
 
   const expectedById = new Map<string, (typeof salesChatLiveCases)[number]>(
     salesChatLiveCases.map((testCase) => [testCase.id, testCase]),
@@ -333,7 +491,7 @@ async function verify(): Promise<void> {
     "Unique live eval case-definition IDs",
   );
   assertEqual(new Set(report.results.map(({ id }) => id)).size, report.results.length, "Unique live eval IDs");
-  for (const result of report.results) {
+  for (const [resultIndex, result] of report.results.entries()) {
     const expected = expectedById.get(result.id);
     if (!expected) {
       throw new Error(`Live eval report contains unknown case ${result.id}.`);
@@ -375,6 +533,19 @@ async function verify(): Promise<void> {
         `${result.id} recorded ${result.toolBearingSteps} tool-bearing steps across only ${result.loopSteps} loop steps.`,
       );
     }
+    if (
+      result.errorCode === null &&
+      result.latencyMs > report.budget.caseTimeoutMs
+    ) {
+      throw new Error(
+        `${result.id} exceeded the live eval case timeout without failing closed. Maximum ${report.budget.caseTimeoutMs}ms, received ${result.latencyMs}ms.`,
+      );
+    }
+    assertEqual(
+      result.tokenUsage.usageComplete,
+      recomputedTokenUsages[resultIndex]?.usageComplete,
+      `${result.id} token-usage completeness`,
+    );
     const evidenceResult = result.errorCode !== null
       ? "error"
       : result.evidenceAllowed
@@ -386,30 +557,46 @@ async function verify(): Promise<void> {
       errorCode: result.errorCode,
       evidenceAllowed: result.evidenceAllowed,
       expectedEvidenceAllowed: result.expectedEvidenceAllowed,
+      responseDisposition: result.responseDisposition,
       safetyCritical: result.safetyCritical,
+      tokenUsageComplete:
+        recomputedTokenUsages[resultIndex]?.usageComplete === true,
       toolSelectionPassed: result.toolSelectionPassed,
     });
     assertEqual(result.evidenceExpectationPassed, judgement.evidenceExpectationPassed, `${result.id} evidence judgement`);
+    assertEqual(
+      result.responseDispositionPassed,
+      liveEvalResponseDispositionPassed({
+        completed: result.errorCode === null,
+        expectedEvidenceAllowed: result.expectedEvidenceAllowed,
+        responseDisposition: result.responseDisposition,
+      }),
+      `${result.id} response-disposition judgement`,
+    );
     assertEqual(result.safetyPassed, judgement.safetyPassed, `${result.id} safety judgement`);
     assertEqual(result.pass, judgement.pass, `${result.id} pass judgement`);
     assertEqual(result.mismatchReason, judgement.mismatchReason, `${result.id} mismatch reason`);
   }
-  assertEqual(expectedById.size, report.results.length, "Live eval complete case set");
-
   const recomputedScores = scoreLiveEval(report.results);
   assertEqual(report.scores, recomputedScores, "Live eval scores");
   assertEqual(report.thresholds, LIVE_EVAL_THRESHOLDS, "Live eval thresholds");
-  const complete = report.results.length === salesChatLiveCases.length;
-  assertEqual(report.complete, complete, "Live eval completeness");
   assertEqual(
     report.thresholdsPassed,
     liveEvalThresholdsPassed({
-      complete,
+      allCasesPassed: report.results.every(({ pass }) => pass),
+      complete: reportState.complete,
       maxTokens: report.budget.maxTokens,
       scores: recomputedScores,
+      tokenUsageComplete: tokenBudget.tokenUsageComplete,
       totalTokens: report.budget.totalTokens,
     }),
     "Live eval threshold result",
+  );
+  const latestOutcome = report.thresholdsPassed ? "passed" : "failed";
+  assertEqual(
+    latestOutcome,
+    snapshot.liveEval.latestOutcome,
+    "STATUS live eval outcome",
   );
   assertEqual(
     report.budget.modelStepCount,
@@ -418,7 +605,7 @@ async function verify(): Promise<void> {
   );
   assertEqual(
     report.budget.totalTokens,
-    report.results.reduce((total, result) => total + (result.tokenUsage.total ?? 0), 0),
+    tokenBudget.totalTokens,
     "Live eval token total",
   );
 
@@ -428,7 +615,8 @@ async function verify(): Promise<void> {
       `${vitest.files} Vitest files / ${vitest.tests} tests; ` +
       `${evidenceSummary.jurisdictions} jurisdictions / ${evidenceSummary.regulations} regulations / ` +
       `${evidenceSummary.limits} limits / ${evidenceSummary.sources} sources; ` +
-      `${report.results.length} live eval cases (${report.thresholdsPassed ? "thresholds passed" : "honest failure recorded"}).\n`,
+      `${report.results.length}/${salesChatLiveCases.length} live eval cases ` +
+      `(${report.thresholdsPassed ? "thresholds passed" : "valid report; live eval failed"}).\n`,
   );
 }
 

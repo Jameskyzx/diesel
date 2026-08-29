@@ -2956,6 +2956,99 @@
 - 验证方式：桌面 E2E 完成 CSV → Draft → Review → Publish → Query → Archive；移动端
   覆盖 persona/Preview。live eval 评分、脱敏和预算停止由单元测试约束。
 
+
+### ADR-150：Live eval 的 token 预算要求完整 usage 并保留异常前已知成本
+
+- 状态：Accepted
+- 日期：2026-08-30
+- 决策：`sales-chat-live-v2` 的每条 case 在生产 `streamSalesChat()` 的 step callback 中收集
+  已完成 provider step 的 input/output/total usage，作为逐 step `ledger`；同时读取 AI SDK 的
+  整轮 aggregate usage。正常结束只有在模型流完整结束、ledger 条数与生产循环的 completed
+  step 数相同、每步 input/output/total 均为非负安全整数且满足 `input + output = total`、
+  input/total 为正，并且 aggregate 与 ledger 求和逐字段相同时，才标记
+  `usageComplete=true`。任一 case 不完整会在 mismatch 中记录 `token_usage`、停止后续 case，
+  并使总预算与 `thresholdsPassed` 失败；`null` 不得按零通过。执行异常仍汇总异常前已完成
+  step 的 ledger、工具步和 step 数，但 usage 保持 incomplete。
+- 保守下界：对每组观测分别取 `max(total, input + output, input, output)`，逐 step 下界求和后
+  再与 aggregate 下界取较大值。即使 provider 给出互相矛盾或部分字段，报告也不会选择较小
+  数字低估已知成本；`budget.totalTokens` 在 incomplete 时明确只是 known lower bound。
+- 结束与计分：报告必须写入明确的 `terminationReason`（`completed`、`case_error`、
+  `initialization_error`、`token_usage_incomplete`、`token_reserve` 或 `case_limit`）。没有样本的
+  指标分母输出 `null`/N/A，不得用 100% 伪装为通过；全部 18 条 case、所有必需指标、完整
+  usage 与 160,000 上限缺一不可。
+- 理由：160,000 token 是验收预算证据。把 provider 未报告值写成零会低估成本并允许一份无法
+  对账的报告通过；只信 aggregate 会掩盖中间 step 缺报，异常分支全部清零又会抹掉失败前
+  真实发生的调用。
+- 后果：`0 known tokens` 与 `tokenUsageComplete=false` 的组合只表示当前可核验下界为零，不
+  表示 provider 实际零消耗。runner 不会在剩余预算未知时继续启动 case。该修复不改变 18 条
+  case 期望，也不会把历史 101,604 aggregate token 结果回填成满足新 ledger 的运行。
+- 限制：通用 OpenAI-compatible usage 只在 provider step 完成后返回。12,000 token 的
+  pre-case reserve 与逐 step 停止不是 tokenizer 证明，最后一条 case 仍可能先越过验收上限
+  再被报告拒绝；账单级预消费硬限额需要 provider 账户预算或模型专用 tokenizer/preflight。
+- 验证方式：纯函数测试锁定缺失、部分、矛盾与被低报的 usage 都保留保守下界但无法通过；
+  AI SDK 多步 mock 校验 aggregate 与 ledger；异常 mock 证明保留错误前已完成 step；
+  `portfolio:verify` 不信任报告布尔值，而是从逐例 ledger 重算 completeness、known total、
+  score、threshold 与 termination reason。
+
+### ADR-151：Live eval 报告使用可核验来源并先归档后推进 latest
+
+- 状态：Accepted
+- 日期：2026-08-30
+- 决策：每次 `pnpm ai:eval:live` 在初始化任何运行时依赖前生成 UUID 并采集 Git 状态；
+  单次采集使用 HEAD → porcelain status → HEAD，运行结束再采一次并与起点对账。只有两端
+  都 clean 且 HEAD 相同才记录该 SHA 为 `evaluatedCommit`；稳定 dirty 只记录
+  `baseHeadCommit`，精确提交为 `null`；Git 不可用或 HEAD 漂移标为 `unavailable`。报告还
+  绑定当前 system prompt version，但不保存 status 文件名、patch、prompt、用户文本或上游
+  错误正文。
+- 来源指纹：运行前后分别对 Git 已跟踪及未忽略的未跟踪评估相关文件计算 SHA-256，范围为
+  `evals/`、`src/`、`drizzle/`、`scripts/ai/`、`package.json`、`pnpm-lock.yaml` 与
+  `tsconfig.json`。路径长度、路径、文件长度和内容都进入确定性摘要；非普通文件、不安全
+  路径、读取失败或起止摘要变化会记录为 `unavailable`/`unstable`。它不是整个 repository
+  的指纹；`portfolio:verify` 只接受稳定 captured 指纹，并与当前工作树重新计算的结果比较。
+- 留存：初始化失败、部分运行、门槛失败和通过结果均先写入同步的独占临时文件，再以 hard
+  link 发布到时间戳 + UUID 归档名，已存在目标不会被 helper 覆盖。随后使用 latest 专用锁
+  串行比较 `evaluatedAt`、再比较 `runId`；只有较新的候选才通过同步的独占临时文件和原子
+  rename 推进 latest，较旧的并发运行只保留归档。锁超时保留已写归档并报错，不擅自删除或
+  接管可能仍活跃的锁。`portfolio:verify` 要求 latest 与推导出的归档逐字节相同。
+- 边界：上述是 persistence helper 提供的 append-only/no-overwrite 语义，不是操作系统
+  immutability。归档仍是普通文件；拥有文件系统写权限的主体可以修改或删除它。文档与界面
+  不得把这种应用层约束称为不可变存储。
+- 理由：只有一个可覆盖的 latest 无法证明失败结果未被成功结果抹除；只在开始时读取 HEAD
+  会让长运行中的编辑、checkout 或 rebase 被错误归到旧提交；仅有 dirty 标志又不能辨认实际
+  执行的未提交评估源码。范围明确的来源指纹、无覆盖归档与 newest-wins latest 让来源和失败
+  轨迹可复核，同时不持久化敏感正文。
+- 后果：dirty 工作树上的 live run 在 scoped fingerprint 匹配时仍是诚实的开发观测，但不能
+  作为“该精确 commit”的发布证据；release-grade eval 应在隔离的 clean commit 上重新执行。
+  `pnpm ai:eval:live` 对初始化、部分运行或门槛失败返回非零；`pnpm portfolio:verify` 则可对
+  `thresholdsPassed=false` 的报告成功完成自洽校验，并明确输出 `valid report; live eval
+  failed`。后者只证明证据完整性，不把失败变成通过。旧报告缺少字段时不得推断或回填。
+- 验证方式：纯函数测试覆盖 clean/dirty/unavailable、HEAD 前后变化、来源指纹稳定/漂移；文件
+  测试覆盖并发运行各自留存、同 run ID 不覆盖、newest-wins、latest 原子替换、锁超时归档
+  保留、临时文件清理、路径/符号链接拒绝，以及 latest/archive 字节一致性。
+
+### ADR-152：Live eval v3 将最终响应处置纳入逐例验收
+
+- 状态：Accepted
+- 日期：2026-08-30
+- 决策：将 suite 升级为 `sales-chat-live-v3`。每条已完成 case 的最终文本只在内存中分类为
+  `answered`、`empty` 或 `whole_request_refusal`；执行异常固定记录 `not_evaluated`。
+  `expectedEvidenceAllowed=true` 只接受 `answered`，而
+  `expectedEvidenceAllowed=false` 只接受明确的 `whole_request_refusal`。逐例 `pass` 必须包含该
+  判定，`responseDispositionAccuracyPct` 门槛为 100%，且总门槛要求所有 case 的 `pass=true`。
+- 分类边界：whole-request classifier 只识别高置信度的整题拒绝。局部风险、单项证据缺口、
+  限定语或免责声明出现在有实质结论的回答中时仍归为 `answered`，避免惩罚合理的失败关闭
+  说明。报告只保存安全分类、判定布尔值和 trim 后字符数，不保存原始模型回答。
+- 理由：v2 可以在工具、参数和证据许可均正确时，让空最终文本或对本应回答问题的整题拒绝
+  通过；它也不能证明证据被拒绝的 case 实际向用户返回了整题失败关闭。新增字段改变评分与
+  报告契约，因此必须升级版本，不能把旧 v2 报告解释为符合 v3。
+- 后果：`portfolio:verify` 从安全分类重算 disposition pass、逐例 pass、分数和总门槛，并校验
+  error/empty/字符数的一致性；由于原文不落盘，它不声称离线重跑分类器。当前 checked-in v2
+  latest 仍是最新诚实 provider 观察，但在新的 v3 verifier 下不构成验收证据；需要有凭据的
+  新运行，且本决策不宣称 v3 已通过。
+- 验证方式：表驱动中英文测试覆盖空文本、明确整题拒绝、局部缺口、风险说明与免责声明；
+  scorer/schema 测试证明 allowed case 的空白或整题拒绝失败、denied case 只有整题拒绝通过、
+  error 为 `not_evaluated`、100% disposition 门槛与 all-cases-pass 门槛均失败关闭。
+
 ## 4. 暂不决策
 
 以下问题在 MVP 出现明确需求或数据证据前不提前设计：

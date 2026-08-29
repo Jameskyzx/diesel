@@ -18,6 +18,11 @@ import { cn } from "@/lib/utils";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getRequestLocale } from "@/i18n/server";
 import type { Locale } from "@/i18n/locale";
+import { getCountryDirectory } from "@/server/services/country-directory";
+
+const countryIso2ByIso3 = Object.fromEntries(
+  getCountryDirectory().map(({ iso2, iso3 }) => [iso3, iso2]),
+);
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: getDictionary(await getRequestLocale()).chatPage.title };
@@ -94,6 +99,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
       <section className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <SalesChat
           aiConfigured={isServerAiConfigured()}
+          countryIso2ByIso3={countryIso2ByIso3}
           demoMode={demoMode}
           imageUploadsEnabled={isServerMultimodalAiConfigured()}
           initialPrompt={initialPromptForContext(context, locale)}

@@ -41,7 +41,17 @@ describe("POST /api/chat stream boundary", () => {
       model: {},
       modelId: "mock/stream-boundary",
     });
-    mocks.toUIMessageStreamResponse.mockReturnValue(new Response("ok"));
+    mocks.toUIMessageStreamResponse.mockImplementation(
+      ({ sendReasoning }: { sendReasoning?: boolean }) => {
+        const visibleParts = ["没有足够证据"];
+        if (sendReasoning) {
+          visibleParts.unshift("REASONING-API-MOCK-FAKE-99");
+        }
+        return new Response(visibleParts.join("\n"), {
+          headers: { "content-type": "text/event-stream" },
+        });
+      },
+    );
     mocks.streamSalesChat.mockReturnValue({
       toUIMessageStreamResponse: mocks.toUIMessageStreamResponse,
     });
@@ -72,7 +82,9 @@ describe("POST /api/chat stream boundary", () => {
     );
 
     expect(response.status).toBe(200);
-    await expect(response.text()).resolves.toBe("ok");
+    const body = await response.text();
+    expect(body).toContain("没有足够证据");
+    expect(body).not.toContain("REASONING-API-MOCK-FAKE-99");
     expect(mocks.toUIMessageStreamResponse).toHaveBeenCalledWith(
       expect.objectContaining({ sendReasoning: false }),
     );

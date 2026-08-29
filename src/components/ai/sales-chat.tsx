@@ -56,6 +56,7 @@ import {
 } from "@/features/ai/client-schemas";
 import {
   localizedCitationTitle,
+  localizedRegulationComparisonCountryName,
   localizedSalesBriefAction,
   localizedSalesBriefItem,
   localizedSalesBriefSummary,
@@ -73,6 +74,7 @@ import { formatOptionalUtcDate, formatUtcDate } from "@/i18n/date";
 
 type SalesChatProps = {
   aiConfigured: boolean;
+  countryIso2ByIso3: Readonly<Record<string, string>>;
   demoMode?: boolean;
   imageUploadsEnabled: boolean;
   initialPrompt?: string;
@@ -408,7 +410,9 @@ function CitationList({
               </span>
             ) : null}
             {citation.isDemo ? (
-              <span className="font-semibold text-amber-700">DEMO</span>
+              <span className="font-semibold text-amber-700">
+                {dictionary.common.demo}
+              </span>
             ) : null}
           </div>
         </article>
@@ -554,7 +558,13 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
   );
 }
 
-function ToolFacts({ result }: { result: ClientAiToolResult }) {
+function ToolFacts({
+  countryIso2ByIso3,
+  result,
+}: {
+  countryIso2ByIso3: Readonly<Record<string, string>>;
+  result: ClientAiToolResult;
+}) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.chat;
   const fitCopy = fitStatusLabels(dictionary);
@@ -738,7 +748,11 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
             key={country.countryIso3}
           >
             <p className="font-semibold">
-              {country.countryIso3} · {country.countryName ?? copy.noCountryRecord}
+              {country.countryIso3} · {localizedRegulationComparisonCountryName(
+                country,
+                locale,
+                countryIso2ByIso3,
+              ) ?? copy.noCountryRecord}
             </p>
             <p className="mt-1 text-muted-foreground">
               {copy.currentEffectiveCount} {country.currentEffectiveRegulations.length} ·{" "}
@@ -914,7 +928,13 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
   );
 }
 
-function ToolResultCard({ result }: { result: ClientAiToolResult }) {
+function ToolResultCard({
+  countryIso2ByIso3,
+  result,
+}: {
+  countryIso2ByIso3: Readonly<Record<string, string>>;
+  result: ClientAiToolResult;
+}) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.chat;
   const labels = toolLabels(copy);
@@ -972,7 +992,7 @@ function ToolResultCard({ result }: { result: ClientAiToolResult }) {
         </div>
       ) : null}
 
-      <ToolFacts result={result} />
+      <ToolFacts countryIso2ByIso3={countryIso2ByIso3} result={result} />
 
       {warnings.length > 0 ? (
         <div className="space-y-1 rounded-lg bg-amber-100/80 p-2 text-xs text-amber-950">
@@ -1047,14 +1067,25 @@ function AttachmentPart({ part }: { part: FileUIPart }) {
   );
 }
 
-function ToolPart({ part }: { part: ChatMessagePart }) {
+function ToolPart({
+  countryIso2ByIso3,
+  part,
+}: {
+  countryIso2ByIso3: Readonly<Record<string, string>>;
+  part: ChatMessagePart;
+}) {
   const { dictionary } = useLocale();
   if (!isToolUIPart(part)) {
     return null;
   }
   const presentation = toolPartPresentation(part);
   if (presentation.kind === "result") {
-    return <ToolResultCard result={presentation.result} />;
+    return (
+      <ToolResultCard
+        countryIso2ByIso3={countryIso2ByIso3}
+        result={presentation.result}
+      />
+    );
   }
   if (presentation.kind === "error") {
     return (
@@ -1078,6 +1109,7 @@ function ToolPart({ part }: { part: ChatMessagePart }) {
 
 export function SalesChat({
   aiConfigured,
+  countryIso2ByIso3,
   demoMode = false,
   imageUploadsEnabled,
   initialPrompt = "",
@@ -1088,6 +1120,7 @@ export function SalesChat({
   const copy = dictionary.chat;
   const [sessionId] = useState(() => crypto.randomUUID());
   const [input, setInput] = useState(initialPrompt);
+  const initialPromptPristineRef = useRef(true);
   const [pendingAttachments, setPendingAttachments] = useState<
     PendingAttachment[]
   >([]);
@@ -1176,6 +1209,12 @@ export function SalesChat({
   const shouldAutoScrollRef = useRef(true);
   const waiting = status === "submitted" || status === "streaming";
   const recoveryPending = error !== undefined && failedSubmission !== null;
+
+  useEffect(() => {
+    if (initialPromptPristineRef.current) {
+      setInput(initialPrompt);
+    }
+  }, [initialPrompt]);
 
   useEffect(() => {
     const messageLog = messageLogRef.current;
@@ -1384,6 +1423,7 @@ export function SalesChat({
         ? currentMessages.slice(0, failedMessageIndex)
         : currentMessages;
     });
+    initialPromptPristineRef.current = false;
     setInput(failedSubmission.text);
     setPendingAttachments(failedSubmission.attachments);
     setFailedSubmission(null);
@@ -1407,6 +1447,7 @@ export function SalesChat({
     }
 
     submissionPendingRef.current = true;
+    initialPromptPristineRef.current = false;
     setSubmissionPending(true);
     try {
       const attachments = pendingAttachments;
@@ -1493,6 +1534,7 @@ export function SalesChat({
                     className="rounded-full border border-emerald-900/10 bg-white px-3 py-1.5 text-left text-xs font-medium text-emerald-900 transition-colors hover:bg-emerald-50"
                     key={prompt}
                     onClick={() => {
+                      initialPromptPristineRef.current = false;
                       setInput(prompt);
                       inputRef.current?.focus();
                     }}
@@ -1564,6 +1606,7 @@ export function SalesChat({
 
               return (
                 <ToolPart
+                  countryIso2ByIso3={countryIso2ByIso3}
                   key={`${message.id}-part-${index}`}
                   part={part}
                 />
@@ -1758,7 +1801,10 @@ export function SalesChat({
               className="min-h-11 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-slate-400"
               id="sales-chat-input"
               maxLength={MAX_CHAT_USER_MESSAGE_CHARACTERS}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(event) => {
+                initialPromptPristineRef.current = false;
+                setInput(event.target.value);
+              }}
               onKeyDown={(event) => {
                 if (
                   event.key === "Enter" &&

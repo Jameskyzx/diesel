@@ -79,6 +79,20 @@ import { emitAiCompletionLog } from "@/server/observability/structured-log";
 import type { Locale } from "@/i18n/locale";
 
 export { MAX_AI_TOOL_STEPS } from "@/features/ai/constants";
+
+export function isReasoningStreamPartType(type: string): boolean {
+  return type.startsWith("reasoning");
+}
+
+export type SalesChatStepObservation = {
+  toolCallCount: number;
+  usage: {
+    inputTokens: number | undefined;
+    outputTokens: number | undefined;
+    totalTokens: number | undefined;
+  };
+};
+
 const regulatoryDisclaimer = (locale: Locale) =>
   locale === "en"
     ? "For information only; not a substitute for formal certification or legal advice."
@@ -828,12 +842,7 @@ function createEvidenceBoundaryTransform({
         return;
       }
 
-      if (
-        chunk.type === "reasoning-start" ||
-        chunk.type === "reasoning-delta" ||
-        chunk.type === "reasoning-end" ||
-        chunk.type === "reasoning-file"
-      ) {
+      if (isReasoningStreamPartType(chunk.type)) {
         return;
       }
 
@@ -931,7 +940,22 @@ function createEvidenceBoundaryTransform({
   });
 }
 
+function toSalesChatStepObservation(step: {
+  toolCalls: readonly unknown[];
+  usage: SalesChatStepObservation["usage"];
+}): SalesChatStepObservation {
+  return {
+    toolCallCount: step.toolCalls.length,
+    usage: {
+      inputTokens: step.usage.inputTokens,
+      outputTokens: step.usage.outputTokens,
+      totalTokens: step.usage.totalTokens,
+    },
+  };
+}
+
 export function streamSalesChat(input: {
+  abortSignal?: AbortSignal;
   allowUnverifiedAttachmentResponse?: boolean;
   auditRepository: Pick<AiAuditRepository, "recordToolCall">;
   hasUnverifiedAttachments?: boolean;
@@ -939,6 +963,7 @@ export function streamSalesChat(input: {
   messages: ModelMessage[];
   model: LanguageModel;
   modelId?: string;
+  onStepMetrics?: (step: SalesChatStepObservation) => void;
   requestId?: string;
   requestStartedAtMs?: number;
   selectedCountryIso3: string | null;
@@ -980,6 +1005,7 @@ export function streamSalesChat(input: {
   });
 
   return streamText({
+    abortSignal: input.abortSignal,
     experimental_transform: () =>
       createEvidenceBoundaryTransform({
         allowUnverifiedAttachmentResponse:
@@ -1033,6 +1059,9 @@ export function streamSalesChat(input: {
         toolCount: 0,
         totalTokens: null,
       });
+    },
+    onStepEnd: (step) => {
+      input.onStepMetrics?.(toSalesChatStepObservation(step));
     },
     prepareStep: ({ steps }) => {
       const stepEvidence = collectSalesChatStepEvidence(steps);

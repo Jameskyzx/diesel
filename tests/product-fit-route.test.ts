@@ -20,6 +20,28 @@ describe("POST /api/product-fit request limits", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "PAYLOAD_TOO_LARGE",
+        message: "The product-fit request is too large. Reduce it and try again.",
+      },
+    });
+  });
+
+  it("uses the Chinese locale cookie without changing the error contract", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/product-fit", {
+        body: "{}",
+        headers: {
+          "content-length": String(MAX_PRODUCT_FIT_REQUEST_BYTES + 1),
+          "content-type": "application/json",
+          cookie: "diesel_locale=zh-CN",
+        },
+        method: "POST",
+      }),
+    );
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "PAYLOAD_TOO_LARGE",
         message: "产品适配请求过大，请缩小请求后重试。",
       },
     });

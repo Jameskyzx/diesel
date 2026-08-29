@@ -1,9 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { formatLiveEvalArchiveFilename } from "../scripts/ai/live-eval-report";
 
 describe("live eval initialization reporting", () => {
   it.each([
@@ -23,7 +25,7 @@ describe("live eval initialization reporting", () => {
       useWorkspaceTsconfig: true,
     },
   ] as const)(
-    "persists an honest v2 report for a $stage failure before any case",
+    "persists an honest v3 report for a $stage failure before any case",
     async ({ linkMigrations, stage, useWorkspaceTsconfig }) => {
       const workspace = process.cwd();
       const temporaryWorkspace = await mkdtemp(
@@ -91,10 +93,25 @@ describe("live eval initialization reporting", () => {
           budget: {
             caseCount: 0,
             modelStepCount: 0,
+            tokenUsageComplete: false,
             totalTokens: 0,
           },
           complete: false,
           modelId: null,
+          provenance: {
+            promptVersion: "sales-chat-system-v5",
+            repository: {
+              baseHeadCommit: null,
+              evaluatedCommit: null,
+              worktreeState: "unavailable",
+            },
+            sourceFingerprint: {
+              algorithm: "sha256",
+              digest: null,
+              fileCount: null,
+              status: "unavailable",
+            },
+          },
           results: [],
           runError: {
             code: "INITIALIZATION_ERROR",
@@ -102,8 +119,28 @@ describe("live eval initialization reporting", () => {
           },
           sampleCount: 0,
           thresholdsPassed: false,
-          version: "sales-chat-live-v2",
+          terminationReason: "initialization_error",
+          version: "sales-chat-live-v3",
         });
+        expect(report.runId).toEqual(expect.any(String));
+        expect(report.evaluatedAt).toEqual(expect.any(String));
+        expect(report.runId).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu,
+        );
+        const archiveFiles = await readdir(
+          resolve(temporaryWorkspace, "docs/evals/archive"),
+        );
+        expect(archiveFiles).toEqual([
+          formatLiveEvalArchiveFilename(
+            String(report.evaluatedAt),
+            String(report.runId),
+          ),
+        ]);
+        const archiveText = await readFile(
+          resolve(temporaryWorkspace, "docs/evals/archive", archiveFiles[0] ?? ""),
+          "utf8",
+        );
+        expect(archiveText).toBe(reportText);
         expect(reportText).toMatch(
           /"errorName": "[A-Za-z][A-Za-z0-9._-]{0,63}"/u,
         );
@@ -111,6 +148,7 @@ describe("live eval initialization reporting", () => {
           Object.keys(report.runError as Record<string, unknown>).sort(),
         ).toEqual(["code", "errorName", "stage"]);
         expect(reportText).not.toContain(secret);
+        expect(archiveText).not.toContain(secret);
         expect(execution.stderr).not.toContain(secret);
       } finally {
         await rm(temporaryWorkspace, { force: true, recursive: true });

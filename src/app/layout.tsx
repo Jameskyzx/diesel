@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
         },
       ],
       locale: locale === "zh-CN" ? "zh_CN" : "en_US",
-      title: "Global Diesel Intelligence",
+      title: dictionary.metadata.openGraphTitle,
       type: "website",
     },
     title: {

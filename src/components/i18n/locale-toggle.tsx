@@ -34,7 +34,13 @@ export function LocaleToggle() {
         throw new Error("Locale preference request failed.");
       }
 
-      window.localStorage.setItem(localeCookieName, nextLocale);
+      try {
+        window.localStorage.setItem(localeCookieName, nextLocale);
+      } catch {
+        // The server cookie is authoritative. Storage may be disabled by a
+        // browser privacy policy, so a failed compatibility mirror must not
+        // block the already-saved locale from being rendered.
+      }
 
       startTransition(() => {
         // A server refresh keeps the current pathname, query string, and scroll

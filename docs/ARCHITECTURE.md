@@ -472,15 +472,44 @@ MVP 采用“结构化结果优先”：
   只向模型开放能满足这些 requirement 的工具并使用 `toolChoice=required`；证据齐全、
   任一结果失败/不足、缺参或纯附件概述时切换为 `toolChoice=none`。工具顺序稳定，最多
   执行 5 个工具步骤；模型不再依靠“自觉”决定是否继续或停止。
-- system instruction 以 `sales-chat-system-v3` 版本化，并按事实边界、工具路由、循环
-  策略、回答契约、附件边界和检索内容不可信边界分段。知识 query 必须与用户明确主题词
-  至少有一个有效重合；检索片段即使包含指令或 URL 也只能作为待解释数据。离线
+- system instruction 当前以 `sales-chat-system-v5` 版本化，`en` / `zh-CN` 使用等价的
+  事实边界、工具路由、循环策略、回答契约、附件边界和检索内容不可信边界。v5 还要求
+  显式保留用户的 `asOf`，来源请求只走知识检索，并按精确 topics/query 收窄工具输入。
+  知识 query 必须与用户明确主题词至少有一个有效重合；检索片段即使包含指令或 URL
+  也只能作为待解释数据。离线
   `pnpm ai:eval` 用固定 golden prompts 检查分流、
   缺参、初始工具集合和停止阶段，不调用外部模型；它不冒充真实 provider 成功率评估。
-- `pnpm ai:eval:live` v2 直接复用上述生产 `streamSalesChat`、独立多轮用户消息与最多五步
+- `pnpm ai:eval:live` v3 直接复用上述生产 `streamSalesChat`、独立多轮用户消息与最多五步
   的动态工具循环。每条 case 都硬性核对 evidence allow/deny 期望，异常不能计为安全通过；
-  报告另外保存总模型步数、工具步数与 160,000 token 的 case 边界预算，不保存 prompt 或
-  完整模型输出。
+  报告另外保存总模型步数、工具步数与 160,000 token 的验收上限，不保存 prompt 或
+  完整模型输出。每条 case 保存已完成 provider step 的 token `ledger`，并把 ledger 求和与
+  AI SDK 的 aggregate usage 交叉核对；只有流完整结束、ledger 数量与生产 loop step 数一致、
+  每步 `input + output = total` 且 aggregate 逐字段一致时 usage 才完整。缺失、部分或矛盾
+  usage 不补零：已知成本按每组 `max(total, input + output, input, output)` 计算，再取 ledger
+  总下界与 aggregate 下界的较大值。执行异常仍保留此前已完成 step 的 ledger/工具步/成本，
+  但标记 incomplete、停止后续 case 并让 threshold 失败；因此 `0 known tokens + incomplete`
+  不能解释为 provider 实际零消耗。
+  报告使用 `terminationReason` 区分完整结束、case/初始化错误、usage 不完整、预算 reserve 与
+  case 上限；零分母 score 为 `null`/N/A，不伪装成 100%。
+  OpenAI-compatible usage 只在 provider step 完成后可得，因此 runner 会在每条 case 前保留
+  12,000 token 并在未知 usage 时停止，但不能把该应用层门槛描述成 provider 账单级硬限额；
+  真正的预消费硬限额还需要获批 provider 的账户预算或对应 tokenizer/preflight 能力。
+  报告绑定 prompt version、运行前后复核的 Git provenance，以及评估相关源码的 scoped
+  SHA-256：稳定 clean 工作树可记录精确 evaluated commit；dirty 只记录 base HEAD 且
+  `evaluatedCommit=null`；fingerprint 覆盖 `evals/`、`src/`、`drizzle/`、`scripts/ai/`、
+  package/lockfile/tsconfig 的 tracked 与未忽略 untracked 普通文件，并在起止摘要变化时标为
+  unstable。它不代表整个 repository；`portfolio:verify` 会用当前工作树重新计算并要求匹配。
+  每次运行（含初始化失败、部分运行和门槛失败）都先通过独占临时文件 + hard link 发布
+  时间戳/UUID 归档，再持有 latest 锁按 `evaluatedAt`、`runId` newest-wins；只有较新候选才用
+  同目录临时文件原子推进 latest，锁超时保留已写归档并失败。归档不可由 helper 覆盖，但仍是
+  可被文件系统权限主体修改/删除的普通文件，并非 OS immutable storage；verifier 要求 latest
+  与其归档逐字节一致。
+  `pnpm ai:eval:live` 在门槛失败时保存真实结果并返回非零；`pnpm portfolio:verify` 独立重算
+  ledger、known total、case 顺序、score、threshold 与 termination，可成功确认一份
+  `thresholdsPassed=false` 报告自洽，但这种成功不代表 live eval 通过。当前 checked-in latest
+  是 `2026-08-29T21:24:34.023Z` 的 v3 hardened 失败：首条 case 以 `case_error` 结束，1/18、
+  0 completed steps、0 known tokens 且 usage incomplete；历史 18/18、101,604 aggregate token
+  结果只保留在 legacy archive，不满足当前 ledger/provenance gate。
 - 流级 evidence boundary 跟踪本轮结构化工具结果；工具结果卡片继续即时流式输出，
   模型自然语言则缓冲到完整顺序/并行工具链结束后再判定。若证据不充分，丢弃已缓冲
   的结论文本并按失败工具生成具体缺口和下一步，同时输出法规免责声明；不得用统一

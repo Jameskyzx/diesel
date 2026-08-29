@@ -42,7 +42,7 @@ export function AppHeader() {
               Global Diesel
             </span>
             <span className="mt-1 block text-[9px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-              Regulatory Intelligence
+              {dictionary.header.subtitle}
             </span>
           </span>
         </Link>

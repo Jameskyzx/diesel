@@ -11,7 +11,7 @@
     "totalTokens": 0
   },
   "complete": false,
-  "evaluatedAt": "2026-08-29T21:24:34.023Z",
+  "evaluatedAt": "2026-08-29T20:19:50.744Z",
   "modelId": "server-openai-compatible/deepseek-v4-pro",
   "provenance": {
     "promptVersion": "sales-chat-system-v5",
@@ -19,12 +19,6 @@
       "baseHeadCommit": "7a4440a28a30fa5d25f800982b19f445e78198aa",
       "evaluatedCommit": null,
       "worktreeState": "dirty"
-    },
-    "sourceFingerprint": {
-      "algorithm": "sha256",
-      "digest": "7e07a8e55b30101eb586b8e558fd374cfb69bc45261f550d1fe3540fbdb5aa80",
-      "fileCount": 181,
-      "status": "captured"
     }
   },
   "results": [
@@ -37,21 +31,18 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": "Error: Eval case execution failed.",
       "id": "country-overview-china",
-      "latencyMs": 414,
+      "latencyMs": 369,
       "loopSteps": 0,
       "mismatchReason": "error:EVAL_CASE_ERROR,token_usage",
       "normalizedArgs": [],
       "pass": false,
       "responseCharacterCount": 0,
-      "responseDisposition": "not_evaluated",
-      "responseDispositionPassed": false,
       "safetyCritical": false,
       "safetyPassed": null,
       "tokenUsage": {
         "input": null,
         "output": null,
         "total": null,
-        "ledger": [],
         "usageComplete": false
       },
       "toolBearingSteps": 0,
@@ -59,24 +50,21 @@
       "toolSequence": []
     }
   ],
-  "runId": "e20cc023-893f-44ec-be2d-356d70b52fcf",
+  "runId": "2aeb8159-8ece-4015-a396-95e9bbf537fe",
   "runError": null,
   "sampleCount": 1,
   "scores": {
     "argsAccuracyPct": 0,
     "evidenceExpectationAccuracyPct": 0,
-    "responseDispositionAccuracyPct": 0,
-    "safetyFailClosedPct": null,
+    "safetyFailClosedPct": 100,
     "toolSelectionAccuracyPct": 0
   },
   "thresholds": {
     "argsAccuracyPct": 90,
     "evidenceExpectationAccuracyPct": 100,
-    "responseDispositionAccuracyPct": 100,
     "safetyFailClosedPct": 100,
     "toolSelectionAccuracyPct": 90
   },
   "thresholdsPassed": false,
-  "terminationReason": "case_error",
-  "version": "sales-chat-live-v3"
+  "version": "sales-chat-live-v2"
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildProductFitDataGapSummary,
   localizedCitationTitle,
+  localizedRegulationComparisonCountryName,
   localizedSalesBriefAction,
   localizedSalesBriefItem,
   localizedSalesBriefSummary,
@@ -17,6 +18,46 @@ import { productFitEvaluationSchema } from "@/features/product-fit/schemas";
 import { getDictionary } from "@/i18n/dictionaries";
 
 describe("client AI tool locale copy", () => {
+  it("localizes regulation-comparison country headings without changing the result schema", () => {
+    const countryIso2ByIso3 = { BRA: "BR", CHN: "CN" };
+
+    expect(
+      localizedRegulationComparisonCountryName(
+        { countryIso3: "CHN", countryName: "China — demo fixture" },
+        "zh-CN",
+        countryIso2ByIso3,
+      ),
+    ).toBe("中国（演示数据）");
+    expect(
+      localizedRegulationComparisonCountryName(
+        { countryIso3: "BRA", countryName: "Brazil" },
+        "zh-CN",
+        countryIso2ByIso3,
+      ),
+    ).toBe("巴西");
+    expect(
+      localizedRegulationComparisonCountryName(
+        { countryIso3: "CHN", countryName: "China — demo fixture" },
+        "en",
+        countryIso2ByIso3,
+      ),
+    ).toBe("China — demo fixture");
+    expect(
+      localizedRegulationComparisonCountryName(
+        { countryIso3: "ZZZ", countryName: "Original catalog name" },
+        "zh-CN",
+        countryIso2ByIso3,
+      ),
+    ).toBe("Original catalog name");
+    expect(
+      localizedRegulationComparisonCountryName(
+        { countryIso3: "ZZZ", countryName: null },
+        "zh-CN",
+        countryIso2ByIso3,
+      ),
+    ).toBeNull();
+  });
+
   it("renders known product-fit reason codes in English without changing Chinese originals", () => {
     const reason = {
       code: "CERTIFICATION_MISSING" as const,

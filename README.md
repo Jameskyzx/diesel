@@ -210,14 +210,19 @@ success rate. `pnpm ai:eval:live` runs 18 versioned fictional cases against an
 isolated PGlite database with explicit case, step, token, and timeout budgets.
 Every case asserts its expected evidence decision; a failed or incomplete run
 is retained as a failed report rather than repackaged as a success metric.
+Missing provider usage is not counted as zero: the runner preserves known
+completed-step cost and fails the token-budget completeness gate. The 160,000
+value is an acceptance ceiling; an exact pre-consumption billing cap requires
+provider-side budget enforcement or model-specific tokenization.
 
 GitHub CI runs lint, strict TypeScript, coverage gates, migration checks, build,
 desktop/mobile Playwright, the zero-config demo contract, real PostgreSQL +
 pgvector migration smoke tests, full-history secret scanning, and the dependency
 advisory policy. A single `Required CI gate` aggregates every merge-blocking job
-that branch protection is intended to require, so the strongest database check
-cannot fail unnoticed. The workflow defines the gate; repository branch
-protection must still be configured and verified separately on GitHub.
+that branch protection requires, so the strongest database check cannot fail
+unnoticed. The `master` protection rule was read back on 2026-08-30 with strict
+mode, administrator enforcement, force-push/deletion disabled, and only this
+aggregate context required.
 
 ## Standard development environment
 

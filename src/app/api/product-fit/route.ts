@@ -10,6 +10,8 @@ import {
   type ProductFitQuery,
 } from "@/features/database/schemas";
 import { getErrorCode } from "@/lib/api-error";
+import { getDictionary, type Dictionary } from "@/i18n/dictionaries";
+import { localeFromRequest } from "@/i18n/locale";
 import {
   readJsonRequest,
   RequestBodyTooLargeError,
@@ -20,19 +22,19 @@ import { createApiRequestObserver } from "@/server/observability/structured-log"
 
 export const runtime = "nodejs";
 
-function invalidInputResponse() {
+function invalidInputResponse(messages: Dictionary["apiErrors"]) {
   return NextResponse.json(
     productFitApiErrorSchema.parse({
       error: {
         code: "INVALID_INPUT",
-        message: "产品适配参数无效，请检查国家、场景、功率、日期和型号。",
+        message: messages.invalidProductFit,
       },
     }),
     { status: 400 },
   );
 }
 
-function internalErrorResponse(error: unknown) {
+function internalErrorResponse(error: unknown, messages: Dictionary["apiErrors"]) {
   console.error("Product fit evaluation failed", {
     errorCode: getErrorCode(error),
   });
@@ -40,7 +42,7 @@ function internalErrorResponse(error: unknown) {
     productFitApiErrorSchema.parse({
       error: {
         code: "INTERNAL_ERROR",
-        message: "产品适配评估暂时不可用，请稍后重试。",
+        message: messages.productFitUnavailable,
       },
     }),
     { status: 500 },
@@ -49,6 +51,7 @@ function internalErrorResponse(error: unknown) {
 
 export async function POST(request: Request) {
   const observer = createApiRequestObserver("/api/product-fit");
+  const messages = getDictionary(localeFromRequest(request)).apiErrors;
   let input: ProductFitQuery;
 
   try {
@@ -61,16 +64,16 @@ export async function POST(request: Request) {
         productFitApiErrorSchema.parse({
           error: {
             code: "PAYLOAD_TOO_LARGE",
-            message: "产品适配请求过大，请缩小请求后重试。",
+            message: messages.productFitPayloadTooLarge,
           },
         }),
         { status: 413 },
       ), "PAYLOAD_TOO_LARGE");
     }
     if (error instanceof SyntaxError || error instanceof ZodError) {
-      return observer.finish(invalidInputResponse(), "INVALID_INPUT");
+      return observer.finish(invalidInputResponse(messages), "INVALID_INPUT");
     }
-    return observer.finish(internalErrorResponse(error), "INTERNAL_ERROR");
+    return observer.finish(internalErrorResponse(error, messages), "INTERNAL_ERROR");
   }
 
   try {
@@ -80,6 +83,6 @@ export async function POST(request: Request) {
       ),
     );
   } catch (error) {
-    return observer.finish(internalErrorResponse(error), "INTERNAL_ERROR");
+    return observer.finish(internalErrorResponse(error, messages), "INTERNAL_ERROR");
   }
 }

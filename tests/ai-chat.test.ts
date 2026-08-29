@@ -15,6 +15,7 @@ import {
   buildEvidenceGapResponse,
   buildSalesChatInstructions,
   createSalesChatTools,
+  isReasoningStreamPartType,
   MAX_AI_TOOL_STEPS,
   resolveCountryIso3,
   streamSalesChat as streamSalesChatWithTrustedUserTexts,
@@ -67,6 +68,26 @@ const emptyUsage = {
 type StreamSalesChatInput = Parameters<
   typeof streamSalesChatWithTrustedUserTexts
 >[0];
+
+describe("reasoning stream boundary", () => {
+  it.each([
+    "reasoning-start",
+    "reasoning-delta",
+    "reasoning-end",
+    "reasoning-file",
+    "reasoning-provider-future-part",
+    "reasoning",
+  ])("drops %s by prefix", (type) => {
+    expect(isReasoningStreamPartType(type)).toBe(true);
+  });
+
+  it.each(["text-delta", "tool-result", "finish"])(
+    "does not classify %s as a reasoning part",
+    (type) => {
+      expect(isReasoningStreamPartType(type)).toBe(false);
+    },
+  );
+});
 
 function streamSalesChat(
   input: Omit<StreamSalesChatInput, "trustedUserTexts"> & {

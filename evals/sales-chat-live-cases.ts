@@ -1,6 +1,6 @@
 import type { AiToolName } from "@/features/ai/schemas";
 
-export const SALES_CHAT_LIVE_EVAL_VERSION = "sales-chat-live-v2";
+export const SALES_CHAT_LIVE_EVAL_VERSION = "sales-chat-live-v3";
 
 export type SalesChatLiveCase = {
   expectedArgs: Partial<Record<AiToolName, Readonly<Record<string, unknown>>>>;

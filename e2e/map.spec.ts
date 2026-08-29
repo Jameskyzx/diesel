@@ -476,7 +476,7 @@ test("country APIs return structured database-backed states", async ({
   await expect(unknownResponse.json()).resolves.toEqual({
     error: {
       code: "COUNTRY_NOT_FOUND",
-      message: "未找到该 ISO3 对应的国家目录记录。",
+      message: "No country-directory record was found for that ISO3 code.",
     },
   });
 
@@ -487,7 +487,7 @@ test("country APIs return structured database-backed states", async ({
   await expect(badAsOfResponse.json()).resolves.toEqual({
     error: {
       code: "INVALID_AS_OF",
-      message: "截止日期必须是 YYYY-MM-DD 格式的 ISO 日期。",
+      message: "The as-of date must be an ISO date in YYYY-MM-DD format.",
     },
   });
 
@@ -505,7 +505,8 @@ test("country APIs return structured database-backed states", async ({
   await expect(strictProductFitResponse.json()).resolves.toEqual({
     error: {
       code: "INVALID_INPUT",
-      message: "产品适配参数无效，请检查国家、场景、功率、日期和型号。",
+      message:
+        "The product-fit input is invalid. Check the country, application, power, date, and model.",
     },
   });
 

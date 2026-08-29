@@ -62,7 +62,7 @@ describe("public API error logging", () => {
     );
 
     await expectSafeFailureLog(
-      () => getCountrySummaries(),
+      () => getCountrySummaries(new Request("http://localhost/api/countries")),
       "Country summary request failed",
     );
   });
@@ -79,7 +79,7 @@ describe("public API error logging", () => {
     mocks.listCountryMapSummaries.mockRejectedValue(error);
 
     await expectSafeFailureLog(
-      () => getCountrySummaries(),
+      () => getCountrySummaries(new Request("http://localhost/api/countries")),
       "Country summary request failed",
       "UNKNOWN_ERROR",
     );
@@ -146,7 +146,25 @@ describe("public API error logging", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "COUNTRY_NOT_FOUND",
-        message: "未找到该 ISO3 对应的国家目录记录。",
+        message: "No country-directory record was found for that ISO3 code.",
+      },
+    });
+    expect(mocks.getCountryDetails).not.toHaveBeenCalled();
+  });
+
+  it("localizes country-detail validation errors from the locale cookie", async () => {
+    const response = await getCountry(
+      new Request("http://localhost/api/countries/CN", {
+        headers: { cookie: "diesel_locale=zh-CN" },
+      }),
+      { params: Promise.resolve({ iso3: "CN" }) },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "INVALID_ISO3",
+        message: "国家代码必须是三个英文字母组成的 ISO3 代码。",
       },
     });
     expect(mocks.getCountryDetails).not.toHaveBeenCalled();
@@ -172,9 +190,51 @@ describe("public API error logging", () => {
     mocks.listProducts.mockRejectedValue(error);
 
     await expectSafeFailureLog(
-      () => getProducts(),
+      () => getProducts(new Request("http://localhost/api/products")),
       "Product list request failed",
     );
+  });
+
+  it.each([
+    {
+      endpoint: "countries" as const,
+      english: "Country summaries are temporarily unavailable. Please try again later.",
+      chinese: "国家摘要暂时不可用，请稍后重试。",
+    },
+    {
+      endpoint: "products" as const,
+      english: "The product list is temporarily unavailable. Please try again later.",
+      chinese: "产品列表暂时不可用，请稍后重试。",
+    },
+  ])("localizes public $endpoint API failures from the locale cookie", async ({
+    endpoint,
+    chinese,
+    english,
+  }) => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const service = endpoint === "products"
+      ? mocks.listProducts
+      : mocks.listCountryMapSummaries;
+    service.mockRejectedValue(new Error("unavailable"));
+    const call = (locale?: "zh-CN") => {
+      const request = new Request(`http://localhost/api/${endpoint}`, {
+        headers: locale ? { cookie: `diesel_locale=${locale}` } : undefined,
+      });
+      return endpoint === "products"
+        ? getProducts(request)
+        : getCountrySummaries(request);
+    };
+
+    try {
+      await expect((await call()).json()).resolves.toMatchObject({
+        error: { code: "INTERNAL_ERROR", message: english },
+      });
+      await expect((await call("zh-CN")).json()).resolves.toMatchObject({
+        error: { code: "INTERNAL_ERROR", message: chinese },
+      });
+    } finally {
+      consoleSpy.mockRestore();
+    }
   });
 
   it("does not log product-fit service error details", async () => {
@@ -222,5 +282,27 @@ describe("public API error logging", () => {
       "Product fit evaluation failed",
     );
     expect(mocks.evaluateProductFit).not.toHaveBeenCalled();
+  });
+
+  it("localizes product-fit validation errors without changing their code", async () => {
+    const response = await evaluateProduct(new Request(
+      "http://localhost/api/product-fit",
+      {
+        body: "{}",
+        headers: {
+          "content-type": "application/json",
+          cookie: "diesel_locale=zh-CN",
+        },
+        method: "POST",
+      },
+    ));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "INVALID_INPUT",
+        message: "产品适配参数无效，请检查国家、场景、功率、日期和型号。",
+      },
+    });
   });
 });

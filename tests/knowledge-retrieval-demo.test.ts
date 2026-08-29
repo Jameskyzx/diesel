@@ -9,10 +9,15 @@ import { createKnowledgeRepository } from "@/server/repositories/knowledge-repos
 import { hybridSearchKnowledge } from "@/server/services/knowledge-service";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
+let demoDatabase: Awaited<ReturnType<typeof getDemoDatabase>>;
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env.DATABASE_MODE = "pglite-demo";
-});
+  // PGlite compiles and migrates its WASM database on first use. Keep that
+  // one-time setup outside the assertions and give slower Linux CI runners a
+  // realistic integration-test budget without weakening the test itself.
+  demoDatabase = await getDemoDatabase();
+}, 15_000);
 
 afterAll(() => {
   if (originalDatabaseMode === undefined) {
@@ -25,7 +30,7 @@ afterAll(() => {
 describe("Demo knowledge retrieval", () => {
   it("retrieves the CHN non-road source fixture from the concise live-eval query", async () => {
     const query = "CHN 非道路排放法规";
-    const repository = createKnowledgeRepository(await getDemoDatabase());
+    const repository = createKnowledgeRepository(demoDatabase);
     const candidates = await repository.searchCandidates(
       {
         applicationScope: null,

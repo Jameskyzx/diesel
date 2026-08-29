@@ -190,6 +190,12 @@ export function WorldMap({
       container,
       maxZoom: 6,
       minZoom: 0.8,
+      locale: {
+        "AttributionControl.ToggleAttribution": copy.toggleAttribution,
+        "Map.Title": copy.mapCanvasAria,
+        "NavigationControl.ZoomIn": copy.zoomIn,
+        "NavigationControl.ZoomOut": copy.zoomOut,
+      },
       renderWorldCopies: false,
       style: mapStyle,
       zoom: 1.15,
@@ -319,7 +325,7 @@ export function WorldMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [countries, countriesByIso3, retryKey]);
+  }, [copy, countries, countriesByIso3, retryKey]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -4,9 +4,8 @@ import { useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
-  defaultLocale,
+  localeFromBrowserPreferences,
   localeCookieName,
-  parseLocale,
 } from "@/i18n/locale";
 
 type GlobalErrorProps = {
@@ -17,8 +16,12 @@ type GlobalErrorProps = {
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   const locale = useSyncExternalStore(
     () => () => undefined,
-    () => parseLocale(window.localStorage.getItem(localeCookieName)),
-    () => defaultLocale,
+    () =>
+      localeFromBrowserPreferences({
+        readCookieHeader: () => document.cookie,
+        readStoredLocale: () => window.localStorage.getItem(localeCookieName),
+      }),
+    () => "en",
   );
   const copy = locale === "en"
     ? {

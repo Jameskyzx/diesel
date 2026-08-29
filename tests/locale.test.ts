@@ -4,9 +4,12 @@ import { dictionaries, getDictionary, interpolate } from "@/i18n/dictionaries";
 import {
   defaultLocale,
   isLocale,
+  localeFromBrowserPreferences,
   localeCookieName,
+  localePreferenceFromCookieHeader,
   locales,
   parseLocale,
+  localeFromRequest,
 } from "@/i18n/locale";
 
 function leafKeys(value: object, prefix = ""): string[] {
@@ -29,6 +32,52 @@ describe("locale preferences", () => {
     expect(parseLocale("zh-CN")).toBe("zh-CN");
     expect(parseLocale("fr")).toBe("en");
     expect(parseLocale(undefined)).toBe("en");
+  });
+
+  it("reads the locale cookie and fails malformed values closed to English", () => {
+    expect(
+      localeFromRequest(
+        new Request("http://localhost", {
+          headers: { cookie: "session=ignored; diesel_locale=zh-CN" },
+        }),
+      ),
+    ).toBe("zh-CN");
+    expect(
+      localeFromRequest(
+        new Request("http://localhost", {
+          headers: { cookie: "diesel_locale=%E0%A4%A" },
+        }),
+      ),
+    ).toBe("en");
+    expect(localeFromRequest()).toBe("en");
+  });
+
+  it("keeps the cookie authoritative and survives unavailable browser storage", () => {
+    expect(
+      localeFromBrowserPreferences({
+        readCookieHeader: () => "diesel_locale=zh-CN",
+        readStoredLocale: () => {
+          throw new DOMException("Storage disabled", "SecurityError");
+        },
+      }),
+    ).toBe("zh-CN");
+    expect(
+      localeFromBrowserPreferences({
+        readCookieHeader: () => "diesel_locale=en",
+        readStoredLocale: () => "zh-CN",
+      }),
+    ).toBe("en");
+    expect(
+      localeFromBrowserPreferences({
+        readCookieHeader: () => {
+          throw new DOMException("Cookies disabled", "SecurityError");
+        },
+        readStoredLocale: () => {
+          throw new DOMException("Storage disabled", "SecurityError");
+        },
+      }),
+    ).toBe("en");
+    expect(localePreferenceFromCookieHeader("diesel_locale=%E0%A4%A")).toBeNull();
   });
 
   it("keeps English and Chinese dictionaries structurally aligned", () => {

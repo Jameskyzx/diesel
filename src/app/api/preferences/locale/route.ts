@@ -34,7 +34,6 @@ export async function POST(request: Request): Promise<Response> {
 
   const response = NextResponse.json({ locale: input.locale, status: "ok" });
   response.cookies.set(localeCookieName, input.locale, {
-    httpOnly: true,
     maxAge: localeCookieMaxAgeSeconds,
     path: "/",
     sameSite: "lax",

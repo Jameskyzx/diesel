@@ -175,13 +175,15 @@ pnpm audit:security
 `pnpm ai:eval` 是确定性对话 harness，不是 live-model 成功率。
 `pnpm ai:eval:live` 在隔离 PGlite 上运行 18 条版本化虚构 case，并设置 case、step、
 token 和超时预算。每条 case 都断言期望证据决策；失败或未完成运行仍作为失败报告保存，
-不会包装成成功指标。
+不会包装成成功指标。provider usage 缺失不会按零计数：runner 会保留已完成 step 的已知
+成本，并让 token 预算完整性门失败关闭。160,000 是验收上限；精确的预消费账单硬限额仍
+需要 provider 侧预算或模型专用 tokenizer。
 
 GitHub CI 执行 lint、严格 TypeScript、coverage 门、migration check、build、桌面/移动
 Playwright、零配置 Demo 合同、真实 PostgreSQL + pgvector migration smoke、完整历史
-密钥扫描和依赖告警策略。唯一的 `Required CI gate` 汇总计划由分支保护要求的所有 job，
-避免最强的数据库检查失败却未被汇总。工作流只定义该 gate；GitHub 仓库的分支保护仍需
-单独配置并在线核验。
+密钥扫描和依赖告警策略。唯一的 `Required CI gate` 汇总分支保护要求的所有 job，避免最强
+的数据库检查失败却未被汇总。2026-08-30 已在线读回 `master` 保护：strict、管理员同样
+受限、禁止 force-push/deletion，且只要求这一汇总 context。
 
 ## 标准开发环境
 

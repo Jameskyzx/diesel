@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   salesChatLiveCases,
@@ -6,6 +6,8 @@ import {
 } from "../evals/sales-chat-live-cases";
 import {
   aiToolResultSchema,
+  findCompatibleProductsInputSchema,
+  findCompatibleProductsResultSchema,
   type AiToolResult,
 } from "@/features/ai/schemas";
 import {
@@ -13,20 +15,43 @@ import {
   evidenceContractAllowsModelText,
   remainingEvidenceTools,
 } from "@/server/ai/evidence-contract";
+import { createSalesChatTools } from "@/server/ai/sales-chat";
 import { buildSalesChatInstructions } from "@/server/ai/sales-chat-prompt";
 import { currentUtcDate } from "@/server/ai/tool-results";
+import { getDemoDatabase } from "@/server/db/demo-client";
+import { createProductRepository } from "@/server/repositories/product-repository";
+import { evaluateProductFit } from "@/server/services/product-fit-service";
+
+const originalDatabaseMode = process.env.DATABASE_MODE;
+let demoDatabase: Awaited<ReturnType<typeof getDemoDatabase>>;
+
+beforeAll(async () => {
+  process.env.DATABASE_MODE = "pglite-demo";
+  demoDatabase = await getDemoDatabase();
+}, 15_000);
+
+afterAll(() => {
+  if (originalDatabaseMode === undefined) {
+    delete process.env.DATABASE_MODE;
+  } else {
+    process.env.DATABASE_MODE = originalDatabaseMode;
+  }
+});
 
 const regressionCaseIds = [
   "country-overview-china",
   "single-country-market-profile",
   "product-ready-dual-axis",
-  "product-outside-supply-period",
   "source-document-retrieval",
   "multi-turn-country-conflict",
   "unknown-product-fails-closed",
 ] as const;
 
-function liveCase(id: (typeof regressionCaseIds)[number]): SalesChatLiveCase {
+type RegressionCaseId =
+  | (typeof regressionCaseIds)[number]
+  | "product-outside-supply-period";
+
+function liveCase(id: RegressionCaseId): SalesChatLiveCase {
   const testCase = salesChatLiveCases.find((candidate) => candidate.id === id);
   if (!testCase) {
     throw new Error(`Missing live-eval regression case: ${id}`);
@@ -144,8 +169,6 @@ const evidenceByCaseId: Record<
     countryProfileEvidence({ asOf: currentUtcDate(), topic: "market" }),
   "product-ready-dual-axis": () =>
     compatibleProductEvidence("2026-08-13"),
-  "product-outside-supply-period": () =>
-    compatibleProductEvidence("2031-01-01"),
   "source-document-retrieval": () =>
     knowledgeEvidence({
       applicationScope: "non-road",
@@ -156,6 +179,79 @@ const evidenceByCaseId: Record<
 };
 
 describe("live-eval evidence-contract regressions", () => {
+  it("allows a sourced not_ready explanation for a product outside its supply period", async () => {
+    const testCase = liveCase("product-outside-supply-period");
+    const query = findCompatibleProductsInputSchema.parse(
+      testCase.expectedArgs.findCompatibleProducts,
+    );
+    if (!query.countryIso3 || !query.productModelCode) {
+      throw new Error(
+        "The outside-supply-period regression requires an explicit country and product.",
+      );
+    }
+
+    const repository = createProductRepository(demoDatabase);
+    const repositoryEvidence = await repository.findFitEvidence(query);
+    expect(repositoryEvidence.product).toMatchObject({
+      availableFrom: "2025-01-01",
+      availableTo: "2030-01-01",
+      modelCode: "DEMO-ENG-100",
+    });
+    expect(repositoryEvidence.applicableRegulations.length).toBeGreaterThan(0);
+    expect(repositoryEvidence.certifications.length).toBeGreaterThan(0);
+
+    const serviceEvaluation = await evaluateProductFit(query);
+    expect(serviceEvaluation).toMatchObject({
+      commercialReadiness: "not_ready",
+      input: query,
+      productChecks: {
+        availability: {
+          code: "PRODUCT_NO_LONGER_AVAILABLE",
+          status: "fail",
+        },
+      },
+      status: "fit",
+    });
+
+    const auditStatuses: string[] = [];
+    const tools = createSalesChatTools({
+      auditRepository: {
+        recordToolCall: async ({ status }) => {
+          auditStatuses.push(status);
+        },
+      },
+      selectedCountryIso3: null,
+      sessionId: "00000000-0000-4000-8000-000000000929",
+    });
+    if (!tools.findCompatibleProducts.execute) {
+      throw new Error("Expected findCompatibleProducts to be executable.");
+    }
+    const toolResult = findCompatibleProductsResultSchema.parse(
+      await tools.findCompatibleProducts.execute(query, {
+        context: undefined as never,
+        messages: [],
+        toolCallId: "outside-supply-period",
+      }),
+    );
+
+    expect(toolResult).toMatchObject({
+      evidenceSufficient: true,
+      status: "ok",
+    });
+    expect(toolResult.citations.length).toBeGreaterThan(0);
+    expect(toolResult.evaluations).toEqual([serviceEvaluation]);
+    expect(toolResult.evaluations[0]?.sources.length).toBeGreaterThan(0);
+    expect(auditStatuses).toEqual(["success"]);
+
+    const contract = buildSalesChatEvidenceContract({
+      selectedCountryIso3: testCase.selectedCountryIso3,
+      userTexts: testCase.userTexts,
+    });
+    expect(testCase.expectedEvidenceAllowed).toBe(true);
+    expect(evidenceContractAllowsModelText(contract, [toolResult])).toBe(true);
+    expect(remainingEvidenceTools(contract, [toolResult])).toEqual([]);
+  });
+
   it.each(regressionCaseIds)(
     "%s selects exactly the declared evidence tool and accepts matching evidence",
     (id) => {

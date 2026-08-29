@@ -4,3 +4,4 @@ export const MAX_CHAT_HISTORY_USER_MESSAGES = 12;
 export const MAX_AI_OUTPUT_TOKENS = 2_048;
 export const MAX_AI_BUFFERED_TEXT_CHARACTERS = 16_000;
 export const MAX_AI_TOOL_STEPS = 5;
+export const SALES_CHAT_SYSTEM_PROMPT_VERSION = "sales-chat-system-v5";

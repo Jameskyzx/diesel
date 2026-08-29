@@ -1,5 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { randomUUID } from "node:crypto";
 
 import {
   salesChatLiveCases,
@@ -14,10 +13,31 @@ import {
   judgeLiveEvalCase,
   liveEvalThresholdsPassed,
   matchesExpectedArgs,
+  resolveLiveEvalResponseDisposition,
+  resolveLiveEvalStopReason,
   scoreLiveEval,
-  shouldStopLiveEval,
+  summarizeLiveEvalTokenBudget,
+  type LiveEvalTerminationReason,
+  type LiveEvalResponseDisposition,
+  type LiveEvalTokenUsage,
 } from "../../src/domain/ai/live-eval";
-import { MAX_AI_TOOL_STEPS } from "../../src/features/ai/constants";
+import {
+  MAX_AI_TOOL_STEPS,
+  SALES_CHAT_SYSTEM_PROMPT_VERSION,
+} from "../../src/features/ai/constants";
+import type { SalesChatStepObservation } from "../../src/server/ai/sales-chat";
+import { buildLiveEvalCaseTokenUsage } from "./live-eval-token-usage";
+import { runWithLiveEvalCaseDeadline } from "./live-eval-deadline";
+import {
+  captureLiveEvalRepositoryState,
+  captureLiveEvalSourceFingerprint,
+  persistLiveEvalReport,
+  reconcileLiveEvalRepositoryStates,
+  reconcileLiveEvalSourceFingerprints,
+  resolveLiveEvalLatestReportPath,
+  type LiveEvalRepositoryState,
+  type LiveEvalSourceFingerprint,
+} from "./live-eval-report";
 
 process.env.DATABASE_MODE = "pglite-demo";
 process.env.PORTFOLIO_DEMO_MODE = "false";
@@ -26,10 +46,8 @@ if (!process.env.NODE_ENV) {
   Reflect.set(process.env, "NODE_ENV", "development");
 }
 
-const reportPath = resolve(
-  process.cwd(),
-  "docs/evals/ai-live-eval-latest.json",
-);
+const workspace = process.cwd();
+const reportPath = resolveLiveEvalLatestReportPath(workspace);
 type LiveEvalInitializationStage =
   | "module_import"
   | "database"
@@ -56,9 +74,11 @@ type LiveEvalResult = {
   normalizedArgs: Array<{ args: Record<string, unknown>; tool: string }>;
   pass: boolean;
   responseCharacterCount: number;
+  responseDisposition: LiveEvalResponseDisposition;
+  responseDispositionPassed: boolean;
   safetyCritical: boolean;
   safetyPassed: boolean | null;
-  tokenUsage: { input: number | null; output: number | null; total: number | null };
+  tokenUsage: LiveEvalTokenUsage;
   toolBearingSteps: number;
   toolSelectionPassed: boolean;
   toolSequence: string[];
@@ -73,6 +93,7 @@ const allowedReportArgKeys = new Set([
   "metricCodes",
   "powerKw",
   "productModelCode",
+  "query",
   "targetCountryIso3",
   "topics",
 ]);
@@ -100,15 +121,7 @@ function sameTools(actual: readonly string[], expected: readonly string[]) {
 }
 
 function summarizeEvalError(error: unknown): string {
-  if (!(error instanceof Error)) {
-    return "Unknown eval case error.";
-  }
-
-  const apiKey = process.env.AI_API_KEY;
-  const message = apiKey
-    ? error.message.replaceAll(apiKey, "[redacted]")
-    : error.message;
-  return `${error.name}: ${message}`.slice(0, 500);
+  return `${safeEvalErrorName(error)}: Eval case execution failed.`;
 }
 
 function safeEvalErrorName(error: unknown): string {
@@ -128,19 +141,30 @@ function markLiveEvalFailure(): void {
 function buildLiveEvalReport(input: {
   modelId: string | null;
   modelStepCount: number;
+  provenance: {
+    promptVersion: string;
+    repository: LiveEvalRepositoryState;
+    sourceFingerprint: LiveEvalSourceFingerprint;
+  };
   results: readonly LiveEvalResult[];
+  runId: string;
   runError: LiveEvalRunError | null;
-  totalTokens: number;
+  terminationReason: LiveEvalTerminationReason;
 }) {
   const scores = scoreLiveEval(input.results);
+  const tokenBudget = summarizeLiveEvalTokenBudget(
+    input.results.map(({ tokenUsage }) => tokenUsage),
+  );
   const complete =
     input.runError === null &&
     input.results.length === salesChatLiveCases.length;
   const thresholdsPassed = liveEvalThresholdsPassed({
+    allCasesPassed: input.results.every(({ pass }) => pass),
     complete,
     maxTokens: LIVE_EVAL_MAX_TOKENS,
     scores,
-    totalTokens: input.totalTokens,
+    tokenUsageComplete: tokenBudget.tokenUsageComplete,
+    totalTokens: tokenBudget.totalTokens,
   });
 
   return {
@@ -152,29 +176,23 @@ function buildLiveEvalReport(input: {
       maxTokens: LIVE_EVAL_MAX_TOKENS,
       modelStepCount: input.modelStepCount,
       caseTokenReserve: LIVE_EVAL_CASE_TOKEN_RESERVE,
-      totalTokens: input.totalTokens,
+      tokenUsageComplete: tokenBudget.tokenUsageComplete,
+      totalTokens: tokenBudget.totalTokens,
     },
     complete,
     evaluatedAt: new Date().toISOString(),
     modelId: input.modelId,
+    provenance: input.provenance,
     results: input.results,
+    runId: input.runId,
     runError: input.runError,
     sampleCount: input.results.length,
     scores,
     thresholds: LIVE_EVAL_THRESHOLDS,
     thresholdsPassed,
+    terminationReason: input.terminationReason,
     version: SALES_CHAT_LIVE_EVAL_VERSION,
   };
-}
-
-async function persistLiveEvalReport(
-  report: ReturnType<typeof buildLiveEvalReport>,
-): Promise<void> {
-  await mkdir(resolve(process.cwd(), "docs/evals"), { recursive: true });
-  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, {
-    encoding: "utf8",
-    mode: 0o600,
-  });
 }
 
 async function initializeLiveEvalRuntime() {
@@ -218,6 +236,25 @@ async function initializeLiveEvalRuntime() {
 }
 
 async function main(): Promise<void> {
+  const repositoryAtStart = captureLiveEvalRepositoryState(workspace);
+  const sourceFingerprintAtStart = await captureLiveEvalSourceFingerprint(
+    workspace,
+  );
+  const runId = randomUUID();
+  const buildRunContext = async () => ({
+    provenance: {
+      promptVersion: SALES_CHAT_SYSTEM_PROMPT_VERSION,
+      repository: reconcileLiveEvalRepositoryStates(
+        repositoryAtStart,
+        captureLiveEvalRepositoryState(workspace),
+      ),
+      sourceFingerprint: reconcileLiveEvalSourceFingerprints(
+        sourceFingerprintAtStart,
+        await captureLiveEvalSourceFingerprint(workspace),
+      ),
+    },
+    runId,
+  });
   const initialized = await initializeLiveEvalRuntime();
   if (!initialized.ok) {
     const runError: LiveEvalRunError = {
@@ -228,13 +265,17 @@ async function main(): Promise<void> {
     const report = buildLiveEvalReport({
       modelId: null,
       modelStepCount: 0,
+      ...(await buildRunContext()),
       results: [],
       runError,
-      totalTokens: 0,
+      terminationReason: "initialization_error",
     });
-    await persistLiveEvalReport(report);
+    const { archivePath, latestUpdated } = await persistLiveEvalReport(
+      workspace,
+      report,
+    );
     process.stderr.write(
-      `Live eval initialization failed at ${runError.stage} (${runError.errorName}). Report: ${reportPath}\n`,
+      `Live eval initialization failed at ${runError.stage} (${runError.errorName}). ${latestUpdated ? `Latest: ${reportPath}` : "A newer latest report was preserved."} Archive: ${archivePath}\n`,
     );
     markLiveEvalFailure();
     return;
@@ -252,14 +293,23 @@ async function main(): Promise<void> {
   const results: LiveEvalResult[] = [];
   let caseCount = 0;
   let modelStepCount = 0;
+  let tokenUsageComplete = true;
   let totalTokens = 0;
+  let terminationReason: LiveEvalTerminationReason | null = null;
 
   for (const testCase of salesChatLiveCases) {
-    if (shouldStopLiveEval({ caseCount, totalTokens })) {
+    const stopReason = resolveLiveEvalStopReason({
+      caseCount,
+      tokenUsageComplete,
+      totalTokens,
+    });
+    if (stopReason !== null) {
+      terminationReason = stopReason;
       break;
     }
     caseCount += 1;
     const startedAt = performance.now();
+    const observedMetricSteps: SalesChatStepObservation[] = [];
 
     try {
       const auditRepository = {
@@ -278,29 +328,45 @@ async function main(): Promise<void> {
         sessionId,
         turnId,
       });
-      const generated = streamSalesChat({
-        auditRepository,
-        messages: testCase.userTexts.map((text) => ({
-          content: text,
-          role: "user" as const,
-        })),
-        model,
-        selectedCountryIso3: testCase.selectedCountryIso3,
-        sessionId,
-        tools,
-        trustedUserTexts: testCase.userTexts,
-        turnId,
-      });
-      const [responseText, toolCalls, toolResults, usage, steps] =
-        await Promise.all([
-          generated.text,
-          generated.toolCalls,
-          generated.toolResults,
-          generated.usage,
-          generated.steps,
-        ]);
+      const [responseText, toolCalls, toolResults, aggregateUsage, steps] =
+        await runWithLiveEvalCaseDeadline({
+          run: async (abortSignal) => {
+            const generated = streamSalesChat({
+              abortSignal,
+              auditRepository,
+              messages: testCase.userTexts.map((text) => ({
+                content: text,
+                role: "user" as const,
+              })),
+              model,
+              onStepMetrics: (step) => observedMetricSteps.push(step),
+              selectedCountryIso3: testCase.selectedCountryIso3,
+              sessionId,
+              tools,
+              trustedUserTexts: testCase.userTexts,
+              turnId,
+            });
+            return Promise.all([
+              generated.text,
+              generated.toolCalls,
+              generated.toolResults,
+              generated.usage,
+              generated.steps,
+            ] as const);
+          },
+          timeoutMs: LIVE_EVAL_CASE_TIMEOUT_MS,
+        });
       const loopSteps = steps.length;
       modelStepCount += loopSteps;
+      const { knownTokens, tokenUsage } = buildLiveEvalCaseTokenUsage({
+        aggregateUsage,
+        loopSteps,
+        metricSteps: observedMetricSteps,
+        modelStreamCompleted: true,
+      });
+      const caseUsageComplete = tokenUsage.usageComplete;
+      tokenUsageComplete &&= caseUsageComplete;
+      totalTokens += knownTokens;
       const toolBearingSteps = steps.filter(
         (step) => step.toolCalls.length > 0,
       ).length;
@@ -336,16 +402,20 @@ async function main(): Promise<void> {
         : evidenceAllowed
           ? "sufficient" as const
           : "insufficient" as const;
+      const responseDisposition = resolveLiveEvalResponseDisposition({
+        errorCode,
+        responseText,
+      });
       const judgement = judgeLiveEvalCase({
         argsPassed,
         errorCode,
         evidenceAllowed,
         expectedEvidenceAllowed: testCase.expectedEvidenceAllowed,
+        responseDisposition,
         safetyCritical: testCase.safetyCritical,
+        tokenUsageComplete: caseUsageComplete,
         toolSelectionPassed,
       });
-      const caseTotalTokens = usage.totalTokens ?? 0;
-      totalTokens += caseTotalTokens;
       results.push({
         argsPassed,
         errorCode,
@@ -363,25 +433,34 @@ async function main(): Promise<void> {
           tool: call.toolName,
         })),
         pass: judgement.pass,
-        responseCharacterCount: responseText.length,
+        responseCharacterCount: responseText.trim().length,
+        responseDisposition,
+        responseDispositionPassed: judgement.responseDispositionPassed,
         safetyCritical: testCase.safetyCritical,
         safetyPassed: judgement.safetyPassed,
-        tokenUsage: {
-          input: usage.inputTokens ?? null,
-          output: usage.outputTokens ?? null,
-          total: usage.totalTokens ?? null,
-        },
+        tokenUsage,
         toolBearingSteps,
         toolSelectionPassed,
         toolSequence,
       });
     } catch (error: unknown) {
+      const { knownTokens, tokenUsage } = buildLiveEvalCaseTokenUsage({
+        aggregateUsage: null,
+        loopSteps: observedMetricSteps.length,
+        metricSteps: observedMetricSteps,
+        modelStreamCompleted: false,
+      });
+      modelStepCount += tokenUsage.ledger.length;
+      totalTokens += knownTokens;
+      tokenUsageComplete = false;
       const judgement = judgeLiveEvalCase({
         argsPassed: false,
         errorCode: "EVAL_CASE_ERROR",
         evidenceAllowed: false,
         expectedEvidenceAllowed: testCase.expectedEvidenceAllowed,
+        responseDisposition: "not_evaluated",
         safetyCritical: testCase.safetyCritical,
+        tokenUsageComplete: false,
         toolSelectionPassed: false,
       });
       results.push({
@@ -394,31 +473,51 @@ async function main(): Promise<void> {
         failureMessage: summarizeEvalError(error),
         id: testCase.id,
         latencyMs: Math.round(performance.now() - startedAt),
-        loopSteps: 0,
+        loopSteps: tokenUsage.ledger.length,
         mismatchReason: judgement.mismatchReason,
         normalizedArgs: [],
         pass: judgement.pass,
         responseCharacterCount: 0,
+        responseDisposition: "not_evaluated",
+        responseDispositionPassed: judgement.responseDispositionPassed,
         safetyCritical: testCase.safetyCritical,
         safetyPassed: judgement.safetyPassed,
-        tokenUsage: { input: null, output: null, total: null },
-        toolBearingSteps: 0,
+        tokenUsage,
+        toolBearingSteps: observedMetricSteps.filter(
+          ({ toolCallCount }) => toolCallCount > 0,
+        ).length,
         toolSelectionPassed: false,
         toolSequence: [],
       });
+      terminationReason = "case_error";
+      break;
     }
   }
+
+  terminationReason ??= results.length === salesChatLiveCases.length
+    ? "completed"
+    : !tokenUsageComplete
+      ? "token_usage_incomplete"
+      : resolveLiveEvalStopReason({
+          caseCount,
+          tokenUsageComplete,
+          totalTokens,
+        }) ?? "case_limit";
 
   const report = buildLiveEvalReport({
     modelId,
     modelStepCount,
+    ...(await buildRunContext()),
     results,
     runError: null,
-    totalTokens,
+    terminationReason,
   });
-  await persistLiveEvalReport(report);
+  const { archivePath, latestUpdated } = await persistLiveEvalReport(
+    workspace,
+    report,
+  );
   process.stdout.write(
-    `Live eval ${report.thresholdsPassed ? "passed" : "failed"}: ${results.length}/${salesChatLiveCases.length} cases, ${modelStepCount} model steps, ${totalTokens} tokens. Report: ${reportPath}\n`,
+    `Live eval ${report.thresholdsPassed ? "passed" : "failed"}: ${results.length}/${salesChatLiveCases.length} cases, ${report.budget.modelStepCount} model steps, ${report.budget.totalTokens} known tokens${report.budget.tokenUsageComplete ? "" : " (usage incomplete)"}; termination: ${report.terminationReason}. ${latestUpdated ? `Latest: ${reportPath}` : "A newer latest report was preserved."} Archive: ${archivePath}\n`,
   );
   if (!report.thresholdsPassed) {
     markLiveEvalFailure();

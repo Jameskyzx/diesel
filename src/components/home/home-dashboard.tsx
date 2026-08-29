@@ -263,7 +263,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
 
         <div className="mt-10 grid gap-4 lg:grid-cols-3">
           <MissionCard
-            eyebrow="REGULATORY SCAN"
+            eyebrow={copy.missionRegulationEyebrow}
             href="/map"
             icon={Search}
             index="01"
@@ -271,7 +271,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
             title={copy.missionRegulation}
           />
           <MissionCard
-            eyebrow="PRODUCT FIT"
+            eyebrow={copy.missionProductEyebrow}
             href={productFitHref}
             icon={FileCheck2}
             index="02"
@@ -279,7 +279,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
             title={copy.missionProduct}
           />
           <MissionCard
-            eyebrow="MARKET BRIEF"
+            eyebrow={copy.missionMarketEyebrow}
             href="/chat"
             icon={Bot}
             index="03"
@@ -375,7 +375,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
                         )}
                       />
                       {country.isDemo
-                        ? "Demo fixture"
+                        ? copy.demoFixture
                         : country.isStale
                           ? copy.pendingReview
                           : copy.freshSource}

@@ -64,25 +64,25 @@ CANARY_BASE_URL=https://jamesky.site CANARY_CHECK_AI=true pnpm ops:canary
 
 ## 2. 分支保护与合并门（仓库设置）
 
-CI 工作流（`.github/workflows/ci.yml`）提供四个检查：`Lint, typecheck, tests,
-build`、`Playwright key flows`、`Secret scanning (gitleaks)`、
-`Dependency audit`。
+CI 工作流（`.github/workflows/ci.yml`）把 quality、PostgreSQL migration smoke、
+两套 Playwright、gitleaks 与 dependency audit 汇总到唯一
+merge-blocking context：`Required CI gate`。分支保护只要求该汇总检查，避免新增或加强的
+上游 job 未同步加入保护规则。
 
 **平台限制（已于 2026-07-30 解除）**：仓库已更名为 `Jameskyzx/diesel`
-并公开，分支保护已启用（下述四检查 + strict + 管理员同样受限，单人作品
-未要求 PR 评审）。如需重建：
+并公开。2026-08-30 已在线复核并把 `master` 保护迁移为唯一 `Required CI gate` + strict，
+管理员同样受限，禁止 force-push / deletion；单人作品未要求 PR 评审。如需重建：
 
 ```bash
 gh api -X PUT repos/Jameskyzx/diesel/branches/master/protection \
   -H "Accept: application/vnd.github+json" \
   -F 'required_status_checks[strict]=true' \
-  -f 'required_status_checks[contexts][]=Lint, typecheck, tests, build' \
-  -f 'required_status_checks[contexts][]=Playwright key flows' \
-  -f 'required_status_checks[contexts][]=Secret scanning (gitleaks)' \
-  -f 'required_status_checks[contexts][]=Dependency audit' \
+  -f 'required_status_checks[contexts][]=Required CI gate' \
   -F enforce_admins=true \
   -F required_pull_request_reviews=null \
-  -F restrictions=null
+  -F restrictions=null \
+  -F allow_force_pushes=false \
+  -F allow_deletions=false
 ```
 
 （`required_pull_request_reviews` 与 `restrictions` 必须显式提供，可为
@@ -91,7 +91,7 @@ null；`-F` 发送类型化值，`-f` 发送字符串，括号键必须加引号
 
 或在 GitHub 网页：Settings → Branches → Add classic branch protection rule：
 分支 `master`；勾选 Require status checks to pass before merging（Strict，
-选择上述四个 job）；勾选 Include administrators；勾选 Do not allow force
+只选择 `Required CI gate`）；勾选 Include administrators；勾选 Do not allow force
 pushes / deletions。单人作品仓库可不要求 PR review。
 
 ## 3. GitHub 原生密钥扫描

@@ -36,6 +36,28 @@ test("portfolio demo keeps an explicitly named product scoped to one result", as
   await expect(query).toContainText("DEMO-ENG-200");
 });
 
+test("portfolio demo localizes regulation-comparison country headings in Chinese", async ({
+  page,
+}) => {
+  await page.goto("/chat");
+
+  const assistant = page.getByRole("complementary", {
+    name: "AI 营销分析助手",
+  });
+  await assistant
+    .getByRole("textbox", { name: "输入问题" })
+    .fill("比较 CHN 和 BRA 在 2026-08-12 的 non-road 100 kW 法规。");
+  await assistant.getByRole("button", { name: "发送问题" }).click();
+
+  const card = assistant.getByRole("region", {
+    name: "数据库法规比较",
+  });
+  await expect(card).toContainText("CHN · 中国（演示数据）");
+  await expect(card).toContainText("BRA · 巴西（演示数据）");
+  await expect(card).not.toContainText("China — demo fixture");
+  await expect(card).not.toContainText("Brazil — demo fixture");
+});
+
 test("portfolio demo localizes product-fit chrome, safety gaps, and fixed answer in English", async ({
   context,
   page,

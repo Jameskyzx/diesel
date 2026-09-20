@@ -72,16 +72,29 @@ function toObservation(
 export default class PortfolioPlaywrightRunReporter implements Reporter {
   private readonly active: boolean;
   private readonly id: PlaywrightRunId;
+  private readonly preparation: Pick<ReporterState, "repository" | "startedAt"> | null;
   private globalErrorCount = 0;
   private state: ReporterState | null = null;
 
   constructor(options: unknown) {
     this.id = reporterOptionsSchema.parse(options).id;
     this.active = process.env.DIESEL_PLAYWRIGHT_EVIDENCE_CAPTURE === "1";
+    // Playwright constructs reporters before web-server setup, but calls
+    // onBegin after Next has generated temporary type declarations. Bind the
+    // authored source here and require teardown to restore it before onEnd.
+    this.preparation = this.active
+      ? {
+          repository: capturePlaywrightRepositoryState(process.cwd()),
+          startedAt: new Date().toISOString(),
+        }
+      : null;
   }
 
   onBegin(config: FullConfig, suite: Suite): void {
     if (!this.active) return;
+    if (!this.preparation) {
+      throw new Error("Playwright evidence has no pre-setup source checkpoint.");
+    }
     const workspace = process.cwd();
     const contract = playwrightRunContracts.find(({ id }) => id === this.id);
     if (!contract) throw new Error(`Unknown Playwright evidence suite: ${this.id}`);
@@ -108,8 +121,8 @@ export default class PortfolioPlaywrightRunReporter implements Reporter {
     }
     this.state = {
       config,
-      repository: capturePlaywrightRepositoryState(workspace),
-      startedAt: new Date().toISOString(),
+      repository: this.preparation.repository,
+      startedAt: this.preparation.startedAt,
       suite,
     };
   }

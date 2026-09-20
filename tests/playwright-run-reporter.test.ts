@@ -46,6 +46,7 @@ vi.mock("../scripts/portfolio/playwright-evidence", async (importOriginal) => {
 import PortfolioPlaywrightRunReporter from "../scripts/portfolio/playwright-run-reporter";
 import {
   EXPECTED_PLAYWRIGHT_VERSION,
+  parseCanonicalPlaywrightRunReceipt,
   playwrightRunContracts,
 } from "../scripts/portfolio/playwright-evidence";
 import { parseCanonicalPlaywrightFailureDiagnostic } from "../scripts/portfolio/playwright-failure-diagnostic";
@@ -67,9 +68,10 @@ function passingTest(project: string, index: number): TestCase {
   } as unknown as TestCase;
 }
 
-function initializeReporter(tests: TestCase[]) {
+function initializeReporter(tests: TestCase[], afterConstruction?: () => void) {
   const contract = playwrightRunContracts[0];
   const reporter = new PortfolioPlaywrightRunReporter({ id: contract.id });
+  afterConstruction?.();
   reporter.onBegin({
     argv: ["node", "playwright", ...contract.cliArguments],
     configFile: resolve(process.cwd(), contract.configPath),
@@ -196,6 +198,68 @@ describe("PortfolioPlaywrightRunReporter", () => {
     expect(fileHandleMocks.writeFile).toHaveBeenCalledOnce();
     expect(fileSystemMocks.rename.mock.calls[0]?.[1])
       .toBe(resolve("test-results/public/playwright-run.json"));
+  });
+
+  it("binds clean provenance before web-server setup temporarily generates type declarations", async () => {
+    const clean = {
+      headCommit: "a".repeat(40),
+      sourceFingerprint: { algorithm: "sha256", digest: "b".repeat(64), fileCount: 1 },
+      worktreeState: "clean",
+    };
+    repositoryStateMock.mockReturnValue(clean);
+    const reporter = initializeReporter(
+      playwrightRunContracts[0].projects.map(passingTest),
+      () => repositoryStateMock.mockReturnValue({ ...clean, worktreeState: "dirty" }),
+    );
+    repositoryStateMock.mockReturnValue(clean);
+
+    await expect(reporter.onEnd({ status: "passed" } as FullResult))
+      .resolves.toEqual({ status: "passed" });
+    const receipt = parseCanonicalPlaywrightRunReceipt(
+      String(fileHandleMocks.writeFile.mock.calls[0]?.[0]),
+    );
+    expect(receipt.provenance).toMatchObject({
+      started: clean,
+      completed: clean,
+      evaluatedCommit: clean.headCommit,
+    });
+  });
+
+  it.each(["head", "source", "unrestored-generated-file"] as const)(
+    "rejects %s drift introduced during server setup instead of accepting it as the baseline",
+    async (drift) => {
+      const clean = {
+        headCommit: "a".repeat(40),
+        sourceFingerprint: { algorithm: "sha256", digest: "b".repeat(64), fileCount: 1 },
+        worktreeState: "clean",
+      };
+      const changed = {
+        ...clean,
+        ...(drift === "head" ? { headCommit: "c".repeat(40) } : {}),
+        ...(drift === "source" ? {
+          sourceFingerprint: { ...clean.sourceFingerprint, digest: "d".repeat(64) },
+        } : {}),
+        ...(drift === "unrestored-generated-file" ? { worktreeState: "dirty" } : {}),
+      };
+      repositoryStateMock.mockReturnValue(clean);
+      const reporter = initializeReporter(
+        playwrightRunContracts[0].projects.map(passingTest),
+        () => repositoryStateMock.mockReturnValue(changed),
+      );
+      vi.spyOn(process.stderr, "write").mockReturnValue(true);
+
+      await expect(reporter.onEnd({ status: "passed" } as FullResult))
+        .resolves.toEqual({ status: "failed" });
+      expect(persistedDiagnostic()).toMatchObject({ stage: "receipt-validation", reporterExitCode: 1 });
+    },
+  );
+
+  it("does not inspect repository state when evidence capture is disabled", async () => {
+    vi.stubEnv("DIESEL_PLAYWRIGHT_EVIDENCE_CAPTURE", "0");
+    const reporter = initializeReporter(playwrightRunContracts[0].projects.map(passingTest));
+    await expect(reporter.onEnd({ status: "passed" } as FullResult))
+      .resolves.toEqual({ status: "passed" });
+    expect(repositoryStateMock).not.toHaveBeenCalled();
   });
 
   it("prints the complete persistence error tree and fails the suite closed", async () => {

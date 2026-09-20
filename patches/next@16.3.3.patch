@@ -1,0 +1,118 @@
+diff --git a/dist/esm/server/serve-static.js b/dist/esm/server/serve-static.js
+index a7d5d1c789035321f1d5a8d771b3a52a5d29151f..c5c02518c9e05205063fc1f6228984998fc99c09 100644
+--- a/dist/esm/server/serve-static.js
++++ b/dist/esm/server/serve-static.js
+@@ -17,16 +17,44 @@ send.mime.define({
+ });
+ export function serveStatic(req, res, path, opts) {
+     return new Promise((resolve, reject)=>{
+-        send(req, path, opts).on('directory', ()=>{
+-            // We don't allow directories to be read.
+-            const err = Object.defineProperty(new Error('No directory access'), "__NEXT_ERROR_CODE", {
+-                value: "E340",
+-                enumerable: false,
+-                configurable: true
+-            });
+-            err.code = 'ENOENT';
+-            reject(err);
+-        }).on('error', reject).pipe(res).on('finish', resolve);
++        let settled = false;
++        const settle = (error, failed = false)=>{
++            if (settled) return;
++            settled = true;
++            res.off('finish', onFinish);
++            res.off('close', onClose);
++            res.off('error', onError);
++            if (failed) reject(error);
++            else resolve();
++        };
++        const onFinish = ()=>settle();
++        const onError = (error)=>settle(error, true);
++        // Cancellation ends ownership, not HTTP delivery. Retain genuine
++        // response failures even when their close event arrives first.
++        const onClose = ()=>res.errored ? onError(res.errored) : onFinish();
++        res.once('finish', onFinish);
++        res.once('close', onClose);
++        res.once('error', onError);
++        if (res.destroyed || res.closed || res.writableFinished) {
++            onClose();
++            return;
++        }
++        try {
++            // Keep the source error sink after cancellation: a late file error
++            // cannot become an unhandled event or change the first outcome.
++            send(req, path, opts).on('directory', ()=>{
++                // We don't allow directories to be read.
++                const err = Object.defineProperty(new Error('No directory access'), "__NEXT_ERROR_CODE", {
++                    value: "E340",
++                    enumerable: false,
++                    configurable: true
++                });
++                err.code = 'ENOENT';
++                onError(err);
++            }).on('error', onError).pipe(res);
++        } catch (error) {
++            onError(error);
++        }
+     });
+ }
+ export const getContentType = 'getType' in send.mime ? (extWithoutDot)=>send.mime.getType(extWithoutDot) : (extWithoutDot)=>send.mime.lookup(extWithoutDot);
+diff --git a/dist/server/serve-static.js b/dist/server/serve-static.js
+index 198a2c9ac6d6852a4e7cb308e0f1c7c0eaabf901..14c16ccdef925e5f36f13ce6add21cba078aa8a7 100644
+--- a/dist/server/serve-static.js
++++ b/dist/server/serve-static.js
+@@ -48,16 +48,44 @@ _send.default.mime.define({
+ });
+ function serveStatic(req, res, path, opts) {
+     return new Promise((resolve, reject)=>{
+-        (0, _send.default)(req, path, opts).on('directory', ()=>{
+-            // We don't allow directories to be read.
+-            const err = Object.defineProperty(new Error('No directory access'), "__NEXT_ERROR_CODE", {
+-                value: "E340",
+-                enumerable: false,
+-                configurable: true
+-            });
+-            err.code = 'ENOENT';
+-            reject(err);
+-        }).on('error', reject).pipe(res).on('finish', resolve);
++        let settled = false;
++        const settle = (error, failed = false)=>{
++            if (settled) return;
++            settled = true;
++            res.off('finish', onFinish);
++            res.off('close', onClose);
++            res.off('error', onError);
++            if (failed) reject(error);
++            else resolve();
++        };
++        const onFinish = ()=>settle();
++        const onError = (error)=>settle(error, true);
++        // Cancellation ends ownership, not HTTP delivery. Retain genuine
++        // response failures even when their close event arrives first.
++        const onClose = ()=>res.errored ? onError(res.errored) : onFinish();
++        res.once('finish', onFinish);
++        res.once('close', onClose);
++        res.once('error', onError);
++        if (res.destroyed || res.closed || res.writableFinished) {
++            onClose();
++            return;
++        }
++        try {
++            // Keep the source error sink after cancellation: a late file error
++            // cannot become an unhandled event or change the first outcome.
++            (0, _send.default)(req, path, opts).on('directory', ()=>{
++                // We don't allow directories to be read.
++                const err = Object.defineProperty(new Error('No directory access'), "__NEXT_ERROR_CODE", {
++                    value: "E340",
++                    enumerable: false,
++                    configurable: true
++                });
++                err.code = 'ENOENT';
++                onError(err);
++            }).on('error', onError).pipe(res);
++        } catch (error) {
++            onError(error);
++        }
+     });
+ }
+ const getContentType = 'getType' in _send.default.mime ? (extWithoutDot)=>_send.default.mime.getType(extWithoutDot) : (extWithoutDot)=>_send.default.mime.lookup(extWithoutDot);

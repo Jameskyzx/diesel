@@ -1,6 +1,5 @@
 import { Buffer } from "node:buffer";
 
-import * as unpdf from "unpdf";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -9,6 +8,7 @@ import {
   MAX_CHAT_ATTACHMENTS_TOTAL_TEXT_CHARACTERS,
 } from "@/features/ai/attachments";
 import {
+  ChatAttachmentProcessingAbortedError,
   ChatAttachmentProcessingError,
   prepareTrustedUserMessagesForModel,
 } from "@/server/ai/attachment-content";
@@ -17,19 +17,21 @@ import {
   type TrustedUserMessage,
 } from "@/server/ai/trusted-user-messages";
 
-type GetDocumentProxy = typeof import("unpdf")["getDocumentProxy"];
-type PdfDocument = Awaited<ReturnType<typeof unpdf.getDocumentProxy>>;
+type GetResolvedPdfJs = typeof import("unpdf")["getResolvedPDFJS"];
+type PdfJsModule = Awaited<ReturnType<GetResolvedPdfJs>>;
+type PdfLoadingTask = ReturnType<PdfJsModule["getDocument"]>;
+type PdfDocument = Awaited<PdfLoadingTask["promise"]>;
 type PdfPage = Awaited<ReturnType<PdfDocument["getPage"]>>;
 
 const unpdfMock = vi.hoisted(() => ({
-  actualGetDocumentProxy: undefined as GetDocumentProxy | undefined,
-  getDocumentProxy: vi.fn<GetDocumentProxy>(),
+  actualGetResolvedPdfJs: undefined as GetResolvedPdfJs | undefined,
+  getResolvedPDFJS: vi.fn<GetResolvedPdfJs>(),
 }));
 
 vi.mock("unpdf", async (importOriginal) => {
   const actual = await importOriginal<typeof import("unpdf")>();
-  unpdfMock.actualGetDocumentProxy = actual.getDocumentProxy;
-  return { ...actual, getDocumentProxy: unpdfMock.getDocumentProxy };
+  unpdfMock.actualGetResolvedPdfJs = actual.getResolvedPDFJS;
+  return { ...actual, getResolvedPDFJS: unpdfMock.getResolvedPDFJS };
 });
 
 function inlineFile(input: {
@@ -37,6 +39,7 @@ function inlineFile(input: {
   filename: string;
   mediaType:
     | "application/pdf"
+    | "image/jpeg"
     | "image/png"
     | "image/webp"
     | "text/plain";
@@ -114,8 +117,22 @@ function streamedPdfPage(chunks: readonly unknown[]) {
   return { cancel, cleanup, page, read };
 }
 
+function mockPdfLoadingTask(
+  promise: Promise<PdfDocument>,
+  destroy: () => Promise<void> = vi.fn(async () => undefined),
+) {
+  const loadingTask = {
+    destroy,
+    promise,
+  } as unknown as PdfLoadingTask;
+  const getDocument = vi.fn(() => loadingTask);
+  unpdfMock.getResolvedPDFJS.mockResolvedValueOnce({
+    getDocument,
+  } as unknown as PdfJsModule);
+  return { destroy, getDocument, loadingTask };
+}
+
 function mockPdfDocument(pages: readonly PdfPage[]) {
-  const destroy = vi.fn(async () => undefined);
   const getPage = vi.fn(async (pageNumber: number) => {
     const page = pages[pageNumber - 1];
     if (page === undefined) {
@@ -125,21 +142,19 @@ function mockPdfDocument(pages: readonly PdfPage[]) {
   });
   const pdf = {
     getPage,
-    loadingTask: { destroy },
     numPages: pages.length,
   } as unknown as PdfDocument;
-  unpdfMock.getDocumentProxy.mockResolvedValueOnce(pdf);
-  return { destroy, getPage, pdf };
+  return { ...mockPdfLoadingTask(Promise.resolve(pdf)), getPage, pdf };
 }
 
 beforeEach(() => {
-  const actualGetDocumentProxy = unpdfMock.actualGetDocumentProxy;
-  if (actualGetDocumentProxy === undefined) {
-    throw new Error("The real unpdf getDocumentProxy export was not loaded.");
+  const actualGetResolvedPdfJs = unpdfMock.actualGetResolvedPdfJs;
+  if (actualGetResolvedPdfJs === undefined) {
+    throw new Error("The real unpdf getResolvedPDFJS export was not loaded.");
   }
-  unpdfMock.getDocumentProxy
+  unpdfMock.getResolvedPDFJS
     .mockReset()
-    .mockImplementation(actualGetDocumentProxy);
+    .mockImplementation(actualGetResolvedPdfJs);
 });
 
 afterEach(() => {
@@ -187,6 +202,38 @@ describe("chat attachment model preparation", () => {
 
     expect(prepared.requiresMultimodalModel).toBe(true);
     expect(prepared.messages[0]?.parts[1]).toEqual(image);
+  });
+
+  // Fixed 16 × 16 solid-color fixtures; tests decode these bytes with real
+  // sharp instead of regenerating them with the decoder version under test.
+  it.each([
+    {
+      filename: "plate.jpg",
+      mediaType: "image/jpeg",
+      base64: "/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAQABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABQb/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCOALpF/9k=",
+    },
+    {
+      filename: "plate.webp",
+      mediaType: "image/webp",
+      base64: "UklGRh4AAABXRUJQVlA4TBEAAAAvD8ADAAfQuI7Ur/+BiOh/AAA=",
+    },
+  ] as const)("fully decodes a valid $mediaType and preserves its model input", async ({
+    base64,
+    filename,
+    mediaType,
+  }) => {
+    const image = inlineFile({
+      bytes: Buffer.from(base64, "base64"),
+      filename,
+      mediaType,
+    });
+    expect(trustedUserFilePartSchema.safeParse(image).success).toBe(true);
+    const message = userMessage([{ text: "读图", type: "text" }, image]);
+
+    const prepared = await prepareTrustedUserMessagesForModel([message]);
+
+    expect(prepared.requiresMultimodalModel).toBe(true);
+    expect(prepared.messages).toEqual([message]);
   });
 
   it("rejects images below the provider-compatible 11 pixel boundary", async () => {
@@ -278,6 +325,13 @@ describe("chat attachment model preparation", () => {
     expect(secondPage.cancel).toHaveBeenCalledOnce();
     expect(secondPage.cleanup).toHaveBeenCalledOnce();
     expect(pdf.destroy).toHaveBeenCalledOnce();
+    expect(pdf.getDocument).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.any(Uint8Array),
+        disableFontFace: true,
+        useSystemFonts: true,
+      }),
+    );
   });
 
   it("fails as soon as a streamed PDF crosses the per-file character budget", async () => {
@@ -375,14 +429,41 @@ describe("chat attachment model preparation", () => {
     expect(pdf.destroy).toHaveBeenCalledOnce();
   });
 
-  it("destroys a document that finishes loading after the parsing deadline", async () => {
+  it("aborts a stalled PDF immediately and still releases its resources", async () => {
+    const page = streamedPdfPage([]);
+    page.read.mockImplementationOnce(
+      () => new Promise<ReadableStreamReadResult<unknown>>(() => undefined),
+    );
+    const pdf = mockPdfDocument([page.page]);
+    const abortController = new AbortController();
+    const preparing = prepareTrustedUserMessagesForModel(
+      [
+        userMessage([
+          inlineFile({
+            bytes: "%PDF-mocked",
+            filename: "aborted.pdf",
+            mediaType: "application/pdf",
+          }),
+        ]),
+      ],
+      { signal: abortController.signal },
+    );
+
+    await vi.waitFor(() => expect(page.read).toHaveBeenCalledOnce());
+    abortController.abort("client-disconnected");
+
+    await expect(preparing).rejects.toBeInstanceOf(
+      ChatAttachmentProcessingAbortedError,
+    );
+    expect(page.cancel).toHaveBeenCalledOnce();
+    expect(page.cleanup).toHaveBeenCalledOnce();
+    expect(pdf.destroy).toHaveBeenCalledOnce();
+  });
+
+  it("destroys a loading task that remains pending at the parsing deadline", async () => {
     vi.useFakeTimers();
-    const pdf = mockPdfDocument([]);
-    let resolveDocument: ((document: PdfDocument) => void) | undefined;
-    const pendingDocument = new Promise<PdfDocument>((resolve) => {
-      resolveDocument = resolve;
-    });
-    unpdfMock.getDocumentProxy.mockReset().mockReturnValueOnce(pendingDocument);
+    const pendingDocument = new Promise<PdfDocument>(() => undefined);
+    const loading = mockPdfLoadingTask(pendingDocument);
     const preparing = prepareTrustedUserMessagesForModel([
       userMessage([
         inlineFile({
@@ -398,13 +479,35 @@ describe("chat attachment model preparation", () => {
       CHAT_ATTACHMENT_PROCESSING_TIMEOUT_MS,
     );
     await rejection;
-    if (resolveDocument === undefined) {
-      throw new Error("The mocked PDF document promise was not initialized.");
-    }
-    resolveDocument(pdf.pdf);
-    await pendingDocument;
 
-    expect(pdf.destroy).toHaveBeenCalledOnce();
+    expect(loading.destroy).toHaveBeenCalledOnce();
+  });
+
+  it("destroys the loading task when malformed PDF parsing rejects", async () => {
+    let rejectDocument: ((error: Error) => void) | undefined;
+    const rejectedDocument = new Promise<PdfDocument>((_resolve, reject) => {
+      rejectDocument = reject;
+    });
+    const loading = mockPdfLoadingTask(rejectedDocument);
+    const preparing = prepareTrustedUserMessagesForModel([
+      userMessage([
+        inlineFile({
+          bytes: "%PDF-rejected",
+          filename: "rejected.pdf",
+          mediaType: "application/pdf",
+        }),
+      ]),
+    ]);
+
+    if (rejectDocument === undefined) {
+      throw new Error("The mocked PDF rejection was not initialized.");
+    }
+    rejectDocument(new Error("invalid-pdf"));
+
+    await expect(preparing).rejects.toBeInstanceOf(
+      ChatAttachmentProcessingError,
+    );
+    expect(loading.destroy).toHaveBeenCalledOnce();
   });
 
   it("rejects malformed or scanned PDFs with an actionable public error", async () => {

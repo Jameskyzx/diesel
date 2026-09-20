@@ -15,6 +15,10 @@ import {
 } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
+import {
+  createDocumentChunkSetFingerprint,
+  createDocumentDataSourceFingerprint,
+} from "@/features/admin/document-reprocessed-audit";
 import type {
   DocumentImportMetadata,
   HybridSearchQuery,
@@ -22,12 +26,22 @@ import type {
 import * as schema from "@/server/db/schema";
 import {
   countries,
+  dataChangeLogs,
+  dataGovernanceDrafts,
   dataSources,
   documentChunks,
   documents,
   jurisdictions,
 } from "@/server/db/schema";
 import { assertGovernanceWriteAllowed } from "@/server/db/governance-maintenance-lock";
+import { documentChunkInsertBatches } from "@/server/repositories/document-chunk-batches";
+import { resolveKnowledgeCandidateConstraint, resolveKnowledgeConstraintKey, resolveKnowledgeTextQuery } from "@/server/repositories/knowledge-text-query";
+import { projectKnowledgeRankingQuery, type KnowledgeRankingOptions } from "@/domain/knowledge/delivery-query";
+import { createLocalHashEmbedding } from "@/domain/knowledge/embedding";
+import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
 
 export type ChunkInsert = {
   applicationScope: DocumentImportMetadata["applicationScope"];
@@ -49,6 +63,82 @@ export type ChunkInsert = {
   verifiedAt: Date;
 };
 
+export type PreparedDocumentOutcome =
+  | {
+      chunks: ChunkInsert[];
+      processingError: null;
+      processingStatus: "ready";
+    }
+  | {
+      chunks: [];
+      processingError: string;
+      processingStatus: "failed";
+    };
+
+export type PreparedKnowledgeDocumentUpload = {
+  byteSize: number;
+  contentSha256: string;
+  metadata: DocumentImportMetadata;
+  mimeType: string;
+  originalFilename: string;
+  outcome: PreparedDocumentOutcome;
+  storageCreated: boolean;
+  storagePath: string;
+};
+
+export type KnowledgeDocumentReprocessingAccessScope =
+  | {
+      createdBy: string;
+      kind: "creator";
+    }
+  | {
+      kind: "global";
+    };
+
+export type PreparedKnowledgeDocumentReprocessing = {
+  documentId: string;
+  expected: {
+    activeDraftCreatedBy: string;
+    activeDraftId: string;
+    chunkSetFingerprint: string;
+    contentSha256: string;
+    dataSourceId: string;
+    processingStatus: "failed" | "ready";
+    provenanceAuditId: string;
+    provenanceMarkerFingerprint: string;
+    provenanceMetadata: DocumentImportMetadata;
+    sourceFingerprint: string;
+  };
+  metadata: DocumentImportMetadata;
+  operationFingerprint: string;
+  outcome: PreparedDocumentOutcome;
+};
+
+export type KnowledgeDocumentSummaryRow = {
+  byteSize: number | null;
+  chunkCount: number;
+  contentSha256: string;
+  createdAt: Date;
+  governanceStatus: "draft" | "published" | "reviewed";
+  id: string;
+  isDemo: boolean;
+  mimeType: string | null;
+  originalFilename: string | null;
+  processedAt: Date | null;
+  processingError: string | null;
+  processingStatus: "failed" | "pending" | "processing" | "ready";
+  sourceTitle: string;
+  storagePath: string | null;
+  title: string;
+  type:
+    | "certificate"
+    | "government-notice"
+    | "industry-report"
+    | "other"
+    | "product-manual"
+    | "regulation-text";
+};
+
 function nullableString(value: string | null): string | null {
   return value ? value : null;
 }
@@ -56,6 +146,12 @@ function nullableString(value: string | null): string | null {
 export function createKnowledgeRepository<
   TQueryResult extends PgQueryResultHKT,
 >(database: PgDatabase<TQueryResult, typeof schema>) {
+  const parseNativeConstraints = (queries: readonly string[]) => database.select({
+    index: sql<number>`(ordinality - 1)::integer`,
+    query: sql<string>`websearch_to_tsquery('simple', value)::text`,
+  }).from(sql`jsonb_array_elements_text(${JSON.stringify(queries)}::jsonb) with ordinality as native_query_constraints(value, ordinality)`)
+    .orderBy(sql`ordinality`);
+
   async function getDocumentSummary(documentId: string) {
     const rows = await database
       .select({
@@ -89,107 +185,12 @@ export function createKnowledgeRepository<
   }
 
   return {
-    async beginDocumentReprocessing(
-      documentId: string,
-      metadata: DocumentImportMetadata,
-    ) {
-      return database.transaction(async (transaction) => {
-        await assertGovernanceWriteAllowed(transaction);
-        const [before] = await transaction
-          .select({
-            document: {
-              canonicalUrl: documents.canonicalUrl,
-              dataSourceId: documents.dataSourceId,
-              demoNotice: documents.demoNotice,
-              governanceStatus: documents.governanceStatus,
-              isDemo: documents.isDemo,
-              languageCode: documents.languageCode,
-              licenseCode: documents.licenseCode,
-              processingStatus: documents.processingStatus,
-              publishedOn: documents.publishedOn,
-              redistributionAllowed: documents.redistributionAllowed,
-              title: documents.title,
-              type: documents.type,
-              validFrom: documents.validFrom,
-              validTo: documents.validTo,
-            },
-            source: {
-              demoNotice: dataSources.demoNotice,
-              isDemo: dataSources.isDemo,
-              publishedOn: dataSources.publishedOn,
-              publisher: dataSources.publisher,
-              sourceType: dataSources.sourceType,
-              title: dataSources.title,
-              url: dataSources.url,
-            },
-          })
-          .from(documents)
-          .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
-          .where(
-            and(
-              eq(documents.id, documentId),
-              isNull(documents.archivedAt),
-              isNull(dataSources.archivedAt),
-            ),
-          )
-          .limit(1)
-          .for("update");
-
-        if (
-          !before ||
-          before.document.governanceStatus !== "draft" ||
-          !["ready", "failed"].includes(before.document.processingStatus)
-        ) {
-          return null;
-        }
-
-        const now = new Date();
-        const [source] = await transaction
-          .insert(dataSources)
-          .values({
-            demoNotice: metadata.isDemo ? metadata.demoNotice : null,
-            isDemo: metadata.isDemo,
-            publishedOn: metadata.publishedOn,
-            publisher: metadata.sourcePublisher,
-            sourceType: metadata.sourceType,
-            title: metadata.sourceTitle,
-            url: nullableString(metadata.sourceUrl),
-            verifiedAt: now,
-          })
-          .returning({ id: dataSources.id });
-        if (!source) {
-          throw new Error("Failed to create the reprocessed document source.");
-        }
-        await transaction
-          .update(documents)
-          .set({
-            canonicalUrl: nullableString(metadata.canonicalUrl),
-            dataSourceId: source.id,
-            demoNotice: metadata.isDemo ? metadata.demoNotice : null,
-            isDemo: metadata.isDemo,
-            languageCode: metadata.languageCode,
-            licenseCode: metadata.licenseCode,
-            processedAt: null,
-            processingError: null,
-            processingStatus: "processing",
-            publishedOn: metadata.publishedOn,
-            redistributionAllowed: metadata.redistributionAllowed,
-            title: metadata.title,
-            type: metadata.documentType,
-            updatedAt: now,
-            validFrom: metadata.validFrom,
-            validTo: metadata.validTo,
-          })
-          .where(
-            and(
-              eq(documents.id, documentId),
-              eq(documents.governanceStatus, "draft"),
-              isNull(documents.archivedAt),
-            ),
-          );
-
-        return { beforeData: before, sourceId: source.id };
-      });
+    async knowledgeQueryConstraintsMatch(expected: string, actual: string, options: RequestSignalOptions = {}) {
+      const readCanonical = (expression: SQL) => database.select({ query: sql<string>`(${expression})::text` })
+        .from(sql`(values (1)) as knowledge_constraint_key(value)`);
+      const expectedKey = await resolveKnowledgeConstraintKey(expected, parseNativeConstraints, readCanonical, options);
+      const actualKey = await resolveKnowledgeConstraintKey(actual, parseNativeConstraints, readCanonical, options);
+      return expectedKey === actualKey;
     },
     async completeDocument(
       documentId: string,
@@ -358,12 +359,9 @@ export function createKnowledgeRepository<
         await transaction
           .delete(documentChunks)
           .where(eq(documentChunks.documentId, documentId));
-        await transaction.insert(documentChunks).values(
-          chunks.map((chunk) => ({
-            ...chunk,
-            documentId,
-          })),
-        );
+        for (const batch of documentChunkInsertBatches(documentId, chunks)) {
+          await transaction.insert(documentChunks).values(batch);
+        }
         await transaction
           .update(documents)
           .set({
@@ -471,6 +469,7 @@ export function createKnowledgeRepository<
     async findDocumentForDownload(documentId: string) {
       const rows = await database
         .select({
+          contentSha256: documents.contentSha256,
           mimeType: documents.mimeType,
           originalFilename: documents.originalFilename,
           storagePath: documents.storagePath,
@@ -481,24 +480,220 @@ export function createKnowledgeRepository<
 
       return rows[0] ?? null;
     },
-    async findDocumentForReprocessing(documentId: string) {
-      const rows = await database
+    async findDocumentForReprocessing(input: {
+      accessScope: KnowledgeDocumentReprocessingAccessScope;
+      documentId: string;
+    }) {
+      const [activeDraft] = await database
         .select({
-          governanceStatus: documents.governanceStatus,
-          mimeType: documents.mimeType,
-          originalFilename: documents.originalFilename,
-          storagePath: documents.storagePath,
+          createdBy: dataGovernanceDrafts.createdBy,
+          id: dataGovernanceDrafts.id,
+          version: dataGovernanceDrafts.version,
         })
-        .from(documents)
+        .from(dataGovernanceDrafts)
         .where(
           and(
-            eq(documents.id, documentId),
+            eq(dataGovernanceDrafts.entityType, "document"),
+            eq(dataGovernanceDrafts.entityKey, input.documentId),
+            inArray(dataGovernanceDrafts.workflowStatus, [
+              "draft",
+              "reviewed",
+            ]),
+            isNull(dataGovernanceDrafts.archivedAt),
+            input.accessScope.kind === "creator"
+              ? eq(
+                  dataGovernanceDrafts.createdBy,
+                  input.accessScope.createdBy,
+                )
+              : undefined,
+          ),
+        )
+        .orderBy(desc(dataGovernanceDrafts.version))
+        .limit(1);
+      if (!activeDraft) {
+        return null;
+      }
+
+      const rows = await database
+        .select({
+          canonicalUrl: documents.canonicalUrl,
+          contentSha256: documents.contentSha256,
+          dataSourceId: documents.dataSourceId,
+          demoNotice: documents.demoNotice,
+          documentType: documents.type,
+          governanceStatus: documents.governanceStatus,
+          isDemo: documents.isDemo,
+          languageCode: documents.languageCode,
+          licenseCode: documents.licenseCode,
+          mimeType: documents.mimeType,
+          originalFilename: documents.originalFilename,
+          processingStatus: documents.processingStatus,
+          publishedOn: documents.publishedOn,
+          redistributionAllowed: documents.redistributionAllowed,
+          sourceArchivedAt: sql<string | null>`case
+            when ${dataSources.archivedAt} is null then null
+            else to_char(
+              ${dataSources.archivedAt} at time zone 'UTC',
+              'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+            )
+          end`,
+          sourceCreatedAt: sql<string>`to_char(
+            ${dataSources.createdAt} at time zone 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+          )`,
+          sourceDemoNotice: dataSources.demoNotice,
+          sourceIsDemo: dataSources.isDemo,
+          sourcePublishedOn: dataSources.publishedOn,
+          sourcePublisher: dataSources.publisher,
+          sourceTitle: dataSources.title,
+          sourceType: dataSources.sourceType,
+          sourceUpdatedAt: sql<string>`to_char(
+            ${dataSources.updatedAt} at time zone 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+          )`,
+          sourceUrl: dataSources.url,
+          sourceVerifiedAt: sql<string>`to_char(
+            ${dataSources.verifiedAt} at time zone 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+          )`,
+          storagePath: documents.storagePath,
+          title: documents.title,
+          validFrom: documents.validFrom,
+          validTo: documents.validTo,
+        })
+        .from(documents)
+        .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+        .where(
+          and(
+            eq(documents.id, input.documentId),
             isNull(documents.archivedAt),
           ),
         )
         .limit(1);
 
-      return rows[0] ?? null;
+      const document = rows[0];
+      if (!document) {
+        return null;
+      }
+
+      const chunks = await database
+        .select({
+          applicationScope: documentChunks.applicationScope,
+          chunkIndex: documentChunks.chunkIndex,
+          content: documentChunks.content,
+          contentHash: documentChunks.contentHash,
+          countryIso3: documentChunks.countryIso3,
+          createdAt: sql<string>`to_char(
+            ${documentChunks.createdAt} at time zone 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+          )`,
+          embedding: documentChunks.embedding,
+          embeddingModel: documentChunks.embeddingModel,
+          headingPath: documentChunks.headingPath,
+          isDemo: documentChunks.isDemo,
+          jurisdictionId: documentChunks.jurisdictionId,
+          pageFrom: documentChunks.pageFrom,
+          pageTo: documentChunks.pageTo,
+          sectionLocator: documentChunks.sectionLocator,
+          tokenCount: documentChunks.tokenCount,
+          updatedAt: sql<string>`to_char(
+            ${documentChunks.updatedAt} at time zone 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+          )`,
+          validFrom: documentChunks.validFrom,
+          validTo: documentChunks.validTo,
+          verifiedAt: sql<string>`to_char(
+            ${documentChunks.verifiedAt} at time zone 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+          )`,
+        })
+        .from(documentChunks)
+        .where(eq(documentChunks.documentId, input.documentId))
+        .orderBy(asc(documentChunks.chunkIndex));
+      if (
+        document.processingStatus !== "ready" &&
+        document.processingStatus !== "failed"
+      ) {
+        return {
+          ...document,
+          activeDraft,
+          applicationScope: chunks[0]?.applicationScope ?? null,
+          auditMarkers: [],
+          chunkSetFingerprint: null,
+          countryIso3: chunks[0]?.countryIso3 ?? null,
+          jurisdictionId: chunks[0]?.jurisdictionId ?? null,
+          sourceFingerprint: createDocumentDataSourceFingerprint({
+            archivedAt: document.sourceArchivedAt,
+            createdAt: document.sourceCreatedAt,
+            demoNotice: document.sourceDemoNotice,
+            id: document.dataSourceId,
+            isDemo: document.sourceIsDemo,
+            publishedOn: document.sourcePublishedOn,
+            publisher: document.sourcePublisher,
+            sourceType: document.sourceType,
+            title: document.sourceTitle,
+            updatedAt: document.sourceUpdatedAt,
+            url: document.sourceUrl,
+            verifiedAt: document.sourceVerifiedAt,
+          }),
+        };
+      }
+      let chunkSetFingerprint: string;
+      try {
+        chunkSetFingerprint = createDocumentChunkSetFingerprint({
+          chunks,
+          processingStatus: document.processingStatus,
+        });
+      } catch {
+        throw new Error("Document chunk provenance is invalid.");
+      }
+
+      const auditMarkers = await database
+        .select({
+          action: dataChangeLogs.action,
+          afterData: dataChangeLogs.afterData,
+          draftId: dataChangeLogs.draftId,
+          entityKey: dataChangeLogs.entityKey,
+          entityType: dataChangeLogs.entityType,
+          id: dataChangeLogs.id,
+        })
+        .from(dataChangeLogs)
+        .where(
+          and(
+            eq(dataChangeLogs.draftId, activeDraft.id),
+            eq(dataChangeLogs.entityType, "document"),
+            eq(dataChangeLogs.entityKey, input.documentId),
+            inArray(dataChangeLogs.action, [
+              "draft_created",
+              "document_reprocessed",
+            ]),
+          ),
+        )
+        .orderBy(desc(dataChangeLogs.createdAt), desc(dataChangeLogs.id));
+
+      return {
+        ...document,
+        activeDraft,
+        applicationScope: chunks[0]?.applicationScope ?? null,
+        auditMarkers,
+        chunkSetFingerprint,
+        countryIso3: chunks[0]?.countryIso3 ?? null,
+        jurisdictionId: chunks[0]?.jurisdictionId ?? null,
+        sourceFingerprint: createDocumentDataSourceFingerprint({
+          archivedAt: document.sourceArchivedAt,
+          createdAt: document.sourceCreatedAt,
+          demoNotice: document.sourceDemoNotice,
+          id: document.dataSourceId,
+          isDemo: document.sourceIsDemo,
+          publishedOn: document.sourcePublishedOn,
+          publisher: document.sourcePublisher,
+          sourceType: document.sourceType,
+          title: document.sourceTitle,
+          updatedAt: document.sourceUpdatedAt,
+          url: document.sourceUrl,
+          verifiedAt: document.sourceVerifiedAt,
+        }),
+      };
     },
     getDocumentSummary,
     async listDocuments() {
@@ -587,7 +782,9 @@ export function createKnowledgeRepository<
     async searchCandidates(
       query: HybridSearchQuery,
       queryEmbedding: number[],
+      options: RequestSignalOptions & KnowledgeRankingOptions = {},
     ) {
+      throwIfRequestAborted(options.signal);
       const conditions: SQL[] = [
         eq(documents.processingStatus, "ready"),
         eq(documents.governanceStatus, "published"),
@@ -624,55 +821,70 @@ export function createKnowledgeRepository<
         );
       }
 
-      const keywordScore = sql<number>`ts_rank_cd(
-        ${documentChunks.searchVector},
-        websearch_to_tsquery('simple', ${query.query})
-      )`;
-      const vectorDistance = cosineDistance(
-        documentChunks.embedding,
-        queryEmbedding,
+      const rankingQuery = projectKnowledgeRankingQuery(query.query, options.deliveryCueRanking);
+      const resolveTextQuery = (text: string) => resolveKnowledgeTextQuery(text, async (maskedQuery) =>
+        database.select({ query: sql<string>`websearch_to_tsquery('simple', ${maskedQuery})::text` })
+          .from(sql`(values (1)) as knowledge_spelling_parse(value)`), options);
+      // Ranking-only projection never changes the original native predicate.
+      const candidateConstraint = await resolveKnowledgeCandidateConstraint(query.query, parseNativeConstraints, options);
+      if (candidateConstraint) conditions.push(sql`${documentChunks.searchVector} @@ ${candidateConstraint}`);
+      throwIfRequestAborted(options.signal);
+      const candidateQuery = (textQuery: SQL, embedding: number[], rankingPath: 0 | 1) => {
+        const keywordScore = sql<number>`ts_rank_cd(${documentChunks.searchVector}, ${textQuery})`;
+        const vectorDistance = cosineDistance(documentChunks.embedding, embedding);
+        return database
+          .select({
+            applicationScope: documentChunks.applicationScope,
+            chunkId: documentChunks.id,
+            content: documentChunks.content,
+            countryIso3: documentChunks.countryIso3,
+            documentId: documents.id,
+            documentPublishedOn: documents.publishedOn,
+            documentTitle: documents.title,
+            headingPath: documentChunks.headingPath,
+            isDemo: sql<boolean>`${documents.isDemo} OR ${documentChunks.isDemo} OR ${dataSources.isDemo}`,
+            jurisdictionId: jurisdictions.id,
+            jurisdictionName: jurisdictions.name,
+            keywordScore,
+            originalFilename: documents.originalFilename,
+            pageFrom: documentChunks.pageFrom,
+            pageTo: documentChunks.pageTo,
+            publisher: dataSources.publisher,
+            rankingPath: sql<0 | 1>`${rankingPath}::integer`,
+            sectionLocator: documentChunks.sectionLocator,
+            sourceId: dataSources.id,
+            sourcePublishedOn: dataSources.publishedOn,
+            sourceTitle: dataSources.title,
+            sourceUrl: dataSources.url,
+            sourceVerifiedAt: dataSources.verifiedAt,
+            storagePath: documents.storagePath,
+            validFrom: documentChunks.validFrom,
+            validTo: documentChunks.validTo,
+            vectorDistance,
+          })
+          .from(documentChunks)
+          .innerJoin(documents, eq(documentChunks.documentId, documents.id))
+          .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+          .leftJoin(countries, eq(documentChunks.countryIso3, countries.iso3))
+          .leftJoin(
+            jurisdictions,
+            eq(documentChunks.jurisdictionId, jurisdictions.id),
+          )
+          .where(and(...conditions))
+          .orderBy(desc(keywordScore), asc(vectorDistance))
+          .limit(100);
+      };
+      const original = candidateQuery(await resolveTextQuery(query.query), queryEmbedding, 0);
+      // Two bounded candidate views share one SQL statement and governance
+      // snapshot. Every row carries its own complete keyword/vector score pair.
+      const combined = rankingQuery === query.query ? original : original.unionAll(
+        candidateQuery(await resolveTextQuery(rankingQuery), createLocalHashEmbedding(rankingQuery), 1),
       );
+      throwIfRequestAborted(options.signal);
+      const rows = await combined;
+      throwIfRequestAborted(options.signal);
 
-      return database
-        .select({
-          applicationScope: documentChunks.applicationScope,
-          chunkId: documentChunks.id,
-          content: documentChunks.content,
-          countryIso3: documentChunks.countryIso3,
-          documentId: documents.id,
-          documentPublishedOn: documents.publishedOn,
-          documentTitle: documents.title,
-          headingPath: documentChunks.headingPath,
-          isDemo: sql<boolean>`${documents.isDemo} OR ${documentChunks.isDemo} OR ${dataSources.isDemo}`,
-          jurisdictionId: jurisdictions.id,
-          jurisdictionName: jurisdictions.name,
-          keywordScore,
-          originalFilename: documents.originalFilename,
-          pageFrom: documentChunks.pageFrom,
-          pageTo: documentChunks.pageTo,
-          publisher: dataSources.publisher,
-          sectionLocator: documentChunks.sectionLocator,
-          sourceId: dataSources.id,
-          sourcePublishedOn: dataSources.publishedOn,
-          sourceTitle: dataSources.title,
-          sourceUrl: dataSources.url,
-          sourceVerifiedAt: dataSources.verifiedAt,
-          storagePath: documents.storagePath,
-          validFrom: documentChunks.validFrom,
-          validTo: documentChunks.validTo,
-          vectorDistance,
-        })
-        .from(documentChunks)
-        .innerJoin(documents, eq(documentChunks.documentId, documents.id))
-        .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
-        .leftJoin(countries, eq(documentChunks.countryIso3, countries.iso3))
-        .leftJoin(
-          jurisdictions,
-          eq(documentChunks.jurisdictionId, jurisdictions.id),
-        )
-        .where(and(...conditions))
-        .orderBy(desc(keywordScore), asc(vectorDistance))
-        .limit(100);
+      return rows;
     },
   };
 }

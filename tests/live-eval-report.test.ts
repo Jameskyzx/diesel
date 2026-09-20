@@ -3,25 +3,41 @@ import {
   mkdtemp,
   readFile,
   readdir,
+  rename,
   rm,
   symlink,
   writeFile,
 } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import {
+  buildLiveEvalGitEnvironment,
   captureLiveEvalRepositoryState,
   captureLiveEvalSourceFingerprint,
+  captureLiveEvalSourceFingerprintAtRevision,
   formatLiveEvalArchiveFilename,
+  isTrustedLiveEvalGitBinary,
+  liveEvalRunCanSucceed,
+  parseCanonicalLiveEvalJson,
   persistLiveEvalReport,
   reconcileLiveEvalRepositoryStates,
   reconcileLiveEvalSourceFingerprints,
+  resolveTrustedLiveEvalGitBinary,
   type RepositoryCommandRunner,
+  type RepositoryBinaryCommandRunner,
+  serializeCanonicalLiveEvalJson,
   verifyLiveEvalArchiveMatchesLatest,
 } from "../scripts/ai/live-eval-report";
+import {
+  fingerprintLiveEvalQuery,
+  sanitizeLiveEvalReportArgs,
+} from "../scripts/ai/live-eval-report-args";
+import { salesChatLiveCases } from "../evals/sales-chat-live-cases";
+import { buildSyntheticLiveEvalReport } from "./helpers/live-eval-report-fixture";
 
 const firstRunId = "11111111-1111-4111-8111-111111111111";
 const secondRunId = "22222222-2222-4222-8222-222222222222";
@@ -29,6 +45,128 @@ const thirdRunId = "33333333-3333-4333-8333-333333333333";
 const fourthRunId = "44444444-4444-4444-8444-444444444444";
 
 describe("live eval report provenance", () => {
+  it("uses only executable absolute system Git paths and a closed environment", () => {
+    expect(isTrustedLiveEvalGitBinary("git")).toBe(false);
+    expect(isTrustedLiveEvalGitBinary("/tmp/git")).toBe(false);
+    expect(isTrustedLiveEvalGitBinary("/usr/bin/git")).toBe(true);
+    expect(resolveTrustedLiveEvalGitBinary("git")).toBeNull();
+    expect(resolveTrustedLiveEvalGitBinary("/tmp/git")).toBeNull();
+
+    const environment = buildLiveEvalGitEnvironment();
+    expect(environment).toMatchObject({
+      GIT_CONFIG_GLOBAL: "/dev/null",
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_OPTIONAL_LOCKS: "0",
+      GIT_TERMINAL_PROMPT: "0",
+      PATH: "/usr/bin:/bin:/usr/sbin:/sbin",
+    });
+    expect(environment).not.toHaveProperty("AI_API_KEY");
+    expect(environment).not.toHaveProperty("NODE_OPTIONS");
+    expect(environment).not.toHaveProperty("LD_PRELOAD");
+    expect(environment).not.toHaveProperty("DYLD_INSERT_LIBRARIES");
+  });
+
+  it("fails repository capture closed for an invalid explicit Git path", () => {
+    const previousGitBinary = process.env.LIVE_EVAL_GIT_BINARY;
+    process.env.LIVE_EVAL_GIT_BINARY = "git";
+    try {
+      expect(captureLiveEvalRepositoryState(process.cwd())).toEqual({
+        baseHeadCommit: null,
+        evaluatedCommit: null,
+        worktreeState: "unavailable",
+      });
+    } finally {
+      if (previousGitBinary === undefined) {
+        delete process.env.LIVE_EVAL_GIT_BINARY;
+      } else {
+        process.env.LIVE_EVAL_GIT_BINARY = previousGitBinary;
+      }
+    }
+  });
+
+  it("persists query fingerprints without leaking raw query text", async () => {
+    const temporaryWorkspace = await mkdtemp(
+      resolve(tmpdir(), "diesel-live-eval-query-redaction-"),
+    );
+    const marker = "PRIVATE-LIVE-EVAL-QUERY-7f607b2c";
+
+    try {
+      const report = buildSyntheticLiveEvalReport({
+        commit: "a".repeat(40),
+        fingerprintDigest: "b".repeat(64),
+        fingerprintFileCount: 1,
+        runId: "77777777-7777-4777-8777-777777777777",
+      });
+      const searchCall = report.results
+        .flatMap(({ normalizedArgs }) => normalizedArgs)
+        .find(({ tool }) => tool === "searchKnowledgeBase");
+      if (!searchCall) {
+        throw new Error("Expected a synthetic searchKnowledgeBase call.");
+      }
+      const searchCase = salesChatLiveCases.find(
+        ({ id }) => id === "source-document-retrieval",
+      );
+      if (!searchCase?.knowledgeQueryContract) {
+        throw new Error("Expected a source-query contract.");
+      }
+      const sanitized = sanitizeLiveEvalReportArgs({
+        args: { countryIso3: "CHN", query: marker },
+        knowledgeQueryContract: searchCase.knowledgeQueryContract,
+        tool: "searchKnowledgeBase",
+      });
+      searchCall.args = sanitized;
+      expect(
+        sanitizeLiveEvalReportArgs({
+          args: { query: marker, rawPrompt: marker },
+          knowledgeQueryContract: searchCase.knowledgeQueryContract,
+          tool: "searchKnowledgeBase",
+        }),
+      ).toEqual({});
+
+      const persisted = await persistLiveEvalReport(
+        temporaryWorkspace,
+        report,
+      );
+      const [latestText, archiveText] = await Promise.all([
+        readFile(persisted.latestPath, "utf8"),
+        readFile(persisted.archivePath, "utf8"),
+      ]);
+      const expectedFingerprint = fingerprintLiveEvalQuery(marker);
+      const expectedReportText = serializeCanonicalLiveEvalJson(report);
+
+      expect(persisted.latestUpdated).toBe(true);
+      expect(persisted.reportReceipt).toEqual({
+        byteLength: Buffer.byteLength(expectedReportText, "utf8"),
+        evaluatedAt: report.evaluatedAt,
+        runId: report.runId,
+        sha256: createHash("sha256")
+          .update(expectedReportText, "utf8")
+          .digest("hex"),
+      });
+      expect(latestText).toBe(archiveText);
+      expect(latestText).not.toContain(marker);
+      expect(archiveText).not.toContain(marker);
+      expect(latestText).not.toContain("rawPrompt");
+      expect(JSON.parse(latestText)).toMatchObject({
+        results: expect.arrayContaining([
+          expect.objectContaining({
+            normalizedArgs: expect.arrayContaining([
+              expect.objectContaining({
+                args: expect.objectContaining({
+                  query: expect.objectContaining(expectedFingerprint),
+                }),
+                tool: "searchKnowledgeBase",
+              }),
+            ]),
+          }),
+        ]),
+        version: "sales-chat-live-v25",
+      });
+    } finally {
+      await rm(temporaryWorkspace, { force: true, recursive: true });
+    }
+  });
+
   it("distinguishes a clean exact commit from a dirty base commit", () => {
     const headCommit = "a".repeat(40);
     const cleanRunner: RepositoryCommandRunner = (args) => ({
@@ -168,6 +306,7 @@ describe("live eval evaluated-source fingerprint", () => {
         "scripts/ai/live-eval.ts",
         "package.json",
         "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
         "tsconfig.json",
       ];
       const untrackedPaths = [
@@ -200,7 +339,7 @@ describe("live eval evaluated-source fingerprint", () => {
       expect(first).toEqual(reordered);
       expect(first).toMatchObject({
         algorithm: "sha256",
-        fileCount: 8,
+        fileCount: 9,
         status: "captured",
       });
       expect(first.digest).toMatch(/^[0-9a-f]{64}$/u);
@@ -212,7 +351,17 @@ describe("live eval evaluated-source fingerprint", () => {
       expect(calls.every((args) => args.includes("src"))).toBe(true);
       expect(calls.every((args) => args.includes("drizzle"))).toBe(true);
       expect(calls.every((args) => args.includes("scripts/ai"))).toBe(true);
+      expect(calls.every((args) => args.includes("scripts/portfolio"))).toBe(
+        true,
+      );
+      expect(calls.every((args) => args.includes(".nvmrc"))).toBe(true);
       expect(calls.every((args) => args.includes("package.json"))).toBe(true);
+      expect(calls.every((args) => args.includes("pnpm-workspace.yaml"))).toBe(
+        true,
+      );
+      expect(calls.every((args) => args.includes("vitest.config.ts"))).toBe(
+        true,
+      );
 
       await writeFile(
         resolve(workspace, "evals/new-case.ts"),
@@ -234,6 +383,86 @@ describe("live eval evaluated-source fingerprint", () => {
     } finally {
       await rm(workspace, { force: true, recursive: true });
     }
+  });
+
+  it("reconstructs a clean source fingerprint from the claimed commit tree", async () => {
+    const revision = "a".repeat(40);
+    const contents = new Map([
+      [".nvmrc", Buffer.from("22\n")],
+      ["evals/cases.ts", Buffer.from("export const cases = [];\n")],
+      ["scripts/portfolio/verify.ts", Buffer.from("export {};\n")],
+      ["src/example.ts", Buffer.from("export const value = 1;\n")],
+    ]);
+    const objectId = (content: Buffer) =>
+      createHash("sha1")
+        .update(`blob ${content.byteLength}\0`, "utf8")
+        .update(content)
+        .digest("hex");
+    const textRunner: RepositoryCommandRunner = () => ({
+      ok: true,
+      stdout: `${revision}\n`,
+    });
+    const binaryRunner: RepositoryBinaryCommandRunner = (args) => {
+      if (args[0] === "ls-tree") {
+        return {
+          ok: true,
+          stdout: Buffer.from(
+            [...contents.entries()]
+              .map(([path, content]) =>
+                `100644 blob ${objectId(content)}\t${path}\0`
+              )
+              .join(""),
+          ),
+        };
+      }
+      const path = args[1]?.slice(revision.length + 1) ?? "";
+      const content = contents.get(path);
+      return { ok: content !== undefined, stdout: content ?? Buffer.alloc(0) };
+    };
+
+    const first = await captureLiveEvalSourceFingerprintAtRevision(
+      "/workspace",
+      revision,
+      textRunner,
+      binaryRunner,
+    );
+    expect(first).toMatchObject({ fileCount: 4, status: "captured" });
+
+    contents.set("scripts/portfolio/verify.ts", Buffer.from("changed\n"));
+    const changed = await captureLiveEvalSourceFingerprintAtRevision(
+      "/workspace",
+      revision,
+      textRunner,
+      binaryRunner,
+    );
+    expect(changed.status).toBe("captured");
+    expect(changed.digest).not.toBe(first.digest);
+  });
+
+  it("fails closed when a claimed commit tree returns bytes for another blob", async () => {
+    const revision = "b".repeat(40);
+    const textRunner: RepositoryCommandRunner = () => ({
+      ok: true,
+      stdout: `${revision}\n`,
+    });
+    const binaryRunner: RepositoryBinaryCommandRunner = (args) =>
+      args[0] === "ls-tree"
+        ? {
+            ok: true,
+            stdout: Buffer.from(
+              `100644 blob ${"c".repeat(40)}\tsrc/example.ts\0`,
+            ),
+          }
+        : { ok: true, stdout: Buffer.from("different bytes") };
+
+    await expect(
+      captureLiveEvalSourceFingerprintAtRevision(
+        "/workspace",
+        revision,
+        textRunner,
+        binaryRunner,
+      ),
+    ).resolves.toMatchObject({ status: "unavailable" });
   });
 
   it("fails closed for Git errors, unsafe paths, and empty source sets", async () => {
@@ -291,7 +520,41 @@ describe("live eval evaluated-source fingerprint", () => {
   });
 });
 
+describe("live eval canonical JSON", () => {
+  it("uses two-space JSON with exactly one trailing newline", () => {
+    const value = { nested: { enabled: true }, version: 1 };
+    const serialized = serializeCanonicalLiveEvalJson(value);
+
+    expect(serialized).toBe(
+      '{\n  "nested": {\n    "enabled": true\n  },\n  "version": 1\n}\n',
+    );
+    expect(parseCanonicalLiveEvalJson(serialized)).toEqual(value);
+  });
+
+  it.each([
+    '{"thresholdsPassed":true}\n',
+    '{\n  "thresholdsPassed": false,\n  "thresholdsPassed": true\n}\n',
+    '{\n  "thresholdsPassed": true\n}\n\n',
+  ])("rejects non-canonical or duplicate-key bytes", (reportText) => {
+    expect(() => parseCanonicalLiveEvalJson(reportText)).toThrow(
+      /canonical JSON bytes/u,
+    );
+  });
+});
+
 describe("live eval report retention", () => {
+  it("accepts only a passing run that became the latest report", () => {
+    expect(
+      liveEvalRunCanSucceed({ latestUpdated: true, thresholdsPassed: true }),
+    ).toBe(true);
+    expect(
+      liveEvalRunCanSucceed({ latestUpdated: false, thresholdsPassed: true }),
+    ).toBe(false);
+    expect(
+      liveEvalRunCanSucceed({ latestUpdated: true, thresholdsPassed: false }),
+    ).toBe(false);
+  });
+
   it("retains every report before advancing latest", async () => {
     const workspace = await mkdtemp(resolve(tmpdir(), "diesel-live-report-"));
     try {
@@ -349,6 +612,235 @@ describe("live eval report retention", () => {
       expect(await readdir(resolve(workspace, "docs/evals"))).not.toContain(
         `.ai-live-eval-latest-${second.runId}.tmp`,
       );
+    } finally {
+      await rm(workspace, { force: true, recursive: true });
+    }
+  });
+
+  it("syncs archive publication, archive cleanup, and latest publication directories", async () => {
+    const workspace = await mkdtemp(resolve(tmpdir(), "diesel-live-report-"));
+    try {
+      const report = {
+        evaluatedAt: "2026-08-30T01:02:03.456Z",
+        runId: firstRunId,
+      };
+      const evalDirectory = resolve(workspace, "docs/evals");
+      const archiveDirectory = resolve(evalDirectory, "archive");
+      const syncedDirectories: string[] = [];
+
+      const persisted = await persistLiveEvalReport(workspace, report, {
+        afterDirectorySync: (path) => {
+          syncedDirectories.push(path);
+        },
+      });
+
+      expect(persisted.latestUpdated).toBe(true);
+      expect(syncedDirectories).toEqual([
+        evalDirectory,
+        archiveDirectory,
+        archiveDirectory,
+        evalDirectory,
+      ]);
+      expect(await readFile(persisted.archivePath, "utf8")).toBe(
+        await readFile(persisted.latestPath, "utf8"),
+      );
+    } finally {
+      await rm(workspace, { force: true, recursive: true });
+    }
+  });
+
+  it("fails closed when a post-rename directory durability check fails", async () => {
+    const workspace = await mkdtemp(resolve(tmpdir(), "diesel-live-report-"));
+    try {
+      const report = {
+        evaluatedAt: "2026-08-30T01:02:03.456Z",
+        runId: firstRunId,
+      };
+      const evalDirectory = resolve(workspace, "docs/evals");
+      let evalDirectorySyncCount = 0;
+
+      await expect(
+        persistLiveEvalReport(workspace, report, {
+          afterDirectorySync: (path) => {
+            if (path === evalDirectory) {
+              evalDirectorySyncCount += 1;
+            }
+            if (path === evalDirectory && evalDirectorySyncCount === 2) {
+              throw new Error("synthetic directory sync failure");
+            }
+          },
+        }),
+      ).rejects.toThrow("synthetic directory sync failure");
+    } finally {
+      await rm(workspace, { force: true, recursive: true });
+    }
+  });
+
+  it("uses the run ID tie-breaker, ignores legacy names, and rejects a restored stale latest", async () => {
+    const workspace = await mkdtemp(resolve(tmpdir(), "diesel-live-report-"));
+    try {
+      const first = {
+        evaluatedAt: "2026-08-30T01:02:03.456Z",
+        runId: firstRunId,
+      };
+      const second = {
+        evaluatedAt: first.evaluatedAt,
+        runId: secondRunId,
+      };
+      const firstPaths = await persistLiveEvalReport(workspace, first);
+      const firstText = await readFile(firstPaths.archivePath, "utf8");
+      const secondPaths = await persistLiveEvalReport(workspace, second);
+      const secondText = await readFile(secondPaths.latestPath, "utf8");
+      await writeFile(
+        resolve(
+          workspace,
+          "docs/evals/archive/ai-live-eval-2026-08-14-scorer-v1-flawed.json",
+        ),
+        `${JSON.stringify({ version: "sales-chat-live-v1" }, null, 2)}\n`,
+        "utf8",
+      );
+
+      await expect(
+        verifyLiveEvalArchiveMatchesLatest(workspace, second, secondText),
+      ).resolves.toBeUndefined();
+      await writeFile(firstPaths.latestPath, firstText, "utf8");
+
+      await expect(
+        verifyLiveEvalArchiveMatchesLatest(
+          workspace,
+          first,
+          await readFile(firstPaths.latestPath, "utf8"),
+        ),
+      ).rejects.toThrow(/not the newest modern archive/u);
+    } finally {
+      await rm(workspace, { force: true, recursive: true });
+    }
+  });
+
+  it.each([
+    {
+      target:
+        "docs/evals/archive/ai-live-eval-2026-08-30-renamed-modern.json",
+      expectedError: /archive filename is malformed/u,
+      label: "an unapproved legacy-like basename",
+    },
+    {
+      target:
+        "docs/evals/archive/ai-live-eval-2026-08-14-scorer-v1-flawed.json",
+      expectedError: /invalid legacy identity/u,
+      label: "an approved pre-run-ID basename",
+    },
+  ])("rejects a newer run renamed to $label", async ({ expectedError, target }) => {
+    const workspace = await mkdtemp(resolve(tmpdir(), "diesel-live-report-"));
+    try {
+      const first = {
+        evaluatedAt: "2026-08-30T01:02:03.456Z",
+        runId: firstRunId,
+      };
+      const second = {
+        evaluatedAt: "2026-08-30T01:03:04.567Z",
+        runId: secondRunId,
+      };
+      const firstPaths = await persistLiveEvalReport(workspace, first);
+      const firstText = await readFile(firstPaths.archivePath, "utf8");
+      const secondPaths = await persistLiveEvalReport(workspace, second);
+      await rename(
+        secondPaths.archivePath,
+        resolve(workspace, target),
+      );
+      await writeFile(firstPaths.latestPath, firstText, "utf8");
+
+      await expect(
+        verifyLiveEvalArchiveMatchesLatest(workspace, first, firstText),
+      ).rejects.toThrow(expectedError);
+    } finally {
+      await rm(workspace, { force: true, recursive: true });
+    }
+  });
+
+  it("rejects a modern archive whose filename and report identity differ", async () => {
+    const workspace = await mkdtemp(resolve(tmpdir(), "diesel-live-report-"));
+    try {
+      const report = {
+        evaluatedAt: "2026-08-30T01:02:03.456Z",
+        runId: firstRunId,
+      };
+      const paths = await persistLiveEvalReport(workspace, report);
+      const driftedText = `${JSON.stringify({
+        ...report,
+        runId: secondRunId,
+      }, null, 2)}\n`;
+      await Promise.all([
+        writeFile(paths.archivePath, driftedText, "utf8"),
+        writeFile(paths.latestPath, driftedText, "utf8"),
+      ]);
+
+      await expect(
+        verifyLiveEvalArchiveMatchesLatest(workspace, report, driftedText),
+      ).rejects.toThrow(/filename does not match its report identity/u);
+    } finally {
+      await rm(workspace, { force: true, recursive: true });
+    }
+  });
+
+  it.each([
+    {
+      filename: "ai-live-eval-20260830T010203456Z-not-a-uuid.json",
+      label: "invalid run ID",
+    },
+    {
+      filename:
+        `ai-live-eval-2026083T010203456Z-${secondRunId}.json`,
+      label: "short compact date",
+    },
+  ])("fails closed for a modern archive with $label", async ({ filename }) => {
+    const workspace = await mkdtemp(resolve(tmpdir(), "diesel-live-report-"));
+    try {
+      const report = {
+        evaluatedAt: "2026-08-30T01:02:03.456Z",
+        runId: firstRunId,
+      };
+      const paths = await persistLiveEvalReport(workspace, report);
+      const reportText = await readFile(paths.latestPath, "utf8");
+      await writeFile(
+        resolve(workspace, "docs/evals/archive", filename),
+        "{}\n",
+        "utf8",
+      );
+
+      await expect(
+        verifyLiveEvalArchiveMatchesLatest(workspace, report, reportText),
+      ).rejects.toThrow(/archive filename is malformed/u);
+    } finally {
+      await rm(workspace, { force: true, recursive: true });
+    }
+  });
+
+  it("fails closed when a modern archive has invalid JSON", async () => {
+    const workspace = await mkdtemp(resolve(tmpdir(), "diesel-live-report-"));
+    try {
+      const report = {
+        evaluatedAt: "2026-08-30T01:02:03.456Z",
+        runId: firstRunId,
+      };
+      const paths = await persistLiveEvalReport(workspace, report);
+      const reportText = await readFile(paths.latestPath, "utf8");
+      await writeFile(
+        resolve(
+          workspace,
+          "docs/evals/archive",
+          formatLiveEvalArchiveFilename(
+            "2026-08-30T01:03:04.567Z",
+            secondRunId,
+          ),
+        ),
+        "not-json\n",
+        "utf8",
+      );
+
+      await expect(
+        verifyLiveEvalArchiveMatchesLatest(workspace, report, reportText),
+      ).rejects.toThrow(/archive .*has invalid JSON/u);
     } finally {
       await rm(workspace, { force: true, recursive: true });
     }

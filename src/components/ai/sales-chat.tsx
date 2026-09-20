@@ -11,6 +11,7 @@ import {
   PencilLine,
   RotateCcw,
   Send,
+  Square,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -18,7 +19,6 @@ import {
   DefaultChatTransport,
   isToolUIPart,
   type FileUIPart,
-  type UIMessage,
 } from "ai";
 import {
   ChangeEvent,
@@ -29,6 +29,7 @@ import {
   useState,
 } from "react";
 import { AssistantMarkdown } from "@/components/ai/assistant-markdown";
+import { MarketComparisonFacts } from "@/components/ai/market-comparison-facts";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { unwrapUntrustedKnowledgeExcerpt } from "@/domain/knowledge/retrieval-policy";
 import { Button } from "@/components/ui/button";
@@ -37,24 +38,33 @@ import {
   CHAT_ATTACHMENT_ACCEPT,
   CHAT_DOCUMENT_ATTACHMENT_ACCEPT,
   formatChatAttachmentBytes,
-  MAX_CHAT_ATTACHMENT_BYTES,
-  MAX_CHAT_ATTACHMENT_FILENAME_CHARACTERS,
-  MAX_CHAT_ATTACHMENTS,
-  MAX_CHAT_ATTACHMENTS_TOTAL_BYTES,
+  normalizeChatAttachmentFilename,
   resolveChatAttachmentMediaType,
   type ChatAttachmentMediaType,
 } from "@/features/ai/attachments";
 import {
+  formatChatAttachmentError,
+  imageInvalidAttachmentError,
+  validateChatAttachments,
+  type ChatAttachmentErrorDescriptor,
+} from "@/features/ai/attachment-errors";
+import {
   hasStructurallyValidChatImage,
-  MAX_CHAT_IMAGE_DIMENSION,
-  MAX_CHAT_IMAGE_PIXELS,
-  MIN_CHAT_IMAGE_DIMENSION,
 } from "@/features/ai/image-attachments";
+import {
+  formatReleasedAttachment,
+  parseReleasedAttachmentPart,
+  prepareSalesChatRequestMessages,
+  releaseSalesChatMessageAttachments,
+  type SalesChatUiMessage,
+} from "@/features/ai/released-attachment";
 import {
   type ClientAiCitation,
   type ClientAiToolResult,
 } from "@/features/ai/client-schemas";
 import {
+  countryProfileTopicLabel,
+  localizedCitationLocator,
   localizedCitationTitle,
   localizedRegulationComparisonCountryName,
   localizedSalesBriefAction,
@@ -67,10 +77,26 @@ import {
 } from "@/features/ai/client-tool-copy";
 import { toolPartPresentation } from "@/features/ai/tool-part-presentation";
 import { MAX_CHAT_USER_MESSAGE_CHARACTERS } from "@/features/ai/constants";
-import { parseSerializedApiErrorMessage } from "@/lib/api-error";
+import {
+  parseSerializedApiErrorCode,
+  type SafeApiErrorCode,
+} from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 import { interpolate, type Dictionary } from "@/i18n/dictionaries";
-import { formatOptionalUtcDate, formatUtcDate } from "@/i18n/date";
+import {
+  formatOptionalUtcDate,
+  formatProductAvailabilityDateRange,
+  formatUtcDate,
+} from "@/i18n/date";
+import type { Locale } from "@/i18n/locale";
+import {
+  applicationScopeLabel,
+  jurisdictionDisplayName,
+  localizedList,
+  nameWithCode,
+  productDisplayName,
+  regulationDisplayName,
+} from "@/i18n/structured-labels";
 
 type SalesChatProps = {
   aiConfigured: boolean;
@@ -84,6 +110,7 @@ type SalesChatProps = {
 
 type PendingAttachment = {
   file: File;
+  filename: string;
   id: string;
   mediaType: ChatAttachmentMediaType;
 };
@@ -98,50 +125,41 @@ type ActiveSubmission = Omit<FailedSubmission, "messageId"> & {
   messageId?: string;
 };
 
-function attachmentValidationMessage(
-  attachments: readonly PendingAttachment[],
-  copy: Dictionary["chat"],
-): string | null {
-  if (attachments.length > MAX_CHAT_ATTACHMENTS) {
-    return interpolate(copy.maxAttachments, { max: MAX_CHAT_ATTACHMENTS });
+class AttachmentMessageReleaseCoordinator {
+  #fileParts: FileUIPart[] | null = null;
+  #release: () => void = () => undefined;
+
+  connect(release: () => void): () => void {
+    this.#release = release;
+    return () => {
+      if (this.#release === release) {
+        this.#release = () => undefined;
+        this.#fileParts?.splice(0);
+        this.#fileParts = null;
+      }
+    };
   }
 
-  for (const { file } of attachments) {
-    const filename = file.name.trim();
-    if (
-      !filename ||
-      filename.length > MAX_CHAT_ATTACHMENT_FILENAME_CHARACTERS ||
-      /[\u0000-\u001f\u007f/\\]/u.test(filename)
-    ) {
-      return interpolate(copy.invalidFilename, {
-        max: MAX_CHAT_ATTACHMENT_FILENAME_CHARACTERS,
-      });
-    }
-    if (file.size === 0) {
-      return interpolate(copy.emptyFile, { name: filename });
-    }
-    if (file.size > MAX_CHAT_ATTACHMENT_BYTES) {
-      return interpolate(copy.fileTooLarge, { name: filename });
-    }
+  run(): void {
+    this.#release();
+    this.#fileParts?.splice(0);
+    this.#fileParts = null;
   }
 
-  const totalBytes = attachments.reduce(
-    (total, attachment) => total + attachment.file.size,
-    0,
-  );
-  if (totalBytes > MAX_CHAT_ATTACHMENTS_TOTAL_BYTES) {
-    return copy.totalTooLarge;
+  trackFileParts(fileParts: FileUIPart[]): void {
+    this.#fileParts?.splice(0);
+    this.#fileParts = fileParts;
   }
-
-  return null;
 }
 
 function fileToUiPart({
   file,
+  filename,
   mediaType,
 }: PendingAttachment): Promise<FileUIPart> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onabort = () => reject(new Error("FileReader aborted."));
     reader.onerror = () => reject(new Error("FileReader failed."));
     reader.onload = () => {
       if (typeof reader.result !== "string") {
@@ -156,7 +174,7 @@ function fileToUiPart({
       }
 
       resolve({
-        filename: file.name.trim(),
+        filename,
         mediaType,
         type: "file",
         url: `data:${mediaType};base64,${reader.result.slice(separatorIndex + 1)}`,
@@ -185,7 +203,7 @@ function PendingImagePreview({ attachment }: { attachment: PendingAttachment }) 
   return previewUrl ? (
     <Image
       alt={interpolate(dictionary.chat.filePreview, {
-        name: attachment.file.name,
+        name: attachment.filename,
       })}
       className="size-12 rounded-md object-cover"
       height={48}
@@ -205,8 +223,23 @@ function PendingImagePreview({ attachment }: { attachment: PendingAttachment }) 
  * 服务端返回 schema 校验的 `{error:{code,message}}` 信封（ADR-041），
  * 这里解出通用消息展示，解不出时退回固定文案，不把 JSON 直接给用户。
  */
-function chatErrorMessage(error: Error, fallback: string): string {
-  return parseSerializedApiErrorMessage(error.message, fallback);
+export function chatErrorMessage(
+  error: Error,
+  dictionary: Dictionary,
+): string {
+  // Parse on every render so a retained failed submission immediately follows
+  // the active locale. Unknown envelopes never expose their raw text.
+  const code = parseSerializedApiErrorCode(error.message);
+  if (code === null) return dictionary.chat.chatError;
+  const messages: Record<SafeApiErrorCode, string> = {
+    AI_NOT_CONFIGURED: dictionary.apiErrors.chatAiNotConfigured,
+    INTERNAL_ERROR: dictionary.apiErrors.chatUnavailable,
+    INVALID_INPUT: dictionary.apiErrors.chatInvalidInput,
+    PAYLOAD_TOO_LARGE: dictionary.apiErrors.chatPayloadTooLarge,
+    RATE_LIMITED: dictionary.apiErrors.chatRateLimited,
+    REQUEST_TIMEOUT: dictionary.apiErrors.chatRequestTimeout,
+  };
+  return messages[code];
 }
 
 function toolLabels(
@@ -248,14 +281,6 @@ function fitStatusLabels(dictionary: Dictionary) {
   } as const;
 }
 
-function marketComparisonStatusLabels(copy: Dictionary["chat"]) {
-  return {
-    comparable: copy.marketComparable,
-    incomparable: copy.marketIncomparable,
-    insufficient_data: copy.marketInsufficientData,
-  } as const;
-}
-
 function commercialReadinessLabels(dictionary: Dictionary) {
   return {
     not_ready: dictionary.productFit.commercialNotReady,
@@ -270,19 +295,6 @@ function scoreComponentLabels(copy: Dictionary["chat"]) {
     productReadiness: copy.scoreProductReadiness,
     regulatoryCoverage: copy.scoreRegulatoryCoverage,
   } as const;
-}
-
-function formatDateRange(
-  start: string | null,
-  end: string | null,
-  locale: "en" | "zh-CN",
-  notRecorded: string,
-  open: string,
-): string {
-  if (start === null && end === null) {
-    return notRecorded;
-  }
-  return `${formatOptionalUtcDate(start, locale, notRecorded)} → ${formatOptionalUtcDate(end, locale, open)}`;
 }
 
 function formatDecimal(value: string): string {
@@ -310,21 +322,6 @@ function regulationStatusNote(
 
 function resultContainsDemoEvidence(result: ClientAiToolResult): boolean {
   return result.citations.some((citation) => citation.isDemo);
-}
-
-function citationLocator(
-  citation: ClientAiCitation,
-  copy: Dictionary["chat"],
-): string {
-  if (citation.pageFrom) {
-    const pages =
-      citation.pageTo && citation.pageTo !== citation.pageFrom
-        ? `${citation.pageFrom}–${citation.pageTo}`
-        : String(citation.pageFrom);
-    return interpolate(copy.sourcePage, { pages });
-  }
-
-  return citation.sectionLocator ?? citation.locator ?? copy.noSourceLocator;
 }
 
 function CitationList({
@@ -364,10 +361,15 @@ function CitationList({
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-medium">
-                {localizedCitationTitle(citation.title, locale, copy)}
+                {localizedCitationTitle(
+                  citation,
+                  locale,
+                  dictionary,
+                )}
               </p>
               <p className="mt-0.5 text-muted-foreground">
-                {citation.sourceTitle} · {citationLocator(citation, copy)}
+                {citation.sourceTitle} ·{" "}
+                {localizedCitationLocator(citation, locale, dictionary)}
               </p>
             </div>
             {isNavigableEvidenceUrl(citation.sourceUrl) ? (
@@ -481,39 +483,114 @@ function ScoreBreakdown({ score }: { score: ClientOpportunityScore }) {
   );
 }
 
-type QuerySummaryResult = Extract<
-  ClientAiToolResult,
-  {
-    tool:
-      | "calculateOpportunityScore"
-      | "compareRegulations"
-      | "findCompatibleProducts"
-      | "generateSalesBrief";
-  }
->;
+type QuerySummaryResult = ClientAiToolResult;
 
 function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.chat;
   const labels = toolLabels(copy);
-  let fields: Array<{ label: string; value: string }>;
+  let fields: Array<{ label: string; value: string; fullMobileRow?: boolean }>;
 
-  if (result.tool === "findCompatibleProducts") {
+  if (result.tool === "searchKnowledgeBase") {
+    fields = [
+      {
+        label: copy.country,
+        value: result.resolvedCountryIso3 ?? copy.unspecified,
+      },
+      {
+        label: copy.scope,
+        value: result.search.filters.applicationScope
+          ? applicationScopeLabel(
+              result.search.filters.applicationScope,
+              dictionary,
+            )
+          : copy.unspecified,
+      },
+      {
+        label: copy.date,
+        value: formatUtcDate(result.informationAsOf, locale),
+      },
+      { label: copy.queryConditions, value: result.search.query },
+    ];
+  } else if (result.tool === "getCountryProfile") {
+    fields = [
+      {
+        label: copy.country,
+        value: result.resolvedCountryIso3 ?? copy.unspecified,
+      },
+      {
+        label: copy.date,
+        value: formatUtcDate(result.informationAsOf, locale),
+      },
+      {
+        label: copy.queryConditions,
+        value: localizedList(
+          result.requestedTopics.map((topic) =>
+            countryProfileTopicLabel(topic, dictionary),
+          ),
+          locale,
+        ),
+      },
+    ];
+  } else if (result.tool === "findCompatibleProducts") {
     fields = [
       { label: copy.country, value: result.query.countryIso3 ?? copy.unspecified },
-      { label: copy.scope, value: result.query.applicationScope },
+      {
+        label: copy.scope,
+        value: applicationScopeLabel(
+          result.query.applicationScope,
+          dictionary,
+        ),
+      },
       { label: copy.power, value: `${result.query.powerKw} kW` },
       { label: copy.date, value: formatUtcDate(result.query.asOf, locale) },
       ...(result.query.productModelCode
         ? [{ label: copy.product, value: result.query.productModelCode }]
         : []),
     ];
+  } else if (result.tool === "compareMarkets") {
+    fields = [
+      {
+        label: copy.country,
+        value: localizedList(
+          result.comparison.query.countryIso3s,
+          locale,
+        ),
+      },
+      {
+        label: copy.scope,
+        value: result.comparison.query.applicationScope
+          ? applicationScopeLabel(
+              result.comparison.query.applicationScope,
+              dictionary,
+            )
+          : copy.unspecified,
+      },
+      ...(result.comparison.query.metricCodes
+        ? [
+            {
+              label: copy.marketMetricCodes,
+              fullMobileRow: true,
+              value: localizedList(
+                result.comparison.query.metricCodes,
+                locale,
+              ),
+            },
+          ]
+        : []),
+    ];
   } else if (result.tool === "generateSalesBrief") {
     const { query } = result.brief;
     fields = [
       { label: copy.targetCountry, value: query.targetCountryIso3 },
-      { label: copy.comparisonCountries, value: query.countryIso3s.join(", ") },
-      { label: copy.scope, value: query.applicationScope },
+      {
+        label: copy.comparisonCountries,
+        value: localizedList(query.countryIso3s, locale),
+      },
+      {
+        label: copy.scope,
+        value: applicationScopeLabel(query.applicationScope, dictionary),
+      },
       { label: copy.power, value: `${query.powerKw} kW` },
       { label: copy.date, value: formatUtcDate(query.asOf, locale) },
       ...(query.productModelCode
@@ -525,16 +602,23 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
       result.tool === "compareRegulations"
         ? result.comparison.query
         : result.scorecard.query;
+    const productModelCode =
+      result.tool === "calculateOpportunityScore"
+        ? result.scorecard.query.productModelCode
+        : undefined;
     fields = [
       {
         label: copy.country,
-        value: query.countryIso3s.join(", "),
+        value: localizedList(query.countryIso3s, locale),
       },
-      { label: copy.scope, value: query.applicationScope },
+      {
+        label: copy.scope,
+        value: applicationScopeLabel(query.applicationScope, dictionary),
+      },
       { label: copy.power, value: `${query.powerKw} kW` },
       { label: copy.date, value: formatUtcDate(query.asOf, locale) },
-      ...(query.productModelCode
-        ? [{ label: copy.product, value: query.productModelCode }]
+      ...(productModelCode
+        ? [{ label: copy.product, value: productModelCode }]
         : []),
     ];
   }
@@ -545,7 +629,7 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
       className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg border border-primary/15 bg-background/80 p-2.5 text-xs sm:grid-cols-3"
     >
       {fields.map((field) => (
-        <div className="min-w-0" key={field.label}>
+        <div className={cn("min-w-0", field.fullMobileRow && "col-span-2 sm:col-span-1")} key={field.label}>
           <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground">
             {field.label}
           </dt>
@@ -570,7 +654,6 @@ function ToolFacts({
   const fitCopy = fitStatusLabels(dictionary);
   const readinessCopy = commercialReadinessLabels(dictionary);
   const regulationCopy = regulationStatusLabels(dictionary);
-  const marketCopy = marketComparisonStatusLabels(copy);
 
   if (result.tool === "getCountryProfile") {
     if (!result.profile || result.profile.status === "no_data") {
@@ -605,7 +688,8 @@ function ToolFacts({
             className="rounded-lg bg-background/70 p-2 text-muted-foreground"
             key={regulation.id}
           >
-            {regulation.canonicalName} · {copy.queryDate}
+            {regulationDisplayName(regulation, dictionary, locale)} ·{" "}
+            {copy.queryDate}
             {dictionary.common.labelSeparator}
             {regulationCopy[regulation.statusAtAsOf]}
             {regulation.status !== regulation.statusAtAsOf
@@ -613,8 +697,27 @@ function ToolFacts({
               : ""}
             {" · "}{dictionary.country.applicableJurisdiction}
             {dictionary.common.labelSeparator}
-            {regulation.applicability.jurisdiction.name}（
-            {regulation.applicability.jurisdiction.code}） ·
+            {nameWithCode(
+              jurisdictionDisplayName(
+                {
+                  code: regulation.applicability.jurisdiction.code,
+                  countryIso3: regulation.applicability.countryIso3,
+                  id: regulation.applicability.jurisdiction.id,
+                  isDemo: regulation.applicability.jurisdiction.isDemo,
+                  name: regulation.applicability.jurisdiction.name,
+                  sourceId: regulation.applicability.jurisdiction.source.id,
+                  sourceIsDemo:
+                    regulation.applicability.jurisdiction.source.isDemo,
+                  sourceTitle:
+                    regulation.applicability.jurisdiction.source.title,
+                  type: "country",
+                },
+                dictionary,
+                locale,
+              ),
+              regulation.applicability.jurisdiction.code,
+              locale,
+            )} ·
             {dictionary.country.membershipPeriod}
             {dictionary.common.labelSeparator}
             {formatUtcDate(
@@ -667,8 +770,13 @@ function ToolFacts({
           >
             <div className="flex items-center justify-between gap-2">
               <p className="font-medium">
-                {evaluation.product?.name ??
-                  evaluation.input.productModelCode}
+                {evaluation.product
+                  ? productDisplayName(
+                      evaluation.product,
+                      dictionary,
+                      locale,
+                    )
+                  : evaluation.input.productModelCode}
               </p>
               <span
                 className={cn(
@@ -687,8 +795,6 @@ function ToolFacts({
             <p className="mt-1 font-medium">
               {dictionary.productFit.fitAxis}
               {dictionary.common.labelSeparator}{fitCopy[evaluation.status]} ·{" "}
-              {copy.commercialReadiness}
-              {dictionary.common.labelSeparator}
               {readinessCopy[evaluation.commercialReadiness]}
             </p>
             <p className="mt-1 text-muted-foreground">
@@ -708,12 +814,11 @@ function ToolFacts({
               <p className="mt-1 text-[11px] text-muted-foreground">
                 {dictionary.productFit.availablePeriod}
                 {dictionary.common.labelSeparator}
-                {formatDateRange(
+                {formatProductAvailabilityDateRange(
                   evaluation.product.availableFrom,
                   evaluation.product.availableTo,
                   locale,
                   dictionary.common.notRecorded,
-                  dictionary.common.open,
                 )}
               </p>
             ) : null}
@@ -771,7 +876,7 @@ function ToolFacts({
               return missing.length > 0 ? (
                 <p className="mt-1 rounded-md bg-amber-100/80 px-2 py-1 text-[11px] leading-4 text-amber-950">
                   {interpolate(copy.regulationMissingLimits, {
-                    pollutants: missing.join(locale === "en" ? ", " : "、"),
+                    pollutants: localizedList(missing, locale),
                   })}
                 </p>
               ) : null;
@@ -783,10 +888,33 @@ function ToolFacts({
               ].map((regulation) => (
                 <div className="space-y-0.5" key={regulation.id}>
                   <p>
-                    {regulation.canonicalName} · {dictionary.country.applicableJurisdiction}
+                    {regulationDisplayName(regulation, dictionary, locale)} ·{" "}
+                    {dictionary.country.applicableJurisdiction}
                     {dictionary.common.labelSeparator}
-                    {regulation.applicability.jurisdiction.name}（
-                    {regulation.applicability.jurisdiction.code}）
+                    {nameWithCode(
+                      jurisdictionDisplayName(
+                        {
+                          code: regulation.applicability.jurisdiction.code,
+                          countryIso3: regulation.applicability.countryIso3,
+                          id: regulation.applicability.jurisdiction.id,
+                          isDemo: regulation.applicability.jurisdiction.isDemo,
+                          name: regulation.applicability.jurisdiction.name,
+                          sourceId:
+                            regulation.applicability.jurisdiction.source
+                              .sourceId,
+                          sourceIsDemo:
+                            regulation.applicability.jurisdiction.source.isDemo,
+                          sourceTitle:
+                            regulation.applicability.jurisdiction.source
+                              .sourceTitle,
+                          type: "country",
+                        },
+                        dictionary,
+                        locale,
+                      ),
+                      regulation.applicability.jurisdiction.code,
+                      locale,
+                    )}
                   </p>
                   <p className="pl-2 text-[11px] font-medium">
                     {regulationStatusNote(
@@ -816,31 +944,7 @@ function ToolFacts({
   }
 
   if (result.tool === "compareMarkets") {
-    return (
-      <div className="space-y-2">
-        {result.comparison.metrics.map((metric) => (
-          <div
-            className="rounded-lg bg-background/70 p-2 text-xs"
-            key={metric.metricCode}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-semibold">{metric.metricName}</p>
-              <span className="text-[10px] text-muted-foreground">
-                {marketCopy[metric.comparisonStatus]}
-              </span>
-            </div>
-            <p className="mt-1 text-muted-foreground">
-              {metric.observations
-                .map(
-                  (observation) =>
-                    `${observation.countryIso3} ${formatDecimal(observation.valueNumeric)} ${observation.unitCode}`,
-                )
-                .join(" · ") || copy.noObservations}
-            </p>
-          </div>
-        ))}
-      </div>
-    );
+    return <MarketComparisonFacts comparison={result.comparison} locale={locale} />;
   }
 
   if (result.tool === "calculateOpportunityScore") {
@@ -865,21 +969,24 @@ function ToolFacts({
           {brief.recommendedProducts.map((product) => (
             <p key={product.modelCode}>
               {copy.commerciallyReady}{dictionary.common.labelSeparator}
-              {product.modelCode} · {product.name} · {dictionary.productFit.fitAxis}{" "}
+              {product.modelCode} · {productDisplayName(
+                product,
+                dictionary,
+                locale,
+              )} · {dictionary.productFit.fitAxis}{" "}
               {dictionary.productFit.fit} · {dictionary.productFit.availability}{" "}
               {dictionary.productFit.pass} · {dictionary.productFit.availablePeriod}
               {dictionary.common.labelSeparator}
-              {formatDateRange(
+              {formatProductAvailabilityDateRange(
                 product.availableFrom,
                 product.availableTo,
                 locale,
                 dictionary.common.notRecorded,
-                dictionary.common.open,
               )}
             </p>
           ))}
           {brief.risks.map((risk, index) => (
-            <p key={`${risk.title}:${risk.text}`}>
+            <p key={`${risk.ruleCode}:${index}`}>
               {copy.risk}{dictionary.common.labelSeparator}
               {localizedSalesBriefItem(
                 risk,
@@ -901,7 +1008,7 @@ function ToolFacts({
         </p>
         <div className="mt-2 space-y-1">
           {brief.opportunities.map((opportunity, index) => (
-            <p key={`${opportunity.title}:${opportunity.text}`}>
+            <p key={`${opportunity.ruleCode}:${index}`}>
               {copy.opportunity}{dictionary.common.labelSeparator}
               {localizedSalesBriefItem(
                 opportunity,
@@ -913,7 +1020,7 @@ function ToolFacts({
             </p>
           ))}
           {brief.salesActions.map((action, index) => (
-            <p key={`${action.priority}:${action.action}`}>
+            <p key={`${action.ruleCode}:${index}`}>
               {localizedSalesBriefAction(
                 action,
                 index,
@@ -928,6 +1035,12 @@ function ToolFacts({
   );
 }
 
+export function toolResultMayRenderFacts(
+  result: Pick<ClientAiToolResult, "status">,
+): boolean {
+  return result.status !== "error";
+}
+
 function ToolResultCard({
   countryIso2ByIso3,
   result,
@@ -939,6 +1052,7 @@ function ToolResultCard({
   const copy = dictionary.chat;
   const labels = toolLabels(copy);
   const statuses = statusLabels(copy);
+  const mayRenderFacts = toolResultMayRenderFacts(result);
   const hasDemoEvidence = resultContainsDemoEvidence(result);
   const warnings = localizedToolWarnings(result, locale, copy);
 
@@ -952,28 +1066,35 @@ function ToolResultCard({
           : "border-amber-300/60 bg-amber-50/80",
       )}
     >
-      <header className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <FileText aria-hidden="true" className="size-4 text-primary" />
-          <div>
+      <header className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2">
+          <FileText aria-hidden="true" className="size-4 shrink-0 text-primary" />
+          <div className="min-w-0 break-words">
             <p className="text-xs font-semibold">{labels[result.tool]}</p>
             <p className="text-[11px] text-muted-foreground">
-              {copy.deterministicFacts} · {copy.queryAsOf}{dictionary.common.labelSeparator}{formatUtcDate(result.informationAsOf, locale)} · {copy.latestVerified}{dictionary.common.labelSeparator}
-              {formatOptionalUtcDate(
-                result.latestVerifiedAt,
-                locale,
-                dictionary.common.notRecorded,
-              )}
+              {mayRenderFacts ? (
+                <>
+                  {copy.deterministicFacts} · {result.tool === "compareMarkets" ? copy.resultGeneratedOn : copy.queryAsOf}{dictionary.common.labelSeparator}{formatUtcDate(result.informationAsOf, locale)} · {copy.latestVerified}{dictionary.common.labelSeparator}
+                  {formatOptionalUtcDate(
+                    result.latestVerifiedAt,
+                    locale,
+                    dictionary.common.notRecorded,
+                  )}
+                </>
+              ) : copy.queryConditions}
             </p>
           </div>
         </div>
-        <span className="rounded-full border bg-background px-2 py-0.5 text-[10px] font-semibold">
+        <span className="shrink-0 whitespace-nowrap rounded-full border bg-background px-2 py-0.5 text-[10px] font-semibold">
           {statuses[result.status]}
         </span>
       </header>
 
-      {result.tool === "findCompatibleProducts" ||
+      {result.status === "error" ||
+      result.tool === "searchKnowledgeBase" ||
+      result.tool === "findCompatibleProducts" ||
       result.tool === "compareRegulations" ||
+      result.tool === "compareMarkets" ||
       result.tool === "calculateOpportunityScore" ||
       result.tool === "generateSalesBrief" ? (
         <ToolQuerySummary result={result} />
@@ -992,7 +1113,9 @@ function ToolResultCard({
         </div>
       ) : null}
 
-      <ToolFacts countryIso2ByIso3={countryIso2ByIso3} result={result} />
+      {mayRenderFacts ? (
+        <ToolFacts countryIso2ByIso3={countryIso2ByIso3} result={result} />
+      ) : null}
 
       {warnings.length > 0 ? (
         <div className="space-y-1 rounded-lg bg-amber-100/80 p-2 text-xs text-amber-950">
@@ -1008,12 +1131,14 @@ function ToolResultCard({
         </div>
       ) : null}
 
-      <CitationList citations={result.citations} />
+      {mayRenderFacts ? (
+        <CitationList citations={result.citations} />
+      ) : null}
     </section>
   );
 }
 
-type ChatMessagePart = UIMessage["parts"][number];
+type ChatMessagePart = SalesChatUiMessage["parts"][number];
 
 function citationUrlsForMessage(parts: readonly ChatMessagePart[]): string[] {
   const urls = new Set<string>();
@@ -1064,6 +1189,22 @@ function AttachmentPart({ part }: { part: FileUIPart }) {
       <span className="min-w-0 truncate">{filename}</span>
       <span className="shrink-0 opacity-70">{part.mediaType}</span>
     </div>
+  );
+}
+
+function ReleasedAttachmentPart({
+  attachment,
+}: {
+  attachment: NonNullable<
+    ReturnType<typeof parseReleasedAttachmentPart>
+  >;
+}) {
+  const { dictionary } = useLocale();
+
+  return (
+    <p className="my-2 text-xs opacity-80">
+      [{formatReleasedAttachment(attachment, dictionary)}]
+    </p>
   );
 }
 
@@ -1126,18 +1267,29 @@ export function SalesChat({
   >([]);
   const [failedSubmission, setFailedSubmission] =
     useState<FailedSubmission | null>(null);
-  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [attachmentError, setAttachmentError] =
+    useState<ChatAttachmentErrorDescriptor | null>(null);
   const [submissionPending, setSubmissionPending] = useState(false);
   const [validatingAttachments, setValidatingAttachments] = useState(false);
   const validatingAttachmentsRef = useRef(false);
   const activeSubmissionRef = useRef<ActiveSubmission | null>(null);
+  const activeSubmissionLocaleRef = useRef(locale);
   const submissionPendingRef = useRef(false);
+  const [settledChatMessages, setSettledChatMessages] = useState<
+    SalesChatUiMessage[]
+  >([]);
+  const [activeChatRequest, setActiveChatRequest] = useState<{
+    locale: Locale;
+  } | null>(null);
+  const [attachmentMessageRelease] = useState(
+    () => new AttachmentMessageReleaseCoordinator(),
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const transport = useMemo(
     () =>
-      new DefaultChatTransport({
+      new DefaultChatTransport<SalesChatUiMessage>({
         api: "/api/chat",
         prepareSendMessagesRequest: ({
           body,
@@ -1146,19 +1298,8 @@ export function SalesChat({
           messages,
           trigger,
         }) => {
-          const latestUserMessageIndex = messages.findLastIndex(
-            (message) => message.role === "user",
-          );
-          const requestMessages = messages.map((message, index) =>
-            message.role === "user" && index !== latestUserMessageIndex
-              ? {
-                  ...message,
-                  parts: message.parts.filter(
-                    (part) => part.type !== "file",
-                  ),
-                }
-              : message,
-          );
+          const requestMessages = prepareSalesChatRequestMessages(messages);
+          attachmentMessageRelease.run();
 
           return {
             body: {
@@ -1171,8 +1312,12 @@ export function SalesChat({
           };
         },
       }),
-    [],
+    [attachmentMessageRelease],
   );
+  const chatId =
+    activeChatRequest !== null && activeChatRequest.locale !== locale
+      ? `${sessionId}:retired:${locale}`
+      : sessionId;
   const {
     clearError,
     error,
@@ -1180,11 +1325,22 @@ export function SalesChat({
     sendMessage,
     setMessages,
     status,
-  } = useChat({
-    onFinish: ({ isError, messages: finishedMessages }) => {
+    stop,
+  } = useChat<SalesChatUiMessage>({
+    id: chatId,
+    messages: settledChatMessages,
+    onFinish: ({ isAbort, isError, messages: finishedMessages }) => {
       const activeSubmission = activeSubmissionRef.current;
-      if (!activeSubmission) {
+      if (!activeSubmission || activeSubmissionLocaleRef.current !== locale) {
         return;
+      }
+
+      if (!isAbort) {
+        // The locale hand-off snapshot must never retain attachment bytes even
+        // though the live Chat releases them a moment later in sendSubmission.
+        setSettledChatMessages(
+          releaseSalesChatMessageAttachments(finishedMessages),
+        );
       }
 
       if (!isError) {
@@ -1205,10 +1361,31 @@ export function SalesChat({
     },
     transport,
   });
+
+  useEffect(() => {
+    return attachmentMessageRelease.connect(() => {
+      setMessages(releaseSalesChatMessageAttachments);
+    });
+  }, [attachmentMessageRelease, setMessages]);
+  useEffect(
+    () => () => {
+      // `useChat` does not abort its transport when React retires the instance.
+      // A locale change rotates the id above, while an SPA navigation unmounts
+      // the component; both paths must stop the old provider/tool stream.
+      void stop();
+    },
+    [stop],
+  );
   const messageLogRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
   const waiting = status === "submitted" || status === "streaming";
   const recoveryPending = error !== undefined && failedSubmission !== null;
+
+  useEffect(() => {
+    // A retired locale-owned Chat may still invoke its completion callback.
+    // It no longer owns retry state in the newly localized conversation.
+    activeSubmissionRef.current = null;
+  }, [locale]);
 
   useEffect(() => {
     if (initialPromptPristineRef.current) {
@@ -1247,53 +1424,49 @@ export function SalesChat({
     try {
       const additions: PendingAttachment[] = [];
       for (const file of selectedFiles) {
-        const mediaType = resolveChatAttachmentMediaType(file);
-        if (!mediaType) {
-          setAttachmentError(
-            interpolate(copy.unsupportedFile, {
-              name: file.name || copy.unnamedAttachment,
-            }),
-          );
-          return;
-        }
-        if (mediaType.startsWith("image/") && !imageUploadsEnabled) {
-          setAttachmentError(copy.imageModelUnavailable);
-          return;
-        }
-        const addition = {
-          file,
-          id: crypto.randomUUID(),
-          mediaType,
-        };
-        const prospectiveValidationError = attachmentValidationMessage(
-          [...pendingAttachments, ...additions, addition],
-          copy,
-        );
+        const prospectiveValidationError = validateChatAttachments([
+          ...pendingAttachments,
+          ...additions,
+          { file },
+        ]);
         if (prospectiveValidationError) {
           setAttachmentError(prospectiveValidationError);
           return;
         }
+
+        const filename = normalizeChatAttachmentFilename(file.name);
+
+        const mediaType = resolveChatAttachmentMediaType(file);
+        if (!mediaType) {
+          setAttachmentError({
+            kind: "unsupported_file",
+            name: filename,
+          });
+          return;
+        }
+        if (mediaType.startsWith("image/") && !imageUploadsEnabled) {
+          setAttachmentError({ kind: "image_model_unavailable" });
+          return;
+        }
+        const addition = {
+          file,
+          filename,
+          id: crypto.randomUUID(),
+          mediaType,
+        };
         if (mediaType.startsWith("image/")) {
           let bytes: Uint8Array;
           try {
             bytes = new Uint8Array(await file.arrayBuffer());
           } catch {
-            setAttachmentError(
-              interpolate(copy.imageReadError, {
-                name: file.name || copy.unnamedAttachment,
-              }),
-            );
+            setAttachmentError({
+              kind: "image_read_failed",
+              name: filename,
+            });
             return;
           }
           if (!hasStructurallyValidChatImage(mediaType, bytes)) {
-            setAttachmentError(
-              interpolate(copy.imageInvalid, {
-                max: MAX_CHAT_IMAGE_DIMENSION.toLocaleString(locale),
-                min: MIN_CHAT_IMAGE_DIMENSION.toLocaleString(locale),
-                name: file.name || copy.unnamedAttachment,
-                pixels: MAX_CHAT_IMAGE_PIXELS.toLocaleString(locale),
-              }),
-            );
+            setAttachmentError(imageInvalidAttachmentError(filename));
             return;
           }
         }
@@ -1301,7 +1474,7 @@ export function SalesChat({
       }
 
       const nextAttachments = [...pendingAttachments, ...additions];
-      const validationError = attachmentValidationMessage(nextAttachments, copy);
+      const validationError = validateChatAttachments(nextAttachments);
       if (validationError) {
         setAttachmentError(validationError);
         return;
@@ -1337,36 +1510,20 @@ export function SalesChat({
         attachments.map((attachment) => fileToUiPart(attachment)),
       );
     } catch {
-      setAttachmentError(copy.attachmentReadError);
+      setAttachmentError({ kind: "attachment_read_failed" });
       return null;
     }
-  }
-
-  function releaseMessageAttachmentData() {
-    setMessages((currentMessages) =>
-      currentMessages.map((message) => ({
-        ...message,
-        parts: message.parts.flatMap((part) =>
-          part.type === "file"
-            ? [
-                {
-                  text: `[${interpolate(copy.sentAttachment, {
-                    name: part.filename ?? copy.unnamedAttachment,
-                  })}]`,
-                  type: "text" as const,
-                },
-              ]
-            : [part],
-        ),
-      })),
-    );
   }
 
   async function sendSubmission(
     submission: ActiveSubmission,
     files: FileUIPart[],
   ) {
+    const chatRequestOwner = { locale };
     activeSubmissionRef.current = submission;
+    activeSubmissionLocaleRef.current = locale;
+    setActiveChatRequest(chatRequestOwner);
+    attachmentMessageRelease.trackFileParts(files);
     try {
       await sendMessage(
         submission.messageId
@@ -1381,10 +1538,13 @@ export function SalesChat({
         },
       );
     } finally {
-      releaseMessageAttachmentData();
+      attachmentMessageRelease.run();
       if (activeSubmissionRef.current === submission) {
         activeSubmissionRef.current = null;
       }
+      setActiveChatRequest((currentOwner) =>
+        currentOwner === chatRequestOwner ? null : currentOwner,
+      );
     }
   }
 
@@ -1496,7 +1656,12 @@ export function SalesChat({
         </div>
       </header>
 
-      <p aria-live="polite" className="sr-only" role="status">
+      <p
+        aria-busy={status === "submitted" || status === "streaming"}
+        aria-live="polite"
+        className="sr-only"
+        role="status"
+      >
         {status === "submitted"
           ? copy.statusSubmitted
           : status === "streaming"
@@ -1604,6 +1769,20 @@ export function SalesChat({
                 );
               }
 
+              const releasedAttachment = parseReleasedAttachmentPart(part);
+              if (releasedAttachment) {
+                return (
+                  <ReleasedAttachmentPart
+                    attachment={releasedAttachment}
+                    key={`${message.id}-released-file-${index}`}
+                  />
+                );
+              }
+
+              if (part.type === "data-releasedAttachment") {
+                return null;
+              }
+
               return (
                 <ToolPart
                   countryIso2ByIso3={countryIso2ByIso3}
@@ -1617,7 +1796,10 @@ export function SalesChat({
         })}
 
         {status === "submitted" ? (
-          <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+          <div
+            aria-hidden="true"
+            className="flex items-center gap-2 px-2 text-xs text-muted-foreground"
+          >
             <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
             {copy.pendingTools}
           </div>
@@ -1628,7 +1810,7 @@ export function SalesChat({
             className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
             role="alert"
           >
-            <p>{chatErrorMessage(error, copy.chatError)}</p>
+            <p>{chatErrorMessage(error, dictionary)}</p>
             {failedSubmission ? (
               <div className="space-y-2 rounded-lg border border-destructive/20 bg-background/70 p-2.5 text-foreground">
                 <p className="font-semibold">{copy.attachmentFailedBody}</p>
@@ -1639,8 +1821,8 @@ export function SalesChat({
                   <p className="break-words text-muted-foreground">
                     {copy.attachment}{dictionary.common.labelSeparator}
                     {failedSubmission.attachments
-                      .map(({ file }) => file.name)
-                      .join("、")}
+                      .map(({ filename }) => filename)
+                      .join(locale === "en" ? ", " : "、")}
                   </p>
                 ) : null}
                 <div className="flex flex-wrap gap-2">
@@ -1693,15 +1875,15 @@ export function SalesChat({
                   <PendingImagePreview attachment={attachment} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">
-                      {attachment.file.name}
+                      {attachment.filename}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {formatChatAttachmentBytes(attachment.file.size)}
+                      {formatChatAttachmentBytes(attachment.file.size, locale)}
                     </p>
                   </div>
                   <Button
                     aria-label={interpolate(copy.removeAttachment, {
-                      name: attachment.file.name,
+                      name: attachment.filename,
                     })}
                     className="size-8 p-0"
                     disabled={
@@ -1723,7 +1905,11 @@ export function SalesChat({
               className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2 text-xs text-destructive"
               role="alert"
             >
-              {attachmentError}
+              {formatChatAttachmentError(
+                attachmentError,
+                dictionary,
+                locale,
+              )}
             </p>
           ) : null}
 
@@ -1798,7 +1984,7 @@ export function SalesChat({
               {copy.questionInput}
             </label>
             <textarea
-              className="min-h-11 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-slate-400"
+              className="min-h-11 min-w-0 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-slate-400"
               id="sales-chat-input"
               maxLength={MAX_CHAT_USER_MESSAGE_CHARACTERS}
               onChange={(event) => {
@@ -1825,28 +2011,39 @@ export function SalesChat({
               ref={inputRef}
               value={input}
             />
-            <Button
-              aria-label={copy.send}
-              className="size-11 rounded-xl bg-[#173d31] p-0 text-white shadow-none hover:bg-[#215142]"
-              disabled={
-                waiting ||
-                recoveryPending ||
-                submissionPending ||
-                validatingAttachments ||
-                !input.trim() ||
-                !aiConfigured
-              }
-              type="submit"
-            >
-              {waiting || submissionPending ? (
-                <LoaderCircle
-                  aria-hidden="true"
-                  className="size-4 animate-spin"
-                />
-              ) : (
-                <Send aria-hidden="true" className="size-4" />
-              )}
-            </Button>
+            {waiting ? (
+              <Button
+                aria-label={copy.stopGenerating}
+                className="h-11 shrink-0 gap-1.5 rounded-xl bg-red-800 px-3 text-white shadow-none hover:bg-red-900"
+                onClick={() => void stop()}
+                type="button"
+              >
+                <Square aria-hidden="true" className="size-3.5 fill-current" />
+                <span>{copy.stopGenerating}</span>
+              </Button>
+            ) : (
+              <Button
+                aria-label={copy.send}
+                className="size-11 rounded-xl bg-[#173d31] p-0 text-white shadow-none hover:bg-[#215142]"
+                disabled={
+                  recoveryPending ||
+                  submissionPending ||
+                  validatingAttachments ||
+                  !input.trim() ||
+                  !aiConfigured
+                }
+                type="submit"
+              >
+                {submissionPending ? (
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className="size-4 animate-spin"
+                  />
+                ) : (
+                  <Send aria-hidden="true" className="size-4" />
+                )}
+              </Button>
+            )}
           </div>
         </form>
       </div>

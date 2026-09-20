@@ -1,15 +1,24 @@
-import type { ClientAiToolResult } from "@/features/ai/client-schemas";
+import type {
+  ClientAiCitation,
+  ClientAiToolResult,
+} from "@/features/ai/client-schemas";
+export { localizedCitationLocator } from "@/features/ai/citation-locator-copy";
 import type { ToolPartErrorCode } from "@/features/ai/tool-part-presentation";
 import { OPPORTUNITY_SCORE_RULESET_VERSION } from "@/features/marketing/constants";
-import type {
-  ProductFitEvaluation,
-  ProductFitReasonCode,
+import {
+  productFitReasonCodeSchema,
+  type ProductFitEvaluation,
+  type ProductFitReasonCode,
 } from "@/features/product-fit/schemas";
-import type { Dictionary } from "@/i18n/dictionaries";
 import { interpolate } from "@/i18n/dictionaries";
+import type { Dictionary } from "@/i18n/dictionaries";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 import { formatUtcDate } from "@/i18n/date";
 import type { Locale } from "@/i18n/locale";
+import {
+  marketMetricDisplayName,
+  productDisplayName,
+} from "@/i18n/structured-labels";
 
 const englishProductFitReasonCopy = {
   APPLICATION_SCOPE_MATCH: "The product covers the requested application.",
@@ -22,6 +31,8 @@ const englishProductFitReasonCopy = {
     "A traceable certification covers the regulation and evaluation conditions.",
   CERTIFICATION_MISSING:
     "No traceable certification record links this product to the applicable regulation; the fit remains unknown.",
+  CERTIFICATION_PRODUCT_MISMATCH:
+    "The certification belongs to a different product and cannot support this evaluation.",
   CERTIFICATION_NOT_YET_VALID:
     "The certification is not yet valid on the evaluation date.",
   CERTIFICATION_POWER_OUT_OF_RANGE:
@@ -50,6 +61,37 @@ const englishProductFitReasonCopy = {
     "The product power range does not cover the requested power.",
 } satisfies Record<ProductFitReasonCode, string>;
 
+const chineseProductFitReasonCopy = {
+  APPLICATION_SCOPE_MATCH: "产品覆盖请求的应用场景。",
+  APPLICATION_SCOPE_MISMATCH: "产品不覆盖请求的应用场景。",
+  CERTIFICATION_EXPIRED: "认证在评估日期前已到期。",
+  CERTIFICATION_INACTIVE: "认证当前不是有效状态。",
+  CERTIFICATION_MATCH: "一条可追溯认证覆盖该法规和本次评估条件。",
+  CERTIFICATION_MISSING:
+    "没有可追溯认证记录将该产品与适用法规关联，适配结论保持未知。",
+  CERTIFICATION_PRODUCT_MISMATCH:
+    "认证记录属于其他产品，不能作为本次评估的依据。",
+  CERTIFICATION_NOT_YET_VALID: "认证在评估日期尚未生效。",
+  CERTIFICATION_POWER_OUT_OF_RANGE: "认证功率范围不覆盖请求的功率。",
+  CERTIFICATION_POWER_RANGE_UNKNOWN:
+    "认证功率范围信息不完整，因此无法确认覆盖情况。",
+  CERTIFICATION_SCOPE_MISMATCH: "认证不覆盖请求的应用场景。",
+  CERTIFICATION_STATUS_UNKNOWN:
+    "认证状态未知，因此无法确认当前有效性。",
+  CERTIFICATION_VALIDITY_UNKNOWN:
+    "认证有效期信息不完整，因此无法确认日期覆盖情况。",
+  NO_APPLICABLE_REGULATION_DATA:
+    "没有生效法规记录覆盖该国家、应用场景、功率和日期，因此无法推断合规。",
+  PRODUCT_AVAILABILITY_UNKNOWN:
+    "产品供应期信息不完整，因此无法判断查询日是否可供应。",
+  PRODUCT_AVAILABLE: "产品在查询日处于供应期内。",
+  PRODUCT_NOT_FOUND: "没有找到该产品型号的结构化记录。",
+  PRODUCT_NOT_YET_AVAILABLE: "产品在查询日尚未开始供应。",
+  PRODUCT_NO_LONGER_AVAILABLE: "产品在查询日已不再供应。",
+  PRODUCT_POWER_MATCH: "产品功率范围覆盖请求的功率。",
+  PRODUCT_POWER_OUT_OF_RANGE: "产品功率范围不覆盖请求的功率。",
+} satisfies Record<ProductFitReasonCode, string>;
+
 type ProductFitReason = {
   code: ProductFitReasonCode;
   message: string;
@@ -65,7 +107,9 @@ type ClientSalesBrief = Extract<
   { tool: "generateSalesBrief" }
 >["brief"];
 
-type ClientSalesBriefItem = ClientSalesBrief["risks"][number];
+type ClientSalesBriefItem =
+  | ClientSalesBrief["opportunities"][number]
+  | ClientSalesBrief["risks"][number];
 type ClientSalesAction = ClientSalesBrief["salesActions"][number];
 
 type ClientRegulationComparisonCountry = Extract<
@@ -73,10 +117,31 @@ type ClientRegulationComparisonCountry = Extract<
   { tool: "compareRegulations" }
 >["comparison"]["countries"][number];
 
+type ClientCountryProfileTopic = Extract<
+  ClientAiToolResult,
+  { tool: "getCountryProfile" }
+>["requestedTopics"][number];
+
+const countryProfileTopicKeys = {
+  country: "countryProfileTopicCountry",
+  market: "countryProfileTopicMarket",
+  regulations: "countryProfileTopicRegulations",
+} as const satisfies Record<
+  ClientCountryProfileTopic,
+  keyof Dictionary["chat"]
+>;
+
+export function countryProfileTopicLabel(
+  topic: ClientCountryProfileTopic,
+  dictionary: Dictionary,
+): string {
+  return dictionary.chat[countryProfileTopicKeys[topic]];
+}
+
 export function localizedRegulationComparisonCountryName(
   country: Pick<
     ClientRegulationComparisonCountry,
-    "countryIso3" | "countryName"
+    "countryIsDemo" | "countryIso3" | "countryName" | "countrySource"
   >,
   locale: Locale,
   countryIso2ByIso3: Readonly<Record<string, string>>,
@@ -87,10 +152,12 @@ export function localizedRegulationComparisonCountryName(
 
   return formatCountryDisplayName(
     {
+      isDemo: country.countryIsDemo,
       iso2: countryIso2ByIso3[country.countryIso3],
       iso3: country.countryIso3,
       nameEn: country.countryName,
       nameLocal: null,
+      source: country.countrySource,
     },
     locale,
   );
@@ -100,61 +167,96 @@ export function productFitReasonMessage(
   reason: ProductFitReason,
   locale: Locale,
 ): string {
+  const code = productFitReasonCodeSchema.safeParse(reason.code);
+  if (!code.success) {
+    return locale === "en"
+      ? "The product-fit result contains an unrecognized reason code; review the structured record before drawing a conclusion."
+      : "产品适配结果包含无法识别的原因码；请先核对结构化记录，再得出结论。";
+  }
+
+  // The service-authored `message` remains diagnostic data only. Visible copy
+  // is selected exclusively by the validated reason code; contextual scope,
+  // power, status and date facts are rendered from their typed fields nearby.
   return locale === "en"
-    ? englishProductFitReasonCopy[reason.code]
-    : reason.message;
+    ? englishProductFitReasonCopy[code.data]
+    : chineseProductFitReasonCopy[code.data];
 }
 
 export function localizedCitationTitle(
-  title: string,
+  citation: ClientAiCitation,
   locale: Locale,
-  copy: Dictionary["chat"],
+  dictionary: Dictionary,
 ): string {
-  if (locale === "zh-CN") {
-    return title;
+  if (
+    citation.chunkId !== null ||
+    citation.documentId !== null ||
+    citation.documentTitle !== null
+  ) {
+    return citation.title;
   }
 
-  const jurisdiction = title.match(/^(.+) 适用辖区：(.+)$/u);
-  if (jurisdiction) {
-    return interpolate(copy.citationJurisdiction, {
-      jurisdiction: jurisdiction[2] ?? "",
-      regulation: jurisdiction[1] ?? "",
+  const descriptor = citation.titleDescriptor;
+  if (descriptor?.kind === "regulation_jurisdiction") {
+    return interpolate(dictionary.chat.citationJurisdiction, {
+      jurisdiction: descriptor.jurisdictionName,
+      regulation: descriptor.regulationName,
     });
   }
-  const membership = title.match(/^(.+) 对 ([A-Z]{3}) 的成员关系$/u);
-  if (membership) {
-    return interpolate(copy.citationMembership, {
-      country: membership[2] ?? "",
-      jurisdiction: membership[1] ?? "",
+  if (descriptor?.kind === "country_jurisdiction_membership") {
+    return interpolate(dictionary.chat.citationMembership, {
+      country: descriptor.countryIso3,
+      jurisdiction: descriptor.jurisdictionName,
     });
   }
-  const countryProfile = title.match(/^(.+) 国家概览$/u);
-  if (countryProfile) {
-    return interpolate(copy.citationCountryProfile, {
-      country: countryProfile[1] ?? "",
+  if (descriptor?.kind === "country_profile") {
+    return interpolate(dictionary.chat.citationCountryProfile, {
+      country: formatCountryDisplayName(
+        {
+          iso2: descriptor.countryIso2,
+          iso3: descriptor.countryIso3,
+          isDemo: descriptor.countryIsDemo,
+          nameEn: descriptor.countryNameEn,
+          nameLocal: descriptor.countryNameLocal,
+          source: {
+            id: descriptor.countrySourceId,
+            isDemo: descriptor.countrySourceIsDemo,
+            title: descriptor.countrySourceTitle,
+          },
+        },
+        locale,
+      ),
     });
   }
-  const applicableLimits = title.match(/^(.+) 适用限值$/u);
-  if (applicableLimits) {
-    return interpolate(copy.citationLimits, {
-      regulation: applicableLimits[1] ?? "",
+  if (descriptor?.kind === "regulation_limits") {
+    return interpolate(dictionary.chat.citationLimits, {
+      regulation: descriptor.regulationName,
     });
   }
-  const certification = title.match(/^(.+)认证记录$/u);
-  if (certification) {
-    return interpolate(copy.citationCertificationRecord, {
-      product: certification[1] ?? "",
+  if (descriptor?.kind === "regulation_pollutant_limit") {
+    return interpolate(dictionary.chat.citationPollutantLimit, {
+      pollutant: descriptor.pollutantCode,
+      regulation: descriptor.regulationName,
     });
   }
-  const pollutantLimit = title.match(/^(.+) ([^ ]+) 限值$/u);
-  if (pollutantLimit) {
-    return interpolate(copy.citationPollutantLimit, {
-      pollutant: pollutantLimit[2] ?? "",
-      regulation: pollutantLimit[1] ?? "",
+  if (descriptor?.kind === "product_certification_record") {
+    return interpolate(dictionary.chat.citationCertificationRecord, {
+      product: descriptor.productModelCode ?? dictionary.chat.product,
     });
+  }
+  if (descriptor?.kind === "market_metric") {
+    return marketMetricDisplayName(
+      {
+        isDemo: descriptor.isDemo,
+        metricCode: descriptor.metricCode,
+        metricIds: [descriptor.metricId],
+        metricName: descriptor.metricName,
+      },
+      dictionary,
+      locale,
+    );
   }
 
-  return title;
+  return citation.title;
 }
 
 function scoreComponentLabel(
@@ -172,22 +274,12 @@ function scoreComponentLabel(
 
 export function localizedScoreComponentContent(
   component: ClientOpportunityScoreComponent,
-  locale: Locale,
+  _locale: Locale,
   copy: Dictionary["chat"],
 ): { explanation: string; inputSummary: string | null } {
-  if (locale === "zh-CN") {
-    return {
-      explanation: component.explanation,
-      inputSummary:
-        component.inputFacts.length > 0
-          ? component.inputFacts.join(" · ")
-          : null,
-    };
-  }
-
   const values = {
     component: scoreComponentLabel(component.key, copy),
-    count: component.inputFacts.length,
+    count: 0,
     score: component.score ?? "—",
   };
   return {
@@ -197,24 +289,15 @@ export function localizedScoreComponentContent(
         : copy.scoreComponentMissing,
       values,
     ),
-    inputSummary:
-      component.inputFacts.length > 0
-        ? interpolate(copy.scoreInputSummary, {
-            count: component.inputFacts.length,
-          })
-        : null,
+    inputSummary: null,
   };
 }
 
 export function localizedSalesBriefSummary(
   brief: ClientSalesBrief,
-  locale: Locale,
+  _locale: Locale,
   copy: Dictionary["chat"],
 ): string {
-  if (locale === "zh-CN") {
-    return brief.executiveSummary;
-  }
-
   return interpolate(
     brief.marketScore.overallScore === null
       ? copy.briefSummaryMissing
@@ -236,17 +319,19 @@ export function localizedSalesBriefItem(
   item: ClientSalesBriefItem,
   index: number,
   kind: "opportunity" | "risk",
-  locale: Locale,
+  _locale: Locale,
   copy: Dictionary["chat"],
 ): string {
-  if (locale === "zh-CN") {
-    return `${item.title} — ${item.text}`;
-  }
-
+  const count =
+    "metricCodes" in item
+      ? item.metricCodes.length
+      : "regulationIds" in item
+        ? item.regulationIds.length
+        : item.productIds.length;
   return interpolate(
     kind === "risk" ? copy.briefRisk : copy.briefOpportunity,
     {
-      count: item.evidenceIds.length,
+      count,
       index: index + 1,
     },
   );
@@ -255,13 +340,9 @@ export function localizedSalesBriefItem(
 export function localizedSalesBriefAction(
   action: ClientSalesAction,
   index: number,
-  locale: Locale,
+  _locale: Locale,
   copy: Dictionary["chat"],
 ): string {
-  if (locale === "zh-CN") {
-    return action.action;
-  }
-
   const priority = {
     high: copy.priorityHigh,
     low: copy.priorityLow,
@@ -273,20 +354,43 @@ export function localizedSalesBriefAction(
   });
 }
 
+type ProductFitRequiredFieldsCopyKey =
+  | "requiredCertificationFields"
+  | "requiredProductFields"
+  | "requiredRegulationFields";
+
+const requiredFieldsCopyKeyByReasonCode = {
+  APPLICATION_SCOPE_MATCH: "requiredProductFields",
+  APPLICATION_SCOPE_MISMATCH: "requiredProductFields",
+  CERTIFICATION_EXPIRED: "requiredCertificationFields",
+  CERTIFICATION_INACTIVE: "requiredCertificationFields",
+  CERTIFICATION_MATCH: "requiredCertificationFields",
+  CERTIFICATION_MISSING: "requiredCertificationFields",
+  CERTIFICATION_PRODUCT_MISMATCH: "requiredCertificationFields",
+  CERTIFICATION_NOT_YET_VALID: "requiredCertificationFields",
+  CERTIFICATION_POWER_OUT_OF_RANGE: "requiredCertificationFields",
+  CERTIFICATION_POWER_RANGE_UNKNOWN: "requiredCertificationFields",
+  CERTIFICATION_SCOPE_MISMATCH: "requiredCertificationFields",
+  CERTIFICATION_STATUS_UNKNOWN: "requiredCertificationFields",
+  CERTIFICATION_VALIDITY_UNKNOWN: "requiredCertificationFields",
+  NO_APPLICABLE_REGULATION_DATA: "requiredRegulationFields",
+  PRODUCT_AVAILABILITY_UNKNOWN: "requiredProductFields",
+  PRODUCT_AVAILABLE: "requiredProductFields",
+  PRODUCT_NOT_FOUND: "requiredProductFields",
+  PRODUCT_NOT_YET_AVAILABLE: "requiredProductFields",
+  PRODUCT_NO_LONGER_AVAILABLE: "requiredProductFields",
+  PRODUCT_POWER_MATCH: "requiredProductFields",
+  PRODUCT_POWER_OUT_OF_RANGE: "requiredProductFields",
+} as const satisfies Record<
+  ProductFitReasonCode,
+  ProductFitRequiredFieldsCopyKey
+>;
+
 function requiredFieldsForReasonCode(
   code: ProductFitReasonCode,
   copy: Dictionary["productFit"],
 ): string {
-  if (code === "PRODUCT_NOT_FOUND") {
-    return copy.requiredProductFields;
-  }
-  if (code === "NO_APPLICABLE_REGULATION_DATA") {
-    return copy.requiredRegulationFields;
-  }
-  if (code.startsWith("CERTIFICATION_")) {
-    return copy.requiredCertificationFields;
-  }
-  return copy.requiredGenericFields;
+  return copy[requiredFieldsCopyKeyByReasonCode[code]];
 }
 
 export function buildProductFitDataGapSummary({
@@ -301,14 +405,19 @@ export function buildProductFitDataGapSummary({
   scopeLabel: string;
 }): string {
   const copy = dictionary.productFit;
-  const reasonCodes = evaluation.reasons.map(({ code }) => code);
   const requiredFields = Array.from(
     new Set(
-      reasonCodes.map((code) => requiredFieldsForReasonCode(code, copy)),
+      evaluation.reasons.map(({ code }) =>
+        requiredFieldsForReasonCode(code, copy),
+      ),
     ),
   );
   const product = evaluation.product
-    ? `${evaluation.product.modelCode} · ${evaluation.product.name}`
+    ? `${evaluation.product.modelCode} · ${productDisplayName(
+        evaluation.product,
+        dictionary,
+        locale,
+      )}`
     : evaluation.input.productModelCode;
   const separator = dictionary.common.labelSeparator;
   const itemSeparator = locale === "en" ? "; " : "；";
@@ -317,10 +426,9 @@ export function buildProductFitDataGapSummary({
     copy.dataGapSummaryTitle,
     `${copy.dataGapSummaryCountry}${separator}${evaluation.input.countryIso3}`,
     `${copy.dataGapSummaryProduct}${separator}${product}`,
-    `${copy.dataGapSummaryApplication}${separator}${scopeLabel} (${evaluation.input.applicationScope})`,
+    `${copy.dataGapSummaryApplication}${separator}${scopeLabel}`,
     `${copy.dataGapSummaryPower}${separator}${evaluation.input.powerKw} kW`,
     `${copy.dataGapSummaryAsOf}${separator}${formatUtcDate(evaluation.asOf, locale)}`,
-    `${copy.dataGapSummaryReasonCodes}${separator}${reasonCodes.join(locale === "en" ? ", " : "、")}`,
     `${copy.dataGapSummaryReasons}${separator}${evaluation.reasons
       .map((reason) => productFitReasonMessage(reason, locale))
       .join(itemSeparator)}`,
@@ -337,31 +445,47 @@ function structuredGapCounts(result: ClientAiToolResult): {
   rawWarnings: number;
 } {
   if (result.tool === "compareRegulations") {
+    const countryGapCount = result.comparison.countries.filter(
+      (country) =>
+        country.countryName === null ||
+        (country.currentEffectiveRegulations.length === 0 &&
+          country.futureAdoptedRegulations.length === 0),
+    ).length;
     return {
-      display: new Set(result.comparison.missingData).size,
-      rawWarnings: result.comparison.missingData.length,
+      display: countryGapCount,
+      rawWarnings: countryGapCount,
     };
   }
   if (result.tool === "compareMarkets") {
+    const nonComparableMetricCount = result.comparison.metrics.filter(
+      ({ comparisonStatus }) => comparisonStatus !== "comparable",
+    ).length;
+    const emptyComparisonGap = result.comparison.metrics.length === 0 ? 1 : 0;
     return {
-      display: new Set([
-        ...result.comparison.missingData,
-        ...result.comparison.metrics.flatMap(({ issues }) => issues),
-      ]).size,
-      rawWarnings: result.comparison.missingData.length,
+      display:
+        new Set(
+          result.comparison.metrics.flatMap(({ issues }) => issues),
+        ).size + emptyComparisonGap,
+      rawWarnings: nonComparableMetricCount + emptyComparisonGap,
     };
   }
   if (result.tool === "calculateOpportunityScore") {
-    const gaps = result.scorecard.scores.flatMap(({ missingData }) => missingData);
-    return { display: new Set(gaps).size, rawWarnings: gaps.length };
+    return {
+      display: result.scorecard.scores.reduce(
+        (count, score) =>
+          count +
+          score.components.filter(({ status }) => status === "missing").length,
+        0,
+      ),
+      rawWarnings: 0,
+    };
   }
   if (result.tool === "generateSalesBrief") {
     return {
-      display: new Set([
-        ...result.brief.missingData,
-        ...result.brief.marketScore.missingData,
-      ]).size,
-      rawWarnings: result.brief.missingData.length,
+      display: result.brief.marketScore.components.filter(
+        ({ status }) => status === "missing",
+      ).length,
+      rawWarnings: 0,
     };
   }
   return { display: 0, rawWarnings: 0 };
@@ -369,20 +493,17 @@ function structuredGapCounts(result: ClientAiToolResult): {
 
 export function localizedToolWarnings(
   result: ClientAiToolResult,
-  locale: Locale,
+  _locale: Locale,
   copy: Dictionary["chat"],
 ): string[] {
-  if (locale === "zh-CN") {
-    return result.warnings;
-  }
-
   const messages: string[] = [];
   let representedRawWarnings = 0;
 
   if (result.status === "error") {
-    messages.push(copy.toolQueryFailedWarning);
-    representedRawWarnings += 1;
-  } else if (!result.evidenceSufficient) {
+    return [copy.toolQueryFailedWarning];
+  }
+
+  if (!result.evidenceSufficient) {
     messages.push(copy.insufficientEvidenceWarning);
     representedRawWarnings += 1;
   }
@@ -399,6 +520,66 @@ export function localizedToolWarnings(
       messages.push(
         interpolate(copy.unknownProductsWarning, { count: unknownCount }),
       );
+      representedRawWarnings += 1;
+    }
+  }
+
+  if (result.tool === "searchKnowledgeBase") {
+    const missingApplicationScopeCount = result.search.results.filter(
+      ({ applicationScope }) => applicationScope === null,
+    ).length;
+    const missingCountryCount = result.search.results.filter(
+      ({ countryIso3 }) => countryIso3 === null,
+    ).length;
+    const missingValidFromCount = result.search.results.filter(
+      ({ validFrom }) => validFrom === null,
+    ).length;
+
+    if (missingApplicationScopeCount > 0) {
+      messages.push(
+        interpolate(copy.knowledgeMissingApplicationScopeWarning, {
+          count: missingApplicationScopeCount,
+        }),
+      );
+    }
+    if (missingCountryCount > 0) {
+      messages.push(
+        interpolate(copy.knowledgeMissingCountryWarning, {
+          count: missingCountryCount,
+        }),
+      );
+    }
+    if (missingValidFromCount > 0) {
+      messages.push(
+        interpolate(copy.knowledgeMissingValidFromWarning, {
+          count: missingValidFromCount,
+        }),
+      );
+    }
+    representedRawWarnings +=
+      missingApplicationScopeCount +
+      missingCountryCount +
+      missingValidFromCount;
+  }
+
+  if (
+    result.tool === "getCountryProfile" &&
+    result.profile?.status === "available"
+  ) {
+    const missingRegulations =
+      result.requestedTopics.includes("regulations") &&
+      result.profile.country.currentEffectiveRegulations.length === 0 &&
+      result.profile.country.futureAdoptedRegulations.length === 0;
+    const missingMarket =
+      result.requestedTopics.includes("market") &&
+      result.profile.country.marketMetrics.length === 0;
+
+    if (missingRegulations) {
+      messages.push(copy.countryProfileMissingRegulationsWarning);
+      representedRawWarnings += 1;
+    }
+    if (missingMarket) {
+      messages.push(copy.countryProfileMissingMarketWarning);
       representedRawWarnings += 1;
     }
   }

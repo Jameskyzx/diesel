@@ -2,9 +2,11 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 
+export const MAX_KNOWLEDGE_DOCUMENT_BYTES = 5 * 1024 * 1024;
+
 export class DocumentProcessingError extends Error {
   constructor(
-    readonly code: "EMPTY_TEXT" | "UNSUPPORTED_FILE" | "INVALID_UTF8",
+    readonly code: "EMPTY_TEXT" | "UNSUPPORTED_FILE" | "INVALID_UTF8" | "UNSUPPORTED_TEXT",
     message: string,
   ) {
     super(message);
@@ -50,9 +52,18 @@ export function extractUtf8Text(input: {
     );
   }
 
-  const normalizedText = text.replace(/^\uFEFF/, "").trim();
+  if (text.includes("\0")) {
+    throw new DocumentProcessingError(
+      "UNSUPPORTED_TEXT",
+      "UTF-8 文本包含空字符（U+0000），无法保存为文档正文；请核对源文件。",
+    );
+  }
 
-  if (!normalizedText) {
+  // Form-feed is whitespace to trim(), but it carries source page boundaries.
+  // Use trimming only to test emptiness; pass source layout to the chunker.
+  const normalizedText = text.replace(/^\uFEFF/, "");
+
+  if (!normalizedText.trim()) {
     throw new DocumentProcessingError(
       "EMPTY_TEXT",
       "文件没有可提取的文本内容。",
@@ -61,4 +72,3 @@ export function extractUtf8Text(input: {
 
   return normalizedText;
 }
-

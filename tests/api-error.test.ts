@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import {
   getErrorCode,
+  parseApiErrorCode,
+  parseSerializedApiErrorCode,
   parseSerializedApiErrorMessage,
   toUserFacingErrorMessage,
 } from "@/lib/api-error";
@@ -37,6 +39,27 @@ describe("serialized API error messages", () => {
         fallback,
       ),
     ).toBe(fallback);
+  });
+});
+
+describe("safe API error envelope codes", () => {
+  it("retains only allowlisted codes from response and serialized envelopes", async () => {
+    const envelope = JSON.stringify({
+      error: { code: "INTERNAL_ERROR", message: "provider text" },
+    });
+
+    await expect(
+      parseApiErrorCode(new Response(envelope)),
+    ).resolves.toBe("INTERNAL_ERROR");
+    expect(parseSerializedApiErrorCode(envelope)).toBe("INTERNAL_ERROR");
+    expect(
+      parseSerializedApiErrorCode(
+        JSON.stringify({
+          error: { code: "DATABASE_SECRET", message: "provider text" },
+        }),
+      ),
+    ).toBeNull();
+    expect(parseSerializedApiErrorCode("<html>upstream failure</html>")).toBeNull();
   });
 });
 

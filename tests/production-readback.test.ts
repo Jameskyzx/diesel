@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertProductionMigrationLineage,
+  assertProductionReadbackEnvironment,
   assertProductionReadback,
   recognizedLegacyMigrationExtras,
   recognizedMigrationHashAliases,
@@ -21,6 +22,32 @@ const valid = {
   rateLimitCountDefinition: `CHECK ((("request_count") > 0))`,
   recognizedLegacyMigrationCount: 0,
 };
+
+describe("production readback environment gate", () => {
+  const validEnvironment = {
+    DATABASE_MODE: "postgres",
+    DIESEL_VERIFY_PRODUCTION: "1",
+    NODE_ENV: "production",
+  } as const;
+
+  it("accepts only an explicitly authorized production PostgreSQL readback", () => {
+    expect(() => assertProductionReadbackEnvironment(validEnvironment))
+      .not.toThrow();
+  });
+
+  it.each([
+    ["missing NODE_ENV", { ...validEnvironment, NODE_ENV: undefined }],
+    ["non-production NODE_ENV", { ...validEnvironment, NODE_ENV: "test" }],
+    ["missing DATABASE_MODE", { ...validEnvironment, DATABASE_MODE: undefined }],
+    ["non-PostgreSQL DATABASE_MODE", { ...validEnvironment, DATABASE_MODE: "pglite-demo" }],
+    ["missing authorization", { ...validEnvironment, DIESEL_VERIFY_PRODUCTION: undefined }],
+    ["non-exact authorization", { ...validEnvironment, DIESEL_VERIFY_PRODUCTION: "true" }],
+  ] as const)("rejects %s", (_name, environment) => {
+    expect(() => assertProductionReadbackEnvironment(environment)).toThrow(
+      "Production readback requires NODE_ENV=production, DATABASE_MODE=postgres, and DIESEL_VERIFY_PRODUCTION=1.",
+    );
+  });
+});
 
 describe("production database readback", () => {
   it("accepts semantic constraints despite redundant formatting", () => {

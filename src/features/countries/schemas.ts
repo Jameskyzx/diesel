@@ -1,10 +1,12 @@
 import { z } from "zod";
 
+import { countryDetailResponseMatchesDeterministicRules } from "@/domain/countries/detail-consistency";
 import {
   applicationScopeSchema,
   dataCoverageStatusSchema,
   httpUrlSchema,
   iso3Schema,
+  marketMetricDecimalSchema,
 } from "@/features/database/schemas";
 import {
   analysisSourceSchema,
@@ -80,6 +82,12 @@ export const countryMapResponseSchema = z
   })
   .strict();
 
+export const jurisdictionTypeSchema = z.enum([
+  "country",
+  "regional",
+  "international",
+]);
+
 const jurisdictionSummarySchema = z
   .object({
     code: z.string(),
@@ -90,7 +98,7 @@ const jurisdictionSummarySchema = z
     membershipSource: countrySourceSchema,
     name: z.string(),
     source: countrySourceSchema,
-    type: z.enum(["country", "regional", "international"]),
+    type: jurisdictionTypeSchema,
     validFrom: z.iso.date(),
     validTo: z.iso.date().nullable(),
     verifiedAt: isoTimestampSchema,
@@ -151,7 +159,12 @@ const futureAdoptedRegulationSummarySchema = regulationSummarySchema.extend({
 const marketMetricSchema = z
   .object({
     applicationScope: applicationScopeSchema.nullable(),
-    currencyCode: z.string().length(3).nullable(),
+    countryIso3: iso3Schema,
+    currencyCode: z
+      .string()
+      .length(3)
+      .regex(/^[A-Z]{3}$/, "Currency code must contain three uppercase ASCII letters")
+      .nullable(),
     definition: z.string(),
     id: z.uuid(),
     isDemo: z.boolean(),
@@ -163,10 +176,19 @@ const marketMetricSchema = z
     publishedOn: z.iso.date().nullable(),
     source: countrySourceSchema,
     unitCode: z.string(),
-    valueNumeric: z.string(),
+    valueNumeric: marketMetricDecimalSchema,
     verifiedAt: isoTimestampSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((metric, context) => {
+    if (metric.periodEnd <= metric.periodStart) {
+      context.addIssue({
+        code: "custom",
+        message: "periodEnd must be after periodStart",
+        path: ["periodEnd"],
+      });
+    }
+  });
 
 const countryDetailSchema = countryMapSummarySchema
   .extend({
@@ -194,7 +216,7 @@ export const countryApplicabilitySummarySchema = z
   })
   .strict();
 
-export const countryDetailResponseSchema = z.discriminatedUnion("status", [
+const countryDetailResponseShapeSchema = z.discriminatedUnion("status", [
   z
     .object({
       applicabilitySummary: countryApplicabilitySummarySchema.nullable(),
@@ -210,6 +232,22 @@ export const countryDetailResponseSchema = z.discriminatedUnion("status", [
     })
     .strict(),
 ]);
+
+export type CountryDetailResponse = z.infer<
+  typeof countryDetailResponseShapeSchema
+>;
+
+export const countryDetailResponseSchema =
+  countryDetailResponseShapeSchema.superRefine((response, context) => {
+    if (!countryDetailResponseMatchesDeterministicRules(response)) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Country details do not match their deterministic lifecycle and source rules",
+        path: response.status === "available" ? ["country"] : [],
+      });
+    }
+  });
 
 export const countryApiErrorSchema = z
   .object({
@@ -228,10 +266,11 @@ export const countryApiErrorSchema = z
   })
   .strict();
 
-export type CountryDetailResponse = z.infer<
-  typeof countryDetailResponseSchema
->;
+export type CountryApiErrorCode = z.infer<
+  typeof countryApiErrorSchema
+>["error"]["code"];
 export type CountryDirectory = z.infer<typeof countryDirectorySchema>;
 export type CountryGeoIndex = z.infer<typeof countryGeoIndexSchema>;
 export type CountryMapResponse = z.infer<typeof countryMapResponseSchema>;
+export type JurisdictionType = z.infer<typeof jurisdictionTypeSchema>;
 export type CountryMapSummary = z.infer<typeof countryMapSummarySchema>;

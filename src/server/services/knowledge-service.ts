@@ -1,16 +1,35 @@
 import "server-only";
 
+import { z } from "zod";
+
+import { compareCanonicalText } from "@/domain/canonical-order";
+
+import {
+  createDocumentProvenanceMarkerFingerprint,
+  getDocumentProvenanceActionForVersion,
+  parseDocumentDraftCreatedAuditMarkerFor,
+  parseDocumentReprocessedAuditMarkerFor,
+} from "@/features/admin/document-reprocessed-audit";
 import {
   chunkStructuredText,
+  KnowledgeChunkingError,
   type ExtractedChunk,
 } from "@/domain/knowledge/chunk-document";
 import {
   createLocalHashEmbedding,
   KNOWLEDGE_EMBEDDING_MODEL,
 } from "@/domain/knowledge/embedding";
-import { isKnowledgeResultRelevant } from "@/domain/knowledge/retrieval-policy";
+import {
+  expectedKnowledgeHitWarnings,
+  recomputeKnowledgeFinalScore,
+  roundKnowledgeScore,
+} from "@/domain/knowledge/search-consistency";
+import { selectKnowledgeRankingCandidates } from "@/domain/knowledge/ranking-candidates";
+import type { KnowledgeRankingOptions } from "@/domain/knowledge/delivery-query";
+import { knowledgeQueryMayHaveConstraints } from "@/domain/knowledge/query-constraints";
 import { env } from "@/env";
 import {
+  documentFileDescriptorSchema,
   documentImportMetadataSchema,
   documentImportResponseSchema,
   hybridSearchQuerySchema,
@@ -29,6 +48,7 @@ import { getDatabaseMode } from "@/server/db/environment";
 import {
   DocumentProcessingError,
   extractUtf8Text,
+  MAX_KNOWLEDGE_DOCUMENT_BYTES,
   sha256,
 } from "@/server/knowledge/document-file";
 import { getErrorCode } from "@/lib/api-error";
@@ -37,9 +57,33 @@ import {
   readDocumentFile,
   saveDocumentFile,
 } from "@/server/knowledge/local-document-storage";
-import { createKnowledgeRepository } from "@/server/repositories/knowledge-repository";
+import {
+  createKnowledgeRepository,
+  type KnowledgeDocumentReprocessingAccessScope,
+  type KnowledgeDocumentSummaryRow,
+  type PreparedDocumentOutcome,
+  type PreparedKnowledgeDocumentReprocessing,
+  type PreparedKnowledgeDocumentUpload,
+} from "@/server/repositories/knowledge-repository";
+import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
 
-const maximumFileBytes = 5 * 1024 * 1024;
+const knowledgeDocumentReprocessingAccessScopeSchema =
+  z.discriminatedUnion("kind", [
+    z
+      .object({
+        createdBy: z.email(),
+        kind: z.literal("creator"),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal("global"),
+      })
+      .strict(),
+  ]);
 
 export class KnowledgeInputError extends Error {
   constructor(
@@ -71,30 +115,9 @@ function downloadUrl(
     : null;
 }
 
-function toDocumentSummary(row: {
-  byteSize: number | null;
-  chunkCount: number;
-  contentSha256: string;
-  createdAt: Date;
-  governanceStatus: "draft" | "reviewed" | "published";
-  id: string;
-  isDemo: boolean;
-  mimeType: string | null;
-  originalFilename: string | null;
-  processedAt: Date | null;
-  processingError: string | null;
-  processingStatus: "pending" | "processing" | "ready" | "failed";
-  sourceTitle: string;
-  storagePath: string | null;
-  title: string;
-  type:
-    | "regulation-text"
-    | "government-notice"
-    | "product-manual"
-    | "industry-report"
-    | "certificate"
-    | "other";
-}): KnowledgeDocumentSummary {
+function toDocumentSummary(
+  row: KnowledgeDocumentSummaryRow,
+): KnowledgeDocumentSummary {
   const { storagePath, ...summary } = row;
 
   return knowledgeDocumentSummarySchema.parse({
@@ -105,15 +128,42 @@ function toDocumentSummary(row: {
   });
 }
 
-async function getKnowledgeRepository() {
+export function createKnowledgeDocumentImportResponse(input: {
+  summary: KnowledgeDocumentSummaryRow;
+  status: "duplicate" | "failed" | "ready";
+}): DocumentImportResponse {
+  return documentImportResponseSchema.parse({
+    document: toDocumentSummary(input.summary),
+    status: input.status,
+  });
+}
+
+async function getKnowledgeRepository(options: RequestSignalOptions = {}) {
+  throwIfRequestAborted(options.signal);
   if (getDatabaseMode() === "pglite-demo") {
-    return createKnowledgeRepository(await getDemoDatabase());
+    const database = await getDemoDatabase();
+    throwIfRequestAborted(options.signal);
+    return createKnowledgeRepository(database);
   }
 
   return createKnowledgeRepository(getDatabase());
 }
 
+function isExpectedProcessingError(
+  error: unknown,
+): error is DocumentProcessingError | KnowledgeChunkingError {
+  return error instanceof DocumentProcessingError || error instanceof KnowledgeChunkingError;
+}
+
 function processingMessage(error: unknown): string {
+  if (error instanceof KnowledgeChunkingError) {
+    const messages = {
+      HEADING_PATH_LIMIT: "文档标题路径超过 2048 个 UTF-16 单元的处理上限，请缩短标题或拆分文档。",
+      CHUNK_COUNT_LIMIT: "文档超过 5000 个分块的处理上限，请拆分文档后重新导入。",
+      GENERATED_TEXT_LIMIT: "文档分块及定位文本超过 16 Mi 个 UTF-16 单元的生成上限，请拆分文档后重新导入。",
+    } as const;
+    return messages[error.code];
+  }
   if (error instanceof DocumentProcessingError) {
     return error.message;
   }
@@ -140,6 +190,310 @@ function createChunkRows(
     validTo: metadata.validTo,
     verifiedAt,
   }));
+}
+
+function assertDocumentFileSize(bytes: Uint8Array): void {
+  if (bytes.byteLength === 0) {
+    throw new KnowledgeInputError("EMPTY_FILE", "上传文件不能为空。");
+  }
+  if (bytes.byteLength > MAX_KNOWLEDGE_DOCUMENT_BYTES) {
+    throw new KnowledgeInputError(
+      "FILE_TOO_LARGE",
+      "上传文件不得超过 5 MiB。",
+    );
+  }
+}
+
+function prepareDocumentOutcome(input: {
+  bytes: Uint8Array;
+  fileName: string;
+  metadata: DocumentImportMetadata;
+  mimeType: string;
+}): PreparedDocumentOutcome {
+  try {
+    const text = extractUtf8Text(input);
+    const chunks = chunkStructuredText(input.metadata.title, text);
+
+    if (chunks.length === 0) {
+      throw new DocumentProcessingError(
+        "EMPTY_TEXT",
+        "文件没有可切分的正文段落。",
+      );
+    }
+
+    return {
+      chunks: createChunkRows(chunks, input.metadata),
+      processingError: null,
+      processingStatus: "ready",
+    };
+  } catch (error: unknown) {
+    if (!isExpectedProcessingError(error)) {
+      throw error;
+    }
+    return {
+      chunks: [],
+      processingError: processingMessage(error),
+      processingStatus: "failed",
+    };
+  }
+}
+
+export async function prepareKnowledgeDocument(input: {
+  bytes: Uint8Array;
+  fileName: string;
+  metadata: unknown;
+  mimeType: string;
+}): Promise<PreparedKnowledgeDocumentUpload> {
+  assertDocumentFileSize(input.bytes);
+  documentFileDescriptorSchema.parse({ fileName: input.fileName, mimeType: input.mimeType });
+  const metadata = documentImportMetadataSchema.parse(input.metadata);
+  const contentSha256 = sha256(input.bytes);
+  const savedFile = await saveDocumentFile({
+    bytes: input.bytes,
+    contentSha256,
+  });
+  const mimeType = input.mimeType || "application/octet-stream";
+  let outcome: PreparedDocumentOutcome;
+  try {
+    outcome = prepareDocumentOutcome({
+      bytes: input.bytes,
+      fileName: input.fileName,
+      metadata,
+      mimeType,
+    });
+  } catch (error: unknown) {
+    if (savedFile.created) {
+      console.warn("Knowledge document orphan cleanup deferred", {
+        errorCode: getErrorCode(error),
+      });
+    }
+    throw error;
+  }
+
+  return {
+    byteSize: input.bytes.byteLength,
+    contentSha256,
+    metadata,
+    mimeType,
+    originalFilename: input.fileName,
+    outcome,
+    storageCreated: savedFile.created,
+    storagePath: savedFile.storagePath,
+  };
+}
+
+export async function prepareKnowledgeDocumentReprocessing(input: {
+  accessScope: KnowledgeDocumentReprocessingAccessScope;
+  documentId: string;
+  metadata: unknown;
+}): Promise<PreparedKnowledgeDocumentReprocessing> {
+  const accessScope =
+    knowledgeDocumentReprocessingAccessScopeSchema.parse(
+      input.accessScope,
+    );
+  const metadataPatch = z
+    .record(z.string(), z.unknown())
+    .parse(input.metadata);
+  const repository = await getKnowledgeRepository();
+  const document = await repository.findDocumentForReprocessing({
+    accessScope,
+    documentId: input.documentId,
+  });
+
+  if (!document?.storagePath || !document.activeDraft) {
+    throw new KnowledgeInputError(
+      "EMPTY_FILE",
+      "文档不存在、已归档或没有可重新处理的原文件。",
+    );
+  }
+  if (
+    accessScope.kind === "creator" &&
+    document.activeDraft.createdBy !== accessScope.createdBy
+  ) {
+    throw new KnowledgeInputError(
+      "EMPTY_FILE",
+      "文档不存在、已归档或没有可重新处理的原文件。",
+    );
+  }
+  if (document.sourceArchivedAt !== null) {
+    throw new KnowledgeConflictError(
+      "文档当前证据来源已归档，不能原地重新处理。",
+    );
+  }
+  if (
+    document.governanceStatus !== "draft" ||
+    (document.processingStatus !== "ready" &&
+      document.processingStatus !== "failed")
+  ) {
+    throw new KnowledgeConflictError(
+      "只有 ready/failed 的 Draft 文档可以重新处理；已审核、已发布或正在处理的文档必须创建新版本或等待当前操作完成。",
+    );
+  }
+  if (!document.chunkSetFingerprint) {
+    throw new KnowledgeConflictError(
+      "文档 chunk provenance 缺失或不一致，不能重新处理。",
+    );
+  }
+  const provenanceAction = getDocumentProvenanceActionForVersion(
+    document.activeDraft.version,
+  );
+  const provenanceAudits = document.auditMarkers.filter(
+    (marker) => marker.action === provenanceAction,
+  );
+  let governanceMetadata: DocumentImportMetadata;
+  let provenanceAuditId: string;
+  let provenanceMarkerFingerprint: string;
+  if (provenanceAction === "document_reprocessed") {
+    if (provenanceAudits.length !== 1) {
+      throw new KnowledgeConflictError(
+        "文档当前草稿存在重复的重新处理审计，metadata provenance 无法唯一确定。",
+      );
+    }
+    const audit = provenanceAudits[0]!;
+    const marker = parseDocumentReprocessedAuditMarkerFor({
+      expectedChunkSetFingerprint: document.chunkSetFingerprint,
+      expectedContentSha256: document.contentSha256,
+      expectedDocumentId: input.documentId,
+      expectedDraftId: document.activeDraft.id,
+      expectedProcessingStatus: document.processingStatus,
+      expectedSourceFingerprint: document.sourceFingerprint,
+      expectedSourceId: document.dataSourceId,
+      marker: {
+        afterData: audit.afterData,
+        draftId: audit.draftId,
+        entityKey: audit.entityKey,
+        entityType: audit.entityType,
+      },
+    });
+    if (!marker) {
+      throw new KnowledgeConflictError(
+        "文档重新处理审计已损坏或与当前文档、草稿、来源不一致。",
+      );
+    }
+    governanceMetadata = marker.afterData.metadata;
+    provenanceAuditId = audit.id;
+    provenanceMarkerFingerprint =
+      createDocumentProvenanceMarkerFingerprint(marker);
+  } else {
+    if (provenanceAudits.length !== 1) {
+      throw new KnowledgeConflictError(
+        "文档创建审计缺失或不唯一，metadata provenance 无法验证。",
+      );
+    }
+    const audit = provenanceAudits[0]!;
+    const marker = parseDocumentDraftCreatedAuditMarkerFor({
+      expectedChunkSetFingerprint: document.chunkSetFingerprint,
+      expectedContentSha256: document.contentSha256,
+      expectedDocumentId: input.documentId,
+      expectedDraftId: document.activeDraft.id,
+      expectedProcessingStatus: document.processingStatus,
+      expectedSourceFingerprint: document.sourceFingerprint,
+      expectedSourceId: document.dataSourceId,
+      marker: {
+        afterData: audit.afterData,
+        draftId: audit.draftId,
+        entityKey: audit.entityKey,
+        entityType: audit.entityType,
+      },
+    });
+    if (!marker) {
+      throw new KnowledgeConflictError(
+        "文档创建审计已损坏或与当前文档、草稿、来源不一致。",
+      );
+    }
+    governanceMetadata = marker.afterData.metadata;
+    provenanceAuditId = audit.id;
+    provenanceMarkerFingerprint =
+      createDocumentProvenanceMarkerFingerprint(marker);
+  }
+  const metadata = documentImportMetadataSchema.parse({
+    applicationScope:
+      document.applicationScope ?? governanceMetadata.applicationScope,
+    canonicalUrl: document.canonicalUrl,
+    countryIso3:
+      document.countryIso3 ?? governanceMetadata.countryIso3,
+    demoNotice: document.demoNotice,
+    documentType: document.documentType,
+    isDemo: document.isDemo,
+    jurisdictionId:
+      document.jurisdictionId ?? governanceMetadata.jurisdictionId,
+    languageCode: document.languageCode,
+    licenseCode: document.licenseCode,
+    publishedOn: document.publishedOn,
+    redistributionAllowed: document.redistributionAllowed,
+    sourcePublisher: document.sourcePublisher,
+    sourceTitle: document.sourceTitle,
+    sourceType: document.sourceType,
+    sourceUrl: document.sourceUrl,
+    title: document.title,
+    validFrom: document.validFrom,
+    validTo: document.validTo,
+    ...metadataPatch,
+  });
+
+  let bytes: Uint8Array;
+  try {
+    bytes = await readDocumentFile(document.storagePath);
+  } catch (error: unknown) {
+    console.error("Knowledge document reprocessing file read failed", {
+      errorCode: getErrorCode(error),
+    });
+    throw new KnowledgeInputError(
+      "EMPTY_FILE",
+      "文档原文件不可读，未修改现有文档。",
+    );
+  }
+  if (sha256(bytes) !== document.contentSha256) {
+    throw new KnowledgeInputError(
+      "EMPTY_FILE",
+      "文档原文件内容哈希与登记值不一致，未修改现有文档。",
+    );
+  }
+  const outcome = prepareDocumentOutcome({
+    bytes,
+    fileName: document.originalFilename ?? "document.txt",
+    metadata,
+    mimeType: document.mimeType ?? "application/octet-stream",
+  });
+  if (
+    document.processingStatus === "ready" &&
+    outcome.processingStatus === "failed"
+  ) {
+    throw new KnowledgeInputError(
+      "EMPTY_FILE",
+      `${outcome.processingError}；未修改现有 ready 文档。`,
+    );
+  }
+  const operationFingerprint = sha256(
+    JSON.stringify({
+      contentSha256: document.contentSha256,
+      metadata,
+      outcome: {
+        chunkHashes: outcome.chunks.map((chunk) => chunk.contentHash),
+        processingError: outcome.processingError,
+        processingStatus: outcome.processingStatus,
+      },
+    }),
+  );
+
+  return {
+    documentId: input.documentId,
+    expected: {
+      activeDraftCreatedBy: document.activeDraft.createdBy,
+      activeDraftId: document.activeDraft.id,
+      chunkSetFingerprint: document.chunkSetFingerprint,
+      contentSha256: document.contentSha256,
+      dataSourceId: document.dataSourceId,
+      processingStatus: document.processingStatus,
+      provenanceAuditId,
+      provenanceMarkerFingerprint,
+      provenanceMetadata: governanceMetadata,
+      sourceFingerprint: document.sourceFingerprint,
+    },
+    metadata,
+    operationFingerprint,
+    outcome,
+  };
 }
 
 export function isKnowledgeDebugEnabled(): boolean {
@@ -189,6 +543,51 @@ export function parseDocumentImportFormData(
   });
 }
 
+export function parseDocumentReprocessFormData(
+  formData: FormData,
+): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  const stringFields = [
+    "applicationScope",
+    "canonicalUrl",
+    "countryIso3",
+    "demoNotice",
+    "documentType",
+    "jurisdictionId",
+    "languageCode",
+    "licenseCode",
+    "publishedOn",
+    "sourcePublisher",
+    "sourceTitle",
+    "sourceType",
+    "sourceUrl",
+    "title",
+    "validFrom",
+    "validTo",
+  ] as const;
+
+  for (const field of stringFields) {
+    if (!formData.has(field)) continue;
+    const value = formData.get(field);
+    patch[field] =
+      typeof value === "string" && value.trim() ? value.trim() : null;
+  }
+  for (const field of ["isDemo", "redistributionAllowed"] as const) {
+    if (!formData.has(field)) continue;
+    const value = formData.get(field);
+    patch[field] =
+      typeof value === "string" && value.trim()
+        ? value.trim() === "true"
+          ? true
+          : value.trim() === "false"
+            ? false
+            : value.trim()
+        : null;
+  }
+
+  return patch;
+}
+
 export async function importKnowledgeDocument(input: {
   bytes: Uint8Array;
   fileName: string;
@@ -199,13 +598,14 @@ export async function importKnowledgeDocument(input: {
   if (input.bytes.byteLength === 0) {
     throw new KnowledgeInputError("EMPTY_FILE", "上传文件不能为空。");
   }
-  if (input.bytes.byteLength > maximumFileBytes) {
+  if (input.bytes.byteLength > MAX_KNOWLEDGE_DOCUMENT_BYTES) {
     throw new KnowledgeInputError(
       "FILE_TOO_LARGE",
       "上传文件不得超过 5 MiB。",
     );
   }
 
+  documentFileDescriptorSchema.parse({ fileName: input.fileName, mimeType: input.mimeType });
   const metadata = documentImportMetadataSchema.parse(input.metadata);
   const repository = await getKnowledgeRepository();
   const contentSha256 = sha256(input.bytes);
@@ -286,7 +686,7 @@ export async function importKnowledgeDocument(input: {
     const message = processingMessage(error);
     await repository.markDocumentFailed(documentId, message);
 
-    if (!(error instanceof DocumentProcessingError)) {
+    if (!isExpectedProcessingError(error)) {
       console.error("Knowledge document processing failed", {
         errorCode: getErrorCode(error),
       });
@@ -344,102 +744,40 @@ export async function getKnowledgeOptions(): Promise<KnowledgeOptionsResponse> {
   });
 }
 
-export async function reprocessKnowledgeDocument(input: {
-  documentId: string;
-  metadata: unknown;
-}) {
-  const metadata = documentImportMetadataSchema.parse(input.metadata);
-  const repository = await getKnowledgeRepository();
-  const document = await repository.findDocumentForReprocessing(
-    input.documentId,
-  );
+const knowledgeQueryComparisonSchema = z.object({
+  expected: hybridSearchQuerySchema.shape.query,
+  actual: hybridSearchQuerySchema.shape.query,
+}).strict();
 
-  if (!document?.storagePath) {
-    throw new KnowledgeInputError(
-      "EMPTY_FILE",
-      "文档不存在、已归档或没有可重新处理的原文件。",
-    );
-  }
-  const reprocessing = await repository.beginDocumentReprocessing(
-    input.documentId,
-    metadata,
-  );
-  if (!reprocessing) {
-    throw new KnowledgeConflictError(
-      "只有 ready/failed 的 Draft 文档可以重新处理；已审核、已发布或正在处理的文档必须创建新版本或等待当前操作完成。",
-    );
-  }
-
-  try {
-    const bytes = await readDocumentFile(document.storagePath);
-    const text = extractUtf8Text({
-      bytes,
-      fileName: document.originalFilename ?? "document.txt",
-      mimeType: document.mimeType ?? "application/octet-stream",
-    });
-    const chunks = chunkStructuredText(metadata.title, text);
-
-    if (chunks.length === 0) {
-      throw new DocumentProcessingError(
-        "EMPTY_TEXT",
-        "文件没有可切分的正文段落。",
-      );
-    }
-
-    await repository.completeDocument(
-      input.documentId,
-      createChunkRows(chunks, metadata),
-      "draft",
-    );
-  } catch (error: unknown) {
-    const message = processingMessage(error);
-    await repository.markDocumentFailed(input.documentId, message);
-
-    if (!(error instanceof DocumentProcessingError)) {
-      console.error("Knowledge document reprocessing failed", {
-        errorCode: getErrorCode(error),
-      });
-    }
-  }
-
-  const summary = await repository.getDocumentSummary(input.documentId);
-  if (!summary) {
-    throw new Error("Reprocessed document summary could not be loaded.");
-  }
-
-  const response = documentImportResponseSchema.parse({
-    document: toDocumentSummary(summary),
-    status:
-      summary.processingStatus === "ready" ? "ready" : "failed",
-  });
-
-  return {
-    afterData: {
-      metadata,
-      processingStatus: response.document.processingStatus,
-      sourceId: reprocessing.sourceId,
-      status: response.status,
-    },
-    beforeData: reprocessing.beforeData,
-    response,
-  };
-}
-
-function roundScore(value: number): number {
-  return Number(value.toFixed(6));
+export async function knowledgeQueryConstraintsMatch(input: unknown, options: RequestSignalOptions = {}): Promise<boolean> {
+  throwIfRequestAborted(options.signal);
+  const { expected, actual } = knowledgeQueryComparisonSchema.parse(input);
+  if (expected === actual || (!knowledgeQueryMayHaveConstraints(expected) && !knowledgeQueryMayHaveConstraints(actual))) return true;
+  const repository = await getKnowledgeRepository(options);
+  throwIfRequestAborted(options.signal);
+  const matches = await repository.knowledgeQueryConstraintsMatch(expected, actual, options);
+  throwIfRequestAborted(options.signal);
+  return matches;
 }
 
 export async function hybridSearchKnowledge(
   input: unknown,
+  options: RequestSignalOptions & KnowledgeRankingOptions = {},
 ): Promise<HybridSearchResponse> {
+  throwIfRequestAborted(options.signal);
   const query = hybridSearchQuerySchema.parse(input);
-  const repository = await getKnowledgeRepository();
+  const repository = await getKnowledgeRepository(options);
+  throwIfRequestAborted(options.signal);
+  const queryEmbedding = createLocalHashEmbedding(query.query);
+  throwIfRequestAborted(options.signal);
   const candidates = await repository.searchCandidates(
     query,
-    createLocalHashEmbedding(query.query),
+    queryEmbedding,
+    options,
   );
+  throwIfRequestAborted(options.signal);
 
-  const ranked = candidates
+  const ranked = selectKnowledgeRankingCandidates(candidates
     .map((candidate) => {
       const keywordScore = Math.max(Number(candidate.keywordScore), 0);
       const vectorScore = Math.max(
@@ -448,35 +786,32 @@ export async function hybridSearchKnowledge(
       );
       const normalizedKeyword =
         keywordScore === 0 ? 0 : keywordScore / (keywordScore + 0.1);
-      const finalScore = normalizedKeyword * 0.5 + vectorScore * 0.5;
-      const warnings: string[] = [];
-
-      if (candidate.validFrom === null) {
-        warnings.push("该片段未记录 validFrom，日期适用性仍需人工核验。");
-      }
-      if (candidate.countryIso3 === null) {
-        warnings.push("该片段未记录国家 metadata。");
-      }
-      if (candidate.applicationScope === null) {
-        warnings.push("该片段未记录应用场景 metadata。");
-      }
+      const publicKeywordScore = roundKnowledgeScore(normalizedKeyword);
+      const publicVectorScore = roundKnowledgeScore(vectorScore);
+      const finalScore = recomputeKnowledgeFinalScore({
+        keywordScore: publicKeywordScore,
+        keywordWeight: 0.5,
+        vectorScore: publicVectorScore,
+        vectorWeight: 0.5,
+      });
+      const warnings = expectedKnowledgeHitWarnings(candidate);
 
       return {
         candidate,
         finalScore,
-        keywordScore,
-        vectorScore,
+        keywordScore: publicKeywordScore,
+        vectorScore: publicVectorScore,
         warnings,
       };
-    })
-    .filter((candidate) => isKnowledgeResultRelevant(candidate))
+    }))
     .sort(
       (left, right) =>
         right.finalScore - left.finalScore ||
-        left.candidate.chunkId.localeCompare(right.candidate.chunkId),
+        compareCanonicalText(left.candidate.chunkId, right.candidate.chunkId),
     )
     .slice(0, query.limit);
 
+  throwIfRequestAborted(options.signal);
   return hybridSearchResponseSchema.parse({
     embeddingModel: KNOWLEDGE_EMBEDDING_MODEL,
     filters: {
@@ -511,7 +846,7 @@ export async function hybridSearchKnowledge(
         },
         title: item.candidate.documentTitle,
       },
-      finalScore: roundScore(item.finalScore),
+      finalScore: item.finalScore,
       headingPath: item.candidate.headingPath,
       jurisdiction:
         item.candidate.jurisdictionId && item.candidate.jurisdictionName
@@ -520,14 +855,14 @@ export async function hybridSearchKnowledge(
               name: item.candidate.jurisdictionName,
             }
           : null,
-      keywordScore: roundScore(item.keywordScore),
+      keywordScore: item.keywordScore,
       pageFrom: item.candidate.pageFrom,
       pageTo: item.candidate.pageTo,
       rank: index + 1,
       sectionLocator: item.candidate.sectionLocator,
       validFrom: item.candidate.validFrom,
       validTo: item.candidate.validTo,
-      vectorScore: roundScore(item.vectorScore),
+      vectorScore: item.vectorScore,
       warnings: item.warnings,
     })),
     scoring: {
@@ -548,8 +883,13 @@ export async function getKnowledgeDocumentFile(input: {
     return null;
   }
 
+  const bytes = await readDocumentFile(document.storagePath);
+  if (sha256(bytes) !== document.contentSha256) {
+    throw new Error("The original document does not match its registered content hash.");
+  }
+
   return {
-    bytes: await readDocumentFile(document.storagePath),
+    bytes,
     fileName: document.originalFilename ?? "document.txt",
     mimeType: document.mimeType ?? "application/octet-stream",
   };

@@ -1,14 +1,24 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { shouldForbidOnlyInPlaywrightRun } from "./scripts/portfolio/playwright-evidence";
+
 const baseURL =
   process.env.PLAYWRIGHT_FDE_BASE_URL ?? "http://127.0.0.1:3300";
 
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "fde-demo.spec.ts",
-  forbidOnly: Boolean(process.env.CI),
+  globalTeardown: "./scripts/e2e/fde-global-teardown.ts",
+  forbidOnly: shouldForbidOnlyInPlaywrightRun(),
   retries: process.env.CI ? 1 : 0,
-  reporter: "list",
+  reporter: [
+    ["list"],
+    [
+      "./scripts/portfolio/playwright-run-reporter.ts",
+      { id: "fde" },
+    ],
+  ],
+  outputDir: "test-results/fde",
   timeout: 60_000,
   workers: 1,
   use: {

@@ -5,6 +5,7 @@ import {
   hasConversationComparisonIntent,
 } from "@/server/ai/conversation-context";
 import type { Locale } from "@/i18n/locale";
+import { buildKnowledgeRequestContext } from "@/server/ai/knowledge-request-context";
 
 type DirectChatResponseInput = {
   locale?: Locale;
@@ -61,7 +62,7 @@ function capabilityResponse(selectedCountryIso3: string | null): string {
 
 ${contextLine(selectedCountryIso3)}
 
-你可以直接问：“对比 CHN 与 DEU 在 2026-08-08 的 non-road 120 kW 法规，并说明产品适配风险。”`;
+你可以直接问：“对比 CHN 与 DEU 在 2026-08-08 的非道路 120 kW 法规，并说明产品适配风险。”`;
 }
 
 function structuredAnalysisMissingParameters(
@@ -72,7 +73,7 @@ function structuredAnalysisMissingParameters(
     missing.push("至少两个国家");
   }
   if (context.applicationScope === null) {
-    missing.push("应用场景（如 non-road、on-road-truck、marine）");
+    missing.push("应用场景（如非道路、道路卡车或船舶）");
   }
   if (context.powerKw === null) {
     missing.push("额定功率（kW）");
@@ -92,6 +93,36 @@ function profileTopicLabel(
           : "国家资料",
     )
     .join("、");
+}
+
+function singleCountryRegulationMissingParameters(
+  context: ReturnType<typeof buildConversationBusinessContext>,
+): Array<"applicationScope" | "powerKw"> {
+  if (
+    context.activeTask !== "country_profile" ||
+    !context.profileTopics.includes("regulations") ||
+    context.countryIso3s.length !== 1
+  ) {
+    return [];
+  }
+
+  const hasApplicationScope = context.applicationScope !== null;
+  const hasPower = context.powerKw !== null;
+  if (hasApplicationScope === hasPower) {
+    return [];
+  }
+  return hasApplicationScope ? ["powerKw"] : ["applicationScope"];
+}
+
+function hasUnsupportedScopedSingleCountryMarket(
+  context: ReturnType<typeof buildConversationBusinessContext>,
+): boolean {
+  return (
+    context.activeTask === "country_profile" &&
+    context.profileTopics.includes("market") &&
+    context.countryIso3s.length === 1 &&
+    context.applicationScope !== null
+  );
 }
 
 function buildEnglishDirectChatResponse({
@@ -140,6 +171,18 @@ Try: “Compare CHN and DEU non-road rules at 120 kW as of 2026-08-08, then expl
     ).join(", ");
     return `A country is required to query ${topics || "country information"}. Provide a country name or ISO3 code such as CHN, BRA, or DEU.\n\n${contextText}`;
   }
+  const missingSingleCountryRegulationParameters =
+    singleCountryRegulationMissingParameters(context);
+  if (missingSingleCountryRegulationParameters.length > 0) {
+    const missing =
+      missingSingleCountryRegulationParameters[0] === "powerKw"
+        ? "rated power in kW"
+        : "an application scope, such as non-road or on-road-truck";
+    return `A deterministic single-country regulatory applicability query still needs ${missing}. The application scope and power must be supplied together so a broad country profile cannot silently replace the requested filter. Add the missing value and retry; if no date is supplied I use the current UTC date.\n\n${contextText}\n\n${disclaimer}`;
+  }
+  if (hasUnsupportedScopedSingleCountryMarket(context)) {
+    return `The single-country market profile is not filtered by application scope, so I cannot use broad country metrics to answer this scoped request. Add a second country for a scope-filtered market comparison, or remove the application scope to request the broad country market profile.\n\n${contextText}`;
+  }
   if (context.activeTask === "product_fit") {
     const missing: string[] = [];
     if (context.applicationScope === null) missing.push("an application scope, such as non-road or on-road-truck");
@@ -173,7 +216,7 @@ Try: “Compare CHN and DEU non-road rules at 120 kW as of 2026-08-08, then expl
 }
 
 export function buildDirectChatResponse({
-  locale = "zh-CN",
+  locale = "en",
   selectedCountryIso3,
   text,
   userTexts = [text],
@@ -184,6 +227,21 @@ export function buildDirectChatResponse({
   const context = buildConversationBusinessContext(contextTexts, {
     selectedCountryIso3,
   });
+
+  if (context.activeTask === "knowledge" && !greetingPattern.test(normalized) &&
+    !thanksPattern.test(normalized) && !capabilityPattern.test(normalized) &&
+    buildKnowledgeRequestContext(contextTexts, context).requiresRestatement) {
+    return locale === "en"
+      ? "Please restate the complete source query with its topic, OR branches and exclusions in one message. I cannot safely merge this new query wording with the retained topic or OR branches. No evidence has been accepted for this refinement."
+      : "请在同一条消息中重新写出完整来源查询，包含主题、OR 分支和排除条件。无法安全地将新增检索文字合并到原主题或 OR 分支中；本次追问尚未接受任何证据。";
+  }
+
+  if (context.hasScopeConflict && !greetingPattern.test(normalized) &&
+    !thanksPattern.test(normalized) && !capabilityPattern.test(normalized)) {
+    return locale === "en"
+      ? "Please specify one application scope, such as non-road or marine. The scopes or exclusions in this request do not resolve to one supported filter; I cannot choose one or silently query all scopes. Your country, power, and as-of date remain unchanged."
+      : "请明确一个应用场景，例如非道路或船用。当前用途或排除条件无法确定唯一支持的筛选范围，不能替你任选一个，也不能静默查询所有用途。已给出的国家、功率和判断日期保持不变。";
+  }
 
   if (locale === "en") {
     return buildEnglishDirectChatResponse({
@@ -212,10 +270,24 @@ export function buildDirectChatResponse({
     return `要查询${profileTopicLabel(context.profileTopics)}，还缺少国家。请写国家名称或 ISO3，例如 CHN、BRA、DEU。\n\n${contextLine(selectedCountryIso3)}`;
   }
 
+  const missingSingleCountryRegulationParameters =
+    singleCountryRegulationMissingParameters(context);
+  if (missingSingleCountryRegulationParameters.length > 0) {
+    const missing =
+      missingSingleCountryRegulationParameters[0] === "powerKw"
+        ? "额定功率（kW）"
+        : "应用场景（如非道路、道路卡车或船舶）";
+    return `要做确定性的单国法规适用性查询，还缺少：${missing}。应用场景和功率必须成对提供，不能让未过滤的国家概览静默替代已给出的筛选条件。请补充后重试；日期未写时我会使用当前 UTC 日期。\n\n${contextLine(selectedCountryIso3)}\n\n信息参考，不替代正式认证或法律意见`;
+  }
+
+  if (hasUnsupportedScopedSingleCountryMarket(context)) {
+    return `单国市场概览目前不能按应用场景过滤，因此不能用全口径国家指标回答这次带场景的请求。请再提供一个国家以执行带场景过滤的市场比较，或移除应用场景后查询全口径单国市场概览。\n\n${contextLine(selectedCountryIso3)}`;
+  }
+
   if (context.activeTask === "product_fit") {
     const missing: string[] = [];
     if (context.applicationScope === null) {
-      missing.push("应用场景（如 non-road、on-road-truck、marine）");
+      missing.push("应用场景（如非道路、道路卡车或船舶）");
     }
     if (context.powerKw === null) {
       missing.push("额定功率（kW）");

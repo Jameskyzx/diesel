@@ -11,7 +11,8 @@ import { getDictionary, type Dictionary } from "@/i18n/dictionaries";
 import { localeFromRequest } from "@/i18n/locale";
 import { isKnownCountryIso3 } from "@/server/services/country-directory";
 import { getCountryDetails } from "@/server/services/country-service";
-import { createApiRequestObserver } from "@/server/observability/structured-log";
+import { createPublicApiRequestObserver } from "@/server/http/public-api-response";
+import { runPublicDataOperation } from "@/server/http/public-data-admission";
 
 export const runtime = "nodejs";
 
@@ -35,7 +36,7 @@ function internalErrorResponse(error: unknown, messages: Dictionary["apiErrors"]
 }
 
 export async function GET(request: Request, context: CountryRouteContext) {
-  const observer = createApiRequestObserver("/api/countries/:iso3");
+  const observer = createPublicApiRequestObserver("/api/countries/:iso3");
   const messages = getDictionary(localeFromRequest(request)).apiErrors;
   let input: CountryDetailQuery;
 
@@ -103,7 +104,32 @@ export async function GET(request: Request, context: CountryRouteContext) {
   }
 
   try {
-    return observer.finish(NextResponse.json(await getCountryDetails(input)));
+    const operation = await runPublicDataOperation({
+      request,
+      route: "/api/countries/:iso3",
+      work: (signal) => getCountryDetails(input, { signal }),
+    });
+    if (operation.status === "failed") {
+      throw operation.error;
+    }
+    if (operation.status !== "fulfilled") {
+      return observer.finish(
+        NextResponse.json(
+          countryApiErrorSchema.parse({
+            error: {
+              code: "INTERNAL_ERROR",
+              message: messages.countryDetailUnavailable,
+            },
+          }),
+          {
+            headers: { "Retry-After": "1" },
+            status: 503,
+          },
+        ),
+        "INTERNAL_ERROR",
+      );
+    }
+    return observer.finish(NextResponse.json(operation.value));
   } catch (error) {
     return observer.finish(internalErrorResponse(error, messages), "INTERNAL_ERROR");
   }

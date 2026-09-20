@@ -12,7 +12,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -30,10 +30,29 @@ import {
   type ProductFitEvaluation,
   type ProductSummary,
 } from "@/features/product-fit/schemas";
-import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
+import {
+  parseApiErrorCode,
+  type SafeApiErrorCode,
+} from "@/lib/api-error";
+import { createPublicApiRequestDeadline } from "@/lib/public-api-request";
+import { subscribeToPublicNavigationIntent } from "@/lib/public-navigation-intent";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
-import { formatOptionalUtcDate, formatUtcDate } from "@/i18n/date";
+import type { Dictionary } from "@/i18n/dictionaries";
+import {
+  formatOptionalUtcDate,
+  formatProductAvailabilityDateRange,
+  formatUtcDate,
+} from "@/i18n/date";
 import type { Locale } from "@/i18n/locale";
+import {
+  applicationScopeLabel,
+  applicationScopeListLabel,
+  certificationStatusLabel,
+  jurisdictionDisplayName,
+  nameWithCode,
+  productDisplayName,
+  regulationDisplayName,
+} from "@/i18n/structured-labels";
 
 export type ProductFitInitialFilters = {
   applicationScope?: ApplicationScope;
@@ -46,16 +65,38 @@ export type ProductFitCommittedFilters = Required<ProductFitInitialFilters>;
 
 type ProductListState =
   | { status: "loading" }
-  | { message: string; status: "error" }
+  | { code: SafeApiErrorCode | null; status: "error" }
   | { products: ProductSummary[]; status: "ready" };
 
 type EvaluationState =
   | { status: "idle" }
   | { status: "loading" }
-  | { message: string; status: "error" }
+  | { code: SafeApiErrorCode | null; status: "error" }
   | { evaluation: ProductFitEvaluation; status: "ready" };
 
 const quickPowerValues = [50, 100, 150, 300] as const;
+
+export function productListErrorMessage(
+  code: SafeApiErrorCode | null,
+  dictionary: Dictionary,
+): string {
+  return code === "INTERNAL_ERROR" || code === "REQUEST_TIMEOUT"
+    ? dictionary.apiErrors.productListUnavailable
+    : dictionary.productFit.productLoadFallback;
+}
+
+export function productFitErrorMessage(
+  code: SafeApiErrorCode | null,
+  dictionary: Dictionary,
+): string {
+  if (code === "INVALID_INPUT") return dictionary.apiErrors.invalidProductFit;
+  if (code === "PAYLOAD_TOO_LARGE") {
+    return dictionary.apiErrors.productFitPayloadTooLarge;
+  }
+  return code === "INTERNAL_ERROR" || code === "REQUEST_TIMEOUT"
+    ? dictionary.apiErrors.productFitUnavailable
+    : dictionary.productFit.errorFallback;
+}
 
 const fitPresentation = {
   fit: {
@@ -93,6 +134,19 @@ function formatRange(
   return `[${minimum ?? missing}, ${maximum ?? open}) kW`;
 }
 
+export function formatCertificationPowerRange(
+  minimum: number | null,
+  maximum: number | null,
+  notRecorded: string,
+  open: string,
+): string {
+  if (minimum === null && maximum === null) {
+    return notRecorded;
+  }
+
+  return `[${minimum ?? notRecorded}, ${maximum ?? open}) kW`;
+}
+
 function formatDateRange(
   start: string | null,
   end: string | null,
@@ -105,6 +159,16 @@ function formatDateRange(
   }
 
   return `${formatOptionalUtcDate(start, locale, notRecorded)} → ${formatOptionalUtcDate(end, locale, open)}`;
+}
+
+export function formatCertificationValidityRange(
+  start: string | null,
+  end: string | null,
+  locale: Locale,
+  notRecorded: string,
+  open: string,
+): string {
+  return formatDateRange(start, end, locale, notRecorded, open);
 }
 
 export function ProductFitPanel({
@@ -122,18 +186,8 @@ export function ProductFitPanel({
     cancelPendingEvaluation: (() => void) | null,
   ) => void;
 }) {
-  const { dictionary } = useLocale();
+  const { dictionary, locale } = useLocale();
   const copy = dictionary.productFit;
-  const scopeLabels: Record<ApplicationScope, string> = {
-    agriculture: copy.scopeAgriculture,
-    construction: copy.scopeConstruction,
-    "generator-set": copy.scopeGenerator,
-    marine: copy.scopeMarine,
-    "non-road": copy.scopeNonRoad,
-    "on-road": copy.scopeOnRoad,
-    "on-road-bus": copy.scopeBus,
-    "on-road-truck": copy.scopeTruck,
-  };
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -163,8 +217,18 @@ export function ProductFitPanel({
   // router update as a fresh shared-link load can race with the next user edit
   // and restore a stale result.
   const autoRanRef = useRef(!initialFilters?.productModelCode);
+  const autoRunEpochRef = useRef(0);
+  const productListRequestIdRef = useRef(0);
   const evaluationAbortControllerRef = useRef<AbortController | null>(null);
   const evaluationRequestIdRef = useRef(0);
+  const onEvaluationCommittedRef = useRef(onEvaluationCommitted);
+
+  useLayoutEffect(() => {
+    // An earlier evaluation's own URL acknowledgement can preserve this panel
+    // while a later request is pending. Complete against the latest committed
+    // parent context, never a callback from the request's starting render.
+    onEvaluationCommittedRef.current = onEvaluationCommitted;
+  }, [onEvaluationCommitted]);
 
   function clearEvaluation() {
     evaluationRequestIdRef.current += 1;
@@ -174,56 +238,97 @@ export function ProductFitPanel({
   }
 
   useEffect(() => {
-    const cancelPendingEvaluation = () => {
+    const abortCurrentEvaluation = () => {
       evaluationRequestIdRef.current += 1;
       evaluationAbortControllerRef.current?.abort();
       evaluationAbortControllerRef.current = null;
     };
+    const cancelPendingEvaluation = () => {
+      autoRanRef.current = true;
+      autoRunEpochRef.current += 1;
+      abortCurrentEvaluation();
+    };
 
+    // Header navigation can begin while its RSC keeps this panel mounted.
+    // Retire both unstarted and queued auto-runs as well as the active request.
+    const unsubscribeNavigationIntent = subscribeToPublicNavigationIntent(
+      cancelPendingEvaluation,
+    );
     registerNavigationGuard?.(cancelPendingEvaluation);
     return () => {
-      cancelPendingEvaluation();
+      unsubscribeNavigationIntent();
+      // StrictMode cleanup is not a user navigation and must not retire the
+      // initial shared-link attempt before the catalog is ready.
+      abortCurrentEvaluation();
       registerNavigationGuard?.(null);
     };
   }, [registerNavigationGuard]);
 
   useEffect(() => {
     const abortController = new AbortController();
+    const requestId = productListRequestIdRef.current + 1;
+    productListRequestIdRef.current = requestId;
+    const requestIsCurrent = () =>
+      !abortController.signal.aborted &&
+      productListRequestIdRef.current === requestId;
+    const deadline = createPublicApiRequestDeadline(abortController.signal);
 
     void fetch("/api/products", {
       headers: { accept: "application/json" },
-      signal: abortController.signal,
+      signal: deadline.signal,
     })
       .then(async (response) => {
         if (!response.ok) {
-          throw new Error(
-            await parseApiErrorMessage(response, copy.productLoadRequest),
-          );
+          return {
+            code: await parseApiErrorCode(response),
+            status: "error" as const,
+          };
         }
-        return productListResponseSchema.parse(await response.json());
+        return {
+          response: productListResponseSchema.parse(await response.json()),
+          status: "ready" as const,
+        };
       })
-      .then((response) => {
-        setProductList({ products: response.products, status: "ready" });
+      .then((result) => {
+        if (!requestIsCurrent()) return;
+        if (result.status === "error") {
+          setProductList(result);
+          return;
+        }
+        setProductList({ products: result.response.products, status: "ready" });
         // URL 携带未知型号（如已下架）时回退到第一个产品，避免
         // select 显示与状态不一致。
         setProductModelCode((current) =>
-          response.products.some((product) => product.modelCode === current)
+          result.response.products.some(
+            (product) => product.modelCode === current,
+          )
             ? current
-            : (response.products[0]?.modelCode ?? ""),
+            : (result.response.products[0]?.modelCode ?? ""),
         );
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (
+          !requestIsCurrent() ||
+          error instanceof DOMException &&
+          error.name === "AbortError" &&
+          !deadline.didTimeout()
+        ) {
           return;
         }
         setProductList({
-          message: toUserFacingErrorMessage(error, copy.productLoadFallback),
+          code: deadline.didTimeout() ? "REQUEST_TIMEOUT" : null,
           status: "error",
         });
-      });
+      })
+      .finally(deadline.dispose);
 
-    return () => abortController.abort();
-  }, [copy.productLoadFallback, copy.productLoadRequest, reloadKey]);
+    return () => {
+      if (productListRequestIdRef.current === requestId) {
+        productListRequestIdRef.current += 1;
+      }
+      abortController.abort();
+    };
+  }, [reloadKey]);
 
   /**
    * ADR-044：评估成功后把筛选写回 URL（replace，不污染历史），
@@ -251,6 +356,7 @@ export function ProductFitPanel({
     evaluationAbortControllerRef.current = abortController;
     const requestId = evaluationRequestIdRef.current + 1;
     evaluationRequestIdRef.current = requestId;
+    const deadline = createPublicApiRequestDeadline(abortController.signal);
     setEvaluation({ status: "loading" });
 
     try {
@@ -268,13 +374,22 @@ export function ProductFitPanel({
           "content-type": "application/json",
         },
         method: "POST",
-        signal: abortController.signal,
+        signal: deadline.signal,
       });
 
       if (!response.ok) {
-        throw new Error(
-          await parseApiErrorMessage(response, copy.productLoadError),
-        );
+        const code = await parseApiErrorCode(response);
+        if (
+          abortController.signal.aborted ||
+          evaluationRequestIdRef.current !== requestId
+        ) {
+          return;
+        }
+        setEvaluation({
+          code,
+          status: "error",
+        });
+        return;
       }
 
       const parsed = productFitEvaluationSchema.parse(await response.json());
@@ -291,23 +406,25 @@ export function ProductFitPanel({
         productModelCode: parsed.input.productModelCode,
       };
       setEvaluation({ evaluation: parsed, status: "ready" });
-      onEvaluationCommitted?.(committedFilters);
+      onEvaluationCommittedRef.current?.(committedFilters);
       syncFiltersToUrl(committedFilters);
     } catch (error: unknown) {
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (
+        error instanceof DOMException &&
+        error.name === "AbortError" &&
+        !deadline.didTimeout()
+      ) {
         return;
       }
       if (evaluationRequestIdRef.current !== requestId) {
         return;
       }
       setEvaluation({
-        message: toUserFacingErrorMessage(
-          error,
-          copy.errorFallback,
-        ),
+        code: deadline.didTimeout() ? "REQUEST_TIMEOUT" : null,
         status: "error",
       });
     } finally {
+      deadline.dispose();
       if (evaluationAbortControllerRef.current === abortController) {
         evaluationAbortControllerRef.current = null;
       }
@@ -326,12 +443,19 @@ export function ProductFitPanel({
     const known = productList.products.some(
       (product) => product.modelCode === initialFilters.productModelCode,
     );
+    // Catalog readiness settles this initial shared-link attempt even if its
+    // model is unknown. A later manual URL acknowledgement must not revive it
+    // and submit the user's current, unsubmitted draft.
+    autoRanRef.current = true;
     if (!known) {
       return;
     }
-    autoRanRef.current = true;
     // 延迟到当前渲染后执行，避免 effect 内同步 setState 触发级联渲染。
+    const autoRunEpoch = autoRunEpochRef.current;
     const timer = setTimeout(() => {
+      if (autoRunEpochRef.current !== autoRunEpoch) {
+        return;
+      }
       void runEvaluation();
     }, 0);
     return () => clearTimeout(timer);
@@ -351,6 +475,9 @@ export function ProductFitPanel({
       </p>
 
       <form
+        aria-busy={
+          productList.status === "loading" || evaluation.status === "loading"
+        }
         className="mt-3 grid min-w-0 gap-3 rounded-2xl border bg-card p-4"
         data-testid="product-fit-form"
         data-vaul-no-drag
@@ -370,19 +497,14 @@ export function ProductFitPanel({
         >
           <legend className="text-xs font-medium">{copy.productModel}</legend>
           {productList.status === "loading" ? (
-            <p className="rounded-xl border bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
+            <p
+              aria-atomic="true"
+              aria-busy="true"
+              aria-live="polite"
+              className="rounded-xl border bg-muted/30 px-3 py-3 text-xs text-muted-foreground"
+              role="status"
+            >
               {copy.loadingProducts}
-            </p>
-          ) : null}
-          {productList.status === "error" ? (
-            <p className="rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-3 text-xs text-destructive">
-              {copy.productLoadError}
-            </p>
-          ) : null}
-          {productList.status === "ready" &&
-          productList.products.length === 0 ? (
-            <p className="rounded-xl border bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
-              {copy.emptyCatalog}
             </p>
           ) : null}
           {productList.status === "ready" &&
@@ -390,6 +512,11 @@ export function ProductFitPanel({
             <div className="grid min-w-0 gap-2">
               {productList.products.map((product) => {
                 const selected = product.modelCode === productModelCode;
+                const displayName = productDisplayName(
+                  product,
+                  dictionary,
+                  locale,
+                );
 
                 return (
                   <label
@@ -402,7 +529,7 @@ export function ProductFitPanel({
                     key={product.id}
                   >
                     <input
-                      aria-label={`${product.modelCode} · ${product.name}`}
+                      aria-label={`${product.modelCode} · ${displayName}`}
                       checked={selected}
                       className="mt-1 size-4 shrink-0 accent-primary"
                       name="productModelCode"
@@ -419,7 +546,7 @@ export function ProductFitPanel({
                         {product.modelCode}
                       </span>
                       <span className="mt-0.5 block break-words text-[11px] font-normal leading-4 text-muted-foreground">
-                        {product.name}
+                        {displayName}
                       </span>
                     </span>
                     {selected ? (
@@ -454,7 +581,7 @@ export function ProductFitPanel({
             >
               {applicationScopes.map((scope) => (
                 <option key={scope} value={scope}>
-                  {scopeLabels[scope]}
+                  {applicationScopeLabel(scope, dictionary)}
                 </option>
               ))}
             </select>
@@ -531,12 +658,20 @@ export function ProductFitPanel({
         </label>
 
         {productList.status === "error" ? (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-destructive" role="alert">
-              {productList.message}
+          <div
+            aria-atomic="true"
+            className="flex items-center justify-between gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-3"
+            data-testid="product-fit-catalog-error"
+            role="alert"
+          >
+            <p className="text-xs text-destructive">
+              {productListErrorMessage(productList.code, dictionary)}
             </p>
             <Button
-              onClick={() => setReloadKey((key) => key + 1)}
+              onClick={() => {
+                setProductList({ status: "loading" });
+                setReloadKey((key) => key + 1);
+              }}
               size="sm"
               type="button"
               variant="outline"
@@ -549,12 +684,16 @@ export function ProductFitPanel({
 
         {productList.status === "ready" &&
         productList.products.length === 0 ? (
-          <p
+          <div
+            aria-atomic="true"
+            aria-live="polite"
             className="rounded-xl border border-dashed bg-muted/40 p-3 text-xs text-muted-foreground"
             data-testid="product-fit-empty-catalog"
+            role="status"
           >
-            {copy.emptyCatalogBody}
-          </p>
+            <p className="font-medium text-foreground">{copy.emptyCatalog}</p>
+            <p className="mt-1 leading-5">{copy.emptyCatalogBody}</p>
+          </div>
         ) : null}
 
         <Button
@@ -573,6 +712,19 @@ export function ProductFitPanel({
           )}
           {copy.run}
         </Button>
+
+        {evaluation.status === "loading" ? (
+          <p
+            aria-atomic="true"
+            aria-busy="true"
+            aria-live="polite"
+            className="text-xs text-muted-foreground"
+            data-testid="product-fit-evaluation-loading"
+            role="status"
+          >
+            {copy.runningEvaluation}
+          </p>
+        ) : null}
       </form>
 
       {evaluation.status === "error" ? (
@@ -581,7 +733,9 @@ export function ProductFitPanel({
           role="alert"
         >
           <AlertCircle aria-hidden="true" className="size-4 text-destructive" />
-          <p className="mt-2">{evaluation.message}</p>
+          <p className="mt-2">
+            {productFitErrorMessage(evaluation.code, dictionary)}
+          </p>
         </div>
       ) : null}
 
@@ -709,7 +863,11 @@ function ProductFitResult({
             />
             <TraceValue
               label={copy.application}
-              value={evaluation.product.applicationScopes.join(", ")}
+              value={applicationScopeListLabel(
+                evaluation.product.applicationScopes,
+                dictionary,
+                locale,
+              )}
             />
             <TraceValue
               label={copy.productPower}
@@ -722,12 +880,11 @@ function ProductFitResult({
             />
             <TraceValue
               label={copy.availablePeriod}
-              value={formatDateRange(
+              value={formatProductAvailabilityDateRange(
                 evaluation.product.availableFrom,
                 evaluation.product.availableTo,
                 locale,
                 dictionary.common.notRecorded,
-                dictionary.common.open,
               )}
             />
           </dl>
@@ -750,7 +907,15 @@ function ProductFitResult({
                 {copy.regulationTrace}
               </p>
               <h3 className="mt-1 text-sm font-semibold">
-                {regulationCheck.regulation.canonicalName}
+                {regulationDisplayName(
+                  {
+                    canonicalName: regulationCheck.regulation.canonicalName,
+                    id: regulationCheck.regulation.regulationId,
+                    isDemo: regulationCheck.regulation.isDemo,
+                  },
+                  dictionary,
+                  locale,
+                )}
               </h3>
             </div>
             <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
@@ -797,9 +962,40 @@ function ProductFitResult({
               <div>
                 <p className="font-semibold">{dictionary.country.applicabilityEvidence}</p>
                 <p className="mt-1 text-muted-foreground">
-                  {regulationCheck.regulation.applicability.jurisdiction.name}（
-                  {regulationCheck.regulation.applicability.jurisdiction.code}
-                  ） · {dictionary.country.applicableJurisdiction}
+                  {nameWithCode(
+                    jurisdictionDisplayName(
+                      {
+                        code:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .code,
+                        countryIso3:
+                          regulationCheck.regulation.applicability.countryIso3,
+                        id:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .id,
+                        isDemo:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .isDemo,
+                        name:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .name,
+                        sourceId:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .source.id,
+                        sourceIsDemo:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .source.isDemo,
+                        sourceTitle:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .source.title,
+                        type: "country",
+                      },
+                      dictionary,
+                      locale,
+                    ),
+                    regulationCheck.regulation.applicability.jurisdiction.code,
+                    locale,
+                  )} · {dictionary.country.applicableJurisdiction}
                   {dictionary.common.labelSeparator}
                   {regulationCheck.regulation.applicability.countryIso3} ·{" "}
                   {dictionary.country.membershipPeriod}
@@ -869,24 +1065,25 @@ function ProductFitResult({
                     />
                   </div>
                   <p className="mt-1 text-muted-foreground">
-                    {copy.status} {certificationCheck.certification.status} · {copy.power}{" "}
-                    {formatRange(
+                    {copy.status}{dictionary.common.labelSeparator}
+                    {certificationStatusLabel(
+                      certificationCheck.certification.status,
+                      dictionary,
+                    )} · {copy.power}{" "}
+                    {formatCertificationPowerRange(
                       certificationCheck.certification.powerMinKw,
                       certificationCheck.certification.powerMaxKw,
-                      copy.noNumber,
+                      dictionary.common.notRecorded,
                       dictionary.common.open,
                     )}
                   </p>
                   <p className="mt-1 text-muted-foreground">
                     {copy.validPeriod}{" "}
-                    {formatOptionalUtcDate(
+                    {formatCertificationValidityRange(
                       certificationCheck.certification.validFrom,
-                      locale,
-                      dictionary.common.open,
-                    )} →{" "}
-                    {formatOptionalUtcDate(
                       certificationCheck.certification.validTo,
                       locale,
+                      dictionary.common.notRecorded,
                       dictionary.common.open,
                     )}
                   </p>
@@ -948,16 +1145,10 @@ function DataGapCopyAction({
       if (!navigator.clipboard) {
         throw new Error("Clipboard API is unavailable.");
       }
-      const scopeLabel = {
-        agriculture: copy.scopeAgriculture,
-        construction: copy.scopeConstruction,
-        "generator-set": copy.scopeGenerator,
-        marine: copy.scopeMarine,
-        "non-road": copy.scopeNonRoad,
-        "on-road": copy.scopeOnRoad,
-        "on-road-bus": copy.scopeBus,
-        "on-road-truck": copy.scopeTruck,
-      }[evaluation.input.applicationScope];
+      const scopeLabel = applicationScopeLabel(
+        evaluation.input.applicationScope,
+        dictionary,
+      );
       await navigator.clipboard.writeText(
         buildProductFitDataGapSummary({
           dictionary,

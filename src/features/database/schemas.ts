@@ -148,8 +148,45 @@ export const httpUrlSchema = z
     }
   });
 
+/** Check exact integer watts before IEEE-754 can round across a power band. */
+function isExactPowerDecimal(value: string): boolean {
+  const [mantissa = "", exponentText = "0"] = value.split(/[eE]/);
+  const negative = mantissa.startsWith("-");
+  const unsigned = mantissa.replace(/^[+-]/, "");
+  const [integerPart = "", fractionalPart = ""] = unsigned.split(".");
+  const digits = `${integerPart}${fractionalPart}`.replace(/^0+/, "");
+  // Any signed zero remains zero regardless of the written exponent.
+  if (digits.length === 0) return true;
+  if (negative) return false;
+
+  const significantDigits = digits.replace(/0+$/, "");
+  const trailingZeros = digits.length - significantDigits.length;
+  // After removing trailing zeros, the coefficient must become an integer
+  // number of watts with at most nine digits (100,000 kW = 100,000,000 W).
+  const minimumExponent = fractionalPart.length - trailingZeros - 3;
+  const maximumExponent = minimumExponent + 9 - significantDigits.length;
+  const exponent = Number(exponentText);
+  if (
+    !Number.isSafeInteger(exponent) ||
+    exponent < minimumExponent || exponent > maximumExponent
+  ) {
+    return false;
+  }
+  // Only the exponent is parsed above; an accepted exponent is bounded by
+  // the input length. Never allocate 10**exponent or expand untrusted zeros.
+  const watts = Number(
+    significantDigits + "0".repeat(exponent - minimumExponent),
+  );
+  return watts <= 100_000_000;
+}
+
 export const powerKwSchema = z
-  .union([z.number(), decimalNumberStringSchema])
+  .union([
+    z.number(),
+    decimalNumberStringSchema.refine(isExactPowerDecimal, {
+      message: "Power must be between 0 and 100000 kW in exact 0.001 kW increments",
+    }),
+  ])
   .transform((value) =>
     typeof value === "number" ? value : Number(value),
   )

@@ -10,6 +10,10 @@ import {
   aiCitations,
   aiToolCalls,
 } from "@/server/db/schema";
+import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
 
 type AuditJson = Record<string, unknown>;
 
@@ -31,11 +35,15 @@ export function createAiAuditRepository<
   TQueryResult extends PgQueryResultHKT,
 >(database: PgDatabase<TQueryResult, typeof schema>) {
   return {
-    async ensureSession(input: {
-      modelId: string;
-      selectedCountryIso3: string | null;
-      sessionId: string;
-    }): Promise<void> {
+    async ensureSession(
+      input: {
+        modelId: string;
+        selectedCountryIso3: string | null;
+        sessionId: string;
+      },
+      options: RequestSignalOptions = {},
+    ): Promise<void> {
+      throwIfRequestAborted(options.signal);
       await database
         .insert(aiChatSessions)
         .values({
@@ -51,6 +59,7 @@ export function createAiAuditRepository<
           },
           target: aiChatSessions.id,
         });
+      throwIfRequestAborted(options.signal);
     },
 
     async recordToolCall(input: AiToolCallAuditInput): Promise<void> {

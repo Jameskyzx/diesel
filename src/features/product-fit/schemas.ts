@@ -17,6 +17,14 @@ export const commercialReadinessSchema = z.enum([
   "unknown",
 ]);
 
+export const certificationStatusSchema = z.enum([
+  "pending",
+  "active",
+  "expired",
+  "withdrawn",
+  "unknown",
+]);
+
 export const productFitReasonCodeSchema = z.enum([
   "PRODUCT_NOT_FOUND",
   "APPLICATION_SCOPE_MATCH",
@@ -30,6 +38,7 @@ export const productFitReasonCodeSchema = z.enum([
   "NO_APPLICABLE_REGULATION_DATA",
   "CERTIFICATION_MATCH",
   "CERTIFICATION_MISSING",
+  "CERTIFICATION_PRODUCT_MISMATCH",
   "CERTIFICATION_INACTIVE",
   "CERTIFICATION_STATUS_UNKNOWN",
   "CERTIFICATION_VALIDITY_UNKNOWN",
@@ -128,9 +137,11 @@ export const certificationEvidenceSchema = z
     isDemo: z.boolean(),
     powerMaxKw: z.number().finite().positive().nullable(),
     powerMinKw: z.number().finite().nonnegative().nullable(),
+    productId: z.uuid(),
+    productModelCode: z.string().trim().min(1),
     regulationId: z.uuid(),
     source: fitEvidenceSourceSchema,
-    status: z.enum(["pending", "active", "expired", "withdrawn", "unknown"]),
+    status: certificationStatusSchema,
     validFrom: z.iso.date().nullable(),
     validTo: z.iso.date().nullable(),
     verifiedAt: isoTimestampSchema,
@@ -215,6 +226,7 @@ export const productFitApiErrorSchema = z
         code: z.enum([
           "INVALID_INPUT",
           "PAYLOAD_TOO_LARGE",
+          "REQUEST_TIMEOUT",
           "INTERNAL_ERROR",
         ]),
         message: z.string().trim().min(1),
@@ -226,6 +238,7 @@ export const productFitApiErrorSchema = z
 export type CertificationEvidence = z.infer<
   typeof certificationEvidenceSchema
 >;
+export type CertificationStatus = z.infer<typeof certificationStatusSchema>;
 export type FitEvidenceSource = z.infer<typeof fitEvidenceSourceSchema>;
 export type ProductFitEvaluation = z.infer<
   typeof productFitEvaluationSchema

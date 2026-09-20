@@ -16,6 +16,10 @@ import { applicableRegulationsQuerySchema } from "@/features/database/schemas";
 import { compareRegulationsInputSchema } from "@/features/marketing/schemas";
 import * as schema from "@/server/db/schema";
 import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
+import {
   countries,
   countryJurisdictions,
   dataSources,
@@ -42,10 +46,14 @@ export function createRegulationRepository<
   TQueryResult extends PgQueryResultHKT,
 >(database: PgDatabase<TQueryResult, typeof schema>) {
   return {
-    async findForComparison(input: unknown) {
+    async findForComparison(
+      input: unknown,
+      options: RequestSignalOptions = {},
+    ) {
       const query = compareRegulationsInputSchema.parse(input);
+      throwIfRequestAborted(options.signal);
 
-      return database
+      const rows = await database
         .select({
           applicability: {
             countryIso3: countryJurisdictions.countryIso3,
@@ -223,12 +231,18 @@ export function createRegulationRepository<
           asc(regulations.canonicalName),
           asc(regulationLimits.pollutantCode),
         );
+      throwIfRequestAborted(options.signal);
+      return rows;
     },
 
-    async findEffectiveByCountry(input: unknown) {
+    async findEffectiveByCountry(
+      input: unknown,
+      options: RequestSignalOptions = {},
+    ) {
       const query = applicableRegulationsQuerySchema.parse(input);
+      throwIfRequestAborted(options.signal);
 
-      return database
+      const rows = await database
         .select({
           applicability: {
             countryIso3: countryJurisdictions.countryIso3,
@@ -373,6 +387,8 @@ export function createRegulationRepository<
           ),
         )
         .orderBy(regulations.canonicalName, regulationLimits.pollutantCode);
+      throwIfRequestAborted(options.signal);
+      return rows;
     },
   };
 }

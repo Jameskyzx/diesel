@@ -1,17 +1,30 @@
 import { CalendarDays, Database, FileCheck2, MapPin } from "lucide-react";
 
-import type { CountryDetailResponse } from "@/features/countries/schemas";
+import type {
+  CountryDetailResponse,
+  CountryDirectory,
+  CountryMapSummary,
+} from "@/features/countries/schemas";
+import { countryDirectoryDisplayIdentity } from "@/features/countries/directory-display";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 import { formatOptionalUtcDate, formatUtcDate } from "@/i18n/date";
 import type { Locale } from "@/i18n/locale";
+import {
+  nameWithCode,
+  regulationDisplayName,
+} from "@/i18n/structured-labels";
 
 export function CountryInitialPanel({
+  countryDirectoryEntry,
+  countrySummary,
   detail,
   dictionary,
   hasGeometry,
   locale,
 }: {
+  countryDirectoryEntry: CountryDirectory[number];
+  countrySummary?: CountryMapSummary;
   detail: CountryDetailResponse;
   dictionary: Dictionary;
   hasGeometry: boolean;
@@ -34,7 +47,18 @@ export function CountryInitialPanel({
         </p>
         <MapPin aria-hidden="true" className="mt-8 size-7 text-primary" />
         <h2 className="mt-4 text-2xl font-semibold">
-          {detail.iso3} {copy.noDataSuffix}
+          {nameWithCode(
+            formatCountryDisplayName(
+              countryDirectoryDisplayIdentity(
+                countryDirectoryEntry,
+                countrySummary,
+              ),
+              locale,
+            ),
+            detail.iso3,
+            locale,
+          )}{dictionary.common.wordSeparator}
+          {copy.noDataSuffix}
         </h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           {hasGeometry
@@ -91,7 +115,9 @@ export function CountryInitialPanel({
           <ul className="mt-2 space-y-2">
             {country.currentEffectiveRegulations.slice(0, 4).map((regulation) => (
               <li className="rounded-xl border p-3 text-sm" key={regulation.id}>
-                <p className="font-semibold">{regulation.canonicalName}</p>
+                <p className="font-semibold">
+                  {regulationDisplayName(regulation, dictionary, locale)}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {regulation.citationCode ?? copy.citationMissing} ·{" "}
                   {copy.effectiveDate}{" "}

@@ -2,7 +2,7 @@ import "server-only";
 
 import { Buffer } from "node:buffer";
 import sharp from "sharp";
-import { getDocumentProxy } from "unpdf";
+import { getResolvedPDFJS } from "unpdf";
 
 import {
   CHAT_ATTACHMENT_PROCESSING_TIMEOUT_MS,
@@ -28,6 +28,13 @@ export class ChatAttachmentProcessingError extends Error {
   }
 }
 
+export class ChatAttachmentProcessingAbortedError extends ChatAttachmentProcessingError {
+  constructor() {
+    super("附件处理已取消。");
+    this.name = "ChatAttachmentProcessingAbortedError";
+  }
+}
+
 type PreparedTrustedUserMessages = {
   messages: TrustedUserMessage[];
   requiresMultimodalModel: boolean;
@@ -37,7 +44,12 @@ type AttachmentProcessingDeadline = {
   expiresAt: number;
 };
 
-type PdfDocument = Awaited<ReturnType<typeof getDocumentProxy>>;
+type BeginDeferredWork = () => (() => void) | null;
+type TrackDeferredCleanup = (cleanup: Promise<void>) => void;
+
+type PdfJsModule = Awaited<ReturnType<typeof getResolvedPDFJS>>;
+type PdfLoadingTask = ReturnType<PdfJsModule["getDocument"]>;
+type PdfDocument = Awaited<PdfLoadingTask["promise"]>;
 type PdfPage = Awaited<ReturnType<PdfDocument["getPage"]>>;
 
 function decodeInlineAttachment(part: TrustedUserFilePart): Uint8Array {
@@ -74,6 +86,12 @@ function imageDecodeError(filename: string): ChatAttachmentProcessingError {
   );
 }
 
+function throwIfAttachmentProcessingAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new ChatAttachmentProcessingAbortedError();
+  }
+}
+
 function expectedSharpFormat(mediaType: string): "jpeg" | "png" | "webp" | null {
   if (mediaType === "image/png") {
     return "png";
@@ -88,36 +106,96 @@ function expectedSharpFormat(mediaType: string): "jpeg" | "png" | "webp" | null 
 }
 
 async function runBeforeAttachmentDeadline<T>(input: {
+  beginDeferredWork?: BeginDeferredWork;
   deadline: AttachmentProcessingDeadline;
   filename: string;
   operation: () => Promise<T>;
+  signal?: AbortSignal;
 }): Promise<T> {
+  throwIfAttachmentProcessingAborted(input.signal);
   const remainingMs = input.deadline.expiresAt - Date.now();
   if (remainingMs <= 0) {
     throw attachmentTimeoutError(input.filename);
   }
 
+  const finish = input.beginDeferredWork?.();
+  if (input.beginDeferredWork !== undefined && !finish) {
+    throw new ChatAttachmentProcessingAbortedError();
+  }
+
+  let operation: Promise<T>;
+  try {
+    // Recheck after synchronously acquiring ownership. No decoder/PDF work may
+    // start after cancellation or after the request tracker has been sealed.
+    throwIfAttachmentProcessingAborted(input.signal);
+    operation = Promise.resolve(input.operation());
+  } catch (error: unknown) {
+    finish?.();
+    throw error;
+  }
+  const ownedOperation = operation.then(
+    (value) => {
+      finish?.();
+      return value;
+    },
+    (error: unknown) => {
+      finish?.();
+      throw error;
+    },
+  );
+
   let timeout: ReturnType<typeof setTimeout> | undefined;
+  let abortListener: (() => void) | undefined;
   const timeoutPromise = new Promise<never>((_resolve, reject) => {
     timeout = setTimeout(
       () => reject(attachmentTimeoutError(input.filename)),
       remainingMs,
     );
   });
+  const aborted =
+    input.signal === undefined
+      ? null
+      : new Promise<never>((_resolve, reject) => {
+          abortListener = () =>
+            reject(new ChatAttachmentProcessingAbortedError());
+          input.signal?.addEventListener("abort", abortListener, {
+            once: true,
+          });
+          if (input.signal?.aborted) {
+            abortListener();
+          }
+        });
 
   try {
-    return await Promise.race([input.operation(), timeoutPromise]);
+    const result = await Promise.race([
+      ownedOperation,
+      timeoutPromise,
+      ...(aborted ? [aborted] : []),
+    ]);
+    throwIfAttachmentProcessingAborted(input.signal);
+    return result;
   } finally {
     if (timeout !== undefined) {
       clearTimeout(timeout);
+    }
+    if (input.signal !== undefined && abortListener !== undefined) {
+      input.signal.removeEventListener("abort", abortListener);
     }
   }
 }
 
 async function finalizeAttachmentResource(input: {
+  beginDeferredWork?: BeginDeferredWork;
   deadline: AttachmentProcessingDeadline;
+  deferImmediately?: boolean;
   operation: () => PromiseLike<unknown> | unknown;
+  trackDeferredCleanup?: TrackDeferredCleanup;
 }): Promise<void> {
+  const finish = input.beginDeferredWork?.();
+  if (input.beginDeferredWork !== undefined && !finish) {
+    return;
+  }
+
   let cleanup: Promise<void>;
   try {
     cleanup = Promise.resolve(input.operation()).then(
@@ -125,19 +203,37 @@ async function finalizeAttachmentResource(input: {
       () => undefined,
     );
   } catch {
+    finish?.();
+    return;
+  }
+  const ownedCleanup = cleanup.then(() => {
+    finish?.();
+  });
+  const deferWithoutOwnedToken = () => {
+    if (finish === undefined) {
+      input.trackDeferredCleanup?.(cleanup);
+    }
+  };
+
+  if (input.deferImmediately) {
+    deferWithoutOwnedToken();
     return;
   }
 
   const remainingMs = input.deadline.expiresAt - Date.now();
   if (remainingMs <= 0) {
-    void cleanup;
+    deferWithoutOwnedToken();
     return;
   }
 
+  let completed = false;
+  const observedCleanup = ownedCleanup.then(() => {
+    completed = true;
+  });
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
     await Promise.race([
-      cleanup,
+      observedCleanup,
       new Promise<void>((resolve) => {
         timeout = setTimeout(resolve, remainingMs);
       }),
@@ -147,12 +243,19 @@ async function finalizeAttachmentResource(input: {
       clearTimeout(timeout);
     }
   }
+  if (!completed) {
+    deferWithoutOwnedToken();
+  }
 }
 
 async function assertImageFullyDecodes(input: {
+  beginDeferredWork?: BeginDeferredWork;
   deadline: AttachmentProcessingDeadline;
   part: TrustedUserFilePart;
+  signal?: AbortSignal;
+  trackDeferredCleanup?: TrackDeferredCleanup;
 }): Promise<void> {
+  throwIfAttachmentProcessingAborted(input.signal);
   const expectedFormat = expectedSharpFormat(input.part.mediaType);
   if (expectedFormat === null) {
     throw imageDecodeError(input.part.filename);
@@ -170,9 +273,11 @@ async function assertImageFullyDecodes(input: {
 
   try {
     const metadata = await runBeforeAttachmentDeadline({
+      beginDeferredWork: input.beginDeferredWork,
       deadline: input.deadline,
       filename: input.part.filename,
       operation: () => metadataDecoder.metadata(),
+      signal: input.signal,
     });
     const width = metadata.width ?? 0;
     const height = metadata.pageHeight ?? metadata.height ?? 0;
@@ -193,6 +298,7 @@ async function assertImageFullyDecodes(input: {
     }
 
     await runBeforeAttachmentDeadline({
+      beginDeferredWork: input.beginDeferredWork,
       deadline: input.deadline,
       filename: input.part.filename,
       operation: () =>
@@ -205,6 +311,7 @@ async function assertImageFullyDecodes(input: {
           })
           .raw()
           .toBuffer(),
+      signal: input.signal,
     });
   } catch (error: unknown) {
     if (error instanceof ChatAttachmentProcessingError) {
@@ -212,8 +319,18 @@ async function assertImageFullyDecodes(input: {
     }
     throw imageDecodeError(input.part.filename);
   } finally {
-    metadataDecoder.destroy();
-    pixelDecoder.destroy();
+    await finalizeAttachmentResource({
+      beginDeferredWork: input.beginDeferredWork,
+      deadline: input.deadline,
+      operation: () => metadataDecoder.destroy(),
+      trackDeferredCleanup: input.trackDeferredCleanup,
+    });
+    await finalizeAttachmentResource({
+      beginDeferredWork: input.beginDeferredWork,
+      deadline: input.deadline,
+      operation: () => pixelDecoder.destroy(),
+      trackDeferredCleanup: input.trackDeferredCleanup,
+    });
   }
 }
 
@@ -284,13 +401,16 @@ function pdfTextChunkItems(chunk: unknown): readonly unknown[] {
 }
 
 async function extractPdfPageText(input: {
+  beginDeferredWork?: BeginDeferredWork;
   currentAttachmentCharacters: number;
   currentTotalCharacters: number;
   deadline: AttachmentProcessingDeadline;
   filename: string;
   pageNumber: number;
   pdf: PdfDocument;
+  signal?: AbortSignal;
   textChunks: string[];
+  trackDeferredCleanup?: TrackDeferredCleanup;
 }): Promise<number> {
   let page: PdfPage | undefined;
   let reader: ReadableStreamDefaultReader<unknown> | undefined;
@@ -298,9 +418,11 @@ async function extractPdfPageText(input: {
 
   try {
     page = await runBeforeAttachmentDeadline({
+      beginDeferredWork: input.beginDeferredWork,
       deadline: input.deadline,
       filename: input.filename,
       operation: () => input.pdf.getPage(input.pageNumber),
+      signal: input.signal,
     });
     const textStream =
       page.streamTextContent() as ReadableStream<unknown>;
@@ -309,9 +431,11 @@ async function extractPdfPageText(input: {
 
     while (true) {
       const result = await runBeforeAttachmentDeadline({
+        beginDeferredWork: input.beginDeferredWork,
         deadline: input.deadline,
         filename: input.filename,
         operation: () => pageReader.read(),
+        signal: input.signal,
       });
       if (result.done) {
         break;
@@ -335,35 +459,60 @@ async function extractPdfPageText(input: {
     if (reader !== undefined) {
       const readerToCancel = reader;
       await finalizeAttachmentResource({
+        beginDeferredWork: input.beginDeferredWork,
         deadline: input.deadline,
         operation: () => readerToCancel.cancel(),
+        trackDeferredCleanup: input.trackDeferredCleanup,
       });
     }
     if (page !== undefined) {
       const pageToCleanup = page;
       await finalizeAttachmentResource({
+        beginDeferredWork: input.beginDeferredWork,
         deadline: input.deadline,
         operation: () => pageToCleanup.cleanup(),
+        trackDeferredCleanup: input.trackDeferredCleanup,
       });
     }
   }
 }
 
 async function extractPdfText(input: {
+  beginDeferredWork?: BeginDeferredWork;
   currentTotalCharacters: number;
   deadline: AttachmentProcessingDeadline;
   part: TrustedUserFilePart;
+  signal?: AbortSignal;
+  trackDeferredCleanup?: TrackDeferredCleanup;
 }): Promise<{ pageCount: number; text: string }> {
-  let documentPromise: Promise<PdfDocument> | undefined;
+  let loadingTask: PdfLoadingTask | undefined;
   let pdf: PdfDocument | undefined;
   try {
+    const pdfJs = await runBeforeAttachmentDeadline({
+      beginDeferredWork: input.beginDeferredWork,
+      deadline: input.deadline,
+      filename: input.part.filename,
+      operation: getResolvedPDFJS,
+      signal: input.signal,
+    });
+    // Match the server-safe defaults used by unpdf's proxy helper while
+    // retaining the loading task so every terminal path can destroy it.
     pdf = await runBeforeAttachmentDeadline({
+      beginDeferredWork: input.beginDeferredWork,
       deadline: input.deadline,
       filename: input.part.filename,
       operation: () => {
-        documentPromise = getDocumentProxy(decodeInlineAttachment(input.part));
-        return documentPromise;
+        // getDocument starts PDF worker/loading work synchronously, so both task
+        // creation and its promise must be inside the owned operation boundary.
+        const currentLoadingTask = pdfJs.getDocument({
+          data: decodeInlineAttachment(input.part),
+          disableFontFace: true,
+          useSystemFonts: true,
+        });
+        loadingTask = currentLoadingTask;
+        return currentLoadingTask.promise;
       },
+      signal: input.signal,
     });
     if (pdf.numPages > MAX_CHAT_PDF_PAGES) {
       throw new ChatAttachmentProcessingError(
@@ -384,13 +533,16 @@ async function extractPdfText(input: {
         });
       }
       currentAttachmentCharacters = await extractPdfPageText({
+        beginDeferredWork: input.beginDeferredWork,
         currentAttachmentCharacters,
         currentTotalCharacters: input.currentTotalCharacters,
         deadline: input.deadline,
         filename: input.part.filename,
         pageNumber,
         pdf,
+        signal: input.signal,
         textChunks,
+        trackDeferredCleanup: input.trackDeferredCleanup,
       });
     }
 
@@ -409,21 +561,15 @@ async function extractPdfText(input: {
       `${input.part.filename} 无法安全读取。请确认 PDF 未加密且文件完整。`,
     );
   } finally {
-    if (pdf !== undefined) {
-      const pdfToDestroy = pdf;
+    if (loadingTask !== undefined) {
+      const loadingTaskToDestroy = loadingTask;
       await finalizeAttachmentResource({
+        beginDeferredWork: input.beginDeferredWork,
         deadline: input.deadline,
-        operation: () => pdfToDestroy.loadingTask.destroy(),
+        deferImmediately: input.signal?.aborted === true,
+        operation: () => loadingTaskToDestroy.destroy(),
+        trackDeferredCleanup: input.trackDeferredCleanup,
       });
-    } else if (documentPromise !== undefined) {
-      void documentPromise
-        .then((latePdf) =>
-          finalizeAttachmentResource({
-            deadline: input.deadline,
-            operation: () => latePdf.loadingTask.destroy(),
-          }),
-        )
-        .catch(() => undefined);
     }
   }
 }
@@ -472,6 +618,11 @@ function assertTextBudget(
 
 export async function prepareTrustedUserMessagesForModel(
   messages: readonly TrustedUserMessage[],
+  options: {
+    beginDeferredWork?: BeginDeferredWork;
+    signal?: AbortSignal;
+    trackDeferredCleanup?: TrackDeferredCleanup;
+  } = {},
 ): Promise<PreparedTrustedUserMessages> {
   const deadline: AttachmentProcessingDeadline = {
     expiresAt: Date.now() + CHAT_ATTACHMENT_PROCESSING_TIMEOUT_MS,
@@ -481,15 +632,23 @@ export async function prepareTrustedUserMessagesForModel(
   const preparedMessages: TrustedUserMessage[] = [];
 
   for (const message of messages) {
+    throwIfAttachmentProcessingAborted(options.signal);
     const parts: TrustedUserPart[] = [];
     for (const part of message.parts) {
+      throwIfAttachmentProcessingAborted(options.signal);
       if (part.type !== "file") {
         parts.push(part);
         continue;
       }
 
       if (part.mediaType.startsWith("image/")) {
-        await assertImageFullyDecodes({ deadline, part });
+        await assertImageFullyDecodes({
+          beginDeferredWork: options.beginDeferredWork,
+          deadline,
+          part,
+          signal: options.signal,
+          trackDeferredCleanup: options.trackDeferredCleanup,
+        });
         requiresMultimodalModel = true;
         parts.push(part);
         continue;
@@ -498,11 +657,15 @@ export async function prepareTrustedUserMessagesForModel(
       const extracted =
         part.mediaType === "application/pdf"
           ? await extractPdfText({
+              beginDeferredWork: options.beginDeferredWork,
               currentTotalCharacters: extractedTextCharacters,
               deadline,
               part,
+              signal: options.signal,
+              trackDeferredCleanup: options.trackDeferredCleanup,
             })
           : { text: extractTextAttachment(part) };
+      throwIfAttachmentProcessingAborted(options.signal);
       extractedTextCharacters = assertTextBudget(
         part.filename,
         extracted.text,

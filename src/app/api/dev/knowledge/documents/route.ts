@@ -14,9 +14,14 @@ import {
 } from "@/server/services/knowledge-service";
 import {
   readFormDataRequest,
+  RequestBodyAbortedError,
   RequestBodyTooLargeError,
+  RequestBodyTimeoutError,
 } from "@/server/http/request-body";
-import { MAX_KNOWLEDGE_IMPORT_REQUEST_BYTES } from "@/server/http/request-limits";
+import {
+  MAX_KNOWLEDGE_IMPORT_REQUEST_BYTES,
+  MAX_NON_CHAT_REQUEST_BODY_READ_MS,
+} from "@/server/http/request-limits";
 
 export const runtime = "nodejs";
 
@@ -37,6 +42,8 @@ export async function POST(request: Request) {
     const formData = await readFormDataRequest(
       request,
       MAX_KNOWLEDGE_IMPORT_REQUEST_BYTES,
+      MAX_NON_CHAT_REQUEST_BODY_READ_MS,
+      request.signal,
     );
     const file = formData.get("file");
 
@@ -73,6 +80,20 @@ export async function POST(request: Request) {
         { status: 413 },
       );
     }
+    if (
+      error instanceof RequestBodyTimeoutError ||
+      error instanceof RequestBodyAbortedError
+    ) {
+      return NextResponse.json(
+        knowledgeApiErrorSchema.parse({
+          error: {
+            code: "REQUEST_TIMEOUT",
+            message: "上传请求接收超时或已取消，请重试。",
+          },
+        }),
+        { status: 408 },
+      );
+    }
     if (error instanceof KnowledgeInputError) {
       return NextResponse.json(
         knowledgeApiErrorSchema.parse({
@@ -85,7 +106,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (error instanceof ZodError) {
+    if (error instanceof ZodError || error instanceof SyntaxError) {
       return NextResponse.json(
         knowledgeApiErrorSchema.parse({
           error: {

@@ -3,9 +3,15 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import {
+  PHASE_DEVELOPMENT_SERVER,
+  PHASE_PRODUCTION_BUILD,
+} from "next/constants";
 
-import nextConfig, {
+import {
   APPLICATION_SECURITY_HEADERS,
+  createApplicationSecurityHeaders,
+  createNextConfig,
 } from "../next.config";
 import {
   WORLD_COUNTRIES_GEOJSON_SHA256,
@@ -13,10 +19,10 @@ import {
 } from "@/lib/geo-assets";
 
 describe("security and immutable asset configuration", () => {
-  it("applies browser security headers at both the app and TLS proxy", async () => {
+  it("enforces browser security headers at both the app and TLS proxy", async () => {
     expect(APPLICATION_SECURITY_HEADERS).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ key: "Content-Security-Policy-Report-Only" }),
+        expect.objectContaining({ key: "Content-Security-Policy" }),
         {
           key: "Permissions-Policy",
           value: "camera=(), microphone=(), geolocation=()",
@@ -34,7 +40,77 @@ describe("security and immutable asset configuration", () => {
     );
   });
 
+  it("keeps blob access scoped to rendered images, not module workers", () => {
+    const contentSecurityPolicy = APPLICATION_SECURITY_HEADERS.find(
+      ({ key }) => key === "Content-Security-Policy",
+    );
+
+    expect(contentSecurityPolicy?.value).toContain(
+      "img-src 'self' data: blob:",
+    );
+    expect(contentSecurityPolicy?.value).toContain(
+      "worker-src 'self'",
+    );
+    expect(contentSecurityPolicy?.value).toContain("default-src 'self'");
+    expect(contentSecurityPolicy?.value).toContain("object-src 'none'");
+    expect(contentSecurityPolicy?.value).not.toMatch(
+      /(?:default|script|connect|worker)-src[^;]*blob:/u,
+    );
+    expect(APPLICATION_SECURITY_HEADERS).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "Content-Security-Policy-Report-Only",
+        }),
+      ]),
+    );
+  });
+
+  it("allows development runtime sources only for the Next development-server phase", async () => {
+    const developmentPolicy = createApplicationSecurityHeaders(true).find(
+      ({ key }) => key === "Content-Security-Policy",
+    )?.value;
+    const productionPolicy = createApplicationSecurityHeaders(false).find(
+      ({ key }) => key === "Content-Security-Policy",
+    )?.value;
+    const developmentConfigHeaders = await createNextConfig(
+      PHASE_DEVELOPMENT_SERVER,
+    ).headers?.();
+    const productionConfigHeaders = await createNextConfig(
+      PHASE_PRODUCTION_BUILD,
+    ).headers?.();
+
+    expect(developmentPolicy).toContain(
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    );
+    expect(developmentPolicy).toContain("connect-src 'self' ws: wss:");
+    expect(developmentPolicy).not.toMatch(/connect-src[^;]*https:/u);
+    expect(developmentPolicy).toContain("worker-src 'self'");
+    expect(developmentPolicy).not.toMatch(/worker-src[^;]*blob:/u);
+    expect(productionPolicy).toContain("worker-src 'self'");
+    expect(productionPolicy).not.toMatch(/worker-src[^;]*blob:/u);
+    expect(productionPolicy).toContain(
+      "script-src 'self' 'unsafe-inline'",
+    );
+    expect(productionPolicy).toContain("connect-src 'self';");
+    expect(productionPolicy).not.toMatch(
+      /connect-src[^;]*(?:https:|wss?:)/u,
+    );
+    expect(productionPolicy).not.toContain("'unsafe-eval'");
+    expect(developmentConfigHeaders?.[0]?.headers[4]?.value).toBe(
+      developmentPolicy,
+    );
+    expect(productionConfigHeaders?.[0]?.headers[4]?.value).toBe(
+      productionPolicy,
+    );
+    expect(createNextConfig(PHASE_DEVELOPMENT_SERVER).serverExternalPackages)
+      .toEqual([
+        "@electric-sql/pglite",
+        "@electric-sql/pglite-pgvector",
+      ]);
+  });
+
   it("redirects geometry to a versioned immutable URL", async () => {
+    const nextConfig = createNextConfig(PHASE_PRODUCTION_BUILD);
     const redirects = await nextConfig.redirects?.();
     const rewrites = await nextConfig.rewrites?.();
     const headers = await nextConfig.headers?.();

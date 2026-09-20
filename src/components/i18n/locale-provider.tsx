@@ -7,6 +7,11 @@ import {
   type Dictionary,
 } from "@/i18n/dictionaries";
 import { defaultLocale, type Locale } from "@/i18n/locale";
+import { configureBrowserZodRuntime } from "@/lib/browser-zod-runtime";
+
+if (typeof window !== "undefined") {
+  configureBrowserZodRuntime();
+}
 
 type LocaleContextValue = {
   dictionary: Dictionary;

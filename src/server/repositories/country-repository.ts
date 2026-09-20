@@ -18,6 +18,10 @@ import {
 } from "@/features/database/schemas";
 import * as schema from "@/server/db/schema";
 import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
+import {
   countries,
   countryJurisdictions,
   dataSources,
@@ -42,8 +46,12 @@ export function createCountryRepository<
     .extend({ asOf: isoDateSchema })
     .strict();
 
-  async function findByIso3(input: unknown) {
+  async function findByIso3(
+    input: unknown,
+    options: RequestSignalOptions = {},
+  ) {
     const { iso3 } = countryQuerySchema.parse(input);
+    throwIfRequestAborted(options.signal);
 
     const rows = await database
       .select({
@@ -76,22 +84,28 @@ export function createCountryRepository<
         ),
       )
       .limit(1);
+    throwIfRequestAborted(options.signal);
 
     return rows[0] ?? null;
   }
 
   return {
     findByIso3,
-    async findDetailsByIso3(input: unknown) {
+    async findDetailsByIso3(
+      input: unknown,
+      options: RequestSignalOptions = {},
+    ) {
       const { asOf, iso3 } = countryDetailsQuerySchema.parse(input);
-      const country = await findByIso3({ iso3 });
+      throwIfRequestAborted(options.signal);
+      const country = await findByIso3({ iso3 }, options);
 
       if (!country) {
         return null;
       }
 
-      const [jurisdictionRows, regulationRows, marketMetricRows] =
-        await Promise.all([
+      throwIfRequestAborted(options.signal);
+      const [jurisdictionResult, regulationResult, marketMetricResult] =
+        await Promise.allSettled([
         database
           .select({
             code: jurisdictions.code,
@@ -239,6 +253,7 @@ export function createCountryRepository<
         database
           .select({
             applicationScope: marketMetrics.applicationScope,
+            countryIso3: marketMetrics.countryIso3,
             currencyCode: marketMetrics.currencyCode,
             definition: marketMetrics.definition,
             id: marketMetrics.id,
@@ -277,6 +292,24 @@ export function createCountryRepository<
           .orderBy(desc(marketMetrics.periodEnd), asc(marketMetrics.metricName)),
         ]);
 
+      // Drizzle queries cannot be canceled reliably on this path. Wait for
+      // every branch before surfacing a failure so the outer public-data
+      // admission lease continues to cover all database work started here.
+      // Check in query order to keep failure selection deterministic.
+      if (jurisdictionResult.status === "rejected") {
+        throw jurisdictionResult.reason;
+      }
+      if (regulationResult.status === "rejected") {
+        throw regulationResult.reason;
+      }
+      if (marketMetricResult.status === "rejected") {
+        throw marketMetricResult.reason;
+      }
+      const jurisdictionRows = jurisdictionResult.value;
+      const regulationRows = regulationResult.value;
+      const marketMetricRows = marketMetricResult.value;
+      throwIfRequestAborted(options.signal);
+
       return {
         ...country,
         jurisdictions: jurisdictionRows,
@@ -284,8 +317,9 @@ export function createCountryRepository<
         regulations: regulationRows,
       };
     },
-    async listMapSummaries() {
-      return database
+    async listMapSummaries(options: RequestSignalOptions = {}) {
+      throwIfRequestAborted(options.signal);
+      const rows = await database
         .select({
           dataCoverageStatus: countries.dataCoverageStatus,
           isDemo: sql<boolean>`${countries.isDemo} OR ${dataSources.isDemo}`,
@@ -305,6 +339,8 @@ export function createCountryRepository<
         )
         .where(isNull(countries.archivedAt))
         .orderBy(asc(countries.nameEn));
+      throwIfRequestAborted(options.signal);
+      return rows;
     },
   };
 }

@@ -1,96 +1,62 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
+import {
+  buildConversationBusinessContext,
+  countryIso3sIn,
+} from "@/server/ai/conversation-context";
 import {
   salesBriefSummaryFromPrompt,
   selectPortfolioDemoTool,
 } from "@/server/ai/portfolio-demo-model";
 import { resolvePortfolioDemoMode } from "@/server/config/portfolio-demo";
+import {
+  buildSalesBriefResult,
+  buildToolErrorResult,
+} from "@/server/ai/tool-results";
+import { generateSalesBrief } from "@/server/services/marketing-analysis-service";
+import { salesBriefResultToModelOutput } from "@/features/ai/model-tool-output";
 
-function salesBriefPrompt(overallScore: number | null): unknown[] {
+const originalDatabaseMode = process.env.DATABASE_MODE;
+const portfolioBriefInput = {
+  applicationScope: "non-road" as const,
+  asOf: "2026-08-13",
+  countryIso3s: ["CHN", "BRA"],
+  metricCodes: ["DEMO_ADDRESSABLE_UNITS"],
+  powerKw: 100,
+  targetCountryIso3: "CHN",
+};
+let canonicalBriefResult: ReturnType<typeof buildSalesBriefResult>;
+
+beforeAll(async () => {
+  process.env.DATABASE_MODE = "pglite-demo";
+  canonicalBriefResult = buildSalesBriefResult({
+    brief: await generateSalesBrief(portfolioBriefInput),
+    informationAsOf: portfolioBriefInput.asOf,
+  });
+});
+
+afterAll(() => {
+  if (originalDatabaseMode === undefined) {
+    delete process.env.DATABASE_MODE;
+  } else {
+    process.env.DATABASE_MODE = originalDatabaseMode;
+  }
+});
+
+function salesBriefPrompt(hasScore: boolean): unknown[] {
+  const result = hasScore
+    ? canonicalBriefResult
+    : buildToolErrorResult(
+        "generateSalesBrief",
+        portfolioBriefInput.asOf,
+        portfolioBriefInput,
+      );
+  const value = salesBriefResultToModelOutput(result);
   return [
     {
       content: [
         {
-          output: {
-            type: "json",
-            value: {
-              brief: {
-                executiveSummary: "规则生成摘要",
-                marketScore: {
-                  components: [
-                    {
-                      configuredWeight: 0.5,
-                      contribution: overallScore,
-                      effectiveWeight: 0.5,
-                      explanation: "市场证据",
-                      inputFacts: ["metric=available"],
-                      key: "marketPotential",
-                      score: overallScore,
-                      status: overallScore === null ? "missing" : "available",
-                    },
-                    {
-                      configuredWeight: 0.3,
-                      contribution: overallScore,
-                      effectiveWeight: 0.3,
-                      explanation: "产品证据",
-                      inputFacts: ["fit=1"],
-                      key: "productReadiness",
-                      score: overallScore,
-                      status: overallScore === null ? "missing" : "available",
-                    },
-                    {
-                      configuredWeight: 0.2,
-                      contribution: overallScore,
-                      effectiveWeight: 0.2,
-                      explanation: "法规证据",
-                      inputFacts: ["effective=1"],
-                      key: "regulatoryCoverage",
-                      score: overallScore,
-                      status: overallScore === null ? "missing" : "available",
-                    },
-                  ],
-                  countryIso3: "BRA",
-                  dataCoveragePct: overallScore === null ? 0 : 80,
-                  missingData: overallScore === null ? ["缺少评分证据"] : [],
-                  overallScore,
-                },
-                missingData: [],
-                opportunities: [],
-                query: {
-                  applicationScope: "non-road",
-                  asOf: "2026-08-13",
-                  countryIso3s: ["CHN", "BRA"],
-                  powerKw: 100,
-                  targetCountryIso3: "BRA",
-                },
-                recommendedProducts: [],
-                risks: [
-                  {
-                    evidenceIds: ["risk-1"],
-                    text: "认证证据尚不完整",
-                    title: "认证缺口",
-                  },
-                ],
-                salesActions: [
-                  {
-                    action: "先补齐认证资料再联系客户",
-                    kind: "rule_generated",
-                    priority: "high",
-                    rationale: "避免把未知状态升级为承诺",
-                  },
-                ],
-                sources: [],
-              },
-              citations: [],
-              evidenceSufficient: overallScore !== null,
-              informationAsOf: "2026-08-13",
-              latestVerifiedAt: null,
-              status: overallScore === null ? "no_data" : "ok",
-              tool: "generateSalesBrief",
-              warnings: [],
-            },
-          },
+          output: { type: "json", value },
           toolCallId: "portfolio-demo-generateSalesBrief",
           toolName: "generateSalesBrief",
           type: "tool-result",
@@ -135,6 +101,28 @@ describe("portfolio demo runtime", () => {
 });
 
 describe("portfolio demo deterministic tool routing", () => {
+  it.each([
+    ["compareMarkets", "Compare CHN and BRA market metric DEMO_ADDRESSABLE_UNITS."],
+    ["compareMarkets", "比较 CHN 和 BRA 的 DEMO_ADDRESSABLE_UNITS 市场指标。"],
+    ["calculateOpportunityScore", "Calculate opportunity scores for CHN and BRA non-road 100 kW as of 2026-08-20 using DEMO_ADDRESSABLE_UNITS."],
+    ["calculateOpportunityScore", "为 CHN 和 BRA 非道路 100 kW 做 2026-08-20 机会评分，使用 DEMO_ADDRESSABLE_UNITS。"],
+    ["generateSalesBrief", "Generate a sales brief targeting CHN with BRA as a benchmark, non-road 100 kW, as of 2026-08-20 using DEMO_ADDRESSABLE_UNITS."],
+    ["generateSalesBrief", "以 CHN 为目标、BRA 为对照，生成非道路 100 kW、2026-08-20 的销售简报，使用 DEMO_ADDRESSABLE_UNITS。"],
+  ] as const)("preserves requested metric codes for %s: %s", (toolName, text) => {
+    expect(selectPortfolioDemoTool(text)).toMatchObject({ toolName, input: { metricCodes: ["DEMO_ADDRESSABLE_UNITS"] } });
+    expect(selectPortfolioDemoTool("Continue.", [text, "Continue."])).toMatchObject({ toolName, input: { metricCodes: ["DEMO_ADDRESSABLE_UNITS"] } });
+    expect(selectPortfolioDemoTool("Use DEMO_METRIC_REPLACEMENT.", [text, "Use DEMO_METRIC_REPLACEMENT."]))
+      .toMatchObject({ toolName, input: { metricCodes: ["DEMO_METRIC_REPLACEMENT"] } });
+  });
+
+  it("does not invent a metric filter or transfer it to a different task", () => {
+    const market = "Compare CHN and BRA market metrics.";
+    expect(selectPortfolioDemoTool(market).input).not.toHaveProperty("metricCodes");
+    const score = "Calculate opportunity scores for CHN and BRA non-road 100 kW as of 2026-08-20.";
+    expect(selectPortfolioDemoTool(score, ["Compare CHN and BRA DEMO_ADDRESSABLE_UNITS market metrics.", score]).input)
+      .not.toHaveProperty("metricCodes");
+  });
+
   it("preserves country order from the user's text", () => {
     expect(
       buildConversationBusinessContext([
@@ -151,6 +139,46 @@ describe("portfolio demo deterministic tool routing", () => {
         "Compare Germany, Brazil, and China for non-road 100 kW regulations.",
       ]).countryIso3s,
     ).toEqual(["DEU", "BRA", "CHN"]);
+  });
+
+  it.each([
+    {
+      expectedAsOf: null,
+      text: "Can you show the source for CHN market metrics?",
+    },
+    {
+      expectedAsOf: null,
+      text: "What are the sources for CHN regulations?",
+    },
+    {
+      expectedAsOf: "2026-03-01",
+      text: "Show the source for CHN regulations as of Mar 1, 2026.",
+    },
+  ])(
+    "does not interpret ordinary English as an ISO3 country in: $text",
+    ({ expectedAsOf, text }) => {
+      expect(buildConversationBusinessContext([text])).toMatchObject({
+        activeTask: "knowledge",
+        asOf: expectedAsOf,
+        countryIso3s: ["CHN"],
+        focusedCountryIso3: "CHN",
+      });
+    },
+  );
+
+  it("accepts only canonical uppercase bare ISO3 tokens", () => {
+    expect(countryIso3sIn("CHN BRA chn bra Can are Mar")).toEqual([
+      "CHN",
+      "BRA",
+    ]);
+  });
+
+  it("keeps country names and aliases case-insensitive", () => {
+    expect(countryIso3sIn("gErMaNy, bRaZiL, and CHINA")).toEqual([
+      "DEU",
+      "BRA",
+      "CHN",
+    ]);
   });
 
   it.each([
@@ -180,6 +208,18 @@ describe("portfolio demo deterministic tool routing", () => {
         "COMPARE CHN AND BRA NON-ROAD 100 KW REGULATIONS",
       ]).productModelCode,
     ).toBeNull();
+  });
+
+  it.each([
+    "as of Aug 12, 2026",
+    "截止 2026年8月12日",
+    "asOf 2026-08-12",
+  ])("normalizes the localized explicit date in %s", (text) => {
+    expect(
+      buildConversationBusinessContext([
+        `CHN 的 non-road 100 kW 产品 DEMO-ENG-100，${text}`,
+      ]).asOf,
+    ).toBe("2026-08-12");
   });
 
   it("fails closed on multiple distinct powers and recovers on a single-power correction", () => {
@@ -236,6 +276,37 @@ describe("portfolio demo deterministic tool routing", () => {
     ).toMatchObject({
       input: { countryIso3: "CHN", topics: ["regulations"] },
       toolName: "getCountryProfile",
+    });
+  });
+
+  it.each([
+    "Check FJI non-road regulations for 100 kW as of 2026-08-13. Do not extrapolate if evidence is missing.",
+    "查询 FJI 在 2026-08-13 的 non-road 100 kW 法规，证据不足时不要推断。",
+  ])("preserves exact single-country regulation filters: %s", (text) => {
+    expect(selectPortfolioDemoTool(text)).toEqual({
+      input: {
+        applicationScope: "non-road",
+        asOf: "2026-08-13",
+        countryIso3s: ["FJI"],
+        powerKw: 100,
+      },
+      toolName: "compareRegulations",
+    });
+  });
+
+  it("keeps exact regulation filters when the next turn changes the country", () => {
+    const turns = [
+      "Check CHN non-road regulations for 100 kW as of 2026-08-13.",
+      "What about FJI?",
+    ];
+    expect(selectPortfolioDemoTool(turns[1]!, turns)).toEqual({
+      input: {
+        applicationScope: "non-road",
+        asOf: "2026-08-13",
+        countryIso3s: ["FJI"],
+        powerKw: 100,
+      },
+      toolName: "compareRegulations",
     });
   });
 
@@ -489,28 +560,48 @@ describe("portfolio demo deterministic tool routing", () => {
 
 describe("portfolio demo structured sales-brief summary", () => {
   it("turns the validated brief into a directly reusable conclusion", () => {
-    const summary = salesBriefSummaryFromPrompt(salesBriefPrompt(87));
+    const summary = salesBriefSummaryFromPrompt(salesBriefPrompt(true), "zh-CN");
+    const score = canonicalBriefResult.brief.marketScore;
 
-    expect(summary).toContain("BRA 总体机会分为 87/100");
-    expect(summary).toContain("数据覆盖率 80%");
-    expect(summary).toContain("首要风险：认证缺口：认证证据尚不完整");
-    expect(summary).toContain("第一行动：先补齐认证资料再联系客户");
+    expect(summary).toContain(
+      `${score.countryIso3} 总体机会分为 ${score.overallScore}/100`,
+    );
+    expect(summary).toContain(`数据覆盖率 ${score.dataCoveragePct}%`);
+    expect(summary).toContain(
+      `结构化简报识别到 ${canonicalBriefResult.brief.risks.length} 项风险`,
+    );
+    expect(summary).toContain(
+      `结构化简报提供 ${canonicalBriefResult.brief.salesActions.length} 项规则生成行动`,
+    );
+    expect(summary).not.toContain("认证缺口");
+    expect(summary).not.toContain("认证证据尚不完整");
+    expect(summary).not.toContain("先补齐认证资料再联系客户");
     expect(summary).toContain("不可用于报价、认证声明或销售承诺");
   });
 
   it("does not convert an unavailable score into zero", () => {
-    const summary = salesBriefSummaryFromPrompt(salesBriefPrompt(null));
+    const summary = salesBriefSummaryFromPrompt(
+      salesBriefPrompt(false),
+      "zh-CN",
+    );
 
-    expect(summary).toContain("BRA 当前证据下不可评分");
+    expect(summary).toContain("CHN 当前证据下不可评分");
     expect(summary).not.toContain("0/100");
   });
 
-  it("keeps the fixed English summary English without translating original card text", () => {
-    const summary = salesBriefSummaryFromPrompt(salesBriefPrompt(87), "en");
+  it("defaults the fixed summary to English without translating original card text", () => {
+    const summary = salesBriefSummaryFromPrompt(salesBriefPrompt(true));
+    const score = canonicalBriefResult.brief.marketScore;
 
-    expect(summary).toContain("BRA has an overall opportunity score of 87/100");
-    expect(summary).toContain("identifies 1 risk(s)");
-    expect(summary).toContain("provides 1 rule-generated action(s)");
+    expect(summary).toContain(
+      `${score.countryIso3} has an overall opportunity score of ${score.overallScore}/100`,
+    );
+    expect(summary).toContain(
+      `identifies ${canonicalBriefResult.brief.risks.length} risk(s)`,
+    );
+    expect(summary).toContain(
+      `provides ${canonicalBriefResult.brief.salesActions.length} rule-generated action(s)`,
+    );
     expect(summary).toContain(
       "For information only; not a substitute for formal certification or legal advice.",
     );

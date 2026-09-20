@@ -17,7 +17,6 @@ import {
   FormEvent,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -25,9 +24,17 @@ import Link from "next/link";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import { appendDocumentMetadata } from "@/domain/admin/normalize-document-form";
 import {
+  appendDocumentMetadata,
+  appendDocumentReprocessMetadata,
+} from "@/domain/admin/normalize-document-form";
+import {
+  ADMIN_EXPECTED_PRINCIPAL_EMAIL_REQUEST_HEADER,
+  ADMIN_EXPECTED_PRINCIPAL_ROLE_REQUEST_HEADER,
+  ADMIN_PRINCIPAL_EMAIL_RESPONSE_HEADER,
+  ADMIN_PRINCIPAL_ROLE_RESPONSE_HEADER,
   adminDashboardResponseSchema,
+  adminPrincipalSchema,
   governedEntityTypes,
   type AdminDashboardResponse,
   type AdminPrincipal,
@@ -45,11 +52,13 @@ const previewResponseSchema = z
   .object({
     batchId: z.uuid(),
     errors: z.array(
-      z.object({
-        field: z.string().nullable(),
-        message: z.string(),
-        rowNumber: z.number().int().positive(),
-      }),
+      z
+        .object({
+          field: z.string().nullable(),
+          message: z.string(),
+          rowNumber: z.number().int().positive(),
+        })
+        .strict(),
     ),
     invalidRows: z.number().int().nonnegative(),
     rows: z.array(
@@ -64,7 +73,32 @@ const previewResponseSchema = z
     totalRows: z.number().int().nonnegative(),
     validRows: z.number().int().nonnegative(),
   })
-  .passthrough();
+  .strict();
+
+const createDraftResponseSchema = z
+  .object({ status: z.literal("created") })
+  .strict();
+const sourceVerificationResponseSchema = z
+  .object({ status: z.literal("verified") })
+  .strict();
+const archiveResponseSchema = z
+  .object({ status: z.literal("archived") })
+  .strict();
+const marketImportConfirmationResponseSchema = z
+  .object({
+    createdDrafts: z.number().int().nonnegative(),
+    status: z.enum(["committed", "rejected"]),
+  })
+  .strict();
+const documentUploadResponseSchema = z
+  .object({
+    draftCreated: z.boolean(),
+    status: z.enum(["ready", "duplicate", "failed"]),
+  })
+  .strict();
+const documentReprocessResponseSchema = z
+  .object({ status: z.enum(["ready", "duplicate", "failed"]) })
+  .strict();
 
 const entityLabels = {
   country: "国家数据",
@@ -79,6 +113,7 @@ const entityLabels = {
 
 const demoSourceId = "00000000-0000-4000-8000-000000000001";
 const demoJurisdictionId = "00000000-0000-4000-8000-000000000101";
+const defaultChangeReason = "创建待审核的数据修订。";
 
 function initialPayload(entityType: string): string {
   const verifiedAt = "2026-07-29T00:00:00.000Z";
@@ -211,27 +246,189 @@ function initialPayload(entityType: string): string {
   return JSON.stringify(samples[entityType] ?? {}, null, 2);
 }
 
-async function responseJson(response: Response): Promise<unknown> {
+function sameAdminPrincipal(
+  left: AdminPrincipal | null,
+  right: AdminPrincipal | null,
+): boolean {
+  return (
+    left !== null &&
+    right !== null &&
+    left.email === right.email &&
+    left.role === right.role
+  );
+}
+
+async function responseJson(
+  response: Response,
+  expectedPrincipal?: AdminPrincipal,
+): Promise<unknown> {
+  const responsePrincipal = readResponsePrincipal(response);
   let body: unknown;
   try {
     body = (await response.json()) as unknown;
   } catch {
-    throw new Error(
-      response.ok ? "管理响应格式无效。" : "管理操作失败。",
+    if (!response.ok) {
+      throw new AdminResponseError(
+        "管理操作失败。",
+        response.status,
+        null,
+        responsePrincipal,
+      );
+    }
+    throw new AdminResponseError(
+      "管理响应格式无效。",
+      response.status,
+      "INVALID_RESPONSE",
+      responsePrincipal,
     );
   }
   if (!response.ok) {
     const parsed = z
       .object({
-        error: z.object({ message: z.string() }).passthrough(),
+        error: z
+          .object({
+            code: z.string().optional(),
+            message: z.string(),
+          })
+          .passthrough(),
       })
       .passthrough()
       .safeParse(body);
-    throw new Error(
+    throw new AdminResponseError(
       parsed.success ? parsed.data.error.message : "管理操作失败。",
+      response.status,
+      parsed.success ? (parsed.data.error.code ?? null) : null,
+      responsePrincipal,
+    );
+  }
+  if (!responsePrincipal) {
+    throw new AdminIdentityBoundaryError();
+  }
+  if (
+    expectedPrincipal &&
+    !sameAdminPrincipal(responsePrincipal, expectedPrincipal)
+  ) {
+    throw new AdminResponseError(
+      "管理身份已变化；已清除当前工作区，请重新加载页面。",
+      409,
+      "PRINCIPAL_CHANGED",
+      responsePrincipal,
     );
   }
   return body;
+}
+
+async function responseJsonAs<T>(
+  response: Response,
+  schema: z.ZodType<T>,
+  expectedPrincipal?: AdminPrincipal,
+): Promise<T> {
+  const body = await responseJson(response, expectedPrincipal);
+  const responsePrincipal = parseResponsePrincipal(response);
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    throw new AdminResponseError(
+      "管理响应格式无效。",
+      response.status,
+      "INVALID_RESPONSE",
+      responsePrincipal,
+    );
+  }
+  return parsed.data;
+}
+
+function adminActionFetch(
+  principal: AdminPrincipal,
+  input: RequestInfo | URL,
+  init: RequestInit,
+): Promise<Response> {
+  const headers = new Headers(init.headers);
+  headers.set(
+    ADMIN_EXPECTED_PRINCIPAL_EMAIL_REQUEST_HEADER,
+    principal.email,
+  );
+  headers.set(
+    ADMIN_EXPECTED_PRINCIPAL_ROLE_REQUEST_HEADER,
+    principal.role,
+  );
+  return fetch(input, { ...init, headers });
+}
+
+class AdminResponseError extends Error {
+  readonly code: string | null;
+  readonly principal: AdminPrincipal | null;
+  readonly status: number;
+
+  constructor(
+    message: string,
+    status: number,
+    code: string | null,
+    principal: AdminPrincipal | null,
+  ) {
+    super(message);
+    this.name = "AdminResponseError";
+    this.code = code;
+    this.principal = principal;
+    this.status = status;
+  }
+}
+
+class AdminIdentityBoundaryError extends Error {
+  constructor() {
+    super("管理身份无法验证；已清除当前工作区，请重新加载页面。");
+    this.name = "AdminIdentityBoundaryError";
+  }
+}
+
+function readResponsePrincipal(response: Response): AdminPrincipal | null {
+  const parsed = adminPrincipalSchema.safeParse({
+    email: response.headers.get(ADMIN_PRINCIPAL_EMAIL_RESPONSE_HEADER),
+    role: response.headers.get(ADMIN_PRINCIPAL_ROLE_RESPONSE_HEADER),
+  });
+  return parsed.success ? parsed.data : null;
+}
+
+function parseResponsePrincipal(response: Response): AdminPrincipal {
+  const principal = readResponsePrincipal(response);
+  if (!principal) {
+    throw new AdminIdentityBoundaryError();
+  }
+  return principal;
+}
+
+function invalidatesAdminWorkspace(error: unknown): boolean {
+  return (
+    error instanceof AdminIdentityBoundaryError ||
+    (error instanceof AdminResponseError &&
+      (!error.principal ||
+        error.status === 401 ||
+        error.status === 403 ||
+        error.code === "UNAUTHENTICATED" ||
+        error.code === "FORBIDDEN"))
+  );
+}
+
+function assertDashboardPrincipalScope(
+  dashboard: AdminDashboardResponse,
+  principal: AdminPrincipal,
+): void {
+  if (
+    principal.role === "editor" &&
+    (dashboard.auditLogs.length > 0 ||
+      dashboard.drafts.some(
+        (draft) =>
+          draft.createdBy !== principal.email ||
+          (draft.reviewContext.publishedBaseline !== null &&
+            draft.reviewContext.publishedBaseline.publishedBy !== null),
+      ))
+  ) {
+    throw new AdminResponseError(
+      "管理响应超出当前身份范围；已清除当前工作区。",
+      500,
+      "INVALID_RESPONSE",
+      principal,
+    );
+  }
 }
 
 function FieldLabel({
@@ -312,14 +509,14 @@ export function AdminDashboard({
   initialPrincipal,
   initialUtcNow,
 }: AdminDashboardProps) {
+  const [currentPrincipal, setCurrentPrincipal] =
+    useState<AdminPrincipal | null>(initialPrincipal);
   const [dashboard, setDashboard] =
     useState<AdminDashboardResponse | null>(null);
   const [entityType, setEntityType] =
     useState<(typeof governedEntityTypes)[number]>("country");
   const [payload, setPayload] = useState(() => initialPayload("country"));
-  const [changeReason, setChangeReason] = useState(
-    "创建待审核的数据修订。",
-  );
+  const [changeReason, setChangeReason] = useState(defaultChangeReason);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -333,9 +530,64 @@ export function AdminDashboard({
     typeof previewResponseSchema
   > | null>(null);
   const dashboardAbortControllerRef = useRef<AbortController | null>(null);
-  const canReview =
-    initialPrincipal.role === "reviewer" ||
-    initialPrincipal.role === "admin";
+  const dashboardRef = useRef<AdminDashboardResponse | null>(null);
+  const currentPrincipalRef = useRef<AdminPrincipal | null>(initialPrincipal);
+  const workspaceGenerationRef = useRef(0);
+  const activeActionIdRef = useRef(0);
+  const csvSelectionGenerationRef = useRef(0);
+  const principalKey = currentPrincipal
+    ? `${currentPrincipal.email}:${currentPrincipal.role}`
+    : "unverified";
+
+  const clearIdentityScopedState = useCallback(() => {
+    setEntityType("country");
+    setPayload(initialPayload("country"));
+    setChangeReason(defaultChangeReason);
+    setNotice(null);
+    setDraftActionReasons({});
+    setPublishConfirmations({});
+    setPreview(null);
+    setBusy(false);
+  }, []);
+
+  const invalidateWorkspace = useCallback(() => {
+    workspaceGenerationRef.current += 1;
+    dashboardAbortControllerRef.current?.abort();
+    dashboardAbortControllerRef.current = null;
+    clearIdentityScopedState();
+    currentPrincipalRef.current = null;
+    setCurrentPrincipal(null);
+    dashboardRef.current = null;
+    setDashboard(null);
+  }, [clearIdentityScopedState]);
+
+  const applyAdminFailureBoundary = useCallback(
+    (failure: unknown) => {
+      if (invalidatesAdminWorkspace(failure)) {
+        invalidateWorkspace();
+        return;
+      }
+      if (!(failure instanceof AdminResponseError) || !failure.principal) {
+        return;
+      }
+      const previousPrincipal = currentPrincipalRef.current;
+      if (
+        sameAdminPrincipal(previousPrincipal, failure.principal) &&
+        failure.code !== "INVALID_RESPONSE"
+      ) {
+        return;
+      }
+      workspaceGenerationRef.current += 1;
+      dashboardAbortControllerRef.current?.abort();
+      dashboardAbortControllerRef.current = null;
+      clearIdentityScopedState();
+      currentPrincipalRef.current = failure.principal;
+      setCurrentPrincipal(failure.principal);
+      dashboardRef.current = null;
+      setDashboard(null);
+    },
+    [clearIdentityScopedState, invalidateWorkspace],
+  );
 
   const loadDashboard = useCallback(async () => {
     dashboardAbortControllerRef.current?.abort();
@@ -347,15 +599,26 @@ export function AdminDashboard({
         cache: "no-store",
         signal: abortController.signal,
       });
-      const parsed = adminDashboardResponseSchema.parse(
-        await responseJson(response),
+      const parsed = await responseJsonAs(
+        response,
+        adminDashboardResponseSchema,
       );
+      const responsePrincipal = parseResponsePrincipal(response);
+      assertDashboardPrincipalScope(parsed, responsePrincipal);
       if (
         abortController.signal.aborted ||
         dashboardAbortControllerRef.current !== abortController
       ) {
         return;
       }
+      const previousPrincipal = currentPrincipalRef.current;
+      if (!sameAdminPrincipal(previousPrincipal, responsePrincipal)) {
+        workspaceGenerationRef.current += 1;
+        clearIdentityScopedState();
+      }
+      currentPrincipalRef.current = responsePrincipal;
+      setCurrentPrincipal(responsePrincipal);
+      dashboardRef.current = parsed;
       setDashboard(parsed);
       setError(null);
     } catch (loadError: unknown) {
@@ -365,13 +628,14 @@ export function AdminDashboard({
       ) {
         return;
       }
+      applyAdminFailureBoundary(loadError);
       throw loadError;
     } finally {
       if (dashboardAbortControllerRef.current === abortController) {
         dashboardAbortControllerRef.current = null;
       }
     }
-  }, []);
+  }, [applyAdminFailureBoundary, clearIdentityScopedState]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -391,26 +655,66 @@ export function AdminDashboard({
     };
   }, [loadDashboard]);
 
-  async function runAction(
-    action: () => Promise<void>,
+  async function runAction<T>(
+    action: (principal: AdminPrincipal) => Promise<T>,
     successMessage?: string,
+    onSuccess?: (result: T) => string | void,
+    isOperationCurrent?: () => boolean,
   ) {
+    const actionPrincipal = currentPrincipalRef.current;
+    if (!actionPrincipal) {
+      invalidateWorkspace();
+      setError("管理身份无法验证；已清除当前工作区，请重新加载页面。");
+      return;
+    }
+    const actionGeneration = workspaceGenerationRef.current;
+    const actionId = activeActionIdRef.current + 1;
+    activeActionIdRef.current = actionId;
+    const isCurrentAction = () =>
+      workspaceGenerationRef.current === actionGeneration &&
+      activeActionIdRef.current === actionId &&
+      sameAdminPrincipal(currentPrincipalRef.current, actionPrincipal) &&
+      (isOperationCurrent?.() ?? true);
+    const finishAction = () => {
+      if (activeActionIdRef.current === actionId) {
+        setBusy(false);
+      }
+    };
+
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
-      await action();
-      if (successMessage) setNotice(successMessage);
+      const result = await action(actionPrincipal);
+      if (!isCurrentAction()) {
+        finishAction();
+        return;
+      }
+      const callbackMessage = onSuccess?.(result);
+      const actionMessage =
+        typeof result === "string" ? result : callbackMessage;
+      if (actionMessage ?? successMessage) {
+        setNotice(actionMessage ?? successMessage ?? null);
+      }
     } catch (actionError: unknown) {
+      if (!isCurrentAction()) {
+        finishAction();
+        return;
+      }
+      applyAdminFailureBoundary(actionError);
       setError(
         actionError instanceof Error
           ? actionError.message
           : "管理操作失败。",
       );
-      setBusy(false);
+      finishAction();
       return;
     }
 
+    if (!isCurrentAction()) {
+      finishAction();
+      return;
+    }
     try {
       await loadDashboard();
     } catch (refreshError: unknown) {
@@ -418,18 +722,24 @@ export function AdminDashboard({
         refreshError instanceof Error
           ? refreshError.message
           : "刷新失败，请重试。";
-      setError(`操作已完成，但管理数据刷新失败：${message}`);
+      setError(
+        `操作已完成，但管理数据刷新失败：${message}${
+          dashboardRef.current
+            ? " 当前显示的是上一次成功加载的快照。"
+            : ""
+        }`,
+      );
     } finally {
-      setBusy(false);
+      finishAction();
     }
   }
 
   async function createDraft(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await runAction(async () => {
+    await runAction(async (principal) => {
       const parsedPayload = JSON.parse(payload) as unknown;
-      await responseJson(
-        await fetch("/api/admin/drafts", {
+      await responseJsonAs(
+        await adminActionFetch(principal, "/api/admin/drafts", {
           body: JSON.stringify({
             changeReason,
             entityType,
@@ -438,8 +748,10 @@ export function AdminDashboard({
           headers: { "content-type": "application/json" },
           method: "POST",
         }),
+        createDraftResponseSchema,
+        principal,
       );
-      setNotice("草稿已创建，正式查询仍使用当前已发布版本。");
+      return "草稿已创建，正式查询仍使用当前已发布版本。";
     });
   }
 
@@ -448,17 +760,30 @@ export function AdminDashboard({
     action: "publish" | "review",
     reason: string,
   ) {
-    await runAction(async () => {
-      await responseJson(
-        await fetch(`/api/admin/drafts/${draftId}/${action}`, {
+    await runAction(async (principal) => {
+      await responseJsonAs(
+        await adminActionFetch(
+          principal,
+          `/api/admin/drafts/${draftId}/${action}`,
+          {
           body: JSON.stringify({
             reason,
           }),
           headers: { "content-type": "application/json" },
           method: "POST",
-        }),
+          },
+        ),
+        z
+          .object({
+            status: z.literal(
+              action === "review" ? "reviewed" : "published",
+            ),
+          })
+          .strict(),
+        principal,
       );
-      setNotice(action === "review" ? "草稿已审核。" : "版本已发布。");
+      return action === "review" ? "草稿已审核。" : "版本已发布。";
+    }, undefined, () => {
       setDraftActionReasons((current) => ({ ...current, [draftId]: "" }));
       setPublishConfirmations((current) => ({
         ...current,
@@ -470,29 +795,36 @@ export function AdminDashboard({
   async function previewCsv(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
+    const previewGeneration = csvSelectionGenerationRef.current + 1;
+    csvSelectionGenerationRef.current = previewGeneration;
     setPreview(null);
-    await runAction(async () => {
+    await runAction(async (principal) => {
       const body = new FormData(form);
-      const parsed = previewResponseSchema.parse(
-        await responseJson(
-          await fetch("/api/admin/imports/market/preview", {
-            body,
-            method: "POST",
-          }),
+      return responseJsonAs(
+        await adminActionFetch(
+          principal,
+          "/api/admin/imports/market/preview",
+          {
+          body,
+          method: "POST",
+          },
         ),
+        previewResponseSchema,
+        principal,
       );
+    }, "CSV 只完成预览；尚未写入市场指标或草稿。", (parsed) => {
       setPreview(parsed);
-      setNotice("CSV 只完成预览；尚未写入市场指标或草稿。");
-    });
+    }, () => csvSelectionGenerationRef.current === previewGeneration);
   }
 
   async function confirmCsv() {
     if (!preview) {
       return;
     }
-    await runAction(async () => {
-      const result = await responseJson(
-        await fetch(
+    await runAction(async (principal) => {
+      return responseJsonAs(
+        await adminActionFetch(
+          principal,
           `/api/admin/imports/market/${preview.batchId}/confirm`,
           {
             body: JSON.stringify({
@@ -502,29 +834,23 @@ export function AdminDashboard({
             method: "POST",
           },
         ),
+        marketImportConfirmationResponseSchema,
+        principal,
       );
-      const parsed = z
-        .object({
-          createdDrafts: z.number().int().nonnegative(),
-          status: z.enum(["committed", "rejected"]),
-        })
-        .parse(result);
-      setNotice(
-        parsed.status === "committed"
-          ? `已原子创建 ${parsed.createdDrafts} 条草稿，尚未发布。`
-          : "预览包含错误，批次已拒绝且未写入任何草稿或市场事实。",
-      );
+    }, undefined, (parsed) => {
       setPreview(null);
+      return parsed.status === "committed"
+        ? `已原子创建 ${parsed.createdDrafts} 条草稿，尚未发布。`
+        : "预览包含错误，批次已拒绝且未写入任何草稿或市场事实。";
     });
   }
 
-  const draftCounts = useMemo(() => {
-    const counts = { draft: 0, published: 0, reviewed: 0 };
-    for (const draft of dashboard?.drafts ?? []) {
-      counts[draft.workflowStatus] += 1;
-    }
-    return counts;
-  }, [dashboard]);
+  const activeWorkflowTotal = dashboard
+    ? dashboard.workflowCounts.draft + dashboard.workflowCounts.reviewed
+    : 0;
+  const activeQueueTruncated = dashboard
+    ? activeWorkflowTotal > dashboard.drafts.length
+    : false;
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -546,10 +872,10 @@ export function AdminDashboard({
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             {(["editor", "reviewer", "admin"] as const).map((role) => (
               <a
-                aria-current={initialPrincipal.role === role ? "page" : undefined}
+                aria-current={currentPrincipal?.role === role ? "page" : undefined}
                 className={cn(
                   "rounded-full border px-3 py-1.5 font-semibold",
-                  initialPrincipal.role === role
+                  currentPrincipal?.role === role
                     ? "border-amber-700 bg-amber-200"
                     : "border-amber-400 bg-white",
                 )}
@@ -607,10 +933,18 @@ export function AdminDashboard({
             </p>
           </div>
           <div className="rounded-xl border bg-muted/40 px-4 py-3 text-sm">
-            <p className="font-medium">{initialPrincipal.email}</p>
-            <p className="text-xs text-muted-foreground">
-              角色：{initialPrincipal.role}
-            </p>
+            {currentPrincipal ? (
+              <>
+                <p className="font-medium">{currentPrincipal.email}</p>
+                <p className="text-xs text-muted-foreground">
+                  角色：{currentPrincipal.role}
+                </p>
+              </>
+            ) : (
+              <p className="text-xs font-medium text-destructive">
+                管理身份已失效
+              </p>
+            )}
           </div>
         </div>
       </header>
@@ -646,22 +980,22 @@ export function AdminDashboard({
         </div>
       ) : null}
 
-      {dashboard ? (
-        <section className="grid gap-3 sm:grid-cols-3">
-          {[
-            ["Draft", draftCounts.draft],
-            ["Reviewed", draftCounts.reviewed],
-            ["Published revisions", draftCounts.published],
-          ].map(([label, value]) => (
-            <div className="rounded-xl border bg-card p-4" key={label}>
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="mt-1 text-2xl font-semibold">{value}</p>
-            </div>
-          ))}
-        </section>
-      ) : null}
+      {dashboard && currentPrincipal ? (
+        <Fragment key={principalKey}>
+          <section className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["Draft", dashboard.workflowCounts.draft],
+              ["Reviewed", dashboard.workflowCounts.reviewed],
+              ["Published revisions", dashboard.workflowCounts.published],
+            ].map(([label, value]) => (
+              <div className="rounded-xl border bg-card p-4" key={label}>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="mt-1 text-2xl font-semibold">{value}</p>
+              </div>
+            ))}
+          </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <section className="rounded-2xl border bg-card p-5">
           <div className="flex items-center gap-2">
             <Database className="size-5 text-primary" aria-hidden="true" />
@@ -741,6 +1075,7 @@ export function AdminDashboard({
                 id="market-csv-file"
                 name="file"
                 onChange={() => {
+                  csvSelectionGenerationRef.current += 1;
                   setPreview(null);
                   setNotice(null);
                   setError(null);
@@ -803,7 +1138,7 @@ export function AdminDashboard({
             initialUtcNow={initialUtcNow}
             runAction={runAction}
           />
-          {initialPrincipal.role === "admin" ? (
+          {currentPrincipal?.role === "admin" ? (
             <ArchiveEntityForm busy={busy} runAction={runAction} />
           ) : null}
         </section>
@@ -816,17 +1151,27 @@ export function AdminDashboard({
             <div>
               <h2 className="font-semibold">发布队列</h2>
               <p className="text-xs text-muted-foreground">
-                editor 与 reviewer 必须分离；admin 可执行紧急审核
+                {currentPrincipal.role === "editor"
+                  ? "统计仅包含你创建的未归档修订；队列只列 Draft/Reviewed，审核与发布须由其他 reviewer 或 admin 完成"
+                  : currentPrincipal.role === "reviewer"
+                    ? "全局统计；队列只列 Draft/Reviewed，非 admin 创建者不能审核或发布自己的修订"
+                    : "全局统计；队列只列 Draft/Reviewed，admin 的职责分离紧急覆盖会写入审计记录"}
               </p>
             </div>
           </div>
           <Button
             onClick={() =>
               void loadDashboard().catch((refreshError: unknown) => {
-                setError(
+                const message =
                   refreshError instanceof Error
                     ? refreshError.message
-                    : "刷新失败，请重试。",
+                    : "刷新失败，请重试。";
+                setError(
+                  `管理数据刷新失败：${message}${
+                    dashboardRef.current
+                      ? " 当前显示的是上一次成功加载的快照。"
+                      : ""
+                  }`,
                 );
               })
             }
@@ -837,6 +1182,16 @@ export function AdminDashboard({
             刷新
           </Button>
         </div>
+        {activeQueueTruncated ? (
+          <p
+            className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950"
+            data-testid="admin-active-queue-truncated"
+            role="status"
+          >
+            当前显示最新 {dashboard.drafts.length} / {activeWorkflowTotal}
+            条活跃修订；单次最多返回 100 条。请先处理当前队列或刷新后继续。
+          </p>
+        ) : null}
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="border-b text-xs text-muted-foreground">
@@ -856,7 +1211,7 @@ export function AdminDashboard({
                     className="py-6 text-center text-sm text-muted-foreground"
                     colSpan={6}
                   >
-                    暂无待发布草稿
+                    当前可见范围内暂无活跃 Draft 或 Reviewed 修订
                   </td>
                 </tr>
               ) : null}
@@ -868,6 +1223,15 @@ export function AdminDashboard({
                 const dependencies = draft.reviewContext.dependencies;
                 const actionReason = draftActionReasons[draft.id] ?? "";
                 const reasonId = `draft-action-reason-${draft.id}`;
+                const isOwnDraft =
+                  draft.createdBy === currentPrincipal.email;
+                const canTransitionDraft =
+                  currentPrincipal.role === "admin" ||
+                  (currentPrincipal.role === "reviewer" && !isOwnDraft);
+                const reviewerOwnDraft =
+                  currentPrincipal.role === "reviewer" && isOwnDraft;
+                const adminOwnDraft =
+                  currentPrincipal.role === "admin" && isOwnDraft;
 
                 return (
                   <Fragment key={draft.id}>
@@ -920,8 +1284,14 @@ export function AdminDashboard({
                               {baseline ? (
                                 <>
                                   <p className="mt-1 text-xs text-muted-foreground">
-                                    基线：v{baseline.version} · 发布人
-                                    {baseline.publishedBy ?? "未知"} ·
+                                    基线：v{baseline.version}
+                                    {currentPrincipal.role !== "editor" ? (
+                                      <>
+                                        {" "}· 发布人
+                                        {baseline.publishedBy ?? "未知"}
+                                      </>
+                                    ) : null}
+                                    {" "}·
                                     {baseline.publishedAt ?? "发布时间未知"}
                                   </p>
                                   {draft.reviewContext.baselineStatus !==
@@ -974,7 +1344,9 @@ export function AdminDashboard({
                               ) : draft.reviewContext.baselineStatus ===
                                 "first_revision" ? (
                                 <p className="mt-3 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                                  服务端已确认这是 v1 首个治理修订：它可能建立新实体，也可能把现有 active 种子数据纳入治理基线。首次发布将以此 payload 建立可审计基线。
+                                  {draft.version === 1
+                                    ? "服务端已确认这是 v1 首个治理修订：它可能建立新实体，也可能把现有 active 种子数据纳入治理基线。首次发布将以此 payload 建立可审计基线。"
+                                    : `服务端已确认这是重处理生成的 v${draft.version} 首次可发布修订：更早的未发布修订已失效，首次发布将以当前文档证据建立可审计基线。`}
                                 </p>
                               ) : (
                                 <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
@@ -1069,7 +1441,15 @@ export function AdminDashboard({
                             </section>
                           ) : null}
 
-                          {canReview &&
+                          {reviewerOwnDraft &&
+                          (draft.workflowStatus === "draft" ||
+                            draft.workflowStatus === "reviewed") ? (
+                            <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs leading-5 text-amber-950">
+                              职责分离：Reviewer 不能审核或发布自己创建的修订；请由其他 reviewer 或 admin 处理。
+                            </p>
+                          ) : null}
+
+                          {canTransitionDraft &&
                           (draft.workflowStatus === "draft" ||
                             draft.workflowStatus === "reviewed") ? (
                             <fieldset className="mt-4 rounded-xl border border-primary/20 p-4">
@@ -1078,6 +1458,11 @@ export function AdminDashboard({
                                   ? "审核决定"
                                   : "发布决定"}
                               </legend>
+                              {adminOwnDraft ? (
+                                <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
+                                  Admin 紧急覆盖：当前修订由你创建，仍可继续审核或发布；该例外、理由与操作者身份会写入审计记录。
+                                </p>
+                              ) : null}
                               <FieldLabel htmlFor={reasonId}>
                                 {draft.workflowStatus === "draft"
                                   ? "审核理由"
@@ -1156,44 +1541,65 @@ export function AdminDashboard({
         </div>
       </section>
 
-      <section className="rounded-2xl border bg-card p-5">
-        <div className="flex items-center gap-2">
-          <History className="size-5 text-primary" aria-hidden="true" />
-          <div>
-            <h2 className="font-semibold">数据变更记录</h2>
-            <p className="text-xs text-muted-foreground">
-              记录操作者、角色、实体、动作、原因和时间
-            </p>
-          </div>
-        </div>
-        <div className="mt-4 space-y-2">
-          {dashboard && dashboard.auditLogs.length === 0 ? (
-            <p className="rounded-xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-              暂无变更记录
-            </p>
-          ) : null}
-          {(dashboard?.auditLogs ?? []).slice(0, 30).map((log) => (
-            <article className="rounded-xl border bg-muted/20 p-3 text-xs" key={log.id}>
-              <div className="flex flex-wrap justify-between gap-2">
-                <p className="font-medium">
-                  {log.action} · {entityLabels[log.entityType]} · {log.entityKey}
-                </p>
-                <p className="text-muted-foreground">{log.createdAt.slice(0, 19)}</p>
-              </div>
-              <p className="mt-1 text-muted-foreground">
-                {log.actorEmail} ({log.actorRole}) · {log.reason}
+      {currentPrincipal.role === "editor" ? (
+        <section
+          className="rounded-2xl border bg-card p-5"
+          data-testid="admin-editor-audit-scope"
+        >
+          <div className="flex items-center gap-2">
+            <History className="size-5 text-primary" aria-hidden="true" />
+            <div>
+              <h2 className="font-semibold">审计范围</h2>
+              <p className="text-xs leading-5 text-muted-foreground">
+                Editor 视图不加载全局变更记录或其他操作者身份；所有写入仍由服务端追加审计。
               </p>
-            </article>
-          ))}
-        </div>
-      </section>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl border bg-card p-5">
+          <div className="flex items-center gap-2">
+            <History className="size-5 text-primary" aria-hidden="true" />
+            <div>
+              <h2 className="font-semibold">数据变更记录</h2>
+              <p className="text-xs text-muted-foreground">
+                Reviewer/Admin 视图展示最近 30 条全局记录：操作者、角色、实体、动作、原因和时间
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            {dashboard.auditLogs.length === 0 ? (
+              <p className="rounded-xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
+                当前全局范围内暂无变更记录
+              </p>
+            ) : null}
+            {dashboard.auditLogs.slice(0, 30).map((log) => (
+              <article className="rounded-xl border bg-muted/20 p-3 text-xs" key={log.id}>
+                <div className="flex flex-wrap justify-between gap-2">
+                  <p className="font-medium">
+                    {log.action} · {entityLabels[log.entityType]} · {log.entityKey}
+                  </p>
+                  <p className="text-muted-foreground">{log.createdAt.slice(0, 19)}</p>
+                </div>
+                <p className="mt-1 text-muted-foreground">
+                  {log.actorEmail} ({log.actorRole}) · {log.reason}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+        </Fragment>
+      ) : null}
     </main>
   );
 }
 
-type ActionRunner = (
-  action: () => Promise<void>,
+type ActionRunner = <T>(
+  action: (principal: AdminPrincipal) => Promise<T>,
   successMessage?: string,
+  onSuccess?: (result: T) => string | void,
+  isOperationCurrent?: () => boolean,
 ) => Promise<void>;
 
 function DocumentAdminForms({
@@ -1207,29 +1613,50 @@ function DocumentAdminForms({
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     appendDocumentMetadata(formData);
-    await runAction(async () => {
-      await responseJson(
-        await fetch("/api/admin/documents", {
+    await runAction(async (principal) => {
+      const parsed = await responseJsonAs(
+        await adminActionFetch(principal, "/api/admin/documents", {
           body: formData,
           method: "POST",
         }),
+        documentUploadResponseSchema,
+        principal,
       );
-    }, "文档已上传为 Draft；尚未进入正式检索。");
+
+      if (parsed.status === "duplicate") {
+        return parsed.draftCreated
+          ? "相同内容已存在；已补建此前缺失的治理 Draft。"
+          : "相同内容已存在；未创建新的文档或治理 Draft。";
+      }
+      return parsed.status === "failed"
+        ? "文档已保存为 failed Draft；修复处理问题后再重新处理。"
+        : "文档已上传为 ready Draft；尚未进入正式检索。";
+    });
   }
 
   async function reprocess(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const documentId = String(formData.get("documentId") ?? "");
-    appendDocumentMetadata(formData, "reprocess");
-    await runAction(async () => {
-      await responseJson(
-        await fetch(`/api/admin/documents/${documentId}/reprocess`, {
+    appendDocumentReprocessMetadata(formData);
+    await runAction(async (principal) => {
+      const parsed = await responseJsonAs(
+        await adminActionFetch(
+          principal,
+          `/api/admin/documents/${documentId}/reprocess`,
+          {
           body: formData,
           method: "POST",
-        }),
+          },
+        ),
+        documentReprocessResponseSchema,
+        principal,
       );
-    }, "Draft 文档已重新处理；请复核处理结果后再审核。");
+
+      return parsed.status === "failed"
+        ? "重新处理仍未通过；Draft 保持不可审核，请检查处理错误。"
+        : "Draft 文档已重新处理并生成新修订；请重新复核后再审核。";
+    });
   }
 
   return (
@@ -1297,17 +1724,9 @@ function DocumentAdminForms({
             重新处理原因
             <input className={inputClass} name="reason" required />
           </label>
-          <label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-normal text-foreground">
-            <input name="reprocessisDemo" type="checkbox" value="true" />
-            重新处理为虚构 Demo
-          </label>
-          <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
-            Demo 说明（勾选时必填）
-            <input className={inputClass} name="reprocessdemoNotice" />
-          </label>
-          <input name="reprocessdocumentType" type="hidden" value="other" />
-          <input name="reprocesslanguageCode" type="hidden" value="en" />
-          <input name="reprocesssourceType" type="hidden" value="other" />
+          <p className="rounded-lg border border-dashed bg-muted/30 p-3 text-xs leading-5 text-muted-foreground sm:col-span-2">
+            此处只更新文档标题和来源标题；类型、语言、Demo 分类及其他已存元数据保持不变。
+          </p>
           <Button className="sm:col-span-2" disabled={busy} type="submit" variant="outline">
             重新处理 Draft 文档
           </Button>
@@ -1328,8 +1747,8 @@ function SourceVerificationForm({
 }) {
   const [verifiedAt, setVerifiedAt] = useState(initialUtcNow);
   const parsedVerifiedAt = z.iso.datetime({ offset: true }).safeParse(verifiedAt);
-  const utcPreview = parsedVerifiedAt.success
-    ? new Date(parsedVerifiedAt.data).toISOString()
+  const verifiedAtPreview = parsedVerifiedAt.success
+    ? parsedVerifiedAt.data
     : null;
 
   async function verify(event: FormEvent<HTMLFormElement>) {
@@ -1339,16 +1758,22 @@ function SourceVerificationForm({
     const verifiedAtInput = z.iso
       .datetime({ offset: true })
       .parse(String(formData.get("verifiedAt")));
-    await runAction(async () => {
-      await responseJson(
-        await fetch(`/api/admin/sources/${sourceId}/verify`, {
+    await runAction(async (principal) => {
+      await responseJsonAs(
+        await adminActionFetch(
+          principal,
+          `/api/admin/sources/${sourceId}/verify`,
+          {
           body: JSON.stringify({
             reason: formData.get("reason"),
-            verifiedAt: new Date(verifiedAtInput).toISOString(),
+            verifiedAt: verifiedAtInput,
           }),
           headers: { "content-type": "application/json" },
           method: "POST",
-        }),
+          },
+        ),
+        sourceVerificationResponseSchema,
+        principal,
       );
     }, "来源核验时间已按 UTC 更新并写入审计记录。");
   }
@@ -1384,20 +1809,26 @@ function SourceVerificationForm({
           <p
             className={cn(
               "text-xs sm:col-span-2",
-              utcPreview ? "text-muted-foreground" : "text-destructive",
+              verifiedAtPreview
+                ? "text-muted-foreground"
+                : "text-destructive",
             )}
             id="source-verified-at-preview"
             role="status"
           >
-            {utcPreview
-              ? `将保存为 UTC：${utcPreview}`
+            {verifiedAtPreview
+              ? `将按该 ISO 时间保存：${verifiedAtPreview}`
               : "请输入带 Z 或明确偏移量的 ISO 8601 时间。"}
           </p>
           <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
             核验说明
             <input className={inputClass} name="reason" required />
           </label>
-          <Button disabled={busy || !utcPreview} type="submit" variant="outline">
+          <Button
+            disabled={busy || !verifiedAtPreview}
+            type="submit"
+            variant="outline"
+          >
             更新核验时间
           </Button>
         </fieldset>
@@ -1418,9 +1849,10 @@ function ArchiveEntityForm({
     const formData = new FormData(event.currentTarget);
     const entityType = String(formData.get("entityType") ?? "");
     const entityKey = String(formData.get("entityKey") ?? "");
-    await runAction(async () => {
-      await responseJson(
-        await fetch(
+    await runAction(async (principal) => {
+      await responseJsonAs(
+        await adminActionFetch(
+          principal,
           `/api/admin/entities/${entityType}/${encodeURIComponent(entityKey)}/archive`,
           {
             body: JSON.stringify({
@@ -1430,6 +1862,8 @@ function ArchiveEntityForm({
             method: "POST",
           },
         ),
+        archiveResponseSchema,
+        principal,
       );
     }, "实体已软归档；正式查询已隐藏该记录并保留审计历史。");
   }

@@ -1,17 +1,17 @@
 {
   "complete": false,
-  "evaluatedAt": "2026-09-17T22:08:21.167Z",
+  "evaluatedAt": "2026-09-20T09:35:32.824Z",
   "modelId": "server-openai-compatible/qwen3.8-flash",
   "provenance": {
     "promptVersion": "sales-chat-system-v6",
     "repository": {
-      "baseHeadCommit": "85f866fbd30d03d00006456162012f2ecfd1f292",
-      "evaluatedCommit": null,
-      "worktreeState": "dirty"
+      "baseHeadCommit": "df9f7dc2befde9428d16518b83af4d0e6f8e9b1b",
+      "evaluatedCommit": "df9f7dc2befde9428d16518b83af4d0e6f8e9b1b",
+      "worktreeState": "clean"
     },
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "c729a4a1c6b751cc68b515dc90db64f70e82a3ebf002bae007d621e42b4ed219",
+      "digest": "4f0fa35eca6bab68adb6eaeb665b8dd0e7c5f698ddeb7352cf8f31af3f2859e7",
       "fileCount": 298,
       "status": "captured"
     },
@@ -23,7 +23,7 @@
       "includeUsage": true
     }
   },
-  "runId": "fa216294-a439-4024-a10f-6953c10c7269",
+  "runId": "3dd30b36-d18e-442d-a540-532ed816f51f",
   "runError": null,
   "sampleCount": 1,
   "thresholdsPassed": false,
@@ -66,9 +66,9 @@
       "total": 1
     },
     "caseLatencyMs": {
-      "max": 323,
-      "p50": 323,
-      "p95": 323,
+      "max": 415,
+      "p50": 415,
+      "p95": 415,
       "sampleCount": 1
     },
     "modelPerformance": {
@@ -102,7 +102,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": "AI_APICallError (HTTP 403): Eval case execution failed.",
       "id": "country-overview-china",
-      "latencyMs": 323,
+      "latencyMs": 415,
       "loopSteps": 0,
       "mismatchReason": "error:EVAL_CASE_ERROR,token_usage",
       "normalizedArgs": [],
@@ -187,8 +187,8 @@
       },
       "toolTraceStatus": "unavailable",
       "runtimeContext": {
-        "capturedAt": "2026-09-17T22:08:20.774Z",
-        "utcDate": "2026-09-17"
+        "capturedAt": "2026-09-20T09:35:32.317Z",
+        "utcDate": "2026-09-20"
       }
     }
   ],

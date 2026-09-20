@@ -3,6 +3,12 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
 import {
+  createDocumentDataSourceFingerprintFromPayload,
+  documentDraftCreatedAuditMarkerSchema,
+  documentReprocessedAuditMarkerSchema,
+  getDocumentProvenanceActionForVersion,
+} from "../../src/features/admin/document-reprocessed-audit";
+import {
   marketMetricDecimalSchema,
   regulationLimitDecimalSchema,
 } from "../../src/features/database/schemas";
@@ -208,6 +214,10 @@ function rawJsonTextSchema<T>(schema: z.ZodType<T>) {
 }
 
 const rawGovernanceJsonSchema = rawJsonTextSchema(governanceJsonSchema);
+
+function parseRawGovernanceJson(value: string): unknown {
+  return JSON.parse(value) as unknown;
+}
 
 const sourceRowSchema = z
   .object({
@@ -663,6 +673,9 @@ const governanceSnapshotSchema = z
     );
 
     const sourceIds = new Set(snapshot.tables.data_sources.map((row) => row.id));
+    const sourceById = new Map(
+      snapshot.tables.data_sources.map((row) => [row.id, row]),
+    );
     const countryIds = new Set(snapshot.tables.countries.map((row) => row.iso3));
     const jurisdictionIds = new Set(
       snapshot.tables.jurisdictions.map((row) => row.id),
@@ -670,9 +683,10 @@ const governanceSnapshotSchema = z
     const regulationIds = new Set(
       snapshot.tables.regulations.map((row) => row.id),
     );
-    const draftIds = new Set(
-      snapshot.tables.data_governance_drafts.map((row) => row.id),
+    const draftById = new Map(
+      snapshot.tables.data_governance_drafts.map((row) => [row.id, row]),
     );
+    const draftIds = new Set(draftById.keys());
     const batchIds = new Set(
       snapshot.tables.market_import_batches.map((row) => row.id),
     );
@@ -778,6 +792,10 @@ const governanceSnapshotSchema = z
         "dataSourceId",
       );
     });
+    const canonicalDocumentProvenanceCountByDraftId = new Map<
+      string,
+      number
+    >();
     snapshot.tables.data_change_logs.forEach((row, index) => {
       if (row.draftId !== null) {
         requireReference(
@@ -794,6 +812,153 @@ const governanceSnapshotSchema = z
           index,
           "importBatchId",
         );
+      }
+      const draft = row.draftId ? draftById.get(row.draftId) : null;
+      const expectedDocumentAction =
+        draft?.entityType === "document"
+          ? getDocumentProvenanceActionForVersion(draft.version)
+          : null;
+      const isCanonicalDocumentProvenance =
+        expectedDocumentAction !== null &&
+        row.action === expectedDocumentAction &&
+        row.entityType === "document" &&
+        row.entityKey === draft?.entityKey;
+      const attemptsCanonicalDocumentProvenance =
+        expectedDocumentAction !== null &&
+        row.action === expectedDocumentAction;
+      if (
+        attemptsCanonicalDocumentProvenance &&
+        !isCanonicalDocumentProvenance
+      ) {
+        context.addIssue({
+          code: "custom",
+          message:
+            "Document provenance marker entity type or key does not match its draft",
+          path: ["tables", "data_change_logs", index, "entityType"],
+        });
+      }
+      if (isCanonicalDocumentProvenance && row.draftId !== null) {
+        canonicalDocumentProvenanceCountByDraftId.set(
+          row.draftId,
+          (canonicalDocumentProvenanceCountByDraftId.get(row.draftId) ?? 0) +
+            1,
+        );
+      }
+
+      if (
+        row.action === "document_reprocessed" ||
+        (row.action === "draft_created" &&
+          draft?.entityType === "document" &&
+          draft.version === 1)
+      ) {
+        const markerInput = {
+          afterData:
+            row.afterData === null
+              ? null
+              : parseRawGovernanceJson(row.afterData),
+          draftId: row.draftId,
+          entityKey: row.entityKey,
+          entityType: row.entityType,
+        };
+        const marker =
+          row.action === "document_reprocessed"
+            ? documentReprocessedAuditMarkerSchema.safeParse(markerInput)
+            : documentDraftCreatedAuditMarkerSchema.safeParse(markerInput);
+        if (!marker.success) {
+          context.addIssue({
+            code: "custom",
+            message: `Invalid ${row.action} document provenance marker`,
+            path: ["tables", "data_change_logs", index, "afterData"],
+          });
+          return;
+        }
+
+        const markerDraft = draftById.get(marker.data.draftId);
+        const draftPayload = markerDraft
+          ? parseRawGovernanceJson(markerDraft.payload)
+          : null;
+        const draftDocumentId =
+          typeof draftPayload === "object" &&
+          draftPayload !== null &&
+          "documentId" in draftPayload &&
+          typeof draftPayload.documentId === "string"
+            ? draftPayload.documentId
+            : null;
+
+        // Documents are intentionally outside the v4 snapshot closure. Bind
+        // the marker to its exported document draft and source here; runtime
+        // publication additionally binds sourceId to documents.dataSourceId.
+        requireReference(
+          markerDraft?.entityType === "document" &&
+            markerDraft.entityKey === marker.data.afterData.documentId &&
+            draftDocumentId === marker.data.afterData.documentId,
+          "data_change_logs",
+          index,
+          "draftId",
+        );
+        requireReference(
+          sourceIds.has(marker.data.afterData.sourceId),
+          "data_change_logs",
+          index,
+          "afterData.sourceId",
+        );
+        const source = sourceById.get(marker.data.afterData.sourceId);
+        if (source) {
+          const sourceFingerprint =
+            createDocumentDataSourceFingerprintFromPayload(source);
+          const metadata = marker.data.afterData.metadata;
+          if (
+            marker.data.afterData.sourceFingerprint !== sourceFingerprint ||
+            metadata.demoNotice !== source.demoNotice ||
+            metadata.isDemo !== source.isDemo ||
+            metadata.publishedOn !== source.publishedOn ||
+            metadata.sourcePublisher !== source.publisher ||
+            metadata.sourceTitle !== source.title ||
+            metadata.sourceType !== source.sourceType ||
+            (metadata.sourceUrl || null) !== source.url
+          ) {
+            context.addIssue({
+              code: "custom",
+              message:
+                "Document provenance source fingerprint or metadata does not match the exported source",
+              path: ["tables", "data_change_logs", index, "afterData"],
+            });
+          }
+        }
+        if (row.action === "document_reprocessed") {
+          const reprocessedMarker =
+            documentReprocessedAuditMarkerSchema.parse(markerInput);
+          const supersededDraftId =
+            reprocessedMarker.afterData.supersededDraftIds[0];
+          const supersededDraft = draftById.get(supersededDraftId);
+          requireReference(
+            Boolean(
+              markerDraft &&
+                supersededDraft?.entityType === "document" &&
+                supersededDraft.entityKey ===
+                  reprocessedMarker.afterData.documentId &&
+                supersededDraft.archivedAt !== null &&
+                supersededDraft.version === markerDraft.version - 1 &&
+                (supersededDraft.workflowStatus === "draft" ||
+                  supersededDraft.workflowStatus === "reviewed"),
+            ),
+            "data_change_logs",
+            index,
+            "afterData.supersededDraftIds.0",
+          );
+        }
+      }
+    });
+    snapshot.tables.data_governance_drafts.forEach((draft, index) => {
+      if (
+        draft.entityType === "document" &&
+        canonicalDocumentProvenanceCountByDraftId.get(draft.id) !== 1
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: `Document draft v${draft.version} must have exactly one canonical ${getDocumentProvenanceActionForVersion(draft.version)} provenance marker`,
+          path: ["tables", "data_governance_drafts", index, "id"],
+        });
       }
     });
   });

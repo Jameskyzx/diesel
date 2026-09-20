@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { formatOptionalUtcDate, formatUtcDate } from "@/i18n/date";
+import {
+  formatOptionalUtcDate,
+  formatProductAvailabilityDateRange,
+  formatUtcDate,
+} from "@/i18n/date";
 
 describe("localized UTC date formatting", () => {
   it("formats the same calendar date for each supported locale", () => {
@@ -25,5 +29,46 @@ describe("localized UTC date formatting", () => {
     expect(formatOptionalUtcDate(null, "en", "Not recorded")).toBe(
       "Not recorded",
     );
+  });
+
+  it("never presents an incomplete product availability period as open", () => {
+    expect(
+      formatProductAvailabilityDateRange(
+        "2025-01-01",
+        null,
+        "en",
+        "Not recorded",
+      ),
+    ).toBe("Jan 1, 2025 → Not recorded");
+    expect(
+      formatProductAvailabilityDateRange(
+        "2025-01-01",
+        null,
+        "zh-CN",
+        "未记录",
+      ),
+    ).toBe("2025年1月1日 → 未记录");
+    expect(
+      formatProductAvailabilityDateRange(
+        null,
+        "2030-01-01",
+        "en",
+        "Not recorded",
+      ),
+    ).toBe("Not recorded → Jan 1, 2030");
+    expect(
+      formatProductAvailabilityDateRange(
+        null,
+        "2030-01-01",
+        "zh-CN",
+        "未记录",
+      ),
+    ).toBe("未记录 → 2030年1月1日");
+    expect(
+      formatProductAvailabilityDateRange(null, null, "en", "Not recorded"),
+    ).toBe("Not recorded");
+    expect(
+      formatProductAvailabilityDateRange(null, null, "zh-CN", "未记录"),
+    ).toBe("未记录");
   });
 });

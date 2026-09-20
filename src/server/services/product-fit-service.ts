@@ -1,5 +1,7 @@
 import "server-only";
 
+import { compareCanonicalText } from "@/domain/canonical-order";
+import { productFitEvaluationMatchesDeterministicRules } from "@/domain/product-fit/evaluation-consistency";
 import { evaluateProductFit as evaluateProductFitFacts } from "@/domain/product-fit/evaluate-product-fit";
 import { productFitQuerySchema } from "@/features/database/schemas";
 import {
@@ -12,25 +14,40 @@ import { getDatabase } from "@/server/db/client";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { getDatabaseMode } from "@/server/db/environment";
 import { createProductRepository } from "@/server/repositories/product-repository";
+import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
 
 function serializeDate(value: Date): string {
   return value.toISOString();
 }
 
-async function getProductRepository() {
+async function getProductRepository(options: RequestSignalOptions = {}) {
+  throwIfRequestAborted(options.signal);
   if (getDatabaseMode() === "pglite-demo") {
-    return createProductRepository(await getDemoDatabase());
+    const database = await getDemoDatabase();
+    throwIfRequestAborted(options.signal);
+    return createProductRepository(database);
   }
 
   return createProductRepository(getDatabase());
 }
 
-export async function listProducts(): Promise<ProductListResponse> {
-  const repository = await getProductRepository();
-  const rows = await repository.listProducts();
+export async function listProducts(
+  options: RequestSignalOptions = {},
+): Promise<ProductListResponse> {
+  const repository = await getProductRepository(options);
+  throwIfRequestAborted(options.signal);
+  const rows = await repository.listProducts(options);
+  throwIfRequestAborted(options.signal);
 
   return productListResponseSchema.parse({
-    products: rows.map((product) => ({
+    // SQL collation is not the canonical evidence order consumed by JS clients.
+    products: rows.toSorted((left, right) => compareCanonicalText(
+      `${left.modelCode}\u0000${left.id}`,
+      `${right.modelCode}\u0000${right.id}`,
+    )).map((product) => ({
       ...product,
       source: {
         ...product.source,
@@ -44,12 +61,16 @@ export async function listProducts(): Promise<ProductListResponse> {
 
 export async function evaluateProductFit(
   input: unknown,
+  options: RequestSignalOptions = {},
 ): Promise<ProductFitEvaluation> {
+  throwIfRequestAborted(options.signal);
   const query = productFitQuerySchema.parse(input);
-  const repository = await getProductRepository();
-  const evidence = await repository.findFitEvidence(query);
+  const repository = await getProductRepository(options);
+  throwIfRequestAborted(options.signal);
+  const evidence = await repository.findFitEvidence(query, options);
+  throwIfRequestAborted(options.signal);
 
-  return productFitEvaluationSchema.parse(
+  const evaluation = productFitEvaluationSchema.parse(
     evaluateProductFitFacts({
       applicableRegulations: evidence.applicableRegulations.map(
         (regulation) => {
@@ -126,4 +147,9 @@ export async function evaluateProductFit(
       query,
     }),
   );
+  if (!productFitEvaluationMatchesDeterministicRules(evaluation)) {
+    throw new Error("Product-fit evaluation does not match deterministic rules.");
+  }
+
+  return evaluation;
 }

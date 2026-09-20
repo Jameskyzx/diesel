@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { env } from "@/env";
+import { getErrorCode } from "@/lib/api-error";
 import { getDatabase } from "@/server/db/client";
 import {
   createRateLimitRepository,
@@ -42,6 +43,73 @@ type Bucket = {
 
 export type AiChatRateLimitBackend = "memory" | "postgres";
 
+export const RATE_LIMIT_CLEANUP_INTERVAL_MS = 60 * 1_000;
+export const AI_CHAT_RATE_LIMIT_MAX_PER_HOUR = 10_000;
+export const AI_CHAT_RATE_LIMIT_GLOBAL_DEFAULT_PER_HOUR =
+  AI_CHAT_RATE_LIMIT_MAX_PER_HOUR;
+export const AI_CHAT_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1_000;
+
+export type AiChatRateLimitConfig = {
+  globalLimitPerHour: number;
+  perClientLimitPerHour: number;
+};
+
+export type RateLimitCleanupScheduler = {
+  schedule: (repository: RateLimitRepository) => void;
+};
+
+function reportRateLimitCleanupFailure(error: unknown): void {
+  try {
+    console.error("Shared rate-limit bucket cleanup failed", {
+      errorCode: getErrorCode(error),
+    });
+  } catch {
+    // Cleanup observability must never alter a completed rate-limit decision,
+    // even if the host's console transport is unavailable.
+  }
+}
+
+export function createRateLimitCleanupScheduler(options: {
+  now?: () => number;
+} = {}): RateLimitCleanupScheduler {
+  let cleanupInFlight: Promise<void> | null = null;
+  let nextCleanupAtMs = Number.NEGATIVE_INFINITY;
+  const now = options.now ?? Date.now;
+
+  return {
+    schedule(repository) {
+      let nowMs: number;
+      try {
+        nowMs = now();
+      } catch (error: unknown) {
+        reportRateLimitCleanupFailure(error);
+        return;
+      }
+      if (
+        !Number.isFinite(nowMs) ||
+        cleanupInFlight !== null ||
+        nowMs < nextCleanupAtMs
+      ) {
+        return;
+      }
+      nextCleanupAtMs = nowMs + RATE_LIMIT_CLEANUP_INTERVAL_MS;
+
+      const scheduledCleanup = Promise.resolve()
+        .then(() => repository.cleanupExpiredBuckets())
+        .catch(reportRateLimitCleanupFailure)
+        .finally(() => {
+          if (cleanupInFlight === scheduledCleanup) {
+            cleanupInFlight = null;
+          }
+        });
+      cleanupInFlight = scheduledCleanup;
+      void scheduledCleanup;
+    },
+  };
+}
+
+const sharedRateLimitCleanupScheduler = createRateLimitCleanupScheduler();
+
 export function resolveAiChatRateLimitBackend(options: {
   configuredBackend?: AiChatRateLimitBackend;
   nodeEnv: "development" | "production" | "test";
@@ -59,11 +127,52 @@ export function resolveAiChatRateLimitBackend(options: {
   return backend;
 }
 
+function assertHourlyLimit(name: string, value: number): void {
+  if (
+    !Number.isSafeInteger(value) ||
+    value < 1 ||
+    value > AI_CHAT_RATE_LIMIT_MAX_PER_HOUR
+  ) {
+    throw new Error(
+      `${name} must be a positive safe integer no greater than ${AI_CHAT_RATE_LIMIT_MAX_PER_HOUR}.`,
+    );
+  }
+}
+
+export function resolveAiChatRateLimitConfig(options: {
+  globalLimitPerHour?: number;
+  perClientLimitPerHour: number;
+}): AiChatRateLimitConfig {
+  const globalLimitPerHour =
+    options.globalLimitPerHour ??
+    AI_CHAT_RATE_LIMIT_GLOBAL_DEFAULT_PER_HOUR;
+  assertHourlyLimit("Global hourly rate limit", globalLimitPerHour);
+  assertHourlyLimit(
+    "Per-client hourly rate limit",
+    options.perClientLimitPerHour,
+  );
+  if (options.perClientLimitPerHour > globalLimitPerHour) {
+    throw new Error(
+      "Per-client hourly rate limit cannot exceed the global hourly rate limit.",
+    );
+  }
+  return {
+    globalLimitPerHour,
+    perClientLimitPerHour: options.perClientLimitPerHour,
+  };
+}
+
 export function createRateLimiter(options: {
+  globalLimit?: number;
   limit: number;
   windowMs: number;
 }): RateLimiter {
+  const config = resolveAiChatRateLimitConfig({
+    globalLimitPerHour: options.globalLimit,
+    perClientLimitPerHour: options.limit,
+  });
   const buckets = new Map<string, Bucket>();
+  let globalBucket: Bucket | undefined;
   let lastPurgeWindowStart = Number.NEGATIVE_INFINITY;
 
   function purgeStale(currentWindowStart: number): void {
@@ -75,6 +184,9 @@ export function createRateLimiter(options: {
       if (bucket.windowStart !== currentWindowStart) {
         buckets.delete(key);
       }
+    }
+    if (globalBucket?.windowStart !== currentWindowStart) {
+      globalBucket = undefined;
     }
   }
 
@@ -89,47 +201,69 @@ export function createRateLimiter(options: {
         Math.ceil((windowStart + options.windowMs - nowMs) / 1000),
       );
       const bucket = buckets.get(key);
+      const globalCount =
+        globalBucket?.windowStart === windowStart ? globalBucket.count : 0;
+      const clientCount =
+        bucket?.windowStart === windowStart ? bucket.count : 0;
 
-      if (!bucket || bucket.windowStart !== windowStart) {
-        buckets.set(key, { count: 1, windowStart });
-        return {
-          allowed: true,
-          limit: options.limit,
-          remaining: options.limit - 1,
-          retryAfterSeconds: 0,
-        };
-      }
-
-      if (bucket.count >= options.limit) {
+      if (
+        globalCount >= config.globalLimitPerHour ||
+        clientCount >= config.perClientLimitPerHour
+      ) {
         return {
           allowed: false,
-          limit: options.limit,
+          limit: config.perClientLimitPerHour,
           remaining: 0,
           retryAfterSeconds,
         };
       }
 
-      bucket.count += 1;
+      const nextGlobalCount = globalCount + 1;
+      const nextClientCount = clientCount + 1;
+      globalBucket = { count: nextGlobalCount, windowStart };
+      buckets.set(key, { count: nextClientCount, windowStart });
       return {
         allowed: true,
-        limit: options.limit,
-        remaining: options.limit - bucket.count,
+        limit: config.perClientLimitPerHour,
+        remaining: Math.min(
+          config.globalLimitPerHour - nextGlobalCount,
+          config.perClientLimitPerHour - nextClientCount,
+        ),
         retryAfterSeconds: 0,
       };
     },
     reset() {
       buckets.clear();
+      globalBucket = undefined;
       lastPurgeWindowStart = Number.NEGATIVE_INFINITY;
     },
   };
 }
 
 export function createPostgresRateLimiter(options: {
+  cleanupScheduler?: RateLimitCleanupScheduler;
+  globalLimit: number;
+  globalScope: string;
   limit: number;
   repository: RateLimitRepository;
   scope: string;
   windowMs: number;
 }): RateLimiter {
+  if (options.windowMs !== AI_CHAT_RATE_LIMIT_WINDOW_MS) {
+    throw new Error(
+      "PostgreSQL AI chat rate limiting requires a one-hour window.",
+    );
+  }
+  const config = resolveAiChatRateLimitConfig({
+    globalLimitPerHour: options.globalLimit,
+    perClientLimitPerHour: options.limit,
+  });
+  const cleanupScheduler =
+    options.cleanupScheduler ?? sharedRateLimitCleanupScheduler;
+  const globalKeyHash = createHash("sha256")
+    .update("diesel:ai-chat-hourly-rate-limit:v1:global")
+    .digest("hex");
+
   return {
     async check(key, nowMs = Date.now()): Promise<RateLimitDecision> {
       const windowStart =
@@ -138,28 +272,47 @@ export function createPostgresRateLimiter(options: {
         1,
         Math.ceil((windowStart + options.windowMs - nowMs) / 1000),
       );
-      const requestCount = await options.repository.consumeBucket({
+      const reservation = await options.repository.reserveAiChatHourlyRequest({
+        client: {
+          keyHash: createHash("sha256").update(key).digest("hex"),
+          limit: config.perClientLimitPerHour,
+          scope: options.scope,
+        },
         expiresAt: new Date(windowStart + options.windowMs),
-        keyHash: createHash("sha256").update(key).digest("hex"),
-        limit: options.limit,
+        global: {
+          keyHash: globalKeyHash,
+          limit: config.globalLimitPerHour,
+          scope: options.globalScope,
+        },
         now: new Date(nowMs),
-        scope: options.scope,
         windowStart: new Date(windowStart),
       });
+      // Retention is deliberately outside the request's counter transaction.
+      // This process-local scheduler is single-flight and never awaits cleanup,
+      // so maintenance failure cannot change the already-computed decision.
+      try {
+        cleanupScheduler.schedule(options.repository);
+      } catch (error: unknown) {
+        reportRateLimitCleanupFailure(error);
+      }
 
-      return requestCount <= options.limit
-        ? {
-            allowed: true,
-            limit: options.limit,
-            remaining: options.limit - requestCount,
-            retryAfterSeconds: 0,
-          }
-        : {
-            allowed: false,
-            limit: options.limit,
-            remaining: 0,
-            retryAfterSeconds,
-          };
+      if (!reservation.allowed) {
+        return {
+          allowed: false,
+          limit: config.perClientLimitPerHour,
+          remaining: 0,
+          retryAfterSeconds,
+        };
+      }
+      return {
+        allowed: true,
+        limit: config.perClientLimitPerHour,
+        remaining: Math.min(
+          config.globalLimitPerHour - reservation.globalCount,
+          config.perClientLimitPerHour - reservation.clientCount,
+        ),
+        retryAfterSeconds: 0,
+      };
     },
     reset() {
       // Shared production state is intentionally not reset from the app.
@@ -236,29 +389,49 @@ type RuntimeWithRateLimiter = typeof globalThis & {
   __aiChatRateLimiter?: RateLimiter;
 };
 
-const AI_CHAT_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-const AI_CHAT_RATE_LIMIT_SCOPE = "ai-chat-hourly-v1";
+const AI_CHAT_RATE_LIMIT_CLIENT_SCOPE = "ai-chat-hourly-v1";
+const AI_CHAT_RATE_LIMIT_GLOBAL_SCOPE = "ai-chat-hourly-global-v1";
 export const AI_CHAT_MAX_IN_FLIGHT = 4;
 export const AI_CHAT_MAX_IN_FLIGHT_PER_CLIENT = 2;
+
+function resolveRuntimeAiChatRateLimitConfiguration(): {
+  backend: AiChatRateLimitBackend;
+  config: AiChatRateLimitConfig;
+} {
+  const config = resolveAiChatRateLimitConfig({
+    globalLimitPerHour: env.AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR,
+    perClientLimitPerHour: env.AI_CHAT_RATE_LIMIT_PER_HOUR,
+  });
+  const backend = resolveAiChatRateLimitBackend({
+    configuredBackend: env.AI_CHAT_RATE_LIMIT_BACKEND,
+    nodeEnv: env.NODE_ENV,
+  });
+  return { backend, config };
+}
+
+export function validateAiChatRateLimitConfiguration(): void {
+  resolveRuntimeAiChatRateLimitConfiguration();
+}
 
 export function getAiChatRateLimiter(): RateLimiter {
   const runtime = globalThis as RuntimeWithRateLimiter;
   if (!runtime.__aiChatRateLimiter) {
-    const backend = resolveAiChatRateLimitBackend({
-      configuredBackend: env.AI_CHAT_RATE_LIMIT_BACKEND,
-      nodeEnv: env.NODE_ENV,
-    });
+    const { backend, config } =
+      resolveRuntimeAiChatRateLimitConfiguration();
 
     runtime.__aiChatRateLimiter =
       backend === "postgres"
         ? createPostgresRateLimiter({
-            limit: env.AI_CHAT_RATE_LIMIT_PER_HOUR,
+            globalLimit: config.globalLimitPerHour,
+            globalScope: AI_CHAT_RATE_LIMIT_GLOBAL_SCOPE,
+            limit: config.perClientLimitPerHour,
             repository: createRateLimitRepository(getDatabase()),
-            scope: AI_CHAT_RATE_LIMIT_SCOPE,
+            scope: AI_CHAT_RATE_LIMIT_CLIENT_SCOPE,
             windowMs: AI_CHAT_RATE_LIMIT_WINDOW_MS,
           })
         : createRateLimiter({
-            limit: env.AI_CHAT_RATE_LIMIT_PER_HOUR,
+            globalLimit: config.globalLimitPerHour,
+            limit: config.perClientLimitPerHour,
             windowMs: AI_CHAT_RATE_LIMIT_WINDOW_MS,
           });
   }

@@ -12,7 +12,7 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -23,11 +23,12 @@ import {
 import { hasDetailedCountryCoverage } from "@/features/database/schemas";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 import { formatUtcDate } from "@/i18n/date";
+import { createPublicApiRequestDeadline } from "@/lib/public-api-request";
 import { cn } from "@/lib/utils";
 
 type DashboardState =
   | { status: "loading" }
-  | { status: "error"; message: string }
+  | { status: "error" }
   | { status: "ready"; data: CountryMapResponse };
 
 type DashboardMetrics = {
@@ -55,21 +56,50 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.home;
   const [state, setState] = useState<DashboardState>(initialState);
+  const requestAbortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
   const requestData = useCallback(() => {
-    void fetch("/api/countries", { headers: { accept: "application/json" } })
+    requestAbortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    const requestId = requestIdRef.current + 1;
+    requestAbortControllerRef.current = abortController;
+    requestIdRef.current = requestId;
+    const deadline = createPublicApiRequestDeadline(abortController.signal);
+
+    void fetch("/api/countries", {
+      headers: { accept: "application/json" },
+      signal: deadline.signal,
+    })
       .then(async (response) => {
-        if (!response.ok) throw new Error(copy.errorCountries);
+        if (!response.ok) throw new Error("Country coverage request failed.");
         return countryMapResponseSchema.parse(await response.json());
       })
-      .then((data) => setState({ data, status: "ready" }))
-      .catch(() =>
-        setState({
-          message: copy.errorCountries,
-          status: "error",
-        }),
-      );
-  }, [copy.errorCountries]);
+      .then((data) => {
+        if (
+          abortController.signal.aborted ||
+          requestId !== requestIdRef.current
+        ) {
+          return;
+        }
+        setState({ data, status: "ready" });
+      })
+      .catch(() => {
+        if (
+          abortController.signal.aborted ||
+          requestId !== requestIdRef.current
+        ) {
+          return;
+        }
+        setState({ status: "error" });
+      })
+      .finally(() => {
+        deadline.dispose();
+        if (requestAbortControllerRef.current === abortController) {
+          requestAbortControllerRef.current = null;
+        }
+      });
+  }, []);
 
   const loadData = useCallback(() => {
     setState(initialState);
@@ -78,7 +108,12 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
 
   useEffect(() => {
     requestData();
-  }, [requestData]);
+    return () => {
+      requestIdRef.current += 1;
+      requestAbortControllerRef.current?.abort();
+      requestAbortControllerRef.current = null;
+    };
+  }, [locale, requestData]);
 
   const metrics = useMemo<DashboardMetrics>(() => {
     if (state.status !== "ready") return emptyMetrics;
@@ -190,7 +225,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
         </div>
 
         <div className="relative lg:pl-4">
-          <div className="absolute -inset-5 -z-10 rounded-[3rem] bg-[#dbe8dd]/70 blur-2xl" />
+          <div className="absolute inset-0 -z-10 rounded-[3rem] bg-[#dbe8dd]/70 blur-2xl sm:-inset-5" />
           <div className="relative overflow-hidden rounded-[2rem] bg-[#12372d] p-6 text-white shadow-[0_34px_80px_rgb(20_55_45_/_0.22)] sm:p-8">
             <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgb(255_255_255_/_0.5)_1px,transparent_1px),linear-gradient(90deg,rgb(255_255_255_/_0.5)_1px,transparent_1px)] [background-size:64px_64px]" />
             <div className="relative flex items-center justify-between border-b border-white/10 pb-5">
@@ -308,7 +343,12 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
           </div>
 
           {state.status === "loading" ? (
-            <div className="flex min-h-56 items-center justify-center text-sm text-slate-500">
+            <div
+              aria-busy="true"
+              aria-live="polite"
+              className="flex min-h-56 items-center justify-center text-sm text-slate-500"
+              role="status"
+            >
               <LoaderCircle
                 aria-hidden="true"
                 className="mr-2 size-4 animate-spin"
@@ -321,7 +361,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
               className="m-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 sm:m-7"
               role="alert"
             >
-              <p>{state.message}</p>
+              <p>{copy.errorCountries}</p>
               <button
                 className="mt-3 inline-flex items-center gap-1.5 font-medium underline"
                 onClick={loadData}
@@ -398,7 +438,7 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
 function SignalRow({ label, value }: { label: string; value: number | null }) {
   return (
     <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.055] px-3 py-3">
-      <span className="truncate text-[11px] text-emerald-100/60">{label}</span>
+      <span className="min-w-0 text-[11px] leading-4 text-emerald-100/60" data-screenshot-label>{label}</span>
       <span className="text-sm font-semibold text-white">
         {value ?? "—"}
       </span>

@@ -9,12 +9,15 @@ type ErrorPageProps = {
 };
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
-  const copy = useLocale().dictionary.state;
+  const { dictionary } = useLocale();
+  const copy = dictionary.state;
   return (
     <main className="grid min-h-[70vh] place-items-center px-6 py-16">
       <section
+        aria-atomic="true"
         aria-labelledby="error-title"
         className="w-full max-w-xl rounded-3xl border bg-card p-8 shadow-sm"
+        role="alert"
       >
         <p className="text-sm font-semibold text-destructive">
           {copy.errorKicker}
@@ -30,7 +33,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         </p>
         {error.digest ? (
           <p className="mt-2 font-mono text-xs text-muted-foreground">
-            {copy.errorCode}: {error.digest}
+            {copy.errorCode}{dictionary.common.labelSeparator}{error.digest}
           </p>
         ) : null}
         <Button className="mt-6" onClick={reset} type="button">

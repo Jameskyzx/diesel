@@ -1,12 +1,22 @@
 import "server-only";
 
+import { compareCanonicalText } from "@/domain/canonical-order";
 import {
   calculateProductReadiness,
   calculateRegulatoryCoverage,
   combineOpportunityScore,
   normalizeComparableMetric,
 } from "@/domain/marketing/opportunity-score";
+import { opportunityScorecardMatchesTrustedProvenance } from "@/domain/marketing/analysis-provenance";
+import {
+  marketComparisonIssues,
+  marketComparisonMatchesDeterministicRules,
+  marketComparisonStatus,
+  regulationComparisonMatchesDeterministicRules,
+} from "@/domain/marketing/comparison-consistency";
+import { salesBriefMatchesDeterministicRules } from "@/domain/marketing/sales-brief-consistency";
 import { OPPORTUNITY_SCORE_RULESET_VERSION } from "@/features/marketing/constants";
+import { opportunityMetricDirection } from "@/features/marketing/opportunity-score-registry";
 import {
   compareMarketsInputSchema,
   compareRegulationsInputSchema,
@@ -19,12 +29,12 @@ import {
   type AnalysisSource,
   type MarketComparison,
   type MarketObservation,
+  type OpportunityScoreProvenance,
   type RegulationComparisonItem,
 } from "@/features/marketing/schemas";
 import type { ProductFitEvaluation } from "@/features/product-fit/schemas";
 import {
   getOpportunityScoreWeights,
-  opportunityMetricDirections,
 } from "@/server/config/opportunity-score-config";
 import { getDatabase } from "@/server/db/client";
 import { getDemoDatabase } from "@/server/db/demo-client";
@@ -32,7 +42,12 @@ import { getDatabaseMode } from "@/server/db/environment";
 import { createCountryRepository } from "@/server/repositories/country-repository";
 import { createMarketRepository } from "@/server/repositories/market-repository";
 import { createRegulationRepository } from "@/server/repositories/regulation-repository";
+import { awaitStartedOperationsInOrder } from "@/server/http/settled-operation-barrier";
 import { findCompatibleProducts } from "@/server/services/compatible-products-service";
+import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
 
 function serializeTimestamp(value: Date): string {
   return value.toISOString();
@@ -42,63 +57,137 @@ function uniqueSources(sources: AnalysisSource[]): AnalysisSource[] {
   return Array.from(
     new Map(
       sources.map((source) => [
-        `${source.countryIso3 ?? "global"}:${source.entityType}:${source.entityId}:${source.sourceId}`,
+        `${source.countryIso3 ?? "global"}:${source.entityType}:${source.entityId}:${source.regulationId ?? "none"}:${source.sourceId}`,
         source,
       ]),
     ).values(),
   );
 }
 
-async function getCountryRepository() {
+async function getCountryRepository(options: RequestSignalOptions = {}) {
+  throwIfRequestAborted(options.signal);
   if (getDatabaseMode() === "pglite-demo") {
-    return createCountryRepository(await getDemoDatabase());
+    const database = await getDemoDatabase();
+    throwIfRequestAborted(options.signal);
+    return createCountryRepository(database);
   }
 
   return createCountryRepository(getDatabase());
 }
 
-async function getMarketRepository() {
+async function getMarketRepository(options: RequestSignalOptions = {}) {
+  throwIfRequestAborted(options.signal);
   if (getDatabaseMode() === "pglite-demo") {
-    return createMarketRepository(await getDemoDatabase());
+    const database = await getDemoDatabase();
+    throwIfRequestAborted(options.signal);
+    return createMarketRepository(database);
   }
 
   return createMarketRepository(getDatabase());
 }
 
-async function getRegulationRepository() {
+async function getRegulationRepository(options: RequestSignalOptions = {}) {
+  throwIfRequestAborted(options.signal);
   if (getDatabaseMode() === "pglite-demo") {
-    return createRegulationRepository(await getDemoDatabase());
+    const database = await getDemoDatabase();
+    throwIfRequestAborted(options.signal);
+    return createRegulationRepository(database);
   }
 
   return createRegulationRepository(getDatabase());
 }
 
-function metricDirection(
-  metricCode: string,
-): "higher_is_better" | "lower_is_better" | null {
-  if (metricCode in opportunityMetricDirections) {
-    return opportunityMetricDirections[
-      metricCode as keyof typeof opportunityMetricDirections
-    ];
+/**
+ * Waits for every already-started comparison read before propagating a
+ * failure. Country failures win in query order, followed by the regulation
+ * read, so callers never release request admission while sibling SQL is still
+ * running and failure selection is deterministic.
+ */
+export async function awaitRegulationComparisonReads<TCountry, TRow>(input: {
+  countryReads: readonly Promise<TCountry>[];
+  regulationRead: Promise<readonly TRow[]>;
+}): Promise<[TCountry[], readonly TRow[]]> {
+  const countryBarrier = Promise.allSettled(input.countryReads);
+  const regulationBarrier = Promise.allSettled([input.regulationRead]).then(
+    ([outcome]) => outcome,
+  );
+  const [countryOutcomes, regulationOutcome] = await Promise.all([
+    countryBarrier,
+    regulationBarrier,
+  ]);
+
+  for (const countryOutcome of countryOutcomes) {
+    if (countryOutcome.status === "rejected") {
+      throw countryOutcome.reason;
+    }
+  }
+  if (!regulationOutcome || regulationOutcome.status === "rejected") {
+    throw (
+      regulationOutcome?.reason ?? new Error("Regulation read did not settle.")
+    );
   }
 
-  return null;
+  return [
+    countryOutcomes.map((outcome) => {
+      if (outcome.status === "rejected") {
+        throw outcome.reason;
+      }
+      return outcome.value;
+    }),
+    regulationOutcome.value,
+  ];
 }
 
-export async function compareRegulations(input: unknown) {
+export async function compareRegulations(
+  input: unknown,
+  options: RequestSignalOptions = {},
+) {
+  throwIfRequestAborted(options.signal);
   const query = compareRegulationsInputSchema.parse(input);
-  const [countryRepository, regulationRepository] = await Promise.all([
-    getCountryRepository(),
-    getRegulationRepository(),
-  ]);
-  const [countryRecords, rows] = await Promise.all([
-    Promise.all(
-      query.countryIso3s.map((iso3) =>
-        countryRepository.findByIso3({ iso3 }),
-      ),
+  const [countryRepository, regulationRepository] =
+    await awaitStartedOperationsInOrder([
+      getCountryRepository(options),
+      getRegulationRepository(options),
+    ] as const);
+  throwIfRequestAborted(options.signal);
+  return compareRegulationsFromRepositories(
+    query,
+    { countryRepository, regulationRepository },
+    options,
+  );
+}
+
+export type RegulationComparisonRepositories = {
+  countryRepository: Pick<
+    ReturnType<typeof createCountryRepository>,
+    "findByIso3"
+  >;
+  regulationRepository: Pick<
+    ReturnType<typeof createRegulationRepository>,
+    "findForComparison"
+  >;
+};
+
+/**
+ * Runs the deterministic comparison against repositories supplied by the
+ * caller. Country detail uses this entry point so its wide profile and the
+ * optional applicability summary share one database transaction/snapshot.
+ */
+export async function compareRegulationsFromRepositories(
+  input: unknown,
+  repositories: RegulationComparisonRepositories,
+  options: RequestSignalOptions = {},
+) {
+  throwIfRequestAborted(options.signal);
+  const query = compareRegulationsInputSchema.parse(input);
+  const { countryRepository, regulationRepository } = repositories;
+  const [countryRecords, rows] = await awaitRegulationComparisonReads({
+    countryReads: query.countryIso3s.map((iso3) =>
+      countryRepository.findByIso3({ iso3 }, options),
     ),
-    regulationRepository.findForComparison(query),
-  ]);
+    regulationRead: regulationRepository.findForComparison(query, options),
+  });
+  throwIfRequestAborted(options.signal);
 
   const countries = query.countryIso3s.map((countryIso3, countryIndex) => {
     const countryRecord = countryRecords[countryIndex] ?? null;
@@ -128,6 +217,12 @@ export async function compareRegulations(input: unknown) {
         entityType: "regulation_limit",
         isDemo: row.limit.isDemo || row.limit.sourceIsDemo,
         locator: `${row.limit.pollutantCode} ${row.limit.validFrom}–${row.limit.validTo ?? "open"}`,
+        locatorDescriptor: {
+          kind: "regulation_limit_period",
+          pollutantCode: row.limit.pollutantCode,
+          validFrom: row.limit.validFrom,
+          validTo: row.limit.validTo,
+        },
         publishedOn: row.limit.sourcePublishedOn,
         regulationId: row.regulationId,
         regulationStatus: row.status,
@@ -135,6 +230,11 @@ export async function compareRegulations(input: unknown) {
         sourceTitle: row.limit.sourceTitle,
         sourceUrl: row.limit.sourceUrl,
         title: `${row.canonicalName} ${row.limit.pollutantCode} 限值`,
+        titleDescriptor: {
+          kind: "regulation_pollutant_limit",
+          pollutantCode: row.limit.pollutantCode,
+          regulationName: row.canonicalName,
+        },
         verifiedAt: serializeTimestamp(row.limit.sourceVerifiedAt),
       };
       const jurisdictionSource: AnalysisSource = {
@@ -164,6 +264,11 @@ export async function compareRegulations(input: unknown) {
           row.applicability.membershipIsDemo ||
           row.applicability.membershipSourceIsDemo,
         locator: `${row.applicability.membershipValidFrom}–${row.applicability.membershipValidTo ?? "open"}`,
+        locatorDescriptor: {
+          kind: "membership_period",
+          validFrom: row.applicability.membershipValidFrom,
+          validTo: row.applicability.membershipValidTo,
+        },
         publishedOn: row.applicability.membershipSourcePublishedOn,
         regulationId: row.regulationId,
         regulationStatus: row.status,
@@ -171,6 +276,11 @@ export async function compareRegulations(input: unknown) {
         sourceTitle: row.applicability.membershipSourceTitle,
         sourceUrl: row.applicability.membershipSourceUrl,
         title: `${row.applicability.jurisdictionName} 对 ${countryIso3} 的成员关系`,
+        titleDescriptor: {
+          countryIso3,
+          jurisdictionName: row.applicability.jurisdictionName,
+          kind: "country_jurisdiction_membership",
+        },
         verifiedAt: serializeTimestamp(
           row.applicability.membershipSourceVerifiedAt,
         ),
@@ -245,10 +355,48 @@ export async function compareRegulations(input: unknown) {
       });
     }
 
-    const items = Array.from(regulations.values());
+    const items = Array.from(regulations.values())
+      .map((regulation) => ({
+        ...regulation,
+        limits: regulation.limits.toSorted((left, right) => compareCanonicalText(
+          [
+            left.pollutantCode,
+            left.powerMinKw ?? -1,
+            left.powerMaxKw ?? -1,
+            left.validFrom,
+            left.validTo ?? "",
+            left.id,
+          ].join("\u0000"),
+          [
+            right.pollutantCode,
+            right.powerMinKw ?? -1,
+            right.powerMaxKw ?? -1,
+            right.validFrom,
+            right.validTo ?? "",
+            right.id,
+          ].join("\u0000"),
+        )),
+      }))
+      .toSorted((left, right) => compareCanonicalText(
+        `${left.canonicalName}\u0000${left.id}`,
+        `${right.canonicalName}\u0000${right.id}`,
+      ));
     return {
+      countryIsDemo: countryRecord?.isDemo ?? false,
       countryIso3,
       countryName: countryRecord?.nameEn ?? null,
+      countrySource: countryRecord
+        ? {
+            countryIso2: countryRecord.iso2,
+            countryNameLocal: countryRecord.nameLocal,
+            id: countryRecord.source.id,
+            isDemo: countryRecord.source.isDemo,
+            publishedOn: countryRecord.source.publishedOn,
+            title: countryRecord.source.title,
+            url: countryRecord.source.url,
+            verifiedAt: serializeTimestamp(countryRecord.source.verifiedAt),
+          }
+        : null,
       currentEffectiveRegulations: items.filter(
         ({ status }) => status === "effective",
       ),
@@ -289,12 +437,19 @@ export async function compareRegulations(input: unknown) {
     ),
   );
 
-  return regulationComparisonSchema.parse({
+  const comparison = regulationComparisonSchema.parse({
     countries,
     missingData,
     query,
     sources,
   });
+  if (!regulationComparisonMatchesDeterministicRules(comparison)) {
+    throw new Error(
+      "Regulation comparison does not match deterministic rules.",
+    );
+  }
+
+  return comparison;
 }
 
 function latestObservationsByCountry(
@@ -326,10 +481,16 @@ function latestObservationsByCountry(
   });
 }
 
-export async function compareMarkets(input: unknown) {
+export async function compareMarkets(
+  input: unknown,
+  options: RequestSignalOptions = {},
+) {
+  throwIfRequestAborted(options.signal);
   const query = compareMarketsInputSchema.parse(input);
-  const repository = await getMarketRepository();
-  const rows = await repository.findForComparison(query);
+  const repository = await getMarketRepository(options);
+  throwIfRequestAborted(options.signal);
+  const rows = await repository.findForComparison(query, options);
+  throwIfRequestAborted(options.signal);
   const observations = rows.map(
     (row): MarketObservation => ({
       applicationScope: row.applicationScope,
@@ -351,6 +512,11 @@ export async function compareMarkets(input: unknown) {
         entityType: "market_metric",
         isDemo: row.isDemo || row.source.isDemo,
         locator: `${row.periodStart}–${row.periodEnd}`,
+        locatorDescriptor: {
+          kind: "market_period",
+          periodEnd: row.periodEnd,
+          periodStart: row.periodStart,
+        },
         publishedOn: row.publishedOn ?? row.source.publishedOn,
         regulationId: null,
         regulationStatus: null,
@@ -358,6 +524,13 @@ export async function compareMarkets(input: unknown) {
         sourceTitle: row.source.title,
         sourceUrl: row.source.url,
         title: row.metricName,
+        titleDescriptor: {
+          isDemo: row.isDemo,
+          kind: "market_metric",
+          metricCode: row.metricCode,
+          metricId: row.id,
+          metricName: row.metricName,
+        },
         verifiedAt: serializeTimestamp(row.source.verifiedAt),
       },
       unitCode: row.unitCode,
@@ -370,66 +543,25 @@ export async function compareMarkets(input: unknown) {
     Array.from(new Set(observations.map(({ metricCode }) => metricCode))).sort();
   const metrics: MarketComparison["metrics"] = metricCodes.map(
     (metricCode) => {
+      const countryOrder = new Map(
+        query.countryIso3s.map((countryIso3, index) => [countryIso3, index]),
+      );
       const metricObservations = latestObservationsByCountry(
         observations.filter(
           (observation) => observation.metricCode === metricCode,
         ),
+      ).toSorted(
+        (left, right) =>
+          (countryOrder.get(left.countryIso3) ?? Number.MAX_SAFE_INTEGER) -
+            (countryOrder.get(right.countryIso3) ??
+              Number.MAX_SAFE_INTEGER) ||
+          compareCanonicalText(right.periodEnd, left.periodEnd) ||
+          compareCanonicalText(right.periodStart, left.periodStart) ||
+          compareCanonicalText(left.id, right.id),
       );
-      const issues: MarketComparison["metrics"][number]["issues"] = [];
-      const observationCounts = new Map<string, number>();
-
-      for (const observation of metricObservations) {
-        observationCounts.set(
-          observation.countryIso3,
-          (observationCounts.get(observation.countryIso3) ?? 0) + 1,
-        );
-      }
-      if (
-        query.countryIso3s.some(
-          (countryIso3) => !observationCounts.has(countryIso3),
-        )
-      ) {
-        issues.push("MISSING_COUNTRY_OBSERVATION");
-      }
-      if (
-        Array.from(observationCounts.values()).some((count) => count > 1)
-      ) {
-        issues.push("AMBIGUOUS_LATEST_OBSERVATION");
-      }
-
-      const comparableFields = [
-        ["applicationScope", "APPLICATION_SCOPE_MISMATCH"],
-        ["unitCode", "UNIT_MISMATCH"],
-        ["currencyCode", "CURRENCY_MISMATCH"],
-        ["definition", "DEFINITION_MISMATCH"],
-        ["methodologyVersion", "METHODOLOGY_MISMATCH"],
-        ["periodStart", "PERIOD_MISMATCH"],
-        ["periodEnd", "PERIOD_MISMATCH"],
-      ] as const;
-      for (const [field, issue] of comparableFields) {
-        if (
-          new Set(
-            metricObservations.map((observation) => observation[field]),
-          ).size > 1 &&
-          !issues.includes(issue)
-        ) {
-          issues.push(issue);
-        }
-      }
-
-      const hasInsufficientData = issues.some((issue) =>
-        [
-          "MISSING_COUNTRY_OBSERVATION",
-          "AMBIGUOUS_LATEST_OBSERVATION",
-        ].includes(issue),
-      );
+      const issues = marketComparisonIssues(metricObservations, query.countryIso3s);
       return {
-        comparisonStatus:
-          issues.length === 0
-            ? ("comparable" as const)
-            : hasInsufficientData
-              ? ("insufficient_data" as const)
-              : ("incomparable" as const),
+        comparisonStatus: marketComparisonStatus(issues),
         issues,
         metricCode,
         metricName:
@@ -451,7 +583,8 @@ export async function compareMarkets(input: unknown) {
     missingData.push("所选国家没有结构化市场指标。");
   }
 
-  return marketComparisonSchema.parse({
+  throwIfRequestAborted(options.signal);
+  const comparison = marketComparisonSchema.parse({
     metrics,
     missingData,
     query,
@@ -461,92 +594,131 @@ export async function compareMarkets(input: unknown) {
       ),
     ),
   });
+  if (!marketComparisonMatchesDeterministicRules(comparison)) {
+    throw new Error("Market comparison does not match deterministic rules.");
+  }
+
+  return comparison;
 }
 
-function productAnalysisSources(
+export function productAnalysisSources(
   countryIso3: string,
   evaluations: ProductFitEvaluation[],
 ): AnalysisSource[] {
   return evaluations.flatMap((evaluation) => {
-    const productSources: AnalysisSource[] = evaluation.product
+    const product = evaluation.product;
+    const productSources: AnalysisSource[] = product
       ? [
           {
             countryIso3,
-            entityId: evaluation.product.id,
+            entityId: product.id,
             entityType: "product",
             isDemo:
-              evaluation.product.isDemo || evaluation.product.source.isDemo,
-            locator: `${evaluation.product.modelCode}; availability ${evaluation.product.availableFrom ?? "unknown"}–${evaluation.product.availableTo ?? "open"}`,
-            publishedOn: evaluation.product.source.publishedOn,
+              product.isDemo || product.source.isDemo,
+            locator: `${product.modelCode}; availability ${product.availableFrom ?? "unknown"}–${product.availableTo ?? "unknown"}`,
+            locatorDescriptor: {
+              availableFrom: product.availableFrom,
+              availableTo: product.availableTo,
+              kind: "product_availability",
+              modelCode: product.modelCode,
+              specificationVersion: product.specificationVersion,
+            },
+            publishedOn: product.source.publishedOn,
             regulationId: null,
             regulationStatus: null,
-            sourceId: evaluation.product.source.id,
-            sourceTitle: evaluation.product.source.title,
-            sourceUrl: evaluation.product.source.url,
-            title: evaluation.product.name,
-            verifiedAt: evaluation.product.source.verifiedAt,
+            sourceId: product.source.id,
+            sourceTitle: product.source.title,
+            sourceUrl: product.source.url,
+            title: product.name,
+            verifiedAt: product.source.verifiedAt,
           },
         ]
       : [];
-    const certificationSources = evaluation.regulationChecks.flatMap(
-      (regulationCheck) =>
-        regulationCheck.certifications.map(({ certification }) => ({
+    const certificationSources = product
+      ? evaluation.regulationChecks.flatMap((regulationCheck) =>
+          regulationCheck.certifications.map(({ certification }) => ({
           countryIso3,
           entityId: certification.id,
           entityType: "product_certification" as const,
           isDemo: certification.isDemo || certification.source.isDemo,
           locator: certification.certificateNumber,
           publishedOn: certification.source.publishedOn,
+          productId: certification.productId,
+          productModelCode: certification.productModelCode,
           regulationId: certification.regulationId,
-          regulationStatus: "effective" as const,
+          regulationStatus: regulationCheck.regulation.recordStatus,
           sourceId: certification.source.id,
           sourceTitle: certification.source.title,
           sourceUrl: certification.source.url,
           title:
             certification.certificateNumber ??
-            `${evaluation.product?.modelCode ?? "产品"}认证`,
+            `${certification.productModelCode}认证`,
+          ...(certification.certificateNumber === null
+            ? {
+                titleDescriptor: {
+                  kind: "product_certification_record" as const,
+                  productModelCode: certification.productModelCode,
+                },
+              }
+            : {}),
           verifiedAt: certification.source.verifiedAt,
-        })),
-    );
+          })),
+        )
+      : [];
 
     return [...productSources, ...certificationSources];
   });
 }
 
-export async function calculateOpportunityScore(input: unknown) {
+export async function calculateOpportunityScore(
+  input: unknown,
+  options: RequestSignalOptions = {},
+) {
+  throwIfRequestAborted(options.signal);
   const query = calculateOpportunityScoreInputSchema.parse(input);
   const weights = getOpportunityScoreWeights();
-  const [regulationComparison, marketComparison, productEvaluations] =
-    await Promise.all([
-      compareRegulations({
+  throwIfRequestAborted(options.signal);
+  const regulationComparisonRead = compareRegulations(
+    {
+      applicationScope: query.applicationScope,
+      asOf: query.asOf,
+      countryIso3s: query.countryIso3s,
+      powerKw: query.powerKw,
+    },
+    options,
+  );
+  const marketComparisonRead = compareMarkets(
+    {
+      applicationScope: query.applicationScope,
+      countryIso3s: query.countryIso3s,
+      metricCodes: query.metricCodes,
+    },
+    options,
+  );
+  const productEvaluationReads = query.countryIso3s.map((countryIso3) =>
+    findCompatibleProducts(
+      {
         applicationScope: query.applicationScope,
         asOf: query.asOf,
-        countryIso3s: query.countryIso3s,
+        countryIso3,
         powerKw: query.powerKw,
-      }),
-      compareMarkets({
-        applicationScope: query.applicationScope,
-        countryIso3s: query.countryIso3s,
-        metricCodes: query.metricCodes,
-      }),
-      Promise.all(
-        query.countryIso3s.map((countryIso3) =>
-          findCompatibleProducts({
-            applicationScope: query.applicationScope,
-            asOf: query.asOf,
-            countryIso3,
-            powerKw: query.powerKw,
-            productModelCode: query.productModelCode,
-          }),
-        ),
-      ),
-    ]);
+        productModelCode: query.productModelCode,
+      },
+      options,
+    ),
+  );
+  const [regulationComparison, marketComparison, productEvaluations] =
+    await awaitStartedOperationsInOrder([
+      regulationComparisonRead,
+      marketComparisonRead,
+      awaitStartedOperationsInOrder(productEvaluationReads),
+    ] as const);
+  throwIfRequestAborted(options.signal);
   const marketScores = new Map<string, number[]>();
-  const marketFacts = new Map<string, string[]>();
   const unsupportedMetricCodes: string[] = [];
 
   for (const metric of marketComparison.metrics) {
-    const direction = metricDirection(metric.metricCode);
+    const direction = opportunityMetricDirection(metric.metricCode);
     if (metric.comparisonStatus !== "comparable" || direction === null) {
       if (direction === null) {
         unsupportedMetricCodes.push(metric.metricCode);
@@ -569,11 +741,6 @@ export async function calculateOpportunityScore(input: unknown) {
       const scores = marketScores.get(observation.countryIso3) ?? [];
       scores.push(score);
       marketScores.set(observation.countryIso3, scores);
-      const facts = marketFacts.get(observation.countryIso3) ?? [];
-      facts.push(
-        `${metric.metricCode}=${observation.valueNumeric} ${observation.unitCode}，组内归一化=${score}`,
-      );
-      marketFacts.set(observation.countryIso3, facts);
     }
   }
 
@@ -596,74 +763,54 @@ export async function calculateOpportunityScore(input: unknown) {
     );
     const regulatoryCoverage =
       calculateRegulatoryCoverage(regulationChecks);
-    const readyCount = evaluations.filter(
-      ({ commercialReadiness }) => commercialReadiness === "ready",
-    ).length;
-    const notReadyCount = evaluations.filter(
-      ({ commercialReadiness }) => commercialReadiness === "not_ready",
-    ).length;
     const readinessUnknownCount = evaluations.filter(
       ({ commercialReadiness }) => commercialReadiness === "unknown",
     ).length;
-    const missingData = [
+    const gaps = [
       ...(marketPotential === null
-        ? [
-            `${countryIso3} 没有同时满足可比性和评分方向配置的市场指标。`,
-          ]
+        ? [{ code: "MARKET_DATA_UNAVAILABLE" as const }]
         : []),
       ...(productReadiness === null
-        ? [`${countryIso3} 没有可确定的产品适配结果。`]
+        ? [{ code: "PRODUCT_DATA_UNAVAILABLE" as const }]
         : []),
       ...(regulatoryCoverage === null
-        ? [`${countryIso3} 没有可确定的法规认证覆盖结果。`]
+        ? [{ code: "REGULATORY_DATA_UNAVAILABLE" as const }]
         : []),
       ...(readinessUnknownCount > 0
-        ? [`${countryIso3} 有 ${readinessUnknownCount} 个商业准备度 unknown 产品，未按 0 计分。`]
+        ? [
+            {
+              code: "PRODUCT_READINESS_UNKNOWN" as const,
+              count: readinessUnknownCount,
+            },
+          ]
         : []),
-      ...marketComparison.missingData.filter((message) =>
-        message.includes(countryIso3),
-      ),
+      ...(unsupportedMetricCodes.length > 0
+        ? [
+            {
+              code: "UNSUPPORTED_METRIC_DIRECTION" as const,
+              metricCodes: Array.from(new Set(unsupportedMetricCodes)),
+            },
+          ]
+        : []),
     ];
 
     return combineOpportunityScore({
       components: [
         {
-          explanation:
-            marketPotential === null
-              ? "市场指标缺失、不可比或未配置评分方向，因此本维度不计入总分。"
-              : "对同口径市场指标在本次国家比较组内做 min-max 归一化后取平均；数值方向由代码登记表固定。",
-          inputFacts: marketFacts.get(countryIso3) ?? [],
           key: "marketPotential",
           score: marketPotential,
         },
         {
-          explanation:
-            productReadiness === null
-              ? "没有明确 ready/not_ready 结果；unknown 不作为 0。"
-              : "产品准备度=ready 数量/(ready+not_ready 数量)；合规适配与查询日供应状态共同决定，unknown 从分母排除并单列缺失。",
-          inputFacts: [
-            `ready=${readyCount}`,
-            `not_ready=${notReadyCount}`,
-            `unknown=${readinessUnknownCount}`,
-          ],
           key: "productReadiness",
           score: productReadiness,
         },
         {
-          explanation:
-            regulatoryCoverage === null
-              ? "法规覆盖检查全部为 unknown 或不存在，因此本维度不计入总分。"
-              : "逐项有效法规检查：至少一个产品明确 pass 记 100，存在明确 fail 且无 pass 记 0，只有 unknown 时排除；再取平均。",
-          inputFacts: [
-            `法规检查=${regulationChecks.length}`,
-            `可确定检查=${regulationChecks.filter(({ status }) => status !== "unknown").length}`,
-          ],
           key: "regulatoryCoverage",
           score: regulatoryCoverage,
         },
       ],
       countryIso3,
-      missingData,
+      gaps,
       weights,
     });
   });
@@ -674,49 +821,51 @@ export async function calculateOpportunityScore(input: unknown) {
       productAnalysisSources(query.countryIso3s[index]!, evaluations),
     ),
   ]);
+  const provenance: OpportunityScoreProvenance = {
+    marketComparison,
+    productEvaluations: query.countryIso3s.map((countryIso3, index) => ({
+      countryIso3,
+      evaluations: productEvaluations[index] ?? [],
+    })),
+    regulationComparison,
+  };
 
-  if (unsupportedMetricCodes.length > 0) {
-    for (const score of scores) {
-      score.missingData.push(
-        `指标 ${Array.from(new Set(unsupportedMetricCodes)).join(", ")} 未在 opportunity-score-v2 中配置方向，未参与评分。`,
-      );
-    }
-  }
-
-  return opportunityScorecardSchema.parse({
+  throwIfRequestAborted(options.signal);
+  const scorecard = opportunityScorecardSchema.parse({
+    provenance,
     query,
     rulesetVersion: OPPORTUNITY_SCORE_RULESET_VERSION,
     scores,
     sources,
     weights,
   });
+  if (!opportunityScorecardMatchesTrustedProvenance(scorecard)) {
+    throw new Error(
+      "Opportunity scorecard does not match deterministic provenance.",
+    );
+  }
+  return scorecard;
 }
 
-export async function generateSalesBrief(input: unknown) {
+export async function generateSalesBrief(
+  input: unknown,
+  options: RequestSignalOptions = {},
+) {
+  throwIfRequestAborted(options.signal);
   const query = generateSalesBriefInputSchema.parse(input);
-  const [scorecard, regulationComparison, evaluations] = await Promise.all([
-    calculateOpportunityScore({
+  throwIfRequestAborted(options.signal);
+  const scorecard = await calculateOpportunityScore(
+    {
       applicationScope: query.applicationScope,
       asOf: query.asOf,
       countryIso3s: query.countryIso3s,
       metricCodes: query.metricCodes,
       powerKw: query.powerKw,
       productModelCode: query.productModelCode,
-    }),
-    compareRegulations({
-      applicationScope: query.applicationScope,
-      asOf: query.asOf,
-      countryIso3s: query.countryIso3s,
-      powerKw: query.powerKw,
-    }),
-    findCompatibleProducts({
-      applicationScope: query.applicationScope,
-      asOf: query.asOf,
-      countryIso3: query.targetCountryIso3,
-      powerKw: query.powerKw,
-      productModelCode: query.productModelCode,
-    }),
-  ]);
+    },
+    options,
+  );
+  throwIfRequestAborted(options.signal);
   const marketScore = scorecard.scores.find(
     ({ countryIso3 }) => countryIso3 === query.targetCountryIso3,
   );
@@ -724,6 +873,20 @@ export async function generateSalesBrief(input: unknown) {
   if (!marketScore) {
     throw new Error("Target country score was not produced.");
   }
+  if (!opportunityScorecardMatchesTrustedProvenance(scorecard)) {
+    throw new Error(
+      "Sales brief received an inconsistent opportunity scorecard.",
+    );
+  }
+  const regulationComparison = scorecard.provenance.regulationComparison;
+  const targetProductEvaluations =
+    scorecard.provenance.productEvaluations.find(
+      ({ countryIso3 }) => countryIso3 === query.targetCountryIso3,
+    );
+  if (!targetProductEvaluations) {
+    throw new Error("Target country product provenance was not produced.");
+  }
+  const evaluations = targetProductEvaluations.evaluations;
 
   const recommendedProducts = evaluations.flatMap((evaluation) => {
     if (
@@ -739,29 +902,29 @@ export async function generateSalesBrief(input: unknown) {
         availableFrom: evaluation.product.availableFrom,
         availableTo: evaluation.product.availableTo,
         availabilityStatus: "pass" as const,
-        certificationIds: Array.from(
-          new Set(
-            evaluation.regulationChecks.flatMap((check) =>
-              check.certifications
-                .filter(({ status }) => status === "pass")
-                .map(({ certification }) => certification.id),
-            ),
+        certifications: evaluation.regulationChecks.flatMap((check) =>
+          check.certifications.flatMap(({ certification, status }) =>
+            check.status === "pass" && status === "pass"
+              ? [
+                  {
+                    id: certification.id,
+                    regulationId: certification.regulationId,
+                  },
+                ]
+              : [],
           ),
         ),
         commercialReadiness: "ready" as const,
+        id: evaluation.product.id,
+        isDemo: evaluation.product.isDemo,
         modelCode: evaluation.product.modelCode,
         name: evaluation.product.name,
-        reasons: [
-          ...evaluation.reasons.map(({ message }) => message),
-          evaluation.productChecks.availability.message,
-        ],
-        regulationIds: Array.from(
-          new Set(
-            evaluation.regulationChecks
-              .filter(({ status }) => status === "pass")
-              .map(({ regulation }) => regulation.regulationId),
-          ),
-        ),
+        source: {
+          id: evaluation.product.source.id,
+          isDemo: evaluation.product.source.isDemo,
+          title: evaluation.product.source.title,
+        },
+        specificationVersion: evaluation.product.specificationVersion,
         status: "fit" as const,
       },
     ];
@@ -769,161 +932,153 @@ export async function generateSalesBrief(input: unknown) {
   const targetRegulations = regulationComparison.countries.find(
     ({ countryIso3 }) => countryIso3 === query.targetCountryIso3,
   );
-  const futureRegulations =
+  const futureRegulationFacts =
     targetRegulations?.futureAdoptedRegulations ?? [];
-  const notFitProducts = evaluations.filter(
+  const futureRegulationIds = futureRegulationFacts.map(({ id }) => id);
+  const targetEvaluationProvenance = scorecard.provenance.productEvaluations.find(
+    ({ countryIso3 }) => countryIso3 === query.targetCountryIso3,
+  )?.evaluations ?? [];
+  const productIdsMatching = (
+    matches: (evaluation: ProductFitEvaluation) => boolean,
+  ) =>
+    targetEvaluationProvenance.flatMap((evaluation) =>
+      evaluation.product !== null && matches(evaluation)
+        ? [evaluation.product.id]
+        : [],
+    );
+  const notFitProductIds = productIdsMatching(
     ({ status }) => status === "not_fit",
   );
-  const unknownProducts = evaluations.filter(
+  const unknownProductIds = productIdsMatching(
     ({ status }) => status === "unknown",
   );
-  const unavailableFitProducts = evaluations.filter(
-    (evaluation) =>
-      evaluation.status === "fit" &&
-      evaluation.productChecks.availability.status === "fail",
+  const unavailableFitProductIds = productIdsMatching(
+    ({ productChecks, status }) =>
+      status === "fit" && productChecks.availability.status === "fail",
   );
-  const availabilityUnknownFitProducts = evaluations.filter(
-    (evaluation) =>
-      evaluation.status === "fit" &&
-      evaluation.productChecks.availability.status === "unknown",
+  const availabilityUnknownFitProductIds = productIdsMatching(
+    ({ productChecks, status }) =>
+      status === "fit" && productChecks.availability.status === "unknown",
   );
   const marketComponent = marketScore.components.find(
     ({ key }) => key === "marketPotential",
   );
+  const contributingMetricCodes = scorecard.provenance.marketComparison.metrics.flatMap(
+    ({ comparisonStatus, metricCode }) =>
+      comparisonStatus === "comparable" &&
+      opportunityMetricDirection(metricCode) !== null
+        ? [metricCode]
+        : [],
+  );
   const opportunities = [
     ...(marketComponent?.score !== null &&
     marketComponent?.score !== undefined &&
-    marketComponent.score >= 50
+    marketComponent.score >= 50 &&
+    contributingMetricCodes.length > 0
       ? [
           {
-            evidenceIds: marketComponent.inputFacts,
-            text: `目标国家在本次比较组中的市场潜力维度为 ${marketComponent.score}/100。`,
-            title: "结构化市场指标相对占优",
+            metricCodes: contributingMetricCodes,
+            ruleCode: "MARKET_POTENTIAL_AT_LEAST_50" as const,
           },
         ]
       : []),
     ...(recommendedProducts.length > 0
       ? [
           {
-            evidenceIds: recommendedProducts.flatMap(
-              ({ certificationIds }) => certificationIds,
-            ),
-            text: `${recommendedProducts.length} 个产品合规适配且在查询日供应。`,
-            title: "已有商业就绪产品",
+            productIds: recommendedProducts.map(({ id }) => id),
+            ruleCode: "READY_PRODUCTS_AVAILABLE" as const,
           },
         ]
       : []),
   ];
   const risks = [
-    ...futureRegulations.map((regulation) => ({
-      evidenceIds: [regulation.id],
-      text: `${regulation.canonicalName} 状态为 adopted，预计生效日期 ${regulation.effectiveFrom ?? "未知"}。`,
-      title: "未来已通过法规",
-    })),
-    ...(notFitProducts.length > 0
+    ...(futureRegulationIds.length > 0
       ? [
           {
-            evidenceIds: notFitProducts.flatMap((evaluation) =>
-              evaluation.regulationChecks.map(
-                ({ regulation }) => regulation.regulationId,
-              ),
-            ),
-            text: `${notFitProducts.length} 个产品存在明确 not_fit 结论。`,
-            title: "产品明确不匹配",
+            regulationIds: futureRegulationIds,
+            ruleCode: "FUTURE_ADOPTED_REGULATION" as const,
           },
         ]
       : []),
-    ...(unknownProducts.length > 0
+    ...(notFitProductIds.length > 0
       ? [
           {
-            evidenceIds: [],
-            text: `${unknownProducts.length} 个产品因证据不足为 unknown，不能视为不合规或零机会。`,
-            title: "产品证据缺口",
+            productIds: notFitProductIds,
+            ruleCode: "PRODUCTS_NOT_FIT" as const,
           },
         ]
       : []),
-    ...(unavailableFitProducts.length > 0
+    ...(unknownProductIds.length > 0
       ? [
           {
-            evidenceIds: unavailableFitProducts.flatMap((evaluation) =>
-              evaluation.sources.map(({ id }) => id),
-            ),
-            text: `${unavailableFitProducts.length} 个产品法规/认证适配，但查询日不在供应期内。`,
-            title: "适配产品当前不可供应",
+            productIds: unknownProductIds,
+            ruleCode: "PRODUCT_EVIDENCE_UNKNOWN" as const,
           },
         ]
       : []),
-    ...(availabilityUnknownFitProducts.length > 0
+    ...(unavailableFitProductIds.length > 0
       ? [
           {
-            evidenceIds: availabilityUnknownFitProducts.flatMap(
-              (evaluation) => evaluation.sources.map(({ id }) => id),
-            ),
-            text: `${availabilityUnknownFitProducts.length} 个产品法规/认证适配，但供应期证据不足。`,
-            title: "适配产品供应状态未知",
+            productIds: unavailableFitProductIds,
+            ruleCode: "FIT_PRODUCTS_UNAVAILABLE" as const,
+          },
+        ]
+      : []),
+    ...(availabilityUnknownFitProductIds.length > 0
+      ? [
+          {
+            productIds: availabilityUnknownFitProductIds,
+            ruleCode: "FIT_PRODUCTS_AVAILABILITY_UNKNOWN" as const,
           },
         ]
       : []),
   ];
-  const missingData = Array.from(
-    new Set([
-      ...marketScore.missingData,
-      ...regulationComparison.missingData.filter((message) =>
-        message.includes(query.targetCountryIso3),
-      ),
-    ]),
-  );
+  const gaps = marketScore.gaps;
   const salesActions = [
     ...(recommendedProducts.length > 0
       ? [
           {
-            action: `为 ${recommendedProducts.map(({ modelCode }) => modelCode).join("、")} 准备法规与认证证据包。`,
-            kind: "rule_generated" as const,
             priority: "high" as const,
-            rationale: "这些产品同时具有可追溯的合规 fit 结论和查询日供应证据。",
+            productIds: recommendedProducts.map(({ id }) => id),
+            ruleCode: "PREPARE_PRODUCT_EVIDENCE_PACK" as const,
           },
         ]
       : []),
-    ...(futureRegulations.length > 0
+    ...(futureRegulationIds.length > 0
       ? [
           {
-            action: "在未来法规生效前重新核验认证覆盖和产品配置。",
-            kind: "rule_generated" as const,
             priority: "high" as const,
-            rationale: "adopted 法规不能当作当前 effective，但会形成前置准备窗口。",
+            regulationIds: futureRegulationIds,
+            ruleCode: "REVALIDATE_BEFORE_FUTURE_REGULATION" as const,
           },
         ]
       : []),
-    ...(missingData.length > 0
+    ...(gaps.length > 0
       ? [
           {
-            action: "补齐 missingData 中列出的市场、法规或认证事实后再做商业承诺。",
-            kind: "rule_generated" as const,
+            missingDataIndexes: gaps.map((_, index) => index),
             priority: "medium" as const,
-            rationale: "opportunity-score-v2 会排除缺失维度并降低数据覆盖率。",
+            ruleCode: "RESOLVE_MISSING_DATA_BEFORE_COMMITMENT" as const,
           },
         ]
       : []),
   ];
-  const scoreText =
-    marketScore.overallScore === null
-      ? "当前结构化证据不足，未生成总分"
-      : `确定性机会分为 ${marketScore.overallScore}/100，数据覆盖率 ${marketScore.dataCoveragePct}%`;
-  const sources = uniqueSources([
-    ...scorecard.sources,
-    ...regulationComparison.sources,
-    ...productAnalysisSources(query.targetCountryIso3, evaluations),
-  ]);
+  const sources = scorecard.sources;
 
-  return salesBriefSchema.parse({
-    executiveSummary: `${query.targetCountryIso3}：${scoreText}。该简报使用 ${scorecard.rulesetVersion}，建议文本由固定规则生成，不是事实来源。`,
+  throwIfRequestAborted(options.signal);
+  const brief = salesBriefSchema.parse({
+    gaps,
     marketScore,
-    missingData,
     opportunities,
+    provenance: scorecard.provenance,
     query,
     recommendedProducts,
     risks,
     salesActions,
     sources,
   });
+  if (!salesBriefMatchesDeterministicRules(brief)) {
+    throw new Error("Sales brief does not match deterministic provenance.");
+  }
+  return brief;
 }

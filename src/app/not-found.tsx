@@ -1,12 +1,32 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
-import { getRequestDictionary } from "@/i18n/server";
+import { LocaleRenderReceipt } from "@/components/i18n/locale-controller";
+import { getDictionary } from "@/i18n/dictionaries";
+import { buildLocalizedOpenGraph } from "@/i18n/metadata";
+import { getRequestLocale } from "@/i18n/server";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
+
+  return {
+    openGraph: buildLocalizedOpenGraph(locale, {
+      description: dictionary.state.notFoundBody,
+      imageAlt: dictionary.metadata.openGraphImageAlt,
+      title: dictionary.state.notFoundHeading,
+    }),
+    title: dictionary.state.notFoundHeading,
+  };
+}
 
 export default async function NotFound() {
-  const copy = (await getRequestDictionary()).state;
+  const locale = await getRequestLocale();
+  const copy = getDictionary(locale).state;
   return (
     <main className="grid min-h-[70vh] place-items-center px-6 py-16">
+      <LocaleRenderReceipt locale={locale} />
       <section className="w-full max-w-xl rounded-3xl border bg-card p-8 text-center shadow-sm">
         <p className="text-sm font-semibold tracking-wide text-primary">
           404

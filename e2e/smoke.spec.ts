@@ -1,4 +1,61 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
+
+import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
+
+import { PUBLIC_API_REQUEST_TIMEOUT_MS } from "../src/lib/public-api-request";
+
+async function holdNextChatRequest(page: Page): Promise<{
+  release: () => void;
+  started: Promise<void>;
+}> {
+  let markStarted!: () => void;
+  const started = new Promise<void>((resolve) => {
+    markStarted = resolve;
+  });
+  let releaseRoute!: () => void;
+  const routeGate = new Promise<void>((resolve) => {
+    releaseRoute = resolve;
+  });
+  let released = false;
+
+  await page.route(
+    "**/api/chat",
+    async (route) => {
+      markStarted();
+      await routeGate;
+      try {
+        await route.fulfill({
+          body: JSON.stringify({
+            error: {
+              code: "INTERNAL_ERROR",
+              message: "DO NOT RENDER held chat response",
+            },
+          }),
+          contentType: "application/json",
+          status: 503,
+        });
+      } catch {
+        // The cancellation tests intentionally abort this intercepted request.
+      }
+    },
+    { times: 1 },
+  );
+
+  return {
+    release() {
+      if (released) return;
+      released = true;
+      releaseRoute();
+    },
+    started,
+  };
+}
+
+function waitForChatRequestFailure(page: Page) {
+  return page.waitForEvent("requestfailed", (request) =>
+    new URL(request.url()).pathname === "/api/chat"
+  );
+}
 
 test.beforeEach(async ({ baseURL, context }) => {
   await context.addCookies([
@@ -66,6 +123,80 @@ test("does not claim the home data is online when the country summary fails", as
   await expect(page.getByRole("button", { name: "重试" })).toBeVisible();
 });
 
+test("exits public loading and disabled states when APIs never respond", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "The controlled client deadline only needs one browser project.",
+  );
+
+  let releaseRequests = () => {};
+  const requestGate = new Promise<void>((resolve) => {
+    releaseRequests = resolve;
+  });
+  let startedRequests = 0;
+  let settledRequests = 0;
+  const holdRequest = async (route: Route) => {
+    startedRequests += 1;
+    await requestGate;
+    try {
+      await route.fulfill({
+        body: JSON.stringify({ message: "DO NOT RENDER timeout reason" }),
+        contentType: "application/json",
+        status: 503,
+      });
+    } catch {
+      // The client deadline intentionally aborts these held requests.
+    } finally {
+      settledRequests += 1;
+    }
+  };
+
+  await page.clock.install();
+  await page.route("**/api/countries", holdRequest);
+  await page.route("**/api/preferences/locale", holdRequest);
+  await page.goto("/");
+  await expect(
+    page.getByRole("status").filter({ hasText: "正在同步国家摘要…" }),
+  ).toBeVisible();
+
+  const localeToggle = page.getByTestId("locale-toggle");
+  await localeToggle.getByRole("button", { name: "EN", exact: true }).click();
+  await expect.poll(() => startedRequests).toBe(2);
+  await expect(
+    localeToggle.getByRole("button", { name: "中文", exact: true }),
+  ).toBeDisabled();
+  await expect(localeToggle).toHaveAttribute("aria-busy", "true");
+  await expect(
+    page.getByRole("status").filter({ hasText: "正在切换语言…" }),
+  ).toHaveText("正在切换语言…");
+
+  await page.clock.fastForward(PUBLIC_API_REQUEST_TIMEOUT_MS + 1);
+
+  await expect(
+    page.getByRole("alert").filter({
+      hasText: "国家覆盖摘要暂时无法加载，请进入地图重试。",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("语言切换失败。", { exact: true }),
+  ).toHaveAttribute("role", "alert");
+  await expect(
+    localeToggle.getByRole("button", { name: "中文", exact: true }),
+  ).toBeEnabled();
+  await expect(localeToggle).toHaveAttribute("aria-busy", "false");
+  await expect(
+    page.getByRole("status").filter({ hasText: "正在切换语言…" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("DO NOT RENDER timeout reason", { exact: true }),
+  ).toHaveCount(0);
+
+  releaseRequests();
+  await expect.poll(() => settledRequests).toBe(2);
+});
+
 test("opens the dedicated chat workspace from primary navigation", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { exact: true, name: "对话" }).click();
@@ -93,17 +224,19 @@ test("opens the dedicated chat workspace from primary navigation", async ({ page
 
 test("preserves valid chat context while removing one invalid shared parameter", async ({
   page,
-}) => {
-  await page.goto(
-    "/chat?countryIso3=chn&applicationScope=non-road&powerKw=100.0&asOf=bad&productModelCode=demo-eng-100&utm_source=e2e",
-  );
+}, testInfo) => {
+  await checkBrowserRuntimeErrors(page, testInfo, async () => {
+    await page.goto(
+      "/chat?countryIso3=chn&applicationScope=non-road&powerKw=100.0&asOf=bad&productModelCode=demo-eng-100&utm_source=e2e",
+    );
 
-  await expect(page).toHaveURL(
-    /\/chat\?applicationScope=non-road&countryIso3=CHN&powerKw=100&productModelCode=DEMO-ENG-100&utm_source=e2e$/,
-  );
-  await expect(page.getByPlaceholder("输入问题，可附上文件或图片…")).toHaveValue(
-    /CHN.*non-road 100 kW.*DEMO-ENG-100/,
-  );
+    await expect(page).toHaveURL(
+      /\/chat\?applicationScope=non-road&countryIso3=CHN&powerKw=100&productModelCode=DEMO-ENG-100&utm_source=e2e$/,
+    );
+    await expect(page.getByPlaceholder("输入问题，可附上文件或图片…")).toHaveValue(
+      /CHN.*非道路 100 kW.*DEMO-ENG-100/,
+    );
+  });
 });
 
 test("answers a capability question without forcing a fact tool", async ({ page }) => {
@@ -131,6 +264,31 @@ test("answers a capability question without forcing a fact tool", async ({ page 
 });
 
 test("previews, removes, and validates chat attachments", async ({ page }) => {
+  await page.addInitScript(() => {
+    type ObjectUrlAudit = {
+      created: Array<{ name: string; url: string }>;
+      revoked: string[];
+    };
+    const browserGlobal = globalThis as typeof globalThis & {
+      __chatAttachmentObjectUrls?: ObjectUrlAudit;
+    };
+    const audit: ObjectUrlAudit = { created: [], revoked: [] };
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    const revokeObjectURL = URL.revokeObjectURL.bind(URL);
+    browserGlobal.__chatAttachmentObjectUrls = audit;
+    URL.createObjectURL = (object: Blob | MediaSource) => {
+      const url = createObjectURL(object);
+      audit.created.push({
+        name: object instanceof File ? object.name : "",
+        url,
+      });
+      return url;
+    };
+    URL.revokeObjectURL = (url: string) => {
+      audit.revoked.push(url);
+      revokeObjectURL(url);
+    };
+  });
   await page.goto("/chat");
 
   const assistant = page.getByRole("complementary", {
@@ -150,10 +308,41 @@ test("previews, removes, and validates chat attachments", async ({ page }) => {
   await expect(
     assistant.getByRole("img", { name: "engine-plate.png 预览" }),
   ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const browserGlobal = globalThis as typeof globalThis & {
+          __chatAttachmentObjectUrls?: {
+            created: Array<{ name: string; url: string }>;
+          };
+        };
+        return browserGlobal.__chatAttachmentObjectUrls?.created.some(
+          ({ name }) => name === "engine-plate.png",
+        ) ?? false;
+      }),
+    )
+    .toBe(true);
   await assistant
     .getByRole("button", { name: "移除附件 engine-plate.png" })
     .click();
   await expect(assistant.getByText("engine-plate.png")).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const browserGlobal = globalThis as typeof globalThis & {
+          __chatAttachmentObjectUrls?: {
+            created: Array<{ name: string; url: string }>;
+            revoked: string[];
+          };
+        };
+        const audit = browserGlobal.__chatAttachmentObjectUrls;
+        const previewUrl = audit?.created.find(
+          ({ name }) => name === "engine-plate.png",
+        )?.url;
+        return previewUrl ? audit?.revoked.includes(previewUrl) : false;
+      }),
+    )
+    .toBe(true);
 
   await fileInput.setInputFiles({
     buffer: Buffer.from("not supported"),
@@ -175,21 +364,127 @@ test("previews, removes, and validates chat attachments", async ({ page }) => {
   );
 });
 
+test("lets the user stop a held chat request without showing a retry error", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !["desktop-chromium", "mobile-chromium"].includes(testInfo.project.name),
+    "Chromium desktop and narrow mobile cover the stop control and transport abort contract.",
+  );
+
+  if (testInfo.project.name === "mobile-chromium") {
+    await page.setViewportSize({ height: 800, width: 320 });
+  }
+
+  const heldRequest = await holdNextChatRequest(page);
+  try {
+    await page.goto("/chat");
+    const assistant = page.getByRole("complementary", {
+      name: "AI 营销分析助手",
+    });
+    const input = assistant.getByRole("textbox", { name: "输入问题" });
+    await input.fill("比较 CHN 和 BRA 的非道路 100 kW 法规。");
+    await assistant.getByRole("button", { name: "发送问题" }).click();
+    await heldRequest.started;
+
+    const stopButton = assistant.getByRole("button", { name: "停止生成" });
+    await expect(stopButton).toBeVisible();
+    await expect.poll(() =>
+      page.evaluate(() =>
+        document.documentElement.scrollWidth <= window.innerWidth
+      )
+    ).toBe(true);
+    const requestFailed = waitForChatRequestFailure(page);
+    await stopButton.click();
+
+    const failedRequest = await requestFailed;
+    expect(failedRequest.failure()?.errorText).toMatch(/ERR_ABORTED/u);
+    await expect(stopButton).toHaveCount(0);
+    await expect(input).toBeEditable();
+    await input.fill("下一条问题仍可输入");
+    await expect(input).toHaveValue("下一条问题仍可输入");
+    await expect(assistant.getByRole("alert")).toHaveCount(0);
+    await expect(
+      assistant.getByText("失败的问题和附件已在本页保留。"),
+    ).toHaveCount(0);
+  } finally {
+    heldRequest.release();
+  }
+});
+
+test("aborts a held chat request when SPA navigation unmounts the chat", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "One Chromium project is sufficient for the browser transport abort contract.",
+  );
+
+  const heldRequest = await holdNextChatRequest(page);
+  try {
+    await page.goto("/chat");
+    const assistant = page.getByRole("complementary", {
+      name: "AI 营销分析助手",
+    });
+    await assistant
+      .getByRole("textbox", { name: "输入问题" })
+      .fill("比较 CHN 和 BRA 的非道路 100 kW 法规。");
+    await assistant.getByRole("button", { name: "发送问题" }).click();
+    await heldRequest.started;
+    await expect(
+      assistant.getByRole("button", { name: "停止生成" }),
+    ).toBeVisible();
+
+    const requestFailed = waitForChatRequestFailure(page);
+    await page
+      .getByRole("navigation", { name: "主导航" })
+      .getByRole("link", { exact: true, name: "地图" })
+      .click();
+
+    await expect(page).toHaveURL(/\/map$/u);
+    const failedRequest = await requestFailed;
+    expect(failedRequest.failure()?.errorText).toMatch(/ERR_ABORTED/u);
+
+    await page
+      .getByRole("navigation", { name: "主导航" })
+      .getByRole("link", { exact: true, name: "对话" })
+      .click();
+    const restoredAssistant = page.getByRole("complementary", {
+      name: "AI 营销分析助手",
+    });
+    await expect(
+      restoredAssistant.getByRole("textbox", { name: "输入问题" }),
+    ).toBeEditable();
+    await expect(restoredAssistant.getByRole("alert")).toHaveCount(0);
+    await expect(
+      restoredAssistant.getByText("失败的问题和附件已在本页保留。"),
+    ).toHaveCount(0);
+  } finally {
+    heldRequest.release();
+  }
+});
+
 test("keeps a failed question and attachment for explicit retry or editing", async ({
   page,
 }) => {
   const chatRequestBodies: string[] = [];
+  let releaseFirstResponse!: () => void;
+  const firstResponseGate = new Promise<void>((resolve) => {
+    releaseFirstResponse = resolve;
+  });
   await page.route("**/api/chat", async (route) => {
     const requestNumber = chatRequestBodies.push(
       route.request().postData() ?? "",
     );
-    if (requestNumber >= 2) {
+    if (requestNumber === 1) {
+      await firstResponseGate;
+    } else {
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
     await route.fulfill({
       body: JSON.stringify({
         error: {
-          code: "AI_UPSTREAM_UNAVAILABLE",
+          code: "INTERNAL_ERROR",
           message: "AI 服务暂时不可用，请稍后重试。",
         },
       }),
@@ -222,6 +517,13 @@ test("keeps a failed question and attachment for explicit retry or editing", asy
   ]);
 
   await expect.poll(() => chatRequestBodies.length).toBe(1);
+  expect(chatRequestBodies[0]).toContain("data:text/plain;base64,");
+  await expect(
+    assistant.getByText(
+      "[已发送附件：failed-engine-note.txt；后续追问请重新上传]",
+    ),
+  ).toBeVisible();
+  releaseFirstResponse();
   await expect(assistant.getByRole("alert")).toContainText(
     "AI 服务暂时不可用，请稍后重试。",
   );
@@ -354,6 +656,43 @@ test("locks attachment controls while validating image bytes", async ({
   await expect(sendButton).toBeEnabled();
 });
 
+test("recovers without sending when the browser aborts an attachment read", async ({
+  page,
+}) => {
+  let chatRequests = 0;
+  await page.route("**/api/chat", async (route) => {
+    chatRequests += 1;
+    await route.abort();
+  });
+  await page.addInitScript(() => {
+    const readAsDataURL = FileReader.prototype.readAsDataURL;
+    FileReader.prototype.readAsDataURL = function (blob: Blob) {
+      this.addEventListener("loadstart", () => this.abort(), { once: true });
+      readAsDataURL.call(this, blob);
+    };
+  });
+
+  await page.goto("/chat");
+  const assistant = page.getByRole("complementary", {
+    name: "AI 营销分析助手",
+  });
+  const prompt = assistant.getByPlaceholder(/输入问题，可附上文件/);
+  const sendButton = assistant.getByRole("button", { name: "发送问题" });
+  await assistant.getByLabel(/选择文件/).setInputFiles({
+    buffer: Buffer.from("read abort fixture", "utf8"),
+    mimeType: "text/plain",
+    name: "abort-me.txt",
+  });
+  await prompt.fill("概述附件内容");
+  await sendButton.click();
+
+  await expect(assistant.getByRole("alert")).toContainText(
+    "附件读取失败，请重新选择后再试。",
+  );
+  await expect(sendButton).toBeEnabled();
+  expect(chatRequests).toBe(0);
+});
+
 test("returns a structured health response", async ({ request }) => {
   const response = await request.get("/api/health/live");
 
@@ -372,7 +711,11 @@ test("returns a structured health response", async ({ request }) => {
   expect(readiness.ok()).toBe(true);
   await expect(readiness.json()).resolves.toEqual(
     expect.objectContaining({
-      checks: { database: "ok" },
+      checks: {
+        aiChatAdmission: "ok",
+        aiChatRateLimit: "ok",
+        database: "ok",
+      },
       service: "global-diesel-regulations",
       status: "ok",
     }),

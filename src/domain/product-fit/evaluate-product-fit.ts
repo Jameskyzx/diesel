@@ -47,8 +47,23 @@ function isInHalfOpenDateRange(
 function evaluateCertification(
   certification: CertificationEvidence,
   query: ProductFitQuery,
+  product: ProductSummary | null,
 ): CertificationCheck {
   const reasons: Check[] = [];
+
+  if (
+    product === null ||
+    certification.productId !== product.id ||
+    certification.productModelCode !== product.modelCode
+  ) {
+    reasons.push(
+      check(
+        "fail",
+        "CERTIFICATION_PRODUCT_MISMATCH",
+        "认证记录不属于本次评估的产品，不能用于合规判断。",
+      ),
+    );
+  }
 
   if (certification.status === "unknown") {
     reasons.push(
@@ -288,7 +303,9 @@ export function evaluateProductFit(
   const regulationChecks = applicableRegulations.map((regulation) => {
     const certificationChecks = certifications
       .filter(({ regulationId }) => regulationId === regulation.regulationId)
-      .map((certification) => evaluateCertification(certification, query));
+      .map((certification) =>
+        evaluateCertification(certification, query, product),
+      );
     const matchingCertification = certificationChecks.find(
       ({ status }) => status === "pass",
     );
@@ -315,6 +332,7 @@ export function evaluateProductFit(
 
     if (certificationChecks.some(({ status }) => status === "unknown")) {
       const unknownReason = certificationChecks
+        .filter(({ status }) => status === "unknown")
         .flatMap(({ reasons }) => reasons)
         .find(({ status }) => status === "unknown");
       return {
@@ -326,10 +344,12 @@ export function evaluateProductFit(
       };
     }
 
+    const failedReason = certificationChecks
+      .flatMap(({ reasons }) => reasons)
+      .find(({ status }) => status === "fail");
     return {
       certifications: certificationChecks,
-      code: certificationChecks[0]?.reasons[0]?.code ??
-        "CERTIFICATION_INACTIVE",
+      code: failedReason?.code ?? "CERTIFICATION_INACTIVE",
       message: "已有认证记录，但没有一条同时覆盖状态、场景、功率和有效期。",
       regulation,
       status: "fail" as const,

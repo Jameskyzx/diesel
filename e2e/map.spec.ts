@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
+
 test.beforeEach(async ({ baseURL, context }) => {
   await context.addCookies([
     {
@@ -74,7 +76,7 @@ test("opens a shareable country URL by clicking the map polygon", async ({
 
   await expect(page).toHaveURL(/\/countries\/CHN$/);
   await expect(
-    page.getByRole("heading", { name: "中国（演示数据）" }),
+    page.getByRole("heading", { exact: true, name: "中国（演示数据）" }),
   ).toBeVisible();
 });
 
@@ -135,6 +137,228 @@ test("keeps the map tooltip inside a narrow pointer viewport", async ({
   );
 });
 
+test("keeps the English country selector inside a 320px viewport", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "The narrow-layout regression only needs one browser project.",
+  );
+  await context.clearCookies();
+  await page.setViewportSize({ height: 667, width: 320 });
+
+  for (const route of ["/map", "/countries/CHN?asOf=2026-08-12"] as const) {
+    await page.goto(route);
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.getByLabel("Select country")).toBeEnabled();
+
+    const layout = await page.evaluate(() => {
+      const selector = document.querySelector<HTMLSelectElement>(
+        "#country-select",
+      );
+      const selectorBounds = selector?.getBoundingClientRect();
+      return {
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        selectorRight: selectorBounds?.right ?? Number.POSITIVE_INFINITY,
+      };
+    });
+
+    expect(layout.selectorRight).toBeLessThanOrEqual(layout.clientWidth);
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth);
+  }
+});
+
+test("uses governed Demo classification in both country selectors and locales", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "The selector classification contract only needs one browser project.",
+  );
+  await context.clearCookies();
+  await page.goto("/countries/CHN");
+
+  const mainOption = page.locator('#country-select option[value="CHN"]');
+  const drawerOption = page.locator(
+    '#drawer-country-select option[value="CHN"]',
+  );
+  await expect(mainOption).toHaveText("China — demo fixture · CHN");
+  await expect(drawerOption).toHaveText("China — demo fixture · CHN");
+  await expect(mainOption).not.toHaveText("People's Republic of China · CHN");
+
+  const localeResponse = await page.request.post("/api/preferences/locale", {
+    data: { locale: "zh-CN" },
+  });
+  expect(localeResponse.ok()).toBe(true);
+  await page.reload();
+
+  await expect(mainOption).toHaveText("中国（演示数据） · CHN");
+  await expect(drawerOption).toHaveText("中国（演示数据） · CHN");
+  await expect(mainOption).not.toHaveText("中国 · CHN");
+});
+
+test("does not infer Demo country copy from a name when classification is real", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "The fail-closed selector regression only needs one browser project.",
+  );
+  await page.route("**/api/countries", async (route) => {
+    await route.fulfill({
+      json: {
+        countries: [
+          {
+            dataCoverageStatus: "covered",
+            isDemo: false,
+            iso2: "CN",
+            iso3: "CHN",
+            isStale: false,
+            nameEn: "China — demo fixture",
+            nameLocal: "中国（演示数据）",
+            verifiedAt: "2026-08-31T00:00:00.000Z",
+          },
+        ],
+        status: "ok",
+      },
+      status: 200,
+    });
+  });
+
+  await page.goto("/map");
+  const option = page.locator('#country-select option[value="CHN"]');
+  await expect(option).toHaveText("China — demo fixture · CHN");
+  await expect(option).not.toHaveText("中国（演示数据） · CHN");
+});
+
+test("keeps ready country details inside the 320px drawer in both locales", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "The deterministic narrow drawer boundary only needs one browser project.",
+  );
+  await context.clearCookies();
+  await page.setViewportSize({ height: 667, width: 320 });
+  const route =
+    "/countries/CHN?applicationScope=non-road&asOf=2026-08-12&powerKw=100&productModelCode=DEMO-ENG-100";
+
+  const expectDrawerContentFits = async () => {
+    await expect(page.getByTestId("product-fit-result")).toBeVisible();
+    const drawer = page.getByRole("dialog");
+    await expect(drawer).toBeVisible();
+
+    await expect
+      .poll(() =>
+        drawer.evaluate((element) => {
+          const drawerBounds = element.getBoundingClientRect();
+          const body = element.querySelector<HTMLElement>(
+            '[data-testid="country-drawer-body"]',
+          );
+          const badgeBounds = Array.from(
+            element.querySelectorAll<HTMLElement>("span.rounded-full"),
+          )
+            .map((badge) => badge.getBoundingClientRect())
+            .filter(({ height, width }) => height > 0 && width > 0);
+
+          return {
+            badgeCount: badgeBounds.length,
+            badgesInside:
+              badgeBounds.length > 0 &&
+              badgeBounds.every(
+                ({ left, right }) =>
+                  left >= drawerBounds.left - 0.5 &&
+                  right <= drawerBounds.right + 0.5,
+              ),
+            bodyClientWidth: body?.clientWidth ?? 0,
+            bodyScrollWidth: body?.scrollWidth ?? Number.POSITIVE_INFINITY,
+          };
+        }),
+      )
+      .toMatchObject({
+        badgesInside: true,
+      });
+
+    const layout = await drawer.evaluate((element) => {
+      const body = element.querySelector<HTMLElement>(
+        '[data-testid="country-drawer-body"]',
+      );
+      return {
+        badgeCount: element.querySelectorAll("span.rounded-full").length,
+        bodyClientWidth: body?.clientWidth ?? 0,
+        bodyScrollWidth: body?.scrollWidth ?? Number.POSITIVE_INFINITY,
+      };
+    });
+    expect(layout.badgeCount).toBeGreaterThan(0);
+    expect(layout.bodyClientWidth).toBeGreaterThan(0);
+    // Vaul intentionally extends the dialog's swipe surface with a pseudo
+    // element. The drawer body is the user-scrollable content boundary.
+    expect(layout.bodyScrollWidth).toBeLessThanOrEqual(layout.bodyClientWidth);
+  };
+
+  await page.goto(route);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expectDrawerContentFits();
+
+  const localeResponse = await page.request.post("/api/preferences/locale", {
+    data: { locale: "zh-CN" },
+  });
+  expect(localeResponse.ok()).toBe(true);
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
+  await expectDrawerContentFits();
+});
+
+test("keeps the current destination visible in the 320px header navigation", async ({
+  context,
+  page,
+}) => {
+  await context.clearCookies();
+
+  const expectCurrentDestinationVisible = async (label: string) => {
+    const navigation = page.getByRole("navigation", {
+      name: /Primary navigation|主导航/u,
+    });
+    const currentLink = navigation.getByRole("link", {
+      exact: true,
+      name: label,
+    });
+    await expect(currentLink).toHaveAttribute("aria-current", "page");
+    await expect
+      .poll(() =>
+        currentLink.evaluate((link) => {
+          const navigationElement = link.closest("nav");
+          if (!navigationElement) return false;
+          const linkBounds = link.getBoundingClientRect();
+          const navigationBounds = navigationElement.getBoundingClientRect();
+          return (
+            linkBounds.left >= navigationBounds.left &&
+            linkBounds.right <= navigationBounds.right
+          );
+        }),
+      )
+      .toBe(true);
+  };
+
+  await page.goto("/map");
+  await page.setViewportSize({ height: 667, width: 320 });
+  await expectCurrentDestinationVisible("Map");
+
+  await page
+    .getByTestId("locale-toggle")
+    .getByRole("button", { exact: true, name: "中文" })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
+  await expectCurrentDestinationVisible("地图");
+
+  await page.goto("/chat");
+  await expectCurrentDestinationVisible("对话");
+});
+
 test("updates the tooltip across consecutive country hovers", async ({
   page,
 }, testInfo) => {
@@ -171,6 +395,8 @@ test("updates the tooltip across consecutive country hovers", async ({
   await mapContainer.hover({ position: countryPosition(10, 51) });
   await expect(tooltip).toHaveAttribute("data-country-iso3", "FRA");
   await expect(tooltip).toContainText("法国");
+  await expect(tooltip).toContainText("核验：");
+  await expect(tooltip).not.toContainText("核验:");
 
   await mapContainer.hover({ position: countryPosition(105, 35) });
   await expect(tooltip).toHaveAttribute("data-country-iso3", "CHN");
@@ -181,6 +407,60 @@ test("updates the tooltip across consecutive country hovers", async ({
   await expect(tooltip).toHaveAttribute("data-country-iso3", "BRA");
   await expect(tooltip).toContainText("巴西（演示数据）");
   await expect(tooltip).not.toContainText("中国（演示数据）");
+});
+
+test("localizes a map tooltip when the valid summary response omits that country", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "desktop-chromium",
+    "Pointer-coordinate fallback coverage runs in the desktop project.",
+  );
+  await context.clearCookies();
+  await page.route("**/api/countries", async (route) => {
+    await route.fulfill({
+      json: { countries: [], status: "ok" },
+      status: 200,
+    });
+  });
+
+  const hoverFrance = async () => {
+    const mapContainer = page.getByTestId("map-canvas-container");
+    await expect(mapContainer).toHaveAttribute("data-map-ready", "true");
+    const mapBox = await mapContainer.boundingBox();
+    expect(mapBox).not.toBeNull();
+    const zoom = 1.15;
+    const worldSize = 512 * 2 ** zoom;
+    const mercatorY = (latitude: number) =>
+      (1 -
+        Math.log(
+          Math.tan(Math.PI / 4 + (latitude * Math.PI) / 360),
+        ) /
+          Math.PI) /
+      2;
+    await mapContainer.hover({
+      position: {
+        x: (mapBox?.width ?? 0) / 2 + ((10 - 8) / 360) * worldSize,
+        y:
+          (mapBox?.height ?? 0) / 2 +
+          (mercatorY(51) - mercatorY(18)) * worldSize,
+      },
+    });
+    return page.getByTestId("map-tooltip");
+  };
+
+  await page.goto("/map");
+  await expect((await hoverFrance()).locator("p").first()).toHaveText("France");
+
+  const localeResponse = await page.request.post("/api/preferences/locale", {
+    data: { locale: "zh-CN" },
+  });
+  expect(localeResponse.ok()).toBe(true);
+  await page.reload();
+  const chineseTooltip = await hoverFrance();
+  await expect(chineseTooltip.locator("p").first()).toHaveText("法国");
+  await expect(chineseTooltip.locator("p").first()).not.toHaveText("France");
 });
 
 test("opens, restores, switches, and shows an explicit no-data country", async ({
@@ -194,7 +474,7 @@ test("opens, restores, switches, and shows an explicit no-data country", async (
   await expect(page).toHaveURL(/\/countries\/CHN$/);
   await expect(page.getByTestId("country-detail")).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "中国（演示数据）" }),
+    page.getByRole("heading", { exact: true, name: "中国（演示数据）" }),
   ).toBeVisible();
   await expect(
     page.getByText("国家基础记录或其来源为虚构 Demo"),
@@ -219,7 +499,7 @@ test("opens, restores, switches, and shows an explicit no-data country", async (
   await page.reload();
   await expect(page).toHaveURL(/\/countries\/CHN$/);
   await expect(
-    page.getByRole("heading", { name: "中国（演示数据）" }),
+    page.getByRole("heading", { exact: true, name: "中国（演示数据）" }),
   ).toBeVisible();
 
   await page
@@ -227,7 +507,7 @@ test("opens, restores, switches, and shows an explicit no-data country", async (
     .selectOption({ value: "BRA" });
   await expect(page).toHaveURL(/\/countries\/BRA$/);
   await expect(
-    page.getByRole("heading", { name: "巴西（演示数据）" }),
+    page.getByRole("heading", { exact: true, name: "巴西（演示数据）" }),
   ).toBeVisible();
 
   await page
@@ -236,8 +516,58 @@ test("opens, restores, switches, and shows an explicit no-data country", async (
   await expect(page).toHaveURL(/\/countries\/USA$/);
   await expect(page.getByTestId("country-no-data")).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "USA 暂无数据" }),
+    page.getByRole("heading", { name: "美国（USA）暂无数据" }),
   ).toBeVisible();
+});
+
+test("preserves the complete decision context when switching countries", async ({
+  page,
+}) => {
+  const query =
+    "applicationScope=marine&asOf=2024-02-03&powerKw=321.5&productModelCode=DEMO-ENG-100&utm_source=country-switch";
+  await page.goto(`/countries/CHN?${query}`);
+
+  await expect(page.getByLabel("应用场景")).toHaveValue("marine");
+  await expect(page.getByLabel("功率（kW）")).toHaveValue("321.5");
+  await expect(page.getByLabel("评估日期")).toHaveValue("2024-02-03");
+  await expect(page.getByTestId("product-fit-result")).toBeVisible();
+
+  await page
+    .getByLabel("切换国家")
+    .selectOption({ value: "BRA" });
+
+  await expect(page).toHaveURL(`/countries/BRA?${query}`);
+  await expect(page.getByLabel("应用场景")).toHaveValue("marine");
+  await expect(page.getByLabel("功率（kW）")).toHaveValue("321.5");
+  await expect(page.getByLabel("评估日期")).toHaveValue("2024-02-03");
+});
+
+test("localizes the no-data country name in server-rendered HTML", async ({
+  request,
+}) => {
+  const englishResponse = await request.get("/countries/USA", {
+    headers: { cookie: "diesel_locale=en" },
+  });
+  expect(englishResponse.ok()).toBe(true);
+  const englishHtml = (await englishResponse.text()).replaceAll(
+    "<!-- -->",
+    "",
+  );
+  expect(englishHtml).toContain("country-server-fallback");
+  expect(englishHtml).toContain(
+    "United States of America (USA) has no data",
+  );
+
+  const chineseResponse = await request.get("/countries/USA", {
+    headers: { cookie: "diesel_locale=zh-CN" },
+  });
+  expect(chineseResponse.ok()).toBe(true);
+  const chineseHtml = (await chineseResponse.text()).replaceAll(
+    "<!-- -->",
+    "",
+  );
+  expect(chineseHtml).toContain("country-server-fallback");
+  expect(chineseHtml).toContain("美国（USA）暂无数据");
 });
 
 test("supports keyboard-focused country selection", async ({ page }) => {
@@ -345,7 +675,7 @@ test("carries explicit country filters into the chat workspace", async ({
     "country-applicability-summary",
   );
   await expect(applicabilitySummary).toContainText(
-    "non-road · 100 kW · 截止 2026年1月20日",
+    "非道路 · 100 kW · 截止 2026年1月20日",
   );
   await expect(applicabilitySummary).toContainText("NOX：3.5 g/kWh");
   await expect(applicabilitySummary).toContainText("功率带 [0, 560) kW");
@@ -372,7 +702,7 @@ test("carries explicit country filters into the chat workspace", async ({
   });
   await expect(assistant.getByText(/地图国家：CHN/)).toBeVisible();
   await expect(assistant.getByLabel("输入问题")).toHaveValue(
-    "请分析 CHN 的 non-road 100 kW 法规与产品适配，重点判断产品 DEMO-ENG-100，判断日期 2026-01-20，并明确说明证据缺口以及结果能否用于销售承诺。",
+    "请分析 CHN 的非道路 100 kW 法规与产品适配，重点判断产品 DEMO-ENG-100，判断日期 2026年1月20日，并明确说明证据缺口以及结果能否用于销售承诺。",
   );
 });
 
@@ -402,7 +732,7 @@ test("uses a newly committed fit query in chat before the URL refresh completes"
     /\/chat\?asOf=2026-01-20&countryIso3=CHN&applicationScope=agriculture&powerKw=150&productModelCode=DEMO-ENG-200$/,
   );
   await expect(page.getByLabel("输入问题")).toHaveValue(
-    "请分析 CHN 的 agriculture 150 kW 法规与产品适配，重点判断产品 DEMO-ENG-200，判断日期 2026-01-20，并明确说明证据缺口以及结果能否用于销售承诺。",
+    "请分析 CHN 的农业 150 kW 法规与产品适配，重点判断产品 DEMO-ENG-200，判断日期 2026年1月20日，并明确说明证据缺口以及结果能否用于销售承诺。",
   );
 });
 
@@ -561,6 +891,13 @@ test("shows an explicit homepage empty state when no reviewed country is public"
 test("shared filter URLs reproduce the product-fit evaluation", async ({
   page,
 }) => {
+  const duplicateKeyWarnings: string[] = [];
+  page.on("console", (message) => {
+    const text = message.text();
+    if (text.includes("Encountered two children with the same key")) {
+      duplicateKeyWarnings.push(text);
+    }
+  });
   // 非规范化的分享链接（小写 iso3/型号、100.0、未知分析参数）一次
   // 重定向即规范化，未知参数保留，评估自动复现。
   await page.goto(
@@ -571,6 +908,9 @@ test("shared filter URLs reproduce the product-fit evaluation", async ({
     /\/countries\/CHN\?applicationScope=non-road&asOf=2026-01-20&powerKw=100&productModelCode=DEMO-ENG-100&utm_source=e2e$/,
   );
   await expect(page.getByTestId("product-fit-status-fit")).toBeVisible();
+  await expect(
+    page.getByTestId("country-applicability-summary"),
+  ).toBeVisible();
   await expect(page.getByText("DEMO-CERT-CHN-100")).toBeVisible();
   await expect(page).toHaveURL(/utm_source=e2e$/);
 
@@ -578,6 +918,7 @@ test("shared filter URLs reproduce the product-fit evaluation", async ({
   await page.reload();
   await expect(page.getByTestId("product-fit-status-fit")).toBeVisible();
   await expect(page).toHaveURL(/utm_source=e2e$/);
+  expect(duplicateKeyWarnings).toEqual([]);
 });
 
 test("refreshes country regulation details when the evaluation date changes", async ({
@@ -644,12 +985,89 @@ test("moves focus into the country drawer and restores it after close", async ({
   const chinaShortcut = page.getByRole("button", {
     name: /中国（演示数据） · CHN/,
   });
-  await chinaShortcut.click();
+  await chinaShortcut.focus();
+  await page.keyboard.press("Enter");
   await expect(closeButton).toBeFocused();
+
+  const drawerCountrySelect = page.getByLabel("切换国家");
+  await drawerCountrySelect.focus();
+  await drawerCountrySelect.selectOption("BRA");
+  await expect(page).toHaveURL(/\/countries\/BRA$/);
+  await expect(drawerCountrySelect).toBeFocused();
+
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\/map$/);
   await expect(chinaShortcut).toBeFocused();
 });
+
+for (const storageFailure of [
+  { label: "access is blocked", mode: "getter" },
+  { label: "writes are blocked", mode: "setItem" },
+] as const) {
+  test(`restores country focus when session storage ${storageFailure.label}`, async ({
+    page,
+  }) => {
+    const pageErrors: Error[] = [];
+    page.on("pageerror", (error) => {
+      pageErrors.push(error);
+    });
+
+    await page.goto("/map");
+    const mapContainer = page.getByTestId("map-canvas-container");
+    const chinaShortcut = page.getByRole("button", {
+      name: /中国（演示数据） · CHN/,
+    });
+    await expect(mapContainer).toHaveAttribute("data-map-ready", "true");
+    await expect(chinaShortcut).toBeEnabled();
+
+    await page.evaluate((mode) => {
+      if (mode === "getter") {
+        Object.defineProperty(window, "sessionStorage", {
+          configurable: true,
+          get() {
+            throw new DOMException(
+              "Storage disabled by privacy policy.",
+              "SecurityError",
+            );
+          },
+        });
+        return;
+      }
+
+      Storage.prototype.setItem = () => {
+        throw new DOMException(
+          "Storage writes disabled by privacy policy.",
+          "SecurityError",
+        );
+      };
+    }, storageFailure.mode);
+
+    await chinaShortcut.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/countries\/CHN$/);
+
+    const drawerCountrySelect = page.getByLabel("切换国家");
+    await drawerCountrySelect.focus();
+    await drawerCountrySelect.selectOption("BRA");
+    await expect(page).toHaveURL(/\/countries\/BRA$/);
+    await expect(drawerCountrySelect).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(page).toHaveURL(/\/map$/);
+    await expect(chinaShortcut).toBeFocused();
+    expect(
+      pageErrors
+        .filter(
+          (error) =>
+            error.name === "SecurityError" ||
+            error.message.includes("SecurityError") ||
+            error.message.includes("Storage disabled by privacy policy") ||
+            error.message.includes("Storage writes disabled by privacy policy"),
+        )
+        .map((error) => `${error.name}: ${error.message}`),
+    ).toEqual([]);
+  });
+}
 
 test("does not restore a previous country after a pending fit evaluation", async ({
   page,
@@ -688,33 +1106,36 @@ test("does not restore a previous country after a pending fit evaluation", async
   await page.getByLabel("切换国家").selectOption({ value: "BRA" });
   await expect(page).toHaveURL(/\/countries\/BRA$/);
   await expect(
-    page.getByRole("heading", { name: "巴西（演示数据）" }),
+    page.getByRole("heading", { exact: true, name: "巴西（演示数据）" }),
   ).toBeVisible();
 
   releaseResponse();
   await routeCompletion;
   await expect(page).toHaveURL(/\/countries\/BRA$/);
   await expect(
-    page.getByRole("heading", { name: "巴西（演示数据）" }),
+    page.getByRole("heading", { exact: true, name: "巴西（演示数据）" }),
   ).toBeVisible();
 });
 
-test("canonicalizes and strips invalid filter params", async ({ page }) => {
-  await page.goto("/countries/CHN?powerKw=abc&applicationScope=non-road");
+test("canonicalizes and strips invalid filter params", async ({ page }, testInfo) => {
+  await checkBrowserRuntimeErrors(page, testInfo, async () => {
+    await page.goto("/countries/CHN?powerKw=abc&applicationScope=non-road");
 
-  // 无效 powerKw 被剔除，有效参数保留。
-  await expect(page).toHaveURL(/\/countries\/CHN\?applicationScope=non-road$/);
+    // 无效 powerKw 被剔除，有效参数保留。
+    await expect(page).toHaveURL(/\/countries\/CHN\?applicationScope=non-road$/);
 
-  await page.goto("/countries/CHN?powerKw=300.0");
-  // 规范化数值并重定向。
-  await expect(page).toHaveURL(/\/countries\/CHN\?powerKw=300$/);
+    await page.goto("/countries/CHN?powerKw=300.0");
+    // 规范化数值并重定向。
+    await expect(page).toHaveURL(/\/countries\/CHN\?powerKw=300$/);
 
-  await page.goto(
-    "/countries/CHN?powerKw=100&powerKw=200&utm_term=engine&utm_term=export",
-  );
-  await expect(page).toHaveURL(
-    /\/countries\/CHN\?powerKw=100&utm_term=engine&utm_term=export$/,
-  );
+    await page.goto(
+      "/countries/CHN?powerKw=100&powerKw=200&utm_term=engine&utm_term=export",
+    );
+    await expect(page).toHaveURL(
+      /\/countries\/CHN\?powerKw=100&utm_term=engine&utm_term=export$/,
+    );
+    await expect(page.getByTestId("country-detail")).toBeVisible();
+  });
 });
 
 test("shows a stale verification badge under a small threshold", async ({
@@ -759,8 +1180,11 @@ test("lets touch users choose and re-evaluate product models without a native po
   await product200.tap();
   await expect(product200).toBeChecked();
   await expect(
-    page.getByText("DEMO ONLY — Fictional Engine 200", { exact: true }),
+    page.getByText("仅限 Demo — 虚构发动机 200", { exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByText("DEMO ONLY — Fictional Engine 200", { exact: true }),
+  ).toHaveCount(0);
 
   const applicationScope = page.getByLabel("应用场景");
   const powerKw = page.getByLabel("功率（kW）");
@@ -795,6 +1219,13 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
     page.getByRole("heading", { name: "未来已通过法规" }),
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "市场指标" })).toBeVisible();
+  await expect(
+    page
+      .getByText("仅限 Demo — 中国（演示数据）的虚构排放主管机构", {
+        exact: true,
+      })
+      .first(),
+  ).toBeVisible();
   await expect(page.getByText(/指标发布：2026年1月4日/).first()).toBeVisible();
   const countryRegulationCard = page
     .getByTestId("country-regulation-card")
@@ -849,7 +1280,7 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   await expect(page.getByTestId("product-fit-status-unknown")).toBeVisible();
   await expect(
-    page.getByText(/未找到产品与该法规之间的认证记录/).first(),
+    page.getByText(/没有可追溯认证记录将该产品与适用法规关联/).first(),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "复制补数摘要" }),
@@ -865,6 +1296,10 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   const notFitResult = page.getByTestId("product-fit-status-not_fit");
   await expect(notFitResult).toBeVisible();
   await expect(
-    notFitResult.getByText(/\[50, 150\) kW 不覆盖 150 kW/),
+    notFitResult.getByText("产品功率范围不覆盖请求的功率。"),
   ).toBeVisible();
+  await expect(page.getByTestId("product-record-trace")).toContainText(
+    "[50, 150) kW",
+  );
+  await expect(page.getByLabel("功率（kW）")).toHaveValue("150");
 });

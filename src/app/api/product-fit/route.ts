@@ -14,11 +14,17 @@ import { getDictionary, type Dictionary } from "@/i18n/dictionaries";
 import { localeFromRequest } from "@/i18n/locale";
 import {
   readJsonRequest,
+  RequestBodyAbortedError,
   RequestBodyTooLargeError,
+  RequestBodyTimeoutError,
 } from "@/server/http/request-body";
 import { evaluateProductFit } from "@/server/services/product-fit-service";
-import { MAX_PRODUCT_FIT_REQUEST_BYTES } from "@/server/http/request-limits";
-import { createApiRequestObserver } from "@/server/observability/structured-log";
+import {
+  MAX_NON_CHAT_REQUEST_BODY_READ_MS,
+  MAX_PRODUCT_FIT_REQUEST_BYTES,
+} from "@/server/http/request-limits";
+import { createPublicApiRequestObserver } from "@/server/http/public-api-response";
+import { runPublicDataOperation } from "@/server/http/public-data-admission";
 
 export const runtime = "nodejs";
 
@@ -50,13 +56,19 @@ function internalErrorResponse(error: unknown, messages: Dictionary["apiErrors"]
 }
 
 export async function POST(request: Request) {
-  const observer = createApiRequestObserver("/api/product-fit");
-  const messages = getDictionary(localeFromRequest(request)).apiErrors;
+  const observer = createPublicApiRequestObserver("/api/product-fit");
+  const locale = localeFromRequest(request);
+  const messages = getDictionary(locale).apiErrors;
   let input: ProductFitQuery;
 
   try {
     input = productFitQuerySchema.parse(
-      await readJsonRequest(request, MAX_PRODUCT_FIT_REQUEST_BYTES),
+      await readJsonRequest(
+        request,
+        MAX_PRODUCT_FIT_REQUEST_BYTES,
+        MAX_NON_CHAT_REQUEST_BODY_READ_MS,
+        request.signal,
+      ),
     );
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
@@ -70,6 +82,26 @@ export async function POST(request: Request) {
         { status: 413 },
       ), "PAYLOAD_TOO_LARGE");
     }
+    if (
+      error instanceof RequestBodyTimeoutError ||
+      error instanceof RequestBodyAbortedError
+    ) {
+      return observer.finish(
+        NextResponse.json(
+          productFitApiErrorSchema.parse({
+            error: {
+              code: "REQUEST_TIMEOUT",
+              message:
+                locale === "en"
+                  ? "The product-fit request upload timed out or was canceled. Please try again."
+                  : "产品适配请求接收超时或已取消，请重试。",
+            },
+          }),
+          { status: 408 },
+        ),
+        "REQUEST_TIMEOUT",
+      );
+    }
     if (error instanceof SyntaxError || error instanceof ZodError) {
       return observer.finish(invalidInputResponse(messages), "INVALID_INPUT");
     }
@@ -77,9 +109,34 @@ export async function POST(request: Request) {
   }
 
   try {
+    const operation = await runPublicDataOperation({
+      request,
+      route: "/api/product-fit",
+      work: (signal) => evaluateProductFit(input, { signal }),
+    });
+    if (operation.status === "failed") {
+      throw operation.error;
+    }
+    if (operation.status !== "fulfilled") {
+      return observer.finish(
+        NextResponse.json(
+          productFitApiErrorSchema.parse({
+            error: {
+              code: "INTERNAL_ERROR",
+              message: messages.productFitUnavailable,
+            },
+          }),
+          {
+            headers: { "Retry-After": "1" },
+            status: 503,
+          },
+        ),
+        "INTERNAL_ERROR",
+      );
+    }
     return observer.finish(
       NextResponse.json(
-        productFitEvaluationSchema.parse(await evaluateProductFit(input)),
+        productFitEvaluationSchema.parse(operation.value),
       ),
     );
   } catch (error) {

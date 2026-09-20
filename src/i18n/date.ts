@@ -46,3 +46,24 @@ export function formatOptionalUtcDate(
 ): string {
   return value ? formatUtcDate(value, locale) : fallback;
 }
+
+/**
+ * Product availability requires both endpoints as evidence. A missing end is
+ * therefore not an open-ended period; it remains explicitly unrecorded.
+ */
+export function formatProductAvailabilityDateRange(
+  availableFrom: string | null | undefined,
+  availableTo: string | null | undefined,
+  locale: Locale,
+  notRecorded: string,
+): string {
+  if (!availableFrom && !availableTo) {
+    return notRecorded;
+  }
+
+  return `${formatOptionalUtcDate(
+    availableFrom,
+    locale,
+    notRecorded,
+  )} → ${formatOptionalUtcDate(availableTo, locale, notRecorded)}`;
+}

@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  regulationIsCurrentAt,
+  regulationIsFutureAdoptedAt,
+} from "@/domain/countries/detail-consistency";
 import { env } from "@/env";
 import {
   countryDetailResponseSchema,
@@ -22,7 +26,15 @@ import { getDatabase } from "@/server/db/client";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { getDatabaseMode } from "@/server/db/environment";
 import { createCountryRepository } from "@/server/repositories/country-repository";
-import { compareRegulations } from "@/server/services/marketing-analysis-service";
+import { createRegulationRepository } from "@/server/repositories/regulation-repository";
+import {
+  compareRegulationsFromRepositories,
+  type RegulationComparisonRepositories,
+} from "@/server/services/marketing-analysis-service";
+import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
 
 function serializeDate(value: Date): string {
   return value.toISOString();
@@ -32,23 +44,32 @@ function currentUtcDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+export const COUNTRY_DETAIL_READ_TRANSACTION_CONFIG = {
+  accessMode: "read only",
+  isolationLevel: "repeatable read",
+} as const;
+
+type CountryDetailReadQuery = Omit<
+  ReturnType<typeof countryDetailQuerySchema.parse>,
+  "asOf"
+> & {
+  asOf: string;
+};
+
+type CountryDetailReadRepositories = RegulationComparisonRepositories & {
+  countryRepository: ReturnType<typeof createCountryRepository>;
+};
+
 export function isCurrentEffectiveRegulation(
   regulation: {
+    adoptedOn: string | null;
     effectiveFrom: string | null;
     effectiveTo: string | null;
     status: string;
   },
   asOf: string,
 ): boolean {
-  const recordCanSupportTheDate =
-    regulation.status === "effective" ||
-    (regulation.status === "superseded" &&
-      regulation.effectiveTo !== null);
-
-  return recordCanSupportTheDate &&
-    regulation.effectiveFrom !== null &&
-    regulation.effectiveFrom <= asOf &&
-    (regulation.effectiveTo === null || regulation.effectiveTo > asOf);
+  return regulationIsCurrentAt(regulation, asOf);
 }
 
 export function isFutureAdoptedRegulation(
@@ -60,19 +81,27 @@ export function isFutureAdoptedRegulation(
   },
   asOf: string,
 ): boolean {
-  const adoptionWasKnown =
-    regulation.adoptedOn !== null && regulation.adoptedOn <= asOf;
-  const lifecycleIsUsable =
-    regulation.status !== "superseded" || regulation.effectiveTo !== null;
-
-  return regulation.status !== "proposed" &&
-    lifecycleIsUsable &&
-    adoptionWasKnown &&
-    (regulation.effectiveFrom === null || regulation.effectiveFrom > asOf);
+  return regulationIsFutureAdoptedAt(regulation, asOf);
 }
 
-function latestTimestamp(values: string[]): string {
-  return values.toSorted().at(-1) ?? new Date(0).toISOString();
+export function latestTimestamp(values: readonly string[]): string {
+  if (values.length === 0) {
+    return new Date(0).toISOString();
+  }
+
+  let latest: string | null = null;
+  let latestInstant = Number.NEGATIVE_INFINITY;
+  for (const value of values) {
+    const instant = Date.parse(value);
+    if (Number.isFinite(instant) && instant > latestInstant) {
+      latest = value;
+      latestInstant = instant;
+    }
+  }
+  if (latest === null) {
+    throw new Error("Country verification timestamps were invalid.");
+  }
+  return latest;
 }
 
 /**
@@ -88,17 +117,24 @@ export function isStaleVerification(
   return ageMs > thresholdDays * 24 * 60 * 60 * 1000;
 }
 
-async function getCountryRepository() {
+async function getCountryRepository(options: RequestSignalOptions = {}) {
+  throwIfRequestAborted(options.signal);
   if (getDatabaseMode() === "pglite-demo") {
-    return createCountryRepository(await getDemoDatabase());
+    const database = await getDemoDatabase();
+    throwIfRequestAborted(options.signal);
+    return createCountryRepository(database);
   }
 
   return createCountryRepository(getDatabase());
 }
 
-export async function listCountryMapSummaries(): Promise<CountryMapResponse> {
-  const repository = await getCountryRepository();
-  const rows = await repository.listMapSummaries();
+export async function listCountryMapSummaries(
+  options: RequestSignalOptions = {},
+): Promise<CountryMapResponse> {
+  const repository = await getCountryRepository(options);
+  throwIfRequestAborted(options.signal);
+  const rows = await repository.listMapSummaries(options);
+  throwIfRequestAborted(options.signal);
   const nowIso = new Date().toISOString();
   const includeDemoData = getDatabaseMode() === "pglite-demo";
 
@@ -126,17 +162,64 @@ export async function listCountryMapSummaries(): Promise<CountryMapResponse> {
 
 export async function getCountryDetails(
   input: unknown,
+  options: RequestSignalOptions = {},
 ): Promise<CountryDetailResponse> {
-  const {
-    applicationScope,
-    asOf = currentUtcDate(),
-    iso3,
-    powerKw,
-  } =
-    countryDetailQuerySchema.parse(input);
-  const repository = await getCountryRepository();
+  throwIfRequestAborted(options.signal);
+  const parsed = countryDetailQuerySchema.parse(input);
+  const query: CountryDetailReadQuery = {
+    ...parsed,
+    asOf: parsed.asOf ?? currentUtcDate(),
+  };
   const includeDemoData = getDatabaseMode() === "pglite-demo";
-  const profile = await repository.findByIso3({ iso3 });
+
+  if (includeDemoData) {
+    const database = await getDemoDatabase();
+    throwIfRequestAborted(options.signal);
+    const result = await database.transaction(
+      (transaction) =>
+        getCountryDetailsFromRepositories(
+          query,
+          {
+            countryRepository: createCountryRepository(transaction),
+            regulationRepository: createRegulationRepository(transaction),
+          },
+          true,
+          options,
+        ),
+      COUNTRY_DETAIL_READ_TRANSACTION_CONFIG,
+    );
+    throwIfRequestAborted(options.signal);
+    return result;
+  }
+
+  const database = getDatabase();
+  const result = await database.transaction(
+    (transaction) =>
+      getCountryDetailsFromRepositories(
+        query,
+        {
+          countryRepository: createCountryRepository(transaction),
+          regulationRepository: createRegulationRepository(transaction),
+        },
+        false,
+        options,
+      ),
+    COUNTRY_DETAIL_READ_TRANSACTION_CONFIG,
+  );
+  throwIfRequestAborted(options.signal);
+  return result;
+}
+
+async function getCountryDetailsFromRepositories(
+  { applicationScope, asOf, iso3, powerKw }: CountryDetailReadQuery,
+  repositories: CountryDetailReadRepositories,
+  includeDemoData: boolean,
+  options: RequestSignalOptions,
+): Promise<CountryDetailResponse> {
+  throwIfRequestAborted(options.signal);
+  const { countryRepository } = repositories;
+  const profile = await countryRepository.findByIso3({ iso3 }, options);
+  throwIfRequestAborted(options.signal);
 
   // ADR-040：目录国家（planned/no_data/none）没有详情数据，保持 ADR-029
   // 的精确 no_data 契约；只有详情可见的覆盖状态才进入完整查询。
@@ -151,7 +234,11 @@ export async function getCountryDetails(
     });
   }
 
-  const country = await repository.findDetailsByIso3({ asOf, iso3 });
+  const country = await countryRepository.findDetailsByIso3(
+    { asOf, iso3 },
+    options,
+  );
+  throwIfRequestAborted(options.signal);
 
   if (!country) {
     return countryDetailResponseSchema.parse({
@@ -298,12 +385,17 @@ export async function getCountryDetails(
   ]);
   const applicabilitySummary =
     applicationScope !== undefined && powerKw !== undefined
-      ? await compareRegulations({
-          applicationScope,
-          asOf,
-          countryIso3s: [iso3],
-          powerKw,
-        }).then((comparison) => {
+      ? await compareRegulationsFromRepositories(
+          {
+            applicationScope,
+            asOf,
+            countryIso3s: [iso3],
+            powerKw,
+          },
+          repositories,
+          options,
+        ).then((comparison) => {
+          throwIfRequestAborted(options.signal);
           const countryComparison = comparison.countries[0];
           if (!countryComparison) {
             throw new Error("Single-country applicability result was not produced.");
@@ -323,6 +415,7 @@ export async function getCountryDetails(
           };
         })
       : null;
+  throwIfRequestAborted(options.signal);
 
   return countryDetailResponseSchema.parse({
     applicabilitySummary,

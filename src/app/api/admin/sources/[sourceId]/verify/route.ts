@@ -12,12 +12,15 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ sourceId: string }> },
 ): Promise<Response> {
-  return handleAdminRoute(request, "editor", async (principal) => {
-    const { sourceId } = await context.params;
-    const body = await readAdminJsonRequest(request);
+  return handleAdminRoute(
+    request,
+    "editor",
+    "/api/admin/sources/:sourceId/verify",
+    async (principal) => {
+      const { sourceId } = await context.params;
+      const body = await readAdminJsonRequest(request);
 
-    return NextResponse.json({
-      source: await verifyDataSource({
+      await verifyDataSource({
         actor: principal,
         reason:
           typeof body === "object" && body !== null && "reason" in body
@@ -28,8 +31,9 @@ export async function POST(
           typeof body === "object" && body !== null && "verifiedAt" in body
             ? body.verifiedAt
             : undefined,
-      }),
-      status: "verified",
-    });
-  });
+      });
+
+      return NextResponse.json({ status: "verified" });
+    },
+  );
 }

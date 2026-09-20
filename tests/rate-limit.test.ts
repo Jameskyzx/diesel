@@ -1,10 +1,28 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  AI_CHAT_RATE_LIMIT_GLOBAL_DEFAULT_PER_HOUR,
+  AI_CHAT_RATE_LIMIT_WINDOW_MS,
+  createPostgresRateLimiter,
   createRateLimiter,
+  createRateLimitCleanupScheduler,
   extractClientIdentifier,
+  RATE_LIMIT_CLEANUP_INTERVAL_MS,
   resolveAiChatRateLimitBackend,
+  resolveAiChatRateLimitConfig,
 } from "@/server/http/rate-limit";
+import type { RateLimitRepository } from "@/server/repositories/rate-limit-repository";
+
+function createDeferred(): {
+  promise: Promise<void>;
+  resolve: () => void;
+} {
+  let resolve!: () => void;
+  const promise = new Promise<void>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
 
 describe("createRateLimiter fixed-window decisions", () => {
   const windowMs = 60_000;
@@ -49,6 +67,31 @@ describe("createRateLimiter fixed-window decisions", () => {
     expect((await limiter.check("client-a", t0)).allowed).toBe(true);
     expect((await limiter.check("client-a", t0)).allowed).toBe(false);
     expect((await limiter.check("client-b", t0)).allowed).toBe(true);
+  });
+
+  it("enforces one global ceiling across distinct client keys", async () => {
+    const limiter = createRateLimiter({
+      globalLimit: 2,
+      limit: 2,
+      windowMs,
+    });
+
+    expect((await limiter.check("client-a", t0)).allowed).toBe(true);
+    expect((await limiter.check("client-b", t0)).allowed).toBe(true);
+    expect((await limiter.check("client-c", t0)).allowed).toBe(false);
+  });
+
+  it("does not charge the global remainder for a rejected client retry", async () => {
+    const limiter = createRateLimiter({
+      globalLimit: 2,
+      limit: 1,
+      windowMs,
+    });
+
+    expect((await limiter.check("client-a", t0)).allowed).toBe(true);
+    expect((await limiter.check("client-a", t0 + 1)).allowed).toBe(false);
+    expect((await limiter.check("client-b", t0 + 2)).allowed).toBe(true);
+    expect((await limiter.check("client-c", t0 + 3)).allowed).toBe(false);
   });
 
   it("computes Retry-After as seconds until the window ends", async () => {
@@ -115,5 +158,191 @@ describe("resolveAiChatRateLimitBackend", () => {
     expect(resolveAiChatRateLimitBackend({ nodeEnv: "test" })).toBe(
       "memory",
     );
+  });
+});
+
+describe("resolveAiChatRateLimitConfig", () => {
+  it("uses the compatibility global ceiling when it is omitted", () => {
+    expect(
+      resolveAiChatRateLimitConfig({ perClientLimitPerHour: 30 }),
+    ).toEqual({
+      globalLimitPerHour: AI_CHAT_RATE_LIMIT_GLOBAL_DEFAULT_PER_HOUR,
+      perClientLimitPerHour: 30,
+    });
+  });
+
+  it("rejects a per-client limit above the global limit", () => {
+    expect(() =>
+      resolveAiChatRateLimitConfig({
+        globalLimitPerHour: 29,
+        perClientLimitPerHour: 30,
+      }),
+    ).toThrow("cannot exceed the global hourly rate limit");
+  });
+});
+
+describe("PostgreSQL rate-limit retention scheduling", () => {
+  it("rejects a non-hourly window before repository work can start", () => {
+    const repository: RateLimitRepository = {
+      cleanupExpiredBuckets: vi.fn(async () => undefined),
+      reserveAiChatHourlyRequest: vi.fn(async () => ({
+        allowed: false as const,
+      })),
+      reserveAiChatAdmissionProviderCallUnits: vi.fn(async () => true),
+    };
+
+    expect(() =>
+      createPostgresRateLimiter({
+        globalLimit: 300,
+        globalScope: "test-hourly-global",
+        limit: 30,
+        repository,
+        scope: "test-hourly",
+        windowMs: 60_000,
+      }),
+    ).toThrow("requires a one-hour window");
+    expect(repository.reserveAiChatHourlyRequest).not.toHaveBeenCalled();
+  });
+
+  it("is process-single-flight, interval-bound, and does not await cleanup", async () => {
+    let schedulerNowMs = 1_000;
+    const firstCleanup = createDeferred();
+    const cleanupExpiredBuckets = vi
+      .fn<RateLimitRepository["cleanupExpiredBuckets"]>()
+      .mockImplementationOnce(() => firstCleanup.promise)
+      .mockResolvedValue(undefined);
+    const repository: RateLimitRepository = {
+      cleanupExpiredBuckets,
+      reserveAiChatHourlyRequest: vi.fn(async () => ({
+        allowed: true,
+        clientCount: 1,
+        globalCount: 1,
+      })),
+      reserveAiChatAdmissionProviderCallUnits: vi.fn(async () => true),
+    };
+    const cleanupScheduler = createRateLimitCleanupScheduler({
+      now: () => schedulerNowMs,
+    });
+    const limiterOptions = {
+      cleanupScheduler,
+      globalLimit: 300,
+      globalScope: "test-hourly-global",
+      limit: 30,
+      repository,
+      scope: "test-hourly",
+      windowMs: AI_CHAT_RATE_LIMIT_WINDOW_MS,
+    };
+    const firstLimiter = createPostgresRateLimiter(limiterOptions);
+    const secondLimiter = createPostgresRateLimiter(limiterOptions);
+
+    await expect(firstLimiter.check("client-a", 1_700_000_000_000)).resolves
+      .toMatchObject({ allowed: true, remaining: 29 });
+    await vi.waitFor(() => expect(cleanupExpiredBuckets).toHaveBeenCalledTimes(1));
+
+    // An unresolved cleanup cannot retain or change either request decision.
+    await expect(secondLimiter.check("client-b", 1_700_000_000_001)).resolves
+      .toMatchObject({ allowed: true, remaining: 29 });
+    expect(cleanupExpiredBuckets).toHaveBeenCalledTimes(1);
+
+    firstCleanup.resolve();
+    await firstCleanup.promise;
+    schedulerNowMs = 1_000 + RATE_LIMIT_CLEANUP_INTERVAL_MS - 1;
+    await vi.waitFor(() => {
+      cleanupScheduler.schedule(repository);
+      expect(cleanupExpiredBuckets).toHaveBeenCalledTimes(1);
+    });
+
+    schedulerNowMs = 1_000 + RATE_LIMIT_CLEANUP_INTERVAL_MS;
+    await vi.waitFor(() => {
+      cleanupScheduler.schedule(repository);
+      expect(cleanupExpiredBuckets).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("logs only a fixed message and error class when cleanup fails", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const sensitiveMessage =
+      "postgres://rate-limit:secret@example.test/database";
+    const repository: RateLimitRepository = {
+      cleanupExpiredBuckets: vi.fn(async () => {
+        throw new Error(sensitiveMessage);
+      }),
+      reserveAiChatHourlyRequest: vi.fn(async () => ({
+        allowed: true,
+        clientCount: 1,
+        globalCount: 1,
+      })),
+      reserveAiChatAdmissionProviderCallUnits: vi.fn(async () => true),
+    };
+    const limiter = createPostgresRateLimiter({
+      cleanupScheduler: createRateLimitCleanupScheduler({ now: () => 1_000 }),
+      globalLimit: 300,
+      globalScope: "test-hourly-global",
+      limit: 30,
+      repository,
+      scope: "test-hourly",
+      windowMs: AI_CHAT_RATE_LIMIT_WINDOW_MS,
+    });
+
+    try {
+      await expect(limiter.check("client-a", 1_700_000_000_000)).resolves
+        .toMatchObject({ allowed: true, remaining: 29 });
+      await vi.waitFor(() =>
+        expect(consoleError).toHaveBeenCalledWith(
+          "Shared rate-limit bucket cleanup failed",
+          { errorCode: "Error" },
+        ),
+      );
+      expect(JSON.stringify(consoleError.mock.calls)).not.toContain(
+        sensitiveMessage,
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("preserves the decision when an injected scheduler throws synchronously", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const sensitiveMessage = "postgres://synchronous:secret@example.test/db";
+    const repository: RateLimitRepository = {
+      cleanupExpiredBuckets: vi.fn(async () => undefined),
+      reserveAiChatHourlyRequest: vi.fn(async () => ({
+        allowed: true,
+        clientCount: 1,
+        globalCount: 1,
+      })),
+      reserveAiChatAdmissionProviderCallUnits: vi.fn(async () => true),
+    };
+    const limiter = createPostgresRateLimiter({
+      cleanupScheduler: {
+        schedule() {
+          throw new Error(sensitiveMessage);
+        },
+      },
+      globalLimit: 300,
+      globalScope: "test-hourly-global",
+      limit: 30,
+      repository,
+      scope: "test-hourly",
+      windowMs: AI_CHAT_RATE_LIMIT_WINDOW_MS,
+    });
+
+    try {
+      await expect(limiter.check("client-a", 1_700_000_000_000)).resolves
+        .toMatchObject({ allowed: true, remaining: 29 });
+      expect(consoleError).toHaveBeenCalledWith(
+        "Shared rate-limit bucket cleanup failed",
+        { errorCode: "Error" },
+      );
+      expect(JSON.stringify(consoleError.mock.calls)).not.toContain(
+        sensitiveMessage,
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });

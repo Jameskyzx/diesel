@@ -22,8 +22,24 @@ import {
   regulationDraftPayloadSchema,
   type AdminPrincipal,
   type GovernedEntityType,
-  type GovernanceWorkflowStatus,
 } from "@/features/admin/schemas";
+import {
+  type CanonicalDocumentProvenanceMarker,
+  createDocumentChunkSetFingerprint,
+  createDocumentDataSourceFingerprint,
+  createDocumentProvenanceMarkerFingerprint,
+  documentDraftCreatedAuditAfterDataSchema,
+  documentReprocessedAuditAfterDataSchema,
+  getDocumentProvenanceActionForVersion,
+  normalizeDocumentImportMetadataForProvenance,
+  parseCanonicalDocumentProvenanceMarkerFor,
+  parseDocumentDraftCreatedAuditMarkerFor,
+  parseDocumentReprocessedAuditMarkerFor,
+} from "@/features/admin/document-reprocessed-audit";
+import {
+  documentImportMetadataSchema,
+  type DocumentImportMetadata,
+} from "@/features/knowledge/schemas";
 import { assertGovernanceWriteAllowed } from "@/server/db/governance-maintenance-lock";
 import * as schema from "@/server/db/schema";
 import {
@@ -42,6 +58,19 @@ import {
   regulationLimits,
   regulations,
 } from "@/server/db/schema";
+import type {
+  PreparedKnowledgeDocumentReprocessing,
+  PreparedKnowledgeDocumentUpload,
+} from "@/server/repositories/knowledge-repository";
+import { GovernanceConflictError } from "@/server/repositories/governance-conflict-error";
+import { createGovernanceSourceWrites } from "@/server/repositories/governance-source-writes";
+import { documentChunkInsertBatches } from "@/server/repositories/document-chunk-batches";
+
+export { GovernanceConflictError } from "@/server/repositories/governance-conflict-error";
+export {
+  SOURCE_CONCURRENT_INSERT_CONFLICT_MESSAGE,
+  SOURCE_VERIFIED_AT_REGRESSION_MESSAGE,
+} from "@/server/repositories/governance-source-writes";
 
 type GovernanceJson = Record<string, unknown>;
 type ImportPreviewRow = {
@@ -54,85 +83,29 @@ type ImportValidationError = {
   rowNumber: number;
 };
 
-type GovernanceReviewDependencyKind =
-  | "country"
-  | "jurisdiction"
-  | "product"
-  | "regulation"
-  | "source";
+function nullableString(value: string | null): string | null {
+  return value ? value : null;
+}
 
-type GovernanceReviewReference = {
-  kind: GovernanceReviewDependencyKind;
-  path: string;
-  value: string;
-};
+const documentReprocessingDraftConflictMessage =
+  "The active document draft changed while reprocessing was prepared; retry from the latest version.";
 
-type GovernanceReviewDraft = {
-  entityKey: string;
-  entityType: GovernedEntityType;
-  id: string;
-  payload: GovernanceJson;
-  version: number;
-};
-
-const governanceDependencyKinds = {
-  countryIso3: "country",
-  dataSourceId: "source",
-  jurisdictionId: "jurisdiction",
-  productId: "product",
-  regulationId: "regulation",
-  sourceId: "source",
-} as const satisfies Record<string, GovernanceReviewDependencyKind>;
-
-function collectGovernanceReviewReferences(
-  value: unknown,
-  path = "$",
-  result: GovernanceReviewReference[] = [],
-): GovernanceReviewReference[] {
-  if (Array.isArray(value)) {
-    value.forEach((item, index) =>
-      collectGovernanceReviewReferences(item, `${path}[${index}]`, result),
-    );
-    return result;
-  }
-  if (value === null || typeof value !== "object") {
-    return result;
+function assertDocumentReprocessingDraftAccess(input: {
+  actor: AdminPrincipal;
+  createdBy: string;
+}): void {
+  if (
+    input.actor.role === "admin" ||
+    input.actor.role === "reviewer" ||
+    (input.actor.role === "editor" &&
+      input.actor.email === input.createdBy)
+  ) {
+    return;
   }
 
-  for (const [key, item] of Object.entries(value)) {
-    const nextPath = `${path}.${key}`;
-    const kind =
-      governanceDependencyKinds[
-        key as keyof typeof governanceDependencyKinds
-      ];
-    if (kind && typeof item === "string" && item.trim()) {
-      result.push({ kind, path: nextPath, value: item });
-    }
-    collectGovernanceReviewReferences(item, nextPath, result);
-  }
-
-  return Array.from(
-    new Map(
-      result.map((reference) => [
-        `${reference.kind}:${reference.value}`,
-        reference,
-      ]),
-    ).values(),
+  throw new GovernanceConflictError(
+    documentReprocessingDraftConflictMessage,
   );
-}
-
-function governanceEntityIdentity(
-  entityType: GovernedEntityType,
-  entityKey: string,
-): string {
-  return `${entityType}:${entityKey}`;
-}
-
-export class GovernanceConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "GovernanceConflictError";
-  }
 }
 
 function requiredId(id: string | undefined, entityType: string): string {
@@ -214,6 +187,380 @@ function hasPostgresErrorCode(error: unknown, code: string): boolean {
 export function createGovernanceRepository<
   TQueryResult extends PgQueryResultHKT,
 >(database: PgDatabase<TQueryResult, typeof schema>) {
+  type GovernanceTransaction = Parameters<
+    Parameters<typeof database.transaction>[0]
+  >[0];
+  const sourceWrites = createGovernanceSourceWrites(database);
+
+  const lockDocumentDraftChain = (
+    transaction: GovernanceTransaction,
+    documentId: string,
+  ) =>
+    transaction
+      .select()
+      .from(dataGovernanceDrafts)
+      .where(
+        and(
+          eq(dataGovernanceDrafts.entityType, "document"),
+          eq(dataGovernanceDrafts.entityKey, documentId),
+        ),
+      )
+      .orderBy(asc(dataGovernanceDrafts.version))
+      .for("update");
+
+  const loadDocumentProvenanceExpectation = async (
+    transaction: GovernanceTransaction,
+    documentId: string,
+    failedChunkMetadataFallback?: DocumentImportMetadata,
+  ) => {
+    const [snapshot] = await transaction
+      .select({
+        document: {
+          archivedAt: documents.archivedAt,
+          canonicalUrl: documents.canonicalUrl,
+          contentSha256: documents.contentSha256,
+          dataSourceId: documents.dataSourceId,
+          demoNotice: documents.demoNotice,
+          governanceStatus: documents.governanceStatus,
+          isDemo: documents.isDemo,
+          languageCode: documents.languageCode,
+          licenseCode: documents.licenseCode,
+          processingStatus: documents.processingStatus,
+          publishedOn: documents.publishedOn,
+          redistributionAllowed: documents.redistributionAllowed,
+          title: documents.title,
+          type: documents.type,
+          updatedAt: documents.updatedAt,
+          validFrom: documents.validFrom,
+          validTo: documents.validTo,
+        },
+        source: {
+          archivedAt: sql<string | null>`case
+            when ${dataSources.archivedAt} is null then null
+            else to_char(
+              ${dataSources.archivedAt} at time zone 'UTC',
+              'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+            )
+          end`,
+          createdAt: sql<string>`to_char(
+            ${dataSources.createdAt} at time zone 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+          )`,
+          demoNotice: dataSources.demoNotice,
+          id: dataSources.id,
+          isDemo: dataSources.isDemo,
+          publishedOn: dataSources.publishedOn,
+          publisher: dataSources.publisher,
+          sourceType: dataSources.sourceType,
+          title: dataSources.title,
+          updatedAt: sql<string>`to_char(
+            ${dataSources.updatedAt} at time zone 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+          )`,
+          url: dataSources.url,
+          verifiedAt: sql<string>`to_char(
+            ${dataSources.verifiedAt} at time zone 'UTC',
+            'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+          )`,
+        },
+      })
+      .from(documents)
+      .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+      .where(eq(documents.id, documentId))
+      .limit(1)
+      .for("update");
+    if (
+      !snapshot ||
+      snapshot.document.archivedAt !== null ||
+      snapshot.source.archivedAt !== null ||
+      (snapshot.document.processingStatus !== "ready" &&
+        snapshot.document.processingStatus !== "failed")
+    ) {
+      throw new GovernanceConflictError(
+        "Document provenance cannot be verified against an active ready/failed document and source.",
+      );
+    }
+    const processingStatus: "failed" | "ready" =
+      snapshot.document.processingStatus;
+
+    const chunkMetadata = await transaction
+      .select({
+        applicationScope: documentChunks.applicationScope,
+        chunkIndex: documentChunks.chunkIndex,
+        content: documentChunks.content,
+        contentHash: documentChunks.contentHash,
+        countryIso3: documentChunks.countryIso3,
+        createdAt: sql<string>`to_char(
+          ${documentChunks.createdAt} at time zone 'UTC',
+          'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+        )`,
+        embedding: documentChunks.embedding,
+        embeddingModel: documentChunks.embeddingModel,
+        headingPath: documentChunks.headingPath,
+        isDemo: documentChunks.isDemo,
+        jurisdictionId: documentChunks.jurisdictionId,
+        pageFrom: documentChunks.pageFrom,
+        pageTo: documentChunks.pageTo,
+        sectionLocator: documentChunks.sectionLocator,
+        tokenCount: documentChunks.tokenCount,
+        updatedAt: sql<string>`to_char(
+          ${documentChunks.updatedAt} at time zone 'UTC',
+          'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+        )`,
+        validFrom: documentChunks.validFrom,
+        validTo: documentChunks.validTo,
+        verifiedAt: sql<string>`to_char(
+          ${documentChunks.verifiedAt} at time zone 'UTC',
+          'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+        )`,
+      })
+      .from(documentChunks)
+      .where(eq(documentChunks.documentId, documentId))
+      .orderBy(asc(documentChunks.chunkIndex))
+      .for("update");
+    const firstChunk = chunkMetadata[0];
+    let chunkSetFingerprint: string;
+    try {
+      chunkSetFingerprint = createDocumentChunkSetFingerprint({
+        chunks: chunkMetadata,
+        processingStatus,
+      });
+    } catch {
+      throw new GovernanceConflictError(
+        "Document chunk-set provenance is missing, inconsistent, or malformed.",
+      );
+    }
+    if (
+      firstChunk &&
+      chunkMetadata.some(
+        (chunk) =>
+          chunk.applicationScope !== firstChunk.applicationScope ||
+          chunk.countryIso3 !== firstChunk.countryIso3 ||
+          chunk.isDemo !== firstChunk.isDemo ||
+          chunk.jurisdictionId !== firstChunk.jurisdictionId ||
+          chunk.validFrom !== firstChunk.validFrom ||
+          chunk.validTo !== firstChunk.validTo,
+      )
+    ) {
+      throw new GovernanceConflictError(
+        "Document chunk metadata provenance is missing or inconsistent.",
+      );
+    }
+    if (
+      firstChunk !== undefined &&
+        (firstChunk.isDemo !== snapshot.document.isDemo ||
+          firstChunk.validFrom !== snapshot.document.validFrom ||
+          firstChunk.validTo !== snapshot.document.validTo)
+    ) {
+      throw new GovernanceConflictError(
+        "Document and chunk metadata provenance is inconsistent.",
+      );
+    }
+
+    const metadata = documentImportMetadataSchema.safeParse({
+      applicationScope:
+        firstChunk?.applicationScope ??
+        (processingStatus === "failed"
+          ? failedChunkMetadataFallback?.applicationScope ?? null
+          : null),
+      canonicalUrl: snapshot.document.canonicalUrl,
+      countryIso3:
+        firstChunk?.countryIso3 ??
+        (processingStatus === "failed"
+          ? failedChunkMetadataFallback?.countryIso3 ?? null
+          : null),
+      demoNotice: snapshot.document.demoNotice,
+      documentType: snapshot.document.type,
+      isDemo: snapshot.document.isDemo,
+      jurisdictionId:
+        firstChunk?.jurisdictionId ??
+        (processingStatus === "failed"
+          ? failedChunkMetadataFallback?.jurisdictionId ?? null
+          : null),
+      languageCode: snapshot.document.languageCode,
+      licenseCode: snapshot.document.licenseCode,
+      publishedOn: snapshot.document.publishedOn,
+      redistributionAllowed: snapshot.document.redistributionAllowed,
+      sourcePublisher: snapshot.source.publisher,
+      sourceTitle: snapshot.source.title,
+      sourceType: snapshot.source.sourceType,
+      sourceUrl: snapshot.source.url,
+      title: snapshot.document.title,
+      validFrom: snapshot.document.validFrom,
+      validTo: snapshot.document.validTo,
+    });
+    if (!metadata.success) {
+      throw new GovernanceConflictError(
+        "Document metadata provenance cannot be reconstructed safely.",
+      );
+    }
+
+    return {
+      chunkSetFingerprint,
+      document: { ...snapshot.document, processingStatus },
+      metadata: metadata.data,
+      source: snapshot.source,
+      sourceFingerprint: createDocumentDataSourceFingerprint(
+        snapshot.source,
+      ),
+    };
+  };
+
+  const requireCanonicalDocumentProvenance = async (
+    transaction: GovernanceTransaction,
+    draft: typeof dataGovernanceDrafts.$inferSelect,
+  ): Promise<{
+    document: {
+      governanceStatus: "draft" | "published" | "reviewed";
+      processingStatus: "failed" | "pending" | "processing" | "ready";
+    };
+    provenance: CanonicalDocumentProvenanceMarker;
+  }> => {
+    const initialSnapshot = await loadDocumentProvenanceExpectation(
+      transaction,
+      draft.entityKey,
+    );
+
+    const action = getDocumentProvenanceActionForVersion(draft.version);
+    const auditRows = await transaction
+      .select({
+        afterData: dataChangeLogs.afterData,
+        draftId: dataChangeLogs.draftId,
+        entityKey: dataChangeLogs.entityKey,
+        entityType: dataChangeLogs.entityType,
+      })
+      .from(dataChangeLogs)
+      .where(
+        and(
+          eq(dataChangeLogs.action, action),
+          eq(dataChangeLogs.draftId, draft.id),
+          eq(dataChangeLogs.entityType, "document"),
+          eq(dataChangeLogs.entityKey, draft.entityKey),
+        ),
+      )
+      .for("update");
+    if (auditRows.length !== 1) {
+      throw new GovernanceConflictError(
+        `Document draft v${draft.version} requires exactly one canonical ${action} provenance marker.`,
+      );
+    }
+
+    const marker =
+      action === "draft_created"
+        ? parseDocumentDraftCreatedAuditMarkerFor({
+            expectedChunkSetFingerprint:
+              initialSnapshot.chunkSetFingerprint,
+            expectedContentSha256:
+              initialSnapshot.document.contentSha256,
+            expectedDocumentId: draft.entityKey,
+            expectedDraftId: draft.id,
+            expectedProcessingStatus:
+              initialSnapshot.document.processingStatus,
+            expectedSourceFingerprint:
+              initialSnapshot.sourceFingerprint,
+            expectedSourceId: initialSnapshot.source.id,
+            marker: auditRows[0],
+          })
+        : parseDocumentReprocessedAuditMarkerFor({
+            expectedChunkSetFingerprint:
+              initialSnapshot.chunkSetFingerprint,
+            expectedContentSha256:
+              initialSnapshot.document.contentSha256,
+            expectedDocumentId: draft.entityKey,
+            expectedDraftId: draft.id,
+            expectedProcessingStatus:
+              initialSnapshot.document.processingStatus,
+            expectedSourceFingerprint:
+              initialSnapshot.sourceFingerprint,
+            expectedSourceId: initialSnapshot.source.id,
+            marker: auditRows[0],
+          });
+    if (!marker) {
+      throw new GovernanceConflictError(
+        `Document draft v${draft.version} canonical provenance is malformed or has drifted from the current document, source, chunk set, hash, or status.`,
+      );
+    }
+
+    if (action === "document_reprocessed") {
+      const supersededDraftIds =
+        "supersededDraftIds" in marker.afterData
+          ? marker.afterData.supersededDraftIds
+          : null;
+      const supersededDraftId =
+        Array.isArray(supersededDraftIds) &&
+        typeof supersededDraftIds[0] === "string"
+          ? supersededDraftIds[0]
+          : undefined;
+      const [immediatePredecessor] = supersededDraftId
+        ? await transaction
+            .select()
+            .from(dataGovernanceDrafts)
+            .where(
+              and(
+                eq(dataGovernanceDrafts.id, supersededDraftId),
+                eq(dataGovernanceDrafts.entityType, "document"),
+                eq(dataGovernanceDrafts.entityKey, draft.entityKey),
+                eq(dataGovernanceDrafts.version, draft.version - 1),
+              ),
+            )
+            .limit(1)
+            .for("update")
+        : [];
+      if (
+        !immediatePredecessor ||
+        immediatePredecessor.entityType !== "document" ||
+        immediatePredecessor.entityKey !== draft.entityKey ||
+        immediatePredecessor.version !== draft.version - 1 ||
+        immediatePredecessor.archivedAt === null ||
+        (immediatePredecessor.workflowStatus !== "draft" &&
+          immediatePredecessor.workflowStatus !== "reviewed")
+      ) {
+        throw new GovernanceConflictError(
+          `Document draft v${draft.version} reprocessing provenance does not identify its immediate archived predecessor.`,
+        );
+      }
+    }
+
+    // A failed document deliberately has no chunks. Its canonical v2 marker
+    // is the only provenance source for the three chunk-only metadata fields;
+    // every field reconstructable from the document/source rows remains
+    // checked below against the database snapshot.
+    const snapshot =
+      initialSnapshot.document.processingStatus === "failed"
+        ? await loadDocumentProvenanceExpectation(
+            transaction,
+            draft.entityKey,
+            marker.afterData.metadata,
+          )
+        : initialSnapshot;
+
+    const provenance = parseCanonicalDocumentProvenanceMarkerFor({
+      draftVersion: draft.version,
+      expectedChunkSetFingerprint: snapshot.chunkSetFingerprint,
+      expectedContentSha256: snapshot.document.contentSha256,
+      expectedDocumentId: draft.entityKey,
+      expectedDraftId: draft.id,
+      expectedMetadata: snapshot.metadata,
+      expectedProcessingStatus: snapshot.document.processingStatus,
+      expectedSourceFingerprint: snapshot.sourceFingerprint,
+      expectedSourceId: snapshot.source.id,
+      marker: auditRows[0],
+    });
+    if (!provenance) {
+      throw new GovernanceConflictError(
+        `Document draft v${draft.version} canonical provenance is malformed or has drifted from the current document, source, hash, status, or metadata.`,
+      );
+    }
+
+    return {
+      document: {
+        governanceStatus: snapshot.document.governanceStatus,
+        processingStatus: snapshot.document.processingStatus,
+      },
+      provenance,
+    };
+  };
+
   return {
     async archiveEntity(input: {
       actor: AdminPrincipal;
@@ -810,11 +1157,17 @@ export function createGovernanceRepository<
         const [batch] = await transaction
           .select()
           .from(marketImportBatches)
-          .where(eq(marketImportBatches.id, input.batchId))
+          .where(
+            and(
+              eq(marketImportBatches.id, input.batchId),
+              eq(marketImportBatches.createdBy, input.actor.email),
+              eq(marketImportBatches.status, "previewed"),
+            ),
+          )
           .limit(1)
           .for("update");
 
-        if (!batch || batch.status !== "previewed") {
+        if (!batch) {
           throw new GovernanceConflictError(
             "Import batch is missing or is no longer previewable.",
           );
@@ -830,7 +1183,13 @@ export function createGovernanceRepository<
               confirmedBy: input.actor.email,
               status: "rejected",
             })
-            .where(eq(marketImportBatches.id, input.batchId));
+            .where(
+              and(
+                eq(marketImportBatches.id, input.batchId),
+                eq(marketImportBatches.createdBy, input.actor.email),
+                eq(marketImportBatches.status, "previewed"),
+              ),
+            );
           return { createdDrafts: 0, status: "rejected" as const };
         }
 
@@ -900,11 +1259,377 @@ export function createGovernanceRepository<
             confirmedBy: input.actor.email,
             status: "committed",
           })
-          .where(eq(marketImportBatches.id, input.batchId));
+          .where(
+            and(
+              eq(marketImportBatches.id, input.batchId),
+              eq(marketImportBatches.createdBy, input.actor.email),
+              eq(marketImportBatches.status, "previewed"),
+            ),
+          );
 
         return {
           createdDrafts: drafts.length,
           status: "committed" as const,
+        };
+      });
+    },
+
+    async commitDocumentUpload(input: {
+      actor: AdminPrincipal;
+      changeReason: string;
+      prepared: PreparedKnowledgeDocumentUpload;
+    }) {
+      return database.transaction(async (transaction) => {
+        await assertGovernanceWriteAllowed(transaction);
+        const { metadata, outcome } = input.prepared;
+        const now = new Date();
+        const [source] = await transaction
+          .insert(dataSources)
+          .values({
+            demoNotice: metadata.isDemo ? metadata.demoNotice : null,
+            isDemo: metadata.isDemo,
+            publishedOn: metadata.publishedOn,
+            publisher: metadata.sourcePublisher,
+            sourceType: metadata.sourceType,
+            title: metadata.sourceTitle,
+            url: nullableString(metadata.sourceUrl),
+            verifiedAt: now,
+          })
+          .returning();
+        if (!source) {
+          throw new Error("Failed to create the document source.");
+        }
+
+        const [createdDocument] = await transaction
+          .insert(documents)
+          .values({
+            byteSize: input.prepared.byteSize,
+            canonicalUrl: nullableString(metadata.canonicalUrl),
+            contentSha256: input.prepared.contentSha256,
+            dataSourceId: source.id,
+            demoNotice: metadata.isDemo ? metadata.demoNotice : null,
+            governancePublishedAt: null,
+            governanceStatus: "draft",
+            isDemo: metadata.isDemo,
+            languageCode: metadata.languageCode,
+            licenseCode: metadata.licenseCode,
+            mimeType: input.prepared.mimeType,
+            originalFilename: input.prepared.originalFilename,
+            processedAt: now,
+            processingError: outcome.processingError,
+            processingStatus: outcome.processingStatus,
+            publishedOn: metadata.publishedOn,
+            redistributionAllowed: metadata.redistributionAllowed,
+            storagePath: input.prepared.storagePath,
+            title: metadata.title,
+            type: metadata.documentType,
+            validFrom: metadata.validFrom,
+            validTo: metadata.validTo,
+            verifiedAt: now,
+          })
+          .onConflictDoNothing({ target: documents.contentSha256 })
+          .returning({
+            archivedAt: documents.archivedAt,
+            dataSourceId: documents.dataSourceId,
+            governanceStatus: documents.governanceStatus,
+            id: documents.id,
+            processingStatus: documents.processingStatus,
+          });
+
+        let document = createdDocument
+          ? { ...createdDocument, sourceArchivedAt: null as Date | null }
+          : undefined;
+        let prelockedVersions:
+          | (typeof dataGovernanceDrafts.$inferSelect)[]
+          | null = null;
+        const created = Boolean(createdDocument);
+        if (!document) {
+          await transaction
+            .delete(dataSources)
+            .where(eq(dataSources.id, source.id));
+          const [identity] = await transaction
+            .select({ id: documents.id })
+            .from(documents)
+            .where(eq(documents.contentSha256, input.prepared.contentSha256))
+            .limit(1);
+          if (!identity) {
+            throw new Error(
+              "The duplicate document could not be loaded after a hash conflict.",
+            );
+          }
+          prelockedVersions = await transaction
+            .select()
+            .from(dataGovernanceDrafts)
+            .where(
+              and(
+                eq(dataGovernanceDrafts.entityType, "document"),
+                eq(dataGovernanceDrafts.entityKey, identity.id),
+              ),
+            )
+            .orderBy(asc(dataGovernanceDrafts.version))
+            .for("update");
+          [document] = await transaction
+            .select({
+              archivedAt: documents.archivedAt,
+              dataSourceId: documents.dataSourceId,
+              governanceStatus: documents.governanceStatus,
+              id: documents.id,
+              processingStatus: documents.processingStatus,
+              sourceArchivedAt: dataSources.archivedAt,
+            })
+            .from(documents)
+            .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+            .where(
+              and(
+                eq(documents.id, identity.id),
+                eq(documents.contentSha256, input.prepared.contentSha256),
+              ),
+            )
+            .limit(1)
+            .for("update");
+          if (!document) {
+            throw new Error(
+              "The duplicate document could not be loaded after a hash conflict.",
+            );
+          }
+        } else if (outcome.processingStatus === "ready") {
+          for (const batch of documentChunkInsertBatches(document.id, outcome.chunks)) {
+            await transaction.insert(documentChunks).values(batch);
+          }
+        }
+
+        const findActiveDraft = async () => {
+          const rows = await transaction
+            .select()
+            .from(dataGovernanceDrafts)
+            .where(
+              and(
+                eq(dataGovernanceDrafts.entityType, "document"),
+                eq(dataGovernanceDrafts.entityKey, document!.id),
+                inArray(dataGovernanceDrafts.workflowStatus, [
+                  "draft",
+                  "reviewed",
+                ]),
+                isNull(dataGovernanceDrafts.archivedAt),
+              ),
+            )
+            .orderBy(desc(dataGovernanceDrafts.version))
+            .limit(1);
+          return rows[0] ?? null;
+        };
+
+        let draft = await findActiveDraft();
+        let draftCreated = false;
+        if (
+          !draft &&
+          document.governanceStatus === "draft" &&
+          document.archivedAt === null &&
+          document.sourceArchivedAt === null &&
+          (document.processingStatus === "ready" ||
+            document.processingStatus === "failed")
+        ) {
+          const versions =
+            prelockedVersions ??
+            (await transaction
+              .select()
+              .from(dataGovernanceDrafts)
+              .where(
+                and(
+                  eq(dataGovernanceDrafts.entityType, "document"),
+                  eq(dataGovernanceDrafts.entityKey, document.id),
+                ),
+              )
+              .orderBy(asc(dataGovernanceDrafts.version))
+              .for("update"));
+          const nextVersion = (versions.at(-1)?.version ?? 0) + 1;
+          if (versions.length !== 0 || nextVersion !== 1) {
+            throw new GovernanceConflictError(
+              "A document with governance history but no active draft cannot be repaired by duplicate upload.",
+            );
+          }
+          const [insertedDraft] = await transaction
+            .insert(dataGovernanceDrafts)
+            .values({
+              changeReason: input.changeReason,
+              createdBy: input.actor.email,
+              entityKey: document.id,
+              entityType: "document",
+              payload: { documentId: document.id },
+              version: nextVersion,
+            })
+            .onConflictDoNothing()
+            .returning();
+          draft = insertedDraft ?? (await findActiveDraft());
+          if (!draft) {
+            throw new GovernanceConflictError(
+              "A concurrent document draft could not be loaded.",
+            );
+          }
+          if (insertedDraft) {
+            draftCreated = true;
+            const initialProvenance =
+              await loadDocumentProvenanceExpectation(
+                transaction,
+                document.id,
+              );
+            let provenanceMetadata = created
+              ? normalizeDocumentImportMetadataForProvenance(metadata)
+              : null;
+            if (!created && document.processingStatus === "ready") {
+              provenanceMetadata = initialProvenance.metadata;
+            }
+            if (!created && document.processingStatus === "failed") {
+              const auditRows = await transaction
+                .select({
+                  action: dataChangeLogs.action,
+                  afterData: dataChangeLogs.afterData,
+                  draftId: dataChangeLogs.draftId,
+                  entityKey: dataChangeLogs.entityKey,
+                  entityType: dataChangeLogs.entityType,
+                })
+                .from(dataChangeLogs)
+                .innerJoin(
+                  dataGovernanceDrafts,
+                  eq(dataChangeLogs.draftId, dataGovernanceDrafts.id),
+                )
+                .where(
+                  and(
+                    eq(dataChangeLogs.entityType, "document"),
+                    eq(dataChangeLogs.entityKey, document.id),
+                    eq(dataGovernanceDrafts.entityType, "document"),
+                    eq(dataGovernanceDrafts.entityKey, document.id),
+                    inArray(dataChangeLogs.action, [
+                      "draft_created",
+                      "document_reprocessed",
+                    ]),
+                  ),
+                )
+                .orderBy(
+                  desc(dataGovernanceDrafts.version),
+                  desc(dataChangeLogs.createdAt),
+                  desc(dataChangeLogs.id),
+                );
+              for (const audit of auditRows) {
+                if (!audit.draftId) continue;
+                const marker = {
+                  afterData: audit.afterData,
+                  draftId: audit.draftId,
+                  entityKey: audit.entityKey,
+                  entityType: audit.entityType,
+                };
+                const parsed =
+                  audit.action === "document_reprocessed"
+                    ? parseDocumentReprocessedAuditMarkerFor({
+                        expectedDocumentId: document.id,
+                        expectedDraftId: audit.draftId,
+                        expectedChunkSetFingerprint:
+                          initialProvenance.chunkSetFingerprint,
+                        expectedProcessingStatus: "failed",
+                        expectedSourceFingerprint:
+                          initialProvenance.sourceFingerprint,
+                        expectedSourceId: document.dataSourceId,
+                        marker,
+                      })
+                    : parseDocumentDraftCreatedAuditMarkerFor({
+                        expectedContentSha256:
+                          input.prepared.contentSha256,
+                        expectedDocumentId: document.id,
+                        expectedDraftId: audit.draftId,
+                        expectedChunkSetFingerprint:
+                          initialProvenance.chunkSetFingerprint,
+                        expectedProcessingStatus: "failed",
+                        expectedSourceFingerprint:
+                          initialProvenance.sourceFingerprint,
+                        expectedSourceId: document.dataSourceId,
+                        marker,
+                      });
+                if (parsed) {
+                  provenanceMetadata = parsed.afterData.metadata;
+                  break;
+                }
+              }
+              if (!provenanceMetadata) {
+                throw new GovernanceConflictError(
+                  "The failed duplicate document has no trustworthy metadata provenance and cannot be repaired automatically.",
+                );
+              }
+            }
+            if (!provenanceMetadata) {
+              throw new GovernanceConflictError(
+                "Document metadata provenance could not be established.",
+              );
+            }
+            const documentProvenance =
+              document.processingStatus === "failed"
+                ? await loadDocumentProvenanceExpectation(
+                    transaction,
+                    document.id,
+                    provenanceMetadata,
+                  )
+                : initialProvenance;
+            const draftCreatedAfterData =
+              documentDraftCreatedAuditAfterDataSchema.parse({
+                chunkSetFingerprint:
+                  documentProvenance.chunkSetFingerprint,
+                contentSha256: input.prepared.contentSha256,
+                documentId: document.id,
+                metadata: documentProvenance.metadata,
+                processingStatus: document.processingStatus,
+                provenanceVersion: 2,
+                sourceFingerprint:
+                  documentProvenance.sourceFingerprint,
+                sourceId: document.dataSourceId,
+              });
+            await transaction.insert(dataChangeLogs).values({
+              action: "draft_created",
+              actorEmail: input.actor.email,
+              actorRole: input.actor.role,
+              afterData: draftCreatedAfterData,
+              draftId: draft.id,
+              entityKey: document.id,
+              entityType: "document",
+              reason: input.changeReason,
+            });
+          }
+        }
+
+        const [summary] = await transaction
+          .select({
+            byteSize: documents.byteSize,
+            chunkCount: sql<number>`(
+              select count(*)::int
+              from ${documentChunks}
+              where ${documentChunks.documentId} = ${documents.id}
+            )`,
+            contentSha256: documents.contentSha256,
+            createdAt: documents.createdAt,
+            governanceStatus: documents.governanceStatus,
+            id: documents.id,
+            isDemo: documents.isDemo,
+            mimeType: documents.mimeType,
+            originalFilename: documents.originalFilename,
+            processedAt: documents.processedAt,
+            processingError: documents.processingError,
+            processingStatus: documents.processingStatus,
+            sourceTitle: dataSources.title,
+            storagePath: documents.storagePath,
+            title: documents.title,
+            type: documents.type,
+          })
+          .from(documents)
+          .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+          .where(eq(documents.id, document.id))
+          .limit(1);
+        if (!summary) {
+          throw new Error("Committed document summary was not returned.");
+        }
+
+        return {
+          created,
+          documentId: document.id,
+          draft,
+          draftCreated,
+          summary,
         };
       });
     },
@@ -932,6 +1657,18 @@ export function createGovernanceRepository<
           .orderBy(asc(dataGovernanceDrafts.version))
           .for("update");
         const nextVersion = (existingVersions.at(-1)?.version ?? 0) + 1;
+        const documentProvenance =
+          input.entityType === "document"
+            ? await loadDocumentProvenanceExpectation(
+                transaction,
+                input.entityKey,
+              )
+            : null;
+        if (documentProvenance && nextVersion !== 1) {
+          throw new GovernanceConflictError(
+            "Document revisions after v1 must be created by governed reprocessing.",
+          );
+        }
         let draft: typeof dataGovernanceDrafts.$inferSelect | undefined;
         try {
           [draft] = await transaction
@@ -962,7 +1699,22 @@ export function createGovernanceRepository<
           action: "draft_created",
           actorEmail: input.actor.email,
           actorRole: input.actor.role,
-          afterData: input.payload,
+          afterData: documentProvenance
+            ? documentDraftCreatedAuditAfterDataSchema.parse({
+                chunkSetFingerprint:
+                  documentProvenance.chunkSetFingerprint,
+                contentSha256:
+                  documentProvenance.document.contentSha256,
+                documentId: input.entityKey,
+                metadata: documentProvenance.metadata,
+                processingStatus:
+                  documentProvenance.document.processingStatus,
+                provenanceVersion: 2,
+                sourceFingerprint:
+                  documentProvenance.sourceFingerprint,
+                sourceId: documentProvenance.source.id,
+              })
+            : input.payload,
           draftId: draft.id,
           entityKey: input.entityKey,
           entityType: input.entityType,
@@ -1049,429 +1801,6 @@ export function createGovernanceRepository<
         .limit(limit);
     },
 
-    async listDrafts(status?: GovernanceWorkflowStatus) {
-      return database
-        .select()
-        .from(dataGovernanceDrafts)
-        .where(
-          status
-            ? and(
-                eq(dataGovernanceDrafts.workflowStatus, status),
-                isNull(dataGovernanceDrafts.archivedAt),
-              )
-            : isNull(dataGovernanceDrafts.archivedAt),
-        )
-        .orderBy(desc(dataGovernanceDrafts.updatedAt))
-        .limit(100);
-    },
-
-    async getDraftReviewContexts(drafts: GovernanceReviewDraft[]) {
-      if (drafts.length === 0) {
-        return [];
-      }
-
-      const referencesByDraftId = new Map(
-        drafts.map((draft) => [
-          draft.id,
-          collectGovernanceReviewReferences(draft.payload),
-        ]),
-      );
-      const references = Array.from(referencesByDraftId.values()).flat();
-      const uniqueValues = (values: string[]) => Array.from(new Set(values));
-      const referencedValues = (kind: GovernanceReviewDependencyKind) =>
-        references
-          .filter((reference) => reference.kind === kind)
-          .map((reference) => reference.value);
-      const targetValues = (entityType: GovernedEntityType) =>
-        drafts
-          .filter((draft) => draft.entityType === entityType)
-          .map((draft) => draft.entityKey);
-      const sourceIds = uniqueValues([
-        ...referencedValues("source"),
-        ...targetValues("data_source"),
-      ]);
-      const countryIds = uniqueValues([
-        ...referencedValues("country"),
-        ...targetValues("country"),
-      ]);
-      const jurisdictionIds = uniqueValues([
-        ...referencedValues("jurisdiction"),
-        ...targetValues("jurisdiction"),
-      ]);
-      const productIds = uniqueValues([
-        ...referencedValues("product"),
-        ...targetValues("product"),
-      ]);
-      const regulationIds = uniqueValues([
-        ...referencedValues("regulation"),
-        ...targetValues("regulation"),
-      ]);
-      const certificationIds = uniqueValues(
-        targetValues("product_certification"),
-      );
-      const marketMetricIds = uniqueValues(targetValues("market_metric"));
-      const documentIds = uniqueValues(targetValues("document"));
-
-      const identityPredicates = Array.from(
-        new Map(
-          drafts.map((draft) => [
-            governanceEntityIdentity(draft.entityType, draft.entityKey),
-            and(
-              eq(dataGovernanceDrafts.entityType, draft.entityType),
-              eq(dataGovernanceDrafts.entityKey, draft.entityKey),
-            ),
-          ]),
-        ).values(),
-      );
-
-      const [
-        publishedDrafts,
-        sourceRows,
-        countryRows,
-        jurisdictionRows,
-        productRows,
-        regulationRows,
-        certificationRows,
-        marketMetricRows,
-        documentRows,
-      ] = await Promise.all([
-        database
-          .select()
-          .from(dataGovernanceDrafts)
-          .where(
-            and(
-              eq(dataGovernanceDrafts.workflowStatus, "published"),
-              isNull(dataGovernanceDrafts.archivedAt),
-              or(...identityPredicates),
-            ),
-          )
-          .orderBy(desc(dataGovernanceDrafts.version)),
-        sourceIds.length > 0
-          ? database
-              .select({
-                archivedAt: dataSources.archivedAt,
-                id: dataSources.id,
-                isDemo: dataSources.isDemo,
-                label: dataSources.title,
-                url: dataSources.url,
-                verifiedAt: dataSources.verifiedAt,
-              })
-              .from(dataSources)
-              .where(inArray(dataSources.id, sourceIds))
-          : Promise.resolve([]),
-        countryIds.length > 0
-          ? database
-              .select({
-                archivedAt: countries.archivedAt,
-                id: countries.iso3,
-                isDemo: countries.isDemo,
-                label: countries.nameEn,
-                sourceArchivedAt: dataSources.archivedAt,
-                verifiedAt: countries.verifiedAt,
-              })
-              .from(countries)
-              .innerJoin(dataSources, eq(countries.dataSourceId, dataSources.id))
-              .where(inArray(countries.iso3, countryIds))
-          : Promise.resolve([]),
-        jurisdictionIds.length > 0
-          ? database
-              .select({
-                archivedAt: jurisdictions.archivedAt,
-                id: jurisdictions.id,
-                isDemo: jurisdictions.isDemo,
-                label: jurisdictions.name,
-                sourceArchivedAt: dataSources.archivedAt,
-                url: jurisdictions.websiteUrl,
-                verifiedAt: jurisdictions.verifiedAt,
-              })
-              .from(jurisdictions)
-              .innerJoin(
-                dataSources,
-                eq(jurisdictions.dataSourceId, dataSources.id),
-              )
-              .where(inArray(jurisdictions.id, jurisdictionIds))
-          : Promise.resolve([]),
-        productIds.length > 0
-          ? database
-              .select({
-                archivedAt: products.archivedAt,
-                id: products.id,
-                isDemo: products.isDemo,
-                label: products.name,
-                sourceArchivedAt: dataSources.archivedAt,
-                verifiedAt: products.verifiedAt,
-              })
-              .from(products)
-              .innerJoin(dataSources, eq(products.dataSourceId, dataSources.id))
-              .where(inArray(products.id, productIds))
-          : Promise.resolve([]),
-        regulationIds.length > 0
-          ? database
-              .select({
-                archivedAt: regulations.archivedAt,
-                id: regulations.id,
-                isDemo: regulations.isDemo,
-                label: regulations.canonicalName,
-                sourceArchivedAt: dataSources.archivedAt,
-                verifiedAt: regulations.verifiedAt,
-              })
-              .from(regulations)
-              .innerJoin(
-                dataSources,
-                eq(regulations.dataSourceId, dataSources.id),
-              )
-              .where(inArray(regulations.id, regulationIds))
-          : Promise.resolve([]),
-        certificationIds.length > 0
-          ? database
-              .select({
-                archivedAt: productCertifications.archivedAt,
-                id: productCertifications.id,
-                sourceArchivedAt: dataSources.archivedAt,
-              })
-              .from(productCertifications)
-              .innerJoin(
-                dataSources,
-                eq(productCertifications.dataSourceId, dataSources.id),
-              )
-              .where(inArray(productCertifications.id, certificationIds))
-          : Promise.resolve([]),
-        marketMetricIds.length > 0
-          ? database
-              .select({
-                archivedAt: marketMetrics.archivedAt,
-                id: marketMetrics.id,
-                sourceArchivedAt: dataSources.archivedAt,
-              })
-              .from(marketMetrics)
-              .innerJoin(
-                dataSources,
-                eq(marketMetrics.dataSourceId, dataSources.id),
-              )
-              .where(inArray(marketMetrics.id, marketMetricIds))
-          : Promise.resolve([]),
-        documentIds.length > 0
-          ? database
-              .select({
-                archivedAt: documents.archivedAt,
-                governanceStatus: documents.governanceStatus,
-                id: documents.id,
-                sourceArchivedAt: dataSources.archivedAt,
-              })
-              .from(documents)
-              .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
-              .where(inArray(documents.id, documentIds))
-          : Promise.resolve([]),
-      ]);
-
-      const publishedBaselineByIdentity = new Map<
-        string,
-        (typeof publishedDrafts)[number]
-      >();
-      for (const publishedDraft of publishedDrafts) {
-        const identity = governanceEntityIdentity(
-          publishedDraft.entityType,
-          publishedDraft.entityKey,
-        );
-        if (!publishedBaselineByIdentity.has(identity)) {
-          publishedBaselineByIdentity.set(identity, publishedDraft);
-        }
-      }
-
-      type RootState = "active" | "archived" | "unpublished";
-      const rootStateByIdentity = new Map<string, RootState>();
-      const dependencyByIdentity = new Map<
-        string,
-        {
-          isDemo: boolean;
-          label: string;
-          state: "active" | "archived";
-          url: string | null;
-          verifiedAt: Date;
-        }
-      >();
-      const rowState = (
-        archivedAt: Date | null,
-        sourceArchivedAt?: Date | null,
-      ): "active" | "archived" =>
-        archivedAt || sourceArchivedAt ? "archived" : "active";
-
-      for (const row of sourceRows) {
-        const state = rowState(row.archivedAt);
-        rootStateByIdentity.set(
-          governanceEntityIdentity("data_source", row.id),
-          state,
-        );
-        dependencyByIdentity.set(`source:${row.id}`, {
-          isDemo: row.isDemo,
-          label: row.label,
-          state,
-          url: row.url,
-          verifiedAt: row.verifiedAt,
-        });
-      }
-      for (const row of countryRows) {
-        const state = rowState(row.archivedAt, row.sourceArchivedAt);
-        rootStateByIdentity.set(
-          governanceEntityIdentity("country", row.id),
-          state,
-        );
-        dependencyByIdentity.set(`country:${row.id}`, {
-          isDemo: row.isDemo,
-          label: row.label,
-          state,
-          url: null,
-          verifiedAt: row.verifiedAt,
-        });
-      }
-      for (const row of jurisdictionRows) {
-        const state = rowState(row.archivedAt, row.sourceArchivedAt);
-        rootStateByIdentity.set(
-          governanceEntityIdentity("jurisdiction", row.id),
-          state,
-        );
-        dependencyByIdentity.set(`jurisdiction:${row.id}`, {
-          isDemo: row.isDemo,
-          label: row.label,
-          state,
-          url: row.url,
-          verifiedAt: row.verifiedAt,
-        });
-      }
-      for (const row of productRows) {
-        const state = rowState(row.archivedAt, row.sourceArchivedAt);
-        rootStateByIdentity.set(
-          governanceEntityIdentity("product", row.id),
-          state,
-        );
-        dependencyByIdentity.set(`product:${row.id}`, {
-          isDemo: row.isDemo,
-          label: row.label,
-          state,
-          url: null,
-          verifiedAt: row.verifiedAt,
-        });
-      }
-      for (const row of regulationRows) {
-        const state = rowState(row.archivedAt, row.sourceArchivedAt);
-        rootStateByIdentity.set(
-          governanceEntityIdentity("regulation", row.id),
-          state,
-        );
-        dependencyByIdentity.set(`regulation:${row.id}`, {
-          isDemo: row.isDemo,
-          label: row.label,
-          state,
-          url: null,
-          verifiedAt: row.verifiedAt,
-        });
-      }
-      for (const row of certificationRows) {
-        rootStateByIdentity.set(
-          governanceEntityIdentity("product_certification", row.id),
-          rowState(row.archivedAt, row.sourceArchivedAt),
-        );
-      }
-      for (const row of marketMetricRows) {
-        rootStateByIdentity.set(
-          governanceEntityIdentity("market_metric", row.id),
-          rowState(row.archivedAt, row.sourceArchivedAt),
-        );
-      }
-      for (const row of documentRows) {
-        rootStateByIdentity.set(
-          governanceEntityIdentity("document", row.id),
-          row.archivedAt || row.sourceArchivedAt
-            ? "archived"
-            : row.governanceStatus === "published"
-              ? "active"
-              : "unpublished",
-        );
-      }
-
-      return drafts.map((draft) => {
-        const identity = governanceEntityIdentity(
-          draft.entityType,
-          draft.entityKey,
-        );
-        const publishedBaseline =
-          publishedBaselineByIdentity.get(identity) ?? null;
-        const rootState = rootStateByIdentity.get(identity);
-        const baselineStatus = publishedBaseline
-          ? rootState === "active"
-            ? ("active" as const)
-            : rootState === "archived"
-              ? ("archived" as const)
-              : ("missing" as const)
-          : draft.version === 1
-            ? rootState === "archived"
-              ? ("archived" as const)
-              : ("first_revision" as const)
-            : ("missing" as const);
-        const dependencies = (referencesByDraftId.get(draft.id) ?? []).map(
-          (reference) => {
-            const resolved = dependencyByIdentity.get(
-              `${reference.kind}:${reference.value}`,
-            );
-            return {
-              isDemo: resolved?.isDemo ?? null,
-              kind: reference.kind,
-              label: resolved?.label ?? null,
-              path: reference.path,
-              state: resolved?.state ?? ("missing" as const),
-              url: resolved?.url ?? null,
-              value: reference.value,
-              verifiedAt: resolved?.verifiedAt ?? null,
-            };
-          },
-        );
-        const blockingReasons: string[] = [];
-
-        if (baselineStatus === "missing") {
-          blockingReasons.push(
-            "缺少可核验的当前发布基线；为避免覆盖未知正式数据，当前禁止发布。",
-          );
-        } else if (baselineStatus === "archived") {
-          blockingReasons.push(
-            "该实体的最近发布版本已归档；恢复或重新发布前需要单独核验。",
-          );
-        }
-        if (
-          publishedBaseline &&
-          publishedBaseline.version > draft.version
-        ) {
-          blockingReasons.push(
-            `已有更新的 v${publishedBaseline.version} 发布版本，不能用 v${draft.version} 覆盖。`,
-          );
-        }
-        const unavailableDependencies = dependencies.filter(
-          ({ state }) => state !== "active",
-        );
-        if (unavailableDependencies.length > 0) {
-          blockingReasons.push(
-            `存在 ${unavailableDependencies.length} 个缺失或已归档的来源/依赖。`,
-          );
-        }
-
-        return {
-          baselineStatus,
-          blockingReasons,
-          dependencies,
-          draftId: draft.id,
-          publishedBaseline,
-          publishReady: blockingReasons.length === 0,
-        };
-      });
-    },
-
-    async listImportBatches() {
-      return database
-        .select()
-        .from(marketImportBatches)
-        .orderBy(desc(marketImportBatches.createdAt))
-        .limit(50);
-    },
-
     async publishDraft(input: {
       actor: AdminPrincipal;
       draftId: string;
@@ -1538,6 +1867,15 @@ export function createGovernanceRepository<
           entityType: draft.entityType,
           payload: draft.payload,
         });
+        const documentProvenance =
+          draft.entityType === "document" && draft.version > 1
+            ? (
+                await requireCanonicalDocumentProvenance(
+                  transaction,
+                  draft,
+                )
+              ).provenance
+            : null;
 
         type FormalEntityState =
           | "active"
@@ -1655,6 +1993,7 @@ export function createGovernanceRepository<
           const [row] = await transaction
             .select({
               archivedAt: documents.archivedAt,
+              dataSourceId: documents.dataSourceId,
               governanceStatus: documents.governanceStatus,
               sourceArchivedAt: dataSources.archivedAt,
             })
@@ -1672,19 +2011,57 @@ export function createGovernanceRepository<
                 : "unpublished";
         }
 
-        if (draft.version === 1) {
+        const hasLowerPublishedBaseline = entityDrafts.some(
+          (candidate) =>
+            candidate.version < draft.version &&
+            candidate.workflowStatus === "published" &&
+            !candidate.archivedAt,
+        );
+        let hasReprocessingAuditMarker = false;
+        if (
+          draft.version > 1 &&
+          draft.entityType === "document" &&
+          formalEntityState === "unpublished" &&
+          !hasLowerPublishedBaseline
+        ) {
+          const parsedMarker =
+            documentProvenance?.action === "document_reprocessed"
+              ? documentProvenance.marker
+              : null;
+          const supersededDraftId =
+            parsedMarker?.afterData.supersededDraftIds[0];
+          hasReprocessingAuditMarker = Boolean(
+            supersededDraftId &&
+              entityDrafts.some(
+                (candidate) =>
+                  candidate.id === supersededDraftId &&
+                  candidate.entityType === "document" &&
+                  candidate.entityKey === draft.entityKey &&
+                  candidate.version === draft.version - 1 &&
+                  candidate.archivedAt !== null &&
+                  (candidate.workflowStatus === "draft" ||
+                    candidate.workflowStatus === "reviewed"),
+              ),
+          );
+        }
+        const isReprocessedDocumentFirstPublication =
+          draft.entityType === "document" &&
+          formalEntityState === "unpublished" &&
+          !hasLowerPublishedBaseline &&
+          hasReprocessingAuditMarker &&
+          !entityDrafts.some(
+            (candidate) =>
+              candidate.version < draft.version &&
+              candidate.archivedAt === null,
+          );
+
+        if (draft.version === 1 || isReprocessedDocumentFirstPublication) {
           if (formalEntityState === "archived") {
             throw new GovernanceConflictError(
               "A first governance revision cannot revive an archived formal entity.",
             );
           }
         } else {
-          const hasLowerPublishedBaseline = entityDrafts.some(
-            (candidate) =>
-              candidate.version < draft.version &&
-              candidate.workflowStatus === "published" &&
-              !candidate.archivedAt,
-          );
           if (!hasLowerPublishedBaseline) {
             throw new GovernanceConflictError(
               `Revision v${draft.version} requires a lower published governance baseline.`,
@@ -1695,6 +2072,9 @@ export function createGovernanceRepository<
               `Revision v${draft.version} requires an active formal entity; missing, archived, or unpublished entities cannot be recreated by an update.`,
             );
           }
+        }
+        if (draft.entityType === "document" && draft.version === 1) {
+          await requireCanonicalDocumentProvenance(transaction, draft);
         }
 
         const now = new Date();
@@ -1936,166 +2316,6 @@ export function createGovernanceRepository<
             );
           }
         };
-        const requireDemoSourceHasNoNonDemoDependents = async (
-          sourceId: string,
-        ) => {
-          const dependentLabels: string[] = [];
-          if (
-            await hasRows(
-              transaction
-                .select({ id: countries.iso3 })
-                .from(countries)
-                .where(
-                  and(
-                    eq(countries.dataSourceId, sourceId),
-                    eq(countries.isDemo, false),
-                    isNull(countries.archivedAt),
-                  ),
-                )
-                .limit(1),
-            )
-          ) {
-            dependentLabels.push("countries");
-          }
-          if (
-            await hasRows(
-              transaction
-                .select({ id: jurisdictions.id })
-                .from(jurisdictions)
-                .where(
-                  and(
-                    eq(jurisdictions.dataSourceId, sourceId),
-                    eq(jurisdictions.isDemo, false),
-                    isNull(jurisdictions.archivedAt),
-                  ),
-                )
-                .limit(1),
-            )
-          ) {
-            dependentLabels.push("jurisdictions");
-          }
-          if (
-            await hasRows(
-              transaction
-                .select({ id: countryJurisdictions.countryIso3 })
-                .from(countryJurisdictions)
-                .where(
-                  and(
-                    eq(countryJurisdictions.dataSourceId, sourceId),
-                    eq(countryJurisdictions.isDemo, false),
-                    isNull(countryJurisdictions.archivedAt),
-                  ),
-                )
-                .limit(1),
-            )
-          ) {
-            dependentLabels.push("jurisdiction memberships");
-          }
-          if (
-            await hasRows(
-              transaction
-                .select({ id: regulations.id })
-                .from(regulations)
-                .where(
-                  and(
-                    eq(regulations.dataSourceId, sourceId),
-                    eq(regulations.isDemo, false),
-                    isNull(regulations.archivedAt),
-                  ),
-                )
-                .limit(1),
-            )
-          ) {
-            dependentLabels.push("regulations");
-          }
-          if (
-            await hasRows(
-              transaction
-                .select({ id: regulationLimits.id })
-                .from(regulationLimits)
-                .where(
-                  and(
-                    eq(regulationLimits.dataSourceId, sourceId),
-                    eq(regulationLimits.isDemo, false),
-                    isNull(regulationLimits.archivedAt),
-                  ),
-                )
-                .limit(1),
-            )
-          ) {
-            dependentLabels.push("regulation limits");
-          }
-          if (
-            await hasRows(
-              transaction
-                .select({ id: products.id })
-                .from(products)
-                .where(
-                  and(
-                    eq(products.dataSourceId, sourceId),
-                    eq(products.isDemo, false),
-                    isNull(products.archivedAt),
-                  ),
-                )
-                .limit(1),
-            )
-          ) {
-            dependentLabels.push("products");
-          }
-          if (
-            await hasRows(
-              transaction
-                .select({ id: productCertifications.id })
-                .from(productCertifications)
-                .where(
-                  and(
-                    eq(productCertifications.dataSourceId, sourceId),
-                    eq(productCertifications.isDemo, false),
-                    isNull(productCertifications.archivedAt),
-                  ),
-                )
-                .limit(1),
-            )
-          ) {
-            dependentLabels.push("product certifications");
-          }
-          if (
-            await hasRows(
-              transaction
-                .select({ id: marketMetrics.id })
-                .from(marketMetrics)
-                .where(
-                  and(
-                    eq(marketMetrics.dataSourceId, sourceId),
-                    eq(marketMetrics.isDemo, false),
-                    isNull(marketMetrics.archivedAt),
-                  ),
-                )
-                .limit(1),
-            )
-          ) {
-            dependentLabels.push("market metrics");
-          }
-          if (
-            await hasRows(
-              transaction
-                .select({ id: documents.id })
-                .from(documents)
-                .where(
-                  and(
-                    eq(documents.dataSourceId, sourceId),
-                    eq(documents.isDemo, false),
-                    eq(documents.governanceStatus, "published"),
-                    isNull(documents.archivedAt),
-                  ),
-                )
-                .limit(1),
-            )
-          ) {
-            dependentLabels.push("documents");
-          }
-          requireNoNonDemoDependents("source", dependentLabels);
-        };
         const requireDemoCountryHasNoNonDemoDependents = async (
           countryIso3: string,
         ) => {
@@ -2263,44 +2483,18 @@ export function createGovernanceRepository<
         } else if (draft.entityType === "data_source") {
           const payload = dataSourceDraftPayloadSchema.parse(draft.payload);
           const id = requiredId(payload.id, draft.entityType);
-          const [before] = await transaction
-            .select()
-            .from(dataSources)
-            .where(eq(dataSources.id, id))
-            .limit(1)
-            .for("update");
-          if (payload.isDemo) {
-            await requireDemoSourceHasNoNonDemoDependents(id);
-          }
-          beforeData = before ?? null;
-          await transaction
-            .insert(dataSources)
-            .values({
-              ...payload,
-              archivedAt: null,
-              demoNotice: payload.demoNotice ?? null,
-              id,
-              publishedOn: payload.publishedOn ?? null,
-              publisher: payload.publisher ?? null,
-              url: payload.url ?? null,
-              verifiedAt: new Date(payload.verifiedAt),
-            })
-            .onConflictDoUpdate({
-              set: {
-                archivedAt: null,
-                demoNotice: payload.demoNotice ?? null,
-                isDemo: payload.isDemo,
-                publishedOn: payload.publishedOn ?? null,
-                publisher: payload.publisher ?? null,
-                sourceType: payload.sourceType,
-                title: payload.title,
-                updatedAt: now,
-                url: payload.url ?? null,
-                verifiedAt: new Date(payload.verifiedAt),
-              },
-              target: dataSources.id,
+          const { beforeData: sourceBeforeData, persistedSource } =
+            await sourceWrites.applyReviewedDraft(transaction, {
+              now,
+              payload,
+              sourceId: id,
             });
-          afterData = { ...payload, id };
+          beforeData = sourceBeforeData;
+          afterData = {
+            ...payload,
+            id,
+            verifiedAt: persistedSource.verifiedAt,
+          };
         } else if (draft.entityType === "regulation") {
           const payload = regulationDraftPayloadSchema.parse(draft.payload);
           await requirePublishableSources([
@@ -2950,27 +3144,478 @@ export function createGovernanceRepository<
       });
     },
 
-    async recordOperationalChange(input: {
-      action: "document_reprocessed";
+    async commitDocumentReprocessing(input: {
       actor: AdminPrincipal;
-      afterData: GovernanceJson;
-      beforeData?: GovernanceJson | null;
-      entityKey: string;
-      entityType: "document";
+      prepared: PreparedKnowledgeDocumentReprocessing;
       reason: string;
     }) {
-      await database.transaction(async (transaction) => {
+      return database.transaction(async (transaction) => {
         await assertGovernanceWriteAllowed(transaction);
+        const lockedDrafts = await lockDocumentDraftChain(
+          transaction,
+          input.prepared.documentId,
+        );
+        const preparedDraft = lockedDrafts.find(
+          (candidate) =>
+            candidate.id === input.prepared.expected.activeDraftId &&
+            candidate.entityType === "document" &&
+            candidate.entityKey === input.prepared.documentId,
+        );
+        if (
+          !preparedDraft ||
+          preparedDraft.createdBy !==
+            input.prepared.expected.activeDraftCreatedBy
+        ) {
+          throw new GovernanceConflictError(
+            documentReprocessingDraftConflictMessage,
+          );
+        }
+        assertDocumentReprocessingDraftAccess({
+          actor: input.actor,
+          createdBy: preparedDraft.createdBy,
+        });
+        const before = await loadDocumentProvenanceExpectation(
+          transaction,
+          input.prepared.documentId,
+        );
+        if (before.document.governanceStatus !== "draft") {
+          throw new GovernanceConflictError(
+            "Only an active ready/failed draft document can be reprocessed.",
+          );
+        }
+
+        const [latestReprocessing] = await transaction
+          .select({
+            afterData: dataChangeLogs.afterData,
+            draftId: dataChangeLogs.draftId,
+            entityKey: dataChangeLogs.entityKey,
+            entityType: dataChangeLogs.entityType,
+          })
+          .from(dataChangeLogs)
+          .innerJoin(
+            dataGovernanceDrafts,
+            eq(dataChangeLogs.draftId, dataGovernanceDrafts.id),
+          )
+          .where(
+            and(
+              eq(dataChangeLogs.action, "document_reprocessed"),
+              eq(dataChangeLogs.entityType, "document"),
+              eq(dataChangeLogs.entityKey, input.prepared.documentId),
+              eq(dataGovernanceDrafts.entityType, "document"),
+              eq(
+                dataGovernanceDrafts.entityKey,
+                input.prepared.documentId,
+              ),
+            ),
+          )
+          .orderBy(
+            desc(dataGovernanceDrafts.version),
+            desc(dataChangeLogs.createdAt),
+            desc(dataChangeLogs.id),
+          )
+          .limit(1);
+        const latestMarker = latestReprocessing?.draftId
+          ? parseDocumentReprocessedAuditMarkerFor({
+              expectedDocumentId: input.prepared.documentId,
+              expectedDraftId: latestReprocessing.draftId,
+              expectedSourceId: before.document.dataSourceId,
+              marker: latestReprocessing,
+            })
+          : null;
+        if (
+          latestMarker?.afterData.operationFingerprint ===
+            input.prepared.operationFingerprint
+        ) {
+          // Under PostgreSQL READ COMMITTED, a SELECT FOR UPDATE that waited
+          // for the superseded draft can return that updated row without
+          // seeing the marker draft committed while it was waiting. Reload
+          // and lock the complete chain before deciding whether this is an
+          // idempotent response-loss retry.
+          const replayDrafts = await lockDocumentDraftChain(
+            transaction,
+            input.prepared.documentId,
+          );
+          const matchingMarkerDraft = replayDrafts.find(
+            (candidate) =>
+              candidate.id === latestMarker.draftId &&
+              candidate.entityType === "document" &&
+              candidate.entityKey === latestMarker.afterData.documentId,
+          );
+          const activeReplayDrafts = replayDrafts.filter(
+            (candidate) =>
+              candidate.archivedAt === null &&
+              (candidate.workflowStatus === "draft" ||
+                candidate.workflowStatus === "reviewed"),
+          );
+          if (
+            !matchingMarkerDraft ||
+            activeReplayDrafts.length !== 1 ||
+            activeReplayDrafts[0]?.id !== matchingMarkerDraft.id
+          ) {
+            throw new GovernanceConflictError(
+              documentReprocessingDraftConflictMessage,
+            );
+          }
+          assertDocumentReprocessingDraftAccess({
+            actor: input.actor,
+            createdBy: matchingMarkerDraft.createdBy,
+          });
+          const currentProvenance =
+            await requireCanonicalDocumentProvenance(
+              transaction,
+              matchingMarkerDraft,
+            );
+          if (
+            currentProvenance.provenance.action !==
+              "document_reprocessed" ||
+            currentProvenance.provenance.marker.afterData
+              .operationFingerprint !==
+              input.prepared.operationFingerprint ||
+            JSON.stringify(
+              currentProvenance.provenance.marker.afterData.metadata,
+            ) !==
+              JSON.stringify(
+                normalizeDocumentImportMetadataForProvenance(
+                  input.prepared.metadata,
+                ),
+              )
+          ) {
+            throw new GovernanceConflictError(
+              "The reprocessed document no longer matches its idempotency marker; retry from the latest version.",
+            );
+          }
+          const replayProcessingStatus =
+            currentProvenance.document.processingStatus;
+          if (
+            replayProcessingStatus !== "ready" &&
+            replayProcessingStatus !== "failed"
+          ) {
+            throw new GovernanceConflictError(
+              "The reprocessed document no longer has a replayable processing status.",
+            );
+          }
+          const [summary] = await transaction
+            .select({
+              byteSize: documents.byteSize,
+              chunkCount: sql<number>`(
+                select count(*)::int
+                from ${documentChunks}
+                where ${documentChunks.documentId} = ${documents.id}
+              )`,
+              contentSha256: documents.contentSha256,
+              createdAt: documents.createdAt,
+              governanceStatus: documents.governanceStatus,
+              id: documents.id,
+              isDemo: documents.isDemo,
+              mimeType: documents.mimeType,
+              originalFilename: documents.originalFilename,
+              processedAt: documents.processedAt,
+              processingError: documents.processingError,
+              processingStatus: documents.processingStatus,
+              sourceTitle: dataSources.title,
+              storagePath: documents.storagePath,
+              title: documents.title,
+              type: documents.type,
+            })
+            .from(documents)
+            .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+            .where(eq(documents.id, input.prepared.documentId))
+            .limit(1);
+          if (!summary) {
+            throw new Error("Reprocessed document summary was not returned.");
+          }
+          return {
+            documentId: input.prepared.documentId,
+            processingStatus: replayProcessingStatus,
+            summary,
+          };
+        }
+
+        if (
+          before.document.contentSha256 !==
+            input.prepared.expected.contentSha256 ||
+          before.document.dataSourceId !==
+            input.prepared.expected.dataSourceId ||
+          before.document.processingStatus !==
+            input.prepared.expected.processingStatus ||
+          before.sourceFingerprint !==
+            input.prepared.expected.sourceFingerprint ||
+          before.chunkSetFingerprint !==
+            input.prepared.expected.chunkSetFingerprint
+        ) {
+          throw new GovernanceConflictError(
+            "The document changed while reprocessing was prepared; retry from the latest version.",
+          );
+        }
+        const activeDraftsBeforeCommit = lockedDrafts.filter(
+          (draft) =>
+            draft.archivedAt === null &&
+            (draft.workflowStatus === "draft" ||
+              draft.workflowStatus === "reviewed"),
+        );
+        if (
+          activeDraftsBeforeCommit.length !== 1 ||
+          activeDraftsBeforeCommit[0]?.id !==
+            input.prepared.expected.activeDraftId ||
+          activeDraftsBeforeCommit[0]?.createdBy !==
+            input.prepared.expected.activeDraftCreatedBy
+        ) {
+          throw new GovernanceConflictError(
+            documentReprocessingDraftConflictMessage,
+          );
+        }
+        assertDocumentReprocessingDraftAccess({
+          actor: input.actor,
+          createdBy: activeDraftsBeforeCommit[0].createdBy,
+        });
+        const provenanceRows = await transaction
+          .select({
+            action: dataChangeLogs.action,
+            id: dataChangeLogs.id,
+          })
+          .from(dataChangeLogs)
+          .where(
+            and(
+              eq(
+                dataChangeLogs.draftId,
+                input.prepared.expected.activeDraftId,
+              ),
+              eq(dataChangeLogs.entityType, "document"),
+              eq(dataChangeLogs.entityKey, input.prepared.documentId),
+              inArray(dataChangeLogs.action, [
+                "draft_created",
+                "document_reprocessed",
+              ]),
+            ),
+          );
+        const canonicalAction = getDocumentProvenanceActionForVersion(
+          activeDraftsBeforeCommit[0]!.version,
+        );
+        const canonicalProvenance = provenanceRows.filter(
+          ({ action }) => action === canonicalAction,
+        );
+        if (
+          canonicalProvenance.length !== 1 ||
+          canonicalProvenance[0]?.id !==
+            input.prepared.expected.provenanceAuditId
+        ) {
+          throw new GovernanceConflictError(
+            "The document metadata provenance changed while reprocessing was prepared; retry from the latest version.",
+          );
+        }
+        const preparedProvenance =
+          await requireCanonicalDocumentProvenance(
+          transaction,
+          activeDraftsBeforeCommit[0]!,
+        );
+        if (
+          createDocumentProvenanceMarkerFingerprint(
+            preparedProvenance.provenance.marker,
+          ) !== input.prepared.expected.provenanceMarkerFingerprint ||
+          JSON.stringify(
+            preparedProvenance.provenance.marker.afterData.metadata,
+          ) !==
+          JSON.stringify(
+            normalizeDocumentImportMetadataForProvenance(
+              input.prepared.expected.provenanceMetadata,
+            ),
+          )
+        ) {
+          throw new GovernanceConflictError(
+            "The document metadata provenance changed while reprocessing was prepared; retry from the latest version.",
+          );
+        }
+        if (
+          before.document.processingStatus === "ready" &&
+          input.prepared.outcome.processingStatus === "failed"
+        ) {
+          throw new GovernanceConflictError(
+            "A failed reprocessing attempt cannot replace a ready document.",
+          );
+        }
+
+        const { metadata, outcome } = input.prepared;
+        const now = new Date();
+        const [source] = await transaction
+          .insert(dataSources)
+          .values({
+            demoNotice: metadata.isDemo ? metadata.demoNotice : null,
+            isDemo: metadata.isDemo,
+            publishedOn: metadata.publishedOn,
+            publisher: metadata.sourcePublisher,
+            sourceType: metadata.sourceType,
+            title: metadata.sourceTitle,
+            url: nullableString(metadata.sourceUrl),
+            verifiedAt: now,
+          })
+          .returning();
+        if (!source) {
+          throw new Error("Failed to create the reprocessed document source.");
+        }
+
+        await transaction
+          .delete(documentChunks)
+          .where(eq(documentChunks.documentId, input.prepared.documentId));
+        if (outcome.processingStatus === "ready") {
+          for (const batch of documentChunkInsertBatches(input.prepared.documentId, outcome.chunks)) {
+            await transaction.insert(documentChunks).values(batch);
+          }
+        }
+        const [updatedDocument] = await transaction
+          .update(documents)
+          .set({
+            canonicalUrl: nullableString(metadata.canonicalUrl),
+            dataSourceId: source.id,
+            demoNotice: metadata.isDemo ? metadata.demoNotice : null,
+            isDemo: metadata.isDemo,
+            languageCode: metadata.languageCode,
+            licenseCode: metadata.licenseCode,
+            processedAt: now,
+            processingError: outcome.processingError,
+            processingStatus: outcome.processingStatus,
+            publishedOn: metadata.publishedOn,
+            redistributionAllowed: metadata.redistributionAllowed,
+            title: metadata.title,
+            type: metadata.documentType,
+            updatedAt: now,
+            validFrom: metadata.validFrom,
+            validTo: metadata.validTo,
+          })
+          .where(
+            and(
+              eq(documents.id, input.prepared.documentId),
+              eq(documents.dataSourceId, before.document.dataSourceId),
+              eq(documents.governanceStatus, "draft"),
+              eq(
+                documents.processingStatus,
+                before.document.processingStatus,
+              ),
+              isNull(documents.archivedAt),
+            ),
+          )
+          .returning({ id: documents.id });
+        if (!updatedDocument) {
+          throw new GovernanceConflictError(
+            "The document changed while reprocessing was committed.",
+          );
+        }
+        const afterProvenance =
+          await loadDocumentProvenanceExpectation(
+            transaction,
+            input.prepared.documentId,
+            outcome.processingStatus === "failed" ? metadata : undefined,
+          );
+
+        const activeDrafts = activeDraftsBeforeCommit;
+        if (activeDrafts.length > 0) {
+          await transaction
+            .update(dataGovernanceDrafts)
+            .set({ archivedAt: now, updatedAt: now })
+            .where(
+              inArray(
+                dataGovernanceDrafts.id,
+                activeDrafts.map(({ id }) => id),
+              ),
+            );
+        }
+        const nextVersion = (lockedDrafts.at(-1)?.version ?? 0) + 1;
+        let draft: typeof dataGovernanceDrafts.$inferSelect | undefined;
+        try {
+          [draft] = await transaction
+            .insert(dataGovernanceDrafts)
+            .values({
+              changeReason: input.reason,
+              createdBy: input.actor.email,
+              entityKey: input.prepared.documentId,
+              entityType: "document",
+              payload: { documentId: input.prepared.documentId },
+              version: nextVersion,
+            })
+            .returning();
+        } catch (error: unknown) {
+          if (hasPostgresErrorCode(error, "23505")) {
+            throw new GovernanceConflictError(
+              "Another document draft revision was created concurrently; retry from the latest version.",
+            );
+          }
+          throw error;
+        }
+        if (!draft) {
+          throw new Error("Reprocessing draft creation did not return a row.");
+        }
         await transaction.insert(dataChangeLogs).values({
-          action: input.action,
+          action: "draft_created",
           actorEmail: input.actor.email,
           actorRole: input.actor.role,
-          afterData: input.afterData,
-          beforeData: input.beforeData ?? null,
-          entityKey: input.entityKey,
-          entityType: input.entityType,
+          afterData: { documentId: input.prepared.documentId },
+          draftId: draft.id,
+          entityKey: input.prepared.documentId,
+          entityType: "document",
           reason: input.reason,
         });
+        const reprocessingAuditAfterData =
+          documentReprocessedAuditAfterDataSchema.parse({
+            chunkSetFingerprint:
+              afterProvenance.chunkSetFingerprint,
+            contentSha256: before.document.contentSha256,
+            documentId: input.prepared.documentId,
+            metadata: afterProvenance.metadata,
+            operationFingerprint: input.prepared.operationFingerprint,
+            processingStatus: outcome.processingStatus,
+            provenanceVersion: 2,
+            sourceFingerprint: afterProvenance.sourceFingerprint,
+            sourceId: source.id,
+            status: outcome.processingStatus,
+            supersededDraftIds: activeDrafts.map(({ id }) => id),
+          });
+        await transaction.insert(dataChangeLogs).values({
+          action: "document_reprocessed",
+          actorEmail: input.actor.email,
+          actorRole: input.actor.role,
+          afterData: reprocessingAuditAfterData,
+          beforeData: before,
+          draftId: draft.id,
+          entityKey: input.prepared.documentId,
+          entityType: "document",
+          reason: input.reason,
+        });
+
+        const [summary] = await transaction
+          .select({
+            byteSize: documents.byteSize,
+            chunkCount: sql<number>`(
+              select count(*)::int
+              from ${documentChunks}
+              where ${documentChunks.documentId} = ${documents.id}
+            )`,
+            contentSha256: documents.contentSha256,
+            createdAt: documents.createdAt,
+            governanceStatus: documents.governanceStatus,
+            id: documents.id,
+            isDemo: documents.isDemo,
+            mimeType: documents.mimeType,
+            originalFilename: documents.originalFilename,
+            processedAt: documents.processedAt,
+            processingError: documents.processingError,
+            processingStatus: documents.processingStatus,
+            sourceTitle: dataSources.title,
+            storagePath: documents.storagePath,
+            title: documents.title,
+            type: documents.type,
+          })
+          .from(documents)
+          .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+          .where(eq(documents.id, input.prepared.documentId))
+          .limit(1);
+        if (!summary) {
+          throw new Error("Reprocessed document summary was not returned.");
+        }
+
+        return {
+          documentId: input.prepared.documentId,
+          processingStatus: outcome.processingStatus,
+          summary,
+        };
       });
     },
 
@@ -2981,12 +3626,29 @@ export function createGovernanceRepository<
     }) {
       return database.transaction(async (transaction) => {
         await assertGovernanceWriteAllowed(transaction);
-        const [draft] = await transaction
+        const [draftIdentity] = await transaction
           .select()
           .from(dataGovernanceDrafts)
           .where(eq(dataGovernanceDrafts.id, input.draftId))
-          .limit(1)
+          .limit(1);
+
+        if (!draftIdentity) {
+          throw new GovernanceConflictError(
+            "Only an active draft can be reviewed.",
+          );
+        }
+        const entityDrafts = await transaction
+          .select()
+          .from(dataGovernanceDrafts)
+          .where(
+            and(
+              eq(dataGovernanceDrafts.entityType, draftIdentity.entityType),
+              eq(dataGovernanceDrafts.entityKey, draftIdentity.entityKey),
+            ),
+          )
+          .orderBy(asc(dataGovernanceDrafts.version))
           .for("update");
+        const draft = entityDrafts.find(({ id }) => id === input.draftId);
 
         if (
           !draft ||
@@ -3018,23 +3680,9 @@ export function createGovernanceRepository<
           processingStatus: "pending" | "processing" | "ready" | "failed";
         } | null = null;
         if (draft.entityType === "document") {
-          const payload = documentDraftPayloadSchema.parse(draft.payload);
-          const [document] = await transaction
-            .select({
-              governanceStatus: documents.governanceStatus,
-              processingStatus: documents.processingStatus,
-            })
-            .from(documents)
-            .where(
-              and(
-                eq(documents.id, payload.documentId),
-                isNull(documents.archivedAt),
-              ),
-            )
-            .limit(1)
-            .for("update");
+          const { document } =
+            await requireCanonicalDocumentProvenance(transaction, draft);
           if (
-            !document ||
             document.processingStatus !== "ready" ||
             document.governanceStatus !== "draft"
           ) {
@@ -3112,51 +3760,9 @@ export function createGovernanceRepository<
       actor: AdminPrincipal;
       reason: string;
       sourceId: string;
-      verifiedAt: Date;
+      verifiedAt: string;
     }) {
-      return database.transaction(async (transaction) => {
-        await assertGovernanceWriteAllowed(transaction);
-        const [before] = await transaction
-          .select()
-          .from(dataSources)
-          .where(
-            and(
-              eq(dataSources.id, input.sourceId),
-              isNull(dataSources.archivedAt),
-            ),
-          )
-          .limit(1)
-          .for("update");
-        if (!before) {
-          throw new GovernanceConflictError(
-            "Source does not exist or is archived.",
-          );
-        }
-        const [after] = await transaction
-          .update(dataSources)
-          .set({
-            updatedAt: new Date(),
-            verifiedAt: input.verifiedAt,
-          })
-          .where(
-            and(
-              eq(dataSources.id, input.sourceId),
-              isNull(dataSources.archivedAt),
-            ),
-          )
-          .returning();
-        await transaction.insert(dataChangeLogs).values({
-          action: "source_verified",
-          actorEmail: input.actor.email,
-          actorRole: input.actor.role,
-          afterData: after,
-          beforeData: before,
-          entityKey: input.sourceId,
-          entityType: "data_source",
-          reason: input.reason,
-        });
-        return after;
-      });
+      return sourceWrites.updateVerifiedAt(input);
     },
   };
 }

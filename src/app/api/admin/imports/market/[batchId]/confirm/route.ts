@@ -12,19 +12,24 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ batchId: string }> },
 ): Promise<Response> {
-  return handleAdminRoute(request, "editor", async (principal) => {
-    const { batchId } = await context.params;
-    const body = await readAdminJsonRequest(request);
+  return handleAdminRoute(
+    request,
+    "editor",
+    "/api/admin/imports/market/:batchId/confirm",
+    async (principal) => {
+      const { batchId } = await context.params;
+      const body = await readAdminJsonRequest(request);
 
-    return NextResponse.json(
-      await confirmMarketCsvImport({
-        actor: principal,
-        batchId,
-        reason:
-          typeof body === "object" && body !== null && "reason" in body
-            ? body.reason
-            : undefined,
-      }),
-    );
-  });
+      return NextResponse.json(
+        await confirmMarketCsvImport({
+          actor: principal,
+          batchId,
+          reason:
+            typeof body === "object" && body !== null && "reason" in body
+              ? body.reason
+              : undefined,
+        }),
+      );
+    },
+  );
 }

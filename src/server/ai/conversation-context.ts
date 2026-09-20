@@ -1,5 +1,7 @@
 import "server-only";
 
+import { resolveApplicationScopeIntent } from "@/domain/ai/application-scope-intent";
+import { maskKnowledgeQueryLiterals, maskKnowledgeSignedOperands } from "@/domain/knowledge/query-literal-spans";
 import type { ApplicationScope } from "@/features/database/schemas";
 import { countryCatalog } from "@/server/db/seed/country-catalog";
 
@@ -10,6 +12,7 @@ export type ConversationBusinessContext = {
   countryIso3s: string[];
   focusedCountryIso3: string | null;
   hasPowerConflict: boolean;
+  hasScopeConflict: boolean;
   powerKw: number | null;
   profileTopics: CountryProfileTopic[];
   productModelCode: string | null;
@@ -73,23 +76,10 @@ const countryAliases: Readonly<Record<string, string>> = {
 };
 
 const countryIso3Codes = new Set(countryCatalog.map(({ iso3 }) => iso3));
-const scopeMatchers: ReadonlyArray<{
-  pattern: RegExp;
-  scope: ApplicationScope;
-}> = [
-  { pattern: /on-road-truck|卡车|货车/iu, scope: "on-road-truck" },
-  { pattern: /on-road-bus|客车|公交/iu, scope: "on-road-bus" },
-  { pattern: /construction|工程机械|建筑机械/iu, scope: "construction" },
-  { pattern: /agriculture|农业|农机/iu, scope: "agriculture" },
-  { pattern: /generator-set|发电机组/iu, scope: "generator-set" },
-  { pattern: /marine|船用/iu, scope: "marine" },
-  { pattern: /non-road|非道路/iu, scope: "non-road" },
-  { pattern: /on-road|道路/iu, scope: "on-road" },
-];
 const comparisonIntentPattern =
   /(?:比较|对比|排名|排行|哪个国家|哪个市场|compare|comparison|versus|\bvs\.?\b)/iu;
 const negatedComparisonIntentPattern =
-  /(?:不(?:做|进行|需要)?(?:任何)?(?:跨国|跨市场|国家间|市场间)?(?:比较|对比)|(?:无需|无须|不要|不必)(?:进行|做)?(?:任何)?(?:跨国|跨市场|国家间|市场间)?(?:比较|对比)|(?:without|no)\s+(?:cross[- ]country\s+|market\s+)?(?:comparison|compare))/giu;
+  /(?:不(?:做|进行|需要)?(?:任何)?(?:跨国|跨市场|国家间|市场间)?(?:比较|对比)|(?:无需|无须|不要|不必|别)(?:进行|做)?(?:任何)?(?:跨国|跨市场|国家间|市场间)?(?:比较|对比)|(?:without|no)\s+(?:cross[- ]country\s+|market\s+)?(?:comparison|compare)|(?:do(?:es)?|did)\s+not\s+(?:compare|make\s+(?:a\s+)?comparison)|don['’]t\s+(?:compare|make\s+(?:a\s+)?comparison))/giu;
 const targetCountryIntentPattern =
   /(?:目标(?:国家|市场)|(?:国家|市场).{0,6}作为目标|target\s+(?:country|market))/iu;
 const salesBriefIntentPattern =
@@ -112,8 +102,12 @@ const regulationTopicPattern =
   /(?:法规|排放|限值|regulation|emission|emissions\s*limit)/iu;
 const marketTopicPattern =
   /(?:市场|销量|销售量|market|sales\s*volume)/iu;
+const explicitSourceIntentPattern =
+  /(?:原文|公告|文档|出处|来源|页码|章节|依据|原始文件)/iu;
+const explicitEnglishSourceIntentPattern =
+  /(?<![\p{L}\p{N}_])(?:sources?|citations?|(?:official|original)\s+(?:documents?|files?|texts?|wording|notices?|publications?))(?![\p{L}\p{N}_])/iu;
 const knowledgeIntentPattern =
-  /(?:原文|公告|文档|章节|条款|知识库|检索证据|来源|出处|页码|依据|source\s*document|original\s*(?:text|wording)|knowledge\s*base|citation|section|clause)/iu;
+  /(?:原文|公告|文档|章节|条款|知识库|检索证据|来源|出处|页码|依据|original\s*(?:text|wording)|knowledge\s*base|section|clause)/iu;
 const countryProfileIntentPattern =
   /(?:国家(?:基础)?概览|国家资料|国家信息|目前有哪些|当前有哪些|当前有效法规|市场数据|市场规模|country\s*profile|country\s*overview)/iu;
 const countryProfileBaseTopicPattern =
@@ -135,7 +129,7 @@ function literalMatches(
   return matches;
 }
 
-export function countryIso3sIn(text: string): string[] {
+export function countryMentionsIn(text: string): LocatedCountry[] {
   const locatedCountries: LocatedCountry[] = [];
 
   for (const [alias, iso3] of Object.entries(countryAliases)) {
@@ -158,8 +152,10 @@ export function countryIso3sIn(text: string): string[] {
     }
   }
 
-  for (const match of text.matchAll(/(?:^|[^a-z])([a-z]{3})(?=$|[^a-z])/giu)) {
-    const iso3 = match[1].toUpperCase();
+  for (const match of text.matchAll(
+    /(?<![\p{L}\p{N}_])([A-Z]{3})(?![\p{L}\p{N}_])/gu,
+  )) {
+    const iso3 = match[1];
     if (countryIso3Codes.has(iso3)) {
       locatedCountries.push({
         countryIso3: iso3,
@@ -173,25 +169,34 @@ export function countryIso3sIn(text: string): string[] {
     (left, right) => left.index - right.index || right.length - left.length,
   );
 
-  const countries: string[] = [];
-  let claimedIndex = -1;
+  const countries: LocatedCountry[] = [];
+  let claimedEnd = 0;
   for (const locatedCountry of locatedCountries) {
-    // Prefer the longest country name when aliases share a starting position,
-    // such as 印度尼西亚 and 印度.
-    if (locatedCountry.index === claimedIndex) {
+    // Keep leftmost-longest non-overlapping spans: both 印度 within 印度尼西亚
+    // and Sudan within South Sudan belong to the full country name. A later
+    // standalone mention remains independently addressable.
+    if (locatedCountry.index < claimedEnd) {
       continue;
     }
-    claimedIndex = locatedCountry.index;
-    if (!countries.includes(locatedCountry.countryIso3)) {
-      countries.push(locatedCountry.countryIso3);
-    }
+    claimedEnd = locatedCountry.index + locatedCountry.length;
+    countries.push(locatedCountry);
   }
   return countries;
+}
+
+export function countryIso3sIn(text: string): string[] {
+  return Array.from(new Set(countryMentionsIn(text).map(({ countryIso3 }) => countryIso3)));
 }
 
 export function activeConversationTaskIn(
   text: string,
 ): ActiveConversationTask | null {
+  // An explicit request for traceable source material is itself the active
+  // task, even when the same sentence mentions a product, score, or brief.
+  // This keeps a neutral follow-up inside the source-only retrieval boundary.
+  if (hasExplicitSourceIntent(text)) {
+    return "knowledge";
+  }
   if (salesBriefIntentPattern.test(text)) {
     return "sales_brief";
   }
@@ -225,6 +230,13 @@ export function activeConversationTaskIn(
     return "country_profile";
   }
   return null;
+}
+
+export function hasExplicitSourceIntent(text: string): boolean {
+  return (
+    explicitSourceIntentPattern.test(text) ||
+    explicitEnglishSourceIntentPattern.test(text)
+  );
 }
 
 export function hasConversationComparisonIntent(text: string): boolean {
@@ -277,10 +289,6 @@ function explicitTargetCountryIso3In(text: string): string | null {
   return targetBeforeMarkerCountries.at(-1) ?? null;
 }
 
-function applicationScopeIn(text: string): ApplicationScope | null {
-  return scopeMatchers.find(({ pattern }) => pattern.test(text))?.scope ?? null;
-}
-
 function powerKwsIn(text: string): number[] {
   return Array.from(
     new Set(
@@ -292,8 +300,54 @@ function powerKwsIn(text: string): number[] {
   );
 }
 
+const englishMonthNumbers = {
+  apr: 4,
+  aug: 8,
+  dec: 12,
+  feb: 2,
+  jan: 1,
+  jul: 7,
+  jun: 6,
+  mar: 3,
+  may: 5,
+  nov: 11,
+  oct: 10,
+  sep: 9,
+} as const;
+
+function canonicalIsoDate(year: number, month: number, day: number): string | null {
+  const value = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value
+    ? null
+    : value;
+}
+
 function explicitAsOfIn(text: string): string | null {
-  return text.match(/\b\d{4}-\d{2}-\d{2}\b/u)?.[0] ?? null;
+  const iso = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/u);
+  if (iso) {
+    return canonicalIsoDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+  }
+
+  const chinese = text.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/u);
+  if (chinese) {
+    return canonicalIsoDate(
+      Number(chinese[1]),
+      Number(chinese[2]),
+      Number(chinese[3]),
+    );
+  }
+
+  const english = text.match(
+    /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(\d{4})\b/iu,
+  );
+  if (!english) {
+    return null;
+  }
+  const month = englishMonthNumbers[
+    english[1]!.toLowerCase() as keyof typeof englishMonthNumbers
+  ];
+  return canonicalIsoDate(Number(english[3]), month, Number(english[2]));
 }
 
 function productModelCodeIn(text: string): string | null {
@@ -335,6 +389,7 @@ export function buildConversationBusinessContext(
     countryIso3s: selectedCountryIso3 ? [selectedCountryIso3] : [],
     focusedCountryIso3: selectedCountryIso3,
     hasPowerConflict: false,
+    hasScopeConflict: false,
     powerKw: null,
     profileTopics: [],
     productModelCode: null,
@@ -342,15 +397,19 @@ export function buildConversationBusinessContext(
   };
 
   for (const text of userTexts) {
-    const countries = countryIso3sIn(text).slice(0, 5);
-    const powerKws = powerKwsIn(text);
-    const explicitTargetCountryIso3 = explicitTargetCountryIso3In(text);
-    const isComparisonTurn = hasConversationComparisonIntent(text);
+    const explicitTask = activeConversationTaskIn(text);
+    // Quoted/signed query operands are not country/scope/power/date overrides.
+    // Control-only source follow-ups still accept positive quoted filter values.
+    const metadataText = explicitTask === "knowledge" ? maskKnowledgeQueryLiterals(text)
+      : explicitTask === null && context.activeTask === "knowledge" ? maskKnowledgeSignedOperands(text) : text;
+    const countries = countryIso3sIn(metadataText).slice(0, 5);
+    const powerKws = powerKwsIn(metadataText);
+    const explicitTargetCountryIso3 = explicitTargetCountryIso3In(metadataText);
+    const isComparisonTurn = hasConversationComparisonIntent(metadataText);
     const isTargetCountryTurn =
       explicitTargetCountryIso3 !== null ||
-      targetCountryIntentPattern.test(text) ||
-      (countries.length === 1 && salesBriefIntentPattern.test(text));
-    const explicitTask = activeConversationTaskIn(text);
+      targetCountryIntentPattern.test(metadataText) ||
+      (countries.length === 1 && salesBriefIntentPattern.test(metadataText));
 
     context.activeTask = explicitTask ?? context.activeTask;
     if (explicitTask === "country_profile") {
@@ -377,8 +436,9 @@ export function buildConversationBusinessContext(
       }
     }
 
-    context.applicationScope =
-      applicationScopeIn(text) ?? context.applicationScope;
+    const scopeIntent = resolveApplicationScopeIntent(metadataText, context);
+    context.applicationScope = scopeIntent.applicationScope;
+    context.hasScopeConflict = scopeIntent.hasScopeConflict;
     if (powerKws.length > 1) {
       context.hasPowerConflict = true;
       context.powerKw = null;
@@ -386,9 +446,9 @@ export function buildConversationBusinessContext(
       context.hasPowerConflict = false;
       context.powerKw = powerKws[0] ?? null;
     }
-    context.asOf = explicitAsOfIn(text) ?? context.asOf;
+    context.asOf = explicitAsOfIn(metadataText) ?? context.asOf;
     context.productModelCode =
-      productModelCodeIn(text) ?? context.productModelCode;
+      productModelCodeIn(metadataText) ?? context.productModelCode;
   }
 
   return context;

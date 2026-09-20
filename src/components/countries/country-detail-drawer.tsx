@@ -15,10 +15,12 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { LocaleToggle } from "@/components/i18n/locale-toggle";
+import { localizedCitationLocator } from "@/features/ai/citation-locator-copy";
 import {
   Drawer,
   DrawerClose,
@@ -29,20 +31,53 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import {
+  countryDecisionSummaryErrorMessage,
+  countryDetailErrorMessage,
+  parseCountryApiErrorCode,
+} from "@/features/countries/client-errors";
+import {
   countryDetailResponseSchema,
+  type CountryApiErrorCode,
   type CountryDetailResponse,
   type CountryDirectory,
+  type CountryMapSummary,
 } from "@/features/countries/schemas";
+import { countryDirectoryDisplayIdentity } from "@/features/countries/directory-display";
+import {
+  selectCountryDetailState,
+  type CountryDetailQueryIdentity,
+  type CountryDetailState,
+} from "@/features/countries/detail-state";
+import { productFitHistoryRouteKey } from "@/features/product-fit/history-route";
+import {
+  buildProductFitRouteKey,
+  createProductFitNavigationState,
+  reconcileProductFitNavigation,
+  recordProductFitOwnNavigation,
+} from "@/features/product-fit/navigation-state";
 import type {
   ProductFitCommittedFilters,
   ProductFitInitialFilters,
 } from "@/components/products/product-fit-panel";
 import dynamic from "next/dynamic";
-import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
 import { formatDecimalForDisplay } from "@/lib/decimal-format";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 import { formatOptionalUtcDate, formatUtcDate } from "@/i18n/date";
+import {
+  applicationScopeLabel,
+  countryApplicabilityMissingDataMessages,
+  countryRegionLabel,
+  countrySubregionLabel,
+  jurisdictionDisplayName,
+  jurisdictionTypeLabel,
+  marketMetricDisplayDefinition,
+  marketMetricDisplayName,
+  nameWithCode,
+  regulationDisplayName,
+} from "@/i18n/structured-labels";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
+import { createPublicApiRequestDeadline } from "@/lib/public-api-request";
+import { isUnmodifiedPrimaryClick } from "@/lib/public-navigation-intent";
 import { cn } from "@/lib/utils";
 
 function ProductFitLoading() {
@@ -60,27 +95,10 @@ function ProductFitLoading() {
   );
 }
 
-type DetailState =
-  | { status: "idle" }
-  | {
-      iso3: string;
-      message: string;
-      requestedAsOf: string | null;
-      status: "error";
-    }
-  | {
-      iso3: string;
-      requestedAsOf: string | null;
-      response: CountryDetailResponse;
-      status: "ready";
-    };
-
-type CurrentDetailState =
-  | DetailState
-  | { iso3: string; status: "loading" };
-
 type CountryDetailDrawerProps = {
   cancelPendingProductEvaluation: () => void;
+  countries: CountryMapSummary[];
+  consumeCountrySelectFocusRequest: () => boolean;
   countryIndex: CountryDirectory;
   initialFilters?: ProductFitInitialFilters;
   initialResponse?: CountryDetailResponse;
@@ -134,6 +152,8 @@ function buildChatHref({
 
 export function CountryDetailDrawer({
   cancelPendingProductEvaluation,
+  countries,
+  consumeCountrySelectFocusRequest,
   countryIndex,
   initialFilters,
   initialResponse,
@@ -144,47 +164,72 @@ export function CountryDetailDrawer({
 }: CountryDetailDrawerProps) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.country;
-  const [detail, setDetail] = useState<DetailState>(() =>
-    initialResponse && iso3
-      ? {
-          iso3,
-          requestedAsOf: initialFilters?.asOf ?? null,
-          response: initialResponse,
-          status: "ready",
-        }
-      : { status: "idle" },
-  );
+  // SSR props are the current route snapshot, not an initializer for a cache.
+  // Keep only client-fetched responses in state so an RSC filter refresh can
+  // update the details without remounting the product-fit form and result.
+  const [detail, setDetail] = useState<CountryDetailState>({ status: "idle" });
   const [reloadKey, setReloadKey] = useState(0);
+  const detailRequestIdRef = useRef(0);
+  const countrySelectRef = useRef<HTMLSelectElement>(null);
+  const countrySummariesByIso3 = useMemo(
+    () => new Map(countries.map((country) => [country.iso3, country])),
+    [countries],
+  );
+  const selectedDirectoryEntry = iso3
+    ? countryIndex.find(({ iso3: value }) => value === iso3)
+    : undefined;
+  const selectedCountryName = selectedDirectoryEntry
+    ? formatCountryDisplayName(
+        countryDirectoryDisplayIdentity(
+          selectedDirectoryEntry,
+          countrySummariesByIso3.get(selectedDirectoryEntry.iso3),
+        ),
+        locale,
+      )
+    : null;
+  const selectedCountryNameWithCode = selectedDirectoryEntry && selectedCountryName
+    ? nameWithCode(selectedCountryName, selectedDirectoryEntry.iso3, locale)
+    : (iso3 ?? copy.unknownCountryTitle);
   const requestedAsOf = initialFilters?.asOf ?? null;
-  const loadedResponseAlreadyMatchesRequestedAsOf =
-    requestedAsOf !== null &&
-    detail.status === "ready" &&
-    detail.iso3 === iso3 &&
-    detail.response.status === "available" &&
-    detail.response.asOf === requestedAsOf;
-  const fetchAsOf = loadedResponseAlreadyMatchesRequestedAsOf
-    ? detail.requestedAsOf
+  const query: CountryDetailQueryIdentity | null = iso3
+    ? {
+        applicationScope: initialFilters?.applicationScope ?? null,
+        asOf: requestedAsOf,
+        iso3,
+        powerKw: initialFilters?.powerKw ?? null,
+      }
+    : null;
+  const currentDetail = selectCountryDetailState({
+    detail,
+    initialResponse,
+    query,
+  });
+  const fetchAsOf = currentDetail.status === "ready"
+    ? currentDetail.query.asOf
     : requestedAsOf;
-  const currentDetail: CurrentDetailState =
-    !iso3
-      ? { status: "idle" }
-      : detail.status !== "idle" &&
-          detail.iso3 === iso3 &&
-          (detail.requestedAsOf === requestedAsOf ||
-            loadedResponseAlreadyMatchesRequestedAsOf)
-        ? detail
-        : { iso3, status: "loading" };
 
   useEffect(() => {
     if (!iso3) {
       return;
     }
 
-    if (initialResponse && reloadKey === 0) {
+    if (initialResponse) {
       return;
     }
 
     const abortController = new AbortController();
+    const requestId = detailRequestIdRef.current + 1;
+    detailRequestIdRef.current = requestId;
+    const requestIsCurrent = () =>
+      !abortController.signal.aborted &&
+      detailRequestIdRef.current === requestId;
+    const deadline = createPublicApiRequestDeadline(abortController.signal);
+    const requestQuery: CountryDetailQueryIdentity = {
+      applicationScope: initialFilters?.applicationScope ?? null,
+      asOf: fetchAsOf,
+      iso3,
+      powerKw: initialFilters?.powerKw ?? null,
+    };
     const detailParams = new URLSearchParams();
     if (fetchAsOf) {
       detailParams.set("asOf", fetchAsOf);
@@ -201,46 +246,63 @@ export function CountryDetailDrawer({
       headers: {
         accept: "application/json",
       },
-      signal: abortController.signal,
+      signal: deadline.signal,
     })
       .then(async (response) => {
         if (!response.ok) {
-          throw new Error(
-            await parseApiErrorMessage(response, copy.detailRequestError),
-          );
+          return {
+            code: await parseCountryApiErrorCode(response),
+            status: "error" as const,
+          };
         }
-        return countryDetailResponseSchema.parse(await response.json());
+        return {
+          response: countryDetailResponseSchema.parse(await response.json()),
+          status: "ready" as const,
+        };
       })
-      .then((response) => {
+      .then((result) => {
+        if (!requestIsCurrent()) {
+          return;
+        }
+        if (result.status === "error") {
+          setDetail({
+            code: result.code,
+            query: requestQuery,
+            status: "error",
+          });
+          return;
+        }
         setDetail({
-          iso3,
-          requestedAsOf: fetchAsOf,
-          response,
+          query: requestQuery,
+          response: result.response,
           status: "ready",
         });
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (
+          !requestIsCurrent() ||
+          (error instanceof DOMException &&
+            error.name === "AbortError" &&
+            !deadline.didTimeout())
+        ) {
           return;
         }
         setDetail({
-          iso3,
-          message: toUserFacingErrorMessage(
-            error,
-            copy.detailErrorFallback,
-          ),
-          requestedAsOf: fetchAsOf,
+          code: null,
+          query: requestQuery,
           status: "error",
         });
-      });
+      })
+      .finally(deadline.dispose);
 
     return () => {
+      if (detailRequestIdRef.current === requestId) {
+        detailRequestIdRef.current += 1;
+      }
       abortController.abort();
     };
   }, [
     fetchAsOf,
-    copy.detailErrorFallback,
-    copy.detailRequestError,
     initialFilters?.applicationScope,
     initialFilters?.powerKw,
     initialResponse,
@@ -261,7 +323,18 @@ export function CountryDetailDrawer({
       }}
       open={Boolean(iso3)}
     >
-      <DrawerContent aria-describedby="country-drawer-description">
+      <DrawerContent
+        aria-describedby="country-drawer-description"
+        onOpenAutoFocus={(event) => {
+          const target = countrySelectRef.current;
+          if (!target || !consumeCountrySelectFocusRequest()) {
+            return;
+          }
+
+          event.preventDefault();
+          target.focus();
+        }}
+      >
         <DrawerHeader className="relative pr-16">
           <p className="text-xs font-semibold tracking-[0.18em] text-primary">
             {copy.profileKicker}
@@ -270,7 +343,7 @@ export function CountryDetailDrawer({
             {currentDetail.status === "ready" &&
             currentDetail.response.status === "available"
               ? formatCountryDisplayName(currentDetail.response.country, locale)
-              : (iso3 ?? copy.unknownCountryTitle)}
+              : selectedCountryNameWithCode}
           </DrawerTitle>
           <DrawerDescription id="country-drawer-description">
             {copy.baselineDescription}
@@ -288,26 +361,29 @@ export function CountryDetailDrawer({
         </DrawerHeader>
 
         <div className="border-b px-5 py-4 sm:px-7">
-          <label
-            className="mb-1.5 block text-xs font-medium text-muted-foreground"
-            htmlFor="drawer-country-select"
-          >
-            {copy.switchCountry}
-          </label>
+          <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
+            <label
+              className="min-w-0 text-xs font-medium text-muted-foreground"
+              htmlFor="drawer-country-select"
+            >
+              {copy.switchCountry}
+            </label>
+            <LocaleToggle testId="country-drawer-locale-toggle" />
+          </div>
           <select
             className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
             id="drawer-country-select"
             onChange={(event) => onSelectCountry(event.target.value)}
+            ref={countrySelectRef}
             value={iso3 ?? ""}
           >
             {countryIndex.map((country) => (
               <option key={country.iso3} value={country.iso3}>
                 {formatCountryDisplayName(
-                  {
-                    iso2: country.iso2,
-                    iso3: country.iso3,
-                    nameEn: country.name,
-                  },
+                  countryDirectoryDisplayIdentity(
+                    country,
+                    countrySummariesByIso3.get(country.iso3),
+                  ),
                   locale,
                 )} · {country.iso3}
                 {country.hasGeometry
@@ -319,13 +395,15 @@ export function CountryDetailDrawer({
         </div>
 
         <div
-          aria-live="polite"
           className="flex-1 overflow-y-auto px-5 py-5 sm:px-7"
+          data-testid="country-drawer-body"
         >
           {currentDetail.status === "loading" ? (
             <div
+              aria-busy="true"
               className="grid min-h-64 place-items-center text-center"
               data-testid="country-detail-loading"
+              role="status"
             >
               <div>
                 <LoaderCircle
@@ -350,7 +428,7 @@ export function CountryDetailDrawer({
               />
               <p className="mt-3 font-semibold">{copy.detailError}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {currentDetail.message}
+                {countryDetailErrorMessage(currentDetail.code, dictionary)}
               </p>
               <Button
                 className="mt-4"
@@ -367,16 +445,20 @@ export function CountryDetailDrawer({
           {currentDetail.status === "ready" &&
           currentDetail.response.status === "no_data" ? (
             <div
+              aria-atomic="true"
+              aria-live="polite"
               className="rounded-2xl border border-dashed bg-muted/40 p-6"
               data-testid="country-no-data"
+              role="status"
             >
               <MapPin aria-hidden="true" className="size-6 text-primary" />
               <h2 className="mt-4 text-lg font-semibold">
-                {currentDetail.response.iso3} {copy.noDataSuffix}
+                {selectedCountryNameWithCode}
+                {dictionary.common.wordSeparator}
+                {copy.noDataSuffix}
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {countryIndex.find(({ iso3: value }) => value === iso3)
-                  ?.hasGeometry
+                {selectedDirectoryEntry?.hasGeometry
                   ? copy.geometryNoData
                   : copy.missingGeometryNoData}
               </p>
@@ -429,7 +511,28 @@ function CountryDetailContent({
     planned: copy.coveragePlanned,
   } as const;
   const { country } = response;
-  const contextKey = `${country.iso3}:${JSON.stringify(initialFilters ?? {})}`;
+  const routeKey = buildProductFitRouteKey({
+    countryIso3: country.iso3,
+    asOf: response.asOf,
+    initialFilters,
+  });
+  const [navigationState, setNavigationState] = useState(() =>
+    createProductFitNavigationState(routeKey),
+  );
+  const [historyTarget, setHistoryTarget] = useState<string | null>(null);
+  const waitingForHistoryRoute = historyTarget !== null &&
+    productFitHistoryRouteKey(historyTarget, response.asOf) !== routeKey;
+  const navigation = waitingForHistoryRoute
+    ? navigationState
+    : reconcileProductFitNavigation(navigationState, routeKey, {
+        external: historyTarget !== null,
+      });
+  // Reconcile during render so an external route never paints the old result.
+  // These are local state updates only; request cancellation stays in events
+  // and effect cleanup. An own replace acknowledges without resetting drafts.
+  if (navigation !== navigationState) setNavigationState(navigation);
+  if (historyTarget !== null && !waitingForHistoryRoute) setHistoryTarget(null);
+  const contextKey = `${routeKey}:${navigation.routeRevision}`;
   const [committedFilters, setCommittedFilters] = useState<{
     contextKey: string;
     filters: ProductFitCommittedFilters;
@@ -439,10 +542,13 @@ function CountryDetailContent({
     summary: typeof response.applicabilitySummary;
   } | null>(null);
   const [summaryErrorState, setSummaryErrorState] = useState<{
+    code: CountryApiErrorCode | null;
     contextKey: string;
-    message: string;
   } | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryLoadingContextKey, setSummaryLoadingContextKey] = useState<
+    string | null
+  >(null);
+  const summaryLoading = summaryLoadingContextKey === contextKey;
   const summaryAbortController = useRef<AbortController | null>(null);
   const chatFilters =
     committedFilters?.contextKey === contextKey
@@ -452,76 +558,115 @@ function CountryDetailContent({
     refreshedSummary?.contextKey === contextKey
       ? refreshedSummary.summary
       : response.applicabilitySummary;
-  const summaryError =
+  const summaryErrorCode =
     summaryErrorState?.contextKey === contextKey
-      ? summaryErrorState.message
-      : null;
+      ? summaryErrorState.code
+      : undefined;
+
+  useEffect(() => {
+    const handleHistoryNavigation = () => {
+      cancelPendingProductEvaluation();
+      summaryAbortController.current?.abort();
+      summaryAbortController.current = null;
+      // The browser location already points to the target, but its RSC props
+      // may not have arrived. Hide the old content until that target commits.
+      setHistoryTarget(window.location.href);
+    };
+    window.addEventListener("popstate", handleHistoryNavigation);
+    return () => window.removeEventListener("popstate", handleHistoryNavigation);
+  }, [cancelPendingProductEvaluation]);
 
   useEffect(
     () => () => {
       summaryAbortController.current?.abort();
+      summaryAbortController.current = null;
     },
-    [],
+    [contextKey],
   );
 
   const handleEvaluationCommitted = useCallback(
     (filters: ProductFitCommittedFilters) => {
+      setNavigationState((current) => recordProductFitOwnNavigation(current,
+        buildProductFitRouteKey({
+          countryIso3: country.iso3,
+          asOf: filters.asOf,
+          initialFilters: filters,
+        }),
+      ));
       setCommittedFilters({ contextKey, filters });
       summaryAbortController.current?.abort();
       const abortController = new AbortController();
       summaryAbortController.current = abortController;
+      const requestIsCurrent = () =>
+        !abortController.signal.aborted &&
+        summaryAbortController.current === abortController;
+      const deadline = createPublicApiRequestDeadline(abortController.signal);
       const params = new URLSearchParams({
         applicationScope: filters.applicationScope,
         asOf: filters.asOf,
         powerKw: String(filters.powerKw),
       });
-      setSummaryLoading(true);
+      setSummaryLoadingContextKey(contextKey);
       setSummaryErrorState(null);
       void fetch(`/api/countries/${country.iso3}?${params}`, {
         headers: { accept: "application/json" },
-        signal: abortController.signal,
+        signal: deadline.signal,
       })
         .then(async (result) => {
           if (!result.ok) {
-            throw new Error(
-              await parseApiErrorMessage(result, copy.decisionSummaryRequestError),
-            );
+            return {
+              code: await parseCountryApiErrorCode(result),
+              status: "error" as const,
+            };
           }
-          return countryDetailResponseSchema.parse(await result.json());
+          return {
+            response: countryDetailResponseSchema.parse(await result.json()),
+            status: "ready" as const,
+          };
         })
         .then((result) => {
-          if (result.status === "available") {
+          if (!requestIsCurrent()) {
+            return;
+          }
+          if (result.status === "error") {
+            setSummaryErrorState({ code: result.code, contextKey });
+            return;
+          }
+          if (result.response.status === "available") {
             setRefreshedSummary({
               contextKey,
-              summary: result.applicabilitySummary,
+              summary: result.response.applicabilitySummary,
             });
           }
         })
         .catch((error: unknown) => {
-          if (error instanceof DOMException && error.name === "AbortError") {
+          if (
+            !requestIsCurrent() ||
+            (error instanceof DOMException &&
+              error.name === "AbortError" &&
+              !deadline.didTimeout())
+          ) {
             return;
           }
           setSummaryErrorState({
+            code: null,
             contextKey,
-            message: toUserFacingErrorMessage(
-              error,
-              copy.decisionSummaryErrorFallback,
-            ),
           });
         })
         .finally(() => {
-          if (!abortController.signal.aborted) {
-            setSummaryLoading(false);
+          deadline.dispose();
+          if (requestIsCurrent()) {
+            setSummaryLoadingContextKey(null);
           }
         });
     },
     [
       contextKey,
-      copy.decisionSummaryErrorFallback,
-      copy.decisionSummaryRequestError,
       country.iso3,
     ],
   );
+
+  if (waitingForHistoryRoute) return <ProductFitLoading />;
 
   return (
     <div className="space-y-5" data-testid="country-detail">
@@ -538,7 +683,7 @@ function CountryDetailContent({
       ) : null}
 
       <ApplicabilitySummarySection
-        error={summaryError}
+        errorCode={summaryErrorCode}
         loading={summaryLoading}
         summary={applicabilitySummary}
       />
@@ -563,11 +708,11 @@ function CountryDetailContent({
           />
           <DetailItem
             label={copy.region}
-            value={country.regionCode ?? dictionary.common.notRecorded}
+            value={countryRegionLabel(country.regionCode, dictionary)}
           />
           <DetailItem
             label={copy.subregion}
-            value={country.subregionCode ?? dictionary.common.notRecorded}
+            value={countrySubregionLabel(country.subregionCode, dictionary)}
           />
         </dl>
         <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
@@ -586,7 +731,7 @@ function CountryDetailContent({
         asOf={response.asOf}
         countryIso3={country.iso3}
         initialFilters={initialFilters}
-        key={country.iso3}
+        key={`${country.iso3}:${navigation.panelGeneration}`}
         onEvaluationCommitted={handleEvaluationCommitted}
         registerNavigationGuard={registerProductFitNavigationGuard}
       />
@@ -608,7 +753,11 @@ function CountryDetailContent({
             initialFilters: chatFilters,
             responseAsOf: response.asOf,
           })}
-          onClick={cancelPendingProductEvaluation}
+          onClick={(event) => {
+            if (isUnmodifiedPrimaryClick(event)) {
+              cancelPendingProductEvaluation();
+            }
+          }}
         >
           <MessageSquareText aria-hidden="true" className="size-4" />
           {copy.chatAction}
@@ -636,9 +785,25 @@ function CountryDetailContent({
                 className="rounded-2xl border bg-card p-4 text-sm"
                 key={jurisdiction.id}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-semibold">{jurisdiction.name}</h3>
-                  <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
+                  <h3 className="min-w-0 break-words font-semibold">
+                    {jurisdictionDisplayName(
+                      {
+                        code: jurisdiction.code,
+                        countryIso3: country.iso3,
+                        id: jurisdiction.id,
+                        isDemo: jurisdiction.isDemo,
+                        name: jurisdiction.name,
+                        sourceId: jurisdiction.source.id,
+                        sourceIsDemo: jurisdiction.source.isDemo,
+                        sourceTitle: jurisdiction.source.title,
+                        type: jurisdiction.type,
+                      },
+                      dictionary,
+                      locale,
+                    )}
+                  </h3>
+                  <div className="flex max-w-full flex-wrap justify-start gap-1.5 sm:shrink-0 sm:justify-end">
                     <DataClassificationBadge
                       isDemo={
                         jurisdiction.isDemo ||
@@ -648,7 +813,7 @@ function CountryDetailContent({
                       }
                     />
                     <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold">
-                      {jurisdiction.type}
+                      {jurisdictionTypeLabel(jurisdiction.type, dictionary)}
                     </span>
                   </div>
                 </div>
@@ -689,16 +854,25 @@ function CountryDetailContent({
                 className="rounded-2xl border bg-card p-4"
                 key={metric.id}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-sm font-semibold leading-5">
-                    {metric.metricName}
+                <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
+                  <h3 className="min-w-0 break-words text-sm font-semibold leading-5">
+                    {marketMetricDisplayName(
+                      { ...metric, metricIds: [metric.id] },
+                      dictionary,
+                      locale,
+                    )}
                   </h3>
-                  <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                  <div className="flex max-w-full flex-wrap justify-start gap-1.5 sm:shrink-0 sm:justify-end">
                     <DataClassificationBadge
                       isDemo={metric.isDemo || metric.source.isDemo}
                     />
                     <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold">
-                      {metric.applicationScope ?? copy.allScopes}
+                      {metric.applicationScope
+                        ? applicationScopeLabel(
+                            metric.applicationScope,
+                            dictionary,
+                          )
+                        : copy.allScopes}
                     </span>
                   </div>
                 </div>
@@ -709,7 +883,11 @@ function CountryDetailContent({
                   </span>
                 </p>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  {metric.definition}
+                  {marketMetricDisplayDefinition(
+                    { ...metric, metricIds: [metric.id] },
+                    dictionary,
+                    locale,
+                  )}
                 </p>
                 <p className="mt-3 text-xs text-muted-foreground">
                   {copy.period}{dictionary.common.labelSeparator}{formatUtcDate(metric.periodStart, locale)} → {formatUtcDate(metric.periodEnd, locale)} · {copy.methodology}{dictionary.common.labelSeparator}
@@ -745,11 +923,13 @@ function CountryDetailContent({
               className="rounded-2xl border bg-card p-4 text-sm"
               key={source.id}
             >
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-medium">
+              <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
+                <p className="min-w-0 break-words font-medium">
                   <SourceLink source={source} />
                 </p>
-                <DataClassificationBadge isDemo={source.isDemo} />
+                <div className="flex max-w-full flex-wrap justify-start gap-1.5 sm:shrink-0 sm:justify-end">
+                  <DataClassificationBadge isDemo={source.isDemo} />
+                </div>
               </div>
               <p className="mt-1 text-muted-foreground">
                 {source.publisher ?? copy.noRecordPublisher}
@@ -803,11 +983,11 @@ function formatPowerBand(
 }
 
 function ApplicabilitySummarySection({
-  error,
+  errorCode,
   loading,
   summary,
 }: {
-  error: string | null;
+  errorCode: CountryApiErrorCode | null | undefined;
   loading: boolean;
   summary: ApplicabilitySummary | null;
 }) {
@@ -826,13 +1006,13 @@ function ApplicabilitySummarySection({
     );
   }
 
-  if (error) {
+  if (errorCode !== undefined) {
     return (
       <section
         className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
         role="alert"
       >
-        {error}
+        {countryDecisionSummaryErrorMessage(errorCode, dictionary)}
       </section>
     );
   }
@@ -850,6 +1030,16 @@ function ApplicabilitySummarySection({
 
   const current = summary.country.currentEffectiveRegulations;
   const future = summary.country.futureAdoptedRegulations;
+  const missingDataMessages = countryApplicabilityMissingDataMessages(
+    {
+      countryIso3: summary.country.countryIso3,
+      countryName: summary.country.countryName,
+      currentEffectiveRegulationCount: current.length,
+      futureAdoptedRegulationCount: future.length,
+      hasMissingData: summary.missingData.length > 0,
+    },
+    dictionary,
+  );
 
   return (
     <section
@@ -861,7 +1051,8 @@ function ApplicabilitySummarySection({
         {copy.applicabilitySummary}
       </h2>
       <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-        {copy.queryConditions}{dictionary.common.labelSeparator}{summary.query.applicationScope} · {summary.query.powerKw} kW · {copy.queryAsOf} {formatUtcDate(summary.query.asOf, locale)}
+        {copy.queryConditions}{dictionary.common.labelSeparator}
+        {applicationScopeLabel(summary.query.applicationScope, dictionary)} · {summary.query.powerKw} kW · {copy.queryAsOf} {formatUtcDate(summary.query.asOf, locale)}
       </p>
 
       {current.length > 0 ? (
@@ -870,7 +1061,7 @@ function ApplicabilitySummarySection({
             <article className="rounded-xl border bg-background p-3" key={regulation.id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">
-                  {regulation.canonicalName}
+                  {regulationDisplayName(regulation, dictionary, locale)}
                 </h3>
                 <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-900">
                   {copy.currentApplicable}
@@ -897,16 +1088,22 @@ function ApplicabilitySummarySection({
           <p className="font-semibold">{copy.futureAdopted}</p>
           {future.map((regulation) => (
             <p key={regulation.id}>
-              {regulation.canonicalName} · {copy.effectiveDate} {formatOptionalUtcDate(regulation.effectiveFrom, locale, dictionary.common.noData)}
+              {regulationDisplayName(regulation, dictionary, locale)} ·{" "}
+              {copy.effectiveDate}{" "}
+              {formatOptionalUtcDate(
+                regulation.effectiveFrom,
+                locale,
+                dictionary.common.noData,
+              )}
             </p>
           ))}
         </div>
       ) : null}
 
-      {summary.missingData.length > 0 ? (
+      {missingDataMessages.length > 0 ? (
         <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
           <p className="font-semibold">{copy.evidenceGap}</p>
-          {summary.missingData.map((message) => (
+          {missingDataMessages.map((message) => (
             <p key={message}>{message}</p>
           ))}
         </div>
@@ -919,7 +1116,15 @@ function ApplicabilitySummarySection({
         <div className="mt-2 space-y-1 text-muted-foreground">
           <p>{copy.lastVerified}{dictionary.common.labelSeparator}{formatOptionalUtcDate(summary.lastVerifiedAt, locale, dictionary.common.notRecorded)}</p>
           {summary.sources.map((source) => (
-            <p key={`${source.entityType}:${source.entityId}:${source.sourceId}`}>
+            <p
+              key={[
+                source.countryIso3 ?? "global",
+                source.entityType,
+                source.entityId,
+                source.regulationId ?? "none",
+                source.sourceId,
+              ].join(":")}
+            >
               {isNavigableEvidenceUrl(source.sourceUrl) ? (
                 <a
                   className="underline underline-offset-2"
@@ -931,7 +1136,7 @@ function ApplicabilitySummarySection({
                 </a>
               ) : (
                 source.sourceTitle
-              )} · {source.locator ?? copy.noLocator} · {copy.verifiedAt} {formatUtcDate(source.verifiedAt, locale)}
+              )} · {localizedCitationLocator(source, locale, dictionary, copy.noLocator)} · {copy.verifiedAt} {formatUtcDate(source.verifiedAt, locale)}
             </p>
           ))}
         </div>
@@ -984,11 +1189,11 @@ function RegulationSection({
               data-testid="country-regulation-card"
               key={regulation.id}
             >
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-sm font-semibold leading-5">
-                  {regulation.canonicalName}
+              <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
+                <h3 className="min-w-0 break-words text-sm font-semibold leading-5">
+                  {regulationDisplayName(regulation, dictionary, locale)}
                 </h3>
-                <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                <div className="flex max-w-full flex-wrap justify-start gap-1.5 sm:shrink-0 sm:justify-end">
                   <DataClassificationBadge
                     isDemo={regulation.isDemo || regulation.source.isDemo}
                   />
@@ -1024,8 +1229,28 @@ function RegulationSection({
                   </p>
                 <p>
                   {copy.applicableJurisdiction}{dictionary.common.labelSeparator}
-                  {regulation.applicability.jurisdiction.name}（
-                  {regulation.applicability.jurisdiction.code}) · {copy.membershipPeriod}{dictionary.common.labelSeparator}
+                  {nameWithCode(
+                    jurisdictionDisplayName(
+                      {
+                        code: regulation.applicability.jurisdiction.code,
+                        countryIso3: regulation.applicability.countryIso3,
+                        id: regulation.applicability.jurisdiction.id,
+                        isDemo: regulation.applicability.jurisdiction.isDemo,
+                        name: regulation.applicability.jurisdiction.name,
+                        sourceId:
+                          regulation.applicability.jurisdiction.source.id,
+                        sourceIsDemo:
+                          regulation.applicability.jurisdiction.source.isDemo,
+                        sourceTitle:
+                          regulation.applicability.jurisdiction.source.title,
+                        type: "country",
+                      },
+                      dictionary,
+                      locale,
+                    ),
+                    regulation.applicability.jurisdiction.code,
+                    locale,
+                  )} · {copy.membershipPeriod}{dictionary.common.labelSeparator}
                   {formatUtcDate(regulation.applicability.membership.validFrom, locale)} →{" "}
                   {formatOptionalUtcDate(regulation.applicability.membership.validTo, locale, dictionary.common.open)}
                 </p>

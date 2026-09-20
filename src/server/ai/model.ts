@@ -2,8 +2,10 @@ import "server-only";
 
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
+import { createHash } from "node:crypto";
 
 import {
+  aiModelIdSchema,
   userAiConfigSchema,
   type UserAiConfig,
 } from "@/features/ai/schemas";
@@ -19,13 +21,55 @@ export class AiConfigurationError extends Error {
 }
 
 export type ConfiguredAiModel = {
+  costProfile: unknown | null;
   model: LanguageModel;
   modelId: string;
+  providerProfile: AiProviderProfile;
+};
+
+export type AiProviderProfile = {
+  adapter: "@ai-sdk/openai-compatible" | "portfolio-demo";
+  adapterContractVersion: 1;
+  enableThinking: boolean | null;
+  endpointSha256: string | null;
+  includeUsage: boolean;
 };
 
 export type ServerAiConfig = UserAiConfig & {
+  costProfile?: unknown;
+  includeUsage?: boolean;
   multimodalModel?: string;
 };
+
+const invalidModelCostProfile = Object.freeze({ invalid: true });
+
+function endpointSha256(baseUrl: string): string {
+  return createHash("sha256").update(baseUrl, "utf8").digest("hex");
+}
+
+function finalModelId(value: string): string {
+  const parsed = aiModelIdSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new AiConfigurationError("服务端 AI 配置无效，请检查模型标识。");
+  }
+  return parsed.data;
+}
+
+export function parseConfiguredModelCostProfile(
+  value: string | undefined,
+): unknown | null {
+  if (value === undefined) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    // Do not retain malformed configuration text because it may contain
+    // private commercial terms. The strict estimator will reject this marker.
+    return invalidModelCostProfile;
+  }
+}
 
 function parseServerAiConfigForModel(
   config: ServerAiConfig,
@@ -56,6 +100,10 @@ export function getServerAiConfig(): ServerAiConfig | null {
   return parsedConfig.success
     ? {
         ...parsedConfig.data,
+        costProfile: parseConfiguredModelCostProfile(
+          env.AI_COST_PROFILE_JSON,
+        ),
+        includeUsage: env.AI_INCLUDE_USAGE,
         multimodalModel: env.AI_MULTIMODAL_MODEL,
       }
     : null;
@@ -100,8 +148,16 @@ export function getConfiguredAiModel(
     }
 
     return {
+      costProfile: null,
       model: createPortfolioDemoModel(),
-      modelId: "portfolio-demo/deterministic-v1",
+      modelId: finalModelId("portfolio-demo/deterministic-v1"),
+      providerProfile: {
+        adapter: "portfolio-demo",
+        adapterContractVersion: 1,
+        enableThinking: null,
+        endpointSha256: null,
+        includeUsage: false,
+      },
     };
   }
 
@@ -130,6 +186,7 @@ export function getConfiguredAiModel(
   const provider = createOpenAICompatible({
     apiKey: parsedConfig.data.apiKey,
     baseURL: parsedConfig.data.baseUrl,
+    includeUsage: resolvedConfig.includeUsage === true,
     name: "server-openai-compatible",
     transformRequestBody: (body) =>
       parsedConfig.data.enableThinking === undefined
@@ -141,7 +198,17 @@ export function getConfiguredAiModel(
   });
 
   return {
+    costProfile: resolvedConfig.costProfile ?? null,
     model: provider(parsedConfig.data.model),
-    modelId: `server-openai-compatible/${parsedConfig.data.model}`,
+    modelId: finalModelId(
+      `server-openai-compatible/${parsedConfig.data.model}`,
+    ),
+    providerProfile: {
+      adapter: "@ai-sdk/openai-compatible",
+      adapterContractVersion: 1,
+      enableThinking: parsedConfig.data.enableThinking ?? null,
+      endpointSha256: endpointSha256(parsedConfig.data.baseUrl),
+      includeUsage: resolvedConfig.includeUsage === true,
+    },
   };
 }

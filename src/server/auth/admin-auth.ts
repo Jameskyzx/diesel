@@ -31,23 +31,130 @@ export class AdminAuthorizationError extends Error {
   }
 }
 
+export class AdminRoleBindingsConfigurationError extends Error {
+  constructor() {
+    super("管理员角色绑定配置无效。");
+    this.name = "AdminRoleBindingsConfigurationError";
+  }
+}
+
+function skipJsonWhitespace(serialized: string, start: number): number {
+  let index = start;
+  while (/\s/u.test(serialized[index] ?? "")) index += 1;
+  return index;
+}
+
+function findJsonStringEnd(
+  serialized: string,
+  start: number,
+): number | null {
+  if (serialized[start] !== '"') return null;
+
+  for (let index = start + 1; index < serialized.length; index += 1) {
+    if (serialized[index] === "\\") {
+      index += 1;
+    } else if (serialized[index] === '"') {
+      return index + 1;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * JSON.parse intentionally keeps only the last value for duplicate object
+ * members. Preserve the decoded top-level member sequence so role bindings
+ * can reject duplicates before that behavior becomes authorization state.
+ * The input has already passed JSON.parse, so this scanner only identifies
+ * member boundaries; it does not replace JSON validation.
+ */
+function readTopLevelJsonObjectKeys(
+  serialized: string,
+): string[] | null {
+  let index = skipJsonWhitespace(serialized, 0);
+  if (serialized[index] !== "{") return null;
+  index += 1;
+
+  const keys: string[] = [];
+  while (index < serialized.length) {
+    index = skipJsonWhitespace(serialized, index);
+    if (serialized[index] === "}") return keys;
+
+    const keyEnd = findJsonStringEnd(serialized, index);
+    if (keyEnd === null) return null;
+
+    const decodedKey: unknown = JSON.parse(
+      serialized.slice(index, keyEnd),
+    );
+    if (typeof decodedKey !== "string") return null;
+    keys.push(decodedKey);
+
+    index = skipJsonWhitespace(serialized, keyEnd);
+    if (serialized[index] !== ":") return null;
+    index = skipJsonWhitespace(serialized, index + 1);
+
+    let nestedDepth = 0;
+    while (index < serialized.length) {
+      const character = serialized[index];
+      if (character === '"') {
+        const stringEnd = findJsonStringEnd(serialized, index);
+        if (stringEnd === null) return null;
+        index = stringEnd;
+        continue;
+      }
+      if (character === "{" || character === "[") {
+        nestedDepth += 1;
+      } else if (character === "}" || character === "]") {
+        if (nestedDepth === 0) break;
+        nestedDepth -= 1;
+      } else if (character === "," && nestedDepth === 0) {
+        break;
+      }
+      index += 1;
+    }
+
+    if (serialized[index] === ",") {
+      index += 1;
+      continue;
+    }
+    if (serialized[index] === "}") return keys;
+    return null;
+  }
+
+  return null;
+}
+
 function parseRoleBindings(
   environment: Readonly<Record<string, string | undefined>>,
 ): Map<string, AdminRole> {
+  const serialized = environment.ADMIN_ROLE_BINDINGS_JSON ?? "{}";
   let raw: unknown;
 
   try {
-    raw = JSON.parse(environment.ADMIN_ROLE_BINDINGS_JSON ?? "{}");
+    raw = JSON.parse(serialized);
   } catch {
-    throw new Error("ADMIN_ROLE_BINDINGS_JSON must be valid JSON.");
+    throw new AdminRoleBindingsConfigurationError();
   }
 
-  const bindings = roleBindingsSchema.parse(raw);
+  const parsedBindings = roleBindingsSchema.safeParse(raw);
+  const sourceKeys = readTopLevelJsonObjectKeys(serialized);
+  if (
+    !parsedBindings.success ||
+    sourceKeys === null ||
+    sourceKeys.length !== Object.keys(parsedBindings.data).length ||
+    new Set(sourceKeys).size !== sourceKeys.length
+  ) {
+    throw new AdminRoleBindingsConfigurationError();
+  }
+
   const normalized = new Map<string, AdminRole>();
 
-  for (const [email, role] of Object.entries(bindings)) {
-    const parsedEmail = z.email().parse(email.trim().toLowerCase());
-    normalized.set(parsedEmail, role);
+  for (const [email, role] of Object.entries(parsedBindings.data)) {
+    const parsedEmail = z.email().safeParse(email.trim().toLowerCase());
+    if (!parsedEmail.success || normalized.has(parsedEmail.data)) {
+      throw new AdminRoleBindingsConfigurationError();
+    }
+    normalized.set(parsedEmail.data, role);
   }
 
   return normalized;
@@ -69,7 +176,15 @@ export function resolveAdminPrincipal(
     );
   }
 
-  const role = parseRoleBindings(environment).get(z.email().parse(email));
+  const parsedEmail = z.email().safeParse(email);
+  if (!parsedEmail.success) {
+    throw new AdminAuthorizationError(
+      "UNAUTHENTICATED",
+      "需要经过工作区认证才能访问管理后台。",
+    );
+  }
+
+  const role = parseRoleBindings(environment).get(parsedEmail.data);
   if (!role) {
     throw new AdminAuthorizationError(
       "FORBIDDEN",
@@ -77,7 +192,7 @@ export function resolveAdminPrincipal(
     );
   }
 
-  return adminPrincipalSchema.parse({ email, role });
+  return adminPrincipalSchema.parse({ email: parsedEmail.data, role });
 }
 
 export function requireAdminRole(

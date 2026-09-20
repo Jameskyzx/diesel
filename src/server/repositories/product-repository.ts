@@ -4,6 +4,10 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { productFitQuerySchema } from "@/features/database/schemas";
 import * as schema from "@/server/db/schema";
 import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
+import {
   dataSources,
   productCertifications,
   products,
@@ -20,8 +24,12 @@ export function createProductRepository<
   const regulationRepository = createRegulationRepository(database);
 
   return {
-    async findFitEvidence(input: unknown) {
+    async findFitEvidence(
+      input: unknown,
+      options: RequestSignalOptions = {},
+    ) {
       const query = productFitQuerySchema.parse(input);
+      throwIfRequestAborted(options.signal);
 
       const productRows = await database
         .select({
@@ -55,6 +63,7 @@ export function createProductRepository<
           ),
         )
         .limit(1);
+      throwIfRequestAborted(options.signal);
 
       const productCandidate = productRows[0] ?? null;
       const product =
@@ -62,12 +71,16 @@ export function createProductRepository<
           ? productCandidate
           : null;
 
-      const limitRows = await regulationRepository.findEffectiveByCountry({
-        applicationScope: query.applicationScope,
-        asOf: query.asOf,
-        countryIso3: query.countryIso3,
-        powerKw: query.powerKw,
-      });
+      const limitRows = await regulationRepository.findEffectiveByCountry(
+        {
+          applicationScope: query.applicationScope,
+          asOf: query.asOf,
+          countryIso3: query.countryIso3,
+          powerKw: query.powerKw,
+        },
+        options,
+      );
+      throwIfRequestAborted(options.signal);
       const regulationsById = new Map<
         string,
         {
@@ -236,9 +249,21 @@ export function createProductRepository<
                 ),
               )
               .orderBy(asc(productCertifications.certificateNumber));
-      const certifications = certificationCandidates.filter(
-        isPublicCertificationApproved,
-      );
+      throwIfRequestAborted(options.signal);
+      const certifications = certificationCandidates
+        .filter(isPublicCertificationApproved)
+        .map((certification) => {
+          if (!product) {
+            throw new Error(
+              "Certification evidence cannot exist without its product.",
+            );
+          }
+          return {
+            ...certification,
+            productId: product.id,
+            productModelCode: product.modelCode,
+          };
+        });
 
       const coveredRegulationIds = new Set(
         certifications.map(({ regulationId }) => regulationId),
@@ -253,7 +278,8 @@ export function createProductRepository<
         ),
       };
     },
-    async listProducts() {
+    async listProducts(options: RequestSignalOptions = {}) {
+      throwIfRequestAborted(options.signal);
       const rows = await database
         .select({
           applicationScopes: products.applicationScopes,
@@ -285,6 +311,7 @@ export function createProductRepository<
           ),
         )
         .orderBy(asc(products.modelCode));
+      throwIfRequestAborted(options.signal);
 
       return rows.filter(isPublicProductApproved);
     },

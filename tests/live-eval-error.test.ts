@@ -7,6 +7,53 @@ import {
 } from "../scripts/ai/live-eval-error";
 
 describe("live eval safe error diagnostics", () => {
+  it.each(["AbortError", "TimeoutError"])(
+    "preserves only the %s category from a DOMException",
+    (name) => {
+      const error = new DOMException(
+        "private timeout detail https://sensitive.example/api?key=secret",
+        name,
+      );
+
+      expect(safeLiveEvalErrorName(error)).toBe(name);
+      expect(safeLiveEvalHttpStatus(error)).toBeNull();
+      expect(summarizeLiveEvalError(error)).toBe(
+        `${name}: Eval case execution failed.`,
+      );
+    },
+  );
+
+  it.each(["AbortError", "TimeoutError"])(
+    "preserves nested %s without exposing retry or abort details",
+    (name) => {
+      const error = {
+        cause: {
+          errors: [new DOMException("sensitive abort reason", name)],
+          message: "private retry metadata",
+          name: "AI_RetryError",
+          requestBodyValues: { apiKey: "secret" },
+          responseBody: "private provider response",
+          url: "https://sensitive.example/api",
+        },
+        message: "private wrapper detail",
+        name: "Error",
+      };
+
+      expect(summarizeLiveEvalError(error)).toBe(
+        `${name}: Eval case execution failed.`,
+      );
+    },
+  );
+
+  it("does not infer a timeout category from an unstructured abort reason", () => {
+    expect(summarizeLiveEvalError("TimeoutError: sensitive timeout reason"))
+      .toBe("UnknownError: Eval case execution failed.");
+    expect(summarizeLiveEvalError({
+      message: "Step timeout of 30000ms exceeded",
+      name: "Error",
+    })).toBe("Error: Eval case execution failed.");
+  });
+
   it("preserves only an allowlisted AI error class and numeric HTTP status", () => {
     const error = {
       errors: [

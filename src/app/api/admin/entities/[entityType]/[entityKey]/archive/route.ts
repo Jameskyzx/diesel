@@ -14,11 +14,14 @@ export async function POST(
     params: Promise<{ entityKey: string; entityType: string }>;
   },
 ): Promise<Response> {
-  return handleAdminRoute(request, "admin", async (principal) => {
-    const { entityKey, entityType } = await context.params;
-    const body = await readAdminJsonRequest(request);
+  return handleAdminRoute(
+    request,
+    "admin",
+    "/api/admin/entities/:entityType/:entityKey/archive",
+    async (principal) => {
+      const { entityKey, entityType } = await context.params;
+      const body = await readAdminJsonRequest(request);
 
-    return NextResponse.json(
       await archiveGovernedEntity({
         actor: principal,
         entityKey,
@@ -27,7 +30,9 @@ export async function POST(
           typeof body === "object" && body !== null && "reason" in body
             ? body.reason
             : undefined,
-      }),
-    );
-  });
+      });
+
+      return NextResponse.json({ status: "archived" });
+    },
+  );
 }

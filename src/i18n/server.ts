@@ -1,17 +1,18 @@
 import "server-only";
 
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 
 import { getDictionary } from "@/i18n/dictionaries";
 import {
-  localeCookieName,
-  parseLocale,
+  defaultLocale,
+  localePreferenceFromCookieHeader,
   type Locale,
 } from "@/i18n/locale";
 
 export async function getRequestLocale(): Promise<Locale> {
-  const cookieStore = await cookies();
-  return parseLocale(cookieStore.get(localeCookieName)?.value);
+  const requestHeaders = await headers();
+  return localePreferenceFromCookieHeader(requestHeaders.get("cookie")) ??
+    defaultLocale;
 }
 
 export async function getRequestDictionary() {

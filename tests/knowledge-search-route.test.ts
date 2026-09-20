@@ -43,6 +43,38 @@ describe("POST /api/dev/knowledge/search request limits", () => {
     expect(mocks.hybridSearchKnowledge).not.toHaveBeenCalled();
   });
 
+  it("returns a schema-validated empty search response", async () => {
+    mocks.hybridSearchKnowledge.mockResolvedValue({
+      embeddingModel: "local-hash-embedding-v1",
+      filters: {
+        applicationScope: null,
+        asOf: null,
+        countryIso3: null,
+        jurisdictionId: null,
+        limit: 10,
+      },
+      query: "emissions",
+      results: [],
+      scoring: { keywordWeight: 0.5, vectorWeight: 0.5 },
+      status: "ok",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/dev/knowledge/search", {
+        body: JSON.stringify({ query: "emissions" }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      query: "emissions",
+      results: [],
+      status: "ok",
+    });
+  });
+
   it("does not log search failure details", async () => {
     const error = new Error(`Search failed at ${sensitiveText}`);
     error.name = sensitiveText;

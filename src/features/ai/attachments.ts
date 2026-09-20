@@ -1,3 +1,5 @@
+import type { Locale } from "@/i18n/locale";
+
 export const CHAT_ATTACHMENT_MEDIA_TYPES = [
   "image/jpeg",
   "image/png",
@@ -67,19 +69,32 @@ export function resolveChatAttachmentMediaType(file: {
     return null;
   }
 
-  const normalizedName = file.name.trim().toLowerCase();
+  const normalizedName = normalizeChatAttachmentFilename(file.name).toLowerCase();
   const extension = Object.keys(EXTENSION_MEDIA_TYPES).find((candidate) =>
     normalizedName.endsWith(candidate),
   );
   return extension ? EXTENSION_MEDIA_TYPES[extension] : null;
 }
 
-export function formatChatAttachmentBytes(bytes: number): string {
+export function normalizeChatAttachmentFilename(filename: string): string {
+  return filename.trim();
+}
+
+export function formatChatAttachmentBytes(
+  bytes: number,
+  locale: Locale,
+): string {
   if (bytes < 1024) {
-    return `${bytes} B`;
+    return `${bytes.toLocaleString(locale)} B`;
   }
   if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KiB`;
+    return `${(bytes / 1024).toLocaleString(locale, {
+      maximumFractionDigits: 1,
+      minimumFractionDigits: 1,
+    })} KiB`;
   }
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+  return `${(bytes / (1024 * 1024)).toLocaleString(locale, {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  })} MiB`;
 }

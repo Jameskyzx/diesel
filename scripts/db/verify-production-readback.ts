@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
 import {
+  assertProductionReadbackEnvironment,
   assertProductionMigrationLineage,
   assertProductionReadback,
   type MigrationIdentity,
@@ -31,6 +32,7 @@ async function expectedMigrationIdentities(
 }
 
 async function main(): Promise<void> {
+  assertProductionReadbackEnvironment(process.env);
   const journal = journalSchema.parse(JSON.parse(await readFile(
     resolve(process.cwd(), "drizzle/meta/_journal.json"),
     "utf8",

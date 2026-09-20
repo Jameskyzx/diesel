@@ -5,7 +5,7 @@ export const healthResponseSchema = z.object({
   status: z.literal("ok"),
   timestamp: z.iso.datetime(),
   version: z.string().min(1),
-});
+}).strict();
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
@@ -15,9 +15,11 @@ export const readinessResponseSchema = z.object({
   timestamp: z.iso.datetime(),
   version: z.string().min(1),
   checks: z.object({
+    aiChatAdmission: z.enum(["ok", "unavailable"]),
+    aiChatRateLimit: z.enum(["ok", "unavailable"]),
     database: z.enum(["ok", "unavailable"]),
-  }),
-});
+  }).strict(),
+}).strict();
 
 export type ReadinessResponse = z.infer<typeof readinessResponseSchema>;
 
@@ -39,21 +41,29 @@ export function createHealthPayload({
 }
 
 type CreateReadinessPayloadOptions = CreateHealthPayloadOptions & {
-  ready: boolean;
+  aiChatAdmissionReady: boolean;
+  aiChatRateLimitReady: boolean;
+  databaseReady: boolean;
 };
 
 export function createReadinessPayload({
+  aiChatAdmissionReady,
+  aiChatRateLimitReady,
+  databaseReady,
   now = new Date(),
-  ready,
   version,
 }: CreateReadinessPayloadOptions): ReadinessResponse {
+  const ready =
+    aiChatAdmissionReady && aiChatRateLimitReady && databaseReady;
   return readinessResponseSchema.parse({
     service: "global-diesel-regulations",
     status: ready ? "ok" : "unavailable",
     timestamp: now.toISOString(),
     version,
     checks: {
-      database: ready ? "ok" : "unavailable",
+      aiChatAdmission: aiChatAdmissionReady ? "ok" : "unavailable",
+      aiChatRateLimit: aiChatRateLimitReady ? "ok" : "unavailable",
+      database: databaseReady ? "ok" : "unavailable",
     },
   });
 }

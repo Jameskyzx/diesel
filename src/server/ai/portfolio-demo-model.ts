@@ -3,8 +3,10 @@ import "server-only";
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 
-import { generateSalesBriefResultSchema } from "@/features/ai/schemas";
+import { salesBriefModelToolOutputSchema } from "@/features/ai/model-tool-output";
 import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
+import { metricCodesByTask } from "@/server/ai/evidence-contract";
+import { buildKnowledgeRequestContext } from "@/server/ai/knowledge-request-context";
 import { currentUtcDate } from "@/server/ai/tool-results";
 import type { Locale } from "@/i18n/locale";
 
@@ -114,6 +116,7 @@ export function selectPortfolioDemoTool(
   const powerKw = context.powerKw;
   const asOf = context.asOf ?? currentUtcDate();
   const productModelCode = context.productModelCode;
+  const metricCodes = metricCodesByTask(userTexts);
 
   if (
     context.activeTask === "sales_brief" &&
@@ -128,6 +131,9 @@ export function selectPortfolioDemoTool(
         countryIso3s: countries.slice(0, 5),
         powerKw,
         targetCountryIso3: context.targetCountryIso3 ?? countries[0],
+        ...(metricCodes.sales_brief === undefined
+          ? {}
+          : { metricCodes: metricCodes.sales_brief }),
         ...(productModelCode ? { productModelCode } : {}),
       },
       toolName: "generateSalesBrief",
@@ -146,6 +152,9 @@ export function selectPortfolioDemoTool(
         asOf,
         countryIso3s: countries.slice(0, 5),
         powerKw,
+        ...(metricCodes.opportunity_score === undefined
+          ? {}
+          : { metricCodes: metricCodes.opportunity_score }),
         ...(productModelCode ? { productModelCode } : {}),
       },
       toolName: "calculateOpportunityScore",
@@ -156,14 +165,22 @@ export function selectPortfolioDemoTool(
     return {
       input: {
         countryIso3s: countries.slice(0, 5),
+        ...(metricCodes.market_compare === undefined
+          ? {}
+          : { metricCodes: metricCodes.market_compare }),
         ...(applicationScope ? { applicationScope } : {}),
       },
       toolName: "compareMarkets",
     };
   }
 
+  // Exact single-country applicability queries use the same tool as comparisons;
+  // the production evidence contract does not allow a broad profile substitute.
   if (
-    context.activeTask === "regulation_compare" &&
+    (context.activeTask === "regulation_compare" ||
+      (context.activeTask === "country_profile" &&
+        context.profileTopics.includes("regulations") &&
+        countries.length === 1)) &&
     countries.length >= 1 &&
     applicationScope !== null &&
     powerKw !== null
@@ -202,7 +219,7 @@ export function selectPortfolioDemoTool(
         applicationScope,
         asOf,
         countryIso3: context.focusedCountryIso3 ?? countries[0] ?? null,
-        query: userText,
+        query: buildKnowledgeRequestContext(userTexts, context).query,
       },
       toolName: "searchKnowledgeBase",
     };
@@ -227,7 +244,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function localeFromPrompt(prompt: unknown): Locale {
   if (!Array.isArray(prompt)) {
-    return "zh-CN";
+    return "en";
   }
   for (const message of prompt) {
     if (!isRecord(message) || message.role !== "system") {
@@ -247,12 +264,12 @@ function localeFromPrompt(prompt: unknown): Locale {
       return locale;
     }
   }
-  return "zh-CN";
+  return "en";
 }
 
 export function salesBriefSummaryFromPrompt(
   prompt: unknown,
-  locale: Locale = "zh-CN",
+  locale: Locale = "en",
 ): string | null {
   if (!Array.isArray(prompt)) {
     return null;
@@ -285,7 +302,7 @@ export function salesBriefSummaryFromPrompt(
         continue;
       }
 
-      const parsed = generateSalesBriefResultSchema.safeParse(
+      const parsed = salesBriefModelToolOutputSchema.safeParse(
         part.output.value,
       );
       if (!parsed.success) {
@@ -310,21 +327,21 @@ export function salesBriefSummaryFromPrompt(
       const risk = brief.risks[0]
         ? locale === "en"
           ? `The structured brief identifies ${brief.risks.length} risk(s); review the structured card for the original deterministic wording.`
-          : `首要风险：${brief.risks[0].title}：${brief.risks[0].text}。`
+          : `结构化简报识别到 ${brief.risks.length} 项风险；原始确定性表述请查看结构化卡片。`
         : locale === "en"
           ? "The structured brief lists no risk."
           : "结构化简报未列出风险。";
       const action = brief.salesActions[0]
         ? locale === "en"
           ? `The structured brief provides ${brief.salesActions.length} rule-generated action(s); review priorities and rationale in the structured card.`
-          : `第一行动：${brief.salesActions[0].action}。`
+          : `结构化简报提供 ${brief.salesActions.length} 项规则生成行动；请在结构化卡片中复核优先级与依据。`
         : locale === "en"
           ? "The structured brief lists no action."
           : "结构化简报未列出行动。";
 
       return locale === "en"
         ? `${score} (data coverage ${brief.marketScore.dataCoveragePct}%). ${risk} ${action}\n\nThe offline demo uses explicitly fictional fixtures and cannot support quotes, certification claims, or sales commitments.\n\nFor information only; not a substitute for formal certification or legal advice.`
-        : `${score}（数据覆盖率 ${brief.marketScore.dataCoveragePct}%）。${risk}${action}\n\n离线 Demo 仅使用明确标记的虚构 fixture，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见`;
+        : `${score}（数据覆盖率 ${brief.marketScore.dataCoveragePct}%）。${risk}${action}\n\n离线 Demo 仅使用明确标记的虚构演示数据，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见`;
     }
   }
 
@@ -359,27 +376,27 @@ function toolSummary(
     return "The country profile was queried. Review current effective rules, future adopted rules, verification time, and sources in the structured card. The offline demo uses explicitly fictional fixtures.\n\nFor information only; not a substitute for formal certification or legal advice.";
   }
   if (toolName === "findCompatibleProducts") {
-    return "已运行 product-fit-v2 确定性匹配。法规/认证适配、查询日供应状态和商业准备度以结构化卡片为准；离线 Demo 只使用明确标记的虚构产品与认证 fixture。\n\n信息参考，不替代正式认证或法律意见";
+    return "已运行 product-fit-v2 确定性匹配。法规/认证适配、查询日供应状态和商业准备度以结构化卡片为准；离线 Demo 只使用明确标记的虚构产品与认证数据。\n\n信息参考，不替代正式认证或法律意见";
   }
   if (toolName === "compareRegulations") {
-    return "已按同一场景、功率和日期完成法规比较。状态、限值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。\n\n信息参考，不替代正式认证或法律意见";
+    return "已按同一场景、功率和日期完成法规比较。状态、限值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。\n\n信息参考，不替代正式认证或法律意见";
   }
   if (toolName === "compareMarkets") {
-    return "已按一致口径查询结构化市场指标。可比性、观测值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。";
+    return "已按一致口径查询结构化市场指标。可比性、观测值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。";
   }
   if (toolName === "calculateOpportunityScore") {
-    return "已运行 opportunity-score-v2 确定性评分。产品准备度同时使用合规适配和查询日供应状态；分数、权重、数据覆盖率和缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。";
+    return "已运行 opportunity-score-v2 确定性评分。产品准备度同时使用合规适配和查询日供应状态；分数、权重、数据覆盖率和缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。";
   }
   if (toolName === "generateSalesBrief") {
     return (
-      salesBriefSummaryFromPrompt(prompt) ??
-      "已生成确定性的结构化销售简报。机会、风险、产品建议、下一步和数据缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见"
+      salesBriefSummaryFromPrompt(prompt, locale) ??
+      "已生成确定性的结构化销售简报。机会、风险、产品建议、下一步和数据缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见"
     );
   }
   if (toolName === "searchKnowledgeBase") {
-    return "已检索可追溯文档证据。命中内容、页码或章节、有效期和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。\n\n信息参考，不替代正式认证或法律意见";
+    return "已检索可追溯文档证据。命中内容、页码或章节、有效期和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。\n\n信息参考，不替代正式认证或法律意见";
   }
-  return "已查询国家资料。当前有效法规、未来已采纳法规、核验时间和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构 fixture。\n\n信息参考，不替代正式认证或法律意见";
+  return "已查询国家资料。当前有效法规、未来已采纳法规、核验时间和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。\n\n信息参考，不替代正式认证或法律意见";
 }
 
 export function createPortfolioDemoModel() {

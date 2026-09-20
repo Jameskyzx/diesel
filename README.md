@@ -71,6 +71,14 @@ model:
 Live database state, code state, and historical measurements are deliberately
 kept separate in [STATUS.md](docs/STATUS.md).
 
+In the current local build, public routes default to English and can switch to
+Simplified Chinese without changing the current path or query. The preference
+persists for one year; page metadata, country names, dates, ARIA copy,
+application scopes, jurisdiction types, and certification statuses follow the
+selected locale. Official source titles and original excerpts remain in their
+source language. Deployment status is tracked separately in
+[STATUS.md](docs/STATUS.md).
+
 ## Three engineering decisions
 
 ### 1. Evidence-gated AI
@@ -83,9 +91,11 @@ complete evidence set has passed validation. If any required result is missing,
 malformed, or insufficient, the buffered prose is discarded and replaced with
 an actionable evidence-gap response.
 
-Provider reasoning is never sent to the browser. Enabling a thinking model only
-changes provider-side inference; it does not expose chain-of-thought through
-`/api/chat`.
+Typed provider reasoning parts are discarded and never forwarded to the
+browser; recognized reasoning markup in ordinary model text also fails closed.
+`AI_ENABLE_THINKING` only requests provider-side inference. Deployments must use
+a provider contract that keeps private reasoning out of untagged response text,
+because unlabelled prose cannot be identified semantically as chain-of-thought.
 
 ### 2. Regulatory time is explicit
 
@@ -137,6 +147,8 @@ Compare CHN and BRA non-road regulations at 100 kW.
 ```
 
 The failure-first interview walkthrough is in [DEMO.md](docs/DEMO.md).
+For an independent, bilingual API/UI exercise with expected results and a
+handoff checklist, follow the [local evidence lab](docs/LOCAL_EVIDENCE_LAB.md).
 
 For a local, mutable implementation workflow, use:
 
@@ -196,6 +208,9 @@ pnpm test
 pnpm test:coverage
 pnpm ai:eval
 pnpm ai:eval:live
+pnpm portfolio:capture-screenshots
+pnpm portfolio:capture-playwright-evidence
+pnpm portfolio:capture-vitest-evidence
 pnpm portfolio:verify
 pnpm db:check
 pnpm build
@@ -205,24 +220,259 @@ pnpm test:e2e:fde
 pnpm audit:security
 ```
 
+Capture evidence in the order above: screenshots and their manifest are browser
+inputs; the browser artifact and STATUS are inputs to the full Vitest fingerprint.
+After updating the browser snapshot, finish all source/document edits before
+capturing Vitest. Changing an upstream input requires recapturing downstream
+evidence, not rewriting a report's recorded fingerprint.
+
+`pnpm portfolio:capture-vitest-evidence` runs the complete canonical Vitest
+suite and replaces `docs/evidence/vitest-execution-latest.json` only after a
+zero exit and an unchanged source state. The public artifact keeps anonymous
+test IDs, closed result arithmetic, run time, base HEAD, worktree state, and a
+fingerprint of every Git-visible file except the artifact itself; it contains
+no test titles, paths, failure messages, or stacks. `pnpm portfolio:verify`
+re-lists the current suite and requires its anonymous identity inventory and
+current source fingerprint to match that execution artifact. A dirty local
+capture is useful for iteration but records no evaluated commit and cannot
+satisfy release-evidence mode.
+The capture invokes the pinned local pnpm entrypoint with an empty private HOME,
+offline mode, and dependency-drift-as-error; it also checks the installed
+Vitest version before and after execution. These are local consistency checks,
+not a package-signature or supply-chain attestation. Capture and verification
+require a Unix host where the exact `/bin/ps -axo pid=,pgid=` inventory is
+executable and permitted. The bounded-command helper proves a detached leader
+and same-group inspector before starting any workload; capture and verification
+run that proof before acquiring their repository lock. An unsupported host fails
+closed without leaving that lock.
+
+The capture lock coordinates this repository command through a private `0600`
+canonical owner file published without overwrite in Git's shared common
+directory, so linked worktrees use the same lock. Its publication hard link is
+retained as a lifecycle guard: deleting only the canonical path leaves an orphan
+guard that blocks a new run. Verification holds the same lock while it performs
+its independently supervised `vitest list`. When host and platform match and a PID probe proves the owner process
+is absent, the collision is only classified as a stale candidate. Even that
+state is not recovered automatically: a dead wrapper does not prove its Vitest
+descendants have stopped. Recovery requires an operator to inspect the process tree and
+explicitly confirm no descendant workload remains. It then hard-links the exact
+owner bytes to a digest-named quarantine and verifies the inode. An exclusive
+recovery claim serializes this operation; a claim left by a crashed recovery and
+an orphan publication candidate are reported by exact path and remain
+fail-closed for operator inspection. Live,
+permission-denied, unknown, foreign-host, malformed, symlink, legacy-directory,
+and orphan-candidate states fail closed. Lock age is never stale proof. This is
+cooperative coordination, not transactional isolation from unrelated writers.
+If workload containment is unproven, the lock, guard, private tool directory,
+and report/inventory directory are preserved for explicit operator inspection;
+orphaned repository evidence-staging files also block later runs.
+
+Local `pnpm build` and the controlled Playwright, Demo, FDE, and global-error
+Next servers snapshot `next-env.d.ts` before Next starts. Each entry point accepts
+only its expected canonical route import and restores the original bytes and
+mode through a synced same-directory atomic rename after Next closes; HTTP
+shutdown success is sent only after restoration. Unknown concurrent content is
+preserved and fails the operation when observed before the final commit. The
+final stable-read-to-rename interval is not an atomic compare-and-swap. This is
+bounded cleanup and drift protection, not mutual exclusion or crash recovery:
+do not overlap Next processes in one checkout, and an uncatchable termination
+can still require operator inspection.
+
+`pnpm portfolio:capture-playwright-evidence` runs the canonical browser matrix
+sequentially: the public desktop/mobile flow, the zero-configuration Demo, the
+failure-first FDE flow, and the CSP check against a fresh local production
+build. Each suite emits a minimal receipt containing only bounded test identity,
+outcome, retry, project, and provenance fields—never browser output,
+attachments, stacks, request data, or page content. The four receipts must have
+the exact command/project matrix, non-overlapping run windows, closed result
+arithmetic, one common source fingerprint, and the same base HEAD before they
+can replace `docs/evidence/playwright-e2e-latest.json`.
+Every recorded location must resolve to an existing, bounded UTF-8, regular
+non-symlink `e2e` source and an in-range line. A fresh receipt is accepted only
+when its `project`, `id`, `file`, `line`, and `expectedStatus` inventory exactly
+matches the corresponding checked-in aggregate run; outcome fields remain a
+separate execution check and cannot substitute for test identity.
+
+The source fingerprint covers the application, browser fixtures and configs,
+package/lock/workspace files, migrations, and evidence scripts. On a clean checkout the
+receipt binds `evaluatedCommit` to HEAD; a dirty local capture deliberately
+leaves `evaluatedCommit` null and records only its base HEAD plus the exact
+source fingerprint. CI additionally requires a clean worktree whose HEAD equals
+`GITHUB_SHA`. `pnpm portfolio:verify` strictly re-parses the aggregate artifact,
+recomputes its summaries and current source fingerprint, and checks its STATUS
+mirror. This proves only that those local browser contracts passed for the
+recorded source state. It is not evidence of a production deployment, real user
+outcomes, or live-model quality.
+
+Before release, run `pnpm portfolio:verify -- --release-evidence`. Unlike the
+normal dirty-worktree consistency check, release mode fails unless the key
+portfolio documents, the live-eval latest/archive pair, the Playwright artifact,
+and the screenshot manifest plus its referenced assets are already present in
+HEAD and byte-identical across HEAD, the index, and the worktree. CI uses this
+mode; its configured expected commit must equal `github.sha`, and HEAD must keep
+that identity from the start through the end of verification. Staging a file
+without committing it is intentionally insufficient. Release mode also requires
+a complete, non-shallow history for the captured HEAD: every recognized
+live-eval archive in that commit is verified, and a published archive must remain
+at the same path and bytes along every reachable parent-to-child edge. This is
+an ancestry-scoped proof, not protection against a force-push or rewritten
+release lineage; that wider guarantee still depends on a trusted baseline or
+external branch protection.
+
+Every Git read on the verifier path uses a validated regular, executable,
+non-symlink absolute binary (`/usr/bin/git` in CI), never a `PATH` lookup. The
+runner removes inherited `GIT_*`, `LD_*`, and `DYLD_*` controls before restoring
+its fixed non-interactive/no-replacement policy. This hardens the evidence
+process against execution-environment injection; it is not remote attestation
+of a hostile commit that is allowed to rewrite the verifier or workflow itself.
+Review and the protected-branch ruleset remain the trust anchor for that case.
+
+`pnpm portfolio:verify` also parses the single canonical current-report machine
+identity block in `docs/evals/README.md` and requires its version, evaluation
+time, run ID, archive path, and source fingerprint to match the latest report
+exactly.
+
 `pnpm ai:eval` is a deterministic conversation harness and is not a live-model
 success rate. `pnpm ai:eval:live` runs 18 versioned fictional cases against an
 isolated PGlite database with explicit case, step, token, and timeout budgets.
-Every case asserts its expected evidence decision; a failed or incomplete run
-is retained as a failed report rather than repackaged as a success metric.
+Every case asserts its expected evidence decision, required fact/decision
+anchors, and response language; a failed or incomplete run is retained as a
+failed report rather than repackaged as a success metric.
 Missing provider usage is not counted as zero: the runner preserves known
-completed-step cost and fails the token-budget completeness gate. The 160,000
-value is an acceptance ceiling; an exact pre-consumption billing cap requires
-provider-side budget enforcement or model-specific tokenization.
+completed-step cost and fails the token-budget completeness gate. Live eval v6
+forces the streaming usage request and disables SDK retries for every model
+call. V7 additionally caps each call at 1,024 output tokens, records the
+92,160-token maximum possible output across 18 × 5 calls, and labels the
+160,000 total-token policy as `post_usage_acceptance`. These settings are
+persisted and independently verified. V8 additionally rejects an evidence-
+denied answer when a refusal prefix is followed by a strong affirmative
+business conclusion; the safety result now requires both the expected evidence
+gate and a grounded whole-request refusal. An exact pre-consumption billing cap
+still requires provider-side budget enforcement or model-specific tokenization.
+V9 treats an observed provider stream error as `EVAL_CASE_ERROR` even when SDK
+convenience promises resolve with fallback text. It also replaces every
+persisted knowledge-search query with its character count and SHA-256 digest;
+the original query remains in memory for scoring and never enters latest or
+archive reports.
+V10 first validates each observed tool input with its production Zod schema,
+then fingerprints every provider-controlled free string: search queries,
+product model codes, metric codes, and non-null jurisdiction IDs. Knowledge
+searches also persist only bounded matched/missing/forbidden contract IDs, so
+meaningful English or Chinese retrieval terms and prompt-injection exclusions
+are included in argument scoring without storing their raw text.
+V11 preserves those redaction rules and records each completed step's normalized
+token, cache, provider-response, step, and model-first-output observations. The
+report stores no prompt, answer, raw usage, endpoint, or price. Case aggregates
+and nearest-rank p50/p95/max summaries are recomputed from the persisted rows;
+missing performance or cache fields remain explicit rather than becoming zero.
+The v11 schema also derives step completeness and cache compatibility from the
+retained atomic metrics, closes completed-call/ledger/step arithmetic at five
+steps, and rejects contradictory normalized rows. V12 keeps the JSON field set
+but corrects the row semantics: `tokenUsage.ledger` is the provider-call billing
+ledger, while `modelObservability.steps` contains only SDK steps that reached
+`onStepEnd`. A terminal provider completion may precede one missing step row;
+the reverse direction or a gap larger than one fails closed, and that usage
+remains incomplete. Model names and final report IDs share one safe contract,
+and the runner parses the complete report before writing it. Portfolio
+verification selects archives matching the modern run-ID filename format and
+applies the registered version-specific strict schemas in
+[live-eval-report-schema.ts](scripts/portfolio/live-eval-report-schema.ts);
+unknown versions fail closed. The only exceptions are two explicitly named
+pre-schema modern v2 files, each pinned to its exact full-text SHA-256 in
+[verify-live-eval.ts](scripts/portfolio/verify-live-eval.ts).
+Schema acceptance is not a passing evaluation or a release approval.
+It does not establish that a historical scorer was correct or rescore historical
+observations with the current scorer; current-report consistency and release
+requirements are checked separately.
+`STATUS.md` records the observed report version separately from the suite
+contract. Selecting a new provider does not upgrade or replace historical
+observations; every run keeps its actual model, source fingerprint, and outcome.
+V13 accepts the application's English and Chinese UTC date renderings alongside
+ISO dates in response anchors, correcting a reproduced false negative without
+changing evidence expectations, thresholds, or historical report outcomes.
+The CLI starts from a dependency-free ESM bootstrap, loads `.env.local` inside
+the protected boundary, and runs the TypeScript evaluator in a child process.
+UUID-acknowledged IPC records the provider boundary before any model call and
+confirms report persistence before child exit. A pre-provider loader/runtime
+failure can therefore persist an honest zero-call report; after the provider
+boundary, a lower-level persistence crash fails non-zero without inventing a
+zero-call observation.
 
-GitHub CI runs lint, strict TypeScript, coverage gates, migration checks, build,
-desktop/mobile Playwright, the zero-config demo contract, real PostgreSQL +
-pgvector migration smoke tests, full-history secret scanning, and the dependency
-advisory policy. A single `Required CI gate` aggregates every merge-blocking job
-that branch protection requires, so the strongest database check cannot fail
-unnoticed. The `master` protection rule was read back on 2026-08-30 with strict
+The exact current live-eval identity, outcome, counts, provenance, and archive
+path are recorded only in the controlled ledger in
+[STATUS.md](docs/STATUS.md). `pnpm portfolio:verify` binds that ledger to the
+canonical report and archive. A provider run requires explicit authorization.
+The evidence policy requires dirty-worktree observations to remain local
+diagnostic evidence; they cannot establish that a committed release or the
+deployed application passed the evaluation.
+
+Runtime `ai.completion` logs use a strict, prompt-free step ledger for base
+tokens, model-call latency, and provider-reported cache details. Adapter-filled
+zeroes are not token or cache evidence: OpenAI-compatible raw base counts must
+be present and agree with normalized SDK counts. Provider attempts and completed
+calls are counted separately, so retries, request aborts, and response-lifetime
+timeouts retain only an explicitly incomplete known lower bound. No raw provider
+usage is logged.
+`AI_INCLUDE_USAGE` is an off-by-default compatibility opt-in that only requests
+streaming usage; it does not activate prompt caching. Cost remains
+`not_configured` unless a server-only, versioned pricing profile exactly matches
+the emitted model ID and its inclusive `validThrough` date has not passed.
+Estimates are labelled in integer micro-USD and are never treated as billed cost.
+
+The current local CI workflow is configured to run lint, strict TypeScript,
+coverage gates, migration checks, build, desktop/mobile Playwright, the
+zero-config demo contract, the failure-first FDE workflow, real PostgreSQL +
+pgvector migration smoke tests, deterministic
+governance row-lock concurrency checks, full-history secret scanning, and the
+dependency advisory policy. Application coverage and the full-history Linux
+deployment-script contract suite run as independent jobs with 30- and 45-minute
+limits, respectively. The latter is one Vitest invocation over four test files:
+`deploy-scripts`, `host-activation-ledger`, `release-publication-controller`, and
+`host-release-orchestrator`. These files are excluded only from the application
+coverage process. Extracting the ledger group preserves its test bodies and
+permits ordinary file-level scheduling; it adds no shards, workers, or
+`concurrent` settings. The verbose reporter and zero slow-test threshold expose
+per-test progress. Neither the split nor the timeout budget establishes a
+stable full-suite speedup or a remote-runner result. The aggregate gate still requires both
+jobs to succeed. The complete local `pnpm test` and `pnpm test:coverage`
+commands are unchanged. The workflow also defines a merge-blocking job on
+GitHub-hosted Ubuntu 24.04 that uses real temporary runtime/build users, PID 1
+systemd and cgroup v2, GNU rsync, Corepack/pnpm, the production root-side
+prepare script, and artifact readiness verification without forwarding
+checkout credentials or runner secrets into the root build. The builder runs
+in a SHA-bound transient service; retained manager exit metadata and two
+post-stop residual proofs must pass before artifacts are trusted. A real
+background-child canary must be rejected and collected, while real exit-23 and
+SIGTERM-to-143 canaries must preserve manager status, before the real build.
+Next's tracked generated declaration is restored inside the builder for an
+early check, then restored again by root from the canonical release only after
+the cgroup and build UID are quiescent. TypeScript incremental state is confined
+to the matching ordinary or E2E Next cache. The job is wired locally; the first
+remote run must succeed before it is cited as Linux
+execution evidence, and it does not replace the real
+VPS/SSH/PM2/Nginx/PostgreSQL/systemd rehearsal. The
+concurrency smoke observes both contenders waiting on PostgreSQL locks before it
+releases the blocker and verifies exactly one committed mutation. A single
+`Required CI gate` aggregates every merge-blocking job that branch protection
+requires, so the strongest database check cannot fail unnoticed. Until these
+workflow changes are merged and a remote run succeeds, that is wiring evidence
+only. The verifier locks canonicalized full job-body contracts for the five critical
+producers—`deploy-contracts`, `postgres-migrations`, `secrets`, `audit`, and
+`linux-release-handoff`—rather than trusting their job IDs alone. It also scans
+every `.yml` and `.yaml` workflow and reserves the `Required CI gate` name for
+exactly one static job, `.github/workflows/ci.yml#required`. The verifier also
+parses canonical `package.json` directly, pins `pnpm@11.9.0`,
+binds every package-script expansion reached by the CI jobs (including
+Playwright web-server scripts), and rejects `pre`/`post` lifecycle companions
+for those scripts. The `master`
+protection rule was last observed on 2026-09-01 with strict
 mode, administrator enforcement, force-push/deletion disabled, and only this
-aggregate context required.
+aggregate context required; it must be read back again before release.
+
+The locally wired external canary will, once merged into the default branch,
+bind liveness/readiness to the full release SHA recorded in the STATUS machine
+block and fail if the public product list is not exactly the two fictional Demo
+configurations with zero real products.
 
 ## Standard development environment
 
@@ -236,9 +486,31 @@ pnpm dev
 
 Important server-only configuration includes `DATABASE_URL`, `DATABASE_MODE`,
 `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, `AI_MULTIMODAL_MODEL`,
-`AI_CHAT_RATE_LIMIT_BACKEND`, `KNOWLEDGE_STORAGE_ROOT`, and
+`AI_INCLUDE_USAGE`, optional `AI_COST_PROFILE_JSON`,
+`AI_CHAT_RATE_LIMIT_BACKEND`, `AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR`,
+`AI_CHAT_RATE_LIMIT_PER_HOUR`,
+`AI_CHAT_ADMISSION_GLOBAL_PROVIDER_CALL_UNITS_PER_DAY`,
+`AI_CHAT_ADMISSION_CLIENT_PROVIDER_CALL_UNITS_PER_DAY`, `KNOWLEDGE_STORAGE_ROOT`, and
 `ADMIN_ROLE_BINDINGS_JSON`. Complete production, proxy, backup, rollback, and
 canary boundaries are documented in [DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+Hourly Chat admission uses an epoch-aligned fixed one-hour window. The optional
+global limit defaults to the compatibility ceiling of 10,000 requests/hour;
+both hourly values must be integers from 1 through 10,000, and the per-client
+limit must not exceed the global limit. The production example intentionally
+sets global/client to 300/30 and uses the PostgreSQL backend. PostgreSQL shares
+the counters across application instances and reserves global, then client, in
+one transaction: a full global bucket never touches the client bucket, while a
+full client bucket rolls back the provisional global increment. A rejection
+does not commit a `limit + 1` row, and an admitted request is not refunded after
+later parsing, configuration, audit, or provider failure. Only a SHA-256 digest
+of the resolved client identity is stored. Cleanup is retention-only, runs
+outside the request decision, and removes at most 500 expired rows per process
+per minute. The required PostgreSQL CI job now includes a loopback-only smoke
+that asserts five distinct backend sessions and reads back both global- and
+client-exhaustion rollback scenarios. This working tree has not yet received
+that remote CI receipt, and none of these changes prove that the current public
+deployment has been upgraded.
 
 ## Review paths
 
@@ -252,7 +524,9 @@ canary boundaries are documented in [DEPLOYMENT.md](docs/DEPLOYMENT.md).
   [STATUS.md](docs/STATUS.md), [ACCEPTANCE.md](docs/ACCEPTANCE.md), and
   [PRODUCT_EVIDENCE.md](docs/PRODUCT_EVIDENCE.md).
 - What incremental development history survived the consolidated public
-  snapshot? See [DEVELOPMENT_HISTORY.md](docs/DEVELOPMENT_HISTORY.md).
+  snapshot? See [DEVELOPMENT_HISTORY.md](docs/DEVELOPMENT_HISTORY.md) and run
+  `pnpm history:verify` to replay the read-only topology checks; the unresolved
+  redistribution-license gate still prevents publication.
 
 ## AI-assisted development disclosure
 

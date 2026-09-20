@@ -58,6 +58,46 @@ export const salesChatHarnessCases = [
   },
   {
     expected: {
+      activeTools: [],
+      missingRequiredParameters: [],
+      phase: "direct_response",
+    },
+    id: "single-country-regulation-scope-needs-power",
+    selectedCountryIso3: null,
+    userTexts: ["核对 CHN non-road 当前法规。"],
+  },
+  {
+    expected: {
+      activeTools: [],
+      missingRequiredParameters: [],
+      phase: "direct_response",
+    },
+    id: "single-country-regulation-power-needs-scope",
+    selectedCountryIso3: null,
+    userTexts: ["Check current CHN regulations at 100 kW."],
+  },
+  {
+    expected: {
+      activeTools: ["compareRegulations"],
+      missingRequiredParameters: [],
+      phase: "gather_evidence",
+    },
+    id: "single-country-regulation-multi-turn-completes-filter",
+    selectedCountryIso3: null,
+    userTexts: ["核对 CHN non-road 当前法规。", "功率是 100 kW。"],
+  },
+  {
+    expected: {
+      activeTools: [],
+      missingRequiredParameters: [],
+      phase: "direct_response",
+    },
+    id: "negated-comparison-does-not-bypass-partial-filter",
+    selectedCountryIso3: null,
+    userTexts: ["不做跨国比较，只看 CHN non-road 当前法规。"],
+  },
+  {
+    expected: {
       activeTools: ["compareRegulations"],
       missingRequiredParameters: [],
       phase: "gather_evidence",
@@ -100,6 +140,26 @@ export const salesChatHarnessCases = [
   },
   {
     expected: {
+      activeTools: [],
+      missingRequiredParameters: [],
+      phase: "direct_response",
+    },
+    id: "scoped-single-country-market-fails-closed",
+    selectedCountryIso3: null,
+    userTexts: ["Show CHN non-road market data with no cross-country comparison."],
+  },
+  {
+    expected: {
+      activeTools: ["getCountryProfile"],
+      missingRequiredParameters: [],
+      phase: "gather_evidence",
+    },
+    id: "unscoped-single-country-market-remains-supported",
+    selectedCountryIso3: null,
+    userTexts: ["Show CHN market data with no cross-country comparison."],
+  },
+  {
+    expected: {
       activeTools: ["calculateOpportunityScore"],
       missingRequiredParameters: [],
       phase: "gather_evidence",
@@ -129,6 +189,16 @@ export const salesChatHarnessCases = [
     id: "source-document-search",
     selectedCountryIso3: null,
     userTexts: ["查 CHN 当前排放法规原文和来源。"],
+  },
+  {
+    expected: {
+      activeTools: ["searchKnowledgeBase"],
+      missingRequiredParameters: [],
+      phase: "gather_evidence",
+    },
+    id: "scoped-source-search-remains-supported",
+    selectedCountryIso3: null,
+    userTexts: ["查 CHN non-road 排放法规原文和来源。"],
   },
   {
     expected: {

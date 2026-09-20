@@ -12,20 +12,24 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ draftId: string }> },
 ): Promise<Response> {
-  return handleAdminRoute(request, "reviewer", async (principal) => {
-    const { draftId } = await context.params;
-    const body = await readAdminJsonRequest(request);
+  return handleAdminRoute(
+    request,
+    "reviewer",
+    "/api/admin/drafts/:draftId/review",
+    async (principal) => {
+      const { draftId } = await context.params;
+      const body = await readAdminJsonRequest(request);
 
-    return NextResponse.json({
-      draft: await reviewGovernanceDraft({
+      await reviewGovernanceDraft({
         actor: principal,
         draftId,
         reason:
           typeof body === "object" && body !== null && "reason" in body
             ? body.reason
             : undefined,
-      }),
-      status: "reviewed",
-    });
-  });
+      });
+
+      return NextResponse.json({ status: "reviewed" });
+    },
+  );
 }

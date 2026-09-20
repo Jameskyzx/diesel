@@ -22,6 +22,7 @@ import {
   regulations,
 } from "@/server/db/schema";
 import { seedDemoData } from "@/server/db/seed/demo-data";
+import { sha256 } from "@/server/knowledge/document-file";
 import {
   createLocalHashEmbedding,
   KNOWLEDGE_EMBEDDING_MODEL,
@@ -36,9 +37,14 @@ import {
   type AiToolCallAuditInput,
 } from "@/server/repositories/ai-audit-repository";
 import { createMarketRepository } from "@/server/repositories/market-repository";
-import { createGovernanceRepository } from "@/server/repositories/governance-repository";
+import { createGovernanceDashboardRepository } from "@/server/repositories/governance-dashboard-repository";
+import {
+  createGovernanceRepository,
+  SOURCE_VERIFIED_AT_REGRESSION_MESSAGE,
+} from "@/server/repositories/governance-repository";
 import { createRateLimitRepository } from "@/server/repositories/rate-limit-repository";
 import { createPostgresRateLimiter } from "@/server/http/rate-limit";
+import { createPostgresAiChatAdmissionBudget } from "@/server/http/ai-admission-budget";
 import { getGovernanceDashboardFromRepository } from "@/server/services/governance-service";
 import { createTestDatabase } from "../helpers/database";
 
@@ -85,34 +91,49 @@ describe("database migration and demo seed", () => {
     ]);
   });
 
-  it("shares hashed rate-limit buckets across limiter instances and expires old windows", async () => {
-    const scope = "integration-ai-chat";
-    const rawClientIdentifier = "203.0.113.77";
+  it("atomically bounds distinct hourly clients across limiter instances", async () => {
+    const scopes = [
+      "integration-ai-chat-global",
+      "integration-ai-chat-client",
+    ];
     const requestLimit = 5;
-    const windowMs = 60_000;
-    const firstWindow = 1_700_000_040_000;
+    const windowMs = 60 * 60 * 1_000;
+    const firstWindow = Date.UTC(2026, 8, 5, 12);
+    // This fixture deliberately uses a historical injected clock. Retention
+    // uses the database clock and is covered independently below.
+    const cleanupScheduler = { schedule: () => undefined };
     const firstLimiter = createPostgresRateLimiter({
+      cleanupScheduler,
+      globalLimit: requestLimit,
+      globalScope: scopes[0]!,
       limit: requestLimit,
       repository: createRateLimitRepository(testDatabase.database),
-      scope,
+      scope: scopes[1]!,
       windowMs,
     });
     const secondLimiter = createPostgresRateLimiter({
+      cleanupScheduler,
+      globalLimit: requestLimit,
+      globalScope: scopes[0]!,
       limit: requestLimit,
       repository: createRateLimitRepository(testDatabase.database),
-      scope,
+      scope: scopes[1]!,
       windowMs,
     });
 
     await testDatabase.database
       .delete(apiRateLimitBuckets)
-      .where(eq(apiRateLimitBuckets.scope, scope));
+      .where(inArray(apiRateLimitBuckets.scope, scopes));
 
     try {
+      const rawClientIdentifiers = Array.from(
+        { length: requestLimit + 7 },
+        (_, index) => `203.0.113.${index + 1}`,
+      );
       const decisions = await Promise.all(
-        Array.from({ length: requestLimit + 7 }, (_, index) =>
+        rawClientIdentifiers.map((clientIdentifier, index) =>
           (index % 2 === 0 ? firstLimiter : secondLimiter).check(
-            rawClientIdentifier,
+            clientIdentifier,
             firstWindow + index,
           ),
         ),
@@ -122,31 +143,211 @@ describe("database migration and demo seed", () => {
       );
       expect(decisions.filter(({ allowed }) => !allowed)).toHaveLength(7);
 
-      const [sharedBucket] = await testDatabase.database
+      const firstWindowBuckets = await testDatabase.database
         .select()
         .from(apiRateLimitBuckets)
-        .where(eq(apiRateLimitBuckets.scope, scope));
-      expect(sharedBucket).toMatchObject({
-        requestCount: requestLimit + 1,
-        scope,
-      });
-      expect(sharedBucket?.keyHash).toMatch(/^[0-9a-f]{64}$/);
-      expect(sharedBucket?.keyHash).not.toContain(rawClientIdentifier);
+        .where(inArray(apiRateLimitBuckets.scope, scopes));
+      expect(firstWindowBuckets).toHaveLength(requestLimit + 1);
+      expect(
+        firstWindowBuckets.find(({ scope }) => scope === scopes[0])
+          ?.requestCount,
+      ).toBe(requestLimit);
+      expect(
+        firstWindowBuckets.filter(({ scope }) => scope === scopes[1]),
+      ).toHaveLength(requestLimit);
+      expect(
+        firstWindowBuckets.every(({ keyHash }) =>
+          /^[0-9a-f]{64}$/.test(keyHash),
+        ),
+      ).toBe(true);
+      for (const rawClientIdentifier of rawClientIdentifiers) {
+        expect(JSON.stringify(firstWindowBuckets)).not.toContain(
+          rawClientIdentifier,
+        );
+      }
 
       expect(
-        (await secondLimiter.check(rawClientIdentifier, firstWindow + windowMs))
-          .allowed,
+        (
+          await secondLimiter.check(
+            rawClientIdentifiers[0]!,
+            firstWindow + windowMs,
+          )
+        ).allowed,
       ).toBe(true);
       const currentBuckets = await testDatabase.database
         .select()
         .from(apiRateLimitBuckets)
-        .where(eq(apiRateLimitBuckets.scope, scope));
-      expect(currentBuckets).toHaveLength(1);
-      expect(currentBuckets[0]?.requestCount).toBe(1);
+        .where(inArray(apiRateLimitBuckets.scope, scopes));
+      expect(currentBuckets).toHaveLength(requestLimit + 3);
+      expect(
+        currentBuckets.filter(
+          ({ windowStart }) =>
+            windowStart.getTime() === firstWindow + windowMs,
+        ),
+      ).toHaveLength(2);
     } finally {
       await testDatabase.database
         .delete(apiRateLimitBuckets)
-        .where(eq(apiRateLimitBuckets.scope, scope));
+        .where(inArray(apiRateLimitBuckets.scope, scopes));
+    }
+  });
+
+  it("rolls a provisional hourly global reservation back when the client is full", async () => {
+    const scopes = [
+      "integration-ai-chat-rollback-global",
+      "integration-ai-chat-rollback-client",
+    ];
+    const firstWindow = Date.UTC(2026, 8, 5, 14);
+    const limiter = createPostgresRateLimiter({
+      cleanupScheduler: { schedule: () => undefined },
+      globalLimit: 2,
+      globalScope: scopes[0]!,
+      limit: 1,
+      repository: createRateLimitRepository(testDatabase.database),
+      scope: scopes[1]!,
+      windowMs: 60 * 60 * 1_000,
+    });
+
+    await testDatabase.database
+      .delete(apiRateLimitBuckets)
+      .where(inArray(apiRateLimitBuckets.scope, scopes));
+    try {
+      await expect(limiter.check("203.0.113.80", firstWindow)).resolves
+        .toMatchObject({ allowed: true });
+      await expect(limiter.check("203.0.113.80", firstWindow + 1)).resolves
+        .toMatchObject({ allowed: false });
+      await expect(limiter.check("203.0.113.81", firstWindow + 2)).resolves
+        .toMatchObject({ allowed: true });
+      await expect(limiter.check("203.0.113.82", firstWindow + 3)).resolves
+        .toMatchObject({ allowed: false });
+
+      const buckets = await testDatabase.database
+        .select()
+        .from(apiRateLimitBuckets)
+        .where(inArray(apiRateLimitBuckets.scope, scopes));
+      expect(buckets).toHaveLength(3);
+      expect(
+        buckets.find(({ scope }) => scope === scopes[0])?.requestCount,
+      ).toBe(2);
+      expect(
+        buckets
+          .filter(({ scope }) => scope === scopes[1])
+          .map(({ requestCount }) => requestCount),
+      ).toEqual([1, 1]);
+    } finally {
+      await testDatabase.database
+        .delete(apiRateLimitBuckets)
+        .where(inArray(apiRateLimitBuckets.scope, scopes));
+    }
+  });
+
+  it("atomically reserves global and client AI admission units across instances", async () => {
+    const scopes = [
+      "ai-chat-admission-provider-call-global-v1",
+      "ai-chat-admission-provider-call-client-v1",
+    ];
+    const rawClientA = "203.0.113.201";
+    const rawClientB = "203.0.113.202";
+    const firstUtcDay = Date.UTC(2026, 8, 5);
+    const config = { clientUnitsPerDay: 5, globalUnitsPerDay: 10 };
+    const firstBudget = createPostgresAiChatAdmissionBudget({
+      config,
+      repository: createRateLimitRepository(testDatabase.database),
+    });
+    const secondBudget = createPostgresAiChatAdmissionBudget({
+      config,
+      repository: createRateLimitRepository(testDatabase.database),
+    });
+
+    await testDatabase.database
+      .delete(apiRateLimitBuckets)
+      .where(inArray(apiRateLimitBuckets.scope, scopes));
+
+    try {
+      await expect(
+        firstBudget.reserve(rawClientA, firstUtcDay),
+      ).resolves.toMatchObject({ allowed: true, reservedUnits: 5 });
+      await expect(
+        secondBudget.reserve(rawClientA, firstUtcDay + 1),
+      ).resolves.toMatchObject({ allowed: false, reservedUnits: 0 });
+
+      // Client A's rejected second reservation must roll the global write
+      // back, leaving exactly one reserve available for another client.
+      await expect(
+        secondBudget.reserve(rawClientB, firstUtcDay + 2),
+      ).resolves.toMatchObject({ allowed: true, reservedUnits: 5 });
+      await expect(
+        firstBudget.reserve("203.0.113.203", firstUtcDay + 3),
+      ).resolves.toMatchObject({ allowed: false, reservedUnits: 0 });
+
+      const buckets = await testDatabase.database
+        .select()
+        .from(apiRateLimitBuckets)
+        .where(inArray(apiRateLimitBuckets.scope, scopes));
+      expect(buckets).toHaveLength(3);
+      expect(
+        buckets.find(({ scope }) => scope === scopes[0])?.requestCount,
+      ).toBe(10);
+      expect(
+        buckets
+          .filter(({ scope }) => scope === scopes[1])
+          .map(({ requestCount }) => requestCount)
+          .sort((left, right) => left - right),
+      ).toEqual([5, 5]);
+      expect(buckets.every(({ keyHash }) => /^[0-9a-f]{64}$/.test(keyHash)))
+        .toBe(true);
+      expect(JSON.stringify(buckets)).not.toContain(rawClientA);
+      expect(JSON.stringify(buckets)).not.toContain(rawClientB);
+    } finally {
+      await testDatabase.database
+        .delete(apiRateLimitBuckets)
+        .where(inArray(apiRateLimitBuckets.scope, scopes));
+    }
+  });
+
+  it("serializes concurrent AI admission reservations at the global bucket", async () => {
+    const scopes = [
+      "ai-chat-admission-provider-call-global-v1",
+      "ai-chat-admission-provider-call-client-v1",
+    ];
+    const firstUtcDay = Date.UTC(2026, 8, 6);
+    const config = { clientUnitsPerDay: 25, globalUnitsPerDay: 25 };
+    const budgets = [
+      createPostgresAiChatAdmissionBudget({
+        config,
+        repository: createRateLimitRepository(testDatabase.database),
+      }),
+      createPostgresAiChatAdmissionBudget({
+        config,
+        repository: createRateLimitRepository(testDatabase.database),
+      }),
+    ];
+
+    await testDatabase.database
+      .delete(apiRateLimitBuckets)
+      .where(inArray(apiRateLimitBuckets.scope, scopes));
+
+    try {
+      const decisions = await Promise.all(
+        Array.from({ length: 12 }, (_, index) =>
+          budgets[index % budgets.length]!.reserve(
+            `203.0.113.${index + 1}`,
+            firstUtcDay + index,
+          ),
+        ),
+      );
+      expect(decisions.filter(({ allowed }) => allowed)).toHaveLength(5);
+      expect(decisions.filter(({ allowed }) => !allowed)).toHaveLength(7);
+
+      const [globalBucket] = await testDatabase.database
+        .select()
+        .from(apiRateLimitBuckets)
+        .where(eq(apiRateLimitBuckets.scope, scopes[0]!));
+      expect(globalBucket?.requestCount).toBe(25);
+    } finally {
+      await testDatabase.database
+        .delete(apiRateLimitBuckets)
+        .where(inArray(apiRateLimitBuckets.scope, scopes));
     }
   });
 
@@ -502,12 +703,13 @@ describe("repositories", () => {
     await seedDemoData(testDatabase.database);
   });
 
-  it("loads a published review baseline even when it falls outside the 100-row dashboard window", async () => {
-    const governanceRepository = createGovernanceRepository(
+  it("keeps published history out of the active queue while loading only the latest review baseline", async () => {
+    const dashboardRepository = createGovernanceDashboardRepository(
       testDatabase.database,
     );
     const createdBy = "dashboard-baseline-test@example.test";
     const baselineId = "30000000-0000-4000-8000-000000000800";
+    const latestBaselineId = "30000000-0000-4000-8000-000000000802";
     const targetId = "30000000-0000-4000-8000-000000000801";
     const entityKey = "QZZ";
     const basePayload = {
@@ -551,19 +753,42 @@ describe("repositories", () => {
         version: 1,
         workflowStatus: "published",
       },
+      {
+        changeReason: "Latest historical published baseline.",
+        createdAt: new Date("2021-01-01T00:00:00.000Z"),
+        createdBy,
+        entityKey,
+        entityType: "country",
+        id: latestBaselineId,
+        payload: {
+          ...basePayload,
+          nameEn: "DEMO ONLY — Dashboard baseline v2",
+        },
+        publishedAt: new Date("2021-01-02T00:00:00.000Z"),
+        publishedBy: "reviewer@example.test",
+        reviewedAt: new Date("2021-01-01T12:00:00.000Z"),
+        reviewedBy: "reviewer@example.test",
+        updatedAt: new Date("2021-01-02T00:00:00.000Z"),
+        version: 2,
+        workflowStatus: "published",
+      },
       ...Array.from({ length: 100 }, (_, index) => {
         const id = `30000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
         return {
-          changeReason: "Fill the dashboard history window.",
-          createdAt: new Date(Date.UTC(2099, 0, 1, 0, 0, index)),
+          changeReason: "Fill the published dashboard history.",
+          createdAt: new Date(Date.UTC(2200, 0, 1, 0, 0, index)),
           createdBy,
           entityKey: id,
           entityType: "data_source" as const,
           id,
           payload: { id },
-          updatedAt: new Date(Date.UTC(2099, 0, 1, 0, 0, index)),
+          publishedAt: new Date(Date.UTC(2200, 0, 2, 0, 0, index)),
+          publishedBy: "reviewer@example.test",
+          reviewedAt: new Date(Date.UTC(2200, 0, 1, 12, 0, index)),
+          reviewedBy: "reviewer@example.test",
+          updatedAt: new Date(Date.UTC(2200, 0, 2, 0, 0, index)),
           version: 1,
-          workflowStatus: "draft" as const,
+          workflowStatus: "published" as const,
         };
       }),
       {
@@ -575,31 +800,62 @@ describe("repositories", () => {
         id: targetId,
         payload: {
           ...basePayload,
-          nameEn: "DEMO ONLY — Dashboard baseline v2",
+          nameEn: "DEMO ONLY — Dashboard baseline v3",
         },
         reviewedAt: new Date("2100-01-01T00:00:00.000Z"),
         reviewedBy: "reviewer@example.test",
         updatedAt: new Date("2100-01-01T00:00:00.000Z"),
-        version: 2,
+        version: 3,
         workflowStatus: "reviewed",
       },
     ]);
 
     try {
       const dashboard = await getGovernanceDashboardFromRepository(
-        governanceRepository,
+        dashboardRepository,
+        { email: createdBy, role: "editor" },
       );
       const target = dashboard.drafts.find(({ id }) => id === targetId);
 
-      expect(dashboard.drafts).toHaveLength(100);
+      expect(dashboard.drafts).toHaveLength(1);
       expect(
         dashboard.drafts.some(({ id }) => id === baselineId),
       ).toBe(false);
+      expect(
+        dashboard.drafts.some(({ id }) => id === latestBaselineId),
+      ).toBe(false);
+      expect(dashboard.workflowCounts).toEqual({
+        draft: 0,
+        published: 102,
+        reviewed: 1,
+      });
+      expect(Object.keys(target ?? {}).sort()).toEqual([
+        "changeReason",
+        "createdBy",
+        "entityKey",
+        "entityType",
+        "id",
+        "payload",
+        "reviewContext",
+        "version",
+        "workflowStatus",
+      ]);
       expect(target?.reviewContext).toMatchObject({
         baselineStatus: "active",
         blockingReasons: [],
-        publishedBaseline: { id: baselineId, version: 1 },
         publishReady: true,
+      });
+      expect(
+        Object.keys(target?.reviewContext.publishedBaseline ?? {}).sort(),
+      ).toEqual(["payload", "publishedAt", "publishedBy", "version"]);
+      expect(target?.reviewContext.publishedBaseline).toEqual({
+        payload: {
+          ...basePayload,
+          nameEn: "DEMO ONLY — Dashboard baseline v2",
+        },
+        publishedAt: new Date("2021-01-02T00:00:00.000Z"),
+        publishedBy: null,
+        version: 2,
       });
     } finally {
       await testDatabase.database
@@ -608,6 +864,594 @@ describe("repositories", () => {
       await testDatabase.database
         .delete(countries)
         .where(eq(countries.iso3, entityKey));
+    }
+  });
+
+  it("scopes editor queues and exact counts without weakening the reviewer global view", async () => {
+    const dashboardRepository = createGovernanceDashboardRepository(
+      testDatabase.database,
+    );
+    const editor = {
+      email: "dashboard-scope-editor@example.test",
+      role: "editor" as const,
+    };
+    const otherEditorEmail = "dashboard-scope-other@example.test";
+    const ownIds = Array.from(
+      { length: 101 },
+      (_, index) =>
+        `35000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    );
+    const otherId = "35000000-0000-4000-8000-000000000200";
+    const archivedId = "35000000-0000-4000-8000-000000000201";
+    const allIds = [...ownIds, otherId, archivedId];
+
+    const scopedDraftRows: Array<typeof dataGovernanceDrafts.$inferInsert> = [
+      ...ownIds.map((id, index) => ({
+        changeReason: "Exercise the editor-scoped active queue.",
+        createdAt: new Date(Date.UTC(2300, 0, 1, 0, 0, index)),
+        createdBy: editor.email,
+        entityKey: id,
+        entityType: "data_source" as const,
+        id,
+        payload: { id },
+        updatedAt: new Date(Date.UTC(2300, 0, 1, 0, 0, index)),
+        version: 1,
+        workflowStatus: index % 2 === 0 ? "draft" as const : "reviewed" as const,
+      })),
+      {
+        changeReason: "Exercise the reviewer global queue.",
+        createdAt: new Date("2301-01-01T00:00:00.000Z"),
+        createdBy: otherEditorEmail,
+        entityKey: otherId,
+        entityType: "data_source" as const,
+        id: otherId,
+        payload: { id: otherId },
+        updatedAt: new Date("2301-01-01T00:00:00.000Z"),
+        version: 1,
+        workflowStatus: "reviewed" as const,
+      },
+      {
+        archivedAt: new Date("2302-01-02T00:00:00.000Z"),
+        changeReason: "Archived rows must not affect the dashboard.",
+        createdAt: new Date("2302-01-01T00:00:00.000Z"),
+        createdBy: editor.email,
+        entityKey: archivedId,
+        entityType: "data_source" as const,
+        id: archivedId,
+        payload: { id: archivedId },
+        updatedAt: new Date("2302-01-02T00:00:00.000Z"),
+        version: 1,
+        workflowStatus: "draft" as const,
+      },
+    ];
+    await testDatabase.database
+      .insert(dataGovernanceDrafts)
+      .values(scopedDraftRows);
+
+    try {
+      const [editorRows, editorCounts, reviewerRows, reviewerCounts] =
+        await Promise.all([
+          dashboardRepository.listActiveDrafts(editor),
+          dashboardRepository.getWorkflowCounts(editor),
+          dashboardRepository.listActiveDrafts({
+            email: "reviewer@example.test",
+            role: "reviewer",
+          }),
+          dashboardRepository.getWorkflowCounts({
+            email: "reviewer@example.test",
+            role: "reviewer",
+          }),
+        ]);
+
+      expect(editorRows).toHaveLength(100);
+      expect(editorRows.every(({ createdBy }) => createdBy === editor.email)).toBe(
+        true,
+      );
+      expect(editorRows.some(({ id }) => id === archivedId)).toBe(false);
+      expect(editorCounts).toEqual({
+        draft: 51,
+        published: 0,
+        reviewed: 50,
+      });
+      expect(editorCounts.draft + editorCounts.reviewed).toBeGreaterThan(
+        editorRows.length,
+      );
+      expect(reviewerRows.some(({ id }) => id === otherId)).toBe(true);
+      expect(reviewerCounts.draft).toBeGreaterThanOrEqual(51);
+      expect(reviewerCounts.reviewed).toBeGreaterThanOrEqual(51);
+    } finally {
+      await testDatabase.database
+        .delete(dataGovernanceDrafts)
+        .where(inArray(dataGovernanceDrafts.id, allIds));
+    }
+  });
+
+  it("preserves dashboard root and dependency state semantics", async () => {
+    const dashboardRepository = createGovernanceDashboardRepository(
+      testDatabase.database,
+    );
+    const createdBy = "dashboard-review-context@example.test";
+    const verifiedAt = new Date("2026-08-30T00:00:00.000Z");
+    const archivedAt = new Date("2026-08-30T01:00:00.000Z");
+    const activeSourceId = "31000000-0000-4000-8000-000000000811";
+    const archivedSourceId = "31000000-0000-4000-8000-000000000812";
+    const missingSourceId = "31000000-0000-4000-8000-000000000813";
+    const activeCountryIso3 = "QRA";
+    const archivedCountryIso3 = "QRB";
+    const missingCountryIso3 = "QRC";
+    const unpublishedV1DocumentId =
+      "32000000-0000-4000-8000-000000000811";
+    const unpublishedV2DocumentId =
+      "32000000-0000-4000-8000-000000000812";
+    const activeCountryBaselineId =
+      "33000000-0000-4000-8000-000000000811";
+    const archivedCountryBaselineId =
+      "33000000-0000-4000-8000-000000000812";
+    const missingCountryBaselineId =
+      "33000000-0000-4000-8000-000000000813";
+    const activeCountryDraftId =
+      "33000000-0000-4000-8000-000000000821";
+    const archivedCountryDraftId =
+      "33000000-0000-4000-8000-000000000822";
+    const missingCountryDraftId =
+      "33000000-0000-4000-8000-000000000823";
+    const unpublishedV1DraftId =
+      "33000000-0000-4000-8000-000000000824";
+    const unpublishedV2DraftId =
+      "33000000-0000-4000-8000-000000000825";
+    const dependencyDraftId =
+      "33000000-0000-4000-8000-000000000826";
+    const targetDraftIds = new Set([
+      activeCountryDraftId,
+      archivedCountryDraftId,
+      missingCountryDraftId,
+      unpublishedV1DraftId,
+      unpublishedV2DraftId,
+      dependencyDraftId,
+    ]);
+
+    await testDatabase.database.insert(dataSources).values([
+      {
+        demoNotice: "DEMO ONLY — active dashboard dependency fixture.",
+        id: activeSourceId,
+        isDemo: true,
+        sourceType: "demo",
+        title: "DEMO ONLY — Active dashboard source",
+        verifiedAt,
+      },
+      {
+        archivedAt,
+        demoNotice: "DEMO ONLY — archived dashboard dependency fixture.",
+        id: archivedSourceId,
+        isDemo: true,
+        sourceType: "demo",
+        title: "DEMO ONLY — Archived dashboard source",
+        verifiedAt,
+      },
+    ]);
+    await testDatabase.database.insert(countries).values([
+      {
+        dataCoverageStatus: "demo",
+        dataSourceId: activeSourceId,
+        isDemo: true,
+        iso2: "QR",
+        iso3: activeCountryIso3,
+        nameEn: "DEMO ONLY — Active dashboard root",
+        verifiedAt,
+      },
+      {
+        dataCoverageStatus: "demo",
+        dataSourceId: archivedSourceId,
+        isDemo: true,
+        iso2: "QS",
+        iso3: archivedCountryIso3,
+        nameEn: "DEMO ONLY — Root with archived parent source",
+        verifiedAt,
+      },
+    ]);
+    await testDatabase.database.insert(documents).values([
+      {
+        contentSha256: "c".repeat(63) + "1",
+        dataSourceId: activeSourceId,
+        demoNotice: "DEMO ONLY — unpublished v1 dashboard root.",
+        governanceStatus: "draft",
+        id: unpublishedV1DocumentId,
+        isDemo: true,
+        languageCode: "en",
+        processingStatus: "ready",
+        title: "DEMO ONLY — Unpublished v1 dashboard document",
+        type: "other",
+        verifiedAt,
+      },
+      {
+        contentSha256: "c".repeat(63) + "2",
+        dataSourceId: activeSourceId,
+        demoNotice: "DEMO ONLY — unpublished v2 dashboard root.",
+        governanceStatus: "reviewed",
+        id: unpublishedV2DocumentId,
+        isDemo: true,
+        languageCode: "en",
+        processingStatus: "ready",
+        reviewedAt: verifiedAt,
+        title: "DEMO ONLY — Unpublished v2 dashboard document",
+        type: "other",
+        verifiedAt,
+      },
+    ]);
+
+    const insertedDrafts = await testDatabase.database
+      .insert(dataGovernanceDrafts)
+      .values([
+        {
+          changeReason: "Published active root baseline.",
+          createdBy,
+          entityKey: activeCountryIso3,
+          entityType: "country",
+          id: activeCountryBaselineId,
+          payload: {
+            dataSourceId: activeSourceId,
+            iso3: activeCountryIso3,
+          },
+          publishedAt: verifiedAt,
+          publishedBy: "reviewer@example.test",
+          reviewedAt: verifiedAt,
+          reviewedBy: "reviewer@example.test",
+          version: 1,
+          workflowStatus: "published",
+        },
+        {
+          changeReason: "Published archived root baseline.",
+          createdBy,
+          entityKey: archivedCountryIso3,
+          entityType: "country",
+          id: archivedCountryBaselineId,
+          payload: {
+            dataSourceId: archivedSourceId,
+            iso3: archivedCountryIso3,
+          },
+          publishedAt: verifiedAt,
+          publishedBy: "reviewer@example.test",
+          reviewedAt: verifiedAt,
+          reviewedBy: "reviewer@example.test",
+          version: 1,
+          workflowStatus: "published",
+        },
+        {
+          changeReason: "Published baseline whose root is missing.",
+          createdBy,
+          entityKey: missingCountryIso3,
+          entityType: "country",
+          id: missingCountryBaselineId,
+          payload: {
+            dataSourceId: activeSourceId,
+            iso3: missingCountryIso3,
+          },
+          publishedAt: verifiedAt,
+          publishedBy: "reviewer@example.test",
+          reviewedAt: verifiedAt,
+          reviewedBy: "reviewer@example.test",
+          version: 1,
+          workflowStatus: "published",
+        },
+        {
+          changeReason: "Review the active root.",
+          createdBy,
+          entityKey: activeCountryIso3,
+          entityType: "country",
+          id: activeCountryDraftId,
+          payload: {
+            dataSourceId: activeSourceId,
+            iso3: activeCountryIso3,
+          },
+          version: 2,
+          workflowStatus: "reviewed",
+        },
+        {
+          changeReason: "Review the root with an archived parent source.",
+          createdBy,
+          entityKey: archivedCountryIso3,
+          entityType: "country",
+          id: archivedCountryDraftId,
+          payload: {
+            dataSourceId: archivedSourceId,
+            iso3: archivedCountryIso3,
+          },
+          version: 2,
+          workflowStatus: "reviewed",
+        },
+        {
+          changeReason: "Review the missing root.",
+          createdBy,
+          entityKey: missingCountryIso3,
+          entityType: "country",
+          id: missingCountryDraftId,
+          payload: {
+            dataSourceId: activeSourceId,
+            iso3: missingCountryIso3,
+          },
+          version: 2,
+          workflowStatus: "reviewed",
+        },
+        {
+          changeReason: "Review the first unpublished document revision.",
+          createdBy,
+          entityKey: unpublishedV1DocumentId,
+          entityType: "document",
+          id: unpublishedV1DraftId,
+          payload: { documentId: unpublishedV1DocumentId },
+          version: 1,
+          workflowStatus: "reviewed",
+        },
+        {
+          changeReason: "Review an unpublished document without a baseline.",
+          createdBy,
+          entityKey: unpublishedV2DocumentId,
+          entityType: "document",
+          id: unpublishedV2DraftId,
+          payload: { documentId: unpublishedV2DocumentId },
+          version: 2,
+          workflowStatus: "reviewed",
+        },
+        {
+          changeReason: "Review active, archived, and missing dependencies.",
+          createdBy,
+          entityKey: activeSourceId,
+          entityType: "data_source",
+          id: dependencyDraftId,
+          payload: {
+            id: activeSourceId,
+            references: [
+              { sourceId: activeSourceId },
+              { sourceId: archivedSourceId },
+              { sourceId: missingSourceId },
+            ],
+          },
+          version: 1,
+          workflowStatus: "reviewed",
+        },
+      ])
+      .returning({
+        entityKey: dataGovernanceDrafts.entityKey,
+        entityType: dataGovernanceDrafts.entityType,
+        id: dataGovernanceDrafts.id,
+        payload: dataGovernanceDrafts.payload,
+        version: dataGovernanceDrafts.version,
+      });
+
+    try {
+      const reviewContexts =
+        await dashboardRepository.getDraftReviewContexts(
+          insertedDrafts.filter(({ id }) => targetDraftIds.has(id)),
+        );
+      const contextByDraftId = new Map(
+        reviewContexts.map((context) => [context.draftId, context]),
+      );
+      const missingBaselineReason =
+        "缺少可核验的当前发布基线；为避免覆盖未知正式数据，当前禁止发布。";
+      const archivedBaselineReason =
+        "该实体的最近发布版本已归档；恢复或重新发布前需要单独核验。";
+
+      const rootExpectations = [
+        {
+          baselineStatus: "active",
+          blockingReasons: [],
+          draftId: activeCountryDraftId,
+          publishReady: true,
+          publishedBaselineVersion: 1,
+        },
+        {
+          baselineStatus: "archived",
+          blockingReasons: [
+            archivedBaselineReason,
+            "存在 1 个缺失或已归档的来源/依赖。",
+          ],
+          draftId: archivedCountryDraftId,
+          publishReady: false,
+          publishedBaselineVersion: 1,
+        },
+        {
+          baselineStatus: "missing",
+          blockingReasons: [missingBaselineReason],
+          draftId: missingCountryDraftId,
+          publishReady: false,
+          publishedBaselineVersion: 1,
+        },
+        {
+          baselineStatus: "first_revision",
+          blockingReasons: [],
+          draftId: unpublishedV1DraftId,
+          publishReady: true,
+          publishedBaselineVersion: null,
+        },
+        {
+          baselineStatus: "missing",
+          blockingReasons: [missingBaselineReason],
+          draftId: unpublishedV2DraftId,
+          publishReady: false,
+          publishedBaselineVersion: null,
+        },
+      ] as const;
+
+      for (const expectation of rootExpectations) {
+        const context = contextByDraftId.get(expectation.draftId);
+        expect(context).toMatchObject({
+          baselineStatus: expectation.baselineStatus,
+          blockingReasons: expectation.blockingReasons,
+          publishReady: expectation.publishReady,
+        });
+        expect(context?.publishedBaseline?.version ?? null).toBe(
+          expectation.publishedBaselineVersion,
+        );
+      }
+
+      const activeRootDependency = contextByDraftId
+        .get(activeCountryDraftId)
+        ?.dependencies.find(({ value }) => value === activeSourceId);
+      expect(activeRootDependency).toMatchObject({
+        state: "active",
+        value: activeSourceId,
+      });
+
+      const dependencyContext = contextByDraftId.get(dependencyDraftId);
+      expect(dependencyContext).toMatchObject({
+        baselineStatus: "first_revision",
+        blockingReasons: [
+          "存在 2 个缺失或已归档的来源/依赖。",
+        ],
+        publishReady: false,
+      });
+      const dependencyStateByValue = new Map(
+        dependencyContext?.dependencies.map(({ state, value }) => [
+          value,
+          state,
+        ]),
+      );
+      expect(dependencyStateByValue).toEqual(
+        new Map([
+          [activeSourceId, "active"],
+          [archivedSourceId, "archived"],
+          [missingSourceId, "missing"],
+        ]),
+      );
+    } finally {
+      await testDatabase.database
+        .delete(dataGovernanceDrafts)
+        .where(eq(dataGovernanceDrafts.createdBy, createdBy));
+      await testDatabase.database
+        .delete(documents)
+        .where(
+          inArray(documents.id, [
+            unpublishedV1DocumentId,
+            unpublishedV2DocumentId,
+          ]),
+        );
+      await testDatabase.database
+        .delete(countries)
+        .where(inArray(countries.iso3, [activeCountryIso3, archivedCountryIso3]));
+      await testDatabase.database
+        .delete(dataSources)
+        .where(inArray(dataSources.id, [activeSourceId, archivedSourceId]));
+    }
+  });
+
+  it("limits the default dashboard audit window to the newest 30 rows", async () => {
+    const dashboardRepository = createGovernanceDashboardRepository(
+      testDatabase.database,
+    );
+    const ids = Array.from(
+      { length: 31 },
+      (_, index) =>
+        `34000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    );
+
+    await testDatabase.database.insert(dataChangeLogs).values(
+      ids.map((id, index) => ({
+        action: "draft_created" as const,
+        actorEmail: "dashboard-audit-window@example.test",
+        actorRole: "editor" as const,
+        createdAt: new Date(Date.UTC(2200, 0, 1, 0, 0, 0, index)),
+        entityKey: id,
+        entityType: "data_source" as const,
+        id,
+        reason: "Verify the bounded dashboard audit window.",
+      })),
+    );
+
+    try {
+      const logs = await dashboardRepository.listDashboardAuditLogs();
+
+      expect(logs).toHaveLength(30);
+      expect(logs.map(({ id }) => id)).toEqual(ids.slice(1).reverse());
+    } finally {
+      await testDatabase.database
+        .delete(dataChangeLogs)
+        .where(inArray(dataChangeLogs.id, ids));
+    }
+  });
+
+  it("keeps raw audit snapshots and CSV batch history out of the dashboard", async () => {
+    const governanceRepository = createGovernanceRepository(
+      testDatabase.database,
+    );
+    const dashboardRepository = createGovernanceDashboardRepository(
+      testDatabase.database,
+    );
+    const actor = {
+      email: "dashboard-minimization@example.test",
+      role: "editor" as const,
+    };
+    const auditId = "10000000-0000-4000-8000-000000000710";
+    const auditEntityKey = "dashboard-minimization-canary";
+    const auditBeforeCanary = "PRIVATE_AUDIT_BEFORE_CANARY";
+    const auditAfterCanary = "PRIVATE_AUDIT_AFTER_CANARY";
+    const validationCanary = "PRIVATE_CSV_VALIDATION_CANARY";
+    const contentSha256 = "b".repeat(64);
+    const batch = await governanceRepository.createMarketImportPreview({
+      actor,
+      contentSha256,
+      errors: [
+        {
+          field: "valueNumeric",
+          message: validationCanary,
+          rowNumber: 2,
+        },
+      ],
+      fileName: "dashboard-private-import.csv",
+      rows: [{ parsed: null, rowNumber: 2 }],
+    });
+
+    try {
+      await testDatabase.database.insert(dataChangeLogs).values({
+        action: "published",
+        actorEmail: actor.email,
+        actorRole: actor.role,
+        afterData: { canary: auditAfterCanary },
+        beforeData: { canary: auditBeforeCanary },
+        createdAt: new Date("2099-01-01T00:00:00.000Z"),
+        entityKey: auditEntityKey,
+        entityType: "market_metric",
+        id: auditId,
+        importBatchId: batch.id,
+        reason: "Verify the dashboard data-minimization boundary.",
+      });
+
+      const dashboard = await getGovernanceDashboardFromRepository(
+        dashboardRepository,
+        { email: "reviewer@example.test", role: "reviewer" },
+      );
+      const audit = dashboard.auditLogs.find(({ id }) => id === auditId);
+
+      expect(Object.keys(audit ?? {}).sort()).toEqual([
+        "action",
+        "actorEmail",
+        "actorRole",
+        "createdAt",
+        "entityKey",
+        "entityType",
+        "id",
+        "reason",
+      ]);
+      expect(dashboard).not.toHaveProperty("importBatches");
+      const serialized = JSON.stringify(dashboard);
+      expect(serialized).not.toContain(auditBeforeCanary);
+      expect(serialized).not.toContain(auditAfterCanary);
+      expect(serialized).not.toContain(validationCanary);
+      expect(serialized).not.toContain(contentSha256);
+      expect(serialized).not.toContain("dashboard-private-import.csv");
+      expect(audit).not.toHaveProperty("draftId");
+      expect(audit).not.toHaveProperty("importBatchId");
+    } finally {
+      await testDatabase.database
+        .delete(dataChangeLogs)
+        .where(
+          or(
+            eq(dataChangeLogs.id, auditId),
+            eq(dataChangeLogs.importBatchId, batch.id),
+          ),
+        );
+      await testDatabase.database
+        .delete(marketImportBatches)
+        .where(eq(marketImportBatches.id, batch.id));
     }
   });
 
@@ -2089,131 +2933,6 @@ describe("repositories", () => {
     ).rejects.toThrow("demo country");
   });
 
-  it("updates draft document and source metadata atomically before reprocessing", async () => {
-    const repository = createKnowledgeRepository(testDatabase.database);
-    const sourceId = "11000000-0000-4000-8000-000000000001";
-    const documentId = "11000000-0000-4000-8000-000000000002";
-    const verifiedAt = new Date("2026-08-06T00:00:00.000Z");
-    const metadata = {
-      applicationScope: "non-road" as const,
-      canonicalUrl: "https://example.test/demo-document",
-      countryIso3: "CHN" as const,
-      demoNotice: "FICTIONAL DEMO DATA — NOT FOR PRODUCTION.",
-      documentType: "government-notice" as const,
-      isDemo: true,
-      jurisdictionId: null,
-      languageCode: "zh-CN",
-      licenseCode: "CC-BY-4.0",
-      publishedOn: "2026-01-01",
-      redistributionAllowed: true,
-      sourcePublisher: "Demo publisher",
-      sourceTitle: "DEMO ONLY — Reprocessed source",
-      sourceType: "demo" as const,
-      sourceUrl: "https://example.test/demo-source",
-      title: "DEMO ONLY — Reprocessed document",
-      validFrom: "2026-01-01",
-      validTo: null,
-    };
-
-    await testDatabase.database.insert(dataSources).values({
-      id: sourceId,
-      isDemo: false,
-      sourceType: "other",
-      title: "Original source",
-      verifiedAt,
-    });
-    await testDatabase.database.insert(documents).values({
-      contentSha256: "5".repeat(64),
-      dataSourceId: sourceId,
-      governanceStatus: "draft",
-      id: documentId,
-      isDemo: false,
-      languageCode: "en",
-      processedAt: verifiedAt,
-      processingStatus: "ready",
-      title: "Original document",
-      type: "other",
-      verifiedAt,
-    });
-
-    const started = await repository.beginDocumentReprocessing(
-      documentId,
-      metadata,
-    );
-    const [updated] = await testDatabase.database
-      .select({
-        document: {
-          canonicalUrl: documents.canonicalUrl,
-          dataSourceId: documents.dataSourceId,
-          demoNotice: documents.demoNotice,
-          isDemo: documents.isDemo,
-          processingStatus: documents.processingStatus,
-          title: documents.title,
-        },
-        source: {
-          demoNotice: dataSources.demoNotice,
-          isDemo: dataSources.isDemo,
-          publishedOn: dataSources.publishedOn,
-          sourceType: dataSources.sourceType,
-          title: dataSources.title,
-          url: dataSources.url,
-        },
-      })
-      .from(documents)
-      .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
-      .where(eq(documents.id, documentId));
-
-    expect(started?.beforeData).toMatchObject({
-      document: { isDemo: false, title: "Original document" },
-      source: { isDemo: false, title: "Original source" },
-    });
-    expect(updated).toMatchObject({
-      document: {
-        canonicalUrl: metadata.canonicalUrl,
-        dataSourceId: started?.sourceId,
-        demoNotice: metadata.demoNotice,
-        isDemo: true,
-        processingStatus: "processing",
-        title: metadata.title,
-      },
-      source: {
-        demoNotice: metadata.demoNotice,
-        isDemo: true,
-        publishedOn: metadata.publishedOn,
-        sourceType: "demo",
-        title: metadata.sourceTitle,
-        url: metadata.sourceUrl,
-      },
-    });
-    const [originalSource] = await testDatabase.database
-      .select({ isDemo: dataSources.isDemo, title: dataSources.title })
-      .from(dataSources)
-      .where(eq(dataSources.id, sourceId));
-    expect(originalSource).toEqual({
-      isDemo: false,
-      title: "Original source",
-    });
-    await expect(
-      repository.beginDocumentReprocessing(documentId, metadata),
-    ).resolves.toBeNull();
-
-    await testDatabase.database
-      .update(documents)
-      .set({ governanceStatus: "reviewed", processingStatus: "ready" })
-      .where(eq(documents.id, documentId));
-    await expect(
-      repository.beginDocumentReprocessing(documentId, {
-        ...metadata,
-        title: "Must not bypass review",
-      }),
-    ).resolves.toBeNull();
-    const [reviewedDocument] = await testDatabase.database
-      .select({ title: documents.title })
-      .from(documents)
-      .where(eq(documents.id, documentId));
-    expect(reviewedDocument?.title).toBe(metadata.title);
-  });
-
   it("publishes jurisdictions with memberships via governance and reruns cleanly", async () => {
     const governanceRepository = createGovernanceRepository(
       testDatabase.database,
@@ -2720,6 +3439,482 @@ describe("repositories", () => {
     );
   });
 
+  it.each([
+    {
+      expectedAuditCount: 0,
+      expectedVerifiedAt: "2026-02-01T00:00:00.000Z",
+      name: "older",
+      proposedVerifiedAt: "2026-01-01T00:00:00.000Z",
+      shouldReject: true,
+      sourceId: "73000000-0000-4000-8000-000000000001",
+    },
+    {
+      expectedAuditCount: 1,
+      expectedVerifiedAt: "2026-02-01T00:00:00.000Z",
+      name: "equal",
+      proposedVerifiedAt: "2026-02-01T00:00:00.000Z",
+      shouldReject: false,
+      sourceId: "73000000-0000-4000-8000-000000000002",
+    },
+    {
+      expectedAuditCount: 1,
+      expectedVerifiedAt: "2026-03-01T00:00:00.000Z",
+      name: "newer",
+      proposedVerifiedAt: "2026-03-01T00:00:00.000Z",
+      shouldReject: false,
+      sourceId: "73000000-0000-4000-8000-000000000003",
+    },
+  ])(
+    "handles a direct $name source verification timestamp monotonically",
+    async (scenario) => {
+      const governanceRepository = createGovernanceRepository(
+        testDatabase.database,
+      );
+      const actor = {
+        email: "source-verification-editor@example.test",
+        role: "editor" as const,
+      };
+      await testDatabase.database.insert(dataSources).values({
+        id: scenario.sourceId,
+        isDemo: false,
+        sourceType: "other",
+        title: `Source verification ${scenario.name} timestamp test`,
+        verifiedAt: new Date("2026-02-01T00:00:00.000Z"),
+      });
+
+      try {
+        const operation = governanceRepository.updateSourceVerifiedAt({
+          actor,
+          reason: `Exercise the ${scenario.name} timestamp boundary.`,
+          sourceId: scenario.sourceId,
+          verifiedAt: scenario.proposedVerifiedAt,
+        });
+        if (scenario.shouldReject) {
+          await expect(operation).rejects.toThrow(
+            SOURCE_VERIFIED_AT_REGRESSION_MESSAGE,
+          );
+        } else {
+          await expect(operation).resolves.toMatchObject({
+            id: scenario.sourceId,
+            verifiedAt: scenario.expectedVerifiedAt.replace(
+              ".000Z",
+              ".000000Z",
+            ),
+          });
+        }
+
+        const [storedSource] = await testDatabase.database
+          .select({ verifiedAt: dataSources.verifiedAt })
+          .from(dataSources)
+          .where(eq(dataSources.id, scenario.sourceId));
+        const auditRows = await testDatabase.database
+          .select({ id: dataChangeLogs.id })
+          .from(dataChangeLogs)
+          .where(
+            and(
+              eq(dataChangeLogs.action, "source_verified"),
+              eq(dataChangeLogs.entityType, "data_source"),
+              eq(dataChangeLogs.entityKey, scenario.sourceId),
+            ),
+          );
+
+        expect(storedSource?.verifiedAt.toISOString()).toBe(
+          scenario.expectedVerifiedAt,
+        );
+        expect(auditRows).toHaveLength(scenario.expectedAuditCount);
+      } finally {
+        await testDatabase.database
+          .delete(dataChangeLogs)
+          .where(eq(dataChangeLogs.entityKey, scenario.sourceId));
+        await testDatabase.database
+          .delete(dataSources)
+          .where(eq(dataSources.id, scenario.sourceId));
+      }
+    },
+  );
+
+  it("compares and audits direct source verification with database microsecond precision", async () => {
+    const governanceRepository = createGovernanceRepository(
+      testDatabase.database,
+    );
+    const actor = {
+      email: "source-microseconds-editor@example.test",
+      role: "editor" as const,
+    };
+    const sourceId = "73000000-0000-4000-8000-000000000005";
+    const currentVerifiedAt = "2026-03-01T00:00:00.123456Z";
+    const olderVerifiedAt = "2026-03-01T00:00:00.123000Z";
+    const newerVerifiedAt = "2026-03-01T00:00:00.123789Z";
+    await testDatabase.client.query(
+      `insert into data_sources
+         (id, title, source_type, verified_at, is_demo)
+       values ($1, $2, 'other', $3::timestamptz, false)`,
+      [sourceId, "Source microsecond precision test", currentVerifiedAt],
+    );
+
+    try {
+      await expect(
+        governanceRepository.updateSourceVerifiedAt({
+          actor,
+          reason: "Reject an older timestamp within the same millisecond.",
+          sourceId,
+          verifiedAt: olderVerifiedAt,
+        }),
+      ).rejects.toThrow(SOURCE_VERIFIED_AT_REGRESSION_MESSAGE);
+      await expect(
+        governanceRepository.updateSourceVerifiedAt({
+          actor,
+          reason: "Accept a newer timestamp within the same millisecond.",
+          sourceId,
+          verifiedAt: newerVerifiedAt,
+        }),
+      ).resolves.toMatchObject({
+        id: sourceId,
+        verifiedAt: newerVerifiedAt,
+      });
+
+      const storedSources = await testDatabase.client.query<{
+        verifiedAt: string;
+      }>(
+        `select to_char(
+           verified_at at time zone 'UTC',
+           'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+         ) as "verifiedAt"
+         from data_sources
+         where id = $1`,
+        [sourceId],
+      );
+      const auditRows = await testDatabase.client.query<{
+        afterVerifiedAt: string;
+        beforeVerifiedAt: string;
+      }>(
+        `select
+           after_data ->> 'verifiedAt' as "afterVerifiedAt",
+           before_data ->> 'verifiedAt' as "beforeVerifiedAt"
+         from data_change_logs
+         where action = 'source_verified'
+           and entity_type = 'data_source'
+           and entity_key = $1`,
+        [sourceId],
+      );
+
+      expect(storedSources.rows).toEqual([{ verifiedAt: newerVerifiedAt }]);
+      expect(auditRows.rows).toEqual([
+        {
+          afterVerifiedAt: newerVerifiedAt,
+          beforeVerifiedAt: currentVerifiedAt,
+        },
+      ]);
+    } finally {
+      await testDatabase.database
+        .delete(dataChangeLogs)
+        .where(eq(dataChangeLogs.entityKey, sourceId));
+      await testDatabase.database
+        .delete(dataSources)
+        .where(eq(dataSources.id, sourceId));
+    }
+  });
+
+  it("audits the persisted PostgreSQL precision for a source draft with nanoseconds", async () => {
+    const governanceRepository = createGovernanceRepository(
+      testDatabase.database,
+    );
+    const editor = {
+      email: "source-draft-microseconds-editor@example.test",
+      role: "editor" as const,
+    };
+    const reviewer = {
+      email: "source-draft-microseconds-reviewer@example.test",
+      role: "reviewer" as const,
+    };
+    const sourceId = "73000000-0000-4000-8000-000000000006";
+    const verifiedAt = "2026-03-01T00:00:00.654321789Z";
+    const persistedVerifiedAt = "2026-03-01T00:00:00.654322Z";
+    const draft = await governanceRepository.createDraft({
+      actor: editor,
+      changeReason: "Create a source with a microsecond verification time.",
+      entityKey: sourceId,
+      entityType: "data_source",
+      payload: {
+        demoNotice: null,
+        id: sourceId,
+        isDemo: false,
+        publishedOn: null,
+        publisher: null,
+        sourceType: "other",
+        title: "Source draft microsecond precision test",
+        url: null,
+        verifiedAt,
+      },
+    });
+    await governanceRepository.reviewDraft({
+      actor: reviewer,
+      draftId: draft.id,
+      reason: "Review the microsecond-precision source draft.",
+    });
+
+    try {
+      await governanceRepository.publishDraft({
+        actor: reviewer,
+        draftId: draft.id,
+        reason: "Publish the microsecond-precision source draft.",
+      });
+
+      const storedSources = await testDatabase.client.query<{
+        verifiedAt: string;
+      }>(
+        `select to_char(
+           verified_at at time zone 'UTC',
+           'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+         ) as "verifiedAt"
+         from data_sources
+         where id = $1`,
+        [sourceId],
+      );
+      const publishedAudits = await testDatabase.client.query<{
+        afterVerifiedAt: string;
+        beforeData: unknown;
+      }>(
+        `select
+           after_data ->> 'verifiedAt' as "afterVerifiedAt",
+           before_data as "beforeData"
+         from data_change_logs
+         where action = 'published'
+           and draft_id = $1`,
+        [draft.id],
+      );
+
+      expect(storedSources.rows).toEqual([
+        { verifiedAt: persistedVerifiedAt },
+      ]);
+      expect(publishedAudits.rows).toEqual([
+        { afterVerifiedAt: persistedVerifiedAt, beforeData: null },
+      ]);
+    } finally {
+      await testDatabase.database
+        .delete(dataChangeLogs)
+        .where(eq(dataChangeLogs.entityKey, sourceId));
+      await testDatabase.database
+        .delete(dataGovernanceDrafts)
+        .where(eq(dataGovernanceDrafts.id, draft.id));
+      await testDatabase.database
+        .delete(dataSources)
+        .where(eq(dataSources.id, sourceId));
+    }
+  });
+
+  it("audits the persisted PostgreSQL precision when a source draft updates an existing row", async () => {
+    const governanceRepository = createGovernanceRepository(
+      testDatabase.database,
+    );
+    const editor = {
+      email: "source-update-nanoseconds-editor@example.test",
+      role: "editor" as const,
+    };
+    const reviewer = {
+      email: "source-update-nanoseconds-reviewer@example.test",
+      role: "reviewer" as const,
+    };
+    const sourceId = "73000000-0000-4000-8000-000000000007";
+    const proposedVerifiedAt = "2026-03-01T00:00:00.654321789Z";
+    const persistedVerifiedAt = "2026-03-01T00:00:00.654322Z";
+    await testDatabase.database.insert(dataSources).values({
+      id: sourceId,
+      isDemo: false,
+      sourceType: "other",
+      title: "Source draft nanosecond update baseline",
+      verifiedAt: new Date("2026-02-01T00:00:00.000Z"),
+    });
+    const draft = await governanceRepository.createDraft({
+      actor: editor,
+      changeReason: "Update a source using a nanosecond verification time.",
+      entityKey: sourceId,
+      entityType: "data_source",
+      payload: {
+        demoNotice: null,
+        id: sourceId,
+        isDemo: false,
+        publishedOn: null,
+        publisher: null,
+        sourceType: "other",
+        title: "Source draft nanosecond update",
+        url: null,
+        verifiedAt: proposedVerifiedAt,
+      },
+    });
+    await governanceRepository.reviewDraft({
+      actor: reviewer,
+      draftId: draft.id,
+      reason: "Review the nanosecond-precision source update.",
+    });
+
+    try {
+      await governanceRepository.publishDraft({
+        actor: reviewer,
+        draftId: draft.id,
+        reason: "Publish the nanosecond-precision source update.",
+      });
+
+      const storedSources = await testDatabase.client.query<{
+        title: string;
+        verifiedAt: string;
+      }>(
+        `select
+           title,
+           to_char(
+             verified_at at time zone 'UTC',
+             'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+           ) as "verifiedAt"
+         from data_sources
+         where id = $1`,
+        [sourceId],
+      );
+      const publishedAudits = await testDatabase.client.query<{
+        afterTitle: string;
+        afterVerifiedAt: string;
+      }>(
+        `select
+           after_data ->> 'title' as "afterTitle",
+           after_data ->> 'verifiedAt' as "afterVerifiedAt"
+         from data_change_logs
+         where action = 'published'
+           and draft_id = $1`,
+        [draft.id],
+      );
+
+      expect(storedSources.rows).toEqual([
+        {
+          title: "Source draft nanosecond update",
+          verifiedAt: persistedVerifiedAt,
+        },
+      ]);
+      expect(publishedAudits.rows).toEqual([
+        {
+          afterTitle: "Source draft nanosecond update",
+          afterVerifiedAt: persistedVerifiedAt,
+        },
+      ]);
+    } finally {
+      await testDatabase.database
+        .delete(dataChangeLogs)
+        .where(eq(dataChangeLogs.entityKey, sourceId));
+      await testDatabase.database
+        .delete(dataGovernanceDrafts)
+        .where(eq(dataGovernanceDrafts.id, draft.id));
+      await testDatabase.database
+        .delete(dataSources)
+        .where(eq(dataSources.id, sourceId));
+    }
+  });
+
+  it("rejects a reviewed source draft that would undo a newer direct verification", async () => {
+    const governanceRepository = createGovernanceRepository(
+      testDatabase.database,
+    );
+    const editor = {
+      email: "source-regression-editor@example.test",
+      role: "editor" as const,
+    };
+    const reviewer = {
+      email: "source-regression-reviewer@example.test",
+      role: "reviewer" as const,
+    };
+    const sourceId = "73000000-0000-4000-8000-000000000004";
+    const originalTitle = "Source verification regression baseline";
+    await testDatabase.database.insert(dataSources).values({
+      id: sourceId,
+      isDemo: false,
+      sourceType: "other",
+      title: originalTitle,
+      verifiedAt: new Date("2026-03-01T00:00:00.123Z"),
+    });
+    const draft = await governanceRepository.createDraft({
+      actor: editor,
+      changeReason: "Prepare a source metadata revision before re-verification.",
+      entityKey: sourceId,
+      entityType: "data_source",
+      payload: {
+        demoNotice: null,
+        id: sourceId,
+        isDemo: false,
+        publishedOn: null,
+        publisher: null,
+        sourceType: "other",
+        title: "Stale reviewed source revision",
+        url: null,
+        verifiedAt: "2026-03-01T00:00:00.123000Z",
+      },
+    });
+    await governanceRepository.reviewDraft({
+      actor: reviewer,
+      draftId: draft.id,
+      reason: "Review the source revision before a newer verification.",
+    });
+
+    try {
+      await governanceRepository.updateSourceVerifiedAt({
+        actor: editor,
+        reason: "Record a newer source verification before publication.",
+        sourceId,
+        verifiedAt: "2026-03-01T00:00:00.123456Z",
+      });
+      await expect(
+        governanceRepository.publishDraft({
+          actor: reviewer,
+          draftId: draft.id,
+          reason: "Attempt to publish the stale source verification time.",
+        }),
+      ).rejects.toThrow(SOURCE_VERIFIED_AT_REGRESSION_MESSAGE);
+
+      const storedSources = await testDatabase.client.query<{
+        title: string;
+        verifiedAt: string;
+      }>(
+        `select
+           title,
+           to_char(
+             verified_at at time zone 'UTC',
+             'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+           ) as "verifiedAt"
+         from data_sources
+         where id = $1`,
+        [sourceId],
+      );
+      const [storedDraft] = await testDatabase.database
+        .select({ workflowStatus: dataGovernanceDrafts.workflowStatus })
+        .from(dataGovernanceDrafts)
+        .where(eq(dataGovernanceDrafts.id, draft.id));
+      const publishedAuditRows = await testDatabase.database
+        .select({ id: dataChangeLogs.id })
+        .from(dataChangeLogs)
+        .where(
+          and(
+            eq(dataChangeLogs.action, "published"),
+            eq(dataChangeLogs.draftId, draft.id),
+          ),
+        );
+
+      expect(storedSources.rows).toEqual([
+        {
+          title: originalTitle,
+          verifiedAt: "2026-03-01T00:00:00.123456Z",
+        },
+      ]);
+      expect(storedDraft?.workflowStatus).toBe("reviewed");
+      expect(publishedAuditRows).toEqual([]);
+    } finally {
+      await testDatabase.database
+        .delete(dataChangeLogs)
+        .where(eq(dataChangeLogs.entityKey, sourceId));
+      await testDatabase.database
+        .delete(dataGovernanceDrafts)
+        .where(eq(dataGovernanceDrafts.id, draft.id));
+      await testDatabase.database
+        .delete(dataSources)
+        .where(eq(dataSources.id, sourceId));
+    }
+  });
+
   it("serializes concurrent archive requests without duplicate audit entries", async () => {
     const governanceRepository = createGovernanceRepository(
       testDatabase.database,
@@ -3163,6 +4358,15 @@ describe("repositories", () => {
       type: "regulation-text",
       verifiedAt: new Date("2026-08-06T00:00:00.000Z"),
     });
+    const archivedContent = "DEMO ONLY — archived document evidence.";
+    await testDatabase.database.insert(documentChunks).values({
+      chunkIndex: 0,
+      content: archivedContent,
+      contentHash: sha256(archivedContent),
+      documentId,
+      isDemo: true,
+      verifiedAt: new Date("2026-08-06T00:00:00.000Z"),
+    });
     const draft = await governanceRepository.createDraft({
       actor: editor,
       changeReason: "Create an archived document publication test draft.",
@@ -3259,6 +4463,16 @@ describe("repositories", () => {
       type: "regulation-text",
       verifiedAt: publishedAt,
     });
+    const publishedContent =
+      "DEMO ONLY — published document downgrade evidence.";
+    await testDatabase.database.insert(documentChunks).values({
+      chunkIndex: 0,
+      content: publishedContent,
+      contentHash: sha256(publishedContent),
+      documentId,
+      isDemo: true,
+      verifiedAt: publishedAt,
+    });
     const draft = await governanceRepository.createDraft({
       actor: editor,
       changeReason: "Create a duplicate published-document draft.",
@@ -3326,6 +4540,16 @@ describe("repositories", () => {
       processingStatus: "ready",
       title: "DEMO ONLY — Document source dependency",
       type: "regulation-text",
+      verifiedAt,
+    });
+    const sourceDependencyContent =
+      "DEMO ONLY — document source dependency evidence.";
+    await testDatabase.database.insert(documentChunks).values({
+      chunkIndex: 0,
+      content: sourceDependencyContent,
+      contentHash: sha256(sourceDependencyContent),
+      documentId,
+      isDemo: true,
       verifiedAt,
     });
     const draft = await governanceRepository.createDraft({
@@ -3407,10 +4631,11 @@ describe("repositories", () => {
       type: "regulation-text",
       verifiedAt,
     });
+    const content = "DEMO ONLY chunk with a governed country parent.";
     await testDatabase.database.insert(documentChunks).values({
       chunkIndex: 0,
-      content: "DEMO ONLY chunk with a governed country parent.",
-      contentHash: "d".repeat(64),
+      content,
+      contentHash: sha256(content),
       countryIso3,
       documentId,
       id: chunkId,
@@ -3525,10 +4750,11 @@ describe("repositories", () => {
       type: "regulation-text",
       verifiedAt,
     });
+    const content = "DEMO ONLY chunk parent concurrency evidence.";
     await testDatabase.database.insert(documentChunks).values({
       chunkIndex: 0,
-      content: "DEMO ONLY chunk parent concurrency evidence.",
-      contentHash: "02".repeat(32),
+      content,
+      contentHash: sha256(content),
       countryIso3,
       documentId,
       id: chunkId,
@@ -3641,10 +4867,11 @@ describe("repositories", () => {
       type: "regulation-text",
       verifiedAt,
     });
+    const content = "Non-demo chunk attached to a demo country.";
     await testDatabase.database.insert(documentChunks).values({
       chunkIndex: 0,
-      content: "Non-demo chunk attached to a demo country.",
-      contentHash: "04".repeat(32),
+      content,
+      contentHash: sha256(content),
       countryIso3: "CHN",
       documentId,
       id: chunkId,
@@ -3744,7 +4971,7 @@ describe("repositories", () => {
         sourceType: "demo",
         title: "DEMO ONLY — Reclassified document source",
         url: null,
-        verifiedAt: "2026-08-05T00:00:00.000Z",
+        verifiedAt: verifiedAt.toISOString(),
       },
     });
     await governanceRepository.reviewDraft({
@@ -3817,6 +5044,210 @@ describe("repositories", () => {
     expect(afterFacts[0]?.count).toBe(beforeFacts[0]?.count);
     expect(storedBatch?.status).toBe("rejected");
   });
+
+  it.each([
+    {
+      contentSha256: "7".repeat(64),
+      errors: [],
+      expectedOwnerResult: {
+        createdDrafts: 1,
+        status: "committed" as const,
+      },
+      expectedStatus: "committed" as const,
+      kind: "valid",
+      rows: [
+        {
+          parsed: {
+            applicationScope: "non-road",
+            countryIso3: "CHN",
+            currencyCode: null,
+            dataSourceId: demoIds.source.market,
+            definition: "DEMO ONLY — creator-bound CSV confirmation test.",
+            isDemo: true,
+            methodologyVersion: "demo-v1",
+            metricCode: "DEMO_CREATOR_BOUND_IMPORT",
+            metricName: "DEMO ONLY — Creator-bound import",
+            periodEnd: "2026-01-01",
+            periodStart: "2025-01-01",
+            publishedOn: null,
+            unitCode: "units",
+            valueNumeric: "7",
+            verifiedAt: "2026-07-29T00:00:00.000Z",
+          },
+          rowNumber: 2,
+        },
+      ],
+    },
+    {
+      contentSha256: "8".repeat(64),
+      errors: [
+        {
+          field: "valueNumeric",
+          message: "Expected number",
+          rowNumber: 2,
+        },
+      ],
+      expectedOwnerResult: {
+        createdDrafts: 0,
+        status: "rejected" as const,
+      },
+      expectedStatus: "rejected" as const,
+      kind: "invalid",
+      rows: [{ parsed: null, rowNumber: 2 }],
+    },
+  ])(
+    "allows only the creator to confirm a $kind CSV preview batch",
+    async (scenario) => {
+      await seedDemoData(testDatabase.database);
+      const governanceRepository = createGovernanceRepository(
+        testDatabase.database,
+      );
+      const owner = {
+        email: `csv-${scenario.kind}-owner@example.test`,
+        role: "editor" as const,
+      };
+      const otherPrincipals = [
+        {
+          email: `csv-${scenario.kind}-other-editor@example.test`,
+          role: "editor" as const,
+        },
+        {
+          email: `csv-${scenario.kind}-reviewer@example.test`,
+          role: "reviewer" as const,
+        },
+        {
+          email: `csv-${scenario.kind}-admin@example.test`,
+          role: "admin" as const,
+        },
+      ];
+      const batch = await governanceRepository.createMarketImportPreview({
+        actor: owner,
+        contentSha256: scenario.contentSha256,
+        errors: scenario.errors,
+        fileName: `${scenario.kind}-creator-bound.csv`,
+        rows: scenario.rows,
+      });
+      const conflictMessage =
+        "Import batch is missing or is no longer previewable.";
+      const missingBatchId =
+        scenario.kind === "valid"
+          ? "70000000-0000-4000-8000-000000000001"
+          : "70000000-0000-4000-8000-000000000002";
+      const actorEmails = [
+        owner.email,
+        ...otherPrincipals.map(({ email }) => email),
+      ];
+
+      try {
+        const beforeFacts = await testDatabase.database
+          .select({ count: sql<number>`count(*)::int` })
+          .from(marketMetrics);
+
+        await expect(
+          governanceRepository.confirmMarketImport({
+            actor: owner,
+            batchId: missingBatchId,
+            reason: "Attempt to confirm a missing CSV batch.",
+          }),
+        ).rejects.toThrow(conflictMessage);
+
+        for (const principal of otherPrincipals) {
+          await expect(
+            governanceRepository.confirmMarketImport({
+              actor: principal,
+              batchId: batch.id,
+              reason: "Attempt to take over another principal's CSV batch.",
+            }),
+          ).rejects.toThrow(conflictMessage);
+        }
+
+        const [batchAfterDeniedConfirmations] = await testDatabase.database
+          .select({
+            committedAt: marketImportBatches.committedAt,
+            confirmedBy: marketImportBatches.confirmedBy,
+            status: marketImportBatches.status,
+          })
+          .from(marketImportBatches)
+          .where(eq(marketImportBatches.id, batch.id));
+        const draftsAfterDeniedConfirmations = await testDatabase.database
+          .select({ id: dataGovernanceDrafts.id })
+          .from(dataGovernanceDrafts)
+          .where(inArray(dataGovernanceDrafts.createdBy, actorEmails));
+        const logsAfterDeniedConfirmations = await testDatabase.database
+          .select({
+            action: dataChangeLogs.action,
+            actorEmail: dataChangeLogs.actorEmail,
+            draftId: dataChangeLogs.draftId,
+          })
+          .from(dataChangeLogs)
+          .where(eq(dataChangeLogs.importBatchId, batch.id));
+        const afterDeniedFacts = await testDatabase.database
+          .select({ count: sql<number>`count(*)::int` })
+          .from(marketMetrics);
+
+        expect(batchAfterDeniedConfirmations).toEqual({
+          committedAt: null,
+          confirmedBy: null,
+          status: "previewed",
+        });
+        expect(draftsAfterDeniedConfirmations).toEqual([]);
+        expect(logsAfterDeniedConfirmations).toEqual([
+          {
+            action: "import_previewed",
+            actorEmail: owner.email,
+            draftId: null,
+          },
+        ]);
+        expect(afterDeniedFacts[0]?.count).toBe(beforeFacts[0]?.count);
+
+        await expect(
+          governanceRepository.confirmMarketImport({
+            actor: owner,
+            batchId: batch.id,
+            reason: "Confirm the creator-bound CSV batch.",
+          }),
+        ).resolves.toEqual(scenario.expectedOwnerResult);
+
+        const [batchAfterOwnerConfirmation] = await testDatabase.database
+          .select({
+            confirmedBy: marketImportBatches.confirmedBy,
+            status: marketImportBatches.status,
+          })
+          .from(marketImportBatches)
+          .where(eq(marketImportBatches.id, batch.id));
+        expect(batchAfterOwnerConfirmation).toEqual({
+          confirmedBy: owner.email,
+          status: scenario.expectedStatus,
+        });
+        await expect(
+          governanceRepository.confirmMarketImport({
+            actor: owner,
+            batchId: batch.id,
+            reason: "Attempt to confirm a settled CSV batch.",
+          }),
+        ).rejects.toThrow(conflictMessage);
+      } finally {
+        const relatedLogs = await testDatabase.database
+          .select({ draftId: dataChangeLogs.draftId })
+          .from(dataChangeLogs)
+          .where(eq(dataChangeLogs.importBatchId, batch.id));
+        const draftIds = relatedLogs.flatMap(({ draftId }) =>
+          draftId ? [draftId] : [],
+        );
+        await testDatabase.database
+          .delete(dataChangeLogs)
+          .where(eq(dataChangeLogs.importBatchId, batch.id));
+        if (draftIds.length > 0) {
+          await testDatabase.database
+            .delete(dataGovernanceDrafts)
+            .where(inArray(dataGovernanceDrafts.id, draftIds));
+        }
+        await testDatabase.database
+          .delete(marketImportBatches)
+          .where(eq(marketImportBatches.id, batch.id));
+      }
+    },
+  );
 
   it("rejects a CSV preview that has validation errors but no parsed rows", async () => {
     const governanceRepository = createGovernanceRepository(

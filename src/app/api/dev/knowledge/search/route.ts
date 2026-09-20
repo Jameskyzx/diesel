@@ -12,9 +12,14 @@ import {
 } from "@/server/services/knowledge-service";
 import {
   readJsonRequest,
+  RequestBodyAbortedError,
   RequestBodyTooLargeError,
+  RequestBodyTimeoutError,
 } from "@/server/http/request-body";
-import { MAX_KNOWLEDGE_SEARCH_REQUEST_BYTES } from "@/server/http/request-limits";
+import {
+  MAX_KNOWLEDGE_SEARCH_REQUEST_BYTES,
+  MAX_NON_CHAT_REQUEST_BODY_READ_MS,
+} from "@/server/http/request-limits";
 
 export const runtime = "nodejs";
 
@@ -35,6 +40,8 @@ export async function POST(request: Request) {
     const input = await readJsonRequest(
       request,
       MAX_KNOWLEDGE_SEARCH_REQUEST_BYTES,
+      MAX_NON_CHAT_REQUEST_BODY_READ_MS,
+      request.signal,
     );
     return NextResponse.json(
       hybridSearchResponseSchema.parse(await hybridSearchKnowledge(input)),
@@ -49,6 +56,20 @@ export async function POST(request: Request) {
           },
         }),
         { status: 413 },
+      );
+    }
+    if (
+      error instanceof RequestBodyTimeoutError ||
+      error instanceof RequestBodyAbortedError
+    ) {
+      return NextResponse.json(
+        knowledgeApiErrorSchema.parse({
+          error: {
+            code: "REQUEST_TIMEOUT",
+            message: "检索请求接收超时或已取消，请重试。",
+          },
+        }),
+        { status: 408 },
       );
     }
     if (error instanceof ZodError || error instanceof SyntaxError) {

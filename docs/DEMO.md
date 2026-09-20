@@ -10,13 +10,26 @@ set, so the final narrative appears at once rather than token by token.
 
 ## English
 
+For a self-paced exercise with exact requests, expected results, and a handoff
+checklist, use the [local evidence lab](LOCAL_EVIDENCE_LAB.md).
+
 ### Before the timer
+
+Use the hosted path only when `STATUS.md` confirms that the same version was
+deployed and passed production readback. Otherwise, use `pnpm demo`; do not
+substitute the currently hosted release for the local walkthrough.
 
 - Hosted path: open the [home page](https://jamesky.site), a
   [CHN 100 kW deep link](https://jamesky.site/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13),
   and the [AI workspace](https://jamesky.site/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13).
-- Zero-configuration path: run `pnpm install` and `pnpm demo`, then open
-  <http://127.0.0.1:3000>. Installation and startup are not part of the timer.
+- Zero-configuration path: run `pnpm install` and `pnpm demo`, then open the
+  [local home page](http://127.0.0.1:3000),
+  [local CHN 100 kW deep link](http://127.0.0.1:3000/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13),
+  and [local AI workspace](http://127.0.0.1:3000/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13).
+  These use the default port; if you set `DEMO_PORT`, update all three local
+  URLs. Installation and startup are not part of the timer.
+- Use the CHN and AI links from your chosen runtime throughout the walkthrough;
+  do not switch from local to hosted links mid-query.
 - Select English in the header before the walkthrough.
 
 ### 0:00–0:30 — Frame the user problem
@@ -60,7 +73,8 @@ date. Show the tool cards and citations before discussing the explanation.
 
 ### 2:10–3:00 — Prove reproducibility and boundaries
 
-Switch to the local demo and repeat a CHN query. Explain that `pnpm demo` needs
+If you started on the hosted version, switch to the local demo; otherwise stay
+in the local demo. Repeat a CHN query. Explain that `pnpm demo` needs
 no `.env.local`, PostgreSQL, Docker, or model key, but still runs the tracked
 Drizzle migrations, repositories, services, Zod tool contracts, citations, and
 evidence gate. Its stable products, regulations, and answers are explicitly
@@ -72,6 +86,9 @@ expert sign-off, and no real-user adoption claim.
 
 ## 中文
 
+需要按自己的节奏独立执行、核对请求和预期结果并整理交接记录时，请使用
+[本地证据练习](LOCAL_EVIDENCE_LAB.md)。
+
 这份脚本先展示失败场景，因为项目最重要的主张不是“模型能生成文字”，而是证据合同
 不满足时系统会拒绝编造法规。
 
@@ -80,11 +97,19 @@ expert sign-off, and no real-user adoption claim.
 
 ### 演示前准备（不计时）
 
+只有当 `STATUS.md` 确认相同版本已经部署并通过生产读回时，才使用托管版；否则必须使用
+`pnpm demo`，不得用当前线上旧版本替代本地演示流程。
+
 - 托管版：预先打开[首页](https://jamesky.site)、
   [中国 100 kW 深链](https://jamesky.site/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13)
   和[AI 工作区](https://jamesky.site/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13)。
 - 零配置版：提前执行 `pnpm install`、`pnpm demo`，打开
-  <http://127.0.0.1:3000>。安装和启动不计入三分钟。
+  [本地首页](http://127.0.0.1:3000)、
+  [本地中国 100 kW 深链](http://127.0.0.1:3000/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13)
+  和[本地 AI 工作区](http://127.0.0.1:3000/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13)。
+  以上使用默认端口；若设置了 `DEMO_PORT`，三条本地 URL 都须同步修改。
+  安装和启动不计入三分钟。
+- 演示全程使用所选环境对应的 CHN 与 AI 链接，不在同一查询中混用本地和托管版。
 - 在页头选择中文。
 
 ### 0:00–0:30：说明用户问题
@@ -118,7 +143,8 @@ expert sign-off, and no real-user adoption claim.
 
 ### 2:10–3:00：证明可复现并说明边界
 
-切到本地 Demo 重复 CHN 查询。说明 `pnpm demo` 不需要 `.env.local`、PostgreSQL、
+若从托管版开始，切到本地 Demo；若已经在本地，则保持当前环境。重复 CHN 查询。
+说明 `pnpm demo` 不需要 `.env.local`、PostgreSQL、
 Docker 或模型 Key，但仍执行受版本控制的 Drizzle migration、repository、service、Zod
 工具、引用和证据门。其产品、法规和回答均为明确标记的虚构 fixture，不能用于报价、
 认证声明或销售承诺。

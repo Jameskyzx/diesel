@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SalesChat } from "@/components/ai/sales-chat";
+import { LocaleRenderReceipt } from "@/components/i18n/locale-controller";
 import {
   parseChatUrlContext,
   type ChatUrlContext,
@@ -16,8 +17,10 @@ import { isPortfolioDemoMode } from "@/server/config/portfolio-demo";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getDictionary } from "@/i18n/dictionaries";
+import { formatUtcDate } from "@/i18n/date";
 import { getRequestLocale } from "@/i18n/server";
 import type { Locale } from "@/i18n/locale";
+import { applicationScopeLabel } from "@/i18n/structured-labels";
 import { getCountryDirectory } from "@/server/services/country-directory";
 
 const countryIso2ByIso3 = Object.fromEntries(
@@ -41,27 +44,39 @@ function initialPromptForContext(
   }
 
   if (context.applicationScope && context.powerKw !== undefined) {
+    const scope = applicationScopeLabel(
+      context.applicationScope,
+      getDictionary(locale),
+    );
     if (locale === "zh-CN") {
       const product = context.productModelCode
         ? `，重点判断产品 ${context.productModelCode}`
         : "";
-      const date = context.asOf ? `，判断日期 ${context.asOf}` : "";
-      return `请分析 ${context.countryIso3} 的 ${context.applicationScope} ${context.powerKw} kW 法规与产品适配${product}${date}，并明确说明证据缺口以及结果能否用于销售承诺。`;
+      const date = context.asOf
+        ? `，判断日期 ${formatUtcDate(context.asOf, locale)}`
+        : "";
+      return `请分析 ${context.countryIso3} 的${scope} ${context.powerKw} kW 法规与产品适配${product}${date}，并明确说明证据缺口以及结果能否用于销售承诺。`;
     }
 
     const product = context.productModelCode
       ? `, focusing on product ${context.productModelCode}`
       : "";
-    const date = context.asOf ? `, as of ${context.asOf}` : "";
-    return `Analyze ${context.applicationScope} regulations and product fit for ${context.countryIso3} at ${context.powerKw} kW${product}${date}. State the evidence gaps and whether the result can support a sales commitment.`;
+    const date = context.asOf
+      ? `, as of ${formatUtcDate(context.asOf, locale)}`
+      : "";
+    return `Analyze ${scope} regulations and product fit for ${context.countryIso3} at ${context.powerKw} kW${product}${date}. State the evidence gaps and whether the result can support a sales commitment.`;
   }
 
   if (locale === "zh-CN") {
-    const date = context.asOf ? `在 ${context.asOf}` : "当前";
+    const date = context.asOf
+      ? `在 ${formatUtcDate(context.asOf, locale)}`
+      : "当前";
     return `请查询 ${context.countryIso3} ${date}的有效法规，并明确说明证据缺口以及结果能否用于销售承诺。`;
   }
 
-  const date = context.asOf ? ` as of ${context.asOf}` : " currently";
+  const date = context.asOf
+    ? ` as of ${formatUtcDate(context.asOf, locale)}`
+    : " currently";
   return `Find the regulations effective in ${context.countryIso3}${date}. State the evidence gaps and whether the result can support a sales commitment.`;
 }
 
@@ -84,6 +99,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
 
   return (
     <main className="page-shell flex min-h-[calc(100dvh-4.5rem)] flex-col py-8 sm:py-10">
+      <LocaleRenderReceipt locale={locale} />
       <section className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="section-kicker flex items-center gap-2"><Bot aria-hidden="true" className="size-4" />{copy.kicker}</div>

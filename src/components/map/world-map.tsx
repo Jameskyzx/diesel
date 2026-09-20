@@ -11,8 +11,10 @@ import type {
 } from "maplibre-gl";
 import {
   AttributionControl,
+  GPUInitializationError,
   Map as MapLibreMapClass,
   NavigationControl,
+  setWorkerUrl,
 } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, LoaderCircle, RotateCcw } from "lucide-react";
@@ -20,10 +22,13 @@ import { AlertTriangle, LoaderCircle, RotateCcw } from "lucide-react";
 import { useLocale } from "@/components/i18n/locale-provider";
 import {
   countryGeoFeaturePropertiesSchema,
+  type CountryDirectory,
   type CountryMapSummary,
 } from "@/features/countries/schemas";
+import { countryDirectoryDisplayIdentity } from "@/features/countries/directory-display";
 import { hasDetailedCountryCoverage } from "@/features/database/schemas";
 import { WORLD_COUNTRIES_GEOJSON_URL } from "@/lib/geo-assets";
+import { MAPLIBRE_WORKER_URL } from "@/lib/maplibre-assets";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 import { formatUtcDate } from "@/i18n/date";
@@ -35,6 +40,10 @@ const TOOLTIP_EDGE_PADDING = 8;
 const TOOLTIP_ESTIMATED_HEIGHT = 128;
 const TOOLTIP_MIN_TOP = 64;
 const TOOLTIP_WIDTH = 224;
+
+// Serve the ESM worker and its relative shared module together. Next's URL
+// asset pipeline does not emit the shared sibling of MapLibre's worker.
+setWorkerUrl(MAPLIBRE_WORKER_URL);
 
 const mapStyle: StyleSpecification = {
   layers: [
@@ -118,6 +127,7 @@ type TooltipState = {
 
 type WorldMapProps = {
   countries: CountryMapSummary[];
+  countryIndex: CountryDirectory;
   onSelectCountry: (iso3: string) => void;
   selectedIso3: string | null;
 };
@@ -153,6 +163,7 @@ function setCountryState(
 
 export function WorldMap({
   countries,
+  countryIndex,
   onSelectCountry,
   selectedIso3,
 }: WorldMapProps) {
@@ -164,7 +175,7 @@ export function WorldMap({
   const selectedRef = useRef<string | null>(selectedIso3);
   const onSelectRef = useRef(onSelectCountry);
   const [loadState, setLoadState] = useState<
-    "error" | "loading" | "ready"
+    "error" | "gpu-error" | "loading" | "ready"
   >("loading");
   const [retryKey, setRetryKey] = useState(0);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
@@ -172,6 +183,10 @@ export function WorldMap({
   const countriesByIso3 = useMemo(
     () => new Map(countries.map((country) => [country.iso3, country])),
     [countries],
+  );
+  const countryDirectoryByIso3 = useMemo(
+    () => new Map(countryIndex.map((country) => [country.iso3, country])),
+    [countryIndex],
   );
 
   useEffect(() => {
@@ -184,46 +199,92 @@ export function WorldMap({
       return;
     }
 
-    const map = new MapLibreMapClass({
-      attributionControl: false,
-      center: [8, 18],
-      container,
-      maxZoom: 6,
-      minZoom: 0.8,
-      locale: {
-        "AttributionControl.ToggleAttribution": copy.toggleAttribution,
-        "Map.Title": copy.mapCanvasAria,
-        "NavigationControl.ZoomIn": copy.zoomIn,
-        "NavigationControl.ZoomOut": copy.zoomOut,
-      },
-      renderWorldCopies: false,
-      style: mapStyle,
-      zoom: 1.15,
+    let disposed = false;
+    let failed = false;
+    // Deliver external renderer state after effect setup, with this instance
+    // as owner so an obsolete initialization cannot update the next map.
+    queueMicrotask(() => {
+      if (disposed || failed) return;
+      setLoadState("loading");
+      setTooltip(null);
     });
+    hoveredRef.current = null;
+    let map: MapLibreMap;
+    try {
+      map = new MapLibreMapClass({
+        attributionControl: false,
+        center: [8, 18],
+        container,
+        maxZoom: 6,
+        minZoom: 0.8,
+        locale: {
+          "AttributionControl.ToggleAttribution": copy.toggleAttribution,
+          "Map.Title": copy.mapCanvasAria,
+          "NavigationControl.ZoomIn": copy.zoomIn,
+          "NavigationControl.ZoomOut": copy.zoomOut,
+        },
+        renderWorldCopies: false,
+        style: mapStyle,
+        zoom: 1.15,
+      });
+    } catch (error: unknown) {
+      if (!(error instanceof GPUInitializationError)) throw error;
+      // The pinned v6.9 constructor rolls its container back before throwing,
+      // before registering throttle/handlers/workers. There is no Map to remove.
+      failed = true;
+      queueMicrotask(() => {
+        if (disposed) return;
+        setTooltip(null);
+        setLoadState("gpu-error");
+      });
+      return () => { disposed = true; };
+    }
     mapRef.current = map;
-    setLoadState("loading");
+    const canvas = map.getCanvas();
     let sourceReady = false;
+    let firstRenderReady = false;
     const loadTimeout = setTimeout(() => {
-      if (!sourceReady) {
-        setLoadState("error");
+      if (!firstRenderReady) {
+        failMap("error");
       }
     }, 15_000);
 
-    map.addControl(
-      new AttributionControl({
-        compact: true,
-        customAttribution:
-          '<a href="https://www.naturalearthdata.com/" rel="noreferrer">Natural Earth</a>',
-      }),
-    );
-    map.addControl(
-      new NavigationControl({
-        showCompass: false,
-      }),
-      "bottom-right",
-    );
+    function disposeMap() {
+      if (disposed) return;
+      disposed = true;
+      clearTimeout(loadTimeout);
+      if (mapRef.current === map) mapRef.current = null;
+      hoveredRef.current = null;
+      canvas.removeEventListener("webglcontextlost", handleNativeContextLoss, true);
+      map.remove();
+    }
+
+    function handleNativeContextLoss() {
+      if (disposed || failed) return;
+      failed = true;
+      setTooltip(null);
+      setLoadState("gpu-error");
+      // We discard lost contexts rather than restore the old Map. Capture runs
+      // before v6.9's bubble listener, whose Style.destroy() drops the style
+      // before normal remove() can release its worker state and RTL listener.
+      // Public remove() also detaches that bubble listener. Do not cancel or
+      // synthesize the native event, or access any private MapLibre fields.
+      disposeMap();
+    }
+
+    function failMap(reason: "error" | "gpu-error") {
+      if (disposed || failed) return;
+      failed = true;
+      clearTimeout(loadTimeout);
+      setTooltip(null);
+      setLoadState(reason);
+      // Finish the current MapLibre event dispatch before releasing the Map.
+      // Cleanup/unmount may win this race; disposal remains idempotent.
+      queueMicrotask(disposeMap);
+    }
 
     const clearHoveredCountry = () => {
+      if (disposed || failed) return;
       if (hoveredRef.current) {
         setCountryState(map, hoveredRef.current, { hover: false });
       }
@@ -233,6 +294,7 @@ export function WorldMap({
     };
 
     const handlePointerMove = (event: MapMouseEvent) => {
+      if (disposed || failed) return;
       const [feature] = map.queryRenderedFeatures(event.point, {
         layers: [COUNTRY_FILL_LAYER],
       });
@@ -264,6 +326,7 @@ export function WorldMap({
     };
 
     const handleCountryClick = (event: MapLayerMouseEvent) => {
+      if (disposed || failed) return;
       const parsed = countryGeoFeaturePropertiesSchema.safeParse(
         event.features?.[0]?.properties,
       );
@@ -273,31 +336,54 @@ export function WorldMap({
     };
 
     const handleSourceData = (event: MapSourceDataEvent) => {
+      if (disposed || failed) return;
       if (
         event.sourceId === COUNTRY_SOURCE &&
         map.isSourceLoaded(COUNTRY_SOURCE)
       ) {
         if (map.querySourceFeatures(COUNTRY_SOURCE).length === 0) {
-          clearTimeout(loadTimeout);
-          setLoadState("error");
+          failMap("error");
           return;
         }
         sourceReady = true;
-        clearTimeout(loadTimeout);
-        setLoadState("ready");
       }
+    };
+
+    const handleIdle = () => {
+      if (disposed || failed || firstRenderReady || !sourceReady) return;
+      // Source availability can precede the first complete frame. Report ready
+      // only after the renderer has finished its pending tiles and transitions.
+      firstRenderReady = true;
+      clearTimeout(loadTimeout);
+      setLoadState("ready");
     };
 
     const handleMapError = () => {
-      if (!sourceReady) {
-        clearTimeout(loadTimeout);
-        setLoadState("error");
-      }
+      failMap("error");
     };
 
     map.on("sourcedata", handleSourceData);
+    map.on("idle", handleIdle);
     map.on("error", handleMapError);
+    canvas.addEventListener("webglcontextlost", handleNativeContextLoss, true);
+    try {
+      map.addControl(
+        new AttributionControl({
+          compact: true,
+          customAttribution:
+            '<a href="https://www.naturalearthdata.com/" rel="noreferrer">Natural Earth</a>',
+        }),
+      );
+      map.addControl(
+        new NavigationControl({ showCompass: false }),
+        "bottom-right",
+      );
+    } catch (error: unknown) {
+      disposeMap();
+      throw error;
+    }
     map.on("load", () => {
+      if (disposed || failed) return;
       map.addSource(COUNTRY_SOURCE, {
         data: WORLD_COUNTRIES_GEOJSON_URL,
         promoteId: "ISO3",
@@ -316,15 +402,11 @@ export function WorldMap({
       }
 
       map.on("mousemove", handlePointerMove);
-      map.on("mouseleave", clearHoveredCountry);
+      map.on("mouseout", clearHoveredCountry);
       map.on("click", COUNTRY_FILL_LAYER, handleCountryClick);
     });
 
-    return () => {
-      clearTimeout(loadTimeout);
-      map.remove();
-      mapRef.current = null;
-    };
+    return disposeMap;
   }, [copy, countries, countriesByIso3, retryKey]);
 
   useEffect(() => {
@@ -344,6 +426,24 @@ export function WorldMap({
     }
     selectedRef.current = selectedIso3;
   }, [selectedIso3]);
+
+  const tooltipDirectoryEntry = tooltip
+    ? countryDirectoryByIso3.get(tooltip.iso3)
+    : undefined;
+  const tooltipDisplayIdentity = tooltip
+    ? tooltipDirectoryEntry
+      ? countryDirectoryDisplayIdentity(
+          tooltipDirectoryEntry,
+          tooltip.summary,
+        )
+      : (tooltip.summary ?? {
+          isDemo: false,
+          iso2: "",
+          iso3: tooltip.iso3,
+          nameEn: tooltip.name,
+          nameLocal: null,
+        })
+    : null;
 
   return (
     <div
@@ -369,7 +469,7 @@ export function WorldMap({
           </span>
         </div>
       ) : null}
-      {loadState === "error" ? (
+      {loadState === "error" || loadState === "gpu-error" ? (
         <div
           className="absolute inset-0 z-30 grid place-items-center bg-[#f7f4ed] p-6 text-center"
           role="alert"
@@ -380,10 +480,10 @@ export function WorldMap({
               className="mx-auto size-8 text-amber-700"
             />
             <p className="mt-3 font-semibold text-slate-950">
-              {copy.boundaryErrorTitle}
+              {loadState === "gpu-error" ? copy.gpuErrorTitle : copy.boundaryErrorTitle}
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              {copy.boundaryErrorBody}
+              {loadState === "gpu-error" ? copy.gpuErrorBody : copy.boundaryErrorBody}
             </p>
             <button
               className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-4 text-sm font-semibold text-[#17382e] hover:bg-emerald-50"
@@ -439,8 +539,8 @@ export function WorldMap({
           }}
         >
           <p className="display-title text-lg font-semibold text-[#17382e]">
-            {tooltip.summary
-              ? formatCountryDisplayName(tooltip.summary, locale)
+            {tooltipDisplayIdentity
+              ? formatCountryDisplayName(tooltipDisplayIdentity, locale)
               : tooltip.name}
           </p>
           <p className="mt-0.5 text-[10px] font-semibold tracking-[0.16em] text-emerald-700">
@@ -451,7 +551,8 @@ export function WorldMap({
           </p>
           {tooltip.summary ? (
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {copy.verification}: {formatUtcDate(tooltip.summary.verifiedAt, locale)}
+              {copy.verification}{dictionary.common.labelSeparator}
+              {formatUtcDate(tooltip.summary.verifiedAt, locale)}
               {tooltip.summary.isStale &&
               hasDetailedCountryCoverage(
                 tooltip.summary.dataCoverageStatus,

@@ -26,6 +26,11 @@ the production build, the public, zero-config Demo, and failure-first FDE
 Playwright suites, plus the production CSP contract, before merge. The single
 `Required CI gate` fails unless every merge-blocking job succeeds.
 
+The allowlist also accepts exact test assignment/serialization lines for the
+three deterministic UUID lock/receipt fixtures ending in `4000`, `4001`, and
+`4002`. It does not exempt test files or arbitrary UUIDs, API-key assignments,
+or lines containing additional values. The synthetic PAT canary remains required.
+
 The secret-scanning job keeps gitleaks 8.21.2 and its reviewed release-archive
 SHA-256. A dependency-free, SHA-256-bound `scripts/ci/run-gitleaks.py` validates
 the actual scan outcome: this release can report a Git scan error and still

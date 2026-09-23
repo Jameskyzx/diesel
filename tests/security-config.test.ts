@@ -161,4 +161,26 @@ describe("security and immutable asset configuration", () => {
       "^AI_API_KEY=replace-with-server-side-secret$",
     );
   });
+
+  it("limits lock-fixture exceptions to exact public test lines", async () => {
+    const configuration = await readFile(
+      resolve(process.cwd(), ".gitleaks.toml"),
+      "utf8",
+    );
+    const patterns = [...configuration.matchAll(/'''([^\n]+)'''/g)]
+      .map((match) => new RegExp(match[1]));
+    const allowed = (line: string) => patterns.some((pattern) => pattern.test(line));
+    const fixture = "123e4567-e89b-42d3-a456-426614174000";
+    expect(allowed(`    token: "${fixture}",`)).toBe(true);
+    expect(allowed(`const OWNER_TOKEN = "${fixture}";`)).toBe(true);
+    expect(allowed(`      receipt.token = "${fixture}";`)).toBe(true);
+    expect(allowed(`        '  "token": "${fixture}",\\n' +`)).toBe(true);
+    for (const suffix of ["1", "2"]) {
+      expect(allowed(`const token = "${fixture.slice(0, -1)}${suffix}";`)).toBe(true);
+    }
+    expect(allowed(`const token = "${fixture.slice(0, -1)}9";`)).toBe(false);
+    expect(allowed(`AI_API_KEY="${fixture}"`)).toBe(false);
+    expect(allowed(`const token = "${fixture}"; const key = "another-value";`)).toBe(false);
+    expect(allowed(`const token = "unrelated-private-value";`)).toBe(false);
+  });
 });

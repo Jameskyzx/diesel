@@ -7,8 +7,12 @@
 useDefault = true
 
 [allowlist]
-description = "仅允许公开环境模板中的精确占位值；不跳过任何整文件"
+description = "仅允许环境模板占位值和固定测试 UUID 的精确行；不跳过任何整文件"
 regexTarget = "line"
 regexes = [
   '''^AI_API_KEY=replace-with-server-side-secret$''',
+  # Public deterministic lock/receipt fixtures, never service credentials.
+  '''^\s*const (staleToken|OWNER_TOKEN|token) = "123e4567-e89b-42d3-a456-42661417400[012]";$''',
+  '''^\s*(token: |receipt\.token = )"123e4567-e89b-42d3-a456-426614174000"[,;]$''',
+  '''^\s*'  "token": "123e4567-e89b-42d3-a456-426614174000",\\n' \+$''',
 ]

@@ -17,5 +17,6 @@ export default defineConfig([
     "scripts/deploy/verify-release-authorization.bundle.mjs",
     "test-results/**",
     "tests/fixtures/**/.next/**",
+    "tmp/**",
   ]),
 ]);

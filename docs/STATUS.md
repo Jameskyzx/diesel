@@ -161,6 +161,10 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 08:34 UTC：日期脚注首次浏览器复验暴露额外 Markdown 块回归；public
+  348 passed / 65 skipped，Demo 36 passed / 32 failed，采集正确以 1 退出且未替换旧成功证据。
+  现将已验证日期合并到原回答末尾，不改变证据门或 case 期望；295 项定向测试、lint、
+  typecheck 与桌面/移动端 Demo 68 项均通过。完整浏览器、Vitest 和真实模型证据仍待重采。
 - 2026-09-29 08:16 UTC：真实 live eval 曾因销售简报正文遗漏评估日期而失败（17/18），
   失败 archive 原样保留。服务端公开边界现只在完整证据校验通过后，从工具的
   `informationAsOf` 补齐本地化日期，不改 case 期望或门槛。323 项定向回归及

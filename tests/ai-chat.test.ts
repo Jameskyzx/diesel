@@ -7012,21 +7012,35 @@ describe("single-agent sales chat", () => {
           services: { findCompatibleProducts: async (input) => [createFitEvaluationFor(input)] },
         }),
       });
-      const [text, fullText, sse] = await Promise.all([
+      const [text, full, sse] = await Promise.all([
         result.text,
         (async () => {
           let output = "";
-          for await (const part of result.fullStream) if (part.type === "text-delta") output += part.text;
-          return output;
+          const textParts: Array<{ id: string; text: string }> = [];
+          const starts: string[] = [];
+          for await (const part of result.fullStream) {
+            if (part.type === "text-start") starts.push(part.id);
+            if (part.type === "text-delta") {
+              output += part.text;
+              textParts.push({ id: part.id, text: part.text });
+            }
+          }
+          return { text: output, textParts, starts };
         })(),
         result.toUIMessageStreamResponse({ sendReasoning: false }).text(),
       ]);
       const footer = locale === "en" ? "Evidence as-of date: 2026-08-13." : "证据评估日期：2026-08-13。";
       expect(text).toContain(modelText);
       expect(text.split(footer)).toHaveLength(2);
-      expect(fullText).toBe(text);
+      expect(full.text).toBe(text);
+      const answerParts = full.textParts.filter((part) => part.text.includes(modelText));
+      expect(answerParts).toHaveLength(1);
+      expect(answerParts[0]!.text).toBe(`${modelText}\n\n${footer}`);
+      expect(full.textParts.filter((part) => part.text.includes(footer))).toEqual(answerParts);
+      expect(full.starts).toEqual([answerParts[0]!.id, "regulatory-disclaimer"]);
       expect(sse).toContain(footer);
-      expect(sse).toContain('"id":"evidence-as-of"');
+      expect(sse).toContain(JSON.stringify(`${modelText}\n\n${footer}`));
+      expect(sse).not.toContain('"id":"evidence-as-of"');
       expect(sse).not.toContain('"type":"reasoning');
     },
   );

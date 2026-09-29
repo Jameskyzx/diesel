@@ -1,63 +1,209 @@
-import { copyFile, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 
-import next from "next";
+import { formatErrorTree } from "../format-error";
+import {
+  createNextEnvironmentFileGuard,
+  restoreNextEnvironmentAfterFailure,
+  restoreRecordedNextEnvironmentAfterFailure,
+  restoreRecordedNextEnvironmentAfterOperation,
+} from "../next-environment-file";
+import { createE2eTsconfig } from "./tsconfig";
+
+process.env.PLAYWRIGHT_E2E = "true";
 
 async function startServer() {
   const hostname = "127.0.0.1";
   const port = 3100;
-  const originalNextEnv = await readFile("next-env.d.ts");
+  const [nextEnvironmentGuard, sourceTsconfig] = await Promise.all([
+    createNextEnvironmentFileGuard({
+      allowedGeneratedRouteImports: [
+        "./.next-e2e/dev/types/routes.d.ts",
+      ],
+    }),
+    readFile("tsconfig.json", "utf8"),
+  ]);
+  let terminationRequested = false;
+  let activeSignalShutdown: (() => void) | null = null;
+  const handleTerminationSignal = () => {
+    terminationRequested = true;
+    activeSignalShutdown?.();
+  };
+  process.on("SIGINT", handleTerminationSignal);
+  process.on("SIGTERM", handleTerminationSignal);
+  const e2eTsconfig = createE2eTsconfig(
+    JSON.parse(sourceTsconfig) as unknown,
+  );
 
-  await copyFile("tsconfig.json", "tsconfig.e2e.json");
+  await writeFile(
+    "tsconfig.e2e.json",
+    `${JSON.stringify(e2eTsconfig, null, 2)}\n`,
+    "utf8",
+  );
+  const { default: next } = await import("next");
   const app = next({
     dev: true,
     hostname,
     port,
+    webpack: true,
   });
   const handle = app.getRequestHandler();
 
   try {
     await app.prepare();
-  } finally {
-    // Next writes generated route imports to the repository-level
-    // next-env.d.ts even when the E2E server uses a separate distDir. Restore
-    // the exact pre-test file so Playwright never dirties production config.
-    await writeFile("next-env.d.ts", originalNextEnv);
+  } catch (prepareError: unknown) {
+    let operationError = prepareError;
+    try {
+      await app.close();
+    } catch (closeError: unknown) {
+      operationError = new AggregateError(
+        [prepareError, closeError],
+        "Next.js preparation and cleanup both failed.",
+      );
+    }
+    await restoreNextEnvironmentAfterFailure(
+      nextEnvironmentGuard,
+      operationError,
+    );
+  }
+  try {
+    await nextEnvironmentGuard.recordGeneratedState();
+  } catch (recordError: unknown) {
+    let operationError = recordError;
+    try {
+      await app.close();
+    } catch (closeError: unknown) {
+      operationError = new AggregateError(
+        [recordError, closeError],
+        "next-env.d.ts validation and Next.js cleanup both failed.",
+      );
+    }
+    await restoreRecordedNextEnvironmentAfterFailure(
+      nextEnvironmentGuard,
+      operationError,
+    );
   }
 
+  let shutdownPromise: Promise<void> | null = null;
+  let shuttingDown = false;
   const server = createServer((request, response) => {
     if (
       process.env.DATABASE_MODE === "pglite-demo" &&
       request.method === "POST" &&
       request.url === "/__e2e/shutdown"
     ) {
-      response.writeHead(200, {
+      void shutdown(false).then(
+        () => {
+          response.once("finish", () => {
+            server.closeAllConnections();
+            process.exit(0);
+          });
+          response.writeHead(200, {
+            "content-type": "application/json",
+          });
+          response.end(JSON.stringify({ status: "stopped" }));
+        },
+        (error: unknown) => {
+          console.error(formatErrorTree(error, "e2e-shutdown").trimEnd());
+          response.once("finish", () => {
+            server.closeAllConnections();
+            process.exit(1);
+          });
+          response.writeHead(500, {
+            connection: "close",
+            "content-type": "application/json",
+          });
+          response.end(JSON.stringify({ status: "shutdown_failed" }));
+        },
+      );
+      return;
+    }
+
+    if (shuttingDown) {
+      response.writeHead(503, {
+        connection: "close",
         "content-type": "application/json",
       });
       response.end(JSON.stringify({ status: "shutting_down" }));
-
-      setTimeout(() => {
-        server.closeAllConnections();
-        server.close(() => {
-          void app.close().finally(() => process.exit(0));
-        });
-      }, 50);
       return;
     }
 
     void handle(request, response);
   });
 
-  server.listen(port, hostname, () => {
-    console.log(`E2E server ready at http://${hostname}:${port}`);
-  });
+  const shutdown = (forceConnections: boolean) => {
+    shuttingDown = true;
+    if (server.listening) {
+      server.close();
+    }
+    if (forceConnections) server.closeAllConnections();
+    if (shutdownPromise) return shutdownPromise;
+    shutdownPromise = (async () => {
+      try {
+        await app.close();
+      } catch (closeError: unknown) {
+        await restoreRecordedNextEnvironmentAfterFailure(
+          nextEnvironmentGuard,
+          closeError,
+        );
+      }
+      await restoreRecordedNextEnvironmentAfterOperation(
+        nextEnvironmentGuard,
+      );
+    })();
+    return shutdownPromise;
+  };
+  let signalShutdownStarted = false;
+  const shutdownFromSignal = () => {
+    if (signalShutdownStarted) return;
+    signalShutdownStarted = true;
+    void shutdown(true).then(
+      () => process.exit(0),
+      (error: unknown) => {
+        console.error(formatErrorTree(error, "e2e-shutdown").trimEnd());
+        process.exit(1);
+      },
+    );
+  };
+  activeSignalShutdown = shutdownFromSignal;
+  if (terminationRequested) {
+    shutdownFromSignal();
+    return;
+  }
+
+  try {
+    await new Promise<void>((resolveListening, rejectListening) => {
+      const handleListenError = (error: Error) => {
+        server.off("listening", handleListening);
+        rejectListening(error);
+      };
+      const handleListening = () => {
+        server.off("error", handleListenError);
+        resolveListening();
+      };
+      server.once("error", handleListenError);
+      server.once("listening", handleListening);
+      server.listen(port, hostname);
+    });
+  } catch (listenError: unknown) {
+    let operationError = listenError;
+    try {
+      await app.close();
+    } catch (closeError: unknown) {
+      operationError = new AggregateError(
+        [listenError, closeError],
+        "HTTP listen and Next.js cleanup both failed.",
+      );
+    }
+    await restoreRecordedNextEnvironmentAfterFailure(
+      nextEnvironmentGuard,
+      operationError,
+    );
+  }
+  console.log(`E2E server ready at http://${hostname}:${port}`);
 }
 
 void startServer().catch((error: unknown) => {
-  if (error instanceof Error) {
-    console.error(error.message);
-  } else {
-    console.error("E2E server failed to start");
-  }
+  console.error(formatErrorTree(error, "e2e-server").trimEnd());
   process.exit(1);
 });

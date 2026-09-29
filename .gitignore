@@ -5,12 +5,14 @@
 # Next.js
 /.next
 /.next-e2e
+/tests/fixtures/global-error-app/.next
 /out
 tsconfig.e2e.json
 
 # Test output
 /coverage
 /playwright-report
+/playwright-demo-report
 /test-results
 /tmp
 /backups

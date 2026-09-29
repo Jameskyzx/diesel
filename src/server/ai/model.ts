@@ -2,8 +2,11 @@ import "server-only";
 
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
+import { createHash } from "node:crypto";
+import { z } from "zod";
 
 import {
+  aiModelIdSchema,
   userAiConfigSchema,
   type UserAiConfig,
 } from "@/features/ai/schemas";
@@ -19,13 +22,90 @@ export class AiConfigurationError extends Error {
 }
 
 export type ConfiguredAiModel = {
+  costProfile: unknown | null;
   model: LanguageModel;
   modelId: string;
+  providerProfile: AiProviderProfile;
+};
+
+export type AiProviderProfile = {
+  adapter: "@ai-sdk/openai-compatible" | "portfolio-demo";
+  adapterContractVersion: 1 | 2 | 3 | 4;
+  enableThinking: boolean | null;
+  endpointSha256: string | null;
+  includeUsage: boolean;
 };
 
 export type ServerAiConfig = UserAiConfig & {
+  costProfile?: unknown;
+  includeUsage?: boolean;
   multimodalModel?: string;
 };
+
+const invalidModelCostProfile = Object.freeze({ invalid: true });
+
+function endpointSha256(baseUrl: string): string {
+  return createHash("sha256").update(baseUrl, "utf8").digest("hex");
+}
+
+function isOfficialDeepSeekEndpoint(baseUrl: string): boolean {
+  const url = new URL(baseUrl);
+  return url.origin === "https://api.deepseek.com" &&
+    (url.pathname === "/" || url.pathname === "/v1");
+}
+
+const requiredFunctionSchema = z.object({
+  type: z.literal("function"),
+  function: z.object({ name: z.string().min(1).max(128) }),
+});
+
+function sequenceDeepSeekRequiredTools(body: Record<string, unknown>): Record<string, unknown> {
+  if (body.tool_choice !== "required") return body;
+  const firstTool: unknown = Array.isArray(body.tools) ? body.tools[0] : undefined;
+  const parsed = requiredFunctionSchema.safeParse(firstTool);
+  if (!parsed.success) {
+    throw new AiConfigurationError("必选工具请求缺少有效工具定义。");
+  }
+  const messages = z.array(z.record(z.string(), z.unknown())).parse(body.messages);
+  const instruction = "For this provider request, invoke the named tool exactly once. Do not repeat this tool, omit requested parameters, or substitute it for another tool to simulate parallel execution. The application will make other required tools available on subsequent steps. A user request for parallel execution does not override this transport constraint.";
+  const firstMessage = messages[0];
+  const sequencedMessages = firstMessage?.role === "system" && typeof firstMessage.content === "string"
+    ? [{ ...firstMessage, content: `${firstMessage.content}\n<provider_tool_execution>${instruction}</provider_tool_execution>` }, ...messages.slice(1)]
+    : [{ role: "system", content: instruction }, ...messages];
+  // Parallel tool arguments were observed to be malformed. Name only the first
+  // currently allowed tool; production prepareStep supplies the remaining tools
+  // on the next step. Never repair/guess provider arguments or add a retry.
+  return {
+    ...body,
+    messages: sequencedMessages,
+    tools: [firstTool],
+    tool_choice: { type: "function", function: { name: parsed.data.function.name } },
+  };
+}
+
+function finalModelId(value: string): string {
+  const parsed = aiModelIdSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new AiConfigurationError("服务端 AI 配置无效，请检查模型标识。");
+  }
+  return parsed.data;
+}
+
+export function parseConfiguredModelCostProfile(
+  value: string | undefined,
+): unknown | null {
+  if (value === undefined) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    // Do not retain malformed configuration text because it may contain
+    // private commercial terms. The strict estimator will reject this marker.
+    return invalidModelCostProfile;
+  }
+}
 
 function parseServerAiConfigForModel(
   config: ServerAiConfig,
@@ -56,6 +136,10 @@ export function getServerAiConfig(): ServerAiConfig | null {
   return parsedConfig.success
     ? {
         ...parsedConfig.data,
+        costProfile: parseConfiguredModelCostProfile(
+          env.AI_COST_PROFILE_JSON,
+        ),
+        includeUsage: env.AI_INCLUDE_USAGE,
         multimodalModel: env.AI_MULTIMODAL_MODEL,
       }
     : null;
@@ -100,8 +184,16 @@ export function getConfiguredAiModel(
     }
 
     return {
+      costProfile: null,
       model: createPortfolioDemoModel(),
-      modelId: "portfolio-demo/deterministic-v1",
+      modelId: finalModelId("portfolio-demo/deterministic-v1"),
+      providerProfile: {
+        adapter: "portfolio-demo",
+        adapterContractVersion: 1,
+        enableThinking: null,
+        endpointSha256: null,
+        includeUsage: false,
+      },
     };
   }
 
@@ -127,21 +219,46 @@ export function getConfiguredAiModel(
     throw new AiConfigurationError("服务端 AI 配置无效，请检查接口地址和模型名。");
   }
 
+  const usesDeepSeekContract = isOfficialDeepSeekEndpoint(parsedConfig.data.baseUrl);
+  const enableThinking = usesDeepSeekContract
+    ? parsedConfig.data.enableThinking ?? false
+    : parsedConfig.data.enableThinking;
+  if (usesDeepSeekContract && enableThinking) {
+    // DeepSeek thinking mode rejects the required tool choice used by this
+    // application; do not silently downgrade an explicitly enabled setting.
+    throw new AiConfigurationError(
+      "当前 DeepSeek 工具流程要求 AI_ENABLE_THINKING=false。",
+    );
+  }
+
   const provider = createOpenAICompatible({
     apiKey: parsedConfig.data.apiKey,
     baseURL: parsedConfig.data.baseUrl,
+    includeUsage: resolvedConfig.includeUsage === true,
     name: "server-openai-compatible",
     transformRequestBody: (body) =>
-      parsedConfig.data.enableThinking === undefined
+      enableThinking === undefined
         ? body
         : {
-            ...body,
-            enable_thinking: parsedConfig.data.enableThinking,
+            ...(usesDeepSeekContract ? sequenceDeepSeekRequiredTools(body) : body),
+            ...(usesDeepSeekContract
+              ? { thinking: { type: "disabled" } }
+              : { enable_thinking: enableThinking }),
           },
   });
 
   return {
+    costProfile: resolvedConfig.costProfile ?? null,
     model: provider(parsedConfig.data.model),
-    modelId: `server-openai-compatible/${parsedConfig.data.model}`,
+    modelId: finalModelId(
+      `server-openai-compatible/${parsedConfig.data.model}`,
+    ),
+    providerProfile: {
+      adapter: "@ai-sdk/openai-compatible",
+      adapterContractVersion: usesDeepSeekContract ? 4 : 1,
+      enableThinking: enableThinking ?? null,
+      endpointSha256: endpointSha256(parsedConfig.data.baseUrl),
+      includeUsage: resolvedConfig.includeUsage === true,
+    },
   };
 }

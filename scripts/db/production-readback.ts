@@ -5,6 +5,26 @@ export type MigrationIdentity = {
   hash: string;
 };
 
+export type ProductionReadbackEnvironment = Readonly<{
+  DATABASE_MODE?: string;
+  DIESEL_VERIFY_PRODUCTION?: string;
+  NODE_ENV?: string;
+}>;
+
+export function assertProductionReadbackEnvironment(
+  environment: ProductionReadbackEnvironment,
+): void {
+  if (
+    environment.NODE_ENV !== "production" ||
+    environment.DATABASE_MODE !== "postgres" ||
+    environment.DIESEL_VERIFY_PRODUCTION !== "1"
+  ) {
+    throw new Error(
+      "Production readback requires NODE_ENV=production, DATABASE_MODE=postgres, and DIESEL_VERIFY_PRODUCTION=1.",
+    );
+  }
+}
+
 export const recognizedLegacyMigrationExtras = [
   {
     createdAt: "1785737341036",

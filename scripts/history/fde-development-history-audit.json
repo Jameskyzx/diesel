@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "fde-development-history-audit-v3",
+  "subject": {
+    "commit": "6be02895643a3fdf8dcee1a5876c5f3d70d03036",
+    "commitCount": 50,
+    "nonMergeCommitCount": 42
+  },
+  "recordedClaims": {
+    "fullHistorySecretScan": {
+      "recordedAt": "2026-08-20",
+      "reportedResult": "passed",
+      "evidenceLevel": "historical-operator-record-only",
+      "rawReportPresent": false
+    },
+    "dependencyLicenseMetadataScan": {
+      "recordedAt": "2026-08-20",
+      "reportedResult": "metadata-passed-with-review-items",
+      "evidenceLevel": "historical-operator-record-only",
+      "rawReportPresent": false
+    }
+  },
+  "retainedSecretScan": {
+    "recordedAt": "2026-09-05",
+    "observedResult": "completed-zero-findings",
+    "evidenceLevel": "repository-contained-dated-run-record",
+    "rawReportPresent": true,
+    "replayableFromRepository": false,
+    "manifest": {
+      "path": "docs/evidence/fde-development-history-secret-scan-2026-09-05.manifest.json",
+      "byteLength": 3370,
+      "sha256": "4dbd0171c75aab4791585b26df43285f85d53ce64c6ba9dfc6e60686b2728b40"
+    }
+  },
+  "retainedDependencyLicenseScan": {
+    "recordedAt": "2026-09-05",
+    "observedResult": "metadata-collected-with-unresolved-review-items",
+    "evidenceLevel": "repository-contained-dated-run-record",
+    "rawReportPresent": true,
+    "replayableFromRepository": false,
+    "licenseApproval": "not-performed",
+    "manifest": {
+      "path": "docs/evidence/fde-development-history-dependency-licenses-2026-09-05.manifest.json",
+      "byteLength": 3592,
+      "sha256": "c972c2e9d4db4748d6d3cc8a0f9447eb9dedcf4ede2646b5282c9c1133bfd186"
+    }
+  },
+  "publicationGate": {
+    "status": "blocked",
+    "publicationPermitted": false,
+    "machineVerifiedBlockers": [
+      "source-project-license-missing",
+      "source-project-notice-missing",
+      "source-package-license-field-missing"
+    ],
+    "manualBlockers": [
+      "historical-assets-and-copied-material-review-incomplete",
+      "weak-copyleft-and-notice-policy-missing"
+    ]
+  }
+}

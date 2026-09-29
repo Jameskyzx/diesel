@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { hybridSearchResponseMatchesDeterministicRules } from "@/domain/knowledge/search-consistency";
+import { isPersistableDocumentText } from "@/features/knowledge/document-text";
 import {
   applicationScopeSchema,
   decimalNumberStringSchema,
@@ -50,6 +52,17 @@ const optionalUrlSchema = z.union([
   z.null(),
 ]);
 
+const documentTextValidationMessage =
+  "Document text must not contain NUL or unpaired UTF-16 surrogates.";
+const documentDescriptorTextSchema = z.string().refine(isPersistableDocumentText, {
+  message: documentTextValidationMessage,
+});
+
+export const documentFileDescriptorSchema = z.object({
+  fileName: documentDescriptorTextSchema,
+  mimeType: documentDescriptorTextSchema,
+}).strict();
+
 export const documentImportMetadataSchema = z
   .object({
     applicationScope: z.union([applicationScopeSchema, z.null()]),
@@ -78,6 +91,15 @@ export const documentImportMetadataSchema = z
   })
   .strict()
   .superRefine((value, context) => {
+    for (const [field, text] of Object.entries(value)) {
+      if (typeof text === "string" && !isPersistableDocumentText(text)) {
+        context.addIssue({
+          code: "custom",
+          message: documentTextValidationMessage,
+          path: [field],
+        });
+      }
+    }
     if (value.isDemo !== (value.sourceType === "demo")) {
       context.addIssue({
         code: "custom",
@@ -199,7 +221,7 @@ export const hybridSearchResponseSchema = z
   .object({
     embeddingModel: z.literal("local-hash-embedding-v1"),
     filters: hybridSearchQuerySchema.omit({ query: true }),
-    query: z.string(),
+    query: z.string().trim().min(1).max(500),
     results: z.array(hybridSearchResultSchema),
     scoring: z
       .object({
@@ -209,7 +231,17 @@ export const hybridSearchResponseSchema = z
       .strict(),
     status: z.literal("ok"),
   })
-  .strict();
+  .strict()
+  .superRefine((response, context) => {
+    if (!hybridSearchResponseMatchesDeterministicRules(response)) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Knowledge-search results do not match their filters, ranks, and public scores",
+        path: ["results"],
+      });
+    }
+  });
 
 export const knowledgeOptionsResponseSchema = z
   .object({
@@ -243,6 +275,7 @@ export const knowledgeApiErrorSchema = z
           "DEVELOPER_ONLY",
           "INVALID_INPUT",
           "PAYLOAD_TOO_LARGE",
+          "REQUEST_TIMEOUT",
           "FILE_TOO_LARGE",
           "EMPTY_FILE",
           "NOT_FOUND",

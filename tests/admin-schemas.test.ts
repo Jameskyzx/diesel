@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  adminDashboardResponseSchema,
   countryDraftPayloadSchema,
   dataSourceDraftPayloadSchema,
+  governanceDraftCreateSchema,
+  governancePublishedBaselineSchema,
   governedEntityReferenceSchema,
   jurisdictionDraftPayloadSchema,
   marketMetricDraftPayloadSchema,
@@ -102,6 +105,33 @@ const marketMetricPayload = {
 function issuePaths(result: { error?: { issues: { path: PropertyKey[] }[] } }) {
   return result.error?.issues.map(({ path }) => path.join(".")) ?? [];
 }
+
+describe("admin direct draft creation boundary", () => {
+  it("rejects document drafts outside the governed document workflows", () => {
+    expect(
+      governanceDraftCreateSchema.safeParse({
+        changeReason: "Attempt to bypass governed document creation.",
+        entityType: "document",
+        payload: {
+          documentId: "00000000-0000-4000-8000-000000000701",
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  it.each([
+    ["product", productPayload],
+    ["product_certification", certificationPayload],
+  ] as const)("keeps %s draft creation available", (entityType, payload) => {
+    expect(
+      governanceDraftCreateSchema.safeParse({
+        changeReason: `Create a governed ${entityType} draft.`,
+        entityType,
+        payload,
+      }).success,
+    ).toBe(true);
+  });
+});
 
 describe("admin product governance schemas", () => {
   it("accepts valid half-open product and certification periods", () => {
@@ -653,5 +683,205 @@ describe("admin governance numeric inputs", () => {
 
     expect(result.success).toBe(false);
     expect(issuePaths(result)).toContain("valueNumeric");
+  });
+});
+
+describe("admin dashboard response schema", () => {
+  const countryPayload = {
+    dataCoverageStatus: "covered",
+    dataSourceId: "00000000-0000-4000-8000-000000000001",
+    isDemo: false,
+    iso2: "CN",
+    iso3: "CHN",
+    nameEn: "China v2",
+    nameLocal: "中国",
+    regionCode: "EAS",
+    subregionCode: "EAS",
+    verifiedAt: "2026-08-05T13:00:00.000Z",
+  } as const;
+  const publishedBaseline = {
+    payload: { ...countryPayload, nameEn: "China" },
+    publishedAt: "2026-08-29T00:00:00.000Z",
+    publishedBy: "reviewer@example.test",
+    version: 1,
+  } as const;
+  const currentDraft = {
+    changeReason: "Update the governed country name.",
+    createdBy: "editor@example.test",
+    entityKey: "CHN",
+    entityType: "country",
+    id: "00000000-0000-4000-8000-000000000801",
+    payload: countryPayload,
+    reviewContext: {
+      baselineStatus: "active",
+      blockingReasons: [],
+      dependencies: [],
+      publishedBaseline,
+      publishReady: true,
+    },
+    version: 2,
+    workflowStatus: "reviewed",
+  } as const;
+  const dashboard = {
+    auditLogs: [
+      {
+        action: "published",
+        actorEmail: "reviewer@example.test",
+        actorRole: "reviewer",
+        createdAt: "2026-08-30T00:00:00.000Z",
+        entityKey: "00000000-0000-4000-8000-000000000601",
+        entityType: "market_metric",
+        id: "00000000-0000-4000-8000-000000000701",
+        reason: "Publish the reviewed metric.",
+      },
+    ],
+    drafts: [currentDraft],
+    status: "ok",
+    workflowCounts: { draft: 0, published: 1, reviewed: 1 },
+  } as const;
+
+  it("accepts only the dashboard draft and audit summary fields", () => {
+    expect(adminDashboardResponseSchema.safeParse(dashboard).success).toBe(true);
+  });
+
+  it("rejects an extra audit snapshot field", () => {
+    const result = adminDashboardResponseSchema.safeParse({
+      ...dashboard,
+      auditLogs: [
+        { ...dashboard.auditLogs[0], afterData: { private: true } },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("keeps the published baseline schema independent and strict", () => {
+    expect(governancePublishedBaselineSchema.parse(publishedBaseline)).toEqual(
+      publishedBaseline,
+    );
+    expect(
+      governancePublishedBaselineSchema.safeParse({
+        ...publishedBaseline,
+        entityKey: "CHN",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects storage-only fields on current dashboard drafts", () => {
+    const result = adminDashboardResponseSchema.safeParse({
+      ...dashboard,
+      drafts: [
+        {
+          ...currentDraft,
+          updatedAt: "2026-08-30T00:00:00.000Z",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects the removed import batch history field", () => {
+    const result = adminDashboardResponseSchema.safeParse({
+      ...dashboard,
+      importBatches: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects the removed dashboard principal field", () => {
+    const result = adminDashboardResponseSchema.safeParse({
+      ...dashboard,
+      principal: { email: "editor@example.test", role: "editor" },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects published history in the bounded active queue", () => {
+    const result = adminDashboardResponseSchema.safeParse({
+      ...dashboard,
+      drafts: [{ ...currentDraft, workflowStatus: "published" }],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it.each([
+    {
+      name: "current payload extra fields",
+      drafts: [
+        {
+          ...currentDraft,
+          payload: { ...currentDraft.payload, privateCanary: true },
+        },
+      ],
+    },
+    {
+      name: "published baseline payload extra fields",
+      drafts: [
+        {
+          ...currentDraft,
+          reviewContext: {
+            ...currentDraft.reviewContext,
+            publishedBaseline: {
+              ...publishedBaseline,
+              payload: { ...publishedBaseline.payload, privateCanary: true },
+            },
+          },
+        },
+      ],
+    },
+    {
+      name: "payload identity drift",
+      drafts: [
+        {
+          ...currentDraft,
+          payload: { ...currentDraft.payload, iso3: "USA" },
+        },
+      ],
+    },
+  ])("rejects $name", ({ drafts }) => {
+    expect(
+      adminDashboardResponseSchema.safeParse({ ...dashboard, drafts }).success,
+    ).toBe(false);
+  });
+
+  it("rejects counts smaller than the visible active queue", () => {
+    const result = adminDashboardResponseSchema.safeParse({
+      ...dashboard,
+      workflowCounts: { ...dashboard.workflowCounts, reviewed: 0 },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("bounds the active queue and audit summary", () => {
+    expect(
+      adminDashboardResponseSchema.safeParse({
+        ...dashboard,
+        drafts: Array.from({ length: 101 }, () => currentDraft),
+        workflowCounts: { ...dashboard.workflowCounts, reviewed: 101 },
+      }).success,
+    ).toBe(false);
+    expect(
+      adminDashboardResponseSchema.safeParse({
+        ...dashboard,
+        auditLogs: Array.from(
+          { length: 31 },
+          () => dashboard.auditLogs[0],
+        ),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects audit actions outside the governed action vocabulary", () => {
+    const result = adminDashboardResponseSchema.safeParse({
+      ...dashboard,
+      auditLogs: [{ ...dashboard.auditLogs[0], action: "private_action" }],
+    });
+
+    expect(result.success).toBe(false);
   });
 });

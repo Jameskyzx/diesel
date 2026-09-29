@@ -80,8 +80,9 @@ describe("world country map assets", () => {
     ).then((value) => countryGeoIndexSchema.parse(value));
     const geometryIso3s = new Set(countryIndex.map(({ iso3 }) => iso3));
     const directory = countryDirectorySchema.parse(
-      countryCatalog.map(({ iso3, nameEn }) => ({
+      countryCatalog.map(({ iso2, iso3, nameEn }) => ({
         hasGeometry: geometryIso3s.has(iso3),
+        iso2,
         iso3,
         name: nameEn,
       })),

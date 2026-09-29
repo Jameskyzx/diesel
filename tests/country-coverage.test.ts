@@ -76,6 +76,49 @@ describe("country coverage gating (ADR-040)", () => {
             validTo: null,
           },
         });
+        const jurisdictionCitation = toolResult.citations.find(
+          ({ titleDescriptor }) =>
+            titleDescriptor?.kind === "regulation_jurisdiction",
+        );
+        expect(jurisdictionCitation?.titleDescriptor).toEqual({
+          jurisdictionName: regulation?.applicability.jurisdiction.name,
+          kind: "regulation_jurisdiction",
+          regulationName: regulation?.canonicalName,
+        });
+        const membershipCitation = toolResult.citations.find(
+          ({ titleDescriptor }) =>
+            titleDescriptor?.kind === "country_jurisdiction_membership",
+        );
+        expect(membershipCitation).toMatchObject({
+          title: `${regulation?.applicability.jurisdiction.name} 对 CHN 的成员关系`,
+          titleDescriptor: {
+            countryIso3: "CHN",
+            jurisdictionName: regulation?.applicability.jurisdiction.name,
+            kind: "country_jurisdiction_membership",
+          },
+        });
+        expect(
+          toolResult.citations.find(
+            ({ sourceId, title }) =>
+              sourceId === regulation?.source.id &&
+              title === regulation?.canonicalName,
+          )?.titleDescriptor,
+        ).toBeUndefined();
+        expect(
+          toolResult.citations.find(
+            ({ sourceId }) => sourceId === china.country.source.id,
+          )?.titleDescriptor,
+        ).toEqual({
+          countryIsDemo: true,
+          countryIso2: "CN",
+          countryIso3: "CHN",
+          countryNameEn: china.country.nameEn,
+          countryNameLocal: china.country.nameLocal,
+          countrySourceId: china.country.source.id,
+          countrySourceIsDemo: china.country.source.isDemo,
+          countrySourceTitle: china.country.source.title,
+          kind: "country_profile",
+        });
         expect(toolResult.citations).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
@@ -83,13 +126,31 @@ describe("country coverage gating (ADR-040)", () => {
               sourceId: regulation?.applicability.jurisdiction.source.id,
             }),
             expect.objectContaining({
+              locatorDescriptor: {
+                kind: "membership_period",
+                validFrom:
+                  regulation?.applicability.membership.validFrom,
+                validTo: regulation?.applicability.membership.validTo,
+              },
               regulationId: regulation?.id,
               sourceId: regulation?.applicability.membership.source.id,
             }),
             expect.objectContaining({
+              locatorDescriptor: {
+                kind: "market_period",
+                periodEnd: china.country.marketMetrics[0]?.periodEnd,
+                periodStart: china.country.marketMetrics[0]?.periodStart,
+              },
               publishedOn: china.country.marketMetrics[0]?.publishedOn,
               sourceId: china.country.marketMetrics[0]?.source.id,
               title: china.country.marketMetrics[0]?.metricName,
+              titleDescriptor: {
+                isDemo: true,
+                kind: "market_metric",
+                metricCode: china.country.marketMetrics[0]?.metricCode,
+                metricId: china.country.marketMetrics[0]?.id,
+                metricName: china.country.marketMetrics[0]?.metricName,
+              },
             }),
           ]),
         );
@@ -113,17 +174,7 @@ describe("country coverage gating (ADR-040)", () => {
           resolvedCountryIso3: "CHN",
         });
         expect(regulationOnlyResult.citations.length).toBeGreaterThan(0);
-        expect(
-          regulationOnlyResult.citations.every(
-            ({ regulationId }) => regulationId !== null,
-          ),
-        ).toBe(true);
-        expect(
-          regulationOnlyResult.citations.some(
-            ({ sourceId }) =>
-              sourceId === china.country.marketMetrics[0]?.source.id,
-          ),
-        ).toBe(false);
+        expect(regulationOnlyResult.citations).toEqual(toolResult.citations);
 
         const marketOnlyResult = buildCountryProfileResult({
           informationAsOf: china.asOf,
@@ -131,18 +182,20 @@ describe("country coverage gating (ADR-040)", () => {
           requestedTopics: ["market"],
           resolvedCountryIso3: "CHN",
         });
-        expect(marketOnlyResult.citations).toHaveLength(
-          china.country.marketMetrics.length,
-        );
-        expect(
-          marketOnlyResult.citations.every(
-            ({ regulationId }) => regulationId === null,
-          ),
-        ).toBe(true);
+        expect(marketOnlyResult.citations).toEqual(toolResult.citations);
 
+        const marketSourceIds = new Set(
+          china.country.marketMetrics.map(({ source }) => source.id),
+        );
         const withoutMarket = {
           ...china,
-          country: { ...china.country, marketMetrics: [] },
+          country: {
+            ...china.country,
+            marketMetrics: [],
+            sources: china.country.sources.filter(
+              ({ id }) => !marketSourceIds.has(id),
+            ),
+          },
         };
         expect(
           buildCountryProfileResult({
@@ -209,6 +262,40 @@ describe("country coverage gating (ADR-040)", () => {
     });
     expect(china.applicabilitySummary?.lastVerifiedAt).not.toBeNull();
     expect(china.applicabilitySummary?.sources.length).toBeGreaterThan(0);
+    expect(china.applicabilitySummary?.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          entityType: "country_jurisdiction",
+          locator: "2000-01-01–open",
+          locatorDescriptor: {
+            kind: "membership_period",
+            validFrom: "2000-01-01",
+            validTo: null,
+          },
+        }),
+        expect.objectContaining({
+          entityType: "regulation_limit",
+          locator: "NOX 2025-01-01–open",
+          locatorDescriptor: {
+            kind: "regulation_limit_period",
+            pollutantCode: "NOX",
+            validFrom: "2025-01-01",
+            validTo: null,
+          },
+        }),
+      ]),
+    );
+    const jurisdictionSource = china.applicabilitySummary?.sources.find(
+      ({ entityType }) => entityType === "jurisdiction",
+    );
+    expect(jurisdictionSource?.locator).toBe("DEMO-CHN-AUTHORITY");
+    expect(jurisdictionSource).not.toHaveProperty("locatorDescriptor");
+    const regulationSource = china.applicabilitySummary?.sources.find(
+      ({ entityType, locator }) =>
+        entityType === "regulation" && locator === "DEMO-CHN-NR-A",
+    );
+    expect(regulationSource).toBeDefined();
+    expect(regulationSource).not.toHaveProperty("locatorDescriptor");
   });
 
   it(
@@ -479,6 +566,7 @@ describe("country regulation status grouping", () => {
     expect(
       isCurrentEffectiveRegulation(
         {
+          adoptedOn: "2019-06-01",
           effectiveFrom: "2020-01-01",
           effectiveTo: null,
           status: "superseded",
@@ -489,6 +577,7 @@ describe("country regulation status grouping", () => {
     expect(
       isCurrentEffectiveRegulation(
         {
+          adoptedOn: "2019-06-01",
           effectiveFrom: "2020-01-01",
           effectiveTo: "2025-01-01",
           status: "superseded",
@@ -496,6 +585,17 @@ describe("country regulation status grouping", () => {
         "2024-12-31",
       ),
     ).toBe(true);
+    expect(
+      isCurrentEffectiveRegulation(
+        {
+          adoptedOn: null,
+          effectiveFrom: "2020-01-01",
+          effectiveTo: null,
+          status: "effective",
+        },
+        "2024-12-31",
+      ),
+    ).toBe(false);
     expect(
       isFutureAdoptedRegulation(
         {

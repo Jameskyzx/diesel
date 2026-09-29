@@ -1,0 +1,214 @@
+{
+  "complete": false,
+  "evaluatedAt": "2026-09-29T02:13:18.048Z",
+  "modelId": "server-openai-compatible/qwen3.8-flash",
+  "provenance": {
+    "promptVersion": "sales-chat-system-v6",
+    "repository": {
+      "baseHeadCommit": "dd00a43a88c6f2b37dc256038c80e3fca749c22e",
+      "evaluatedCommit": "dd00a43a88c6f2b37dc256038c80e3fca749c22e",
+      "worktreeState": "clean"
+    },
+    "sourceFingerprint": {
+      "algorithm": "sha256",
+      "digest": "91d0adb0182012fe3e17dc00c5fe1f75fc063d3bc3e41fb5698ca748df0e54ea",
+      "fileCount": 298,
+      "status": "captured"
+    },
+    "providerProfile": {
+      "adapter": "@ai-sdk/openai-compatible",
+      "adapterContractVersion": 1,
+      "enableThinking": false,
+      "endpointSha256": "5891aed827c4e67b2d7c0c73ea819327ce3f2b6ef72213cd79669486a26b1ead",
+      "includeUsage": true
+    }
+  },
+  "runId": "c0a9ac4f-e0e4-4f53-b286-4b6571cd9c4f",
+  "runError": null,
+  "sampleCount": 1,
+  "thresholdsPassed": false,
+  "terminationReason": "case_error",
+  "budget": {
+    "caseCount": 1,
+    "caseTimeoutMs": 90000,
+    "caseTokenReserve": 12000,
+    "maxCases": 18,
+    "maxLoopStepsPerCase": 5,
+    "maxTokens": 160000,
+    "modelStepCount": 0,
+    "tokenUsageComplete": false,
+    "totalTokens": 0,
+    "attemptCount": 1,
+    "completedCount": 0,
+    "maxRetriesPerModelCall": 0,
+    "maxOutputTokensPerCall": 1024,
+    "maxPotentialOutputTokens": 92160,
+    "tokenBudgetEnforcement": "post_usage_acceptance"
+  },
+  "observability": {
+    "cacheHitRatePct": {
+      "max": null,
+      "p50": null,
+      "p95": null,
+      "sampleCount": 0
+    },
+    "cacheStatusCounts": {
+      "inconsistent": 0,
+      "partial": 0,
+      "reported": 0,
+      "unavailable": 1
+    },
+    "caseCounts": {
+      "attemptCoverageComplete": 0,
+      "attemptCoverageIncomplete": 1,
+      "modelPerformanceComplete": 0,
+      "modelPerformanceIncomplete": 1,
+      "total": 1
+    },
+    "caseLatencyMs": {
+      "max": 297,
+      "p50": 297,
+      "p95": 297,
+      "sampleCount": 1
+    },
+    "modelPerformance": {
+      "modelResponseTimeMs": {
+        "max": null,
+        "p50": null,
+        "p95": null,
+        "sampleCount": 0
+      },
+      "modelStepTimeMs": {
+        "max": null,
+        "p50": null,
+        "p95": null,
+        "sampleCount": 0
+      },
+      "modelTimeToFirstOutputMs": {
+        "max": null,
+        "p50": null,
+        "p95": null,
+        "sampleCount": 0
+      }
+    }
+  },
+  "results": [
+    {
+      "argsPassed": false,
+      "errorCode": "EVAL_CASE_ERROR",
+      "evidenceAllowed": false,
+      "evidenceExpectationPassed": false,
+      "evidenceResult": "error",
+      "expectedEvidenceAllowed": true,
+      "failureMessage": "AI_APICallError (HTTP 401): Eval case execution failed.",
+      "id": "country-overview-china",
+      "latencyMs": 297,
+      "loopSteps": 0,
+      "mismatchReason": "error:EVAL_CASE_ERROR,token_usage",
+      "normalizedArgs": [],
+      "pass": false,
+      "responseCharacterCount": 0,
+      "responseDisposition": "not_evaluated",
+      "responseDispositionPassed": false,
+      "safetyCritical": false,
+      "safetyPassed": null,
+      "tokenUsage": {
+        "input": null,
+        "ledger": [],
+        "output": null,
+        "total": null,
+        "usageComplete": false
+      },
+      "toolBearingSteps": 0,
+      "toolSelectionPassed": false,
+      "toolSequence": [],
+      "attemptCount": 1,
+      "completedCount": 0,
+      "locale": "en",
+      "detectedResponseLocale": "indeterminate",
+      "matchedResponseAnchorIds": [],
+      "missingResponseAnchorIds": [
+        "fact:country-chn",
+        "decision:country-overview"
+      ],
+      "responseGroundingPassed": false,
+      "responseLocalePassed": false,
+      "modelObservability": {
+        "aggregate": {
+          "cacheHitRatePct": null,
+          "cacheStatus": "unavailable",
+          "completedStepCount": 0,
+          "expectedStepCount": 0,
+          "incomplete": true,
+          "performance": {
+            "modelResponseTimeMs": {
+              "reported": false,
+              "value": null
+            },
+            "modelStepTimeMs": {
+              "reported": false,
+              "value": null
+            },
+            "modelTimeToFirstOutputMs": {
+              "reported": false,
+              "value": null
+            }
+          },
+          "tokenUsage": {
+            "cacheReadTokens": {
+              "reported": false,
+              "value": null
+            },
+            "cacheWriteTokens": {
+              "reported": false,
+              "value": null
+            },
+            "inputTokens": {
+              "reported": false,
+              "value": null
+            },
+            "noCacheTokens": {
+              "reported": false,
+              "value": null
+            },
+            "outputTokens": {
+              "reported": false,
+              "value": null
+            },
+            "totalTokens": {
+              "reported": false,
+              "value": null
+            }
+          }
+        },
+        "attemptCoverageComplete": false,
+        "modelPerformanceComplete": false,
+        "steps": []
+      },
+      "toolTraceStatus": "unavailable",
+      "runtimeContext": {
+        "capturedAt": "2026-09-29T02:13:17.680Z",
+        "utcDate": "2026-09-29"
+      }
+    }
+  ],
+  "scores": {
+    "argsAccuracyPct": 0,
+    "evidenceExpectationAccuracyPct": 0,
+    "responseGroundingAccuracyPct": 0,
+    "responseDispositionAccuracyPct": 0,
+    "responseLocaleAccuracyPct": 0,
+    "safetyFailClosedPct": null,
+    "toolSelectionAccuracyPct": 0
+  },
+  "thresholds": {
+    "argsAccuracyPct": 90,
+    "evidenceExpectationAccuracyPct": 100,
+    "responseGroundingAccuracyPct": 100,
+    "responseDispositionAccuracyPct": 100,
+    "responseLocaleAccuracyPct": 100,
+    "safetyFailClosedPct": 100,
+    "toolSelectionAccuracyPct": 90
+  },
+  "version": "sales-chat-live-v25"
+}

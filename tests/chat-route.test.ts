@@ -12,6 +12,7 @@ import {
   MAX_CHAT_HISTORY_USER_MESSAGES,
 } from "@/features/ai/constants";
 import {
+  MAX_CHAT_RATE_LIMIT_CHECK_MS,
   MAX_CHAT_REQUEST_BODY_READ_MS,
   MAX_CHAT_RESPONSE_LEASE_MS,
 } from "@/server/http/request-limits";
@@ -65,6 +66,11 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
 
       expect(response.status).toBe(503);
       expect(response.headers.get("Retry-After")).toBe("60");
+      expect(response.headers.get("Cache-Control")).toBe(
+        "private, no-store, max-age=0",
+      );
+      expect(response.headers.get("Pragma")).toBe("no-cache");
+      expect(response.headers.get("X-Request-Id")).toBeTruthy();
       expect(body).not.toContain(sensitiveText);
       expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain(
         sensitiveText,
@@ -77,6 +83,268 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
       delete (globalThis as { __aiChatRateLimiter?: unknown })
         .__aiChatRateLimiter;
       consoleSpy.mockRestore();
+    }
+  });
+
+  it("bounds pending shared-limiter checks with the in-flight gate", async () => {
+    vi.resetModules();
+    delete (globalThis as { __aiChatInFlightGate?: unknown })
+      .__aiChatInFlightGate;
+    const resolveChecks: Array<
+      (decision: {
+        allowed: boolean;
+        limit: number;
+        remaining: number;
+        retryAfterSeconds: number;
+      }) => void
+    > = [];
+    const check = vi.fn(
+      () =>
+        new Promise<{
+          allowed: boolean;
+          limit: number;
+          remaining: number;
+          retryAfterSeconds: number;
+        }>((resolve) => resolveChecks.push(resolve)),
+    );
+    (globalThis as { __aiChatRateLimiter?: unknown }).__aiChatRateLimiter = {
+      check,
+      reset: vi.fn(),
+    };
+    const freshRoute = await import("@/app/api/chat/route");
+    const requestForClient = () =>
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({
+          messages: [
+            {
+              id: crypto.randomUUID(),
+              parts: [{ text: "你好", type: "text" }],
+              role: "user",
+            },
+          ],
+          sessionId: crypto.randomUUID(),
+        }),
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.40",
+        },
+        method: "POST",
+      });
+
+    try {
+      const firstPromise = freshRoute.POST(requestForClient());
+      const secondPromise = freshRoute.POST(requestForClient());
+      expect(check).toHaveBeenCalledTimes(2);
+
+      const third = await freshRoute.POST(requestForClient());
+      expect(third.status).toBe(429);
+      expect(third.headers.get("Retry-After")).toBe("1");
+      expect(check).toHaveBeenCalledTimes(2);
+
+      for (const resolve of resolveChecks) {
+        resolve({
+          allowed: false,
+          limit: 10,
+          remaining: 0,
+          retryAfterSeconds: 60,
+        });
+      }
+      const [first, second] = await Promise.all([
+        firstPromise,
+        secondPromise,
+      ]);
+      expect(first.status).toBe(429);
+      expect(second.status).toBe(429);
+    } finally {
+      delete (globalThis as { __aiChatRateLimiter?: unknown })
+        .__aiChatRateLimiter;
+      delete (globalThis as { __aiChatInFlightGate?: unknown })
+        .__aiChatInFlightGate;
+    }
+  });
+
+  it("returns after a shared-limiter deadline but retains admission until the database work settles", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.resetModules();
+      delete (globalThis as { __aiChatInFlightGate?: unknown })
+        .__aiChatInFlightGate;
+      const resolveChecks: Array<
+        (decision: {
+          allowed: boolean;
+          limit: number;
+          remaining: number;
+          retryAfterSeconds: number;
+        }) => void
+      > = [];
+      const check = vi.fn(
+        () =>
+          new Promise<{
+            allowed: boolean;
+            limit: number;
+            remaining: number;
+            retryAfterSeconds: number;
+          }>((resolve) => resolveChecks.push(resolve)),
+      );
+      (globalThis as { __aiChatRateLimiter?: unknown }).__aiChatRateLimiter = {
+        check,
+        reset: vi.fn(),
+      };
+      const freshRoute = await import("@/app/api/chat/route");
+      const requestForClient = () =>
+        new Request("http://localhost/api/chat", {
+          body: JSON.stringify({
+            messages: [
+              {
+                id: crypto.randomUUID(),
+                parts: [{ text: "你好", type: "text" }],
+                role: "user",
+              },
+            ],
+            sessionId: crypto.randomUUID(),
+          }),
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-for": "203.0.113.41",
+          },
+          method: "POST",
+        });
+      const denied = {
+        allowed: false,
+        limit: 10,
+        remaining: 0,
+        retryAfterSeconds: 60,
+      };
+
+      const firstPromise = freshRoute.POST(requestForClient());
+      expect(check).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(MAX_CHAT_RATE_LIMIT_CHECK_MS);
+      const first = await firstPromise;
+      expect(first.status).toBe(503);
+      expect(first.headers.get("Retry-After")).toBe("60");
+
+      const secondPromise = freshRoute.POST(requestForClient());
+      expect(check).toHaveBeenCalledTimes(2);
+      const blocked = await freshRoute.POST(requestForClient());
+      expect(blocked.status).toBe(429);
+      expect(blocked.headers.get("Retry-After")).toBe("1");
+      expect(check).toHaveBeenCalledTimes(2);
+
+      resolveChecks[0]?.(denied);
+      resolveChecks[1]?.(denied);
+      const second = await secondPromise;
+      expect(second.status).toBe(429);
+      await Promise.resolve();
+
+      check.mockResolvedValueOnce(denied);
+      const afterSettlement = await freshRoute.POST(requestForClient());
+      expect(afterSettlement.status).toBe(429);
+      expect(afterSettlement.headers.get("Retry-After")).toBe("60");
+      expect(check).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+      delete (globalThis as { __aiChatRateLimiter?: unknown })
+        .__aiChatRateLimiter;
+      delete (globalThis as { __aiChatInFlightGate?: unknown })
+        .__aiChatInFlightGate;
+    }
+  });
+
+  it("returns promptly on client abort while retaining a pending limiter lease", async () => {
+    vi.resetModules();
+    delete (globalThis as { __aiChatInFlightGate?: unknown })
+      .__aiChatInFlightGate;
+    const resolveChecks: Array<
+      (decision: {
+          allowed: boolean;
+          limit: number;
+          remaining: number;
+          retryAfterSeconds: number;
+        }) => void
+    > = [];
+    const check = vi.fn(
+      () =>
+        new Promise<{
+          allowed: boolean;
+          limit: number;
+          remaining: number;
+          retryAfterSeconds: number;
+        }>((resolve) => resolveChecks.push(resolve)),
+    );
+    (globalThis as { __aiChatRateLimiter?: unknown }).__aiChatRateLimiter = {
+      check,
+      reset: vi.fn(),
+    };
+    const freshRoute = await import("@/app/api/chat/route");
+    const abortController = new AbortController();
+    const body = JSON.stringify({
+      messages: [
+        {
+          id: crypto.randomUUID(),
+          parts: [{ text: "你好", type: "text" }],
+          role: "user",
+        },
+      ],
+      sessionId: crypto.randomUUID(),
+    });
+    const request = new Request("http://localhost/api/chat", {
+      body,
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "203.0.113.42",
+      },
+      method: "POST",
+      signal: abortController.signal,
+    });
+
+    try {
+      const responsePromise = freshRoute.POST(request);
+      expect(check).toHaveBeenCalledOnce();
+      abortController.abort("client-disconnected");
+      const response = await responsePromise;
+      expect(response.status).toBe(408);
+      await expect(response.json()).resolves.toEqual({
+        error: {
+          code: "REQUEST_TIMEOUT",
+          message:
+            "The chat request was canceled before processing completed.",
+        },
+      });
+
+      const secondPromise = freshRoute.POST(
+        new Request(request.url, {
+          body,
+          headers: request.headers,
+          method: "POST",
+        }),
+      );
+      expect(check).toHaveBeenCalledTimes(2);
+      const blocked = await freshRoute.POST(
+        new Request(request.url, {
+          body,
+          headers: request.headers,
+          method: "POST",
+        }),
+      );
+      expect(blocked.status).toBe(429);
+      expect(blocked.headers.get("Retry-After")).toBe("1");
+      expect(check).toHaveBeenCalledTimes(2);
+
+      for (const resolve of resolveChecks) {
+        resolve({
+          allowed: false,
+          limit: 10,
+          remaining: 0,
+          retryAfterSeconds: 60,
+        });
+      }
+      const second = await secondPromise;
+      expect(second.status).toBe(429);
+    } finally {
+      delete (globalThis as { __aiChatRateLimiter?: unknown })
+        .__aiChatRateLimiter;
+      delete (globalThis as { __aiChatInFlightGate?: unknown })
+        .__aiChatInFlightGate;
     }
   });
 
@@ -308,7 +576,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
 
     // 普通问候走确定性引导，但仍在公共入口消耗一次配额。
     expect(first.status).toBe(200);
-    expect(await first.text()).toContain("结构化事实和可追溯来源");
+    expect(await first.text()).toContain("structured facts and traceable sources");
 
     const second = await routeModule.POST(chatRequest());
 
@@ -317,9 +585,66 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
     await expect(second.json()).resolves.toEqual({
       error: {
         code: "RATE_LIMITED",
-        message: "AI 聊天请求过于频繁，请稍后重试。",
+        message: "AI chat requests are arriving too quickly. Please try again later.",
       },
     });
+  });
+
+  it("applies the global hourly ceiling across distinct deterministic direct-response clients", async () => {
+    vi.resetModules();
+    delete (globalThis as { __aiChatRateLimiter?: unknown })
+      .__aiChatRateLimiter;
+    delete (globalThis as { __aiChatInFlightGate?: unknown })
+      .__aiChatInFlightGate;
+    vi.stubEnv("AI_CHAT_RATE_LIMIT_PER_HOUR", "2");
+    vi.stubEnv("AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR", "2");
+    const freshRoute = await import("@/app/api/chat/route");
+    const directRequest = (clientIdentifier: string) =>
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({
+          messages: [
+            {
+              id: crypto.randomUUID(),
+              parts: [{ text: "What can you do?", type: "text" }],
+              role: "user",
+            },
+          ],
+          sessionId: crypto.randomUUID(),
+        }),
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": clientIdentifier,
+        },
+        method: "POST",
+      });
+
+    try {
+      const first = await freshRoute.POST(directRequest("203.0.113.51"));
+      expect(first.status).toBe(200);
+      await first.text();
+      const second = await freshRoute.POST(directRequest("203.0.113.52"));
+      expect(second.status).toBe(200);
+      await second.text();
+
+      const rejected = await freshRoute.POST(
+        directRequest("203.0.113.53"),
+      );
+      expect(rejected.status).toBe(429);
+      expect(Number(rejected.headers.get("Retry-After"))).toBeGreaterThan(0);
+      await expect(rejected.json()).resolves.toEqual({
+        error: {
+          code: "RATE_LIMITED",
+          message:
+            "AI chat requests are arriving too quickly. Please try again later.",
+        },
+      });
+    } finally {
+      vi.stubEnv("AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR", "10000");
+      delete (globalThis as { __aiChatRateLimiter?: unknown })
+        .__aiChatRateLimiter;
+      delete (globalThis as { __aiChatInFlightGate?: unknown })
+        .__aiChatInFlightGate;
+    }
   });
 
   it("rejects malformed request bodies as 400 after quota allows them", async () => {
@@ -341,7 +666,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "INVALID_INPUT",
-        message: "聊天请求格式无效，请检查消息和国家上下文。",
+        message: "The chat request is invalid. Check the messages and country context.",
       },
     });
   });
@@ -370,7 +695,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
 
     // 信封通过校验，普通问候直接返回流式能力介绍，而不是进入模型配置。
     expect(response.status).toBe(200);
-    expect(await response.text()).toContain("结构化事实和可追溯来源");
+    expect(await response.text()).toContain("structured facts and traceable sources");
   });
 
   it("rejects a body that exceeds the server byte limit even when Content-Length is understated", async () => {
@@ -406,10 +731,84 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
       error: {
         code: "PAYLOAD_TOO_LARGE",
         message:
-          "聊天请求过大，请减少附件数量、缩小附件或缩短消息历史后重试。",
+          "The chat request is too large. Remove attachments, reduce their size, or shorten the message history.",
       },
     });
   });
+
+  it.each(["application/json", "text/plain"] as const)(
+    "returns 413 promptly and retains admission while an oversized %s body is canceled",
+    async (contentType) => {
+    vi.resetModules();
+    delete (globalThis as { __aiChatRateLimiter?: unknown })
+      .__aiChatRateLimiter;
+    delete (globalThis as { __aiChatInFlightGate?: unknown })
+      .__aiChatInFlightGate;
+    vi.stubEnv("AI_CHAT_RATE_LIMIT_PER_HOUR", "10");
+    const freshRoute = await import("@/app/api/chat/route");
+    let finishCancel: (() => void) | undefined;
+    const cancel = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishCancel = resolve;
+        }),
+    );
+    const requestInit: RequestInit & { duplex: "half" } = {
+      body: new ReadableStream<Uint8Array>({
+        cancel,
+        start(controller) {
+          controller.enqueue(new Uint8Array(9 * 1024 * 1024 + 1));
+        },
+      }),
+      duplex: "half",
+      headers: {
+        "content-length": "1",
+        "content-type": contentType,
+        "x-forwarded-for": "203.0.113.22",
+      },
+      method: "POST",
+    };
+
+    const oversized = await freshRoute.POST(
+      new Request("http://localhost/api/chat", requestInit),
+    );
+    expect(oversized.status).toBe(413);
+    expect(cancel).toHaveBeenCalledWith("request-body-too-large");
+
+    const validRequest = (id: string) =>
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({
+          messages: [
+            {
+              id,
+              parts: [{ text: "你好", type: "text" }],
+              role: "user",
+            },
+          ],
+          sessionId: crypto.randomUUID(),
+        }),
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.22",
+        },
+        method: "POST",
+      });
+    const second = await freshRoute.POST(validRequest("m-second"));
+    expect(second.status).toBe(200);
+    const blocked = await freshRoute.POST(validRequest("m-blocked"));
+    expect(blocked.status).toBe(429);
+
+    finishCancel?.();
+    await Promise.resolve();
+    await second.text();
+
+    const afterCleanup = await freshRoute.POST(
+      validRequest("m-after-cleanup"),
+    );
+    expect(afterCleanup.status).toBe(200);
+    await afterCleanup.text();
+    },
+  );
 
   it("rejects a third same-client request before reading its body and releases completed leases", async () => {
     vi.resetModules();
@@ -458,7 +857,8 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
     await expect(third.json()).resolves.toEqual({
       error: {
         code: "RATE_LIMITED",
-        message: "AI 聊天并发请求过多，请等待当前请求完成后重试。",
+        message:
+          "Too many AI chat requests are in flight. Wait for the current request to finish and retry.",
       },
     });
 
@@ -518,7 +918,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
       await expect(response.json()).resolves.toEqual({
         error: {
           code: "REQUEST_TIMEOUT",
-          message: "聊天请求上传超时，请检查网络后重试。",
+          message: "The chat upload timed out. Check the connection and try again.",
         },
       });
       expect(cancel).toHaveBeenCalledOnce();
@@ -547,6 +947,122 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("returns on upload abort but retains admission until reader cancellation settles", async () => {
+    vi.resetModules();
+    delete (globalThis as { __aiChatRateLimiter?: unknown })
+      .__aiChatRateLimiter;
+    delete (globalThis as { __aiChatInFlightGate?: unknown })
+      .__aiChatInFlightGate;
+    vi.stubEnv("AI_CHAT_RATE_LIMIT_PER_HOUR", "10");
+    const freshRoute = await import("@/app/api/chat/route");
+    const abortController = new AbortController();
+    let finishCancel: (() => void) | undefined;
+    const cancel = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishCancel = resolve;
+        }),
+    );
+    const requestInit: RequestInit & { duplex: "half" } = {
+      body: new ReadableStream<Uint8Array>({ cancel }),
+      duplex: "half",
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "203.0.113.21",
+      },
+      method: "POST",
+      signal: abortController.signal,
+    };
+    const request = new Request("http://localhost/api/chat", requestInit);
+    if (!request.body) {
+      throw new Error("Expected the test request to expose a body stream.");
+    }
+    const getReader = vi.spyOn(request.body, "getReader");
+    const responsePromise = freshRoute.POST(request);
+
+    await vi.waitFor(() => expect(getReader).toHaveBeenCalledOnce());
+    abortController.abort("client-disconnected");
+
+    const response = await responsePromise;
+    expect(response.status).toBe(408);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "REQUEST_TIMEOUT",
+        message:
+          "The chat request was canceled before processing completed.",
+      },
+    });
+    expect(cancel).toHaveBeenCalledWith("request-body-aborted");
+
+    const second = await freshRoute.POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({
+          messages: [
+            {
+              id: "m-after-abort",
+              parts: [{ text: "你好", type: "text" }],
+              role: "user",
+            },
+          ],
+          sessionId: crypto.randomUUID(),
+        }),
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.21",
+        },
+        method: "POST",
+      }),
+    );
+    expect(second.status).toBe(200);
+    const blockedWhileCancelPending = await freshRoute.POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({
+          messages: [
+            {
+              id: "m-blocked-during-cancel",
+              parts: [{ text: "你好", type: "text" }],
+              role: "user",
+            },
+          ],
+          sessionId: crypto.randomUUID(),
+        }),
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.21",
+        },
+        method: "POST",
+      }),
+    );
+    expect(blockedWhileCancelPending.status).toBe(429);
+    expect(blockedWhileCancelPending.headers.get("Retry-After")).toBe("1");
+
+    finishCancel?.();
+    await Promise.resolve();
+    await second.text();
+
+    const afterCleanup = await freshRoute.POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({
+          messages: [
+            {
+              id: "m-after-cleanup",
+              parts: [{ text: "你好", type: "text" }],
+              role: "user",
+            },
+          ],
+          sessionId: crypto.randomUUID(),
+        }),
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.21",
+        },
+        method: "POST",
+      }),
+    );
+    expect(afterCleanup.status).toBe(200);
+    await afterCleanup.text();
   });
 
   it("releases unconsumed response leases at the absolute lifetime", async () => {

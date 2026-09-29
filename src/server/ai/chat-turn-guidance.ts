@@ -4,8 +4,11 @@ import {
   buildConversationBusinessContext,
   hasConversationComparisonIntent,
 } from "@/server/ai/conversation-context";
+import type { Locale } from "@/i18n/locale";
+import { buildKnowledgeRequestContext } from "@/server/ai/knowledge-request-context";
 
 type DirectChatResponseInput = {
+  locale?: Locale;
   selectedCountryIso3: string | null;
   text: string;
   userTexts?: readonly string[];
@@ -16,9 +19,9 @@ const greetingPattern =
 const thanksPattern =
   /^(?:谢谢|感谢|多谢|好的谢谢|明白了|收到|thanks|thank you)[!！。,.，\s]*$/iu;
 const capabilityPattern =
-  /(?:你能(?:做|干|帮我做)(?:什么|啥)|你会什么|有哪些功能|可以做什么|怎么使用|怎么用|使用帮助|介绍一下(?:你自己)?)/u;
+  /(?:你能(?:做|干|帮我做)(?:什么|啥)|你会什么|有哪些功能|可以做什么|怎么使用|怎么用|使用帮助|介绍一下(?:你自己)?|what can you do|how (?:do i|to) use (?:this|you)|help me use (?:this|you))/iu;
 const vagueAnalysisPattern =
-  /^(?:帮我)?(?:分析一下|看看|给点建议|怎么卖|该怎么做|你怎么看)[!！?？。,.，\s]*$/u;
+  /^(?:(?:帮我)?(?:分析一下|看看|给点建议|怎么卖|该怎么做|你怎么看)|(?:please )?(?:analy[sz]e this|take a look|give me advice|what should i do))[!！?？。,.，\s]*$/iu;
 const pureAttachmentContentRequestPatterns = [
   /^(?:(?:请|请你|帮我|麻烦你?|能否|可以)\s*)?(?:概述|总结|摘要|描述|识别|提取|读取|读出|转录|翻译|ocr)\s*(?:一下)?\s*(?:我)?\s*(?:刚刚|刚才)?\s*(?:上传的|所附的|这个|这张|这份|这些)?\s*(?:附件|文件|图片|图像|照片|截图|pdf|csv|markdown)\s*(?:中|里|内|上)?\s*(?:的)?\s*(?:文字|文本|内容|表格|信息)?\s*(?:(?:并)?\s*(?:翻译)?(?:成|为)\s*(?:中文|英文|英语|汉语))?\s*[!！?？。,.，]*$/iu,
   /^(?:(?:请|请你|帮我|麻烦你?)\s*)?(?:这张|这个|这份|这些)\s*(?:图片|图像|照片|截图|附件|文件|pdf)\s*(?:里|内|上|中)?\s*(?:有|写着|写了|包含)\s*(?:什么|哪些)\s*(?:内容|文字|信息)?\s*[!！?？。,.，]*$/iu,
@@ -59,7 +62,7 @@ function capabilityResponse(selectedCountryIso3: string | null): string {
 
 ${contextLine(selectedCountryIso3)}
 
-你可以直接问：“对比 CHN 与 DEU 在 2026-08-08 的 non-road 120 kW 法规，并说明产品适配风险。”`;
+你可以直接问：“对比 CHN 与 DEU 在 2026-08-08 的非道路 120 kW 法规，并说明产品适配风险。”`;
 }
 
 function structuredAnalysisMissingParameters(
@@ -70,7 +73,7 @@ function structuredAnalysisMissingParameters(
     missing.push("至少两个国家");
   }
   if (context.applicationScope === null) {
-    missing.push("应用场景（如 non-road、on-road-truck、marine）");
+    missing.push("应用场景（如非道路、道路卡车或船舶）");
   }
   if (context.powerKw === null) {
     missing.push("额定功率（kW）");
@@ -92,7 +95,128 @@ function profileTopicLabel(
     .join("、");
 }
 
+function singleCountryRegulationMissingParameters(
+  context: ReturnType<typeof buildConversationBusinessContext>,
+): Array<"applicationScope" | "powerKw"> {
+  if (
+    context.activeTask !== "country_profile" ||
+    !context.profileTopics.includes("regulations") ||
+    context.countryIso3s.length !== 1
+  ) {
+    return [];
+  }
+
+  const hasApplicationScope = context.applicationScope !== null;
+  const hasPower = context.powerKw !== null;
+  if (hasApplicationScope === hasPower) {
+    return [];
+  }
+  return hasApplicationScope ? ["powerKw"] : ["applicationScope"];
+}
+
+function hasUnsupportedScopedSingleCountryMarket(
+  context: ReturnType<typeof buildConversationBusinessContext>,
+): boolean {
+  return (
+    context.activeTask === "country_profile" &&
+    context.profileTopics.includes("market") &&
+    context.countryIso3s.length === 1 &&
+    context.applicationScope !== null
+  );
+}
+
+function buildEnglishDirectChatResponse({
+  context,
+  normalized,
+  selectedCountryIso3,
+}: {
+  context: ReturnType<typeof buildConversationBusinessContext>;
+  normalized: string;
+  selectedCountryIso3: string | null;
+}): string | null {
+  const contextText = selectedCountryIso3
+    ? `The current country context is ${selectedCountryIso3}; a country named in your question takes precedence.`
+    : "There is no country context. Include a country name or ISO3 code in your question.";
+  const disclaimer = "For information only; not a substitute for formal certification or legal advice.";
+  const missingStructuredParameters = (): string[] => {
+    const missing: string[] = [];
+    if (context.countryIso3s.length < 2) missing.push("at least two countries");
+    if (context.applicationScope === null) missing.push("an application scope, such as non-road or on-road-truck");
+    if (context.powerKw === null) missing.push("rated power in kW");
+    return missing;
+  };
+
+  if (greetingPattern.test(normalized) || capabilityPattern.test(normalized)) {
+    return `Yes. I query structured facts and traceable sources before explaining a result; I do not present model memory as regulatory evidence.
+
+I can:
+1. find current effective or future adopted rules for one country;
+2. compare regulations or structured market metrics across 2–5 countries;
+3. evaluate product fit by country, application, power, and date; and
+4. create a sales brief with deterministic scores, risks, products, and actions.
+
+${contextText}
+
+Try: “Compare CHN and DEU non-road rules at 120 kW as of 2026-08-08, then explain the product-fit risk.”`;
+  }
+  if (thanksPattern.test(normalized)) {
+    return `You’re welcome. For the next question, include the country, topic, and any required application, power, or date so I can query current evidence again.\n\n${contextText}`;
+  }
+  if (vagueAnalysisPattern.test(normalized) && context.activeTask === null) {
+    return `I can help, but first specify:\n1. one target country or 2–5 countries to compare;\n2. regulations, market data, product fit, or a complete sales brief;\n3. application scope and power when a product is involved; and\n4. an as-of date when needed.\n\n${contextText}`;
+  }
+  if (context.activeTask === "country_profile" && context.focusedCountryIso3 === null) {
+    const topics = context.profileTopics.map((topic) =>
+      topic === "regulations" ? "regulations" : topic === "market" ? "market data" : "country profile",
+    ).join(", ");
+    return `A country is required to query ${topics || "country information"}. Provide a country name or ISO3 code such as CHN, BRA, or DEU.\n\n${contextText}`;
+  }
+  const missingSingleCountryRegulationParameters =
+    singleCountryRegulationMissingParameters(context);
+  if (missingSingleCountryRegulationParameters.length > 0) {
+    const missing =
+      missingSingleCountryRegulationParameters[0] === "powerKw"
+        ? "rated power in kW"
+        : "an application scope, such as non-road or on-road-truck";
+    return `A deterministic single-country regulatory applicability query still needs ${missing}. The application scope and power must be supplied together so a broad country profile cannot silently replace the requested filter. Add the missing value and retry; if no date is supplied I use the current UTC date.\n\n${contextText}\n\n${disclaimer}`;
+  }
+  if (hasUnsupportedScopedSingleCountryMarket(context)) {
+    return `The single-country market profile is not filtered by application scope, so I cannot use broad country metrics to answer this scoped request. Add a second country for a scope-filtered market comparison, or remove the application scope to request the broad country market profile.\n\n${contextText}`;
+  }
+  if (context.activeTask === "product_fit") {
+    const missing: string[] = [];
+    if (context.applicationScope === null) missing.push("an application scope, such as non-road or on-road-truck");
+    if (context.powerKw === null) missing.push("rated power in kW");
+    if (missing.length > 0) {
+      return `A deterministic product-fit decision still needs ${missing.join(" and ")}. Add the missing values and retry; if no date is supplied I use the current UTC date.\n\n${contextText}\n\n${disclaimer}`;
+    }
+  }
+  if (context.activeTask === "sales_brief" || context.activeTask === "opportunity_score") {
+    const missing = missingStructuredParameters();
+    if (missing.length > 0) {
+      return `A deterministic ${context.activeTask === "sales_brief" ? "sales brief" : "opportunity score"} still needs ${missing.join(", ")}. Add the missing values and retry; if no date is supplied I use the current UTC date.\n\n${contextText}\n\n${disclaimer}`;
+    }
+  }
+  if (
+    context.activeTask === "regulation_compare" ||
+    context.activeTask === "market_compare" ||
+    hasConversationComparisonIntent(normalized)
+  ) {
+    const isRegulationComparison = context.activeTask === "regulation_compare";
+    const missing = isRegulationComparison
+      ? missingStructuredParameters()
+      : context.countryIso3s.length < 2
+        ? ["at least two countries"]
+        : [];
+    if (missing.length > 0) {
+      return `A deterministic cross-country ${isRegulationComparison ? "regulatory" : "market"} comparison still needs ${missing.join(", ")}. Add the missing values and retry; if no date is supplied I use the current UTC date.\n\n${contextText}\n\n${disclaimer}`;
+    }
+  }
+  return null;
+}
+
 export function buildDirectChatResponse({
+  locale = "en",
   selectedCountryIso3,
   text,
   userTexts = [text],
@@ -103,6 +227,29 @@ export function buildDirectChatResponse({
   const context = buildConversationBusinessContext(contextTexts, {
     selectedCountryIso3,
   });
+
+  if (context.activeTask === "knowledge" && !greetingPattern.test(normalized) &&
+    !thanksPattern.test(normalized) && !capabilityPattern.test(normalized) &&
+    buildKnowledgeRequestContext(contextTexts, context).requiresRestatement) {
+    return locale === "en"
+      ? "Please restate the complete source query with its topic, OR branches and exclusions in one message. I cannot safely merge this new query wording with the retained topic or OR branches. No evidence has been accepted for this refinement."
+      : "请在同一条消息中重新写出完整来源查询，包含主题、OR 分支和排除条件。无法安全地将新增检索文字合并到原主题或 OR 分支中；本次追问尚未接受任何证据。";
+  }
+
+  if (context.hasScopeConflict && !greetingPattern.test(normalized) &&
+    !thanksPattern.test(normalized) && !capabilityPattern.test(normalized)) {
+    return locale === "en"
+      ? "Please specify one application scope, such as non-road or marine. The scopes or exclusions in this request do not resolve to one supported filter; I cannot choose one or silently query all scopes. Your country, power, and as-of date remain unchanged."
+      : "请明确一个应用场景，例如非道路或船用。当前用途或排除条件无法确定唯一支持的筛选范围，不能替你任选一个，也不能静默查询所有用途。已给出的国家、功率和判断日期保持不变。";
+  }
+
+  if (locale === "en") {
+    return buildEnglishDirectChatResponse({
+      context,
+      normalized,
+      selectedCountryIso3,
+    });
+  }
 
   if (greetingPattern.test(normalized) || capabilityPattern.test(normalized)) {
     return capabilityResponse(selectedCountryIso3);
@@ -123,10 +270,24 @@ export function buildDirectChatResponse({
     return `要查询${profileTopicLabel(context.profileTopics)}，还缺少国家。请写国家名称或 ISO3，例如 CHN、BRA、DEU。\n\n${contextLine(selectedCountryIso3)}`;
   }
 
+  const missingSingleCountryRegulationParameters =
+    singleCountryRegulationMissingParameters(context);
+  if (missingSingleCountryRegulationParameters.length > 0) {
+    const missing =
+      missingSingleCountryRegulationParameters[0] === "powerKw"
+        ? "额定功率（kW）"
+        : "应用场景（如非道路、道路卡车或船舶）";
+    return `要做确定性的单国法规适用性查询，还缺少：${missing}。应用场景和功率必须成对提供，不能让未过滤的国家概览静默替代已给出的筛选条件。请补充后重试；日期未写时我会使用当前 UTC 日期。\n\n${contextLine(selectedCountryIso3)}\n\n信息参考，不替代正式认证或法律意见`;
+  }
+
+  if (hasUnsupportedScopedSingleCountryMarket(context)) {
+    return `单国市场概览目前不能按应用场景过滤，因此不能用全口径国家指标回答这次带场景的请求。请再提供一个国家以执行带场景过滤的市场比较，或移除应用场景后查询全口径单国市场概览。\n\n${contextLine(selectedCountryIso3)}`;
+  }
+
   if (context.activeTask === "product_fit") {
     const missing: string[] = [];
     if (context.applicationScope === null) {
-      missing.push("应用场景（如 non-road、on-road-truck、marine）");
+      missing.push("应用场景（如非道路、道路卡车或船舶）");
     }
     if (context.powerKw === null) {
       missing.push("额定功率（kW）");

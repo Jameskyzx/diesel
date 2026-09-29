@@ -13,6 +13,10 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { compareMarketsInputSchema } from "@/features/marketing/schemas";
 import * as schema from "@/server/db/schema";
 import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
+import {
   countries,
   dataSources,
   marketMetrics,
@@ -27,7 +31,11 @@ export function createMarketRepository<
   TQueryResult extends PgQueryResultHKT,
 >(database: PgDatabase<TQueryResult, typeof schema>) {
   return {
-    async findForComparison(input: unknown) {
+    async findForComparison(
+      input: unknown,
+      options: RequestSignalOptions = {},
+    ) {
+      throwIfRequestAborted(options.signal);
       const query = compareMarketsInputSchema.parse(input);
       const filters = [
         inArray(marketMetrics.countryIso3, query.countryIso3s),
@@ -49,7 +57,7 @@ export function createMarketRepository<
         );
       }
 
-      return database
+      const rows = await database
         .select({
           applicationScope: marketMetrics.applicationScope,
           countryIso3: marketMetrics.countryIso3,
@@ -94,6 +102,9 @@ export function createMarketRepository<
           desc(marketMetrics.periodStart),
           asc(marketMetrics.id),
         );
+      throwIfRequestAborted(options.signal);
+
+      return rows;
     },
   };
 }

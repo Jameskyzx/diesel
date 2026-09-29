@@ -3,10 +3,9 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { constants } from "node:fs";
 import {
-  access,
   link,
   mkdir,
-  readFile,
+  open,
   readdir,
   rmdir,
   stat,
@@ -16,7 +15,10 @@ import {
 import { dirname, relative, resolve, sep } from "node:path";
 
 import { env } from "@/env";
-import { sha256 } from "@/server/knowledge/document-file";
+import {
+  MAX_KNOWLEDGE_DOCUMENT_BYTES,
+  sha256,
+} from "@/server/knowledge/document-file";
 
 function resolveStorageRoot(): string {
   return resolve(process.cwd(), ".data", env.KNOWLEDGE_STORAGE_ROOT);
@@ -42,10 +44,57 @@ export type SavedDocumentFile = {
 
 const contentStoragePathPattern = /^[0-9a-f]{64}\/content$/;
 
+function assertDocumentByteLimit(byteLength: number): void {
+  if (byteLength > MAX_KNOWLEDGE_DOCUMENT_BYTES) {
+    throw new Error("Document files must not exceed 5 MiB.");
+  }
+}
+
+async function readBoundedDocumentFile(target: string): Promise<Buffer> {
+  // Nonblocking open lets us reject a FIFO before waiting for a writer.
+  const file = await open(target, constants.O_RDONLY | constants.O_NONBLOCK);
+  try {
+    const metadata = await file.stat();
+    if (!metadata.isFile()) {
+      throw new Error("A stored document must be a regular file.");
+    }
+    assertDocumentByteLimit(metadata.size);
+
+    // Stat is only a fast precheck: a file may grow before or during reads.
+    // Each working buffer holds at most the payload limit plus one overflow byte.
+    const readLimit = MAX_KNOWLEDGE_DOCUMENT_BYTES + 1;
+    let buffer = Buffer.alloc(
+      Math.min(readLimit, Math.max(64 * 1024, metadata.size + 1)),
+    );
+    let length = 0;
+    while (true) {
+      if (length === buffer.length) {
+        const grown = Buffer.alloc(Math.min(readLimit, buffer.length * 2));
+        buffer.copy(grown, 0, 0, length);
+        buffer = grown;
+      }
+      const { bytesRead } = await file.read(
+        buffer,
+        length,
+        buffer.length - length,
+        length,
+      );
+      if (bytesRead === 0) {
+        return Buffer.from(buffer.subarray(0, length));
+      }
+      length += bytesRead;
+      assertDocumentByteLimit(length);
+    }
+  } finally {
+    await file.close();
+  }
+}
+
 export async function saveDocumentFile(input: {
   bytes: Uint8Array;
   contentSha256: string;
 }): Promise<SavedDocumentFile> {
+  assertDocumentByteLimit(input.bytes.byteLength);
   if (sha256(input.bytes) !== input.contentSha256) {
     throw new Error("Document bytes do not match the requested content hash.");
   }
@@ -57,7 +106,7 @@ export async function saveDocumentFile(input: {
   await mkdir(dirname(target), { recursive: true });
 
   try {
-    const existing = await readFile(target);
+    const existing = await readBoundedDocumentFile(target);
     if (sha256(existing) !== input.contentSha256) {
       throw new Error("Stored file hash does not match the requested document.");
     }
@@ -102,7 +151,7 @@ export async function saveDocumentFile(input: {
   }
   await unlink(temporaryTarget);
 
-  const stored = await readFile(target);
+  const stored = await readBoundedDocumentFile(target);
   if (sha256(stored) !== input.contentSha256) {
     throw new Error("Stored file hash does not match the requested document.");
   }
@@ -117,8 +166,7 @@ export async function readDocumentFile(storagePath: string): Promise<Buffer> {
   const root = resolveStorageRoot();
   const target = resolve(root, storagePath);
   assertInsideStorageRoot(root, target);
-  await access(target, constants.R_OK);
-  return readFile(target);
+  return readBoundedDocumentFile(target);
 }
 
 export async function removeDocumentFile(storagePath: string): Promise<void> {

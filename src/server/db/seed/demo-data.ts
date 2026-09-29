@@ -1,5 +1,9 @@
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
+import {
+  createLocalHashEmbedding,
+  KNOWLEDGE_EMBEDDING_MODEL,
+} from "@/domain/knowledge/embedding";
 import * as schema from "@/server/db/schema";
 import {
   countries,
@@ -563,15 +567,22 @@ const demoDocuments = [
   },
 ] satisfies (typeof documents.$inferInsert)[];
 
+const demoRegulationChunkContent =
+  `${demoNotice} Searchable fictional source fixture for CHN non-road emissions regulation evidence, original text, section, and citation; 中国: 非道路排放法规; 原文、章节和来源证据。本片段不包含任何真实法规要求。`;
+const demoProductChunkContent =
+  `${demoNotice} This searchable chunk contains no real product specification.`;
+
 const demoDocumentChunks = [
   {
     ...demoRecordTimestamps,
     applicationScope: "non-road",
     chunkIndex: 0,
-    content: `${demoNotice} This chunk contains no real regulatory requirement.`,
+    content: demoRegulationChunkContent,
     contentHash: "b".repeat(64),
     countryIso3: "CHN",
     documentId: demoIds.document.regulation,
+    embedding: createLocalHashEmbedding(demoRegulationChunkContent),
+    embeddingModel: KNOWLEDGE_EMBEDDING_MODEL,
     headingPath: ["DEMO ONLY", "Fictional requirements"],
     id: demoIds.documentChunk.regulation,
     isDemo: true,
@@ -586,9 +597,11 @@ const demoDocumentChunks = [
     ...demoRecordTimestamps,
     applicationScope: "non-road",
     chunkIndex: 0,
-    content: `${demoNotice} This chunk contains no real product specification.`,
+    content: demoProductChunkContent,
     contentHash: "d".repeat(64),
     documentId: demoIds.document.product,
+    embedding: createLocalHashEmbedding(demoProductChunkContent),
+    embeddingModel: KNOWLEDGE_EMBEDDING_MODEL,
     headingPath: ["DEMO ONLY", "Fictional product"],
     id: demoIds.documentChunk.product,
     isDemo: true,

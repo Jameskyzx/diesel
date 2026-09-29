@@ -38,10 +38,3 @@ export function getOpportunityScoreWeights(
     regulatoryCoverage: parsed.OPPORTUNITY_SCORE_REGULATORY_WEIGHT,
   });
 }
-
-export const opportunityMetricDirections = {
-  DEMO_ADDRESSABLE_UNITS: "higher_is_better",
-} as const satisfies Record<
-  string,
-  "higher_is_better" | "lower_is_better"
->;

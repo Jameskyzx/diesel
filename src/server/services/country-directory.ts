@@ -15,8 +15,9 @@ const geometryIso3s = new Set(
 
 const directory = countryDirectorySchema.parse(
   countryCatalog
-    .map(({ iso3, nameEn }) => ({
+    .map(({ iso2, iso3, nameEn }) => ({
       hasGeometry: geometryIso3s.has(iso3),
+      iso2,
       iso3,
       name: nameEn,
     }))

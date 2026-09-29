@@ -639,35 +639,35 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20260929T032837667Z-2f27625e-38c2-46f5-8417-bb8d20ae57ae.json",
-  "attemptCount": 36,
+  "archivePath": "archive/ai-live-eval-20260929T040313414Z-2ed13258-3dae-4204-b070-78f69ea24828.json",
+  "attemptCount": 35,
   "complete": true,
-  "completedCount": 36,
-  "evaluatedAt": "2026-09-29T03:28:37.667Z",
-  "latestOutcome": "passed",
-  "modelStepCount": 36,
-  "runId": "2f27625e-38c2-46f5-8417-bb8d20ae57ae",
+  "completedCount": 35,
+  "evaluatedAt": "2026-09-29T04:03:13.414Z",
+  "latestOutcome": "failed",
+  "modelStepCount": 35,
+  "runId": "2ed13258-3dae-4204-b070-78f69ea24828",
   "runError": null,
   "sampleCount": 18,
   "sourceFingerprint": {
     "algorithm": "sha256",
-    "digest": "a2c2244d8b37ddbc967ea3255d624b4b4e3d2192b06ccdd4fbbb8fea4b5c032a",
+    "digest": "9121c72753ae2aa4afcc37256ea8fbfe5c77a51fe89ecd28cb00cbda78f40727",
     "fileCount": 298,
     "status": "captured"
   },
   "suiteCaseCount": 18,
   "terminationReason": "completed",
-  "thresholdsPassed": true,
+  "thresholdsPassed": false,
   "tokenUsageComplete": true,
-  "totalTokens": 92439,
+  "totalTokens": 86122,
   "version": "sales-chat-live-v25"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `passed`; evaluatedAt `2026-09-29T03:28:37.667Z`; run ID `2f27625e-38c2-46f5-8417-bb8d20ae57ae`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `36 provider attempts`; `36 completed provider calls`; `36 model steps`; `92439 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20260929T032837667Z-2f27625e-38c2-46f5-8417-bb8d20ae57ae.json`; source fingerprint `a2c2244d8b37ddbc967ea3255d624b4b4e3d2192b06ccdd4fbbb8fea4b5c032a` across `298` files.
+Current report result: `failed`; evaluatedAt `2026-09-29T04:03:13.414Z`; run ID `2ed13258-3dae-4204-b070-78f69ea24828`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `35 provider attempts`; `35 completed provider calls`; `35 model steps`; `86122 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=false`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20260929T040313414Z-2ed13258-3dae-4204-b070-78f69ea24828.json`; source fingerprint `9121c72753ae2aa4afcc37256ea8fbfe5c77a51fe89ecd28cb00cbda78f40727` across `298` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed
@@ -911,6 +911,22 @@ recomputation is unchanged. No model-quality threshold is relaxed.
 首次 v7 运行虽然逐例门槛全部通过，但在独立验证确认前因可选字段序列化失败而以 1
 退出；该归档不是成功命令的证明。现仅在观察数据的 JSON 边界省略对象中值为
 `undefined` 的可选属性，其余非法值仍拒绝，独立证据重算不变；失败分支不重复计费记账。
+
+The subsequent v7/v2 run `2ed13258-3dae-4204-b070-78f69ea24828` honestly failed
+one mixed regulation/product case (17/18 passed; 86,122 tokens). A bounded
+three-trial, diagnostic-only production-path probe reproduced invalid JSON in
+the second parallel tool call twice. DeepSeek adapter v3 therefore sends only
+the first currently required tool with a named choice, and the unchanged
+production loop gathers remaining evidence on later steps. The five-step limit,
+zero retries, Zod input validation, evidence gate, cases and scorer are unchanged.
+This uses the documented [named tool choice](https://api-docs.deepseek.com/api/create-chat-completion/),
+not an undocumented parallel-call flag. Generic adapters retain their behavior.
+Diagnostic probes are not scored benchmark runs or release evidence.
+
+后续 v7/v2 完整评估有一例法规＋产品请求失败（17/18 通过，86,122 tokens）。固定三次
+局部诊断中两次复现第二个并行工具参数为非法 JSON。DeepSeek 适配合同 v3 改为每步
+指定一个仍需取证的工具，再由原生产循环收集其余证据；五步限制、零重试、Zod 校验、
+证据门与评分器均不变，不猜修非法参数。局部诊断不算基准或发布验收，旧失败原样保留。
 
 Each invocation captures repository state and the eval-source fingerprint at
 both the start and end. Clean, stable Git state may name an exact

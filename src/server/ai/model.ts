@@ -3,6 +3,7 @@ import "server-only";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
 import { createHash } from "node:crypto";
+import { z } from "zod";
 
 import {
   aiModelIdSchema,
@@ -29,7 +30,7 @@ export type ConfiguredAiModel = {
 
 export type AiProviderProfile = {
   adapter: "@ai-sdk/openai-compatible" | "portfolio-demo";
-  adapterContractVersion: 1 | 2;
+  adapterContractVersion: 1 | 2 | 3;
   enableThinking: boolean | null;
   endpointSha256: string | null;
   includeUsage: boolean;
@@ -51,6 +52,28 @@ function isOfficialDeepSeekEndpoint(baseUrl: string): boolean {
   const url = new URL(baseUrl);
   return url.origin === "https://api.deepseek.com" &&
     (url.pathname === "/" || url.pathname === "/v1");
+}
+
+const requiredFunctionSchema = z.object({
+  type: z.literal("function"),
+  function: z.object({ name: z.string().min(1).max(128) }),
+});
+
+function sequenceDeepSeekRequiredTools(body: Record<string, unknown>): Record<string, unknown> {
+  if (body.tool_choice !== "required") return body;
+  const firstTool: unknown = Array.isArray(body.tools) ? body.tools[0] : undefined;
+  const parsed = requiredFunctionSchema.safeParse(firstTool);
+  if (!parsed.success) {
+    throw new AiConfigurationError("必选工具请求缺少有效工具定义。");
+  }
+  // Parallel tool arguments were observed to be malformed. Name only the first
+  // currently allowed tool; production prepareStep supplies the remaining tools
+  // on the next step. Never repair/guess provider arguments or add a retry.
+  return {
+    ...body,
+    tools: [firstTool],
+    tool_choice: { type: "function", function: { name: parsed.data.function.name } },
+  };
 }
 
 function finalModelId(value: string): string {
@@ -210,7 +233,7 @@ export function getConfiguredAiModel(
       enableThinking === undefined
         ? body
         : {
-            ...body,
+            ...(usesDeepSeekContract ? sequenceDeepSeekRequiredTools(body) : body),
             ...(usesDeepSeekContract
               ? { thinking: { type: "disabled" } }
               : { enable_thinking: enableThinking }),
@@ -225,7 +248,7 @@ export function getConfiguredAiModel(
     ),
     providerProfile: {
       adapter: "@ai-sdk/openai-compatible",
-      adapterContractVersion: usesDeepSeekContract ? 2 : 1,
+      adapterContractVersion: usesDeepSeekContract ? 3 : 1,
       enableThinking: enableThinking ?? null,
       endpointSha256: endpointSha256(parsedConfig.data.baseUrl),
       includeUsage: resolvedConfig.includeUsage === true,

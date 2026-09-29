@@ -340,7 +340,7 @@ async function createSmokeFixtures(client: Sql): Promise<void> {
         (id, title, source_type, verified_at, is_demo)
       values
         (${smokeSourceId}, 'PostgreSQL concurrency smoke source', 'other',
-         ${smokeInitialSourceVerifiedAt}, false)
+         ${smokeInitialSourceVerifiedAt}::text::timestamptz, false)
     `;
     await transaction`
       insert into countries
@@ -736,7 +736,7 @@ async function verifyMissingSourceInsertRaceFailsClosed(input: {
         values
           (${smokeConcurrentSourceId},
            'Source inserted concurrently with draft publication',
-           'other', ${smokeInitialSourceVerifiedAt}, false)
+           'other', ${smokeInitialSourceVerifiedAt}::text::timestamptz, false)
       `;
       publication = input.repository.publishDraft({
         actor: smokeActor,
@@ -1013,8 +1013,8 @@ async function verifyDocumentReprocessingBarriers(input: {
       );
       await transaction`
         update data_sources
-        set verified_at = ${driftedVerifiedAt}::timestamptz,
-            updated_at = ${driftedUpdatedAt}::timestamptz
+        set verified_at = ${driftedVerifiedAt}::text::timestamptz,
+            updated_at = ${driftedUpdatedAt}::text::timestamptz
         where id = ${currentSourceId}
       `;
     });

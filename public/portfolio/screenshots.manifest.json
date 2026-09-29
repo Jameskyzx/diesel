@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-09-29T08:50:54.663Z",
+      "capturedAt": "2026-09-29T10:42:36.683Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -282,12 +282,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-09-29T08:50:56.878Z",
+      "capturedAt": "2026-09-29T10:42:38.874Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "573c5153d94b293d22fe7cdf98226feeec0e00eda1d680da526b15a1a704144d",
+      "sha256": "7120f7ebb58b1c58a63ad8845191d6bad65b66f8e3ae3e714cf850da57b60676",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",

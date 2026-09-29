@@ -804,6 +804,43 @@ test "$(stat -c '%U:%G:%a:%h' \
 命令。每次普通发布在创建本次 state 目录前都先要求它存在，随后 `--begin-activation` 才能为
 当前 release 建立 V1 anchor/PENDING。
 
+### One-time pre-protocol host migration / 一次性旧主机迁移
+
+The 2026-09-29 host audit found pre-protocol, unclassified backup material, not
+valid completed V1 transactions. Ordinary initialization must continue to reject
+that material. An explicitly authorized maintenance/re-baseline is a separate
+operator operation, never an automatic release fallback: inventory every file
+and hash, preserve an independently verified copy and the original tree, capture
+a fresh database backup and current runtime/configuration recovery basis, and
+prove that no release/build operation is active while holding both host locks.
+Record any archival location and the unclassified historical status; do not
+invent terminal markers or add these records to the V1 grandfather allowlist.
+Only after that recovery baseline is verified may the empty active backup root
+be initialized by the committed normal initializer for the CI-authorized release.
+An existing V1 manifest, active transaction or unexplained drift is not eligible
+for this procedure and requires incident recovery instead.
+
+2026-09-29 主机审计发现的旧备份属于 V1 之前、状态未分类的恢复材料，不是有效的已完成
+V1 事务。普通初始化必须继续拒绝它们。只有用户明确授权的独立维护/恢复基线重建才可
+处理：逐文件建清单和哈希，保留经独立验证的副本与原树，另取 fresh 数据库备份和当前
+运行配置恢复依据，并在同时持有 lifecycle/build 两把锁时确认无活动发布或构建。归档
+记录必须写明旧材料仍未分类，不得伪造 terminal marker 或加入 V1 grandfather allowlist。
+恢复基线验证成功后，才允许通过已提交的正常初始化器，为 CI 授权版本初始化空的活动
+backup 根。已有 V1 manifest、活动事务或无法解释的漂移不适用此流程，须走事故恢复。
+
+PM2/systemd maintenance affects every application owned by that daemon. The
+current host also runs `jamesky-api`; obtain explicit maintenance authorization
+for both services, retain the old installation/unit/dump, and verify both process
+states, original listeners and HTTP readbacks after restart. A Node distribution
+extracted with an unmapped numeric owner is normalized only after a full
+metadata/content inventory, with unchanged bytes verified afterwards. This is
+host provisioning, not evidence that a new Diesel application release is live.
+
+PM2/systemd 维护会影响同一 daemon 的全部应用；本机还运行 `jamesky-api`，必须分别取得
+两项服务的维护授权。保留旧安装、unit 和 dump，重启后核对两者进程状态、原监听端口与
+HTTP 读回。Node 解压目录遗留的无对应账号数字所有者，只能在完整元数据/内容审计后
+规范化，并再次确认字节未变。这些属于主机准备，不代表新版 Diesel 已上线。
+
 普通发布不得先修改 `/opt/diesel/shared/.env.production.local`。先完成一次性的主机
 provisioning 与只读 preflight；本次 rollback basis、FD 8、ledger、candidate 安装和 traps 全部由
 后述版本化 `host-release-orchestrator.sh` 在单一前台 root 进程中持有。`shared` 根目录由

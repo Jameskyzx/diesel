@@ -1,12 +1,13 @@
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { wrapUntrustedKnowledgeExcerpt } from "@/domain/knowledge/retrieval-policy";
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
 import type { CountryDetailResponse } from "@/features/countries/schemas";
 import type { HybridSearchResponse } from "@/features/knowledge/schemas";
 import type { Locale } from "@/i18n/locale";
+import { getDemoDatabase } from "@/server/db/demo-client";
 
 const emptyUsage = {
   inputTokens: {
@@ -844,6 +845,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 describe("POST /api/chat SSE evidence boundary", () => {
+  // Native query-constraint checks use real PostgreSQL semantics through
+  // PGlite. Keep its cold WASM/migration/seed startup outside the request's
+  // normal test deadline, especially under Linux coverage instrumentation.
+  beforeAll(async () => {
+    await getDemoDatabase();
+  }, 30_000);
+
   beforeEach(() => {
     mocks.ensureSession.mockClear();
     mocks.findCompatibleProducts.mockClear();

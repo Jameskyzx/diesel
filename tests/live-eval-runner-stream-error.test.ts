@@ -88,6 +88,7 @@ const harness = vi.hoisted(() => ({
   },
   events: [] as string[],
   invalidateFinalReport: false,
+  nonJsonToolOutput: false,
   providerMaxRetries: [] as number[],
   providerRuns: 0,
   reports: [] as unknown[],
@@ -310,6 +311,8 @@ vi.mock("../src/server/ai/sales-chat", async () => {
           tool: toolName,
           privateToolField: "PRIVATE_OBSERVER_TOOL_MARKER",
           reasoning: "PRIVATE_OBSERVER_REASONING_MARKER",
+          optionalField: undefined,
+          ...(harness.nonJsonToolOutput ? { invalidNumber: NaN } : {}),
         },
         toolCallId,
         toolName,
@@ -616,6 +619,7 @@ afterEach(() => {
   harness.reports.length = 0;
   harness.publicResponses.clear();
   harness.invalidateFinalReport = false;
+  harness.nonJsonToolOutput = false;
   harness.providerMaxRetries.length = 0;
   harness.providerRuns = 0;
   harness.scenario = "stream_error";
@@ -1078,6 +1082,21 @@ describe("live eval runner stream failures", () => {
 describe("same-run failed public response diagnostics", () => {
   const eligibleCases = salesChatLiveCases.filter((testCase) =>
     testCase.expectedEvidenceAllowed && !testCase.safetyCritical);
+
+  it("fails a non-JSON tool observation closed without double-counting provider usage", async () => {
+    harness.scenario = "completed_public_quality_failure";
+    harness.nonJsonToolOutput = true;
+    const { runLiveEval } = await import("../scripts/ai/live-eval");
+    const returned = await runLiveEval();
+    const report = harness.reports[0] as CapturedReport;
+    expect(returned.observations).toBeNull();
+    expect(report.thresholdsPassed).toBe(false);
+    expect(report.budget.totalTokens).toBe(report.budget.attemptCount * 110);
+    expect(report.budget.totalTokens).toBe(report.results.reduce((sum, result) =>
+      sum + result.tokenUsage.ledger.reduce((subtotal, row) => subtotal + (row.total ?? 0), 0), 0));
+    expect(report.results[0]).toMatchObject({ errorCode: "EVAL_CASE_ERROR", pass: false });
+    expect(process.exitCode).toBe(1);
+  });
 
   it("observes only the completed public response after the failed report has been persisted", async () => {
     harness.scenario = "completed_public_quality_failure";

@@ -69,6 +69,7 @@ import {
 } from "./live-eval-error";
 import {
   LIVE_EVAL_OBSERVATIONS_VERSION,
+  projectLiveEvalToolJson,
   serializeLiveEvalObservations,
   type InMemoryLiveEvalObservations,
   liveEvalObservationsSchema,
@@ -577,8 +578,6 @@ export async function runLiveEval(
         steps: observedMetricSteps.map(({ observability }) => observability),
       });
       const caseUsageComplete = tokenUsage.usageComplete;
-      tokenUsageComplete &&= caseUsageComplete;
-      totalTokens += knownTokens;
       const toolBearingSteps = steps.filter(
         (step) => step.toolCalls.length > 0,
       ).length;
@@ -763,19 +762,23 @@ export async function runLiveEval(
             },
             toolCalls: step.toolCalls.map((call) => ({
               dynamic: "dynamic" in call && call.dynamic === true,
-              input: call.input ?? null,
+              input: projectLiveEvalToolJson(call.input ?? null),
               invalid: "invalid" in call && call.invalid === true,
               toolCallId: call.toolCallId,
               toolName: call.toolName,
             })),
             toolResults: (step.toolResults ?? []).map((result) => ({
-              output: result.output,
+              output: projectLiveEvalToolJson(result.output),
               toolCallId: result.toolCallId,
               toolName: result.toolName,
             })),
           };
         }),
       });
+      // Commit the case ledger only after its observation can be serialized;
+      // an observation error is accounted for exactly once by the catch path.
+      tokenUsageComplete &&= caseUsageComplete;
+      totalTokens += knownTokens;
       results.push(completedResult);
       if (caseStepStopReason !== null) {
         terminationReason = caseStepStopReason;

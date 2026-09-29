@@ -1157,6 +1157,11 @@ Linux 演练通过。CI 隔离根现不再依赖 runner 主目录对新增 UID �
 `playwright-demo-report/index.html` 使结束时的工作区变脏，严格证据校验因此失败。该精确
 生成目录现与既有 `playwright-report` 一样被 Git 忽略；源码指纹与开始/结束状态等值规则不变。
 
+同次远端 public Playwright 在 job 的 30 分钟上限被中止，没有成功或失败逐例报告，不能据此
+断言测试通过或已定位卡顿原因。CI public 配置增加 list 进度 reporter，并将整套测试的
+global timeout 设为 25 分钟，给框架 teardown、失败收据和 artifact 上传留出时间；每例
+60 秒、两次 retry、所有断言与完整项目矩阵保持不变。超时仍是失败，不是条件跳过或通过。
+
 工作站完整门禁通过后，normal path 不再由运维人员分别拼接 environment backup、
 begin、prepare、activation 与 governance 命令。下文只从 clean environment 前台调用
 目标 release 的版本化 `host-release-orchestrator.sh`；该单一 root 进程拥有

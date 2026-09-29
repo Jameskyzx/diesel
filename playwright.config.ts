@@ -12,9 +12,13 @@ export default defineConfig({
   forbidOnly: shouldForbidOnlyInPlaywrightRun(),
   globalTeardown: "./scripts/e2e/global-teardown.ts",
   retries: process.env.CI ? 2 : 0,
+  // Finish through Playwright (including teardown and failure receipts) before
+  // the 30-minute CI job kills its process tree without a usable report.
+  globalTimeout: process.env.CI ? 25 * 60_000 : 0,
   reporter: process.env.CI
     ? [
         ["github"],
+        ["list"],
         ["html", { open: "never" }],
         [
           "./scripts/portfolio/playwright-run-reporter.ts",

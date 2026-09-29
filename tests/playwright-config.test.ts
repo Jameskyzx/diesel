@@ -22,6 +22,23 @@ function firstWebServer(
 }
 
 describe("Playwright server contracts", () => {
+  it("leaves CI time for honest interruption receipts and prints case progress", () => {
+    const result = spawnSync(process.execPath, [
+      "--import", "tsx", "--input-type=module", "--eval",
+      "const imported = (await import(process.argv[1])).default; const config = imported.default ?? imported; process.stdout.write(JSON.stringify({ globalTimeout: config.globalTimeout, timeout: config.timeout, retries: config.retries, reporter: config.reporter }));",
+      pathToFileURL(resolve("playwright.config.ts")).href,
+    ], { env: { ...process.env, CI: "true" }, encoding: "utf8" });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(JSON.parse(result.stdout) as unknown).toMatchObject({
+      globalTimeout: 25 * 60_000,
+      timeout: 60_000,
+      retries: 2,
+      reporter: expect.arrayContaining([["github"], ["list"]]),
+    });
+  });
+
   it("ignores generated HTML reports without ignoring authored test inputs", () => {
     const result = spawnSync("/usr/bin/git", [
       "-c", "core.excludesFile=/dev/null", "check-ignore", "--no-index", "-v", "--",

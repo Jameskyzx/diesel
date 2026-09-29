@@ -1223,6 +1223,31 @@ prepare_release_quiesce_build_unit() {
     "${proc_root}" "${control_group}" "${builder_uid}"
 }
 
+prepare_release_report_build_start_failure() {
+  local unit="$1"
+  local start_status="$2"
+  local value
+
+  if ! prepare_release_load_unit_state "${unit}"; then
+    return 0
+  fi
+  for value in \
+    "${start_status}" "${PREPARE_RELEASE_UNIT_LOAD_STATE}" \
+    "${PREPARE_RELEASE_UNIT_ACTIVE_STATE}" "${PREPARE_RELEASE_UNIT_SUB_STATE}" \
+    "${PREPARE_RELEASE_UNIT_RESULT}" "${PREPARE_RELEASE_UNIT_EXEC_MAIN_CODE}" \
+    "${PREPARE_RELEASE_UNIT_EXEC_MAIN_STATUS}"; do
+    if [[ ! "${value}" =~ ^[a-zA-Z0-9_-]{1,40}$ ]]; then
+      return 0
+    fi
+  done
+  # Only bounded status fields: never print unit environment, argv or journal.
+  printf 'Build start diagnostics: start=%s load=%s active=%s sub=%s result=%s code=%s status=%s\n' \
+    "${start_status}" "${PREPARE_RELEASE_UNIT_LOAD_STATE}" \
+    "${PREPARE_RELEASE_UNIT_ACTIVE_STATE}" "${PREPARE_RELEASE_UNIT_SUB_STATE}" \
+    "${PREPARE_RELEASE_UNIT_RESULT}" "${PREPARE_RELEASE_UNIT_EXEC_MAIN_CODE}" \
+    "${PREPARE_RELEASE_UNIT_EXEC_MAIN_STATUS}" >&2
+}
+
 prepare_release_run_build_unit() {
   local release_id="$1"
   local build_workspace="$2"
@@ -1277,6 +1302,7 @@ prepare_release_run_build_unit() {
     PNPM_REGISTRY="${registry}" \
     /usr/bin/bash scripts/deploy/build-release.sh </dev/null || start_status="$?"
   if [[ "${start_status}" -ne 0 ]]; then
+    prepare_release_report_build_start_failure "${unit}" "${start_status}" || true
     prepare_release_fail 70 "systemd rejected the transient build unit"
     return
   fi

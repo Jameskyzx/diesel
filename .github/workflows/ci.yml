@@ -634,13 +634,15 @@ jobs:
           set -Eeuo pipefail
           test "${RUNNER_ENVIRONMENT}" = "github-hosted"
           sudo -n true
-          test -n "${RUNNER_TEMP:-}"
-          runner_temp="$(realpath -- "${RUNNER_TEMP}")"
-          test "${runner_temp}" = "${RUNNER_TEMP}"
+          # Keep both synthetic users independent of runner-home permissions.
+          # This exact generated tree is left to ephemeral runner teardown.
+          handoff_temp="$(mktemp -d /tmp/diesel-handoff-runner.XXXXXX)"
+          chmod 0755 "${handoff_temp}"
+          test "$(realpath -- "${handoff_temp}")" = "${handoff_temp}"
           release_id="$(git rev-parse --verify 'HEAD^{commit}')"
           [[ "${release_id}" =~ ^[0-9a-f]{40}$ ]]
           test -z "$(git status --porcelain --untracked-files=no)"
-          export_parent="$(mktemp -d "${runner_temp}/diesel-release-export.XXXXXX")"
+          export_parent="$(mktemp -d "${handoff_temp}/diesel-release-export.XXXXXX")"
           release_export="${export_parent}/release"
           release_archive="${export_parent}/release.tar"
           install -d -m 0755 "${release_export}"
@@ -657,7 +659,7 @@ jobs:
             RUNNER_ENVIRONMENT="${RUNNER_ENVIRONMENT}" \
             PATH="${node_directory}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
             /bin/bash "${release_export}/scripts/ci/linux-release-handoff-smoke.sh" \
-            "${release_id}" "${release_export}" "${node_binary}" "${runner_temp}"
+            "${release_id}" "${release_export}" "${node_binary}" "${handoff_temp}"
 
   required:
     name: Required CI gate

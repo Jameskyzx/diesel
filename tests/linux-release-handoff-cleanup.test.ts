@@ -16,6 +16,55 @@ async function handoffFunctions(): Promise<string> {
   return source.slice(0, -entry.length);
 }
 
+describe("Linux handoff bounded systemd startup", () => {
+  it.each([
+    { state: "running", status: 0, transition: false, accepted: true },
+    { state: "degraded", status: 1, transition: false, accepted: true },
+    { state: "starting", status: 1, transition: true, accepted: true },
+    { state: "initializing", status: 1, transition: true, accepted: true },
+    { state: "starting", status: 1, transition: false, accepted: false },
+    { state: "stopping", status: 1, transition: false, accepted: false },
+    { state: "running", status: 124, transition: false, accepted: false },
+    { state: "unknown secret marker", status: 1, transition: false, accepted: false },
+  ])("handles $state/$status with transition=$transition", async (fixture) => {
+    const result = spawnSync("/bin/bash", ["-c", `${await handoffFunctions()}
+clock=0
+linux_release_handoff_clock_seconds() { printf '%s\\n' "$clock"; }
+sleep() { [[ "$1" == 2 ]] || return 91; clock=$((clock + 2)); }
+timeout() {
+  [[ "$1 $2 $3 $4 $5" == '--foreground --signal=TERM --kill-after=2s 10s systemctl' ]] || return 92
+  if [[ "$6" == list-jobs ]]; then
+    printf '123 cloud-final.service start running\\n'
+    printf '124 unknown/secret start running\\n'
+    printf '125 unsafe.service private-payload running\\n'
+    return 0
+  fi
+  [[ "$6" == is-system-running ]] || return 93
+  if [[ "$TEST_TRANSITION" == true && "$clock" -ge 2 ]]; then
+    printf 'running\\n'
+    return 0
+  fi
+  printf '%s\\n' "$TEST_STATE"
+  return "$TEST_STATUS"
+}
+linux_release_handoff_wait_systemd_ready
+printf 'startup-accepted\\n'
+`], {
+      env: { NODE_ENV: "test", PATH: "/usr/bin:/bin", TEST_STATE: fixture.state,
+        TEST_STATUS: String(fixture.status), TEST_TRANSITION: String(fixture.transition) },
+      encoding: "utf8", timeout: 5_000,
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status, result.stderr).toBe(fixture.accepted ? 0 : 70);
+    expect(result.stdout.includes("startup-accepted")).toBe(fixture.accepted);
+    expect(result.stdout + result.stderr).not.toMatch(/secret|private-payload/);
+    if (fixture.state === "starting" && !fixture.transition) {
+      expect(result.stderr).toContain("did not finish startup within 180 seconds");
+      expect(result.stdout).toContain("Pending CI boot job: cloud-final.service start running");
+    }
+  });
+});
+
 describe("Linux handoff fixed Node fixture", () => {
   it.each([
     "fresh", "wrong-version", "existing-target", "symlink-target",

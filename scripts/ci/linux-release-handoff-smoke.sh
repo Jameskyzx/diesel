@@ -34,6 +34,62 @@ linux_release_handoff_uid_has_processes() {
   return 70
 }
 
+linux_release_handoff_clock_seconds() {
+  printf '%s\n' "${SECONDS}"
+}
+
+linux_release_handoff_report_boot_jobs() {
+  local jobs
+  if jobs="$(timeout --foreground --signal=TERM --kill-after=2s 10s \
+    systemctl list-jobs --no-legend --no-pager)"; then
+    # Bounded manager metadata only; no unit properties, environment or journal.
+    printf '%s\n' "${jobs}" | awk '
+      NF == 4 && $1 ~ /^[0-9]+$/ && $2 ~ /^[A-Za-z0-9@_.:-]+$/ &&
+        $3 ~ /^(start|stop|restart|reload|verify-active)$/ &&
+        $4 ~ /^(waiting|running)$/ && count++ < 12 {
+          print "Pending CI boot job: " $2 " " $3 " " $4
+        }'
+  fi
+}
+
+linux_release_handoff_wait_systemd_ready() {
+  local started
+  local now
+  local state
+  local status
+  local reported=0
+  started="$(linux_release_handoff_clock_seconds)"
+  while true; do
+    now="$(linux_release_handoff_clock_seconds)"
+    if (( now - started >= 180 )); then
+      linux_release_handoff_report_boot_jobs
+      linux_release_handoff_fail 70 "CI systemd did not finish startup within 180 seconds"
+      return
+    fi
+    status=0
+    state="$(timeout --foreground --signal=TERM --kill-after=2s 10s \
+      systemctl is-system-running)" || status="$?"
+    case "${state}:${status}" in
+      running:0 | degraded:1)
+        printf 'CI systemd reached an accepted state: %s\n' "${state}"
+        return 0
+        ;;
+      initializing:1 | starting:1)
+        if [[ "${reported}" -eq 0 ]]; then
+          echo "Waiting for CI systemd startup (180-second budget)"
+          linux_release_handoff_report_boot_jobs
+          reported=1
+        fi
+        sleep 2
+        ;;
+      *)
+        linux_release_handoff_fail 70 "CI systemd startup query returned an unsafe state or failed"
+        return
+        ;;
+    esac
+  done
+}
+
 linux_release_handoff_install_node_fixture() {
   local source_node="$1"
   local target_root="$2"
@@ -703,6 +759,8 @@ linux_release_handoff_main() {
     # shellcheck source=/dev/null
     source "${release_export}/scripts/deploy/prepare-release-runtime.sh"
     prepare_release_require_fixed_root_command_boundary "${fixed_path}" "${node_binary}"
+    linux_release_handoff_wait_systemd_ready
+    prepare_release_require_systemd_host /proc
   )
 
   if ! available_kib="$(df -Pk "${runner_temp}" | awk 'NR == 2 { print $4 }')"; then

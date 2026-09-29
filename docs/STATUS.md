@@ -161,6 +161,13 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 13:42 UTC：候选 `f0bae90` 的本地完整验证为 8,070 passed / 5 skipped /
+  0 failed；严格证据和完整历史密钥扫描通过并已推送。远端质量、数据库、安全与部署
+  契约通过，随后 FDE 和 Demo 也通过（Demo 修复取得远端验证）。Linux 已通过固定命令
+  路径和三项 canary，之后因 manager 为 `starting`
+  失败；CI 增加有界启动等待并保留原生产校验，不接受未就绪状态。新十表只读恢复快照
+  已在本地通过 dry-run，但传输被自动安全审查拦截，等待用户单独授权；未改 VPS。
+  生产仍未切换，新代码仍需完整测试与远端门禁。
 - 2026-09-29 13:15 UTC：固定 Node 演练路径与 Demo fulfill 同步修复的 33 项定向
   回归、lint、typecheck、build 均通过。干净候选 `b345e1a` 的四套浏览器采集为
   420 passed / 67 skipped / 0 failed / 0 flaky；修复涉及的四种语言/视口组合均首试通过。

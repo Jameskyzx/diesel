@@ -1692,6 +1692,25 @@ function createPublicEvidenceBoundaryTransform({
             });
             controller.enqueue({ id: textPart.id, type: "text-end" });
           }
+          if (toolResults.length > 0) {
+            // The complete evidence contract has passed above. Publish dates
+            // from those validated results, never from model prose or an
+            // unverified request. A model can omit this context despite the
+            // prompt; the same deterministic footer reaches text/fullStream/SSE.
+            const dates = [...new Set(
+              toolResults.map((result) => result.informationAsOf),
+            )].sort();
+            const id = "evidence-as-of";
+            controller.enqueue({ id, type: "text-start" });
+            controller.enqueue({
+              id,
+              text: locale === "en"
+                ? `\n\nEvidence as-of date: ${dates.join(", ")}.`
+                : `\n\n证据评估日期：${dates.join("、")}。`,
+              type: "text-delta",
+            });
+            controller.enqueue({ id, type: "text-end" });
+          }
           if (
             hasToolResult &&
             evidenceNeedsRegulatoryDisclaimer(evidenceContract, toolResults)

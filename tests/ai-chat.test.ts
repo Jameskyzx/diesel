@@ -6993,7 +6993,43 @@ describe("single-agent sales chat", () => {
 
     expect(text).toContain("没有足够证据");
     expect(text).not.toContain("WRONG-DEFAULT-DATE-CLAIM");
+    expect(text).not.toContain("证据评估日期：");
   });
+
+  it.each(["en", "zh-CN"] as const)(
+    "publishes the validated date when model prose omits it across all public streams (%s)",
+    async (locale) => {
+      const auditRepository = { recordToolCall: vi.fn(async () => undefined) };
+      const sessionId = crypto.randomUUID();
+      const asOf = "2026-08-13";
+      const modelText = locale === "en" ? "The checked product is compatible." : "已核对产品适配。";
+      const result = streamSalesChat({
+        auditRepository, locale, sessionId, selectedCountryIso3: null,
+        messages: [{ role: "user", content: "CHN non-road 100 kW 产品在 2026-08-13 是否适配？" }],
+        model: compatibleProductsMockModel(modelText, asOf),
+        tools: createSalesChatTools({
+          auditRepository, sessionId, selectedCountryIso3: null,
+          services: { findCompatibleProducts: async (input) => [createFitEvaluationFor(input)] },
+        }),
+      });
+      const [text, fullText, sse] = await Promise.all([
+        result.text,
+        (async () => {
+          let output = "";
+          for await (const part of result.fullStream) if (part.type === "text-delta") output += part.text;
+          return output;
+        })(),
+        result.toUIMessageStreamResponse({ sendReasoning: false }).text(),
+      ]);
+      const footer = locale === "en" ? "Evidence as-of date: 2026-08-13." : "证据评估日期：2026-08-13。";
+      expect(text).toContain(modelText);
+      expect(text.split(footer)).toHaveLength(2);
+      expect(fullText).toBe(text);
+      expect(sse).toContain(footer);
+      expect(sse).toContain('"id":"evidence-as-of"');
+      expect(sse).not.toContain('"type":"reasoning');
+    },
+  );
 
   it("appends the fixed disclaimer server-side after a successful product-fit answer", async () => {
     const auditRepository = {

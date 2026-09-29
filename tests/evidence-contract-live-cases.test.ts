@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { simulateReadableStream } from "ai";
+import { MockLanguageModelV3 } from "ai/test";
 
 import {
   salesChatLiveCases,
@@ -16,7 +18,7 @@ import {
   evidenceContractAllowsModelText,
   remainingEvidenceTools,
 } from "@/server/ai/evidence-contract";
-import { createSalesChatTools } from "@/server/ai/sales-chat";
+import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
 import { buildSalesChatInstructions } from "@/server/ai/sales-chat-prompt";
 import {
   buildCompatibleProductsResult,
@@ -438,6 +440,39 @@ function recomputeLatestVerifiedAt(result: AiToolResult): string | null {
 }
 
 describe("live-eval evidence-contract regressions", () => {
+  it.each(["en", "zh-CN"] as const)("keeps the sales-brief evaluation date visible when the model omits it (%s)", async (locale) => {
+    const testCase = liveCase("sales-brief");
+    const auditRepository = { recordToolCall: async () => undefined };
+    const sessionId = crypto.randomUUID();
+    const usage = { inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 }, outputTokens: { total: 1, text: 1, reasoning: 0 } };
+    const modelText = locale === "en" ? "The sales brief is based on the returned evidence." : "销售简报基于返回的结构化证据。";
+    const model = new MockLanguageModelV3({
+      doStream: [
+        { stream: simulateReadableStream({ chunks: [
+          { type: "stream-start" as const, warnings: [] },
+          { type: "tool-call" as const, toolCallId: "brief-date", toolName: "generateSalesBrief", input: JSON.stringify(testCase.expectedArgs.generateSalesBrief) },
+          { type: "finish" as const, finishReason: { unified: "tool-calls" as const, raw: undefined }, usage },
+        ] }) },
+        { stream: simulateReadableStream({ chunks: [
+          { type: "stream-start" as const, warnings: [] },
+          { type: "text-start" as const, id: "answer" },
+          { type: "text-delta" as const, id: "answer", delta: modelText },
+          { type: "text-end" as const, id: "answer" },
+          { type: "finish" as const, finishReason: { unified: "stop" as const, raw: undefined }, usage },
+        ] }) },
+      ],
+    });
+    const result = streamSalesChat({
+      auditRepository, sessionId, locale, model, selectedCountryIso3: null,
+      messages: testCase.userTexts.map(content => ({role: "user" as const, content})),
+      trustedUserTexts: testCase.userTexts,
+      tools: createSalesChatTools({auditRepository, sessionId, selectedCountryIso3: null}),
+    });
+    const text = await result.text;
+    expect(text).toContain(modelText);
+    expect(text).toContain(locale === "en" ? "Evidence as-of date: 2026-08-13." : "证据评估日期：2026-08-13。");
+  });
+
   it("orders latest citation freshness by instant rather than timestamp text", () => {
     const citations = [
       { verifiedAt: "2026-01-02T00:30:00+01:00" },

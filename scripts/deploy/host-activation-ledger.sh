@@ -1040,12 +1040,14 @@ host_activation_ledger_require_lifecycle_lock() {
 
   if [[ "${DIESEL_RELEASE_LIFECYCLE_LOCK_FD:-}" != "8" ]] ||
     ! { true <&8; } 2>/dev/null ||
-    ! inherited_path="$(realpath -- "/proc/$$/fd/8")" ||
+    ! inherited_path="$(realpath -- /proc/self/fd/8)" ||
     [[ "${inherited_path}" != "${lock_path}" ]]; then
     host_activation_ledger_fail 70 \
       "release lifecycle lock descriptor 8 is required"
     return
   fi
+  # /proc/self is the resolver process, which inherits this shell's FD 8.
+  # $$ remains the outer Bash PID in subshells and may not own this descriptor.
   # A descriptor that merely points at the lock inode is not proof that this
   # open-file-description owns the lifecycle flock. Reapplying flock is
   # idempotent for an inherited locked OFD, safely acquires an uncontended

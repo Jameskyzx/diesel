@@ -531,7 +531,7 @@ governance_acquire_release_lifecycle_lock() {
         "inherited release lifecycle lock descriptor is invalid"
       return
     fi
-    if ! inherited_lock_path="$(readlink -f -- "/proc/$$/fd/8")" ||
+    if ! inherited_lock_path="$(readlink -f -- /proc/self/fd/8)" ||
       [[ "${inherited_lock_path}" != "${lock_path}" ]]; then
       governance_publication_fail 70 \
         "inherited release lifecycle lock path is invalid"
@@ -880,7 +880,7 @@ governance_run_isolated_host_validator() {
     return
   fi
   if [[ -z "${GOVERNANCE_RELEASE_LIFECYCLE_LOCK_PATH:-}" ]] ||
-    ! inherited_lock_path="$(readlink -f -- "/proc/$$/fd/8")" ||
+    ! inherited_lock_path="$(readlink -f -- /proc/self/fd/8)" ||
     [[ "${inherited_lock_path}" != \
       "${GOVERNANCE_RELEASE_LIFECYCLE_LOCK_PATH}" ]]; then
     governance_publication_fail 70 \

@@ -815,6 +815,22 @@ test "$(stat -c '%U:%G:%a:%h' \
 
 ### One-time pre-protocol host migration / 一次性旧主机迁移
 
+The read-only 2026-09-29 preflight found eight historical `product` / `archived`
+audit rows whose before/after JSONB values are strings containing JSON objects.
+The v4 recovery parser now preserves that exact encoding only for product archival
+audit data. It does not convert stored values, admit malformed/nested encodings,
+or weaken draft/document provenance validation. Existing old-release validators
+reject this legacy data; the recovery baseline must therefore be validated by the
+CI-approved candidate's updated validator, with the validator commit recorded,
+before any backup-root rebaseline or publication. A diagnostic export or failed
+`pg_dump` is not a verified recovery baseline.
+
+2026-09-29 只读预检发现 8 条旧产品归档审计的 before/after JSONB 是包含对象的字符串。
+v4 恢复校验只为 `product` / `archived` 保留原始编码，不修改库中旧数据，不允许非法或
+多层编码，不放宽 draft/document 来源规则。旧 release 校验器拒绝这些历史数据；必须用
+经 CI 批准的候选版校验器验证并记录其提交，才可重置备份根协议或发布。诊断导出、失败的
+`pg_dump` 均不算有效恢复基线。
+
 The 2026-09-29 host audit found pre-protocol, unclassified backup material, not
 valid completed V1 transactions. Ordinary initialization must continue to reject
 that material. An explicitly authorized maintenance/re-baseline is a separate

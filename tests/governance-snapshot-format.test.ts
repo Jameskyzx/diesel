@@ -282,6 +282,49 @@ const reprocessingLineageSnapshotCases = [
 ])[];
 
 describe("governance snapshot format", () => {
+  function archivedProductSnapshot(raw: string | null) {
+    const snapshot = emptySnapshot();
+    snapshot.tables.data_change_logs.push({
+      action: "archived", actorEmail: "admin@example.test", actorRole: "admin",
+      afterData: raw, beforeData: raw, createdAt: "2026-08-11T00:00:00.000Z",
+      draftId: null, entityKey: "legacy-product", entityType: "product",
+      id: "00000000-0000-4000-8000-000000000091", importBatchId: null,
+      reason: "Historical archival fixture",
+    });
+    snapshot.tableCounts.data_change_logs = 1;
+    return snapshot;
+  }
+
+  it.each([null, '{"archived": true}', JSON.stringify('{"integer":9007199254740993,"archived":true}')])(
+    "preserves product archival audit JSON exactly: %s", (raw) => {
+      const parsed = parseGovernanceSnapshot(archivedProductSnapshot(raw));
+      expect(parsed.tables.data_change_logs[0]).toMatchObject({beforeData: raw, afterData: raw});
+    },
+  );
+
+  it.each(['[]', 'null', 'true', '1', JSON.stringify('not-json'), JSON.stringify('[]'), JSON.stringify('null'), JSON.stringify(JSON.stringify('{}')), '{invalid']) (
+    "rejects malformed or non-object archival JSON: %s", (raw) => {
+      expect(() => parseGovernanceSnapshot(archivedProductSnapshot(raw))).toThrow();
+    },
+  );
+
+  it.each([
+    {action: "published", entityType: "product"},
+    {action: "archived", entityType: "country"},
+    {action: "document_reprocessed", entityType: "document"},
+    {action: "draft_created", entityType: "document"},
+  ])("does not extend legacy encoding to $action / $entityType", (identity) => {
+    const snapshot = archivedProductSnapshot(JSON.stringify('{}'));
+    Object.assign(snapshot.tables.data_change_logs[0], identity);
+    expect(() => parseGovernanceSnapshot(snapshot)).toThrow();
+  });
+
+  it("keeps live governance draft payloads object-only", () => {
+    const snapshot = reprocessedDocumentSnapshot();
+    Object.assign(snapshot.tables.data_governance_drafts[0], {payload: JSON.stringify('{}')});
+    expect(() => parseGovernanceSnapshot(snapshot)).toThrow();
+  });
+
   it("accepts the exact v4 table set and matching counts", () => {
     expect(parseGovernanceSnapshot(emptySnapshot()).formatVersion).toBe(4);
   });

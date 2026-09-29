@@ -247,6 +247,12 @@ an explicit 30-second disk/coverage budget; their assertions are unchanged.
 JS 入口，继续严格核对包名、固定版本、声明入口和有界版本读回。首个 PATH 候选损坏仍
 直接失败。两项全仓库截图指纹扫描明确使用 30 秒测试预算，不改变任何内容断言。
 
+Linux process inventory accepts PGID zero only for unrelated rows, such as
+kernel threads. Both sentinels must still belong to the positive guardian PGID;
+negative/malformed IDs, duplicate PIDs and missing sentinels still fail closed.
+Linux 进程列表允许无关行（如内核线程）的 PGID 为零；两个 sentinel 仍必须属于正数
+guardian PGID，负数/畸形 ID、重复 PID 与 sentinel 缺失继续失败关闭。
+
 ## 3. GitHub 原生密钥扫描
 
 CI 的 gitleaks job 覆盖历史扫描。原生 Secret scanning 与 push protection

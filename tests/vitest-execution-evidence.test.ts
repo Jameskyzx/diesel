@@ -2066,11 +2066,14 @@ process.exit(66);
     (version) => {
       const workspace = createWorkspace();
       const bin = resolve(workspace, "setup-pnpm/node_modules/.bin");
-      const entry = "setup-pnpm/node_modules/pnpm/bin/pnpm.cjs";
+      const entry = "setup-pnpm/node_modules/pnpm/bin/pnpm.mjs";
       writeWorkspaceFile(workspace, "setup-pnpm/node_modules/.bin/pnpm",
         "#!/bin/sh\nexit 99 # This shim must never execute.\n");
       writeWorkspaceFile(workspace, "setup-pnpm/node_modules/pnpm/package.json",
-        JSON.stringify({ name: "pnpm", version, bin: { pnpm: "bin/pnpm.cjs" } }));
+        JSON.stringify({ name: "pnpm", version, bin: { pnpm: "bin/pnpm.mjs" } }));
+      // pnpm 11's compatibility CJS file is not its declared executable.
+      writeWorkspaceFile(workspace, "setup-pnpm/node_modules/pnpm/bin/pnpm.cjs",
+        "throw new Error('must not select the compatibility module');\n");
       writeWorkspaceFile(workspace, entry, "#!/usr/bin/env node\nprocess.exit(98);\n");
       chmodSync(resolve(bin, "pnpm"), 0o755);
       chmodSync(resolve(workspace, entry), 0o755);

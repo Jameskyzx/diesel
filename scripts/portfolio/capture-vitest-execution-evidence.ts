@@ -413,8 +413,7 @@ export function assertVitestProcessGroupInventoryCapability(
   vitestProcessGroupInventoryCapabilityVerified = true;
 }
 
-function assertPnpmPackageIdentity(pnpmEntrypoint: string): void {
-  const packageRoot = resolve(dirname(pnpmEntrypoint), "..");
+function declaredPnpmPackageEntrypoint(packageRoot: string): string {
   if (realpathSync(packageRoot) !== packageRoot) {
     throw new Error("Resolved pnpm package root must be a physical directory.");
   }
@@ -432,10 +431,19 @@ function assertPnpmPackageIdentity(pnpmEntrypoint: string): void {
     );
   }
   const declaredEntrypoint = resolve(packageRoot, metadata.bin.pnpm);
-  if (
-    !declaredEntrypoint.startsWith(`${packageRoot}${sep}`) ||
-    realpathSync(declaredEntrypoint) !== pnpmEntrypoint
-  ) {
+  if (!declaredEntrypoint.startsWith(`${packageRoot}${sep}`)) {
+    throw new Error("Resolved pnpm entrypoint does not match its package metadata.");
+  }
+  const entrypoint = realpathSync(declaredEntrypoint);
+  if (!entrypoint.startsWith(`${packageRoot}${sep}`)) {
+    throw new Error("Resolved pnpm entrypoint does not match its package metadata.");
+  }
+  return entrypoint;
+}
+
+function assertPnpmPackageIdentity(pnpmEntrypoint: string): void {
+  const packageRoot = resolve(dirname(pnpmEntrypoint), "..");
+  if (declaredPnpmPackageEntrypoint(packageRoot) !== pnpmEntrypoint) {
     throw new Error("Resolved pnpm entrypoint does not match its package metadata.");
   }
 }
@@ -474,7 +482,9 @@ export function resolvePnpmEntrypoint(
       `${sep}node_modules${sep}.bin`,
     );
     const entrypoint = isPackageBinShim
-      ? realpathSync(resolve(dirname(physicalCandidate), "../pnpm/bin/pnpm.cjs"))
+      ? declaredPnpmPackageEntrypoint(
+          realpathSync(resolve(dirname(physicalCandidate), "../pnpm")),
+        )
       : physicalCandidate;
     assertRegularExecutable(entrypoint, "Resolved pnpm entrypoint");
     assertPnpmPackageIdentity(entrypoint);

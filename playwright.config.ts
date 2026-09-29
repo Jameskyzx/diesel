@@ -12,9 +12,10 @@ export default defineConfig({
   forbidOnly: shouldForbidOnlyInPlaywrightRun(),
   globalTeardown: "./scripts/e2e/global-teardown.ts",
   retries: process.env.CI ? 2 : 0,
-  // Finish through Playwright (including teardown and failure receipts) before
-  // the 30-minute CI job kills its process tree without a usable report.
-  globalTimeout: process.env.CI ? 25 * 60_000 : 0,
+  // The full single-worker matrix exceeded 25 minutes on hosted Linux with no
+  // failed assertions. Keep per-case limits unchanged and reserve ten minutes
+  // in the 60-minute job for setup, production CSP and diagnostic uploads.
+  globalTimeout: process.env.CI ? 50 * 60_000 : 0,
   reporter: process.env.CI
     ? [
         ["github"],

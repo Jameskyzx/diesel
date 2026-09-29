@@ -22,7 +22,7 @@ function firstWebServer(
 }
 
 describe("Playwright server contracts", () => {
-  it("leaves CI time for honest interruption receipts and prints case progress", () => {
+  it("leaves CI time for honest interruption receipts and prints case progress", async () => {
     const result = spawnSync(process.execPath, [
       "--import", "tsx", "--input-type=module", "--eval",
       "const imported = (await import(process.argv[1])).default; const config = imported.default ?? imported; process.stdout.write(JSON.stringify({ globalTimeout: config.globalTimeout, timeout: config.timeout, retries: config.retries, reporter: config.reporter }));",
@@ -32,11 +32,14 @@ describe("Playwright server contracts", () => {
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
     expect(JSON.parse(result.stdout) as unknown).toMatchObject({
-      globalTimeout: 25 * 60_000,
+      globalTimeout: 50 * 60_000,
       timeout: 60_000,
       retries: 2,
       reporter: expect.arrayContaining([["github"], ["list"]]),
     });
+    const workflow = await readFile(resolve(".github/workflows/ci.yml"), "utf8");
+    const publicJob = workflow.split("\n  e2e:\n")[1]?.split("\n  portfolio-demo-e2e:\n")[0];
+    expect(publicJob).toContain("    timeout-minutes: 60\n");
   });
 
   it("ignores generated HTML reports without ignoring authored test inputs", () => {

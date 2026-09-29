@@ -133,7 +133,7 @@ if present:
     fail("root install lifecycle scripts are forbidden: " + ", ".join(present))
 
 expected_workspace_sha256 = (
-    "9ec4771bfcb5dd9bf25ef21144963d17cca88c64fc416443fb996ad0ade04305"
+    "6bc023c188caab624b18bd99690abb5470bcb8370f4eadf790ff9b3ee6c8ad0d"
 )
 if hashlib.sha256(workspace_bytes).hexdigest() != expected_workspace_sha256:
     fail("pnpm-workspace.yaml does not match the reviewed execution config")
@@ -142,6 +142,11 @@ if hashlib.sha256(next_patch_bytes).hexdigest() != (
     "c4bab236a65a0e52fa62f88e892e007d2ca2936a2df20d02579e759ea973d2a3"
 ):
     fail("Next static-file patch does not match its reviewed source")
+runner_patch_bytes = read_regular("patches/@vitest__runner@4.1.11.patch", 256 * 1024)
+if hashlib.sha256(runner_patch_bytes).hexdigest() != (
+    "43a34fe00371ed7d2a7a972ad80269cbfe7cda5beb045640d3a2ad8ff06d54ee"
+):
+    fail("Vitest runner patch does not match its reviewed source")
 if nvmrc_bytes != b"22.22.3\n":
     fail(".nvmrc must be exactly 22.22.3")
 

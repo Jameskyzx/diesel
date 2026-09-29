@@ -10,13 +10,62 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { createRequire } from "node:module";
+import { dirname, join, resolve } from "node:path";
+import { runInNewContext } from "node:vm";
 
 import { expect, it } from "vitest";
 
 import { parseVitestJsonReporterOutput } from "../scripts/portfolio/vitest-execution-evidence";
 
 const progressPrefix = "vitest-progress-v1:";
+
+it.each([99, 100, 101])("delivers queued runner events when its throttle timer fires at %i ms", (elapsed) => {
+  // Execute the pinned dependency's actual throttle, not a copied substitute.
+  // Its early timer used to retain an expired handle and never requeue events.
+  const require = createRequire(import.meta.url);
+  const runner = createRequire(require.resolve("vitest/package.json")).resolve("@vitest/runner");
+  const source = readFileSync(join(dirname(runner), "chunk-artifact.js"), "utf8");
+  const start = source.indexOf("function throttle(fn, ms) {");
+  const end = source.indexOf("\n// throttle based on", start);
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(end).toBeGreaterThan(start);
+  let now = 1_000;
+  let sequence = 0;
+  let calls = 0;
+  const timers = new Map<number, () => void>();
+  const throttle = runInNewContext(`(${source.slice(start, end)})`, {
+    unixNow: () => now,
+    clearTimeout: (id: number) => timers.delete(id),
+    setTimeout: (callback: () => void) => {
+      const id = ++sequence;
+      timers.set(id, callback);
+      return id;
+    },
+  }, { timeout: 1_000 }) as (callback: () => void, delay: number) => () => void;
+  const call = throttle(() => calls++, 100);
+  call();
+  now++;
+  call();
+  expect(calls).toBe(1);
+  expect(timers.size).toBe(1);
+  const runTimer = () => {
+    const timer = [...timers][0];
+    if (!timer) throw new Error("The runner lost its pending event timer.");
+    timers.delete(timer[0]);
+    timer[1]();
+  };
+  now = 1_000 + elapsed;
+  runTimer();
+  if (elapsed <= 100) {
+    expect(calls).toBe(1);
+    expect(timers.size).toBe(1);
+    now += 100;
+    runTimer();
+  }
+  expect(calls).toBe(2);
+  expect(timers.size).toBe(0);
+});
 
 it("repairs actual timeout reports without mutating the ordinary reporter or test outcomes", () => {
   const directory = realpathSync(mkdtempSync(join(tmpdir(), "diesel-vitest-reporter-")));
@@ -168,7 +217,10 @@ it(${JSON.stringify(privateTitle)}, async () => {
     });
     expect(child.error).toBeUndefined();
     expect(child.signal).toBeNull();
-    expect(child.status, child.stderr).toBe(0);
+    const nestedReport = parseVitestJsonReporterOutput(readFileSync(reportPath, "utf8"));
+    const nestedFailures = nestedReport.testResults.flatMap((module) =>
+      module.assertionResults.flatMap((test) => test.failureMessages ?? []));
+    expect(child.status, `${child.stderr}\n${nestedFailures.join("\n")}`).toBe(0);
     const observation: unknown = JSON.parse(readFileSync(observationPath, "utf8"));
     expect(observation).toEqual({
       observedBeforeFinalJson: true,

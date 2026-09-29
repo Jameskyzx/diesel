@@ -2398,6 +2398,12 @@ describe("merge-blocking Linux release handoff", () => {
     expect(job).toContain('chmod 0755 "${handoff_temp}"');
     expect(job).not.toContain('${RUNNER_TEMP}');
     expect(smokeScript).toContain('runuser -u diesel-build -- /usr/bin/test -x "${canary_workspace}"');
+    expect(smokeScript).toContain('"${node_binary}" /opt/node-v22.22.3-linux-x64');
+    expect(smokeScript).toContain('node_binary=/opt/node-v22.22.3-linux-x64/bin/node');
+    expect(smokeScript).toContain('prepare_release_require_fixed_root_command_boundary "${fixed_path}" "${node_binary}"');
+    expect(smokeScript.indexOf('prepare_release_require_fixed_root_command_boundary "${fixed_path}" "${node_binary}"'))
+      .toBeLessThan(smokeScript.indexOf('groupadd --system'));
+    expect(smokeScript).not.toContain("prepare_release_require_fixed_root_command_boundary()");
     expect(job).toContain(
       "node scripts/deploy/release-input-manifest.mjs",
     );

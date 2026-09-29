@@ -24,6 +24,7 @@ for (const browserLocale of ["en-US", "zh-CN"] as const) {
       const english = browserLocale === "en-US";
       if (english) await context.clearCookies();
       let delivered = false;
+      const { promise: comparisonFulfilled, resolve: markComparisonFulfilled } = Promise.withResolvers<void>();
       // Test-only transport variation, not an accepted fixture or a claim about
       // the provider. Unit tests separately exercise the real production service.
       await page.route("**/api/chat", async (route) => {
@@ -49,6 +50,7 @@ for (const browserLocale of ["en-US", "zh-CN"] as const) {
           return line;
         }).join("\n");
         await route.fulfill({ response, body });
+        markComparisonFulfilled();
       }, { times: 1 });
 
       await page.goto("/chat");
@@ -67,7 +69,9 @@ for (const browserLocale of ["en-US", "zh-CN"] as const) {
       await assistant.getByRole("button", { name: english ? "Send question" : "发送问题" }).click();
       const response = await comparisonResponse;
       expect(response.status()).toBe(200);
-      expect(await response.finished()).toBeNull();
+      // Chromium may keep a fulfilled event-stream's network lifecycle open.
+      // Synchronize with our own completed finite-body fulfillment instead.
+      await comparisonFulfilled;
       const card = assistant.getByRole("region", { name: english ? "Database regulation comparison" : "数据库法规比较", exact: true });
       await expect(card).toHaveCount(1);
       for (const name of canonicalDemoRegulationNames) await expect(card).toContainText(name);

@@ -58,7 +58,16 @@ for (const browserLocale of ["en-US", "zh-CN"] as const) {
       await assistant.getByRole("textbox", { name: english ? "Enter a question" : "输入问题" }).fill(english
         ? "Compare CHN and BRA non-road regulations for 100 kW as of 2026-08-20."
         : "比较 CHN 和 BRA 非道路 100 kW 法规，截至 2026-08-20。");
+      // This route intentionally buffers and transforms the full SSE response.
+      // Wait for that transport before starting the card's rendering deadline;
+      // the original test timeout still bounds the request and all assertions.
+      const comparisonResponse = page.waitForResponse((response) =>
+        new URL(response.url()).pathname === "/api/chat"
+        && response.request().method() === "POST");
       await assistant.getByRole("button", { name: english ? "Send question" : "发送问题" }).click();
+      const response = await comparisonResponse;
+      expect(response.status()).toBe(200);
+      expect(await response.finished()).toBeNull();
       const card = assistant.getByRole("region", { name: english ? "Database regulation comparison" : "数据库法规比较", exact: true });
       await expect(card).toHaveCount(1);
       for (const name of canonicalDemoRegulationNames) await expect(card).toContainText(name);

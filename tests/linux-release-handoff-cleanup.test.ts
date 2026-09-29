@@ -1,8 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { readFile, rm } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { createHostActivationLedgerFixture, TEST_RELEASE_SHA } from "./helpers/deploy-runtime-fixtures";
 
 async function handoffFunctions(): Promise<string> {
   const source = await readFile(
@@ -13,6 +15,72 @@ async function handoffFunctions(): Promise<string> {
   expect(source.endsWith(entry)).toBe(true);
   return source.slice(0, -entry.length);
 }
+
+describe("Linux handoff activation fixture", () => {
+  it.each(["pending", "missing-lock", "live-drift"] as const)(
+    "uses the real ledger and fails closed for %s",
+    async (scenario) => {
+      const fixture = await createHostActivationLedgerFixture();
+      try {
+        await rm(fixture.stateDir, { recursive: true });
+        await rm(fixture.currentLink);
+        const result = spawnSync("/bin/bash", ["-c", `${await handoffFunctions()}
+source "$1"
+# Only project Linux ownership/install flags onto this unprivileged fixture.
+# The shipped ledger, record writer, parser and durability checks are real.
+install() {
+  local -a args=()
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      -o|-g) shift 2 ;;
+      *) args+=("$1"); shift ;;
+    esac
+  done
+  /usr/bin/install "\${args[@]}"
+}
+if [[ "$TEST_SCENARIO" != missing-lock ]]; then
+  exec 8<>"$TEST_DEPLOY_ROOT/.release-lifecycle.lock"
+  export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8
+fi
+linux_release_handoff_begin_fixture "$TEST_RELEASE" "$TEST_DEPLOY_ROOT" "$TEST_NODE"
+if [[ "$TEST_SCENARIO" == live-drift ]]; then
+  printf 'drift\\n' >>"$TEST_DEPLOY_ROOT/ci-nginx-sites/jamesky.site"
+fi
+host_activation_ledger_require_live_basis \\
+  "$TEST_RELEASE" "$TEST_DEPLOY_ROOT" "$TEST_DEPLOY_ROOT/ci-nginx-sites"
+printf 'fixture-pending-verified\\n'
+`, "handoff-activation-fixture", resolve("scripts/deploy/host-activation-ledger.sh")], {
+          env: {
+            NODE_ENV: "test",
+            PATH: fixture.fakePath,
+            TEST_SCENARIO: scenario,
+            TEST_DEPLOY_ROOT: fixture.deployRoot,
+            TEST_RELEASE: TEST_RELEASE_SHA,
+            TEST_NODE: fixture.nodeBinary,
+          },
+          encoding: "utf8",
+          timeout: 20_000,
+        });
+        expect(result.error).toBeUndefined();
+        expect(result.status, result.stderr).toBe(scenario === "pending" ? 0 : 70);
+        expect(result.stdout.includes("fixture-pending-verified")).toBe(scenario === "pending");
+        if (scenario === "missing-lock") {
+          await expect(readFile(fixture.manifest)).rejects.toMatchObject({ code: "ENOENT" });
+          await expect(readFile(fixture.pending)).rejects.toMatchObject({ code: "ENOENT" });
+        } else {
+          expect(await readFile(fixture.pending, "utf8")).toContain(fixture.anchor);
+          expect(await readFile(join(fixture.stateDir, "previous-release"), "utf8"))
+            .toBe(`${fixture.deployRoot}/releases/ci-previous\n`);
+        }
+        await expect(readFile(fixture.committed)).rejects.toMatchObject({ code: "ENOENT" });
+        await expect(readFile(join(fixture.stateDir, "PUBLISH_FINALIZED"))).rejects.toMatchObject({ code: "ENOENT" });
+      } finally {
+        await rm(fixture.root, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
+});
 
 describe("Linux handoff private-group cleanup", () => {
   it.each([

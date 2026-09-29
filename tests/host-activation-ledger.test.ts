@@ -719,7 +719,12 @@ describe("host activation ledger", { timeout: 30_000 }, () => {
     }
   });
 
-  it.skipIf(process.platform !== "linux")("checks the actual subshell descriptor with native procfs and flock, not the outer Bash PID", async () => {
+  it("checks the actual subshell descriptor with native procfs and flock, not the outer Bash PID", async (context) => {
+    // Runtime skipping keeps this registered case in Vitest's list inventory.
+    if (process.platform !== "linux") {
+      context.skip();
+      return;
+    }
     const fixture = await createHostActivationLedgerFixture();
     const governanceScript = resolve(
       process.cwd(), "scripts/deploy/governance-publication-state-machine.sh",

@@ -923,7 +923,8 @@ This uses the documented [named tool choice](https://api-docs.deepseek.com/api/c
 not an undocumented parallel-call flag. Generic adapters retain their behavior.
 Diagnostic probes are not scored benchmark runs or release evidence.
 
-后续 v7/v2 完整评估有一例法规＋产品请求失败（17/18 通过，86,122 tokens）。固定三次
+历史评估报告 `2ed13258-3dae-4204-b070-78f69ea24828`（v7/v2）记录一例法规＋产品请求失败
+（17/18 通过，86,122 tokens）。固定三次
 局部诊断中两次复现第二个并行工具参数为非法 JSON。DeepSeek 适配合同 v3 改为每步
 指定一个仍需取证的工具，再由原生产循环收集其余证据；五步限制、零重试、Zod 校验、
 证据门与评分器均不变，不猜修非法参数。局部诊断不算基准或发布验收，旧失败原样保留。
@@ -935,7 +936,7 @@ adds a request-local system rule: invoke the named tool exactly once, preserve
 requested parameters, and leave other tools for subsequent steps. The normal
 answer-language instruction and final tool-free request remain unchanged.
 
-v3 运行 `e6272332-a3b8-4d38-9b7e-607dd9140fd1` 仍为 17/18（101,223 tokens）：
+历史 v3 归档 `e6272332-a3b8-4d38-9b7e-607dd9140fd1` 记录 17/18（101,223 tokens）：
 JSON 已合法，但模型为满足“并行”要求重复调用当步唯一产品工具。v4 增加请求级系统
 约束：本步只调用一次且保留已请求参数，其他工具留到后续步骤；原语言指令和最终无工具
 回答请求不变。本次失败同样保留，不以局部诊断替代正式验收。

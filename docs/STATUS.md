@@ -1587,6 +1587,10 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   双 reporter 实际回归同时覆盖数值断言、test/hook 超时、同名参数化用例、通过、跳过与 todo。
 - 当前唯一 Vitest 执行证据指针：artifact `docs/evidence/vitest-execution-latest.json`；format `diesel-vitest-execution-evidence-v1`。
   动态测试计数、执行时间、HEAD 与 source fingerprint 仅从该 artifact 派生；`STATUS.md` 不复制这些值。
+- 2026-09-29 回答修复后的首次全量采集以 1 退出，旧成功 artifact 未替换。两条失败均为
+  `tests/live-eval-readme-snapshot.test.ts` 的文档一致性断言：新中文历史说明缺少明确的
+  历史归档定位，被识别为台账外的当前结果声明。仅修正文案的历史边界，不改测试、
+  评分器、阈值或报告；随后重新执行完整采集，最终状态仍只看上述执行证据指针。
 - 2026-09-13 私有 abort 诊断修复后的首次完整采集返回 1。工作负载正常结束，结束进度记录
   含一条测试失败；采集器还检测到 `node_modules/.vite/vitest/.../results.json` 改变。
   操作者在全量采集期间另跑了 `pnpm ai:eval`，该命令更新的缓存条目及时间与漂移吻合。

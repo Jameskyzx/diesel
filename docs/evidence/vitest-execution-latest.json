@@ -1,20 +1,20 @@
 {
   "command": "pnpm test",
   "complete": true,
-  "completedAt": "2026-09-29T18:11:41.912Z",
+  "completedAt": "2026-09-29T20:19:50.611Z",
   "configPath": "vitest.config.ts",
   "provenance": {
-    "baseHeadCommit": "32cce867d954e35eb60bc533127cb5bf6a47b359",
-    "evaluatedCommit": "32cce867d954e35eb60bc533127cb5bf6a47b359",
+    "baseHeadCommit": "386a0ddea86bef823e7613b57e625c5a2643facc",
+    "evaluatedCommit": "386a0ddea86bef823e7613b57e625c5a2643facc",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "4433608f20179f4a4442a3ff4e7719fa2e6fbd61db05f2ff923965cc64f4a40a",
+      "digest": "1ce8cb0a972177f1f9ade17cdfc530f2765dd93af5aee6accf699107aab20ac0",
       "fileCount": 856
     },
     "worktreeState": "clean"
   },
-  "runId": "5294aba1-92c2-41e1-b5da-d39bc9b50636",
-  "startedAt": "2026-09-29T17:58:46.104Z",
+  "runId": "22c1096c-1e12-4c17-9b57-9606f6448389",
+  "startedAt": "2026-09-29T20:08:06.772Z",
   "tests": [
     {
       "id": "0005420a555cc43ee81536366b23ecca4cd57c5195d3eb883e1043fd9a7f6dda",
@@ -23949,6 +23949,10 @@
       "status": "passed"
     },
     {
+      "id": "bce77c2782a41e8e7302ee6d1a9f45a90a1981334dcf200ac931bfce89be4a71",
+      "status": "skipped"
+    },
+    {
       "id": "bcf2c6861cb74cff118f74a03b58439fec5e5aa6e5f73ec14bc6333f6b9e4a55",
       "status": "passed"
     },
@@ -32380,11 +32384,11 @@
   "totals": {
     "collectedFiles": 268,
     "collectedSuites": 667,
-    "collectedTests": 8090,
+    "collectedTests": 8091,
     "failedTests": 0,
     "passedTests": 8085,
     "pendingTests": 0,
-    "skippedTests": 5,
+    "skippedTests": 6,
     "todoTests": 0
   },
   "version": "diesel-vitest-execution-evidence-v1",

@@ -64,8 +64,11 @@ function createDeferred<T>() {
   return { promise, reject, resolve };
 }
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env.DATABASE_MODE = "pglite-demo";
+  // Fixture initialization includes WASM startup, migrations, and seeding.
+  // Keep it in setup, not in the first seven-tool contract test's 5s budget.
+  await getDemoDatabase();
 });
 
 afterAll(() => {

@@ -161,6 +161,14 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 15:48 UTC：`ae9c394` 的完整 Vitest 重跑为 8,085 passed / 5 skipped /
+  0 failed，已提交生成收据；`3721265` 严格证据校验和完整历史密钥扫描通过并推送。
+  远端完整门禁仍在运行。工作站另外用提交导出、独立 HOME 和无密钥环境实际构建，
+  Next 编译成功，但 esbuild postinstall 生成的双链接二进制被工件检查拒绝。
+  现只将发布安装命令对齐 CI 的禁用安装脚本/pnpmfile 边界，补实际参数回归；
+  保留单链接校验，必须重新验证隔离构建、完整测试与 CI。此复现不是 Linux 通过证明，
+  生产仍未切换。
+
 - 2026-09-29 15:20 UTC：候选 `f44b6f5` 的完整 Vitest 实际为 268 文件、8,090 用例，
   8,084 passed / 5 skipped / 1 failed；进程正常结束并返回 1，未生成新的成功执行收据。
   聚焦复现定位到状态文档混合主语触发唯一台账检查，现仅拆分文档表述，保留原断言。

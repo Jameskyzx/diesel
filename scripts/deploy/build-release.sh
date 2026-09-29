@@ -104,8 +104,12 @@ input_digest="$(
 # verifier after the builder cgroup has been stopped.
 cp -p -- "${next_environment_path}" "${next_environment_snapshot}"
 
+# Keep installation aligned with the CI install boundary. In particular,
+# esbuild's optional postinstall optimization creates hardlinks even when pnpm
+# imports packages by copy; those cannot enter the immutable artifact closure.
 corepack pnpm --config.registry="${registry}" \
-  install --frozen-lockfile --trust-lockfile --package-import-method=copy
+  install --frozen-lockfile --trust-lockfile --package-import-method=copy \
+  --ignore-scripts --ignore-pnpmfile
 
 env -i \
   HOME="${build_home}" \

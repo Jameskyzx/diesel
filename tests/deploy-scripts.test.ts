@@ -6721,6 +6721,7 @@ printf '%s\\n' "$value"
       "expected-next-env.d.ts",
     );
     const inputVerifyCounterPath = join(fixture, "input-verify-count");
+    const installInvocationPath = join(fixture, "install-arguments");
     const originalNextEnvironment =
       '/// <reference types="next" />\n' +
       'import "./.next/dev/types/routes.d.ts";\n';
@@ -6796,6 +6797,9 @@ printf '%064d\n' 0
         join(fakeBin, "corepack"),
         `#!/bin/bash
 set -euo pipefail
+if [[ " $* " == *" install "* ]]; then
+  printf '%s\\n' "$@" >${quoteShell(installInvocationPath)}
+fi
 if [[ " $* " == *" pnpm build "* ]]; then
   printf '%s\n' '// rewritten by Next during the fixture build' >next-env.d.ts
   mkdir -p .next/server .next/cache
@@ -6822,6 +6826,19 @@ fi
       );
 
       expect(result.stderr).toBe("");
+      await expect(readFile(installInvocationPath, "utf8")).resolves.toBe(
+        [
+          "pnpm",
+          "--config.registry=https://registry.npmjs.org",
+          "install",
+          "--frozen-lockfile",
+          "--trust-lockfile",
+          "--package-import-method=copy",
+          "--ignore-scripts",
+          "--ignore-pnpmfile",
+          "",
+        ].join("\n"),
+      );
       await expect(
         readFile(join(workspace, "next-env.d.ts"), "utf8"),
       ).resolves.toBe(originalNextEnvironment);
@@ -10489,6 +10506,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
       "[[ -f .build-complete && ! -L .build-complete ]]",
     );
     expect(buildScript).toContain("--package-import-method=copy");
+    expect(buildScript).toContain("--ignore-scripts --ignore-pnpmfile");
     expect(buildScript).toContain("export COREPACK_ENABLE_DOWNLOAD_PROMPT=0");
     expect(buildScript).toContain(
       "node scripts/deploy/release-input-manifest.mjs",

@@ -1068,6 +1068,10 @@ systemd service 调用 `scripts/deploy/build-release.sh`。service 使用 `Type=
 Corepack/pnpm 用户态缓存；脚本在复制 release 前确认 `corepack` 可用并设置
 `COREPACK_ENABLE_DOWNLOAD_PROMPT=0`，不能在无人值守发布中临时询问是否下载。安装强制使用
 pnpm `--package-import-method=copy`，避免构建 workspace 中的文件通过 hardlink 影响共享 store；
+同时显式使用 `--ignore-scripts --ignore-pnpmfile`，与 CI 安装边界一致。仅复制导入不能防止
+依赖的安装脚本再次建立硬链接：已在无密钥、独立 HOME 的工作站构建中复现 esbuild 的
+postinstall 优化把平台二进制与 CLI 改为同一 inode，导致编译成功后被工件检查拒绝。
+禁止安装脚本后仍须证明真实构建成功；不放宽工件的单链接要求，也不引入构建期生产凭据。
 连续发布必须继续使用同一隔离边界。
 
 controller 不信任 `systemd-run` 的返回码，而是在 retained unit 上同时核验 `Result`、

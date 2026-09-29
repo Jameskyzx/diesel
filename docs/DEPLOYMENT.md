@@ -1169,6 +1169,13 @@ Linux 演练通过。CI 隔离根现不再依赖 runner 主目录对新增 UID �
 在 `userdel` 成功后自动删除同名私有组；cleanup 只在本次已成功删除用户且名称、数字 GID
 都明确不存在时接受该结果，查询错误、替换身份和 GID 复用仍失败。该修正不等于 handoff 已通过。
 
+后续真实演练通过后台子进程 canary，但非零退出 canary 揭示了另一项合同错误：systemd
+在失败进程的 cgroup 已回收后，保留 `failed/failed` 与原始退出元数据，但将 `ControlGroup`
+置空。校验只在其他身份/隔离字段全部匹配、状态精确为 `failed/failed` 且预期 cgroup
+路径已经不存在时接受该空值；非空漂移、活动状态空值与残留路径仍失败。正常退出码映射、
+unit unload、cgroup 路径消失和两轮 UID/process 清理证明不变。独立 VPS 诊断复现
+`exit-code/1/23` 的空字段并完成清理；这不替代尚待重跑的完整 Linux CI 或生产发布。
+
 同次 CI 的 68 项 Demo 浏览器断言全部通过，但 HTML reporter 生成的
 `playwright-demo-report/index.html` 使结束时的工作区变脏，严格证据校验因此失败。该精确
 生成目录现与既有 `playwright-report` 一样被 Git 忽略；源码指纹与开始/结束状态等值规则不变。

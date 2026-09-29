@@ -442,7 +442,9 @@ function assertPnpmPackageIdentity(pnpmEntrypoint: string): void {
 
 /**
  * Resolves the first executable `pnpm` on inherited PATH, removes symlink
- * indirection, and verifies its exact package identity. Runtime version output
+ * indirection, and verifies its exact package identity. For node_modules/.bin
+ * shell shims, select the adjacent pnpm package's verified JS entrypoint without
+ * evaluating the shim. Runtime version output
  * is checked later behind the same bounded supervisor as the test workload.
  */
 export function resolvePnpmEntrypoint(
@@ -466,7 +468,14 @@ export function resolvePnpmEntrypoint(
     } catch {
       continue;
     }
-    const entrypoint = realpathSync(candidate);
+    const physicalCandidate = realpathSync(candidate);
+    assertRegularExecutable(physicalCandidate, "Resolved pnpm executable");
+    const isPackageBinShim = dirname(physicalCandidate).endsWith(
+      `${sep}node_modules${sep}.bin`,
+    );
+    const entrypoint = isPackageBinShim
+      ? realpathSync(resolve(dirname(physicalCandidate), "../pnpm/bin/pnpm.cjs"))
+      : physicalCandidate;
     assertRegularExecutable(entrypoint, "Resolved pnpm entrypoint");
     assertPnpmPackageIdentity(entrypoint);
     return entrypoint;

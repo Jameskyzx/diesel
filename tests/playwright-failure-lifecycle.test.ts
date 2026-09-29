@@ -102,11 +102,13 @@ test("PRIVATE_SYNTHETIC_BLOCKED_TWO", () => { expect(true).toBe(true); });
       },
       maxBuffer: 131_072,
     });
-    const stdout = readFileSync(stdoutPath, "utf8");
-    const stderr = readFileSync(stderrPath, "utf8");
+    const stdout = existsSync(stdoutPath) ? readFileSync(stdoutPath, "utf8") : "";
+    const stderr = existsSync(stderrPath) ? readFileSync(stderrPath, "utf8") : "";
     expect(execution.error).toBeUndefined();
     expect(execution.signal).toBeNull();
     expect(execution.status, `${execution.stderr}\n${stderr}\n${stdout}`).toBe(1);
+    expect(existsSync(stdoutPath), execution.stderr).toBe(true);
+    expect(existsSync(stderrPath), execution.stderr).toBe(true);
     z.object({
       version: z.literal("bounded-command-completion-v2"),
       token: z.literal(completionToken),

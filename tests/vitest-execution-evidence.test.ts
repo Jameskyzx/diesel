@@ -2061,6 +2061,38 @@ process.exit(66);
     })).toThrow(/pnpm package metadata/u);
   });
 
+  it.each(["11.9.0", "11.8.0"])(
+    "resolves a node_modules/.bin shim only through the pinned package (%s)",
+    (version) => {
+      const workspace = createWorkspace();
+      const bin = resolve(workspace, "setup-pnpm/node_modules/.bin");
+      const entry = "setup-pnpm/node_modules/pnpm/bin/pnpm.cjs";
+      writeWorkspaceFile(workspace, "setup-pnpm/node_modules/.bin/pnpm",
+        "#!/bin/sh\nexit 99 # This shim must never execute.\n");
+      writeWorkspaceFile(workspace, "setup-pnpm/node_modules/pnpm/package.json",
+        JSON.stringify({ name: "pnpm", version, bin: { pnpm: "bin/pnpm.cjs" } }));
+      writeWorkspaceFile(workspace, entry, "#!/usr/bin/env node\nprocess.exit(98);\n");
+      chmodSync(resolve(bin, "pnpm"), 0o755);
+      chmodSync(resolve(workspace, entry), 0o755);
+      const resolveEntry = () => resolvePnpmEntrypoint({ PATH: bin });
+      if (version === "11.9.0") {
+        expect(resolveEntry()).toBe(resolve(workspace, entry));
+      } else {
+        expect(resolveEntry).toThrow(/pnpm package metadata/u);
+      }
+    },
+  );
+
+  it("does not search past a broken package-bin shim", () => {
+    const workspace = createWorkspace();
+    const bin = resolve(workspace, "node_modules/.bin");
+    writeWorkspaceFile(workspace, "node_modules/.bin/pnpm", "#!/bin/sh\nexit 0;\n");
+    chmodSync(resolve(bin, "pnpm"), 0o755);
+    expect(() => resolvePnpmEntrypoint({
+      PATH: `${bin}${delimiter}${process.env.PATH ?? ""}`,
+    })).toThrow();
+  });
+
   it("exposes only verified node and pnpm links through the private tool bin", () => {
     const tools = createVitestExecutionToolBin();
     try {

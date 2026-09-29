@@ -2404,6 +2404,8 @@ describe("merge-blocking Linux release handoff", () => {
     expect(smokeScript.indexOf('prepare_release_require_fixed_root_command_boundary "${fixed_path}" "${node_binary}"'))
       .toBeLessThan(smokeScript.indexOf('groupadd --system'));
     expect(smokeScript).not.toContain("prepare_release_require_fixed_root_command_boundary()");
+    expect(smokeScript).toContain("linux_release_handoff_wait_systemd_ready\n    prepare_release_require_systemd_host /proc");
+    expect(smokeScript).not.toContain("prepare_release_require_systemd_host()");
     expect(job).toContain(
       "node scripts/deploy/release-input-manifest.mjs",
     );

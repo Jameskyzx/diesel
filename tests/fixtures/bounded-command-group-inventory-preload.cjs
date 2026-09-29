@@ -25,6 +25,7 @@ childProcess.spawn = function patchedSpawn(command, args, options) {
       fixture,
       String(process.pid),
       residualPidPath,
+      process.env.DIESEL_BOUNDED_COMMAND_TEST_INVENTORY_VARIANT ?? "linux-kernel",
     ], options);
   }
   return originalSpawn.call(this, command, args, options);

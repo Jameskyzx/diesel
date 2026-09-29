@@ -199,7 +199,7 @@ async function waitForManagedProcessCleanup(
 }
 
 describe("bounded deployment command supervisor", () => {
-  it("proves the detached process-group inventory capability explicitly", async () => {
+  it("proves the detached process-group inventory capability with unrelated Linux PGID zero rows", async () => {
     await expect(executeHelper([
       "--check-process-group-inventory-v1",
     ])).resolves.toEqual({
@@ -208,6 +208,20 @@ describe("bounded deployment command supervisor", () => {
       stdout: "bounded-command-v2:process-group-inventory-ok\n",
     });
   });
+
+  it.each(["negative-pgid", "zero-sentinel", "duplicate-pid"])(
+    "still rejects invalid process inventories: %s",
+    async (variant) => {
+      await expect(executeHelper(
+        ["--check-process-group-inventory-v1"], "", [],
+        { ...process.env, DIESEL_BOUNDED_COMMAND_TEST_INVENTORY_VARIANT: variant },
+      )).resolves.toEqual({
+        exitCode: 126,
+        stderr: "bounded-command-v2:process-group-capability\n",
+        stdout: "",
+      });
+    },
+  );
 
   it("writes a bound containment receipt without exposing its capability to the child", async () => {
     const root = await mkdtemp(join(tmpdir(), "diesel-bounded-receipt-"));

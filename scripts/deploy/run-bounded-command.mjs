@@ -130,7 +130,9 @@ function parseProcessGroupInventory(bytes, groupLeaderPid, inspectorPid) {
   let guardianSeen = false;
   let inspectorSeen = false;
   for (const row of rows) {
-    const match = /^\s*([1-9][0-9]*)\s+([1-9][0-9]*)\s*$/u.exec(row);
+    // Linux kernel threads legitimately have PGID 0. They cannot match the
+    // positive guardian PGID, and neither sentinel may belong to group zero.
+    const match = /^\s*([1-9][0-9]*)\s+(0|[1-9][0-9]*)\s*$/u.exec(row);
     if (match === null) {
       throw new Error("process-group inventory was malformed");
     }

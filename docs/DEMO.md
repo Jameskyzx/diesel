@@ -19,9 +19,9 @@ Use the hosted path only when `STATUS.md` confirms that the same version was
 deployed and passed production readback. Otherwise, use `pnpm demo`; do not
 substitute the currently hosted release for the local walkthrough.
 
-- Hosted path: open the [home page](https://jamesky.site), a
-  [CHN 100 kW deep link](https://jamesky.site/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13),
-  and the [AI workspace](https://jamesky.site/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13).
+- Hosted path: open the [home page](https://diesel.jamesky.site), a
+  [CHN 100 kW deep link](https://diesel.jamesky.site/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13),
+  and the [AI workspace](https://diesel.jamesky.site/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13).
 - Zero-configuration path: run `pnpm install` and `pnpm demo`, then open the
   [local home page](http://127.0.0.1:3000),
   [local CHN 100 kW deep link](http://127.0.0.1:3000/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13),
@@ -100,9 +100,9 @@ expert sign-off, and no real-user adoption claim.
 只有当 `STATUS.md` 确认相同版本已经部署并通过生产读回时，才使用托管版；否则必须使用
 `pnpm demo`，不得用当前线上旧版本替代本地演示流程。
 
-- 托管版：预先打开[首页](https://jamesky.site)、
-  [中国 100 kW 深链](https://jamesky.site/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13)
-  和[AI 工作区](https://jamesky.site/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13)。
+- 托管版：预先打开[首页](https://diesel.jamesky.site)、
+  [中国 100 kW 深链](https://diesel.jamesky.site/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13)
+  和[AI 工作区](https://diesel.jamesky.site/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13)。
 - 零配置版：提前执行 `pnpm install`、`pnpm demo`，打开
   [本地首页](http://127.0.0.1:3000)、
   [本地中国 100 kW 深链](http://127.0.0.1:3000/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13)

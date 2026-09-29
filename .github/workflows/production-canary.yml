@@ -41,7 +41,7 @@ jobs:
 
       - name: Check public production contracts
         env:
-          CANARY_BASE_URL: https://jamesky.site
+          CANARY_BASE_URL: https://diesel.jamesky.site
           CANARY_CHECK_AI: ${{ github.event_name == 'workflow_dispatch' && inputs.include_ai && 'true' || 'false' }}
           CANARY_REPORT_PATH: artifacts/production-canary.json
           CANARY_STATUS_PATH: docs/STATUS.md

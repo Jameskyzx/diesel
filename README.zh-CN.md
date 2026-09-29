@@ -5,12 +5,15 @@
 
 [![CI](https://github.com/Jameskyzx/diesel/actions/workflows/ci.yml/badge.svg)](https://github.com/Jameskyzx/diesel/actions/workflows/ci.yml)
 
-[公开演示](https://jamesky.site) ·
-[世界地图](https://jamesky.site/map) ·
-[AI 工作台](https://jamesky.site/chat) ·
+[公开演示](https://diesel.jamesky.site) ·
+[世界地图](https://diesel.jamesky.site/map) ·
+[AI 工作台](https://diesel.jamesky.site/chat) ·
 [FDE 项目案例](docs/FDE_CASE_STUDY.md) ·
 [当前状态](docs/STATUS.md) ·
 [English README](README.md)
+
+以上子域名为新的部署目标。在 [STATUS.md](docs/STATUS.md) 确认迁移与读回完成前，
+本版本请使用本地 Demo 演示。
 
 项目模拟海外柴油机销售决策背后的工作：某个国家、日期、应用和功率带适用哪些法规；
 产品证据是否足以支持适配结论；市场观测能否比较；每个结论究竟由哪些来源支撑。
@@ -31,11 +34,11 @@
 
 ### 核心流程
 
-1. 在[世界地图](https://jamesky.site/map)选择国家；ISO3 URL 可分享。
+1. 在[世界地图](https://diesel.jamesky.site/map)选择国家；ISO3 URL 可分享。
 2. 查看当前 `effective`、未来 `adopted` 法规、来源链接和核验日期。
 3. 输入应用、功率、日期和可选型号。`product-fit-v2` 将合规适配、查询日供应状态和组合后的
    商业就绪度作为独立的确定性字段返回。
-4. 在 [AI 工作台](https://jamesky.site/chat)请求法规比较或销售简报。结构化工具卡、引用与
+4. 在 [AI 工作台](https://diesel.jamesky.site/chat)请求法规比较或销售简报。结构化工具卡、引用与
    模型文本保持分离。
 5. 缺失数据、过期证据、proposed 法规和缺失认证继续显式呈现；系统不会乐观地跨地域或
    功率带外推。

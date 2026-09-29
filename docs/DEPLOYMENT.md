@@ -8,9 +8,16 @@
 
 ## 1. 环境配置矩阵
 
+新的公开入口为 `https://diesel.jamesky.site`。部署前必须确认权威 DNS 的 A 记录为
+`111.228.50.85`，且 `/etc/letsencrypt/live/diesel.jamesky.site/` 已有受信任证书及
+续期配置。原 `jamesky.site` / `www.jamesky.site` 的证书保留，切换后 HTTP 与旧 HTTPS
+入口保留 path/query 并重定向至新入口。Nginx 文件名 `jamesky.site`、`diesel-demo` 与
+ledger 回滚文件名不变，以便原子恢复原站点；不得改动 `supplier.jamesky.site`。
+DNS/证书准备不等同于应用部署成功，实际切换与读回以 `STATUS.md` 为准。
+
 | 维度 | 标准开发 | 零配置作品 Demo | CI | 公开只读作品站 / 业务生产 |
 | --- | --- | --- | --- | --- |
-| 启动入口 | `pnpm dev` | `pnpm demo` | workflow / Playwright custom server | <https://jamesky.site> / 受控部署流水线 |
+| 启动入口 | `pnpm dev` | `pnpm demo` | workflow / Playwright custom server | <https://diesel.jamesky.site> / 受控部署流水线 |
 | `DATABASE_MODE` | `postgres` | `pglite-demo`；仅 development、显式启用 | `pglite-demo`（e2e job） | `postgres`；两类部署均禁止 `pglite-demo` |
 | 数据库 | Supabase/PostgreSQL 开发库 | 进程内 PGlite + 真实 Migration | 进程内 PGlite + 真实 Migration | PostgreSQL；Migration 走受控步骤，应用不自动改 schema（ARCH §14） |
 | Seed | 只允许显式 Demo + Natural Earth 目录；真实数据经 Draft → Reviewed → Published | 自动运行显式虚构 Demo Seed | 自动运行 Demo Seed | 不运行 Demo Seed；记录按事实/来源逐条分类 |
@@ -130,9 +137,9 @@ pnpm demo
 部署前后可运行无外部监控依赖的 canary：
 
 ```bash
-CANARY_BASE_URL=https://jamesky.site pnpm ops:canary
-CANARY_BASE_URL=https://jamesky.site CANARY_EXPECTED_VERSION=<40-char-release-sha> pnpm ops:canary
-CANARY_BASE_URL=https://jamesky.site CANARY_CHECK_AI=true pnpm ops:canary
+CANARY_BASE_URL=https://diesel.jamesky.site pnpm ops:canary
+CANARY_BASE_URL=https://diesel.jamesky.site CANARY_EXPECTED_VERSION=<40-char-release-sha> pnpm ops:canary
+CANARY_BASE_URL=https://diesel.jamesky.site CANARY_CHECK_AI=true pnpm ops:canary
 ```
 
 显式设置 `CANARY_BASE_URL` 时，默认从 `CANARY_STATUS_PATH`（缺省
@@ -1203,6 +1210,13 @@ runner 的 `/opt/node-v22.22.3-linux-x64`（拒绝已存在路径、不安装额
 和持续启动全部失败，不重启或更改系统服务，也不把 `starting` 视为可发布。等待开始及
 超时只打印最多 12 条经过字段白名单的 pending job 元数据，不输出环境或 journal。
 
+候选 `f26c910` 的真实 CI 已在约 60 秒后完成启动等待、通过三项 canary，再于真实构建
+阶段以 1 退出。CI 的失败清理现在仅针对该完整 SHA 对应的合成构建 unit 查询最多 60 行
+journal（10 秒上限、每行 500 字符），抑制凭据特征行、打断 workflow-command 分隔符
+并为输出加前缀；不会读取生产
+unit、环境或其他服务日志，也不改变原失败退出码或放宽生产校验。此诊断不是构建修复，
+须以新的真实远端结果定位原因并完整通过后才能部署。
+
 候选 `5239b02` 的 Demo CI 有一例首试失败、重试通过，严格门禁因此失败（67 passed /
 1 flaky）。trace 显示首次 `/api/chat` 的完整缓冲/改写传输耗时约 4.5 秒，几乎耗尽卡片的
 5 秒渲染断言期限，失败快照已经出现正确卡片。该测试现在先等待被改写响应完成且为 HTTP
@@ -1329,7 +1343,7 @@ commit 或迁移恢复账本。
 的配置合同，不预留预算、不消费小时请求、不连接 provider；
 在数据库侧使用 2.5 秒 statement timeout，并在应用进程内对未完成探针 single-flight、对快速失败
 短暂冷却，避免公网重复健康请求在数据库故障时累积连接或查询。首页、
-`/chat`、代表国家页返回 200；HTTP IP/备用域名跳转到 `https://jamesky.site`；主域名
+`/chat`、代表国家页返回 200；HTTP IP/备用域名跳转到 `https://diesel.jamesky.site`；主域名
 发送超过 1 MiB 但仍在应用 9 MiB 上限内的合法附件时，请求必须到达应用而不是返回
 Nginx 413 HTML；1×1 图片应由应用返回结构化 400，至少 11×11 的有效图片必须进入已配置
 视觉模型路径；超限、损坏图片和超页 PDF 也应返回应用的结构化 4xx。法规数据发布还要
@@ -1339,7 +1353,7 @@ Nginx 413 HTML；1×1 图片应由应用返回结构化 400，至少 11×11 的�
 
 ```bash
 scripts/deploy/verify-release.sh http://127.0.0.1:8788 "${release_id}"
-scripts/deploy/verify-release.sh https://jamesky.site "${release_id}"
+scripts/deploy/verify-release.sh https://diesel.jamesky.site "${release_id}"
 ```
 
 该脚本先独立校验 `/api/health` 的服务名、canonical ISO UTC 时间、`status=ok` 与目标
@@ -1372,7 +1386,7 @@ live eval 和对应发布检查单独验证。
 工具路径读回；未获批准或检查失败时，生产状态必须继续标记为“provider path 未验证”：
 
 ```bash
-CANARY_BASE_URL=https://jamesky.site \
+CANARY_BASE_URL=https://diesel.jamesky.site \
 CANARY_EXPECTED_VERSION="${release_id}" \
 CANARY_CHECK_AI=true \
 CANARY_REPORT_PATH=artifacts/post-release-provider-canary.json \

@@ -339,7 +339,7 @@ describe("synthetic canary", () => {
     );
 
     expect(workflow).toContain('cron: "23 */6 * * *"');
-    expect(workflow).toContain("CANARY_BASE_URL: https://jamesky.site");
+    expect(workflow).toContain("CANARY_BASE_URL: https://diesel.jamesky.site");
     expect(workflow).toContain("inputs.include_ai");
     expect(workflow).toContain("default: false");
     expect(workflow).toContain("CANARY_STATUS_PATH: docs/STATUS.md");

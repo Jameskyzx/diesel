@@ -26,7 +26,7 @@ describe("interview demo deployment boundary", () => {
         "/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-13",
         "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-13",
       ];
-      for (const origin of ["http://127.0.0.1:3000", "https://jamesky.site"]) {
+      for (const origin of ["http://127.0.0.1:3000", "https://diesel.jamesky.site"]) {
         expect(
           urls.filter((url) => url.origin === origin).map((url) => `${url.pathname}${url.search}`),
         ).toEqual(expect.arrayContaining(expectedPaths));

@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     description: dictionary.metadata.description,
-    metadataBase: new URL("https://jamesky.site"),
+    metadataBase: new URL("https://diesel.jamesky.site"),
     openGraph: buildLocalizedOpenGraph(locale, {
       description: dictionary.metadata.openGraphDescription,
       imageAlt: dictionary.metadata.openGraphImageAlt,

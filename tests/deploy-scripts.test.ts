@@ -7190,6 +7190,49 @@ fi
   );
 
   it.each([
+    { active: "failed", sub: "failed", absent: true, expected: 0 },
+    { active: "failed", sub: "failed", absent: false, expected: 70 },
+    { active: "active", sub: "running", absent: true, expected: 70 },
+    { active: "active", sub: "exited", absent: true, expected: 70 },
+    { active: "activating", sub: "start", absent: true, expected: 70 },
+    { active: "deactivating", sub: "stop", absent: true, expected: 70 },
+    { active: "inactive", sub: "dead", absent: true, expected: 70 },
+    { active: "failed", sub: "running", absent: true, expected: 70 },
+  ])(
+    "accepts an empty build cgroup only after failed terminal reclamation: $active/$sub absent=$absent",
+    async ({ active, sub, absent, expected }) => {
+      const unit = `diesel-build-${TEST_RELEASE_SHA}.service`;
+      const workspace = "/fixture/build-workspace";
+      const controlGroup = `/system.slice/${unit}`;
+      const metadata = createLoadedSystemdUnitMetadata(unit, workspace, "");
+      metadata.ActiveState = active;
+      metadata.SubState = sub;
+      metadata.Result = "exit-code";
+      metadata.ExecMainCode = "1";
+      metadata.ExecMainStatus = "23";
+      const result = await executeSystemdUnitMetadataFixture(
+        renderSystemdUnitMetadata(metadata),
+        [
+          "set -Eeuo pipefail",
+          'source "$1"',
+          'prepare_release_load_unit_state "$2"',
+          "prepare_release_require_control_group_absent() {",
+          '  [[ "$1" == "$expected_cgroup" ]] || return 99',
+          `  return ${absent ? 0 : 70}`,
+          "}",
+          'expected_cgroup="$4"',
+          'prepare_release_validate_loaded_build_unit "$2" "$3" "$4"',
+        ].join("\n"),
+        unit,
+        workspace,
+        controlGroup,
+      );
+      expect(result.command.exitCode).toBe(expected);
+      expect(result.command.stdout).toBe("");
+    },
+  );
+
+  it.each([
     { code: "1", expected: 0, result: "success", status: "0" },
     { code: "1", expected: 23, result: "exit-code", status: "23" },
     { code: "2", expected: 143, result: "success", status: "15" },

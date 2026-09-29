@@ -161,6 +161,13 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 10:16 UTC：候选 `78e75f2` 的远端应用覆盖率/构建、数据库、部署契约、
+  安全审计、Demo 与 FDE 浏览器任务已通过，public Playwright 尚在运行。Linux 实际
+  交接已通过后台子进程 canary，但退出码 canary 把已回收 cgroup 的失败终态误判为身份
+  漂移；独立 VPS 无密钥诊断复现 `failed/failed`、空 `ControlGroup`、原始退出码 23，
+  诊断单元及进程均已清理。修复只接受已证明 cgroup 不存在的这一终态，仍需完整回归
+  和新远端门禁；没有切换生产或写入候选模型密钥。此前全量报告器复验已通过，旧失败
+  记录保留；本次发布脚本改动要求重新生成全量 Vitest 证据。
 - 2026-09-29 09:50 UTC：测试准备修复后的首次全量采集为 8,043 passed / 5 skipped /
   1 failed，唯一失败位于报告器活动心跳的子进程回归；旧成功 artifact 未替换。该测试随后
   独立一次及正式采集器相同隔离环境下连续三次均通过，尚未确定此次失败的唯一原因。

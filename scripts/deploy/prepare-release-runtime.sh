@@ -1021,7 +1021,6 @@ prepare_release_validate_loaded_build_unit() {
     "${PREPARE_RELEASE_UNIT_USER}" != diesel-build ||
     "${PREPARE_RELEASE_UNIT_GROUP}" != diesel-build ||
     "${PREPARE_RELEASE_UNIT_WORKING_DIRECTORY}" != "${build_workspace}" ||
-    "${PREPARE_RELEASE_UNIT_CONTROL_GROUP}" != "${expected_control_group}" ||
     "${PREPARE_RELEASE_UNIT_SLICE}" != system.slice ||
     "${PREPARE_RELEASE_UNIT_KILL_MODE}" != control-group ||
     "${PREPARE_RELEASE_UNIT_DELEGATE}" != no ||
@@ -1040,6 +1039,18 @@ prepare_release_validate_loaded_build_unit() {
     "${PREPARE_RELEASE_UNIT_PROTECT_CONTROL_GROUPS}" != yes ]]; then
     prepare_release_fail 70 "build unit metadata drifted: ${unit}"
     return
+  fi
+  if [[ "${PREPARE_RELEASE_UNIT_CONTROL_GROUP}" != "${expected_control_group}" ]]; then
+    # systemd releases the cgroup of a failed service while retaining its exit
+    # metadata. Only accept that exact terminal shape after proving the expected
+    # cgroup has disappeared; never accept another path or a missing active one.
+    if [[ -n "${PREPARE_RELEASE_UNIT_CONTROL_GROUP}" ||
+      "${PREPARE_RELEASE_UNIT_ACTIVE_STATE}" != failed ||
+      "${PREPARE_RELEASE_UNIT_SUB_STATE}" != failed ]]; then
+      prepare_release_fail 70 "build unit metadata drifted: ${unit}"
+      return
+    fi
+    prepare_release_require_control_group_absent "${expected_control_group}"
   fi
 }
 

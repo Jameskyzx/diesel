@@ -2394,6 +2394,10 @@ describe("merge-blocking Linux release handoff", () => {
       'test "${RUNNER_ENVIRONMENT}" = "github-hosted"',
     );
     expect(job).toContain("sudo -n true");
+    expect(job).toContain('handoff_temp="$(mktemp -d /tmp/diesel-handoff-runner.XXXXXX)"');
+    expect(job).toContain('chmod 0755 "${handoff_temp}"');
+    expect(job).not.toContain('${RUNNER_TEMP}');
+    expect(smokeScript).toContain('runuser -u diesel-build -- /usr/bin/test -x "${canary_workspace}"');
     expect(job).toContain(
       "node scripts/deploy/release-input-manifest.mjs",
     );

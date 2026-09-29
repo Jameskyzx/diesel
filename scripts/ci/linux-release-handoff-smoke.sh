@@ -107,6 +107,13 @@ linux_release_handoff_run_cgroup_canary() {
     "${canary_workspace}/scripts/deploy/build-release.sh"
   chmod 700 "${canary_workspace}/scripts/deploy/build-release.sh"
 
+  if ! runuser -u diesel-build -- /usr/bin/test -x "${canary_workspace}" ||
+    ! runuser -u diesel-build -- /usr/bin/test -r \
+      "${canary_workspace}/scripts/deploy/build-release.sh"; then
+    linux_release_handoff_fail 70 "builder cannot traverse the isolated canary workspace"
+    return
+  fi
+
   echo "Expecting the transient builder canary to reject a background child"
   /bin/bash -c '
     set -Eeuo pipefail
@@ -351,6 +358,37 @@ LINUX_RELEASE_HANDOFF_BUILDER_UID=''
 LINUX_RELEASE_HANDOFF_RUNTIME_GID=''
 LINUX_RELEASE_HANDOFF_BUILDER_GID=''
 
+linux_release_handoff_remove_owned_group() {
+  local name="$1"
+  local expected_gid="$2"
+  local user_removed="$3"
+  local entry
+  local lookup_status
+  local observed_name
+  local password
+  local observed_gid
+  local members
+
+  if entry="$(getent group "${name}")"; then
+    [[ "${entry}" != *$'\n'* ]] || return 70
+    IFS=: read -r observed_name password observed_gid members <<<"${entry}"
+    [[ "${observed_name}" == "${name}" && "${observed_gid}" == "${expected_gid}" ]] || return 70
+    groupdel "${name}"
+    return
+  else
+    lookup_status="$?"
+  fi
+  # Some shadow configurations remove the matching private group in userdel.
+  # Accept that only after our successful user deletion and two absent lookups.
+  [[ "${lookup_status}" -eq 2 && "${user_removed}" -eq 1 ]] || return 70
+  if getent group "${expected_gid}" >/dev/null 2>&1; then
+    return 70
+  else
+    lookup_status="$?"
+  fi
+  [[ "${lookup_status}" -eq 2 ]] || return 70
+}
+
 linux_release_handoff_cleanup() {
   local original_status="$1"
   local cleanup_failed=0
@@ -358,6 +396,8 @@ linux_release_handoff_cleanup() {
   local cleanup_gid=''
   local builder_identity_preserved=0
   local runtime_identity_preserved=0
+  local builder_user_removed=0
+  local runtime_user_removed=0
   trap - EXIT
   trap '' INT TERM HUP
 
@@ -378,6 +418,8 @@ linux_release_handoff_cleanup() {
       elif ! userdel diesel-build; then
         cleanup_failed=1
         builder_identity_preserved=1
+      else
+        builder_user_removed=1
       fi
     fi
   fi
@@ -398,6 +440,8 @@ linux_release_handoff_cleanup() {
       elif ! userdel diesel; then
         cleanup_failed=1
         runtime_identity_preserved=1
+      else
+        runtime_user_removed=1
       fi
     fi
   fi
@@ -425,29 +469,19 @@ linux_release_handoff_cleanup() {
   fi
 
   if [[ "${LINUX_RELEASE_HANDOFF_BUILDER_GROUP_OWNED}" -eq 1 ]]; then
-    if ! cleanup_gid="$(
-      getent group diesel-build | awk -F: '$1 == "diesel-build" { print $3 }'
-    )"; then
-      cleanup_gid=''
-    fi
     if [[ "${builder_identity_preserved}" -eq 1 ]]; then
       echo "Retaining the diesel-build group with its user" >&2
-    elif [[ "${cleanup_gid}" != "${LINUX_RELEASE_HANDOFF_BUILDER_GID}" ]] ||
-      ! groupdel diesel-build; then
+    elif ! linux_release_handoff_remove_owned_group diesel-build \
+      "${LINUX_RELEASE_HANDOFF_BUILDER_GID}" "${builder_user_removed}"; then
       echo "Refusing or failing to remove a replaced diesel-build group" >&2
       cleanup_failed=1
     fi
   fi
   if [[ "${LINUX_RELEASE_HANDOFF_RUNTIME_GROUP_OWNED}" -eq 1 ]]; then
-    if ! cleanup_gid="$(
-      getent group diesel | awk -F: '$1 == "diesel" { print $3 }'
-    )"; then
-      cleanup_gid=''
-    fi
     if [[ "${runtime_identity_preserved}" -eq 1 ]]; then
       echo "Retaining the diesel group with its user" >&2
-    elif [[ "${cleanup_gid}" != "${LINUX_RELEASE_HANDOFF_RUNTIME_GID}" ]] ||
-      ! groupdel diesel; then
+    elif ! linux_release_handoff_remove_owned_group diesel \
+      "${LINUX_RELEASE_HANDOFF_RUNTIME_GID}" "${runtime_user_removed}"; then
       echo "Refusing or failing to remove a replaced diesel group" >&2
       cleanup_failed=1
     fi

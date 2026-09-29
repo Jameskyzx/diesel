@@ -1130,7 +1130,8 @@ artifact digest。
 
 CI 的 `linux-release-handoff` job 会在不持久化 checkout 凭据的固定 GitHub-hosted Ubuntu
 24.04 runner 上，从当前 commit 重新导出 archive/manifest，并用 `sudo /usr/bin/env -i` 调用
-`scripts/ci/linux-release-handoff-smoke.sh`。它在 `${RUNNER_TEMP}` 中创建真实但临时的独立
+`scripts/ci/linux-release-handoff-smoke.sh`。它在独立的 `/tmp/diesel-handoff-runner.XXXXXX`
+目录中创建真实但临时的独立
 runtime/builder 用户，要求真实 PID 1 systemd 与 cgroup v2，执行 GNU rsync、Corepack/pnpm
 frozen install、transient build service、Next build、root-side prepare 与 `check-ready`，并把
 unit/cgroup、身份、进程和临时根清理也作为门禁的一部分；workflow 为生产 45 分钟 build 上限
@@ -1144,6 +1145,17 @@ runtime-owned 或 group-writable，要求全部拒绝，逐项恢复后再要求
 workflow 接线并成为 `Required CI gate` 的 dependency；首个远端 Actions 成功出现前，不得写成
 “Linux 演练已通过”。即使远端通过，它也不覆盖真实 `/opt/diesel`、SSH、PM2/Nginx、数据库、
 生产凭据或目标 VPS 的 systemd/cgroup 配置，VPS 发布仍必须执行本节完整演练。
+
+2026-09-29 首次到达真实 handoff 的远端运行在 transient canary 启动阶段失败，尚不能记为
+Linux 演练通过。CI 隔离根现不再依赖 runner 主目录对新增 UID 的遍历权限，并在 canary
+启动前按实际 builder 身份验证 workspace 和脚本访问；不修改 runner 主目录或生产目录权限。
+启动失败只报告有界的 systemd 状态字段，不打印环境、argv 或 journal。某些 shadow 配置会
+在 `userdel` 成功后自动删除同名私有组；cleanup 只在本次已成功删除用户且名称、数字 GID
+都明确不存在时接受该结果，查询错误、替换身份和 GID 复用仍失败。该修正不等于 handoff 已通过。
+
+同次 CI 的 68 项 Demo 浏览器断言全部通过，但 HTML reporter 生成的
+`playwright-demo-report/index.html` 使结束时的工作区变脏，严格证据校验因此失败。该精确
+生成目录现与既有 `playwright-report` 一样被 Git 忽略；源码指纹与开始/结束状态等值规则不变。
 
 工作站完整门禁通过后，normal path 不再由运维人员分别拼接 environment backup、
 begin、prepare、activation 与 governance 命令。下文只从 clean environment 前台调用

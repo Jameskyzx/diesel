@@ -12,6 +12,7 @@ tsconfig.e2e.json
 # Test output
 /coverage
 /playwright-report
+/playwright-demo-report
 /test-results
 /tmp
 /backups

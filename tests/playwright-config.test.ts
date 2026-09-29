@@ -22,6 +22,24 @@ function firstWebServer(
 }
 
 describe("Playwright server contracts", () => {
+  it("ignores generated HTML reports without ignoring authored test inputs", () => {
+    const result = spawnSync("/usr/bin/git", [
+      "-c", "core.excludesFile=/dev/null", "check-ignore", "--no-index", "-v", "--",
+      "playwright-demo-report/index.html", "playwright-report/index.html",
+      "e2e/demo.spec.ts", "scripts/portfolio/playwright-run-reporter.ts",
+    ], {
+      cwd: process.cwd(),
+      env: { NODE_ENV: "test", PATH: "/usr/bin:/bin", GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" },
+      encoding: "utf8",
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(result.stdout.trim().split("\n").map((line) => line.split("\t")[1]))
+      .toEqual(["playwright-demo-report/index.html", "playwright-report/index.html"]);
+    expect(result.stdout).toMatch(/\.gitignore:\d+:\/playwright-demo-report\t/u);
+  });
+
   it("forbids test.only in every evidence config even when capture removes CI", () => {
     const configUrls = [
       "playwright.config.ts",

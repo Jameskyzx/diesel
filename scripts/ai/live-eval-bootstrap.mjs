@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 // The spawned-process contract tests bind these duplicated current literals to the
 // canonical TypeScript constants.
 const LIVE_EVAL_VERSION = "sales-chat-live-v25";
-const SYSTEM_PROMPT_VERSION = "sales-chat-system-v6";
+const SYSTEM_PROMPT_VERSION = "sales-chat-system-v7";
 const LIVE_EVAL_CASE_COUNT = 18;
 const LIVE_EVAL_CASE_TIMEOUT_MS = 90_000;
 const INITIALIZATION_DEADLINE_MS = 60_000;

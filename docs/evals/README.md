@@ -639,14 +639,14 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20260929T024730552Z-2de33305-7b8f-4316-9c2c-af7f629a5e5c.json",
+  "archivePath": "archive/ai-live-eval-20260929T032100736Z-6f1ed4b7-e84f-421e-b257-47907e212189.json",
   "attemptCount": 36,
   "complete": true,
   "completedCount": 36,
-  "evaluatedAt": "2026-09-29T02:47:30.552Z",
+  "evaluatedAt": "2026-09-29T03:21:00.736Z",
   "latestOutcome": "failed",
   "modelStepCount": 36,
-  "runId": "2de33305-7b8f-4316-9c2c-af7f629a5e5c",
+  "runId": "6f1ed4b7-e84f-421e-b257-47907e212189",
   "runError": null,
   "sampleCount": 18,
   "sourceFingerprint": {
@@ -659,15 +659,15 @@ decision from discarded text.
   "terminationReason": "completed",
   "thresholdsPassed": false,
   "tokenUsageComplete": true,
-  "totalTokens": 81712,
+  "totalTokens": 81633,
   "version": "sales-chat-live-v25"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `failed`; evaluatedAt `2026-09-29T02:47:30.552Z`; run ID `2de33305-7b8f-4316-9c2c-af7f629a5e5c`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `36 provider attempts`; `36 completed provider calls`; `36 model steps`; `81712 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=false`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20260929T024730552Z-2de33305-7b8f-4316-9c2c-af7f629a5e5c.json`; source fingerprint `ba54fd90126ce15e7f31166dbc2fd892b3efddd17e42d8d43525bedcda3de0ce` across `298` files.
+Current report result: `failed`; evaluatedAt `2026-09-29T03:21:00.736Z`; run ID `6f1ed4b7-e84f-421e-b257-47907e212189`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `36 provider attempts`; `36 completed provider calls`; `36 model steps`; `81633 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=false`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20260929T032100736Z-6f1ed4b7-e84f-421e-b257-47907e212189.json`; source fingerprint `ba54fd90126ce15e7f31166dbc2fd892b3efddd17e42d8d43525bedcda3de0ce` across `298` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed
@@ -879,6 +879,24 @@ pre-consumption cap requires an approved provider-side budget or model-specific
 tokenizer/preflight support.
 
 ## Provenance and persistence
+
+### Response-language repair (system prompt v7)
+
+The 2026-09-29 DeepSeek diagnostic run exposed schema-heavy public responses:
+English property names/reason codes dominated Chinese explanations, while some
+business decisions appeared only as raw enums or incomplete topic labels.
+System prompt v7 requires concise reader-facing explanations, a plain opening
+decision sentence, localized business terms, separate fit/availability outcomes,
+and exact quoted source titles without repeated metadata dumps. Status wording
+is conditional on tool results; recorded availability never proves stock or a
+real sales commitment. The same production prompt serves both the public route
+and live eval. This changes neither the 18 v25 cases, scorer nor thresholds.
+V5/v6 prompt reports remain readable and unchanged; v7 needs a new observation.
+
+2026-09-29 的 DeepSeek 本地诊断显示：回答堆砌英文属性名与原因代码，中文说明被
+元数据淹没，部分业务结论仅写成枚举值。提示词 v7 要求简洁中文/英文、完整的开头
+结论、双轴状态与适用范围、原文来源去重引用，禁止把供应期判定扩张为库存或现实承诺。
+公开路径与评估共用同一生产提示词；不修改 v25 的 18 例、评分器或门槛，不改写旧报告。
 
 Each invocation captures repository state and the eval-source fingerprint at
 both the start and end. Clean, stable Git state may name an exact

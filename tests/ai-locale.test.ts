@@ -66,6 +66,43 @@ describe("AI locale contract", () => {
     );
   });
 
+  it.each([
+    { locale: "en" as const, clauses: [
+      "plain, complete sentence", "market metrics or market comparison",
+      "regulatory requirements", "opportunity score", "at most four short evidence bullets",
+      "Do not dump tool names, JSON property names, internal UUIDs, reason-code lists",
+      "Put each source title in quotation marks", "Do not insert bold/code formatting",
+    ] },
+    { locale: "zh-CN" as const, clauses: [
+      "完整中文句子", "市场指标或市场比较", "法规要求", "机会评分",
+      "最多四条简短证据", "不要堆砌英文工具名、JSON 字段名、内部 UUID 或原因代码",
+      "用引号逐字引用一次", "不加粗、不嵌入代码",
+    ] },
+  ])("requires concise reader-facing $locale explanations without schema dumps", ({ locale, clauses }) => {
+    const prompt = buildSalesChatInstructions(null, locale);
+    expect(prompt).toContain('version="sales-chat-system-v7"');
+    for (const clause of clauses) expect(prompt).toContain(clause);
+    // Production instructions must be domain-wide, never benchmark fixtures.
+    expect(prompt).not.toMatch(/DEMO-ENG-100|DEMO_ADDRESSABLE_UNITS|2026-08-13|country-overview-china/u);
+  });
+
+  it.each([
+    { locale: "en" as const, clauses: [
+      "regulatory/certification fit and recorded supply availability separately",
+      "conditional vocabulary rules, not findings", "never infer a positive result",
+      "Preserve unknown and not-fit outcomes", "does not establish inventory, lead time",
+      "not ready for supply with the returned reason", "never recalculate scores",
+    ] },
+    { locale: "zh-CN" as const, clauses: [
+      "分别解释法规/认证适配与记录中的供应可用性", "只是条件化术语说明，不是个案事实",
+      "不得据此推断肯定结论", "保留未知、不适配", "不代表库存、交期",
+      "不可供货", "评分禁止重算",
+    ] },
+  ])("keeps dual-axis decisions conditional and scoped in $locale", ({ locale, clauses }) => {
+    const prompt = buildSalesChatInstructions(null, locale);
+    for (const clause of clauses) expect(prompt).toContain(clause);
+  });
+
   it("localizes direct guidance without weakening required parameters", () => {
     const response = buildDirectChatResponse({
       locale: "en",

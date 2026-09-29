@@ -4833,6 +4833,38 @@ describe("single-agent sales chat", () => {
     expect(emittedText).toContain("没有足够证据");
   });
 
+  it.each(["en", "zh-CN"] as const)("keeps the v7 %s writing contract on every provider step", async (locale) => {
+    const auditRepository = { recordToolCall: vi.fn(async () => undefined) };
+    const model = privateContinuationProjectionMockModel();
+    const sessionId = "00000000-0000-4000-8000-000000000962";
+    const result = streamSalesChat({
+      auditRepository,
+      locale,
+      messages: [{ content: "Which diesel regulations currently apply in BRA?", role: "user" }],
+      model,
+      selectedCountryIso3: null,
+      sessionId,
+      tools: createSalesChatTools({
+        auditRepository,
+        selectedCountryIso3: null,
+        services: { getCountryDetails: async () => ({ iso3: "BRA", status: "no_data" as const }) },
+        sessionId,
+      }),
+    });
+    await result.text;
+    expect(model.doStreamCalls).toHaveLength(2);
+    for (const call of model.doStreamCalls) {
+      const instructions = call.prompt.filter(({ role }) => role === "system").map(({ content }) => content).join("\n");
+      expect(instructions).toContain(`version="sales-chat-system-v7" locale="${locale}"`);
+      expect(instructions).toContain(locale === "en"
+        ? "conditional vocabulary rules, not findings"
+        : "只是条件化术语说明，不是个案事实");
+      expect(instructions).toContain(locale === "en"
+        ? "Do not dump tool names, JSON property names"
+        : "不要堆砌英文工具名、JSON 字段名");
+    }
+  });
+
   it("preserves private continuation history while projecting every public stream branch", async () => {
     const auditRepository = {
       recordToolCall: vi.fn(async () => undefined),

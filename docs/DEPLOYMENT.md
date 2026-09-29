@@ -1176,6 +1176,24 @@ Linux 演练通过。CI 隔离根现不再依赖 runner 主目录对新增 UID �
 unit unload、cgroup 路径消失和两轮 UID/process 清理证明不变。独立 VPS 诊断复现
 `exit-code/1/23` 的空字段并完成清理；这不替代尚待重跑的完整 Linux CI 或生产发布。
 
+同日后续 CI 已通过退出码 23 canary，但 SIGTERM canary 进一步证明，已回收 cgroup 的
+`active/exited` 也是合法终态。独立 VPS 诊断读回正常退出的 `success/1/0` 与原始 SIGTERM
+的 `success/2/15`，两者都是 `active/exited`、空 `ControlGroup`，且均完成单元/进程清理。
+因此空字段规则同时接受 `failed/failed` 与 `active/exited`，仍先检查其余身份字段和预期
+cgroup 路径消失；运行中、停止中、非空路径漂移和残留路径继续拒绝。后续原有退出码映射
+分别保留 0、23 和 143，未知退出元数据仍失败。完整 Linux 交接尚待新 CI 验证。
+
+交接 fixture 也必须遵守新版 ledger 前置条件：在独立 runner 根的永久生命周期锁 FD 8
+下，先对空 backups 调用版本化 `initialize_protocol`，再保存合成的 previous/current、
+环境和两份 Nginx 回滚基线，由真实 `begin` 写入并重验 V1 PENDING，之后才运行 preparer。
+不手写 ledger，不创建提交/发布完成标记，不访问真实 Nginx 或凭据。单测执行真实 ledger
+并验证缺锁和 live/backup 漂移失败；真实 Linux systemd/权限证明仍以远端完整演练为准。
+
+候选 `5239b02` 的 Demo CI 有一例首试失败、重试通过，严格门禁因此失败（67 passed /
+1 flaky）。trace 显示首次 `/api/chat` 的完整缓冲/改写传输耗时约 4.5 秒，几乎耗尽卡片的
+5 秒渲染断言期限，失败快照已经出现正确卡片。该测试现在先等待被改写响应完成且为 HTTP
+200，再断言卡片；原单例总时限、渲染断言时限及所有内容断言不变，不能把旧 flaky 记为通过。
+
 同次 CI 的 68 项 Demo 浏览器断言全部通过，但 HTML reporter 生成的
 `playwright-demo-report/index.html` 使结束时的工作区变脏，严格证据校验因此失败。该精确
 生成目录现与既有 `playwright-report` 一样被 Git 忽略；源码指纹与开始/结束状态等值规则不变。

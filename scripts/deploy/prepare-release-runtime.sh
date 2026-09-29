@@ -1041,12 +1041,13 @@ prepare_release_validate_loaded_build_unit() {
     return
   fi
   if [[ "${PREPARE_RELEASE_UNIT_CONTROL_GROUP}" != "${expected_control_group}" ]]; then
-    # systemd releases the cgroup of a failed service while retaining its exit
-    # metadata. Only accept that exact terminal shape after proving the expected
+    # systemd releases empty terminal cgroups while retaining exit metadata,
+    # including active/exited for clean exits and SIGTERM. Accept only a known
+    # terminal state after proving the expected
     # cgroup has disappeared; never accept another path or a missing active one.
     if [[ -n "${PREPARE_RELEASE_UNIT_CONTROL_GROUP}" ||
-      "${PREPARE_RELEASE_UNIT_ACTIVE_STATE}" != failed ||
-      "${PREPARE_RELEASE_UNIT_SUB_STATE}" != failed ]]; then
+      ( "${PREPARE_RELEASE_UNIT_ACTIVE_STATE}:${PREPARE_RELEASE_UNIT_SUB_STATE}" != failed:failed &&
+        "${PREPARE_RELEASE_UNIT_ACTIVE_STATE}:${PREPARE_RELEASE_UNIT_SUB_STATE}" != active:exited ) ]]; then
       prepare_release_fail 70 "build unit metadata drifted: ${unit}"
       return
     fi

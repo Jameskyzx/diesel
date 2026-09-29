@@ -34,6 +34,46 @@ linux_release_handoff_uid_has_processes() {
   return 70
 }
 
+linux_release_handoff_begin_fixture() {
+  local release_id="$1"
+  local deploy_root="$2"
+  local node_binary="$3"
+  local state_root="${deploy_root}/backups/${release_id}"
+  local previous_release="${deploy_root}/releases/ci-previous"
+  local nginx_sites_root="${deploy_root}/ci-nginx-sites"
+  local site
+
+  # Use the shipped ledger and its real lock/durability checks. This isolated
+  # runner fixture has synthetic live state, not production Nginx or secrets.
+  host_activation_ledger_require_lifecycle_lock "${deploy_root}"
+  host_activation_ledger_require_absent "${state_root}" "CI activation state"
+  host_activation_ledger_require_absent "${previous_release}" "CI previous release"
+  host_activation_ledger_require_absent "${nginx_sites_root}" "CI Nginx root"
+  host_activation_ledger_require_absent "${deploy_root}/current" "CI current link"
+  host_activation_ledger_initialize_protocol \
+    "${release_id}" "${deploy_root}" "${node_binary}"
+  install -d -m 0700 -o root -g root "${state_root}"
+  install -d -m 0750 -o root -g diesel "${previous_release}"
+  install -d -m 0755 -o root -g root "${nginx_sites_root}"
+  install -m 0600 -o root -g root /dev/null "${state_root}/previous-release"
+  printf '%s\n' "${previous_release}" >"${state_root}/previous-release"
+  install -m 0600 -o root -g root \
+    "${deploy_root}/shared/.env.production.local" \
+    "${state_root}/env.production.local.pre-switch"
+  for site in jamesky.site diesel-demo; do
+    install -m 0644 -o root -g root /dev/null "${nginx_sites_root}/${site}"
+    printf '# Synthetic CI rollback basis: %s\n' "${site}" \
+      >"${nginx_sites_root}/${site}"
+    install -m 0600 -o root -g root \
+      "${nginx_sites_root}/${site}" "${state_root}/${site}.pre-switch"
+  done
+  ln -s -- "${previous_release}" "${deploy_root}/current"
+  host_activation_ledger_begin \
+    "${release_id}" "${deploy_root}" "${node_binary}" "${nginx_sites_root}"
+  host_activation_ledger_require_pending \
+    "${release_id}" "${deploy_root}" "${node_binary}"
+}
+
 linux_release_handoff_stop_uid_processes() {
   local uid="$1"
   local label="$2"
@@ -514,9 +554,7 @@ linux_release_handoff_main() {
   local build_workspace_root
   local shared_root
   local data_root
-  local state_root
   local environment_path
-  local environment_backup
   local fixed_path
   local available_kib
   local cp_version
@@ -548,7 +586,7 @@ linux_release_handoff_main() {
   fi
   for command_name in \
     awk bash chmod chown corepack cp df dirname findmnt flock getent groupadd \
-    groupdel id install mktemp pgrep pkill realpath rm rsync runuser sleep stat \
+    groupdel id install ln mktemp pgrep pkill realpath rm rsync runuser sleep stat \
     systemctl systemd systemd-run timeout uname useradd userdel rmdir; do
     if ! command -v "${command_name}" >/dev/null 2>&1; then
       linux_release_handoff_fail 70 \
@@ -604,6 +642,7 @@ linux_release_handoff_main() {
   for required_input in \
     .release-input-manifest.json \
     scripts/deploy/build-release.sh \
+    scripts/deploy/host-activation-ledger.sh \
     scripts/deploy/prepare-release-runtime.sh \
     scripts/deploy/release-artifact-manifest.mjs; do
     if [[ ! -f "${release_export}/${required_input}" ||
@@ -801,19 +840,19 @@ linux_release_handoff_main() {
   build_workspace_root="${deploy_root}/build-workspaces"
   shared_root="${deploy_root}/shared"
   data_root="${shared_root}/.data"
-  state_root="${deploy_root}/backups/${release_id}"
   environment_path="${shared_root}/.env.production.local"
-  environment_backup="${state_root}/env.production.local.pre-switch"
 
   chmod 755 "${deploy_root}"
   install -m 0600 -o root -g root /dev/null \
     "${deploy_root}/.release-build.lock"
+  install -m 0600 -o root -g root /dev/null \
+    "${deploy_root}/.release-lifecycle.lock"
   install -d -m 0755 -o root -g root "${release_root}"
   install -d -m 0750 -o root -g diesel "${release_dir}"
   install -d -m 0710 -o root -g diesel-build "${build_root}"
   install -d -m 0750 -o root -g diesel "${shared_root}"
   install -d -m 0750 -o diesel -g diesel "${data_root}"
-  install -d -m 0700 -o root -g root "${deploy_root}/backups" "${state_root}"
+  install -d -m 0700 -o root -g root "${deploy_root}/backups"
   install -m 0640 -o root -g diesel /dev/null "${environment_path}"
   printf '%s\n' \
     'NODE_ENV=production' \
@@ -825,8 +864,6 @@ linux_release_handoff_main() {
     'AI_CHAT_RATE_LIMIT_PER_HOUR=30' \
     'AI_CHAT_RATE_LIMIT_BACKEND=postgres' \
     >"${environment_path}"
-  install -m 0600 -o root -g root \
-    "${environment_path}" "${environment_backup}"
 
   rsync -a --no-owner --no-group --no-perms -- \
     "${release_export}/" "${release_dir}/"
@@ -847,15 +884,24 @@ linux_release_handoff_main() {
   linux_release_handoff_run_status_canary \
     "${release_id}" "${deploy_root}" "${release_dir}" \
     "${fixed_path}" "${builder_uid}" signal
+  # Open in the outer shell: the ledger resolves /proc/$$/fd/8 even inside the
+  # sourced preparer's subshell. Keep the same locked open-file description.
+  exec 8<>"${deploy_root}/.release-lifecycle.lock"
+  flock -n 8
+  export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8
   (
     # Keep sourced shell options, traps, and function names inside this child;
     # the outer EXIT trap must remain authoritative for identities and temp root.
     # shellcheck source=/dev/null
     source "${release_dir}/scripts/deploy/prepare-release-runtime.sh"
+    linux_release_handoff_begin_fixture \
+      "${release_id}" "${deploy_root}" "${node_binary}"
     prepare_release_runtime \
       "${release_id}" "${deploy_root}" "${fixed_path}" "${node_binary}" \
       "/proc"
   )
+  exec 8>&-
+  unset DIESEL_RELEASE_LIFECYCLE_LOCK_FD
 
   for marker in .build-complete .deploy-ready; do
     if [[ "$(stat -c '%U:%G:%a' "${release_dir}/${marker}")" != \

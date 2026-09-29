@@ -6270,6 +6270,14 @@ describe("versioned deployment scripts", () => {
     expect(script).toContain("prepare_release_control_group_has_processes");
     expect(script).toContain("linux_release_handoff_run_cgroup_canary");
     expect(script).toContain("linux_release_handoff_run_status_canary");
+    expect(script).toContain('exec 8<>"${deploy_root}/.release-lifecycle.lock"');
+    expect(script).toContain("export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8");
+    expect(script).toContain("host_activation_ledger_initialize_protocol");
+    expect(script).toContain("host_activation_ledger_begin");
+    expect(script).toContain("host_activation_ledger_require_pending");
+    expect(script.indexOf("    linux_release_handoff_begin_fixture"))
+      .toBeLessThan(script.indexOf("    prepare_release_runtime"));
+    expect(script).not.toContain("PUBLISH_FINALIZED");
     expect(script).toContain("'/usr/bin/sleep 300 &'");
     expect(script).toContain("payload_terminal_command='exit 23'");
     expect(script).toContain(
@@ -7190,26 +7198,28 @@ fi
   );
 
   it.each([
-    { active: "failed", sub: "failed", absent: true, expected: 0 },
+    { active: "failed", sub: "failed", absent: true, expected: 23 },
     { active: "failed", sub: "failed", absent: false, expected: 70 },
     { active: "active", sub: "running", absent: true, expected: 70 },
-    { active: "active", sub: "exited", absent: true, expected: 70 },
+    { active: "active", sub: "exited", absent: true, result: "success", code: "1", status: "0", expected: 0 },
+    { active: "active", sub: "exited", absent: false, result: "success", code: "1", status: "0", expected: 70 },
+    { active: "active", sub: "exited", absent: true, result: "success", code: "2", status: "15", expected: 143 },
     { active: "activating", sub: "start", absent: true, expected: 70 },
     { active: "deactivating", sub: "stop", absent: true, expected: 70 },
     { active: "inactive", sub: "dead", absent: true, expected: 70 },
     { active: "failed", sub: "running", absent: true, expected: 70 },
   ])(
-    "accepts an empty build cgroup only after failed terminal reclamation: $active/$sub absent=$absent",
-    async ({ active, sub, absent, expected }) => {
+    "preserves terminal outcomes only with a reclaimed build cgroup: $active/$sub absent=$absent",
+    async ({ active, sub, absent, expected, result: terminalResult, code, status }) => {
       const unit = `diesel-build-${TEST_RELEASE_SHA}.service`;
       const workspace = "/fixture/build-workspace";
       const controlGroup = `/system.slice/${unit}`;
       const metadata = createLoadedSystemdUnitMetadata(unit, workspace, "");
       metadata.ActiveState = active;
       metadata.SubState = sub;
-      metadata.Result = "exit-code";
-      metadata.ExecMainCode = "1";
-      metadata.ExecMainStatus = "23";
+      metadata.Result = terminalResult ?? "exit-code";
+      metadata.ExecMainCode = code ?? "1";
+      metadata.ExecMainStatus = status ?? "23";
       const result = await executeSystemdUnitMetadataFixture(
         renderSystemdUnitMetadata(metadata),
         [
@@ -7222,6 +7232,7 @@ fi
           "}",
           'expected_cgroup="$4"',
           'prepare_release_validate_loaded_build_unit "$2" "$3" "$4"',
+          'prepare_release_map_build_status "$PREPARE_RELEASE_UNIT_RESULT" "$PREPARE_RELEASE_UNIT_EXEC_MAIN_CODE" "$PREPARE_RELEASE_UNIT_EXEC_MAIN_STATUS"',
         ].join("\n"),
         unit,
         workspace,

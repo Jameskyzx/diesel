@@ -214,6 +214,13 @@ function rawJsonTextSchema<T>(schema: z.ZodType<T>) {
 }
 
 const rawGovernanceJsonSchema = rawJsonTextSchema(governanceJsonSchema);
+// Legacy product archival logs contain JSONB strings holding an object. Keep
+// their original PostgreSQL text, including the extra encoding layer; decoding
+// it on restore would silently rewrite audit history. Other audit operations
+// and all live draft/document payloads still require an actual JSONB object.
+const rawArchivedProductAuditSchema = rawJsonTextSchema(
+  z.union([governanceJsonSchema, rawGovernanceJsonSchema]),
+);
 
 function parseRawGovernanceJson(value: string): unknown {
   return JSON.parse(value) as unknown;
@@ -514,8 +521,8 @@ const changeLogRowSchema = z
     ]),
     actorEmail: z.string(),
     actorRole: z.enum(["editor", "reviewer", "admin"]),
-    afterData: rawGovernanceJsonSchema.nullable(),
-    beforeData: rawGovernanceJsonSchema.nullable(),
+    afterData: rawArchivedProductAuditSchema.nullable(),
+    beforeData: rawArchivedProductAuditSchema.nullable(),
     createdAt: timestampSchema,
     draftId: nullableUuidSchema,
     entityKey: z.string(),
@@ -524,7 +531,21 @@ const changeLogRowSchema = z
     importBatchId: nullableUuidSchema,
     reason: z.string(),
   })
-  .strict();
+  .strict()
+  .superRefine((row, context) => {
+    if (row.action === "archived" && row.entityType === "product") {
+      return;
+    }
+    for (const field of ["beforeData", "afterData"] as const) {
+      if (row[field] !== null && !rawGovernanceJsonSchema.safeParse(row[field]).success) {
+        context.addIssue({
+          code: "custom",
+          message: "Only legacy product archival audit data may contain an encoded object",
+          path: [field],
+        });
+      }
+    }
+  });
 
 const tableCountsSchema = z
   .object(

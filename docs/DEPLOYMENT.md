@@ -226,10 +226,15 @@ field types/values, extra fields and microsecond timestamp differences remain
 strictly checked. The initial 2026-09-29 release PR run exposed this assertion
 mismatch; a local mock pass is not a substitute for a successful real PostgreSQL
 CI rerun.
+Microsecond fixture parameters are bound as text before PostgreSQL casts them
+to `timestamptz`; inferring a timestamp parameter would invoke the driver's
+millisecond-only JavaScript Date serializer. Expected precision is not reduced.
 
 PostgreSQL 并发 smoke 将驱动的 `Result` 行集转成普通数组后严格比较，排除驱动原型和
 元数据差异；行数、顺序、字段类型/值、额外字段及微秒时间差仍严格校验。2026-09-29
 首次发布 PR 运行暴露了该断言问题；本地替身通过不能替代真实 PostgreSQL CI 重跑。
+微秒 fixture 参数先绑定为 text，再由 PostgreSQL 转为 timestamptz，避免驱动按时间戳
+参数推断时经过 JavaScript Date 而丢失微秒；不降低预期精度。
 
 The evidence tool resolver also supports pnpm/action-setup's
 `node_modules/.bin/pnpm` shell-shim layout. It never executes that shim: it

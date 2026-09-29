@@ -89,8 +89,12 @@ describe("PostgreSQL governance concurrency smoke safety gate", () => {
       "waitForDocumentDraftLockWaiters(\n        input.monitor,\n        input.abortSignal,\n        2,\n        input.routeApplicationName,",
     );
     expect(source).toContain(
-      "set verified_at = ${driftedVerifiedAt}::timestamptz,\n            updated_at = ${driftedUpdatedAt}::timestamptz",
+      "set verified_at = ${driftedVerifiedAt}::text::timestamptz,\n            updated_at = ${driftedUpdatedAt}::text::timestamptz",
     );
+    // Bind as text so postgres.js never converts six-digit fixture precision
+    // through its millisecond Date serializer before the server-side cast.
+    expect(source.match(/\$\{smokeInitialSourceVerifiedAt\}::text::timestamptz/gu))
+      .toHaveLength(2);
     expect(source).toContain("and application_name = ${applicationName}");
     expect(source).toContain("assert.equal(driftedResponse.status, 409)");
     expect(databaseClientSource).toContain(

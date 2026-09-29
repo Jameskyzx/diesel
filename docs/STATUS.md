@@ -161,6 +161,11 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 10:27 UTC：cgroup 修复的聚焦运行中新增 8 项通过，lint、typecheck 和
+  build 通过。整组部署回归为 541 passed / 4 skipped / 44 failed；44 项共享失败原因
+  是执行沙箱拒绝本地 HTTP fixture 的 `127.0.0.1` 监听（`listen EPERM`），不能记为
+  应用验证成功。保留失败日志，完整证据采集须在允许本地测试端口的环境重新执行，
+  不修改或跳过测试断言。
 - 2026-09-29 10:16 UTC：候选 `78e75f2` 的远端应用覆盖率/构建、数据库、部署契约、
   安全审计、Demo 与 FDE 浏览器任务已通过，public Playwright 尚在运行。Linux 实际
   交接已通过后台子进程 canary，但退出码 canary 把已回收 cgroup 的失败终态误判为身份

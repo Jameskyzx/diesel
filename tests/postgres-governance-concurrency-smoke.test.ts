@@ -1,9 +1,11 @@
+import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
 
 import { governanceMaintenanceTokenEnvironmentVariable } from "@/server/db/governance-maintenance-lock";
 import {
+  assertPostgresRowsEqual,
   composePostgresConcurrencySmokeError,
   createSameMillisecondTimestampDrift,
   postgresGovernanceConcurrencySmokeScenarioNames,
@@ -16,6 +18,42 @@ import {
 const optIn = {
   [postgresConcurrencySmokeOptInEnvironmentVariable]: "1",
 } as const;
+
+describe("PostgreSQL row-set assertions", () => {
+  class Result<Row> extends Array<Row> {
+    count = this.length;
+    command = "SELECT";
+  }
+
+  it("compares Array-subclass row values without requiring driver metadata", () => {
+    const row = { count: 1, version: 1 };
+    const result = new Result(row);
+    expect(() => assert.deepEqual(result, [row])).toThrow();
+    expect(() => assertPostgresRowsEqual(result, [row])).not.toThrow();
+    expect(result[0]).toBe(row);
+    expect(result).toBeInstanceOf(Result);
+    expect(result.command).toBe("SELECT");
+  });
+
+  it.each([
+    [[], [{ count: 1 }]],
+    [[{ count: 1 }, { count: 1 }], [{ count: 1 }]],
+    [[{ count: 2 }], [{ count: 1 }]],
+    [[{ count: "1" }], [{ count: 1 }]],
+    [[{ count: 1, unexpected: true }], [{ count: 1 }]],
+    [[{ count: 1 }, { count: 2 }], [{ count: 2 }, { count: 1 }]],
+    [
+      [{ verifiedAt: "2026-03-01T00:00:00.123456Z" }],
+      [{ verifiedAt: "2026-03-01T00:00:00.123789Z" }],
+    ],
+  ])(
+    "still rejects row cardinality, values, types, shape, order or precision drift (%#)",
+    (actual, expected) => {
+      const result = new Result<unknown>(...actual);
+      expect(() => assertPostgresRowsEqual(result, expected)).toThrow();
+    },
+  );
+});
 
 describe("PostgreSQL governance concurrency smoke safety gate", () => {
   it("keeps all repository and HTTP barrier scenarios in the real PostgreSQL smoke", () => {

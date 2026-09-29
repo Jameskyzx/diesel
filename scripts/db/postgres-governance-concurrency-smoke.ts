@@ -59,6 +59,14 @@ const waiterObservationTimeoutMs = 3_000;
 const smokeDeadlineMs = 30_000;
 const closeTimeoutSeconds = 2;
 
+/** Compare rows, not postgres.js Result's Array-subclass prototype/metadata. */
+export function assertPostgresRowsEqual(
+  actual: readonly unknown[],
+  expected: readonly unknown[],
+): void {
+  assert.deepEqual(Array.from(actual), expected);
+}
+
 export function createSameMillisecondTimestampDrift(
   timestamp: string,
 ): string {
@@ -484,7 +492,7 @@ async function verifyConcurrentDraftCreation(input: {
     where entity_type = 'data_source'
       and entity_key = ${smokeDraftEntityKey}
   `;
-  assert.deepEqual(rows, [{ count: 1, version: 1 }]);
+  assertPostgresRowsEqual(rows, [{ count: 1, version: 1 }]);
   const auditRows = await input.monitor<{ count: number }[]>`
     select count(*)::int as count
     from data_change_logs
@@ -558,7 +566,7 @@ async function verifyConcurrentImportConfirmation(input: {
     where batch.id = ${batch.id}
     group by batch.status
   `;
-  assert.deepEqual(batchRows, [
+  assertPostgresRowsEqual(batchRows, [
     { draftCreated: 1, importCommitted: 1, status: "committed" },
   ]);
 }
@@ -660,7 +668,7 @@ async function verifyConcurrentSourceVerifiedAtMonotonicity(input: {
     from data_sources
     where id = ${smokeSourceId}
   `;
-  assert.deepEqual(sourceRows, [
+  assertPostgresRowsEqual(sourceRows, [
     {
       title: "PostgreSQL concurrency smoke source",
       verifiedAt: smokeNewestSourceVerifiedAt,
@@ -685,7 +693,7 @@ async function verifyConcurrentSourceVerifiedAtMonotonicity(input: {
     where draft.id = ${draft.id}
     group by draft.workflow_status
   `;
-  assert.deepEqual(draftRows, [
+  assertPostgresRowsEqual(draftRows, [
     { publishedAudits: 0, sourceVerifiedAudits: 1, status: "reviewed" },
   ]);
 }
@@ -771,7 +779,7 @@ async function verifyMissingSourceInsertRaceFailsClosed(input: {
     from data_sources
     where id = ${smokeConcurrentSourceId}
   `;
-  assert.deepEqual(sourceRows, [
+  assertPostgresRowsEqual(sourceRows, [
     {
       title: "Source inserted concurrently with draft publication",
       verifiedAt: smokeInitialSourceVerifiedAt,
@@ -789,7 +797,7 @@ async function verifyMissingSourceInsertRaceFailsClosed(input: {
     where draft.id = ${draft.id}
     group by draft.workflow_status
   `;
-  assert.deepEqual(draftRows, [{ publishedAudits: 0, status: "reviewed" }]);
+  assertPostgresRowsEqual(draftRows, [{ publishedAudits: 0, status: "reviewed" }]);
 }
 
 function createDocumentReprocessingRequest(documentId: string): Request {
@@ -1047,7 +1055,7 @@ async function verifyDocumentReprocessingBarriers(input: {
          ${smokeReprocessingReplacementSourceTitle}
        )) as "sourceCount"
   `;
-  assert.deepEqual(stateAfterDrift, [
+  assertPostgresRowsEqual(stateAfterDrift, [
     { draftCount: 2, markerCount: 1, sourceCount: 2 },
   ]);
 }
@@ -1089,7 +1097,7 @@ async function verifyConcurrentArchive(input: {
     where country.iso3 = ${smokeCountryIso3}
     group by country.archived_at
   `;
-  assert.deepEqual(rows, [{ archiveLogs: 1, archived: true }]);
+  assertPostgresRowsEqual(rows, [{ archiveLogs: 1, archived: true }]);
 }
 
 export async function runPostgresGovernanceConcurrencySmoke(

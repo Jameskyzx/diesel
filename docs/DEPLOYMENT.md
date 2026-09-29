@@ -219,6 +219,18 @@ null；`-F` 发送类型化值，`-f` 发送字符串，括号键必须加引号
 只选择 `Required CI gate`）；勾选 Include administrators；勾选 Do not allow force
 pushes / deletions。单人作品仓库可不要求 PR review。
 
+PostgreSQL concurrency smoke row-set assertions compare `Array.from(result)`
+with the expected rows. postgres.js returns an Array subclass (`Result`) with
+driver metadata; its prototype is not a database fact. Cardinality, row order,
+field types/values, extra fields and microsecond timestamp differences remain
+strictly checked. The initial 2026-09-29 release PR run exposed this assertion
+mismatch; a local mock pass is not a substitute for a successful real PostgreSQL
+CI rerun.
+
+PostgreSQL 并发 smoke 将驱动的 `Result` 行集转成普通数组后严格比较，排除驱动原型和
+元数据差异；行数、顺序、字段类型/值、额外字段及微秒时间差仍严格校验。2026-09-29
+首次发布 PR 运行暴露了该断言问题；本地替身通过不能替代真实 PostgreSQL CI 重跑。
+
 ## 3. GitHub 原生密钥扫描
 
 CI 的 gitleaks job 覆盖历史扫描。原生 Secret scanning 与 push protection

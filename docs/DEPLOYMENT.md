@@ -1055,6 +1055,30 @@ governance marker 共存合同是封闭集合，不得把未知组合当作空�
 `--begin-activation` 在写 anchor 前完成旧 release、PM2/systemd、两份 Nginx backup、旧 verifier、
 `current=previous` 以及 live/basis 字节一致性预检；anchor-only 中断只能由同一 release 重新运行同一
 完整入口。写入 PENDING 后还会再次证明 live/basis、FD 8 和 ledger，才向 outer shell 返回。
+
+PM2 identity checks support both upstream and Debian/Ubuntu compiled unit-path
+orders. The manager list must remain an ordered subset of that exact native list;
+absent roots are bound to their trusted nearest ancestor and included in both
+disk fingerprints. Paths are never sorted to hide precedence changes. Empty
+compound properties omitted by `systemctl show --all` require successful,
+type-checked, bounded `busctl` reads; missing fields never default to empty.
+`Upholds` omission is accepted only when the loaded unit's successful `GetAll`
+proves absence and the manager reports supported legacy v249/v250. The property
+exists from [systemd v251](https://github.com/systemd/systemd/blob/v251/src/core/dbus-unit.c);
+newer/unknown versions, unavailable D-Bus, nonempty arrays and A/B drift fail closed.
+The process must have exactly one v2 membership in `/system.slice/pm2-root.service`;
+coexisting v1 records may name only unique known controllers at `/`, never another
+unit, a named hierarchy or duplicate identity. No unit, daemon or cgroup is changed
+by these read-only checks. This does not authorize recovery of a preserved
+anchorless release directory or mutation of an already staged candidate.
+
+PM2 校验明确支持上游与 Debian/Ubuntu 两种搜索路径顺序；manager 路径必须保持 native
+列表的相对顺序，未存在目录仍须绑定可信父目录并进入前后指纹。缺失的复合属性必须由
+有界、类型正确的 D-Bus 读回证明为空，不直接补默认值。只有 v249/v250 且 `GetAll`
+证明属性不存在时才接受 `Upholds` 缺省；未知版本、查询失败、非空值和前后漂移均拒绝。
+进程必须恰有一条正确的 v2 单元归属；旧 v1 控制器只允许唯一已知控制器的根路径记录。
+这些只读兼容检查不修改主机，也不授权删除无 anchor 的保留现场或改写已暂存候选。
+
 FD 8 的路径相等不单独算持锁证明；每个 helper proof 都重做 `flock -n 8`，以拒绝另一个 OFD 已持锁
 但当前 caller 只打开了 lock inode 的伪 capability。
 `host-activation-ledger.sh` 的公开 CLI 只有一次性 `initialize-protocol` 与 `validate`；不得直接调用

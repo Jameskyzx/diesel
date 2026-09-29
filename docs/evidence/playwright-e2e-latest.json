@@ -1,22 +1,22 @@
 {
   "complete": true,
-  "evaluatedAt": "2026-09-29T11:48:37.615Z",
+  "evaluatedAt": "2026-09-29T12:26:53.610Z",
   "provenance": {
-    "baseHeadCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
-    "evaluatedCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+    "baseHeadCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
+    "evaluatedCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "6a443085ca4a0ff58f15fced062e16206aaf7791b384ac608bfe814d8e3ad521",
-      "fileCount": 344
+      "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+      "fileCount": 345
     },
     "worktreeState": "clean"
   },
-  "runId": "4d17260d-5cfd-479c-9e40-8cfd837cca77",
+  "runId": "c45ec15e-9b9e-44f6-9b2b-f6aabf9d0182",
   "runs": [
     {
       "command": "pnpm test:e2e",
       "complete": true,
-      "completedAt": "2026-09-29T11:47:12.801Z",
+      "completedAt": "2026-09-29T12:25:13.025Z",
       "configPath": "playwright.config.ts",
       "exitCode": 0,
       "globalErrorCount": 0,
@@ -76,27 +76,27 @@
       ],
       "provenance": {
         "completed": {
-          "headCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+          "headCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "6a443085ca4a0ff58f15fced062e16206aaf7791b384ac608bfe814d8e3ad521",
-            "fileCount": 344
+            "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+            "fileCount": 345
           },
           "worktreeState": "clean"
         },
-        "evaluatedCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+        "evaluatedCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
         "started": {
-          "headCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+          "headCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "6a443085ca4a0ff58f15fced062e16206aaf7791b384ac608bfe814d8e3ad521",
-            "fileCount": 344
+            "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+            "fileCount": 345
           },
           "worktreeState": "clean"
         }
       },
       "runStatus": "passed",
-      "startedAt": "2026-09-29T11:36:31.286Z",
+      "startedAt": "2026-09-29T12:13:39.360Z",
       "tests": [
         {
           "attempts": 1,
@@ -4654,7 +4654,7 @@
     {
       "command": "pnpm test:e2e:demo",
       "complete": true,
-      "completedAt": "2026-09-29T11:47:57.993Z",
+      "completedAt": "2026-09-29T12:26:03.528Z",
       "configPath": "playwright.demo.config.ts",
       "exitCode": 0,
       "globalErrorCount": 0,
@@ -4684,27 +4684,27 @@
       ],
       "provenance": {
         "completed": {
-          "headCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+          "headCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "6a443085ca4a0ff58f15fced062e16206aaf7791b384ac608bfe814d8e3ad521",
-            "fileCount": 344
+            "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+            "fileCount": 345
           },
           "worktreeState": "clean"
         },
-        "evaluatedCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+        "evaluatedCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
         "started": {
-          "headCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+          "headCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "6a443085ca4a0ff58f15fced062e16206aaf7791b384ac608bfe814d8e3ad521",
-            "fileCount": 344
+            "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+            "fileCount": 345
           },
           "worktreeState": "clean"
         }
       },
       "runStatus": "passed",
-      "startedAt": "2026-09-29T11:47:16.006Z",
+      "startedAt": "2026-09-29T12:25:16.535Z",
       "tests": [
         {
           "attempts": 1,
@@ -5467,7 +5467,7 @@
     {
       "command": "pnpm test:e2e:fde",
       "complete": true,
-      "completedAt": "2026-09-29T11:48:10.438Z",
+      "completedAt": "2026-09-29T12:26:16.994Z",
       "configPath": "playwright.fde.config.ts",
       "exitCode": 0,
       "globalErrorCount": 0,
@@ -5497,27 +5497,27 @@
       ],
       "provenance": {
         "completed": {
-          "headCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+          "headCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "6a443085ca4a0ff58f15fced062e16206aaf7791b384ac608bfe814d8e3ad521",
-            "fileCount": 344
+            "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+            "fileCount": 345
           },
           "worktreeState": "clean"
         },
-        "evaluatedCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+        "evaluatedCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
         "started": {
-          "headCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+          "headCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "6a443085ca4a0ff58f15fced062e16206aaf7791b384ac608bfe814d8e3ad521",
-            "fileCount": 344
+            "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+            "fileCount": 345
           },
           "worktreeState": "clean"
         }
       },
       "runStatus": "passed",
-      "startedAt": "2026-09-29T11:48:00.237Z",
+      "startedAt": "2026-09-29T12:26:05.902Z",
       "tests": [
         {
           "attempts": 1,
@@ -5576,7 +5576,7 @@
     {
       "command": "pnpm test:e2e:csp:production",
       "complete": true,
-      "completedAt": "2026-09-29T11:48:37.615Z",
+      "completedAt": "2026-09-29T12:26:53.610Z",
       "configPath": "playwright.production.config.ts",
       "exitCode": 0,
       "globalErrorCount": 0,
@@ -5596,27 +5596,27 @@
       ],
       "provenance": {
         "completed": {
-          "headCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+          "headCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "6a443085ca4a0ff58f15fced062e16206aaf7791b384ac608bfe814d8e3ad521",
-            "fileCount": 344
+            "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+            "fileCount": 345
           },
           "worktreeState": "clean"
         },
-        "evaluatedCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+        "evaluatedCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
         "started": {
-          "headCommit": "0be6898790b891fbc59fe40b61305cd558bbbc13",
+          "headCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "6a443085ca4a0ff58f15fced062e16206aaf7791b384ac608bfe814d8e3ad521",
-            "fileCount": 344
+            "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+            "fileCount": 345
           },
           "worktreeState": "clean"
         }
       },
       "runStatus": "passed",
-      "startedAt": "2026-09-29T11:48:34.905Z",
+      "startedAt": "2026-09-29T12:26:50.864Z",
       "tests": [
         {
           "attempts": 1,

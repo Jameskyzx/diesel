@@ -738,6 +738,14 @@ capability。传输固定使用 `rsync -a --no-owner --no-group --no-perms --tim
 rsync 环境，又保留 manifest 所需的普通/可执行文件 mode。传输后还要重验 candidate metadata
 和远端 `inputDigest`。
 
+工作站只在解包已经通过 Git tree admission 的无密钥 release payload 时，于子 shell 中使用
+`umask 022`，使普通输入为 0644、可执行输入及子目录为 0755。外层临时根仍为 0700，授权、
+归档、控制文件和生成的 manifest 仍为 0600；不会全局放宽 umask。仅设置远端 receiver 的
+umask 不能补回本地以 077 解包时移除的权限。回归实际执行 Git archive、发布脚本解包和
+本地 rsync，逐文件比较 manifest mode，并确认预建目标根 0750 和私有控制文件权限不变。
+2026-09-29 的 `3b189c3` 已通过 master CI，但首次真实暂存因此被远端 helper 的 0644
+校验拒绝；该未激活候选保留，不以 chmod 后复用同一 SHA 的方式跳过正常暂存。
+
 本地在传输前直接计算已按 commit blob 绑定的 archived manifest helper 的 SHA-256 与大小；
 postcheck 在执行它前后都要求 helper 为 canonical、`root:root` 0644、单链接普通文件，且大小和
 `/usr/bin/sha256sum` 结果精确匹配。postcheck 另要求 `.next`、`node_modules`、

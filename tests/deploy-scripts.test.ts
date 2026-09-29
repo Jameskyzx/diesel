@@ -1060,6 +1060,7 @@ async function createStageReleaseFixture(options?: {
   forbiddenPath?: string;
   remoteDigestMismatch?: boolean;
   remoteIdentityOutputMode?: "extra-newline" | "oversized";
+  realRsync?: boolean;
   rsyncFailure?: boolean;
   sshFailureAt?: 1 | 2;
   sshMode?: "hang-first";
@@ -1421,7 +1422,8 @@ if (count === 1) {
     join(fakeBin, "rsync"),
     `#!/usr/bin/env node
 const { createHash } = require("node:crypto");
-const { appendFileSync, lstatSync, readFileSync, readdirSync, writeFileSync } = require("node:fs");
+const { spawnSync } = require("node:child_process");
+const { appendFileSync, chmodSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
 const args = process.argv.slice(2);
 const environment = Object.fromEntries(Object.entries(process.env).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0));
@@ -1461,12 +1463,31 @@ function walk(root, prefix = "") {
 }
 const manifest = JSON.parse(readFileSync(join(source, ".release-input-manifest.json"), "utf8"));
 const helper = readFileSync(join(source, "scripts/deploy/release-input-manifest.mjs"));
+let received;
+if (${JSON.stringify(options?.realRsync ?? false)}) {
+  const destination = ${JSON.stringify(join(root, "received-release"))};
+  mkdirSync(destination, { mode: 0o750 });
+  chmodSync(destination, 0o750);
+  const result = spawnSync("/bin/bash", ["--noprofile", "--norc", "-c",
+    'umask 022; exec /usr/bin/rsync -a --no-owner --no-group --no-perms -- "$1/" "$2/"',
+    "real-stage-rsync", source, destination], {
+    env: { PATH: "/usr/bin:/bin", LANG: "C", LC_ALL: "C" },
+    encoding: "utf8", timeout: 10_000,
+  });
+  if (result.status !== 0) process.exit(100);
+  received = { rootMode: lstatSync(destination).mode & 0o777, paths: walk(destination) };
+}
 writeFileSync(${JSON.stringify(rsyncCapture)}, JSON.stringify({
   args,
+  controlModes: ["authorization.json", "release.tar", "remote-preflight.sh"].map(path => ({
+    path, mode: lstatSync(join(source, "..", path)).mode & 0o777,
+  })),
   helperSha256: createHash("sha256").update(helper).digest("hex"),
   helperSize: helper.byteLength,
   manifest,
   paths: walk(source),
+  privateRootMode: lstatSync(join(source, "..")).mode & 0o777,
+  received,
 }, null, 2) + "\\n");
 if (${JSON.stringify(options?.rsyncFailure ?? false)}) process.exit(43);
 `,
@@ -5390,7 +5411,7 @@ describe("versioned deployment scripts", () => {
   });
 
   it("stages one clean committed archive before the first remote mutation", async () => {
-    const fixture = await createStageReleaseFixture();
+    const fixture = await createStageReleaseFixture({ realRsync: true });
     try {
       const result = await executeStageRelease(
         fixture.script,
@@ -5433,6 +5454,7 @@ describe("versioned deployment scripts", () => {
         await readFile(fixture.rsyncCapture, "utf8"),
       ) as {
         args: string[];
+        controlModes: Array<{ mode: number; path: string }>;
         helperSha256: string;
         helperSize: number;
         manifest: {
@@ -5442,6 +5464,11 @@ describe("versioned deployment scripts", () => {
           inputDigest: string;
         };
         paths: Array<{ mode: number; path: string; type: string }>;
+        privateRootMode: number;
+        received: {
+          rootMode: number;
+          paths: Array<{ mode: number; path: string; type: string }>;
+        };
       };
       const sourceArgument = capture.args.at(-2);
       if (!sourceArgument) throw new Error("rsync fixture omitted its source argument");
@@ -5553,6 +5580,29 @@ describe("versioned deployment scripts", () => {
         ]),
       );
       expect(capture.paths.some(({ path }) => path === ".git")).toBe(false);
+      // Exercise the actual Git archive, production extraction and rsync, not
+      // hand-created 0644 fixtures that mask a private-umask export defect.
+      expect(capture.privateRootMode).toBe(0o700);
+      expect(capture.controlModes).toEqual([
+        { path: "authorization.json", mode: 0o600 },
+        { path: "release.tar", mode: 0o600 },
+        { path: "remote-preflight.sh", mode: 0o600 },
+      ]);
+      expect(capture.received.rootMode).toBe(0o750);
+      for (const paths of [capture.paths, capture.received.paths]) {
+        for (const file of capture.manifest.files) {
+          expect(paths.find(({ path }) => path === file.path)).toEqual({
+            path: file.path,
+            type: "file",
+            mode: file.mode === "100755" ? 0o755 : 0o644,
+          });
+        }
+        for (const directory of paths.filter(({ type }) => type === "directory")) {
+          expect(directory.mode, directory.path).toBe(0o755);
+        }
+        expect(paths.find(({ path }) => path === ".release-input-manifest.json"))
+          .toEqual({ path: ".release-input-manifest.json", type: "file", mode: 0o600 });
+      }
       expect(JSON.stringify(capture)).not.toContain("PRIVATE_CANARY");
       await expect(readdir(fixture.temporaryRoot)).resolves.toEqual([]);
     } finally {

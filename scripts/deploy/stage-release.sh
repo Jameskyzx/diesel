@@ -417,8 +417,14 @@ input_digest="$(
 assert_repo_state
 assert_critical_bindings
 run_git archive --format=tar --output="${release_archive}" "${release_id}"
-"${env_bin}" -i "LANG=C" "LC_ALL=C" "PATH=${trusted_path}" \
-  "${tar_bin}" -xf "${release_archive}" -C "${release_export}"
+# Only the admitted, secret-free payload gets transport-readable modes. Keep
+# the enclosing temporary root, authorization and control files private.
+# The receiver's umask cannot add bits removed during local archive extraction.
+(
+  umask 022
+  "${env_bin}" -i "LANG=C" "LC_ALL=C" "PATH=${trusted_path}" \
+    "${tar_bin}" -xf "${release_archive}" -C "${release_export}"
+)
 
 archive_manifest_helper="${release_export}/${manifest_helper_path}"
 assert_bound_file "${archive_manifest_helper}" 100644 "${manifest_helper_blob}" "archived release manifest helper"

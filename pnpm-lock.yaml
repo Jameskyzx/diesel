@@ -20,6 +20,7 @@ overrides:
   sharp: 0.35.4
 
 patchedDependencies:
+  '@vitest/runner@4.1.11': 43a34fe00371ed7d2a7a972ad80269cbfe7cda5beb045640d3a2ad8ff06d54ee
   next@16.3.3: c4bab236a65a0e52fa62f88e892e007d2ca2936a2df20d02579e759ea973d2a3
 
 importers:
@@ -5738,7 +5739,7 @@ snapshots:
     dependencies:
       tinyrainbow: 3.1.0
 
-  '@vitest/runner@4.1.11':
+  '@vitest/runner@4.1.11(patch_hash=43a34fe00371ed7d2a7a972ad80269cbfe7cda5beb045640d3a2ad8ff06d54ee)':
     dependencies:
       '@vitest/utils': 4.1.11
       pathe: 2.0.3
@@ -8823,7 +8824,7 @@ snapshots:
       '@vitest/expect': 4.1.11
       '@vitest/mocker': 4.1.11(vite@8.1.5(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
       '@vitest/pretty-format': 4.1.11
-      '@vitest/runner': 4.1.11
+      '@vitest/runner': 4.1.11(patch_hash=43a34fe00371ed7d2a7a972ad80269cbfe7cda5beb045640d3a2ad8ff06d54ee)
       '@vitest/snapshot': 4.1.11
       '@vitest/spy': 4.1.11
       '@vitest/utils': 4.1.11

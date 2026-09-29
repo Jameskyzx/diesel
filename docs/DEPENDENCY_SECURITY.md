@@ -87,6 +87,29 @@ pnpm 配置、锁文件和安装前 CI 校验共同绑定补丁字节；缺失�
 三十条已安装运行时回归在原目录修复前为 18 失败 / 12 通过。未迁入隔离候选的其他
 框架补丁，未升级依赖、增加脚本或放宽关闭期限；具体执行结果以本轮检查记录为准。
 
+### Pinned Vitest task-event timer correction
+
+`patches/@vitest__runner@4.1.11.patch` clears the expired throttle timer handle
+before invoking its callback. In the installed runner, a callback firing at or
+just before the 100ms boundary retained that handle, so queued task events could
+remain undelivered until another event arrived. A deterministic clock regression
+executes the installed dependency's actual function at 99/100/101ms: the first
+two failed before the correction; all three pass afterwards. The original
+active-test heartbeat integration assertion and its deadlines remain unchanged.
+This proves the timer defect, not that every historical intermittent failure
+has the same cause.
+
+This is a patch to an existing development dependency, not a version upgrade or
+new dependency. It changes no assertions, results, application code, or model
+behavior. pnpm's lockfile and the pre-install guard bind its exact bytes;
+missing, changed, and symlinked patches fail closed. Future runner upgrades must
+re-evaluate the patch and retain the installed-runtime boundary regressions.
+
+固定 Vitest 补丁只在计时器回调执行前清除失效 handle，避免 99/100ms 边界不再排队。
+回归直接执行已安装依赖的函数，修复前两个边界失败、修复后三个边界通过；真实活动用例
+进度断言和全部超时不变。不新增依赖、不改应用/模型行为，补丁字节受锁文件和安装前校验
+约束。此前间歇性失败仍保留，不声称这个竞态已经解释所有旧失败。
+
 Local portfolio evidence capture is install-free. The workspace disables
 `verifyDepsBeforeRun`, while Playwright and Vitest capture additionally pin pnpm
 offline mode, dependency verification off, and the exact validated versioned

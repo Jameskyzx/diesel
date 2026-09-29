@@ -161,6 +161,13 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 12:08 UTC：冻结 `d68f46d` 的全量运行真实失败：8,056 passed / 5 skipped /
+  1 failed，失败为活动用例进度集成回归。六次独立诊断均通过，不能据此消除完整运行失败。
+  安装源码中的 Vitest throttle 在 99/100ms 回调边界保留过期 handle；可控时钟直接执行
+  实际依赖函数复现两项失败。现仅以锁定补丁在回调前清除 handle，三项边界回归及原集成
+  测试通过，所有断言和期限不变。不声称解释所有历史波动；依赖输入变化要求重新采集
+  受影响截图、真实 eval、浏览器和完整 Vitest，尚未推送或部署。旧远端 `5239b02` 的公共
+  浏览器和生产 CSP 已完整通过，但 Linux/Demo 失败仍使 Required CI gate 失败。
 - 2026-09-29 11:49 UTC：候选 `0be6898` 的四套浏览器重采完成，420 passed /
   67 skipped / 0 failed / 0 flaky；修复后的中英文、桌面/移动 Demo 用例均首试通过。
   lint、typecheck、build 和 57 项定向回归通过。现在冻结源码、文档和浏览器证据进行

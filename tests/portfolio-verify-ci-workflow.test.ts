@@ -58,6 +58,7 @@ const installBoundaryInputPaths = [
   "pnpm-lock.yaml",
   ".nvmrc",
   "patches/next@16.3.3.patch",
+  "patches/@vitest__runner@4.1.11.patch",
 ] as const;
 
 async function createInstallBoundaryFixture(): Promise<string> {
@@ -1413,11 +1414,12 @@ describe("dependency-free CI install-boundary guard", () => {
     });
   });
 
-  it.each(["missing", "changed", "symlink"] as const)(
-    "rejects a %s Next patch before installing dependencies",
-    async (state) => {
+  it.each(["patches/next@16.3.3.patch", "patches/@vitest__runner@4.1.11.patch"]
+    .flatMap((path) => ["missing", "changed", "symlink"].map((state) => ({ path, state }))))(
+    "rejects a $state $path before installing dependencies",
+    async ({ path, state }) => {
       await withInstallBoundaryFixture(async (directory) => {
-        const patchPath = resolve(directory, "patches/next@16.3.3.patch");
+        const patchPath = resolve(directory, path);
         const bytes = await readFile(patchPath);
         if (state === "changed") {
           await writeFile(patchPath, Buffer.concat([bytes, Buffer.from("\n")]));

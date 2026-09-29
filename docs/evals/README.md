@@ -639,19 +639,19 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20260920T093532824Z-3dd30b36-d18e-442d-a540-532ed816f51f.json",
+  "archivePath": "archive/ai-live-eval-20260929T021318048Z-c0a9ac4f-e0e4-4f53-b286-4b6571cd9c4f.json",
   "attemptCount": 1,
   "complete": false,
   "completedCount": 0,
-  "evaluatedAt": "2026-09-20T09:35:32.824Z",
+  "evaluatedAt": "2026-09-29T02:13:18.048Z",
   "latestOutcome": "failed",
   "modelStepCount": 0,
-  "runId": "3dd30b36-d18e-442d-a540-532ed816f51f",
+  "runId": "c0a9ac4f-e0e4-4f53-b286-4b6571cd9c4f",
   "runError": null,
   "sampleCount": 1,
   "sourceFingerprint": {
     "algorithm": "sha256",
-    "digest": "4f0fa35eca6bab68adb6eaeb665b8dd0e7c5f698ddeb7352cf8f31af3f2859e7",
+    "digest": "91d0adb0182012fe3e17dc00c5fe1f75fc063d3bc3e41fb5698ca748df0e54ea",
     "fileCount": 298,
     "status": "captured"
   },
@@ -666,8 +666,8 @@ decision from discarded text.
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `failed`; evaluatedAt `2026-09-20T09:35:32.824Z`; run ID `3dd30b36-d18e-442d-a540-532ed816f51f`; `1/18 cases`; `complete=false`; `terminationReason=case_error`; `1 provider attempts`; `0 completed provider calls`; `0 model steps`; `0 known tokens`; `tokenUsageComplete=false`; `thresholdsPassed=false`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20260920T093532824Z-3dd30b36-d18e-442d-a540-532ed816f51f.json`; source fingerprint `4f0fa35eca6bab68adb6eaeb665b8dd0e7c5f698ddeb7352cf8f31af3f2859e7` across `298` files.
+Current report result: `failed`; evaluatedAt `2026-09-29T02:13:18.048Z`; run ID `c0a9ac4f-e0e4-4f53-b286-4b6571cd9c4f`; `1/18 cases`; `complete=false`; `terminationReason=case_error`; `1 provider attempts`; `0 completed provider calls`; `0 model steps`; `0 known tokens`; `tokenUsageComplete=false`; `thresholdsPassed=false`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20260929T021318048Z-c0a9ac4f-e0e4-4f53-b286-4b6571cd9c4f.json`; source fingerprint `91d0adb0182012fe3e17dc00c5fe1f75fc063d3bc3e41fb5698ca748df0e54ea` across `298` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed

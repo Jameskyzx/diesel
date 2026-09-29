@@ -434,7 +434,7 @@ rollback_acquire_release_lifecycle_lock() {
       rollback_fail 70 "inherited release lifecycle lock descriptor is invalid"
       return
     fi
-    if ! inherited_lock_path="$(realpath -- "/proc/$$/fd/8")" ||
+    if ! inherited_lock_path="$(realpath -- /proc/self/fd/8)" ||
       [[ "${inherited_lock_path}" != "${lock_path}" ]]; then
       rollback_fail 70 "inherited release lifecycle lock path is invalid"
       return

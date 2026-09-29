@@ -719,6 +719,71 @@ describe("host activation ledger", { timeout: 30_000 }, () => {
     }
   });
 
+  it("checks the actual subshell descriptor with native procfs and flock, not the outer Bash PID", async (context) => {
+    // Runtime skipping keeps this registered case in Vitest's list inventory.
+    if (process.platform !== "linux") {
+      context.skip();
+      return;
+    }
+    const fixture = await createHostActivationLedgerFixture();
+    const governanceScript = resolve(
+      process.cwd(), "scripts/deploy/governance-publication-state-machine.sh",
+    );
+    try {
+      await writeFile(join(fixture.deployRoot, "validator.sh"), "true <&8\n", { mode: 0o600 });
+      for (const validator of ["ledger", "isolated-governance"] as const) {
+        for (const scenario of ["child-only", "wrong-child", "closed-child", "contended"] as const) {
+          if (validator === "isolated-governance" && scenario === "contended") continue;
+          const result = await execFileAsync("/bin/bash", [
+            "--noprofile", "--norc", "-c", `
+set -uo pipefail
+source "$1"
+source "$2"
+lock="$3/.release-lifecycle.lock"
+scenario="$4"
+validator="$5"
+# Do not let Bash tail-exec optimization collapse the outer process.
+exec 8>&-
+if [[ "$scenario" == wrong-child || "$scenario" == closed-child ]]; then
+  exec 8<>"$lock"
+elif [[ "$scenario" == contended ]]; then
+  exec 9<>"$lock"
+  flock -n 9
+fi
+run_in_child() (
+  set -Eeuo pipefail
+  case "$scenario" in
+    wrong-child) exec 8<>"$3/wrong.lock" ;;
+    closed-child) exec 8>&- ;;
+    *) exec 8<>"$lock" ;;
+  esac
+  export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8
+  if [[ "$validator" == ledger ]]; then
+    host_activation_ledger_require_lifecycle_lock "$3"
+  else
+    GOVERNANCE_RELEASE_LIFECYCLE_LOCK_PATH="$lock"
+    governance_run_isolated_host_validator "$3/validator.sh"
+  fi
+)
+run_in_child "$@"
+status=$?
+printf '%s\\n' "$status"
+exit 0
+`, "native-lifecycle-fd-regression", hostActivationLedgerScript,
+            governanceScript, fixture.deployRoot, scenario, validator,
+          ], {
+            env: { PATH: "/usr/bin:/bin", LANG: "C", LC_ALL: "C", NODE_ENV: "test" },
+            timeout: 10_000,
+          });
+          expect(result.stdout.trim(), `${validator}:${scenario}: ${result.stderr}`)
+            .toBe(scenario === "child-only" ? "0" : "70");
+        }
+      }
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  });
+
   it("rejects a distinct unlocked descriptor while another lifecycle owner exists, before begin or require mutation", async () => {
     const fixture = await createHostActivationLedgerFixture();
     try {

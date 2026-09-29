@@ -13,16 +13,25 @@ import {
   type AdminPrincipal,
   type GovernedEntityType,
   type GovernanceDraftCreate,
-  type GovernanceWorkflowStatus,
 } from "@/features/admin/schemas";
 import { getDatabase } from "@/server/db/client";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { getDatabaseMode } from "@/server/db/environment";
 import { sha256 } from "@/server/knowledge/document-file";
-import { createGovernanceRepository } from "@/server/repositories/governance-repository";
+import { getErrorCode } from "@/lib/api-error";
 import {
-  importKnowledgeDocument,
-  reprocessKnowledgeDocument,
+  createGovernanceDashboardRepository,
+  type GovernanceDashboardRepository,
+} from "@/server/repositories/governance-dashboard-repository";
+import {
+  createGovernanceRepository,
+  GovernanceConflictError,
+} from "@/server/repositories/governance-repository";
+import type { KnowledgeDocumentReprocessingAccessScope } from "@/server/repositories/knowledge-repository";
+import {
+  createKnowledgeDocumentImportResponse,
+  prepareKnowledgeDocument,
+  prepareKnowledgeDocumentReprocessing,
 } from "@/server/services/knowledge-service";
 
 export class GovernancePermissionError extends Error {
@@ -58,6 +67,14 @@ async function getGovernanceRepository() {
   return createGovernanceRepository(getDatabase());
 }
 
+async function getGovernanceDashboardRepository() {
+  if (getDatabaseMode() === "pglite-demo") {
+    return createGovernanceDashboardRepository(await getDemoDatabase());
+  }
+
+  return createGovernanceDashboardRepository(getDatabase());
+}
+
 function normalizeDraft(input: GovernanceDraftCreate): {
   entityKey: string;
   entityType: GovernedEntityType;
@@ -66,13 +83,6 @@ function normalizeDraft(input: GovernanceDraftCreate): {
   if (input.entityType === "country") {
     return {
       entityKey: input.payload.iso3,
-      entityType: input.entityType,
-      payload: { ...input.payload },
-    };
-  }
-  if (input.entityType === "document") {
-    return {
-      entityKey: input.payload.documentId,
       entityType: input.entityType,
       payload: { ...input.payload },
     };
@@ -151,6 +161,16 @@ export async function createGovernanceDraft(
   actor: AdminPrincipal,
 ) {
   requireEditor(actor);
+  if (
+    z
+      .object({ entityType: z.literal("document") })
+      .passthrough()
+      .safeParse(rawInput).success
+  ) {
+    throw new GovernanceConflictError(
+      "Document drafts must be created through the governed upload or reprocessing workflow.",
+    );
+  }
   const input = governanceDraftCreateSchema.parse(rawInput);
   const normalized = normalizeDraft(input);
   const repository = await getGovernanceRepository();
@@ -162,23 +182,38 @@ export async function createGovernanceDraft(
   });
 }
 
-export async function getGovernanceDashboard(input?: {
-  status?: GovernanceWorkflowStatus;
-}) {
-  const repository = await getGovernanceRepository();
+export async function getGovernanceDashboard(principal: AdminPrincipal) {
+  requireEditor(principal);
+  const repository = await getGovernanceDashboardRepository();
 
-  return getGovernanceDashboardFromRepository(repository, input);
+  return getGovernanceDashboardFromRepository(repository, principal);
 }
 
 export async function getGovernanceDashboardFromRepository(
-  repository: ReturnType<typeof createGovernanceRepository>,
-  input?: { status?: GovernanceWorkflowStatus },
+  repository: GovernanceDashboardRepository,
+  principal: AdminPrincipal,
 ) {
-  const [drafts, importBatches, auditLogs] = await Promise.all([
-    repository.listDrafts(input?.status),
-    repository.listImportBatches(),
-    repository.listAuditLogs(),
+  requireEditor(principal);
+  const [drafts, workflowCounts, auditLogs] = await Promise.all([
+    repository.listActiveDrafts(principal),
+    repository.getWorkflowCounts(principal),
+    principal.role === "editor"
+      ? Promise.resolve([])
+      : repository.listDashboardAuditLogs(),
   ]);
+  if (
+    drafts.some(
+      (draft) =>
+        (draft.workflowStatus !== "draft" &&
+          draft.workflowStatus !== "reviewed") ||
+        (principal.role === "editor" &&
+          draft.createdBy !== principal.email),
+    )
+  ) {
+    throw new Error(
+      "Governance dashboard repository returned an out-of-scope draft.",
+    );
+  }
   const reviewContexts = await repository.getDraftReviewContexts(drafts);
   const reviewContextByDraftId = new Map(
     reviewContexts.map(({ draftId, ...reviewContext }) => [
@@ -194,9 +229,22 @@ export async function getGovernanceDashboardFromRepository(
       if (!reviewContext) {
         throw new Error(`Missing governance review context for ${draft.id}.`);
       }
-      return { ...draft, reviewContext };
+      return {
+        ...draft,
+        reviewContext:
+          principal.role === "editor" &&
+          reviewContext.publishedBaseline
+            ? {
+                ...reviewContext,
+                publishedBaseline: {
+                  ...reviewContext.publishedBaseline,
+                  publishedBy: null,
+                },
+              }
+            : reviewContext,
+      };
     }),
-    importBatches,
+    workflowCounts,
   };
 }
 
@@ -277,30 +325,45 @@ export async function uploadGovernedDocument(input: {
   mimeType: string;
 }) {
   requireEditor(input.actor);
-  const imported = await importKnowledgeDocument({
+  const { reason: changeReason } = governanceActionInputSchema.parse({
+    reason: input.changeReason,
+  });
+  const prepared = await prepareKnowledgeDocument({
     bytes: input.bytes,
     fileName: input.fileName,
-    governanceStatus: "draft",
     metadata: input.metadata,
     mimeType: input.mimeType,
   });
-
-  if (imported.status === "duplicate") {
-    return { draft: null, import: imported };
+  const repository = await getGovernanceRepository();
+  let committed;
+  try {
+    committed = await repository.commitDocumentUpload({
+      actor: input.actor,
+      changeReason,
+      prepared,
+    });
+  } catch (error: unknown) {
+    if (prepared.storageCreated) {
+      console.warn("Governed document orphan cleanup deferred", {
+        errorCode: getErrorCode(error),
+      });
+    }
+    throw error;
   }
+  const imported = createKnowledgeDocumentImportResponse({
+    status: committed.created
+      ? prepared.outcome.processingStatus
+      : "duplicate",
+    summary: committed.summary,
+  });
 
-  const draft = await createGovernanceDraft(
-    {
-      changeReason: input.changeReason,
-      entityType: "document",
-      payload: {
-        documentId: imported.document.id,
-      },
-    },
-    input.actor,
-  );
-
-  return { draft, import: imported };
+  return {
+    draft:
+      committed.created || committed.draftCreated
+        ? committed.draft
+        : null,
+    import: imported,
+  };
 }
 
 export async function reprocessGovernedDocument(input: {
@@ -310,27 +373,41 @@ export async function reprocessGovernedDocument(input: {
   reason: unknown;
 }) {
   requireEditor(input.actor);
+  const accessScope: KnowledgeDocumentReprocessingAccessScope =
+    input.actor.role === "editor"
+      ? { createdBy: input.actor.email, kind: "creator" }
+      : { kind: "global" };
   const action = governanceActionInputSchema.parse({
     reason: input.reason,
   });
   const documentId = z.uuid().parse(input.documentId);
-  const operation = await reprocessKnowledgeDocument({
+  const prepared = await prepareKnowledgeDocumentReprocessing({
+    accessScope,
     documentId,
     metadata: input.metadata,
   });
+  const governedPrepared = {
+    ...prepared,
+    operationFingerprint: sha256(
+      JSON.stringify({
+        actorEmail: input.actor.email,
+        actorRole: input.actor.role,
+        preparationFingerprint: prepared.operationFingerprint,
+        reason: action.reason,
+      }),
+    ),
+  };
   const repository = await getGovernanceRepository();
-
-  await repository.recordOperationalChange({
-    action: "document_reprocessed",
+  const committed = await repository.commitDocumentReprocessing({
     actor: input.actor,
-    afterData: operation.afterData,
-    beforeData: operation.beforeData,
-    entityKey: documentId,
-    entityType: "document",
+    prepared: governedPrepared,
     reason: action.reason,
   });
 
-  return operation.response;
+  return createKnowledgeDocumentImportResponse({
+    status: committed.processingStatus,
+    summary: committed.summary,
+  });
 }
 
 export async function verifyDataSource(input: {
@@ -351,6 +428,6 @@ export async function verifyDataSource(input: {
     actor: input.actor,
     reason: action.reason,
     sourceId,
-    verifiedAt: new Date(action.verifiedAt),
+    verifiedAt: action.verifiedAt,
   });
 }

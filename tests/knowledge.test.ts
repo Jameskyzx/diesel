@@ -11,9 +11,15 @@ import {
   unwrapUntrustedKnowledgeExcerpt,
   wrapUntrustedKnowledgeExcerpt,
 } from "@/domain/knowledge/retrieval-policy";
-import { appendDocumentMetadata } from "@/domain/admin/normalize-document-form";
+import {
+  appendDocumentMetadata,
+  appendDocumentReprocessMetadata,
+} from "@/domain/admin/normalize-document-form";
 import { hybridSearchQuerySchema } from "@/features/knowledge/schemas";
-import { parseDocumentImportFormData } from "@/server/services/knowledge-service";
+import {
+  parseDocumentImportFormData,
+  parseDocumentReprocessFormData,
+} from "@/server/services/knowledge-service";
 
 function cosineSimilarity(left: number[], right: number[]): number {
   return left.reduce(
@@ -49,7 +55,7 @@ describe("knowledge document processing", () => {
     });
     expect(chunks[1]?.sectionLocator).toContain("paragraph 2");
     expect(chunks[2]).toMatchObject({
-      headingPath: ["Demo document", "Requirements"],
+      headingPath: ["Demo document", "Scope", "Requirements"],
       pageFrom: 2,
       pageTo: 2,
     });
@@ -153,26 +159,39 @@ describe("knowledge import form parsing", () => {
     ).toThrow();
   });
 
-  it("preserves an explicit Demo classification from admin forms", () => {
+  it("copies only explicitly submitted reprocessing metadata without defaults", () => {
     const formData = new FormData();
-    formData.set("reprocesstitle", "DEMO ONLY — Document");
-    formData.set("reprocessdocumentType", "other");
-    formData.set("reprocesslanguageCode", "en");
-    formData.set("reprocesssourceTitle", "DEMO ONLY — Source");
-    formData.set("reprocesssourceType", "other");
-    formData.set("reprocessisDemo", "true");
-    formData.set(
-      "reprocessdemoNotice",
-      "FICTIONAL DEMO DATA — NOT FOR PRODUCTION.",
-    );
+    formData.set("reprocesstitle", "Updated document");
+    formData.set("reprocesssourceTitle", "Updated source");
+    formData.set("reprocessredistributionAllowed", "false");
 
-    appendDocumentMetadata(formData, "reprocess");
-    const metadata = parseDocumentImportFormData(formData);
+    appendDocumentReprocessMetadata(formData);
+    const metadata = parseDocumentReprocessFormData(formData);
 
-    expect(metadata).toMatchObject({
-      demoNotice: "FICTIONAL DEMO DATA — NOT FOR PRODUCTION.",
-      isDemo: true,
-      sourceType: "demo",
+    expect(metadata).toEqual({
+      redistributionAllowed: false,
+      sourceTitle: "Updated source",
+      title: "Updated document",
+    });
+    for (const omittedDefault of [
+      "demoNotice",
+      "documentType",
+      "isDemo",
+      "languageCode",
+      "sourceType",
+    ]) {
+      expect(formData.has(omittedDefault)).toBe(false);
+    }
+  });
+
+  it("keeps omitted reprocessing metadata absent for server-side merging", () => {
+    const formData = new FormData();
+    formData.set("title", "Updated title");
+    formData.set("redistributionAllowed", "false");
+
+    expect(parseDocumentReprocessFormData(formData)).toEqual({
+      redistributionAllowed: false,
+      title: "Updated title",
     });
   });
 

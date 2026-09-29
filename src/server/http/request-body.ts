@@ -1,16 +1,29 @@
 import "server-only";
 
 export class RequestBodyTooLargeError extends Error {
-  constructor(readonly maxBytes: number) {
+  constructor(
+    readonly maxBytes: number,
+    readonly cleanup: Promise<void> = Promise.resolve(),
+  ) {
     super(`Request body exceeds ${maxBytes} bytes.`);
     this.name = "RequestBodyTooLargeError";
   }
 }
 
 export class RequestBodyTimeoutError extends Error {
-  constructor(readonly timeoutMs: number) {
+  constructor(
+    readonly timeoutMs: number,
+    readonly cleanup: Promise<void> = Promise.resolve(),
+  ) {
     super(`Request body was not received within ${timeoutMs} milliseconds.`);
     this.name = "RequestBodyTimeoutError";
+  }
+}
+
+export class RequestBodyAbortedError extends Error {
+  constructor(readonly cleanup: Promise<void> = Promise.resolve()) {
+    super("Request body reading was canceled by the client.");
+    this.name = "RequestBodyAbortedError";
   }
 }
 
@@ -18,12 +31,19 @@ async function readRequestBytes(
   request: Request,
   maxBytes: number,
   timeoutMs?: number,
+  abortSignal?: AbortSignal,
 ): Promise<Uint8Array> {
   const declaredLength = request.headers.get("content-length")?.trim();
   if (declaredLength && /^\d+$/.test(declaredLength)) {
     const declaredBytes = Number(declaredLength);
     if (declaredBytes > maxBytes) {
-      throw new RequestBodyTooLargeError(maxBytes);
+      const cleanup = Promise.resolve()
+        .then(() => request.body?.cancel("request-body-too-large"))
+        .then(
+          () => undefined,
+          () => undefined,
+        );
+      throw new RequestBodyTooLargeError(maxBytes, cleanup);
     }
   }
 
@@ -40,14 +60,45 @@ async function readRequestBytes(
   }
 
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let abortListener: (() => void) | undefined;
+  let cancellation: Promise<void> | undefined;
+  const cancelReader = (reason: string): Promise<void> => {
+    cancellation ??= Promise.resolve()
+      .then(() => reader.cancel(reason))
+      .then(
+        () => undefined,
+        () => undefined,
+      );
+    return cancellation;
+  };
   const deadline =
     timeoutMs === undefined
       ? null
       : new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => {
-            reject(new RequestBodyTimeoutError(timeoutMs));
-            void reader.cancel("request-body-timeout").catch(() => undefined);
+            reject(
+              new RequestBodyTimeoutError(
+                timeoutMs,
+                cancelReader("request-body-timeout"),
+              ),
+            );
           }, timeoutMs);
+        });
+  const aborted =
+    abortSignal === undefined
+      ? null
+      : new Promise<never>((_resolve, reject) => {
+          abortListener = () => {
+            reject(
+              new RequestBodyAbortedError(
+                cancelReader("request-body-aborted"),
+              ),
+            );
+          };
+          abortSignal.addEventListener("abort", abortListener, { once: true });
+          if (abortSignal.aborted) {
+            abortListener();
+          }
         });
 
   const chunks: Uint8Array[] = [];
@@ -55,27 +106,34 @@ async function readRequestBytes(
 
   try {
     while (true) {
-      const { done, value } = deadline
-        ? await Promise.race([reader.read(), deadline])
-        : await reader.read();
+      const read = reader.read();
+      const { done, value } =
+        deadline || aborted
+          ? await Promise.race([
+              read,
+              ...(deadline ? [deadline] : []),
+              ...(aborted ? [aborted] : []),
+            ])
+          : await read;
       if (done) {
         break;
       }
 
       totalBytes += value.byteLength;
       if (totalBytes > maxBytes) {
-        try {
-          await reader.cancel();
-        } catch {
-          // Preserve the deterministic payload-too-large error.
-        }
-        throw new RequestBodyTooLargeError(maxBytes);
+        throw new RequestBodyTooLargeError(
+          maxBytes,
+          cancelReader("request-body-too-large"),
+        );
       }
       chunks.push(value);
     }
   } finally {
     if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
+    }
+    if (abortSignal !== undefined && abortListener !== undefined) {
+      abortSignal.removeEventListener("abort", abortListener);
     }
   }
 
@@ -92,13 +150,19 @@ async function readRequestBytes(
 export async function readFormDataRequest(
   request: Request,
   maxBytes: number,
+  timeoutMs?: number,
+  abortSignal?: AbortSignal,
 ): Promise<FormData> {
   const contentType = request.headers.get("content-type");
+  const bytes = await readRequestBytes(
+    request,
+    maxBytes,
+    timeoutMs,
+    abortSignal,
+  );
   if (!contentType?.toLowerCase().startsWith("multipart/form-data;")) {
     throw new SyntaxError("Request body is not multipart form data.");
   }
-
-  const bytes = await readRequestBytes(request, maxBytes);
   const body = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(body).set(bytes);
   try {
@@ -125,20 +189,25 @@ export async function readJsonRequest(
   request: Request,
   maxBytes: number,
   timeoutMs?: number,
+  abortSignal?: AbortSignal,
 ): Promise<unknown> {
   const contentType = request.headers
     .get("content-type")
     ?.split(";", 1)[0]
     ?.trim()
     .toLowerCase();
+  const bytes = await readRequestBytes(
+    request,
+    maxBytes,
+    timeoutMs,
+    abortSignal,
+  );
   if (
     !contentType ||
     !/^application\/(?:[a-z0-9!#$&^_.+-]+\+)?json$/.test(contentType)
   ) {
     throw new SyntaxError("Request body is not JSON content.");
   }
-
-  const bytes = await readRequestBytes(request, maxBytes, timeoutMs);
   let text: string;
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);

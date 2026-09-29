@@ -37,6 +37,18 @@ const positiveNumberInputSchema = numberInputSchema.pipe(
 export const adminRoles = ["editor", "reviewer", "admin"] as const;
 export const adminRoleSchema = z.enum(adminRoles);
 
+export const dataChangeActions = [
+  "draft_created",
+  "reviewed",
+  "published",
+  "archived",
+  "import_previewed",
+  "import_committed",
+  "document_reprocessed",
+  "source_verified",
+] as const;
+export const dataChangeActionSchema = z.enum(dataChangeActions);
+
 export const governedEntityTypes = [
   "country",
   "regulation",
@@ -80,6 +92,15 @@ export const adminPrincipalSchema = z
     role: adminRoleSchema,
   })
   .strict();
+
+export const ADMIN_PRINCIPAL_EMAIL_RESPONSE_HEADER =
+  "x-diesel-admin-principal-email";
+export const ADMIN_PRINCIPAL_ROLE_RESPONSE_HEADER =
+  "x-diesel-admin-principal-role";
+export const ADMIN_EXPECTED_PRINCIPAL_EMAIL_REQUEST_HEADER =
+  "x-diesel-admin-expected-principal-email";
+export const ADMIN_EXPECTED_PRINCIPAL_ROLE_REQUEST_HEADER =
+  "x-diesel-admin-expected-principal-role";
 
 export const dataSourceDraftPayloadSchema = z
   .object({
@@ -566,13 +587,6 @@ export const governanceDraftCreateSchema = z.discriminatedUnion(
     z
       .object({
         ...draftRequestBase,
-        entityType: z.literal("document"),
-        payload: documentDraftPayloadSchema,
-      })
-      .strict(),
-    z
-      .object({
-        ...draftRequestBase,
         entityType: z.literal("jurisdiction"),
         payload: jurisdictionDraftPayloadSchema,
       })
@@ -611,23 +625,121 @@ export const marketCsvRowSchema = marketMetricDraftPayloadObjectSchema.omit({
   }
 });
 
-export const governanceDraftSummarySchema = z
+const dashboardEmailSchema = z.email().max(320);
+const dashboardStringSchema = z.string().trim().min(1).max(1_000);
+const dashboardVersionSchema = z
+  .number()
+  .int()
+  .positive()
+  .max(Number.MAX_SAFE_INTEGER);
+const dashboardCountSchema = z
+  .number()
+  .int()
+  .nonnegative()
+  .max(Number.MAX_SAFE_INTEGER);
+const dashboardWorkflowStatusSchema = z.enum(["draft", "reviewed"]);
+
+const governanceDashboardPayloadSchemas = {
+  country: countryDraftPayloadSchema,
+  data_source: dataSourceDraftPayloadSchema,
+  document: documentDraftPayloadSchema,
+  jurisdiction: jurisdictionDraftPayloadSchema,
+  market_metric: marketMetricDraftPayloadSchema,
+  product: productDraftPayloadSchema,
+  product_certification: productCertificationDraftPayloadSchema,
+  regulation: regulationDraftPayloadSchema,
+} as const satisfies Record<
+  (typeof governedEntityTypes)[number],
+  z.ZodType
+>;
+
+type GovernanceDashboardPayloadIssue = {
+  message: string;
+  path: PropertyKey[];
+};
+
+function governanceDashboardPayloadIssues(input: {
+  entityKey: string;
+  entityType: (typeof governedEntityTypes)[number];
+  path: PropertyKey[];
+  payload: Record<string, unknown>;
+}): GovernanceDashboardPayloadIssue[] {
+  const issues: GovernanceDashboardPayloadIssue[] = [];
+  const reference = governedEntityReferenceSchema.safeParse({
+    entityKey: input.entityKey,
+    entityType: input.entityType,
+  });
+  if (
+    !reference.success ||
+    reference.data.entityKey !== input.entityKey
+  ) {
+    issues.push({
+      message: "entityKey must be a canonical key for entityType",
+      path: ["entityKey"],
+    });
+  }
+
+  const payload = governanceDashboardPayloadSchemas[
+    input.entityType
+  ].safeParse(input.payload);
+  if (!payload.success) {
+    for (const issue of payload.error.issues) {
+      issues.push({
+        message: issue.message,
+        path: [...input.path, ...issue.path],
+      });
+    }
+    return issues;
+  }
+
+  const identityField =
+    input.entityType === "country"
+      ? "iso3"
+      : input.entityType === "document"
+        ? "documentId"
+        : "id";
+  const canonicalPayload = payload.data as Record<string, unknown>;
+  if (canonicalPayload[identityField] !== input.entityKey) {
+    issues.push({
+      message: `${identityField} must match entityKey`,
+      path: [...input.path, identityField],
+    });
+  }
+
+  return issues;
+}
+
+const governanceDashboardCurrentDraftShape = {
+  changeReason: dashboardStringSchema,
+  createdBy: dashboardEmailSchema,
+  entityKey: z.string().trim().min(1).max(300),
+  entityType: governedEntityTypeSchema,
+  id: z.uuid(),
+  payload: z.record(z.string(), z.unknown()),
+  version: dashboardVersionSchema,
+  workflowStatus: dashboardWorkflowStatusSchema,
+} as const;
+
+export const governanceDashboardCurrentDraftSchema = z
+  .object(governanceDashboardCurrentDraftShape)
+  .strict()
+  .superRefine((draft, context) => {
+    for (const issue of governanceDashboardPayloadIssues({
+      entityKey: draft.entityKey,
+      entityType: draft.entityType,
+      path: ["payload"],
+      payload: draft.payload,
+    })) {
+      context.addIssue({ code: "custom", ...issue });
+    }
+  });
+
+export const governancePublishedBaselineSchema = z
   .object({
-    archivedAt: isoTimestampSchema.nullable(),
-    changeReason: z.string(),
-    createdAt: isoTimestampSchema,
-    createdBy: z.string(),
-    entityKey: z.string(),
-    entityType: governedEntityTypeSchema,
-    id: z.uuid(),
     payload: z.record(z.string(), z.unknown()),
     publishedAt: isoTimestampSchema.nullable(),
-    publishedBy: z.string().nullable(),
-    reviewedAt: isoTimestampSchema.nullable(),
-    reviewedBy: z.string().nullable(),
-    updatedAt: isoTimestampSchema,
-    version: z.number().int().positive(),
-    workflowStatus: governanceWorkflowStatusSchema,
+    publishedBy: dashboardEmailSchema.nullable(),
+    version: dashboardVersionSchema,
   })
   .strict();
 
@@ -641,14 +753,27 @@ export const governanceReviewDependencySchema = z
       "regulation",
       "source",
     ]),
-    label: z.string().nullable(),
-    path: z.string(),
+    label: z.string().trim().min(1).max(300).nullable(),
+    path: z.string().trim().min(1).max(1_000),
     state: z.enum(["active", "archived", "missing"]),
-    url: z.string().nullable(),
-    value: z.string(),
+    url: httpUrlSchema.nullable(),
+    value: z.string().trim().min(1).max(300),
     verifiedAt: isoTimestampSchema.nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((dependency, context) => {
+    const reference =
+      dependency.kind === "country"
+        ? iso3Schema.safeParse(dependency.value)
+        : z.uuid().safeParse(dependency.value);
+    if (!reference.success || reference.data !== dependency.value) {
+      context.addIssue({
+        code: "custom",
+        message: "value must be a canonical identifier for kind",
+        path: ["value"],
+      });
+    }
+  });
 
 export const governanceDraftReviewContextSchema = z
   .object({
@@ -658,53 +783,99 @@ export const governanceDraftReviewContextSchema = z
       "first_revision",
       "missing",
     ]),
-    blockingReasons: z.array(z.string()),
-    dependencies: z.array(governanceReviewDependencySchema),
-    publishedBaseline: governanceDraftSummarySchema.nullable(),
+    blockingReasons: z.array(dashboardStringSchema).max(8),
+    dependencies: z.array(governanceReviewDependencySchema).max(256),
+    publishedBaseline: governancePublishedBaselineSchema.nullable(),
     publishReady: z.boolean(),
   })
   .strict();
 
-export const governanceDashboardDraftSchema = governanceDraftSummarySchema
-  .extend({
+export const governanceDashboardDraftSchema = z
+  .object({
+    ...governanceDashboardCurrentDraftShape,
     reviewContext: governanceDraftReviewContextSchema,
+  })
+  .strict()
+  .superRefine((draft, context) => {
+    for (const issue of governanceDashboardPayloadIssues({
+      entityKey: draft.entityKey,
+      entityType: draft.entityType,
+      path: ["payload"],
+      payload: draft.payload,
+    })) {
+      context.addIssue({ code: "custom", ...issue });
+    }
+
+    const baseline = draft.reviewContext.publishedBaseline;
+    if (baseline) {
+      for (const issue of governanceDashboardPayloadIssues({
+        entityKey: draft.entityKey,
+        entityType: draft.entityType,
+        path: ["reviewContext", "publishedBaseline", "payload"],
+        payload: baseline.payload,
+      })) {
+        context.addIssue({ code: "custom", ...issue });
+      }
+    }
+  });
+
+export const governanceWorkflowCountsSchema = z
+  .object({
+    draft: dashboardCountSchema,
+    published: dashboardCountSchema,
+    reviewed: dashboardCountSchema,
   })
   .strict();
 
+const governanceDashboardAuditLogSchema = z
+  .object({
+    action: dataChangeActionSchema,
+    actorEmail: dashboardEmailSchema,
+    actorRole: adminRoleSchema,
+    createdAt: isoTimestampSchema,
+    entityKey: z.string().trim().min(1).max(300),
+    entityType: governedEntityTypeSchema,
+    id: z.uuid(),
+    reason: dashboardStringSchema,
+  })
+  .strict()
+  .superRefine((log, context) => {
+    const reference = governedEntityReferenceSchema.safeParse({
+      entityKey: log.entityKey,
+      entityType: log.entityType,
+    });
+    if (!reference.success || reference.data.entityKey !== log.entityKey) {
+      context.addIssue({
+        code: "custom",
+        message: "entityKey must be a canonical key for entityType",
+        path: ["entityKey"],
+      });
+    }
+  });
+
 export const adminDashboardResponseSchema = z
   .object({
-    auditLogs: z.array(
-      z
-        .object({
-          action: z.string(),
-          actorEmail: z.string(),
-          actorRole: adminRoleSchema,
-          createdAt: isoTimestampSchema,
-          entityKey: z.string(),
-          entityType: governedEntityTypeSchema,
-          id: z.uuid(),
-          reason: z.string(),
-        })
-        .passthrough(),
-    ),
-    drafts: z.array(governanceDashboardDraftSchema),
-    importBatches: z.array(
-      z
-        .object({
-          createdAt: isoTimestampSchema,
-          id: z.uuid(),
-          invalidRows: z.number().int().nonnegative(),
-          originalFilename: z.string(),
-          status: z.enum(["previewed", "committed", "rejected"]),
-          totalRows: z.number().int().nonnegative(),
-          validRows: z.number().int().nonnegative(),
-        })
-        .passthrough(),
-    ),
-    principal: adminPrincipalSchema,
+    auditLogs: z.array(governanceDashboardAuditLogSchema).max(30),
+    drafts: z.array(governanceDashboardDraftSchema).max(100),
     status: z.literal("ok"),
+    workflowCounts: governanceWorkflowCountsSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((dashboard, context) => {
+    const visibleCounts = { draft: 0, reviewed: 0 };
+    for (const draft of dashboard.drafts) {
+      visibleCounts[draft.workflowStatus] += 1;
+    }
+    for (const status of ["draft", "reviewed"] as const) {
+      if (dashboard.workflowCounts[status] < visibleCounts[status]) {
+        context.addIssue({
+          code: "custom",
+          message: `${status} count cannot be smaller than the visible queue`,
+          path: ["workflowCounts", status],
+        });
+      }
+    }
+  });
 
 export type AdminPrincipal = z.infer<typeof adminPrincipalSchema>;
 export type AdminDashboardResponse = z.infer<

@@ -60,8 +60,10 @@ describe("readiness", () => {
     expect(
       readinessResponseSchema.parse(
         createReadinessPayload({
+          aiChatAdmissionReady: true,
+          aiChatRateLimitReady: true,
+          databaseReady: false,
           now: new Date("2026-08-15T00:00:00.000Z"),
-          ready: false,
           version: "test-version",
         }),
       ),
@@ -70,8 +72,61 @@ describe("readiness", () => {
       status: "unavailable",
       timestamp: "2026-08-15T00:00:00.000Z",
       version: "test-version",
-      checks: { database: "unavailable" },
+      checks: {
+        aiChatAdmission: "ok",
+        aiChatRateLimit: "ok",
+        database: "unavailable",
+      },
     });
+  });
+
+  it("reports AI admission configuration independently from the database", () => {
+    expect(
+      createReadinessPayload({
+        aiChatAdmissionReady: false,
+        aiChatRateLimitReady: true,
+        databaseReady: true,
+        now: new Date("2026-08-15T00:00:00.000Z"),
+        version: "test-version",
+      }),
+    ).toEqual({
+      checks: {
+        aiChatAdmission: "unavailable",
+        aiChatRateLimit: "ok",
+        database: "ok",
+      },
+      service: "global-diesel-regulations",
+      status: "unavailable",
+      timestamp: "2026-08-15T00:00:00.000Z",
+      version: "test-version",
+    });
+  });
+
+  it("rejects readiness payloads with missing or unknown checks", () => {
+    const base = {
+      service: "global-diesel-regulations",
+      status: "ok",
+      timestamp: "2026-08-15T00:00:00.000Z",
+      version: "test-version",
+    };
+
+    expect(
+      readinessResponseSchema.safeParse({
+        ...base,
+        checks: { database: "ok" },
+      }).success,
+    ).toBe(false);
+    expect(
+      readinessResponseSchema.safeParse({
+        ...base,
+        checks: {
+          aiChatAdmission: "ok",
+          aiChatRateLimit: "ok",
+          database: "ok",
+          provider: "ok",
+        },
+      }).success,
+    ).toBe(false);
   });
 
   it("returns ready after a successful read-only database probe", async () => {

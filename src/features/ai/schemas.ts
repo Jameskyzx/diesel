@@ -1,5 +1,32 @@
 import { z } from "zod";
 
+import { containsEmbeddedReasoningMarkup } from "@/domain/ai/reasoning-markup";
+import { modelOriginatedProductModelCodeSchema } from "@/domain/ai/model-originated-input";
+import { countryDetailResponseMatchesDeterministicRules } from "@/domain/countries/detail-consistency";
+import { aiKnowledgeSearchResultMatchesDeterministicRules } from "@/domain/knowledge/search-consistency";
+import {
+  marketComparisonMatchesDeterministicRules,
+  regulationComparisonMatchesDeterministicRules,
+} from "@/domain/marketing/comparison-consistency";
+import { opportunityScorecardMatchesTrustedProvenance } from "@/domain/marketing/analysis-provenance";
+import { salesBriefMatchesDeterministicRules } from "@/domain/marketing/sales-brief-consistency";
+import { productFitEvaluationMatchesDeterministicRules } from "@/domain/product-fit/evaluation-consistency";
+import { locales } from "@/i18n/locale";
+
+import { citationLocatorDescriptorSchema } from "@/features/ai/citation-locator";
+import { citationTitleDescriptorSchema } from "@/features/ai/citation-title";
+import {
+  aiToolResultWarningsMatchFacts,
+  canonicalToolErrorResultMatchesNoFacts,
+} from "@/features/ai/tool-result-envelope";
+import {
+  aiEvidenceCitationsMatchFacts,
+  citationHasPairedEntityIdentity,
+  compatibleProductPayloadMatchesQuery,
+  countryProfilePayloadMatchesQuery,
+  evidenceEntityTypes,
+  expectedAiEvidenceSufficiency,
+} from "@/features/ai/evidence-semantics";
 import { countryDetailResponseSchema } from "@/features/countries/schemas";
 import {
   applicationScopeSchema,
@@ -28,6 +55,18 @@ const optionalCountrySchema = z
   .describe(
     "ISO 3166-1 alpha-3 country code. Omit only when the map-selected country should be used.",
   );
+
+export const aiModelNameSchema = z
+  .string()
+  .min(1)
+  .max(160)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._/@:-]*$/u);
+
+export const aiModelIdSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._/@:-]*$/u);
 
 const blockedAiEndpointHostnames = new Set([
   "localhost",
@@ -89,10 +128,16 @@ export const userAiConfigSchema = z
             message: "AI 接口地址不能包含账号或密码。",
           });
         }
+        if (url.search || url.hash) {
+          context.addIssue({
+            code: "custom",
+            message: "AI 接口地址不能包含查询参数或片段。",
+          });
+        }
       })
       .transform((value) => value.replace(/\/+$/, "")),
     enableThinking: z.boolean().optional(),
-    model: z.string().trim().min(1).max(160),
+    model: aiModelNameSchema,
   })
   .strict();
 
@@ -121,8 +166,11 @@ export const aiCitationSchema = z
     countryIso3: z.union([iso3Schema, z.null()]),
     documentId: z.uuid().nullable(),
     documentTitle: z.string().nullable(),
+    entityId: z.uuid().nullable().optional(),
+    entityType: z.enum(evidenceEntityTypes).nullable().optional(),
     isDemo: z.boolean(),
     locator: z.string().nullable(),
+    locatorDescriptor: citationLocatorDescriptorSchema.nullable().optional(),
     pageFrom: z.number().int().positive().nullable(),
     pageTo: z.number().int().positive().nullable(),
     productCertificationId: z.uuid().nullable(),
@@ -136,9 +184,29 @@ export const aiCitationSchema = z
     sourceTitle: z.string().trim().min(1),
     sourceUrl: httpUrlSchema.nullable(),
     title: z.string().trim().min(1),
+    titleDescriptor: citationTitleDescriptorSchema.nullable().optional(),
     verifiedAt: isoTimestampSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((citation, context) => {
+    if (
+      citation.pageTo !== null &&
+      (citation.pageFrom === null || citation.pageTo < citation.pageFrom)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "pageTo requires an earlier or equal pageFrom",
+        path: ["pageTo"],
+      });
+    }
+    if (!citationHasPairedEntityIdentity(citation)) {
+      context.addIssue({
+        code: "custom",
+        message: "Citation entityType and entityId must appear together",
+        path: ["entityId"],
+      });
+    }
+  });
 
 const toolResultBase = z.object({
   citations: z.array(aiCitationSchema),
@@ -148,6 +216,37 @@ const toolResultBase = z.object({
   status: z.enum(["ok", "no_data", "error"]),
   warnings: z.array(z.string()),
 });
+
+function refineToolResultEnvelope(
+  result: unknown,
+  context: z.RefinementCtx,
+): void {
+  const envelope = result as {
+    evidenceSufficient: boolean;
+    status: "error" | "no_data" | "ok";
+  };
+  if ((envelope.status === "ok") !== envelope.evidenceSufficient) {
+    context.addIssue({
+      code: "custom",
+      message: "Tool status must match evidence sufficiency",
+      path: ["status"],
+    });
+  }
+  if (!aiToolResultWarningsMatchFacts(result)) {
+    context.addIssue({
+      code: "custom",
+      message: "Tool warnings do not match the structured result",
+      path: ["warnings"],
+    });
+  }
+  if (!canonicalToolErrorResultMatchesNoFacts(result)) {
+    context.addIssue({
+      code: "custom",
+      message: "Failed tools may only expose a canonical no-facts result",
+      path: ["status"],
+    });
+  }
+}
 
 export const searchKnowledgeBaseInputSchema = z
   .object({
@@ -180,6 +279,33 @@ export const searchKnowledgeBaseInputSchema = z
   })
   .strict();
 
+function rejectKnowledgeQueryReasoning(
+  input: { query: string },
+  context: z.RefinementCtx,
+): void {
+  if (containsEmbeddedReasoningMarkup(input.query)) {
+    context.addIssue({
+      code: "custom",
+      message: "Knowledge query contains private reasoning markup.",
+      path: ["query"],
+    });
+  }
+}
+
+// Retain the observed-argument contract used by live-eval reports. Historical
+// provider-only fields must remain observable so the scorer can reject them;
+// narrowing this schema would silently change existing report sanitization.
+export const salesChatKnowledgeSearchInputSchema =
+  searchKnowledgeBaseInputSchema.superRefine(rejectKnowledgeQueryReasoning);
+
+// The provider cannot choose a jurisdiction UUID or retrieval count: execution
+// fixes these to null/5. Advertise only meaningful model inputs and reject
+// undeclared fields, while leaving trusted search and report schemas intact.
+export const salesChatModelKnowledgeSearchInputSchema =
+  searchKnowledgeBaseInputSchema
+    .omit({ jurisdictionId: true, limit: true })
+    .superRefine(rejectKnowledgeQueryReasoning);
+
 export const getCountryProfileInputSchema = z
   .object({
     asOf: isoDateSchema
@@ -210,12 +336,7 @@ export const findCompatibleProductsInputSchema = z
     ),
     countryIso3: optionalCountrySchema,
     powerKw: powerKwSchema.describe("Required engine power in kW."),
-    productModelCode: z
-      .string()
-      .trim()
-      .min(1)
-      .max(100)
-      .transform((value) => value.toUpperCase())
+    productModelCode: modelOriginatedProductModelCodeSchema
       .optional()
       .describe(
         "Optional exact product model code. When supplied, evaluate only that product instead of the full catalog.",
@@ -229,16 +350,89 @@ export const searchKnowledgeBaseResultSchema = toolResultBase
     search: hybridSearchResponseSchema,
     tool: z.literal("searchKnowledgeBase"),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    refineToolResultEnvelope(result, context);
+    if (!aiKnowledgeSearchResultMatchesDeterministicRules(result)) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Knowledge-search evidence does not match its public scores, filters, or trust boundary",
+        path: ["search"],
+      });
+    }
+    if (
+      result.evidenceSufficient !==
+      expectedAiEvidenceSufficiency(result)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Evidence sufficiency does not match the structured result",
+        path: ["evidenceSufficient"],
+      });
+    }
+    if (!aiEvidenceCitationsMatchFacts(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Visible facts must match their citation identities",
+        path: ["citations"],
+      });
+    }
+  });
 
 export const getCountryProfileResultSchema = toolResultBase
   .extend({
     profile: countryDetailResponseSchema.nullable(),
-    requestedTopics: z.array(countryProfileTopicSchema).min(1),
+    requestedTopics: z
+      .array(countryProfileTopicSchema)
+      .min(1)
+      .max(countryProfileTopics.length)
+      .refine(
+        (topics) => new Set(topics).size === topics.length,
+        "requestedTopics must not contain duplicates",
+      ),
     resolvedCountryIso3: z.union([iso3Schema, z.null()]),
     tool: z.literal("getCountryProfile"),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    refineToolResultEnvelope(result, context);
+    if (
+      result.evidenceSufficient !==
+      expectedAiEvidenceSufficiency(result)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Evidence sufficiency does not match the structured result",
+        path: ["evidenceSufficient"],
+      });
+    }
+    if (!countryProfilePayloadMatchesQuery(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Country-profile facts do not match the resolved query",
+        path: ["profile"],
+      });
+    }
+    if (
+      result.profile !== null &&
+      !countryDetailResponseMatchesDeterministicRules(result.profile)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Country-profile details do not match deterministic lifecycle and source rules",
+        path: ["profile"],
+      });
+    }
+    if (!aiEvidenceCitationsMatchFacts(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Visible facts must match their citation identities",
+        path: ["citations"],
+      });
+    }
+  });
 
 export const findCompatibleProductsResultSchema = toolResultBase
   .extend({
@@ -254,50 +448,274 @@ export const findCompatibleProductsResultSchema = toolResultBase
       .strict(),
     tool: z.literal("findCompatibleProducts"),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    refineToolResultEnvelope(result, context);
+    if (
+      result.evidenceSufficient !==
+      expectedAiEvidenceSufficiency(result)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Evidence sufficiency does not match the structured result",
+        path: ["evidenceSufficient"],
+      });
+    }
+    if (!compatibleProductPayloadMatchesQuery(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Product-fit evaluations do not match the public query",
+        path: ["evaluations"],
+      });
+    }
+    if (
+      result.status !== "error" &&
+      result.evaluations.some(
+        (evaluation) =>
+          !productFitEvaluationMatchesDeterministicRules(evaluation),
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Product-fit conclusions do not match their deterministic inputs",
+        path: ["evaluations"],
+      });
+    }
+    if (!aiEvidenceCitationsMatchFacts(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Visible facts must match their citation identities",
+        path: ["citations"],
+      });
+    }
+  });
 
 export const compareRegulationsResultSchema = toolResultBase
   .extend({
     comparison: regulationComparisonSchema,
     tool: z.literal("compareRegulations"),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    refineToolResultEnvelope(result, context);
+    if (
+      result.evidenceSufficient !==
+      expectedAiEvidenceSufficiency(result)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Evidence sufficiency does not match the structured result",
+        path: ["evidenceSufficient"],
+      });
+    }
+    if (
+      result.status !== "error" &&
+      !regulationComparisonMatchesDeterministicRules(result.comparison)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Regulation comparison does not match its deterministic query rules",
+        path: ["comparison"],
+      });
+    }
+    if (!aiEvidenceCitationsMatchFacts(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Visible facts must match their citation identities",
+        path: ["citations"],
+      });
+    }
+  });
 
 export const compareMarketsResultSchema = toolResultBase
   .extend({
     comparison: marketComparisonSchema,
     tool: z.literal("compareMarkets"),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    refineToolResultEnvelope(result, context);
+    if (
+      result.evidenceSufficient !==
+      expectedAiEvidenceSufficiency(result)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Evidence sufficiency does not match the structured result",
+        path: ["evidenceSufficient"],
+      });
+    }
+    if (
+      result.status !== "error" &&
+      !marketComparisonMatchesDeterministicRules(result.comparison)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Market comparison does not match its deterministic query rules",
+        path: ["comparison"],
+      });
+    }
+    if (!aiEvidenceCitationsMatchFacts(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Visible facts must match their citation identities",
+        path: ["citations"],
+      });
+    }
+  });
 
 export const calculateOpportunityScoreResultSchema = toolResultBase
   .extend({
     scorecard: opportunityScorecardSchema,
     tool: z.literal("calculateOpportunityScore"),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    refineToolResultEnvelope(result, context);
+    if (
+      result.evidenceSufficient !==
+      expectedAiEvidenceSufficiency(result)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Evidence sufficiency does not match the structured result",
+        path: ["evidenceSufficient"],
+      });
+    }
+    if (
+      result.status !== "error" &&
+      !opportunityScorecardMatchesTrustedProvenance(result.scorecard)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Opportunity scorecard provenance is inconsistent",
+        path: ["scorecard"],
+      });
+    }
+    if (!aiEvidenceCitationsMatchFacts(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Visible facts must match their citation identities",
+        path: ["citations"],
+      });
+    }
+  });
 
 export const generateSalesBriefResultSchema = toolResultBase
   .extend({
     brief: salesBriefSchema,
     tool: z.literal("generateSalesBrief"),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    refineToolResultEnvelope(result, context);
+    if (
+      result.evidenceSufficient !==
+      expectedAiEvidenceSufficiency(result)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Evidence sufficiency does not match the structured result",
+        path: ["evidenceSufficient"],
+      });
+    }
+    if (
+      result.status !== "error" &&
+      !salesBriefMatchesDeterministicRules(result.brief)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Sales brief does not match its deterministic visible facts",
+        path: ["brief"],
+      });
+    }
+    if (!aiEvidenceCitationsMatchFacts(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Visible facts must match their citation identities",
+        path: ["citations"],
+      });
+    }
+  });
 
-export const aiToolResultSchema = z.discriminatedUnion("tool", [
-  searchKnowledgeBaseResultSchema,
-  getCountryProfileResultSchema,
-  findCompatibleProductsResultSchema,
-  compareRegulationsResultSchema,
-  compareMarketsResultSchema,
-  calculateOpportunityScoreResultSchema,
-  generateSalesBriefResultSchema,
-]);
+export const aiToolResultSchema = z
+  .discriminatedUnion("tool", [
+    searchKnowledgeBaseResultSchema,
+    getCountryProfileResultSchema,
+    findCompatibleProductsResultSchema,
+    compareRegulationsResultSchema,
+    compareMarketsResultSchema,
+    calculateOpportunityScoreResultSchema,
+    generateSalesBriefResultSchema,
+  ])
+  .superRefine((result, context) => {
+    if (!aiEvidenceCitationsMatchFacts(result)) {
+      context.addIssue({
+        code: "custom",
+        message: "Visible facts must match their citation identities",
+        path: ["citations"],
+      });
+    }
+    if ((result.status === "ok") !== result.evidenceSufficient) {
+      context.addIssue({
+        code: "custom",
+        message: "Tool status must match evidence sufficiency",
+        path: ["status"],
+      });
+    }
+    if (result.evidenceSufficient && result.citations.length === 0) {
+      context.addIssue({
+        code: "custom",
+        message: "Sufficient evidence requires at least one citation",
+        path: ["citations"],
+      });
+    }
+    if (result.tool === "compareRegulations") {
+      const actualCountries = result.comparison.countries.map(
+        ({ countryIso3 }) => countryIso3,
+      );
+      const expectedCountries = result.comparison.query.countryIso3s;
+      if (
+        actualCountries.length !== expectedCountries.length ||
+        actualCountries.some(
+          (countryIso3, index) => countryIso3 !== expectedCountries[index],
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Regulation result countries must match the query order",
+          path: ["comparison", "countries"],
+        });
+      }
+    }
+    if (result.tool === "calculateOpportunityScore") {
+      const actualCountries = result.scorecard.scores.map(
+        ({ countryIso3 }) => countryIso3,
+      );
+      const expectedCountries = result.scorecard.query.countryIso3s;
+      if (
+        actualCountries.length !== expectedCountries.length ||
+        actualCountries.some(
+          (countryIso3, index) => countryIso3 !== expectedCountries[index],
+        )
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "Score result countries must match the query order",
+          path: ["scorecard", "scores"],
+        });
+      }
+    }
+  });
 
 export const chatRequestSchema = z
   .object({
     // AI SDK DefaultChatTransport 信封字段（非业务输入，忽略但允许）。
     id: z.string().trim().min(1).max(100).optional(),
+    locale: z.enum(locales).optional(),
     messages: z.array(z.unknown()).min(1).max(40),
     messageId: z.string().trim().min(1).max(100).optional(),
     selectedCountryIso3: z

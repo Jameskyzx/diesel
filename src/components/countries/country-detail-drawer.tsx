@@ -15,9 +15,12 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { LocaleToggle } from "@/components/i18n/locale-toggle";
+import { localizedCitationLocator } from "@/features/ai/citation-locator-copy";
 import {
   Drawer,
   DrawerClose,
@@ -28,41 +31,74 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import {
+  countryDecisionSummaryErrorMessage,
+  countryDetailErrorMessage,
+  parseCountryApiErrorCode,
+} from "@/features/countries/client-errors";
+import {
   countryDetailResponseSchema,
+  type CountryApiErrorCode,
   type CountryDetailResponse,
   type CountryDirectory,
+  type CountryMapSummary,
 } from "@/features/countries/schemas";
+import { countryDirectoryDisplayIdentity } from "@/features/countries/directory-display";
+import {
+  selectCountryDetailState,
+  type CountryDetailQueryIdentity,
+  type CountryDetailState,
+} from "@/features/countries/detail-state";
+import { productFitHistoryRouteKey } from "@/features/product-fit/history-route";
+import {
+  buildProductFitRouteKey,
+  createProductFitNavigationState,
+  reconcileProductFitNavigation,
+  recordProductFitOwnNavigation,
+} from "@/features/product-fit/navigation-state";
 import type {
   ProductFitCommittedFilters,
   ProductFitInitialFilters,
 } from "@/components/products/product-fit-panel";
 import dynamic from "next/dynamic";
-import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
 import { formatDecimalForDisplay } from "@/lib/decimal-format";
+import { formatCountryDisplayName } from "@/i18n/country-name";
+import { formatOptionalUtcDate, formatUtcDate } from "@/i18n/date";
+import {
+  applicationScopeLabel,
+  countryApplicabilityMissingDataMessages,
+  countryRegionLabel,
+  countrySubregionLabel,
+  jurisdictionDisplayName,
+  jurisdictionTypeLabel,
+  marketMetricDisplayDefinition,
+  marketMetricDisplayName,
+  nameWithCode,
+  regulationDisplayName,
+} from "@/i18n/structured-labels";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
+import { createPublicApiRequestDeadline } from "@/lib/public-api-request";
+import { isUnmodifiedPrimaryClick } from "@/lib/public-navigation-intent";
 import { cn } from "@/lib/utils";
 
-type DetailState =
-  | { status: "idle" }
-  | {
-      iso3: string;
-      message: string;
-      requestedAsOf: string | null;
-      status: "error";
-    }
-  | {
-      iso3: string;
-      requestedAsOf: string | null;
-      response: CountryDetailResponse;
-      status: "ready";
-    };
+function ProductFitLoading() {
+  const { dictionary } = useLocale();
 
-type CurrentDetailState =
-  | DetailState
-  | { iso3: string; status: "loading" };
+  return (
+    <div
+      aria-busy="true"
+      aria-live="polite"
+      className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground"
+      role="status"
+    >
+      {dictionary.country.productFitLoading}
+    </div>
+  );
+}
 
 type CountryDetailDrawerProps = {
   cancelPendingProductEvaluation: () => void;
+  countries: CountryMapSummary[];
+  consumeCountrySelectFocusRequest: () => boolean;
   countryIndex: CountryDirectory;
   initialFilters?: ProductFitInitialFilters;
   initialResponse?: CountryDetailResponse;
@@ -82,42 +118,9 @@ const ProductFitPanel = dynamic(
     return productModule.ProductFitPanel;
   },
   {
-    loading: () => (
-      <div
-        aria-busy="true"
-        aria-live="polite"
-        className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground"
-        role="status"
-      >
-        正在加载确定性产品适配工具…
-      </div>
-    ),
+    loading: ProductFitLoading,
   },
 );
-
-const statusLabels = {
-  adopted: "已采纳",
-  effective: "已生效",
-  proposed: "拟议",
-  superseded: "已被取代",
-} as const;
-
-const statusAtAsOfLabels = {
-  adopted: "查询日已采纳",
-  effective: "查询日已生效",
-} as const;
-
-const coverageLabels = {
-  covered: "已发布证据边界",
-  demo: "虚构演示记录",
-  no_data: "暂无详情数据",
-  none: "未设置",
-  planned: "计划覆盖",
-} as const;
-
-function formatDate(value: string | null) {
-  return value ?? "未记录";
-}
 
 function buildChatHref({
   countryIso3,
@@ -149,6 +152,8 @@ function buildChatHref({
 
 export function CountryDetailDrawer({
   cancelPendingProductEvaluation,
+  countries,
+  consumeCountrySelectFocusRequest,
   countryIndex,
   initialFilters,
   initialResponse,
@@ -157,47 +162,74 @@ export function CountryDetailDrawer({
   onSelectCountry,
   registerProductFitNavigationGuard,
 }: CountryDetailDrawerProps) {
-  const [detail, setDetail] = useState<DetailState>(() =>
-    initialResponse && iso3
-      ? {
-          iso3,
-          requestedAsOf: initialFilters?.asOf ?? null,
-          response: initialResponse,
-          status: "ready",
-        }
-      : { status: "idle" },
-  );
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.country;
+  // SSR props are the current route snapshot, not an initializer for a cache.
+  // Keep only client-fetched responses in state so an RSC filter refresh can
+  // update the details without remounting the product-fit form and result.
+  const [detail, setDetail] = useState<CountryDetailState>({ status: "idle" });
   const [reloadKey, setReloadKey] = useState(0);
+  const detailRequestIdRef = useRef(0);
+  const countrySelectRef = useRef<HTMLSelectElement>(null);
+  const countrySummariesByIso3 = useMemo(
+    () => new Map(countries.map((country) => [country.iso3, country])),
+    [countries],
+  );
+  const selectedDirectoryEntry = iso3
+    ? countryIndex.find(({ iso3: value }) => value === iso3)
+    : undefined;
+  const selectedCountryName = selectedDirectoryEntry
+    ? formatCountryDisplayName(
+        countryDirectoryDisplayIdentity(
+          selectedDirectoryEntry,
+          countrySummariesByIso3.get(selectedDirectoryEntry.iso3),
+        ),
+        locale,
+      )
+    : null;
+  const selectedCountryNameWithCode = selectedDirectoryEntry && selectedCountryName
+    ? nameWithCode(selectedCountryName, selectedDirectoryEntry.iso3, locale)
+    : (iso3 ?? copy.unknownCountryTitle);
   const requestedAsOf = initialFilters?.asOf ?? null;
-  const loadedResponseAlreadyMatchesRequestedAsOf =
-    requestedAsOf !== null &&
-    detail.status === "ready" &&
-    detail.iso3 === iso3 &&
-    detail.response.status === "available" &&
-    detail.response.asOf === requestedAsOf;
-  const fetchAsOf = loadedResponseAlreadyMatchesRequestedAsOf
-    ? detail.requestedAsOf
+  const query: CountryDetailQueryIdentity | null = iso3
+    ? {
+        applicationScope: initialFilters?.applicationScope ?? null,
+        asOf: requestedAsOf,
+        iso3,
+        powerKw: initialFilters?.powerKw ?? null,
+      }
+    : null;
+  const currentDetail = selectCountryDetailState({
+    detail,
+    initialResponse,
+    query,
+  });
+  const fetchAsOf = currentDetail.status === "ready"
+    ? currentDetail.query.asOf
     : requestedAsOf;
-  const currentDetail: CurrentDetailState =
-    !iso3
-      ? { status: "idle" }
-      : detail.status !== "idle" &&
-          detail.iso3 === iso3 &&
-          (detail.requestedAsOf === requestedAsOf ||
-            loadedResponseAlreadyMatchesRequestedAsOf)
-        ? detail
-        : { iso3, status: "loading" };
 
   useEffect(() => {
     if (!iso3) {
       return;
     }
 
-    if (initialResponse && reloadKey === 0) {
+    if (initialResponse) {
       return;
     }
 
     const abortController = new AbortController();
+    const requestId = detailRequestIdRef.current + 1;
+    detailRequestIdRef.current = requestId;
+    const requestIsCurrent = () =>
+      !abortController.signal.aborted &&
+      detailRequestIdRef.current === requestId;
+    const deadline = createPublicApiRequestDeadline(abortController.signal);
+    const requestQuery: CountryDetailQueryIdentity = {
+      applicationScope: initialFilters?.applicationScope ?? null,
+      asOf: fetchAsOf,
+      iso3,
+      powerKw: initialFilters?.powerKw ?? null,
+    };
     const detailParams = new URLSearchParams();
     if (fetchAsOf) {
       detailParams.set("asOf", fetchAsOf);
@@ -214,40 +246,59 @@ export function CountryDetailDrawer({
       headers: {
         accept: "application/json",
       },
-      signal: abortController.signal,
+      signal: deadline.signal,
     })
       .then(async (response) => {
         if (!response.ok) {
-          throw new Error(
-            await parseApiErrorMessage(response, "国家详情请求失败"),
-          );
+          return {
+            code: await parseCountryApiErrorCode(response),
+            status: "error" as const,
+          };
         }
-        return countryDetailResponseSchema.parse(await response.json());
+        return {
+          response: countryDetailResponseSchema.parse(await response.json()),
+          status: "ready" as const,
+        };
       })
-      .then((response) => {
+      .then((result) => {
+        if (!requestIsCurrent()) {
+          return;
+        }
+        if (result.status === "error") {
+          setDetail({
+            code: result.code,
+            query: requestQuery,
+            status: "error",
+          });
+          return;
+        }
         setDetail({
-          iso3,
-          requestedAsOf: fetchAsOf,
-          response,
+          query: requestQuery,
+          response: result.response,
           status: "ready",
         });
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (
+          !requestIsCurrent() ||
+          (error instanceof DOMException &&
+            error.name === "AbortError" &&
+            !deadline.didTimeout())
+        ) {
           return;
         }
         setDetail({
-          iso3,
-          message: toUserFacingErrorMessage(
-            error,
-            "国家详情暂时无法加载，请关闭后重试。",
-          ),
-          requestedAsOf: fetchAsOf,
+          code: null,
+          query: requestQuery,
           status: "error",
         });
-      });
+      })
+      .finally(deadline.dispose);
 
     return () => {
+      if (detailRequestIdRef.current === requestId) {
+        detailRequestIdRef.current += 1;
+      }
       abortController.abort();
     };
   }, [
@@ -272,23 +323,34 @@ export function CountryDetailDrawer({
       }}
       open={Boolean(iso3)}
     >
-      <DrawerContent aria-describedby="country-drawer-description">
+      <DrawerContent
+        aria-describedby="country-drawer-description"
+        onOpenAutoFocus={(event) => {
+          const target = countrySelectRef.current;
+          if (!target || !consumeCountrySelectFocusRequest()) {
+            return;
+          }
+
+          event.preventDefault();
+          target.focus();
+        }}
+      >
         <DrawerHeader className="relative pr-16">
           <p className="text-xs font-semibold tracking-[0.18em] text-primary">
-            COUNTRY PROFILE
+            {copy.profileKicker}
           </p>
           <DrawerTitle>
             {currentDetail.status === "ready" &&
             currentDetail.response.status === "available"
-              ? currentDetail.response.country.nameEn
-              : (iso3 ?? "国家详情")}
+              ? formatCountryDisplayName(currentDetail.response.country, locale)
+              : selectedCountryNameWithCode}
           </DrawerTitle>
           <DrawerDescription id="country-drawer-description">
-            按查询日期展示结构化事实与来源；本页不会把 Demo 记录描述为真实法规。
+            {copy.baselineDescription}
           </DrawerDescription>
           <DrawerClose asChild>
             <Button
-              aria-label="关闭国家详情"
+              aria-label={dictionary.map.closeCountry}
               className="absolute right-5 top-5"
               size="sm"
               variant="outline"
@@ -299,35 +361,49 @@ export function CountryDetailDrawer({
         </DrawerHeader>
 
         <div className="border-b px-5 py-4 sm:px-7">
-          <label
-            className="mb-1.5 block text-xs font-medium text-muted-foreground"
-            htmlFor="drawer-country-select"
-          >
-            切换国家
-          </label>
+          <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
+            <label
+              className="min-w-0 text-xs font-medium text-muted-foreground"
+              htmlFor="drawer-country-select"
+            >
+              {copy.switchCountry}
+            </label>
+            <LocaleToggle testId="country-drawer-locale-toggle" />
+          </div>
           <select
             className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
             id="drawer-country-select"
             onChange={(event) => onSelectCountry(event.target.value)}
+            ref={countrySelectRef}
             value={iso3 ?? ""}
           >
             {countryIndex.map((country) => (
               <option key={country.iso3} value={country.iso3}>
-                {country.name} · {country.iso3}
-                {country.hasGeometry ? "" : " · 暂无地图边界"}
+                {formatCountryDisplayName(
+                  countryDirectoryDisplayIdentity(
+                    country,
+                    countrySummariesByIso3.get(country.iso3),
+                  ),
+                  locale,
+                )} · {country.iso3}
+                {country.hasGeometry
+                  ? ""
+                  : ` · ${dictionary.map.boundaryMissingOption}`}
               </option>
             ))}
           </select>
         </div>
 
         <div
-          aria-live="polite"
           className="flex-1 overflow-y-auto px-5 py-5 sm:px-7"
+          data-testid="country-drawer-body"
         >
           {currentDetail.status === "loading" ? (
             <div
+              aria-busy="true"
               className="grid min-h-64 place-items-center text-center"
               data-testid="country-detail-loading"
+              role="status"
             >
               <div>
                 <LoaderCircle
@@ -335,7 +411,7 @@ export function CountryDetailDrawer({
                   className="mx-auto size-7 animate-spin text-primary"
                 />
                 <p className="mt-3 text-sm text-muted-foreground">
-                  正在从国家 API 获取详情…
+                  {copy.detailsLoading}
                 </p>
               </div>
             </div>
@@ -350,9 +426,9 @@ export function CountryDetailDrawer({
                 aria-hidden="true"
                 className="size-5 text-destructive"
               />
-              <p className="mt-3 font-semibold">详情加载失败</p>
+              <p className="mt-3 font-semibold">{copy.detailError}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {currentDetail.message}
+                {countryDetailErrorMessage(currentDetail.code, dictionary)}
               </p>
               <Button
                 className="mt-4"
@@ -361,7 +437,7 @@ export function CountryDetailDrawer({
                 variant="outline"
               >
                 <RotateCcw aria-hidden="true" className="size-3.5" />
-                重试
+                {dictionary.common.retry}
               </Button>
             </div>
           ) : null}
@@ -369,19 +445,22 @@ export function CountryDetailDrawer({
           {currentDetail.status === "ready" &&
           currentDetail.response.status === "no_data" ? (
             <div
+              aria-atomic="true"
+              aria-live="polite"
               className="rounded-2xl border border-dashed bg-muted/40 p-6"
               data-testid="country-no-data"
+              role="status"
             >
               <MapPin aria-hidden="true" className="size-6 text-primary" />
               <h2 className="mt-4 text-lg font-semibold">
-                {currentDetail.response.iso3} 暂无数据
+                {selectedCountryNameWithCode}
+                {dictionary.common.wordSeparator}
+                {copy.noDataSuffix}
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {countryIndex.find(({ iso3: value }) => value === iso3)
-                  ?.hasGeometry
-                  ? "地图中包含该国家边界，但数据库尚未录入可公开详情。"
-                  : "该国家属于目录，但当前地图资源暂缺其边界，数据库也尚未录入可公开详情。"}
-                系统不会用空白内容或模型推测代替事实。
+                {selectedDirectoryEntry?.hasGeometry
+                  ? copy.geometryNoData
+                  : copy.missingGeometryNoData}
               </p>
             </div>
           ) : null}
@@ -401,7 +480,7 @@ export function CountryDetailDrawer({
 
         <DrawerFooter>
           <p className="text-xs leading-5 text-muted-foreground">
-            当前 URL 可直接复制分享；刷新后仍会恢复此国家。
+            {copy.shareableFooter}
           </p>
         </DrawerFooter>
       </DrawerContent>
@@ -422,8 +501,38 @@ function CountryDetailContent({
   ) => void;
   response: Extract<CountryDetailResponse, { status: "available" }>;
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.country;
+  const coverageLabels = {
+    covered: copy.coverageCovered,
+    demo: copy.coverageDemo,
+    no_data: copy.coverageNoData,
+    none: copy.coverageNone,
+    planned: copy.coveragePlanned,
+  } as const;
   const { country } = response;
-  const contextKey = `${country.iso3}:${JSON.stringify(initialFilters ?? {})}`;
+  const routeKey = buildProductFitRouteKey({
+    countryIso3: country.iso3,
+    asOf: response.asOf,
+    initialFilters,
+  });
+  const [navigationState, setNavigationState] = useState(() =>
+    createProductFitNavigationState(routeKey),
+  );
+  const [historyTarget, setHistoryTarget] = useState<string | null>(null);
+  const waitingForHistoryRoute = historyTarget !== null &&
+    productFitHistoryRouteKey(historyTarget, response.asOf) !== routeKey;
+  const navigation = waitingForHistoryRoute
+    ? navigationState
+    : reconcileProductFitNavigation(navigationState, routeKey, {
+        external: historyTarget !== null,
+      });
+  // Reconcile during render so an external route never paints the old result.
+  // These are local state updates only; request cancellation stays in events
+  // and effect cleanup. An own replace acknowledges without resetting drafts.
+  if (navigation !== navigationState) setNavigationState(navigation);
+  if (historyTarget !== null && !waitingForHistoryRoute) setHistoryTarget(null);
+  const contextKey = `${routeKey}:${navigation.routeRevision}`;
   const [committedFilters, setCommittedFilters] = useState<{
     contextKey: string;
     filters: ProductFitCommittedFilters;
@@ -433,10 +542,13 @@ function CountryDetailContent({
     summary: typeof response.applicabilitySummary;
   } | null>(null);
   const [summaryErrorState, setSummaryErrorState] = useState<{
+    code: CountryApiErrorCode | null;
     contextKey: string;
-    message: string;
   } | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryLoadingContextKey, setSummaryLoadingContextKey] = useState<
+    string | null
+  >(null);
+  const summaryLoading = summaryLoadingContextKey === contextKey;
   const summaryAbortController = useRef<AbortController | null>(null);
   const chatFilters =
     committedFilters?.contextKey === contextKey
@@ -446,71 +558,115 @@ function CountryDetailContent({
     refreshedSummary?.contextKey === contextKey
       ? refreshedSummary.summary
       : response.applicabilitySummary;
-  const summaryError =
+  const summaryErrorCode =
     summaryErrorState?.contextKey === contextKey
-      ? summaryErrorState.message
-      : null;
+      ? summaryErrorState.code
+      : undefined;
+
+  useEffect(() => {
+    const handleHistoryNavigation = () => {
+      cancelPendingProductEvaluation();
+      summaryAbortController.current?.abort();
+      summaryAbortController.current = null;
+      // The browser location already points to the target, but its RSC props
+      // may not have arrived. Hide the old content until that target commits.
+      setHistoryTarget(window.location.href);
+    };
+    window.addEventListener("popstate", handleHistoryNavigation);
+    return () => window.removeEventListener("popstate", handleHistoryNavigation);
+  }, [cancelPendingProductEvaluation]);
 
   useEffect(
     () => () => {
       summaryAbortController.current?.abort();
+      summaryAbortController.current = null;
     },
-    [],
+    [contextKey],
   );
 
   const handleEvaluationCommitted = useCallback(
     (filters: ProductFitCommittedFilters) => {
+      setNavigationState((current) => recordProductFitOwnNavigation(current,
+        buildProductFitRouteKey({
+          countryIso3: country.iso3,
+          asOf: filters.asOf,
+          initialFilters: filters,
+        }),
+      ));
       setCommittedFilters({ contextKey, filters });
       summaryAbortController.current?.abort();
       const abortController = new AbortController();
       summaryAbortController.current = abortController;
+      const requestIsCurrent = () =>
+        !abortController.signal.aborted &&
+        summaryAbortController.current === abortController;
+      const deadline = createPublicApiRequestDeadline(abortController.signal);
       const params = new URLSearchParams({
         applicationScope: filters.applicationScope,
         asOf: filters.asOf,
         powerKw: String(filters.powerKw),
       });
-      setSummaryLoading(true);
+      setSummaryLoadingContextKey(contextKey);
       setSummaryErrorState(null);
       void fetch(`/api/countries/${country.iso3}?${params}`, {
         headers: { accept: "application/json" },
-        signal: abortController.signal,
+        signal: deadline.signal,
       })
         .then(async (result) => {
           if (!result.ok) {
-            throw new Error(
-              await parseApiErrorMessage(result, "决策摘要请求失败"),
-            );
+            return {
+              code: await parseCountryApiErrorCode(result),
+              status: "error" as const,
+            };
           }
-          return countryDetailResponseSchema.parse(await result.json());
+          return {
+            response: countryDetailResponseSchema.parse(await result.json()),
+            status: "ready" as const,
+          };
         })
         .then((result) => {
-          if (result.status === "available") {
+          if (!requestIsCurrent()) {
+            return;
+          }
+          if (result.status === "error") {
+            setSummaryErrorState({ code: result.code, contextKey });
+            return;
+          }
+          if (result.response.status === "available") {
             setRefreshedSummary({
               contextKey,
-              summary: result.applicabilitySummary,
+              summary: result.response.applicabilitySummary,
             });
           }
         })
         .catch((error: unknown) => {
-          if (error instanceof DOMException && error.name === "AbortError") {
+          if (
+            !requestIsCurrent() ||
+            (error instanceof DOMException &&
+              error.name === "AbortError" &&
+              !deadline.didTimeout())
+          ) {
             return;
           }
           setSummaryErrorState({
+            code: null,
             contextKey,
-            message: toUserFacingErrorMessage(
-              error,
-              "决策摘要暂时无法刷新。",
-            ),
           });
         })
         .finally(() => {
-          if (!abortController.signal.aborted) {
-            setSummaryLoading(false);
+          deadline.dispose();
+          if (requestIsCurrent()) {
+            setSummaryLoadingContextKey(null);
           }
         });
     },
-    [contextKey, country.iso3],
+    [
+      contextKey,
+      country.iso3,
+    ],
   );
+
+  if (waitingForHistoryRoute) return <ProductFitLoading />;
 
   return (
     <div className="space-y-5" data-testid="country-detail">
@@ -518,16 +674,16 @@ function CountryDetailContent({
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
           <div className="flex items-center gap-2 font-semibold">
             <AlertTriangle aria-hidden="true" className="size-4" />
-            国家基础记录或其来源为虚构 Demo
+            {copy.demoCountryTitle}
           </div>
           <p className="mt-1.5 text-xs leading-5">
-            国家名称与基础资料用于测试交互；法规、市场、产品和来源请以每条卡片的分类徽标与核验日期为准。
+            {copy.demoCountryBody}
           </p>
         </div>
       ) : null}
 
       <ApplicabilitySummarySection
-        error={summaryError}
+        errorCode={summaryErrorCode}
         loading={summaryLoading}
         summary={applicabilitySummary}
       />
@@ -536,31 +692,37 @@ function CountryDetailContent({
         <div className="flex items-center gap-2">
           <MapPin aria-hidden="true" className="size-4 text-primary" />
           <h2 className="font-semibold" id="country-basics">
-            国家概览
+            {copy.basics}
           </h2>
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-3">
           <DetailItem label="ISO3" value={country.iso3} />
           <DetailItem label="ISO2" value={country.iso2} />
-          <DetailItem label="本地名称" value={country.nameLocal ?? "未记录"} />
           <DetailItem
-            label="数据覆盖"
+            label={copy.localName}
+            value={country.nameLocal ?? dictionary.common.notRecorded}
+          />
+          <DetailItem
+            label={copy.coverage}
             value={coverageLabels[country.dataCoverageStatus]}
           />
-          <DetailItem label="区域" value={country.regionCode ?? "未记录"} />
           <DetailItem
-            label="子区域"
-            value={country.subregionCode ?? "未记录"}
+            label={copy.region}
+            value={countryRegionLabel(country.regionCode, dictionary)}
+          />
+          <DetailItem
+            label={copy.subregion}
+            value={countrySubregionLabel(country.subregionCode, dictionary)}
           />
         </dl>
         <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
-          “已发布证据边界”只表示存在经治理发布、可追溯的资料，不保证每个应用场景都有数值；“最近核验”表示来源核对时间，不等于外部法规专家或法律签核。虚构 Demo 仅用于验证流程。
+          {copy.coverageSemantics}
         </p>
       </section>
 
       <RegulationSection
-        emptyMessage="在本次截止日期没有结构化的当前有效法规。"
-        heading="当前有效法规"
+        emptyMessage={copy.currentRegulationsEmpty}
+        heading={copy.currentRegulations}
         id="current-regulations"
         regulations={country.currentEffectiveRegulations}
       />
@@ -569,7 +731,7 @@ function CountryDetailContent({
         asOf={response.asOf}
         countryIso3={country.iso3}
         initialFilters={initialFilters}
-        key={country.iso3}
+        key={`${country.iso3}:${navigation.panelGeneration}`}
         onEvaluationCommitted={handleEvaluationCommitted}
         registerNavigationGuard={registerProductFitNavigationGuard}
       />
@@ -579,10 +741,10 @@ function CountryDetailContent({
         className="rounded-2xl border border-primary/20 bg-primary/5 p-4"
       >
         <h2 className="font-semibold" id="country-chat-analysis">
-          继续形成销售分析
+          {copy.chatTitle}
         </h2>
         <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-          将当前国家、用途、功率、日期及已选择的产品型号带入对话；对话结果仍需复核来源，不能替代正式认证或销售审批。
+          {copy.chatBody}
         </p>
         <a
           className={cn(buttonVariants(), "mt-3 w-full")}
@@ -591,16 +753,20 @@ function CountryDetailContent({
             initialFilters: chatFilters,
             responseAsOf: response.asOf,
           })}
-          onClick={cancelPendingProductEvaluation}
+          onClick={(event) => {
+            if (isUnmodifiedPrimaryClick(event)) {
+              cancelPendingProductEvaluation();
+            }
+          }}
         >
           <MessageSquareText aria-hidden="true" className="size-4" />
-          在对话中分析
+          {copy.chatAction}
         </a>
       </section>
 
       <RegulationSection
-        emptyMessage="没有已通过且将在未来生效的结构化法规。拟议法规不会列入此处。"
-        heading="未来已通过法规"
+        emptyMessage={copy.futureRegulationsEmpty}
+        heading={copy.futureRegulations}
         id="future-regulations"
         regulations={country.futureAdoptedRegulations}
       />
@@ -609,7 +775,7 @@ function CountryDetailContent({
         <div className="flex items-center gap-2">
           <Landmark aria-hidden="true" className="size-4 text-primary" />
           <h2 className="font-semibold" id="country-jurisdictions">
-            适用司法辖区
+            {copy.jurisdiction}
           </h2>
         </div>
         {country.jurisdictions.length > 0 ? (
@@ -619,9 +785,25 @@ function CountryDetailContent({
                 className="rounded-2xl border bg-card p-4 text-sm"
                 key={jurisdiction.id}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-semibold">{jurisdiction.name}</h3>
-                  <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
+                  <h3 className="min-w-0 break-words font-semibold">
+                    {jurisdictionDisplayName(
+                      {
+                        code: jurisdiction.code,
+                        countryIso3: country.iso3,
+                        id: jurisdiction.id,
+                        isDemo: jurisdiction.isDemo,
+                        name: jurisdiction.name,
+                        sourceId: jurisdiction.source.id,
+                        sourceIsDemo: jurisdiction.source.isDemo,
+                        sourceTitle: jurisdiction.source.title,
+                        type: jurisdiction.type,
+                      },
+                      dictionary,
+                      locale,
+                    )}
+                  </h3>
+                  <div className="flex max-w-full flex-wrap justify-start gap-1.5 sm:shrink-0 sm:justify-end">
                     <DataClassificationBadge
                       isDemo={
                         jurisdiction.isDemo ||
@@ -631,29 +813,29 @@ function CountryDetailContent({
                       }
                     />
                     <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold">
-                      {jurisdiction.type}
+                      {jurisdictionTypeLabel(jurisdiction.type, dictionary)}
                     </span>
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  编码：{jurisdiction.code} · 成员有效期：
-                  {jurisdiction.validFrom} → {jurisdiction.validTo ?? "开放"}
+                  {copy.code}{dictionary.common.labelSeparator}{jurisdiction.code} · {copy.membershipPeriod}{dictionary.common.labelSeparator}
+                  {formatUtcDate(jurisdiction.validFrom, locale)} → {formatOptionalUtcDate(jurisdiction.validTo, locale, dictionary.common.open)}
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  辖区来源：<SourceLink source={jurisdiction.source} /> · 核验{" "}
-                  {jurisdiction.jurisdictionVerifiedAt.slice(0, 10)}
+                  {copy.jurisdictionSource}{dictionary.common.labelSeparator}<SourceLink source={jurisdiction.source} /> · {copy.verifiedAt}{" "}
+                  {formatUtcDate(jurisdiction.jurisdictionVerifiedAt, locale)}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  成员关系来源：
-                  <SourceLink source={jurisdiction.membershipSource} /> · 核验{" "}
-                  {jurisdiction.verifiedAt.slice(0, 10)}
+                  {copy.membershipSource}{dictionary.common.labelSeparator}
+                  <SourceLink source={jurisdiction.membershipSource} /> · {copy.verifiedAt}{" "}
+                  {formatUtcDate(jurisdiction.verifiedAt, locale)}
                 </p>
               </article>
             ))}
           </div>
         ) : (
           <div className="mt-3 rounded-2xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-            当前截止日期没有可展示的适用司法辖区。
+            {copy.jurisdictionEmpty}
           </div>
         )}
       </section>
@@ -662,7 +844,7 @@ function CountryDetailContent({
         <div className="flex items-center gap-2">
           <BarChart3 aria-hidden="true" className="size-4 text-primary" />
           <h2 className="font-semibold" id="market-metrics">
-            市场指标
+            {copy.marketMetrics}
           </h2>
         </div>
         {country.marketMetrics.length > 0 ? (
@@ -672,16 +854,25 @@ function CountryDetailContent({
                 className="rounded-2xl border bg-card p-4"
                 key={metric.id}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-sm font-semibold leading-5">
-                    {metric.metricName}
+                <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
+                  <h3 className="min-w-0 break-words text-sm font-semibold leading-5">
+                    {marketMetricDisplayName(
+                      { ...metric, metricIds: [metric.id] },
+                      dictionary,
+                      locale,
+                    )}
                   </h3>
-                  <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                  <div className="flex max-w-full flex-wrap justify-start gap-1.5 sm:shrink-0 sm:justify-end">
                     <DataClassificationBadge
                       isDemo={metric.isDemo || metric.source.isDemo}
                     />
                     <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold">
-                      {metric.applicationScope ?? "全场景"}
+                      {metric.applicationScope
+                        ? applicationScopeLabel(
+                            metric.applicationScope,
+                            dictionary,
+                          )
+                        : copy.allScopes}
                     </span>
                   </div>
                 </div>
@@ -692,25 +883,29 @@ function CountryDetailContent({
                   </span>
                 </p>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  {metric.definition}
+                  {marketMetricDisplayDefinition(
+                    { ...metric, metricIds: [metric.id] },
+                    dictionary,
+                    locale,
+                  )}
                 </p>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  期间：{metric.periodStart} → {metric.periodEnd} · 方法版本：
+                  {copy.period}{dictionary.common.labelSeparator}{formatUtcDate(metric.periodStart, locale)} → {formatUtcDate(metric.periodEnd, locale)} · {copy.methodology}{dictionary.common.labelSeparator}
                   {metric.methodologyVersion}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  指标发布：{metric.publishedOn ?? "未记录"}
+                  {copy.metricPublished}{dictionary.common.labelSeparator}{formatOptionalUtcDate(metric.publishedOn, locale, dictionary.common.notRecorded)}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  来源：<SourceLink source={metric.source} /> · 核验：
-                  {metric.source.verifiedAt.slice(0, 10)}
+                  {dictionary.common.source}{dictionary.common.labelSeparator}<SourceLink source={metric.source} /> · {copy.verifiedAt}{dictionary.common.labelSeparator}
+                  {formatUtcDate(metric.source.verifiedAt, locale)}
                 </p>
               </article>
             ))}
           </div>
         ) : (
           <div className="mt-3 rounded-2xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-            尚无可展示的结构化市场指标。
+            {copy.marketEmpty}
           </div>
         )}
       </section>
@@ -719,7 +914,7 @@ function CountryDetailContent({
         <div className="flex items-center gap-2">
           <Database aria-hidden="true" className="size-4 text-primary" />
           <h2 className="font-semibold" id="country-source">
-            数据来源与核验
+            {copy.dataSources}
           </h2>
         </div>
         <div className="mt-3 space-y-2">
@@ -728,18 +923,20 @@ function CountryDetailContent({
               className="rounded-2xl border bg-card p-4 text-sm"
               key={source.id}
             >
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-medium">
+              <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
+                <p className="min-w-0 break-words font-medium">
                   <SourceLink source={source} />
                 </p>
-                <DataClassificationBadge isDemo={source.isDemo} />
+                <div className="flex max-w-full flex-wrap justify-start gap-1.5 sm:shrink-0 sm:justify-end">
+                  <DataClassificationBadge isDemo={source.isDemo} />
+                </div>
               </div>
               <p className="mt-1 text-muted-foreground">
-                {source.publisher ?? "未记录发布机构"}
+                {source.publisher ?? copy.noRecordPublisher}
               </p>
               <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <CalendarDays aria-hidden="true" className="size-3.5" />
-                最近核验：{source.verifiedAt.slice(0, 10)}
+                {copy.lastVerified}{dictionary.common.labelSeparator}{formatUtcDate(source.verifiedAt, locale)}
               </div>
             </article>
           ))}
@@ -747,11 +944,11 @@ function CountryDetailContent({
         <div className="mt-3 rounded-2xl bg-primary/5 p-4 text-sm">
           <div className="flex items-center gap-2 font-semibold">
             <Orbit aria-hidden="true" className="size-4 text-primary" />
-            详情核验时间
+            {copy.detailAsOf}
           </div>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            最近核验：{country.lastVerifiedAt.slice(0, 10)} ·
-            详情截止日期：{response.asOf}
+            {copy.lastVerified}{dictionary.common.labelSeparator}{formatUtcDate(country.lastVerifiedAt, locale)} ·{" "}
+            {copy.detailAsOf}{dictionary.common.labelSeparator}{formatUtcDate(response.asOf, locale)}
           </p>
           {country.isStale ? (
             <p
@@ -759,7 +956,7 @@ function CountryDetailContent({
               data-testid="country-stale-badge"
             >
               <AlertTriangle aria-hidden="true" className="size-3" />
-              核验可能过期，引用前请核实最新来源
+              {copy.staleBadge}
             </p>
           ) : null}
         </div>
@@ -779,19 +976,24 @@ type ApplicabilitySummary = NonNullable<
 function formatPowerBand(
   minimum: number | null,
   maximum: number | null,
+  unknown: string,
+  open: string,
 ): string {
-  return `[${minimum ?? "未知"}, ${maximum ?? "开放"}) kW`;
+  return `[${minimum ?? unknown}, ${maximum ?? open}) kW`;
 }
 
 function ApplicabilitySummarySection({
-  error,
+  errorCode,
   loading,
   summary,
 }: {
-  error: string | null;
+  errorCode: CountryApiErrorCode | null | undefined;
   loading: boolean;
   summary: ApplicabilitySummary | null;
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.country;
+
   if (loading) {
     return (
       <section
@@ -799,18 +1001,18 @@ function ApplicabilitySummarySection({
         className="rounded-2xl border bg-primary/5 p-4 text-sm"
         role="status"
       >
-        正在按新场景与功率刷新国家决策摘要…
+        {copy.applicabilitySummaryLoading}
       </section>
     );
   }
 
-  if (error) {
+  if (errorCode !== undefined) {
     return (
       <section
         className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
         role="alert"
       >
-        {error}
+        {countryDecisionSummaryErrorMessage(errorCode, dictionary)}
       </section>
     );
   }
@@ -818,9 +1020,9 @@ function ApplicabilitySummarySection({
   if (!summary) {
     return (
       <section className="rounded-2xl border border-dashed bg-muted/30 p-4">
-        <h2 className="font-semibold">国家决策摘要</h2>
+        <h2 className="font-semibold">{copy.applicabilitySummary}</h2>
         <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-          选择应用场景和功率并运行产品评估后，这里会用同一组确定性查询显示命中法规、功率带、限值和来源。
+          {copy.applicabilitySummaryEmpty}
         </p>
       </section>
     );
@@ -828,6 +1030,16 @@ function ApplicabilitySummarySection({
 
   const current = summary.country.currentEffectiveRegulations;
   const future = summary.country.futureAdoptedRegulations;
+  const missingDataMessages = countryApplicabilityMissingDataMessages(
+    {
+      countryIso3: summary.country.countryIso3,
+      countryName: summary.country.countryName,
+      currentEffectiveRegulationCount: current.length,
+      futureAdoptedRegulationCount: future.length,
+      hasMissingData: summary.missingData.length > 0,
+    },
+    dictionary,
+  );
 
   return (
     <section
@@ -836,10 +1048,11 @@ function ApplicabilitySummarySection({
       data-testid="country-applicability-summary"
     >
       <h2 className="font-semibold" id="country-applicability-summary">
-        国家决策摘要
+        {copy.applicabilitySummary}
       </h2>
       <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-        查询条件：{summary.query.applicationScope} · {summary.query.powerKw} kW · 截止 {summary.query.asOf}
+        {copy.queryConditions}{dictionary.common.labelSeparator}
+        {applicationScopeLabel(summary.query.applicationScope, dictionary)} · {summary.query.powerKw} kW · {copy.queryAsOf} {formatUtcDate(summary.query.asOf, locale)}
       </p>
 
       {current.length > 0 ? (
@@ -848,16 +1061,16 @@ function ApplicabilitySummarySection({
             <article className="rounded-xl border bg-background p-3" key={regulation.id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">
-                  {regulation.canonicalName}
+                  {regulationDisplayName(regulation, dictionary, locale)}
                 </h3>
                 <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-900">
-                  当前适用
+                  {copy.currentApplicable}
                 </span>
               </div>
               <div className="mt-2 space-y-1 text-xs">
                 {regulation.limits.map((limit) => (
                   <p key={limit.id}>
-                    {limit.pollutantCode}：{formatDecimalForDisplay(limit.limitValue)} {limit.unitCode} · 功率带 {formatPowerBand(limit.powerMinKw, limit.powerMaxKw)} · 限值期 {limit.validFrom} → {limit.validTo ?? "开放"}
+                    {limit.pollutantCode}{dictionary.common.labelSeparator}{formatDecimalForDisplay(limit.limitValue)} {limit.unitCode} · {copy.powerBand} {formatPowerBand(limit.powerMinKw, limit.powerMaxKw, dictionary.common.noData, dictionary.common.open)} · {copy.limitPeriod} {formatUtcDate(limit.validFrom, locale)} → {formatOptionalUtcDate(limit.validTo, locale, dictionary.common.open)}
                   </p>
                 ))}
               </div>
@@ -866,25 +1079,31 @@ function ApplicabilitySummarySection({
         </div>
       ) : (
         <div className="mt-3 rounded-xl border border-dashed bg-background/70 p-3 text-xs leading-5 text-muted-foreground">
-          没有可证明覆盖本次场景、功率和日期的当前有效法规；系统不会据此推断“没有要求”。
+          {copy.decisionNoCurrent}
         </div>
       )}
 
       {future.length > 0 ? (
         <div className="mt-3 text-xs leading-5">
-          <p className="font-semibold">未来已通过</p>
+          <p className="font-semibold">{copy.futureAdopted}</p>
           {future.map((regulation) => (
             <p key={regulation.id}>
-              {regulation.canonicalName} · 预计生效 {regulation.effectiveFrom ?? "未知"}
+              {regulationDisplayName(regulation, dictionary, locale)} ·{" "}
+              {copy.effectiveDate}{" "}
+              {formatOptionalUtcDate(
+                regulation.effectiveFrom,
+                locale,
+                dictionary.common.noData,
+              )}
             </p>
           ))}
         </div>
       ) : null}
 
-      {summary.missingData.length > 0 ? (
+      {missingDataMessages.length > 0 ? (
         <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
-          <p className="font-semibold">No-data / 证据缺口</p>
-          {summary.missingData.map((message) => (
+          <p className="font-semibold">{copy.evidenceGap}</p>
+          {missingDataMessages.map((message) => (
             <p key={message}>{message}</p>
           ))}
         </div>
@@ -892,12 +1111,20 @@ function ApplicabilitySummarySection({
 
       <details className="mt-3 rounded-xl border bg-background/70 p-3 text-xs">
         <summary className="cursor-pointer font-semibold">
-          来源与核验信息（{summary.sources.length}）
+          {copy.sourceCount.replace("{count}", String(summary.sources.length))}
         </summary>
         <div className="mt-2 space-y-1 text-muted-foreground">
-          <p>最近核验：{summary.lastVerifiedAt?.slice(0, 10) ?? "未记录"}</p>
+          <p>{copy.lastVerified}{dictionary.common.labelSeparator}{formatOptionalUtcDate(summary.lastVerifiedAt, locale, dictionary.common.notRecorded)}</p>
           {summary.sources.map((source) => (
-            <p key={`${source.entityType}:${source.entityId}:${source.sourceId}`}>
+            <p
+              key={[
+                source.countryIso3 ?? "global",
+                source.entityType,
+                source.entityId,
+                source.regulationId ?? "none",
+                source.sourceId,
+              ].join(":")}
+            >
               {isNavigableEvidenceUrl(source.sourceUrl) ? (
                 <a
                   className="underline underline-offset-2"
@@ -909,7 +1136,7 @@ function ApplicabilitySummarySection({
                 </a>
               ) : (
                 source.sourceTitle
-              )} · {source.locator ?? "未提供章节定位"} · 核验 {source.verifiedAt.slice(0, 10)}
+              )} · {localizedCitationLocator(source, locale, dictionary, copy.noLocator)} · {copy.verifiedAt} {formatUtcDate(source.verifiedAt, locale)}
             </p>
           ))}
         </div>
@@ -933,6 +1160,19 @@ function RegulationSection({
   id: string;
   regulations: DisplayedRegulation[];
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.country;
+  const localizedStatusLabels = {
+    adopted: copy.statusAdopted,
+    effective: copy.statusEffective,
+    proposed: copy.statusProposed,
+    superseded: copy.statusSuperseded,
+  } as const;
+  const localizedStatusAtAsOfLabels = {
+    adopted: copy.statusAtAdopted,
+    effective: copy.statusAtEffective,
+  } as const;
+
   return (
     <section aria-labelledby={id}>
       <div className="flex items-center gap-2">
@@ -949,59 +1189,79 @@ function RegulationSection({
               data-testid="country-regulation-card"
               key={regulation.id}
             >
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-sm font-semibold leading-5">
-                  {regulation.canonicalName}
+              <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
+                <h3 className="min-w-0 break-words text-sm font-semibold leading-5">
+                  {regulationDisplayName(regulation, dictionary, locale)}
                 </h3>
-                <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                <div className="flex max-w-full flex-wrap justify-start gap-1.5 sm:shrink-0 sm:justify-end">
                   <DataClassificationBadge
                     isDemo={regulation.isDemo || regulation.source.isDemo}
                   />
                   <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold">
-                    {statusAtAsOfLabels[regulation.statusAtAsOf]}
+                    {localizedStatusAtAsOfLabels[regulation.statusAtAsOf]}
                   </span>
                   {regulation.status !== regulation.statusAtAsOf ? (
                     <span className="rounded-full border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-                      当前记录：{statusLabels[regulation.status]}
+                      {copy.archiveCurrent}{dictionary.common.labelSeparator}{localizedStatusLabels[regulation.status]}
                     </span>
                   ) : null}
                 </div>
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                 <DetailItem
-                  label="生效日期"
-                  value={formatDate(regulation.effectiveFrom)}
+                  label={copy.effectiveDate}
+                  value={formatOptionalUtcDate(regulation.effectiveFrom, locale, dictionary.common.notRecorded)}
                 />
                 <DetailItem
-                  label="结束日期"
-                  value={formatDate(regulation.effectiveTo)}
+                  label={copy.endDate}
+                  value={formatOptionalUtcDate(regulation.effectiveTo, locale, dictionary.common.notRecorded)}
                 />
               </dl>
               <details className="mt-3 border-t pt-3 text-xs text-muted-foreground">
                 <summary className="cursor-pointer font-semibold text-foreground">
-                  完整追溯信息
+                  {copy.formalTrace}
                 </summary>
                 <div className="mt-2">
-                  <p>法规记录 ID：{regulation.id}</p>
+                  <p>{copy.regulationId}{dictionary.common.labelSeparator}{regulation.id}</p>
                   <p className="mt-1">
-                    来源：<SourceLink source={regulation.source} /> · 核验：
-                    {regulation.source.verifiedAt.slice(0, 10)}
+                    {dictionary.common.source}{dictionary.common.labelSeparator}<SourceLink source={regulation.source} /> · {copy.verifiedAt}{dictionary.common.labelSeparator}
+                    {formatUtcDate(regulation.source.verifiedAt, locale)}
                   </p>
                 <p>
-                  适用辖区：
-                  {regulation.applicability.jurisdiction.name}（
-                  {regulation.applicability.jurisdiction.code}） · 成员有效期：
-                  {regulation.applicability.membership.validFrom} →{" "}
-                  {regulation.applicability.membership.validTo ?? "开放"}
+                  {copy.applicableJurisdiction}{dictionary.common.labelSeparator}
+                  {nameWithCode(
+                    jurisdictionDisplayName(
+                      {
+                        code: regulation.applicability.jurisdiction.code,
+                        countryIso3: regulation.applicability.countryIso3,
+                        id: regulation.applicability.jurisdiction.id,
+                        isDemo: regulation.applicability.jurisdiction.isDemo,
+                        name: regulation.applicability.jurisdiction.name,
+                        sourceId:
+                          regulation.applicability.jurisdiction.source.id,
+                        sourceIsDemo:
+                          regulation.applicability.jurisdiction.source.isDemo,
+                        sourceTitle:
+                          regulation.applicability.jurisdiction.source.title,
+                        type: "country",
+                      },
+                      dictionary,
+                      locale,
+                    ),
+                    regulation.applicability.jurisdiction.code,
+                    locale,
+                  )} · {copy.membershipPeriod}{dictionary.common.labelSeparator}
+                  {formatUtcDate(regulation.applicability.membership.validFrom, locale)} →{" "}
+                  {formatOptionalUtcDate(regulation.applicability.membership.validTo, locale, dictionary.common.open)}
                 </p>
                 <p className="mt-1">
-                  辖区来源：
+                  {copy.jurisdictionSource}{dictionary.common.labelSeparator}
                   <SourceLink
                     source={regulation.applicability.jurisdiction.source}
                   />
                 </p>
                 <p className="mt-1">
-                  成员关系来源：
+                  {copy.membershipSource}{dictionary.common.labelSeparator}
                   <SourceLink
                     source={regulation.applicability.membership.source}
                   />
@@ -1030,6 +1290,7 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 }
 
 function DataClassificationBadge({ isDemo }: { isDemo: boolean }) {
+  const { dictionary } = useLocale();
   return (
     <span
       className={
@@ -1038,7 +1299,7 @@ function DataClassificationBadge({ isDemo }: { isDemo: boolean }) {
           : "shrink-0 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-900"
       }
     >
-      {isDemo ? "虚构 Demo" : "已核验来源"}
+      {isDemo ? dictionary.country.demoBadge : dictionary.common.verifiedSource}
     </span>
   );
 }
@@ -1046,11 +1307,12 @@ function DataClassificationBadge({ isDemo }: { isDemo: boolean }) {
 type CountrySource = AvailableCountryResponse["country"]["sources"][number];
 
 function SourceLink({ source }: { source: CountrySource }) {
+  const { dictionary } = useLocale();
   if (!isNavigableEvidenceUrl(source.url)) {
     return (
       <span>
         {source.title}
-        {source.isDemo ? "（虚构证据，无外部链接）" : ""}
+        {source.isDemo ? dictionary.country.demoNoExternalSuffix : ""}
       </span>
     );
   }

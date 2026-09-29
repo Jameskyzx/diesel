@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import { evaluateProductFit } from "@/domain/product-fit/evaluate-product-fit";
+import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
 import type { ProductFitQuery } from "@/features/database/schemas";
 import {
   productSummarySchema,
   type CertificationEvidence,
+  type ProductFitReasonCode,
   type ProductSummary,
   type RegulationEvidence,
 } from "@/features/product-fit/schemas";
+import { buildCompatibleProductsResult } from "@/server/ai/tool-results";
 
 const verifiedAt = "2026-01-15T00:00:00.000Z";
 const productSource = {
@@ -121,6 +124,8 @@ const certification: CertificationEvidence = {
   isDemo: true,
   powerMaxKw: 150,
   powerMinKw: 50,
+  productId: product.id,
+  productModelCode: product.modelCode,
   regulationId: regulation.regulationId,
   source: certificationSource,
   status: "active",
@@ -128,6 +133,44 @@ const certification: CertificationEvidence = {
   validTo: "2027-01-01",
   verifiedAt,
 };
+
+const failedCertificationReasonCases = [
+  {
+    certification: {
+      ...certification,
+      applicationScope: "construction",
+      status: "unknown",
+    },
+    failureCode: "CERTIFICATION_SCOPE_MISMATCH",
+    name: "unknown status before a scope mismatch",
+    unknownCode: "CERTIFICATION_STATUS_UNKNOWN",
+  },
+  {
+    certification: {
+      ...certification,
+      powerMaxKw: query.powerKw,
+      powerMinKw: null,
+    },
+    failureCode: "CERTIFICATION_POWER_OUT_OF_RANGE",
+    name: "unknown lower power bound at the excluded upper boundary",
+    unknownCode: "CERTIFICATION_POWER_RANGE_UNKNOWN",
+  },
+  {
+    certification: {
+      ...certification,
+      validFrom: null,
+      validTo: query.asOf,
+    },
+    failureCode: "CERTIFICATION_EXPIRED",
+    name: "unknown validity start at the excluded end date",
+    unknownCode: "CERTIFICATION_VALIDITY_UNKNOWN",
+  },
+] satisfies Array<{
+  certification: CertificationEvidence;
+  failureCode: ProductFitReasonCode;
+  name: string;
+  unknownCode: ProductFitReasonCode;
+}>;
 
 function evaluate(
   input: ProductFitQuery,
@@ -400,6 +443,182 @@ describe("deterministic product-fit rules", () => {
     expect(result.regulationChecks[0]?.certifications[0]).toMatchObject({
       status: "fail",
     });
+  });
+
+  it.each(failedCertificationReasonCases)(
+    "summarizes the explicit failure for $name",
+    ({ certification: record, failureCode, unknownCode }) => {
+      const result = evaluate(query, [record]);
+
+      expect(result.status).toBe("not_fit");
+      expect(result.commercialReadiness).toBe("not_ready");
+      expect(result.productChecks.power.status).toBe("pass");
+      expect(result.productChecks.availability.status).toBe("pass");
+      expect(result.reasons).toEqual([
+        expect.objectContaining({ code: failureCode, status: "fail" }),
+      ]);
+      expect(result.regulationChecks[0]).toMatchObject({
+        code: failureCode,
+        regulation,
+        status: "fail",
+      });
+      expect(result.regulationChecks[0]?.certifications[0]).toMatchObject({
+        certification: record,
+        reasons: [
+          { code: unknownCode, status: "unknown" },
+          { code: failureCode, status: "fail" },
+        ],
+        status: "fail",
+      });
+      expect(result.product).toEqual(product);
+      expect(result.sources).toEqual(evaluate(query).sources);
+      expect(result.rulesetVersion).toBe("product-fit-v2");
+    },
+  );
+
+  it.each(failedCertificationReasonCases)(
+    "accepts the deterministic AI/client result for $name",
+    ({ certification: record }) => {
+      const result = buildCompatibleProductsResult({
+        ...query,
+        evaluations: [evaluate(query, [record])],
+      });
+
+      expect(clientAiToolResultSchema.safeParse(result).success).toBe(true);
+    },
+  );
+
+  it.each([false, true])(
+    "selects the first failing reason in certification order (reversed: %s)",
+    (reverse) => {
+      const records: CertificationEvidence[] = [
+        {
+          ...certification,
+          applicationScope: "construction",
+          powerMaxKw: query.powerKw,
+          status: "unknown",
+        },
+        {
+          ...certification,
+          id: "00000000-0000-4000-8000-000000000402",
+          status: "withdrawn",
+        },
+      ];
+      if (reverse) records.reverse();
+      const result = evaluate(query, records);
+      const failureCode = reverse
+        ? "CERTIFICATION_INACTIVE"
+        : "CERTIFICATION_SCOPE_MISMATCH";
+
+      expect(result.reasons[0]).toMatchObject({
+        code: failureCode,
+        status: "fail",
+      });
+      expect(result.regulationChecks[0]).toMatchObject({
+        code: failureCode,
+        status: "fail",
+      });
+      expect(
+        result.regulationChecks[0]?.certifications.map((item) => ({
+          certification: item.certification,
+          status: item.status,
+        })),
+      ).toEqual(
+        records.map((record) => ({ certification: record, status: "fail" })),
+      );
+    },
+  );
+
+  it.each([false, true])(
+    "takes unknown evidence from the viable certification (reversed: %s)",
+    (reverse) => {
+      const failedRecord: CertificationEvidence = {
+        ...certification,
+        applicationScope: "construction",
+        status: "unknown",
+      };
+      const unknownRecord: CertificationEvidence = {
+        ...certification,
+        id: "00000000-0000-4000-8000-000000000402",
+        powerMinKw: null,
+      };
+      const records = reverse
+        ? [unknownRecord, failedRecord]
+        : [failedRecord, unknownRecord];
+      const result = evaluate(query, records);
+      const checks = result.regulationChecks[0]?.certifications;
+
+      expect(result.status).toBe("unknown");
+      expect(result.commercialReadiness).toBe("unknown");
+      expect(checks?.map((item) => item.certification)).toEqual(records);
+      expect(
+        checks?.find((item) => item.certification.id === failedRecord.id),
+      ).toMatchObject({
+        certification: failedRecord,
+        reasons: [
+          { code: "CERTIFICATION_STATUS_UNKNOWN", status: "unknown" },
+          { code: "CERTIFICATION_SCOPE_MISMATCH", status: "fail" },
+        ],
+        status: "fail",
+      });
+      expect(
+        checks?.find((item) => item.certification.id === unknownRecord.id),
+      ).toMatchObject({
+        certification: unknownRecord,
+        reasons: [
+          { code: "CERTIFICATION_POWER_RANGE_UNKNOWN", status: "unknown" },
+        ],
+        status: "unknown",
+      });
+      expect(result.regulationChecks[0]).toMatchObject({
+        code: "CERTIFICATION_POWER_RANGE_UNKNOWN",
+        status: "unknown",
+      });
+      expect(result.reasons[0]).toMatchObject({
+        code: "CERTIFICATION_POWER_RANGE_UNKNOWN",
+        status: "unknown",
+      });
+    },
+  );
+
+  it("keeps all-unknown certification evidence unknown and client-valid", () => {
+    const record: CertificationEvidence = {
+      ...certification,
+      powerMaxKw: null,
+      powerMinKw: null,
+      status: "unknown",
+      validFrom: null,
+      validTo: null,
+    };
+    const result = evaluate(query, [record]);
+
+    expect(result.status).toBe("unknown");
+    expect(result.commercialReadiness).toBe("unknown");
+    expect(result.reasons[0]).toMatchObject({
+      code: "CERTIFICATION_STATUS_UNKNOWN",
+      status: "unknown",
+    });
+    expect(result.regulationChecks[0]).toMatchObject({
+      code: "CERTIFICATION_STATUS_UNKNOWN",
+      status: "unknown",
+    });
+    expect(result.regulationChecks[0]?.certifications[0]).toMatchObject({
+      certification: record,
+      reasons: [
+        { code: "CERTIFICATION_STATUS_UNKNOWN", status: "unknown" },
+        { code: "CERTIFICATION_POWER_RANGE_UNKNOWN", status: "unknown" },
+        { code: "CERTIFICATION_VALIDITY_UNKNOWN", status: "unknown" },
+      ],
+      status: "unknown",
+    });
+    expect(
+      clientAiToolResultSchema.safeParse(
+        buildCompatibleProductsResult({
+          ...query,
+          evaluations: [result],
+        }),
+      ).success,
+    ).toBe(true);
   });
 
   it("preserves Demo classification when one source supports mixed facts", () => {

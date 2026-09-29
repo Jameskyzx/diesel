@@ -11,6 +11,7 @@ import {
   PencilLine,
   RotateCcw,
   Send,
+  Square,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -18,7 +19,6 @@ import {
   DefaultChatTransport,
   isToolUIPart,
   type FileUIPart,
-  type UIMessage,
 } from "ai";
 import {
   ChangeEvent,
@@ -29,6 +29,8 @@ import {
   useState,
 } from "react";
 import { AssistantMarkdown } from "@/components/ai/assistant-markdown";
+import { MarketComparisonFacts } from "@/components/ai/market-comparison-facts";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { unwrapUntrustedKnowledgeExcerpt } from "@/domain/knowledge/retrieval-policy";
 import { Button } from "@/components/ui/button";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
@@ -36,30 +38,69 @@ import {
   CHAT_ATTACHMENT_ACCEPT,
   CHAT_DOCUMENT_ATTACHMENT_ACCEPT,
   formatChatAttachmentBytes,
-  MAX_CHAT_ATTACHMENT_BYTES,
-  MAX_CHAT_ATTACHMENT_FILENAME_CHARACTERS,
-  MAX_CHAT_ATTACHMENTS,
-  MAX_CHAT_ATTACHMENTS_TOTAL_BYTES,
+  normalizeChatAttachmentFilename,
   resolveChatAttachmentMediaType,
   type ChatAttachmentMediaType,
 } from "@/features/ai/attachments";
 import {
+  formatChatAttachmentError,
+  imageInvalidAttachmentError,
+  validateChatAttachments,
+  type ChatAttachmentErrorDescriptor,
+} from "@/features/ai/attachment-errors";
+import {
   hasStructurallyValidChatImage,
-  MAX_CHAT_IMAGE_DIMENSION,
-  MAX_CHAT_IMAGE_PIXELS,
-  MIN_CHAT_IMAGE_DIMENSION,
 } from "@/features/ai/image-attachments";
+import {
+  formatReleasedAttachment,
+  parseReleasedAttachmentPart,
+  prepareSalesChatRequestMessages,
+  releaseSalesChatMessageAttachments,
+  type SalesChatUiMessage,
+} from "@/features/ai/released-attachment";
 import {
   type ClientAiCitation,
   type ClientAiToolResult,
 } from "@/features/ai/client-schemas";
+import {
+  countryProfileTopicLabel,
+  localizedCitationLocator,
+  localizedCitationTitle,
+  localizedRegulationComparisonCountryName,
+  localizedSalesBriefAction,
+  localizedSalesBriefItem,
+  localizedSalesBriefSummary,
+  localizedScoreComponentContent,
+  localizedToolWarnings,
+  productFitReasonMessage,
+  toolPartErrorMessage,
+} from "@/features/ai/client-tool-copy";
 import { toolPartPresentation } from "@/features/ai/tool-part-presentation";
 import { MAX_CHAT_USER_MESSAGE_CHARACTERS } from "@/features/ai/constants";
-import { parseSerializedApiErrorMessage } from "@/lib/api-error";
+import {
+  parseSerializedApiErrorCode,
+  type SafeApiErrorCode,
+} from "@/lib/api-error";
 import { cn } from "@/lib/utils";
+import { interpolate, type Dictionary } from "@/i18n/dictionaries";
+import {
+  formatOptionalUtcDate,
+  formatProductAvailabilityDateRange,
+  formatUtcDate,
+} from "@/i18n/date";
+import type { Locale } from "@/i18n/locale";
+import {
+  applicationScopeLabel,
+  jurisdictionDisplayName,
+  localizedList,
+  nameWithCode,
+  productDisplayName,
+  regulationDisplayName,
+} from "@/i18n/structured-labels";
 
 type SalesChatProps = {
   aiConfigured: boolean;
+  countryIso2ByIso3: Readonly<Record<string, string>>;
   demoMode?: boolean;
   imageUploadsEnabled: boolean;
   initialPrompt?: string;
@@ -69,6 +110,7 @@ type SalesChatProps = {
 
 type PendingAttachment = {
   file: File;
+  filename: string;
   id: string;
   mediaType: ChatAttachmentMediaType;
 };
@@ -83,47 +125,41 @@ type ActiveSubmission = Omit<FailedSubmission, "messageId"> & {
   messageId?: string;
 };
 
-function attachmentValidationMessage(
-  attachments: readonly PendingAttachment[],
-): string | null {
-  if (attachments.length > MAX_CHAT_ATTACHMENTS) {
-    return `每轮最多上传 ${MAX_CHAT_ATTACHMENTS} 个附件。`;
+class AttachmentMessageReleaseCoordinator {
+  #fileParts: FileUIPart[] | null = null;
+  #release: () => void = () => undefined;
+
+  connect(release: () => void): () => void {
+    this.#release = release;
+    return () => {
+      if (this.#release === release) {
+        this.#release = () => undefined;
+        this.#fileParts?.splice(0);
+        this.#fileParts = null;
+      }
+    };
   }
 
-  for (const { file } of attachments) {
-    const filename = file.name.trim();
-    if (
-      !filename ||
-      filename.length > MAX_CHAT_ATTACHMENT_FILENAME_CHARACTERS ||
-      /[\u0000-\u001f\u007f/\\]/u.test(filename)
-    ) {
-      return `文件名无效或超过 ${MAX_CHAT_ATTACHMENT_FILENAME_CHARACTERS} 个字符。`;
-    }
-    if (file.size === 0) {
-      return `${filename} 是空文件，无法上传。`;
-    }
-    if (file.size > MAX_CHAT_ATTACHMENT_BYTES) {
-      return `${filename} 超过单文件 3 MiB 限制。`;
-    }
+  run(): void {
+    this.#release();
+    this.#fileParts?.splice(0);
+    this.#fileParts = null;
   }
 
-  const totalBytes = attachments.reduce(
-    (total, attachment) => total + attachment.file.size,
-    0,
-  );
-  if (totalBytes > MAX_CHAT_ATTACHMENTS_TOTAL_BYTES) {
-    return "本轮附件合计不能超过 6 MiB。";
+  trackFileParts(fileParts: FileUIPart[]): void {
+    this.#fileParts?.splice(0);
+    this.#fileParts = fileParts;
   }
-
-  return null;
 }
 
 function fileToUiPart({
   file,
+  filename,
   mediaType,
 }: PendingAttachment): Promise<FileUIPart> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onabort = () => reject(new Error("FileReader aborted."));
     reader.onerror = () => reject(new Error("FileReader failed."));
     reader.onload = () => {
       if (typeof reader.result !== "string") {
@@ -138,7 +174,7 @@ function fileToUiPart({
       }
 
       resolve({
-        filename: file.name.trim(),
+        filename,
         mediaType,
         type: "file",
         url: `data:${mediaType};base64,${reader.result.slice(separatorIndex + 1)}`,
@@ -149,6 +185,7 @@ function fileToUiPart({
 }
 
 function PendingImagePreview({ attachment }: { attachment: PendingAttachment }) {
+  const { dictionary } = useLocale();
   const [previewUrl] = useState(() =>
     attachment.mediaType.startsWith("image/")
       ? URL.createObjectURL(attachment.file)
@@ -165,7 +202,9 @@ function PendingImagePreview({ attachment }: { attachment: PendingAttachment }) 
 
   return previewUrl ? (
     <Image
-      alt={`${attachment.file.name} 预览`}
+      alt={interpolate(dictionary.chat.filePreview, {
+        name: attachment.filename,
+      })}
       className="size-12 rounded-md object-cover"
       height={48}
       src={previewUrl}
@@ -184,49 +223,78 @@ function PendingImagePreview({ attachment }: { attachment: PendingAttachment }) 
  * 服务端返回 schema 校验的 `{error:{code,message}}` 信封（ADR-041），
  * 这里解出通用消息展示，解不出时退回固定文案，不把 JSON 直接给用户。
  */
-function chatErrorMessage(error: Error): string {
-  const fallback =
-    "聊天请求失败。不会使用模型记忆补全法规事实，请稍后重试。";
-  return parseSerializedApiErrorMessage(error.message, fallback);
+export function chatErrorMessage(
+  error: Error,
+  dictionary: Dictionary,
+): string {
+  // Parse on every render so a retained failed submission immediately follows
+  // the active locale. Unknown envelopes never expose their raw text.
+  const code = parseSerializedApiErrorCode(error.message);
+  if (code === null) return dictionary.chat.chatError;
+  const messages: Record<SafeApiErrorCode, string> = {
+    AI_NOT_CONFIGURED: dictionary.apiErrors.chatAiNotConfigured,
+    INTERNAL_ERROR: dictionary.apiErrors.chatUnavailable,
+    INVALID_INPUT: dictionary.apiErrors.chatInvalidInput,
+    PAYLOAD_TOO_LARGE: dictionary.apiErrors.chatPayloadTooLarge,
+    RATE_LIMITED: dictionary.apiErrors.chatRateLimited,
+    REQUEST_TIMEOUT: dictionary.apiErrors.chatRequestTimeout,
+  };
+  return messages[code];
 }
 
-const toolLabels: Record<ClientAiToolResult["tool"], string> = {
-  calculateOpportunityScore: "确定性机会评分",
-  compareMarkets: "结构化市场比较",
-  compareRegulations: "数据库法规比较",
-  findCompatibleProducts: "确定性产品适配",
-  generateSalesBrief: "结构化销售简报",
-  getCountryProfile: "国家与法规资料",
-  searchKnowledgeBase: "知识库证据",
-};
+function toolLabels(
+  copy: Dictionary["chat"],
+): Record<ClientAiToolResult["tool"], string> {
+  return {
+    calculateOpportunityScore: copy.toolCalculateOpportunityScore,
+    compareMarkets: copy.toolCompareMarkets,
+    compareRegulations: copy.toolCompareRegulations,
+    findCompatibleProducts: copy.toolFindCompatibleProducts,
+    generateSalesBrief: copy.toolGenerateSalesBrief,
+    getCountryProfile: copy.toolGetCountryProfile,
+    searchKnowledgeBase: copy.toolSearchKnowledgeBase,
+  };
+}
 
-const statusLabels = {
-  error: "查询失败",
-  no_data: "证据不足",
-  ok: "已取得证据",
-} as const;
+function statusLabels(copy: Dictionary["chat"]) {
+  return {
+    error: copy.toolStatusError,
+    no_data: copy.toolStatusNoData,
+    ok: copy.toolStatusOk,
+  } as const;
+}
 
-const regulationStatusLabels = {
-  adopted: "已采纳",
-  effective: "已生效",
-  proposed: "拟议",
-  superseded: "已被取代",
-} as const;
+function regulationStatusLabels(dictionary: Dictionary) {
+  return {
+    adopted: dictionary.country.statusAdopted,
+    effective: dictionary.country.statusEffective,
+    proposed: dictionary.country.statusProposed,
+    superseded: dictionary.country.statusSuperseded,
+  } as const;
+}
 
-const fitStatusLabels = {
-  fit: "匹配",
-  not_fit: "不匹配",
-  unknown: "证据不足",
-} as const;
+function fitStatusLabels(dictionary: Dictionary) {
+  return {
+    fit: dictionary.productFit.fit,
+    not_fit: dictionary.productFit.notFit,
+    unknown: dictionary.productFit.unknownFit,
+  } as const;
+}
 
-const marketComparisonStatusLabels = {
-  comparable: "可比较",
-  incomparable: "不可比较",
-  insufficient_data: "数据不足",
-} as const;
+function commercialReadinessLabels(dictionary: Dictionary) {
+  return {
+    not_ready: dictionary.productFit.commercialNotReady,
+    ready: dictionary.productFit.commercialReady,
+    unknown: dictionary.productFit.commercialUnknown,
+  } as const;
+}
 
-function formatTimestamp(value: string | null): string {
-  return value ? value.slice(0, 10) : "未记录";
+function scoreComponentLabels(copy: Dictionary["chat"]) {
+  return {
+    marketPotential: copy.scoreMarketPotential,
+    productReadiness: copy.scoreProductReadiness,
+    regulatoryCoverage: copy.scoreRegulatoryCoverage,
+  } as const;
 }
 
 function formatDecimal(value: string): string {
@@ -242,28 +310,18 @@ function formatDecimal(value: string): string {
 function regulationStatusNote(
   status: "adopted" | "effective",
   recordStatus: "adopted" | "effective" | "superseded",
+  dictionary: Dictionary,
 ): string {
+  const labels = regulationStatusLabels(dictionary);
   if (status === recordStatus) {
-    return `查询日：${regulationStatusLabels[status]}`;
+    return `${dictionary.chat.queryDate}${dictionary.common.labelSeparator}${labels[status]}`;
   }
 
-  return `查询日：${regulationStatusLabels[status]} · 当前记录：${regulationStatusLabels[recordStatus]}`;
+  return `${dictionary.chat.queryDate}${dictionary.common.labelSeparator}${labels[status]} · ${dictionary.country.archiveCurrent}${dictionary.common.labelSeparator}${labels[recordStatus]}`;
 }
 
 function resultContainsDemoEvidence(result: ClientAiToolResult): boolean {
   return result.citations.some((citation) => citation.isDemo);
-}
-
-function citationLocator(citation: ClientAiCitation): string {
-  if (citation.pageFrom) {
-    const pages =
-      citation.pageTo && citation.pageTo !== citation.pageFrom
-        ? `${citation.pageFrom}–${citation.pageTo}`
-        : String(citation.pageFrom);
-    return `第 ${pages} 页`;
-  }
-
-  return citation.sectionLocator ?? citation.locator ?? "未记录页码/章节";
 }
 
 function CitationList({
@@ -271,10 +329,14 @@ function CitationList({
 }: {
   citations: ClientAiCitation[];
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.chat;
+  const statusCopy = regulationStatusLabels(dictionary);
+
   if (citations.length === 0) {
     return (
       <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-        本次工具没有返回可引用来源。
+        {copy.noCitations}
       </p>
     );
   }
@@ -282,7 +344,7 @@ function CitationList({
   return (
     <details className="rounded-lg border bg-background/40 p-2">
       <summary className="cursor-pointer text-[11px] font-semibold tracking-wide text-muted-foreground">
-        查看来源与定位（{citations.length}）
+        {interpolate(copy.viewSources, { count: citations.length })}
       </summary>
       <div className="mt-2 space-y-2">
       {citations.map((citation, index) => (
@@ -298,14 +360,23 @@ function CitationList({
         >
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-medium">{citation.title}</p>
+              <p className="font-medium">
+                {localizedCitationTitle(
+                  citation,
+                  locale,
+                  dictionary,
+                )}
+              </p>
               <p className="mt-0.5 text-muted-foreground">
-                {citation.sourceTitle} · {citationLocator(citation)}
+                {citation.sourceTitle} ·{" "}
+                {localizedCitationLocator(citation, locale, dictionary)}
               </p>
             </div>
             {isNavigableEvidenceUrl(citation.sourceUrl) ? (
               <a
-                aria-label={`打开来源：${citation.sourceTitle}`}
+                aria-label={interpolate(copy.openSource, {
+                  title: citation.sourceTitle,
+                })}
                 className="shrink-0 text-primary hover:underline"
                 href={citation.sourceUrl}
                 rel="noreferrer"
@@ -315,22 +386,35 @@ function CitationList({
               </a>
             ) : citation.isDemo ? (
               <span className="shrink-0 text-[10px] text-amber-800">
-                虚构证据，无外部链接
+                {dictionary.country.demoNoExternalLink}
               </span>
             ) : null}
           </div>
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
             {citation.regulationStatus ? (
               <span>
-                法规状态：{regulationStatusLabels[citation.regulationStatus]}
+                {copy.regulationStatus}{dictionary.common.labelSeparator}
+                {statusCopy[citation.regulationStatus]}
               </span>
             ) : null}
-            <span>核验：{formatTimestamp(citation.verifiedAt)}</span>
+            <span>
+              {dictionary.common.verified}{dictionary.common.labelSeparator}
+              {formatOptionalUtcDate(
+                citation.verifiedAt,
+                locale,
+                dictionary.common.notRecorded,
+              )}
+            </span>
             {citation.publishedOn ? (
-              <span>发布：{citation.publishedOn}</span>
+              <span>
+                {copy.published}{dictionary.common.labelSeparator}
+                {formatUtcDate(citation.publishedOn, locale)}
+              </span>
             ) : null}
             {citation.isDemo ? (
-              <span className="font-semibold text-amber-700">DEMO</span>
+              <span className="font-semibold text-amber-700">
+                {dictionary.common.demo}
+              </span>
             ) : null}
           </div>
         </article>
@@ -346,6 +430,10 @@ type ClientOpportunityScore = Extract<
 >["scorecard"]["scores"][number];
 
 function ScoreBreakdown({ score }: { score: ClientOpportunityScore }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.chat;
+  const components = scoreComponentLabels(copy);
+
   return (
     <div className="rounded-lg bg-background/70 p-2 text-xs">
       <div className="flex items-end justify-between gap-2">
@@ -356,68 +444,157 @@ function ScoreBreakdown({ score }: { score: ClientOpportunityScore }) {
         </p>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        数据覆盖率 {score.dataCoveragePct}%
+        {copy.dataCoverage} {score.dataCoveragePct}%
       </p>
       <div className="mt-2 space-y-2">
-        {score.components.map((component) => (
-          <div className="rounded-md border bg-background p-2" key={component.key}>
-            <p className="flex justify-between gap-2">
-              <span className="font-medium">{component.key}</span>
-              <span>
-                {component.score ?? "缺失"} · 有效权重{" "}
-                {(component.effectiveWeight * 100).toFixed(0)}% · 贡献{" "}
-                {component.contribution ?? "—"}
-              </span>
-            </p>
-            <p className="mt-1 leading-4 text-muted-foreground">
-              {component.explanation}
-            </p>
-            {component.inputFacts.length > 0 ? (
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                输入：{component.inputFacts.join(" · ")}
+        {score.components.map((component) => {
+          const content = localizedScoreComponentContent(
+            component,
+            locale,
+            copy,
+          );
+          return (
+            <div
+              className="rounded-md border bg-background p-2"
+              key={component.key}
+            >
+              <p className="flex justify-between gap-2">
+                <span className="font-medium">{components[component.key]}</span>
+                <span>
+                  {component.score ?? copy.missing} · {copy.effectiveWeight}{" "}
+                  {(component.effectiveWeight * 100).toFixed(0)}% · {copy.contribution}{" "}
+                  {component.contribution ?? "—"}
+                </span>
               </p>
-            ) : null}
-          </div>
-        ))}
+              <p className="mt-1 leading-4 text-muted-foreground">
+                {content.explanation}
+              </p>
+              {content.inputSummary ? (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {copy.inputFacts}{dictionary.common.labelSeparator}
+                  {content.inputSummary}
+                </p>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-type QuerySummaryResult = Extract<
-  ClientAiToolResult,
-  {
-    tool:
-      | "calculateOpportunityScore"
-      | "compareRegulations"
-      | "findCompatibleProducts"
-      | "generateSalesBrief";
-  }
->;
+type QuerySummaryResult = ClientAiToolResult;
 
 function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
-  let fields: Array<{ label: string; value: string }>;
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.chat;
+  const labels = toolLabels(copy);
+  let fields: Array<{ label: string; value: string; fullMobileRow?: boolean }>;
 
-  if (result.tool === "findCompatibleProducts") {
+  if (result.tool === "searchKnowledgeBase") {
     fields = [
-      { label: "国家", value: result.query.countryIso3 ?? "未指定" },
-      { label: "场景", value: result.query.applicationScope },
-      { label: "功率", value: `${result.query.powerKw} kW` },
-      { label: "日期", value: result.query.asOf },
+      {
+        label: copy.country,
+        value: result.resolvedCountryIso3 ?? copy.unspecified,
+      },
+      {
+        label: copy.scope,
+        value: result.search.filters.applicationScope
+          ? applicationScopeLabel(
+              result.search.filters.applicationScope,
+              dictionary,
+            )
+          : copy.unspecified,
+      },
+      {
+        label: copy.date,
+        value: formatUtcDate(result.informationAsOf, locale),
+      },
+      { label: copy.queryConditions, value: result.search.query },
+    ];
+  } else if (result.tool === "getCountryProfile") {
+    fields = [
+      {
+        label: copy.country,
+        value: result.resolvedCountryIso3 ?? copy.unspecified,
+      },
+      {
+        label: copy.date,
+        value: formatUtcDate(result.informationAsOf, locale),
+      },
+      {
+        label: copy.queryConditions,
+        value: localizedList(
+          result.requestedTopics.map((topic) =>
+            countryProfileTopicLabel(topic, dictionary),
+          ),
+          locale,
+        ),
+      },
+    ];
+  } else if (result.tool === "findCompatibleProducts") {
+    fields = [
+      { label: copy.country, value: result.query.countryIso3 ?? copy.unspecified },
+      {
+        label: copy.scope,
+        value: applicationScopeLabel(
+          result.query.applicationScope,
+          dictionary,
+        ),
+      },
+      { label: copy.power, value: `${result.query.powerKw} kW` },
+      { label: copy.date, value: formatUtcDate(result.query.asOf, locale) },
       ...(result.query.productModelCode
-        ? [{ label: "产品", value: result.query.productModelCode }]
+        ? [{ label: copy.product, value: result.query.productModelCode }]
+        : []),
+    ];
+  } else if (result.tool === "compareMarkets") {
+    fields = [
+      {
+        label: copy.country,
+        value: localizedList(
+          result.comparison.query.countryIso3s,
+          locale,
+        ),
+      },
+      {
+        label: copy.scope,
+        value: result.comparison.query.applicationScope
+          ? applicationScopeLabel(
+              result.comparison.query.applicationScope,
+              dictionary,
+            )
+          : copy.unspecified,
+      },
+      ...(result.comparison.query.metricCodes
+        ? [
+            {
+              label: copy.marketMetricCodes,
+              fullMobileRow: true,
+              value: localizedList(
+                result.comparison.query.metricCodes,
+                locale,
+              ),
+            },
+          ]
         : []),
     ];
   } else if (result.tool === "generateSalesBrief") {
     const { query } = result.brief;
     fields = [
-      { label: "目标国家", value: query.targetCountryIso3 },
-      { label: "比较国家", value: query.countryIso3s.join("、") },
-      { label: "场景", value: query.applicationScope },
-      { label: "功率", value: `${query.powerKw} kW` },
-      { label: "日期", value: query.asOf },
+      { label: copy.targetCountry, value: query.targetCountryIso3 },
+      {
+        label: copy.comparisonCountries,
+        value: localizedList(query.countryIso3s, locale),
+      },
+      {
+        label: copy.scope,
+        value: applicationScopeLabel(query.applicationScope, dictionary),
+      },
+      { label: copy.power, value: `${query.powerKw} kW` },
+      { label: copy.date, value: formatUtcDate(query.asOf, locale) },
       ...(query.productModelCode
-        ? [{ label: "产品", value: query.productModelCode }]
+        ? [{ label: copy.product, value: query.productModelCode }]
         : []),
     ];
   } else {
@@ -425,27 +602,34 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
       result.tool === "compareRegulations"
         ? result.comparison.query
         : result.scorecard.query;
+    const productModelCode =
+      result.tool === "calculateOpportunityScore"
+        ? result.scorecard.query.productModelCode
+        : undefined;
     fields = [
       {
-        label: "国家",
-        value: query.countryIso3s.join("、"),
+        label: copy.country,
+        value: localizedList(query.countryIso3s, locale),
       },
-      { label: "场景", value: query.applicationScope },
-      { label: "功率", value: `${query.powerKw} kW` },
-      { label: "日期", value: query.asOf },
-      ...(query.productModelCode
-        ? [{ label: "产品", value: query.productModelCode }]
+      {
+        label: copy.scope,
+        value: applicationScopeLabel(query.applicationScope, dictionary),
+      },
+      { label: copy.power, value: `${query.powerKw} kW` },
+      { label: copy.date, value: formatUtcDate(query.asOf, locale) },
+      ...(productModelCode
+        ? [{ label: copy.product, value: productModelCode }]
         : []),
     ];
   }
 
   return (
     <dl
-      aria-label={`${toolLabels[result.tool]}查询条件`}
+      aria-label={`${labels[result.tool]}${dictionary.common.wordSeparator}${copy.queryConditions}`}
       className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg border border-primary/15 bg-background/80 p-2.5 text-xs sm:grid-cols-3"
     >
       {fields.map((field) => (
-        <div className="min-w-0" key={field.label}>
+        <div className={cn("min-w-0", field.fullMobileRow && "col-span-2 sm:col-span-1")} key={field.label}>
           <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground">
             {field.label}
           </dt>
@@ -458,23 +642,39 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
   );
 }
 
-function ToolFacts({ result }: { result: ClientAiToolResult }) {
+function ToolFacts({
+  countryIso2ByIso3,
+  result,
+}: {
+  countryIso2ByIso3: Readonly<Record<string, string>>;
+  result: ClientAiToolResult;
+}) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.chat;
+  const fitCopy = fitStatusLabels(dictionary);
+  const readinessCopy = commercialReadinessLabels(dictionary);
+  const regulationCopy = regulationStatusLabels(dictionary);
+
   if (result.tool === "getCountryProfile") {
     if (!result.profile || result.profile.status === "no_data") {
-      return <p className="text-xs">该国家暂无结构化资料。</p>;
+      return <p className="text-xs">{copy.countryNoData}</p>;
     }
 
     return (
       <div className="space-y-2 text-xs">
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg bg-background/70 p-2">
-            <span className="text-muted-foreground">查询日有效法规</span>
+            <span className="text-muted-foreground">
+              {copy.currentEffectiveCount}
+            </span>
             <strong className="mt-1 block text-base">
               {result.profile.country.currentEffectiveRegulations.length}
             </strong>
           </div>
           <div className="rounded-lg bg-background/70 p-2">
-            <span className="text-muted-foreground">查询日已采纳法规</span>
+            <span className="text-muted-foreground">
+              {copy.futureAdoptedCount}
+            </span>
             <strong className="mt-1 block text-base">
               {result.profile.country.futureAdoptedRegulations.length}
             </strong>
@@ -488,16 +688,47 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
             className="rounded-lg bg-background/70 p-2 text-muted-foreground"
             key={regulation.id}
           >
-            {regulation.canonicalName} · 查询日：
-            {regulationStatusLabels[regulation.statusAtAsOf]}
+            {regulationDisplayName(regulation, dictionary, locale)} ·{" "}
+            {copy.queryDate}
+            {dictionary.common.labelSeparator}
+            {regulationCopy[regulation.statusAtAsOf]}
             {regulation.status !== regulation.statusAtAsOf
-              ? ` · 当前记录：${regulationStatusLabels[regulation.status]}`
+              ? ` · ${dictionary.country.archiveCurrent}${dictionary.common.labelSeparator}${regulationCopy[regulation.status]}`
               : ""}
-            {" · "}适用辖区
-            {regulation.applicability.jurisdiction.name}（
-            {regulation.applicability.jurisdiction.code}） · 成员期
-            {regulation.applicability.membership.validFrom} →{" "}
-            {regulation.applicability.membership.validTo ?? "开放"}
+            {" · "}{dictionary.country.applicableJurisdiction}
+            {dictionary.common.labelSeparator}
+            {nameWithCode(
+              jurisdictionDisplayName(
+                {
+                  code: regulation.applicability.jurisdiction.code,
+                  countryIso3: regulation.applicability.countryIso3,
+                  id: regulation.applicability.jurisdiction.id,
+                  isDemo: regulation.applicability.jurisdiction.isDemo,
+                  name: regulation.applicability.jurisdiction.name,
+                  sourceId: regulation.applicability.jurisdiction.source.id,
+                  sourceIsDemo:
+                    regulation.applicability.jurisdiction.source.isDemo,
+                  sourceTitle:
+                    regulation.applicability.jurisdiction.source.title,
+                  type: "country",
+                },
+                dictionary,
+                locale,
+              ),
+              regulation.applicability.jurisdiction.code,
+              locale,
+            )} ·
+            {dictionary.country.membershipPeriod}
+            {dictionary.common.labelSeparator}
+            {formatUtcDate(
+              regulation.applicability.membership.validFrom,
+              locale,
+            )} →{" "}
+            {formatOptionalUtcDate(
+              regulation.applicability.membership.validTo,
+              locale,
+              dictionary.common.open,
+            )}
           </p>
         ))}
       </div>
@@ -519,13 +750,13 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
               {unwrapUntrustedKnowledgeExcerpt(item.content)}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              最终得分 {item.finalScore.toFixed(3)}
+              {copy.finalScore} {item.finalScore.toFixed(3)}
             </p>
           </div>
         ))}
       </div>
     ) : (
-      <p className="text-xs">知识库检索没有命中可用片段。</p>
+      <p className="text-xs">{copy.noKnowledgeResults}</p>
     );
   }
 
@@ -539,8 +770,13 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
           >
             <div className="flex items-center justify-between gap-2">
               <p className="font-medium">
-                {evaluation.product?.name ??
-                  evaluation.input.productModelCode}
+                {evaluation.product
+                  ? productDisplayName(
+                      evaluation.product,
+                      dictionary,
+                      locale,
+                    )
+                  : evaluation.input.productModelCode}
               </p>
               <span
                 className={cn(
@@ -553,37 +789,44 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
                     "bg-amber-100 text-amber-800",
                 )}
               >
-                {fitStatusLabels[evaluation.status]}
+                {fitCopy[evaluation.status]}
               </span>
             </div>
             <p className="mt-1 font-medium">
-              法规/认证适配：{fitStatusLabels[evaluation.status]} · 商业准备度：
-              {evaluation.commercialReadiness === "ready"
-                ? "就绪"
-                : evaluation.commercialReadiness === "not_ready"
-                  ? "未就绪"
-                  : "未知"}
+              {dictionary.productFit.fitAxis}
+              {dictionary.common.labelSeparator}{fitCopy[evaluation.status]} ·{" "}
+              {readinessCopy[evaluation.commercialReadiness]}
             </p>
             <p className="mt-1 text-muted-foreground">
-              {evaluation.reasons.map(({ message }) => message).join("；")}
+              {evaluation.reasons
+                .map((reason) => productFitReasonMessage(reason, locale))
+                .join(copy.listSeparator)}
             </p>
             <p className="mt-1 text-muted-foreground">
-              查询日供应状态：{evaluation.productChecks.availability.message}
+              {dictionary.productFit.availability}
+              {dictionary.common.labelSeparator}
+              {productFitReasonMessage(
+                evaluation.productChecks.availability,
+                locale,
+              )}
             </p>
             {evaluation.product ? (
               <p className="mt-1 text-[11px] text-muted-foreground">
-                供应期：
-                {evaluation.product.availableFrom === null &&
-                evaluation.product.availableTo === null
-                  ? "未记录"
-                  : `${evaluation.product.availableFrom ?? "未记录"} → ${evaluation.product.availableTo ?? "开放"}`}
+                {dictionary.productFit.availablePeriod}
+                {dictionary.common.labelSeparator}
+                {formatProductAvailabilityDateRange(
+                  evaluation.product.availableFrom,
+                  evaluation.product.availableTo,
+                  locale,
+                  dictionary.common.notRecorded,
+                )}
               </p>
             ) : null}
           </div>
         ))}
       </div>
     ) : (
-      <p className="text-xs">没有产品适配结果。</p>
+      <p className="text-xs">{copy.noProductFitResults}</p>
     );
   }
 
@@ -601,10 +844,8 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
     return (
       <div className="space-y-2">
         <div className="rounded-lg border border-sky-200 bg-sky-50/80 p-2 text-xs leading-5 text-sky-950">
-          <p className="font-semibold">比较口径</p>
-          <p>
-            差异只反映本次同场景、功率和日期下返回的结构化记录；未返回某项不能解释为当地没有该要求。
-          </p>
+          <p className="font-semibold">{copy.comparisonBasis}</p>
+          <p>{copy.comparisonBasisBody}</p>
         </div>
         {result.comparison.countries.map((country) => (
           <div
@@ -612,11 +853,15 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
             key={country.countryIso3}
           >
             <p className="font-semibold">
-              {country.countryIso3} · {country.countryName ?? "无国家记录"}
+              {country.countryIso3} · {localizedRegulationComparisonCountryName(
+                country,
+                locale,
+                countryIso2ByIso3,
+              ) ?? copy.noCountryRecord}
             </p>
             <p className="mt-1 text-muted-foreground">
-              查询日有效 {country.currentEffectiveRegulations.length} ·
-              查询日已采纳 {country.futureAdoptedRegulations.length}
+              {copy.currentEffectiveCount} {country.currentEffectiveRegulations.length} ·{" "}
+              {copy.futureAdoptedCount} {country.futureAdoptedRegulations.length}
             </p>
             {(() => {
               const available = new Set(
@@ -630,7 +875,9 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
 
               return missing.length > 0 ? (
                 <p className="mt-1 rounded-md bg-amber-100/80 px-2 py-1 text-[11px] leading-4 text-amber-950">
-                  当前结果未返回结构化 {missing.join("、")} 限值；不能解释为当地没有相关要求。
+                  {interpolate(copy.regulationMissingLimits, {
+                    pollutants: localizedList(missing, locale),
+                  })}
                 </p>
               ) : null;
             })()}
@@ -641,21 +888,50 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
               ].map((regulation) => (
                 <div className="space-y-0.5" key={regulation.id}>
                   <p>
-                    {regulation.canonicalName} · 适用辖区{" "}
-                    {regulation.applicability.jurisdiction.name}（
-                    {regulation.applicability.jurisdiction.code}）
+                    {regulationDisplayName(regulation, dictionary, locale)} ·{" "}
+                    {dictionary.country.applicableJurisdiction}
+                    {dictionary.common.labelSeparator}
+                    {nameWithCode(
+                      jurisdictionDisplayName(
+                        {
+                          code: regulation.applicability.jurisdiction.code,
+                          countryIso3: regulation.applicability.countryIso3,
+                          id: regulation.applicability.jurisdiction.id,
+                          isDemo: regulation.applicability.jurisdiction.isDemo,
+                          name: regulation.applicability.jurisdiction.name,
+                          sourceId:
+                            regulation.applicability.jurisdiction.source
+                              .sourceId,
+                          sourceIsDemo:
+                            regulation.applicability.jurisdiction.source.isDemo,
+                          sourceTitle:
+                            regulation.applicability.jurisdiction.source
+                              .sourceTitle,
+                          type: "country",
+                        },
+                        dictionary,
+                        locale,
+                      ),
+                      regulation.applicability.jurisdiction.code,
+                      locale,
+                    )}
                   </p>
                   <p className="pl-2 text-[11px] font-medium">
                     {regulationStatusNote(
                       regulation.status,
                       regulation.recordStatus,
+                      dictionary,
                     )}
                   </p>
                   {regulation.limits.map((limit) => (
                     <p className="pl-2 text-[11px]" key={limit.id}>
                       {limit.pollutantCode} ≤ {formatDecimal(limit.limitValue)}{" "}
-                      {limit.unitCode} · {limit.validFrom} →{" "}
-                      {limit.validTo ?? "开放"}
+                      {limit.unitCode} · {formatUtcDate(limit.validFrom, locale)} →{" "}
+                      {formatOptionalUtcDate(
+                        limit.validTo,
+                        locale,
+                        dictionary.common.open,
+                      )}
                     </p>
                   ))}
                 </div>
@@ -668,31 +944,7 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
   }
 
   if (result.tool === "compareMarkets") {
-    return (
-      <div className="space-y-2">
-        {result.comparison.metrics.map((metric) => (
-          <div
-            className="rounded-lg bg-background/70 p-2 text-xs"
-            key={metric.metricCode}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-semibold">{metric.metricName}</p>
-              <span className="text-[10px] text-muted-foreground">
-                {marketComparisonStatusLabels[metric.comparisonStatus]}
-              </span>
-            </div>
-            <p className="mt-1 text-muted-foreground">
-              {metric.observations
-                .map(
-                  (observation) =>
-                    `${observation.countryIso3} ${formatDecimal(observation.valueNumeric)} ${observation.unitCode}`,
-                )
-                .join(" · ") || "没有观测值"}
-            </p>
-          </div>
-        ))}
-      </div>
-    );
+    return <MarketComparisonFacts comparison={result.comparison} locale={locale} />;
   }
 
   if (result.tool === "calculateOpportunityScore") {
@@ -709,40 +961,72 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
   return (
     <div className="space-y-3">
       <section className="rounded-lg border border-sky-200 bg-sky-50/80 p-2.5 text-xs">
-        <p className="font-semibold text-sky-950">确定性事实数据</p>
+        <p className="font-semibold text-sky-950">{copy.deterministicData}</p>
         <div className="mt-2">
           <ScoreBreakdown score={brief.marketScore} />
         </div>
         <div className="mt-2 space-y-1">
           {brief.recommendedProducts.map((product) => (
             <p key={product.modelCode}>
-              商业就绪：{product.modelCode} · {product.name} · 法规/认证 fit · 查询日供应 pass · 供应期
-              {product.availableFrom === null && product.availableTo === null
-                ? "未记录"
-                : `${product.availableFrom ?? "未记录"} → ${product.availableTo ?? "开放"}`}
+              {copy.commerciallyReady}{dictionary.common.labelSeparator}
+              {product.modelCode} · {productDisplayName(
+                product,
+                dictionary,
+                locale,
+              )} · {dictionary.productFit.fitAxis}{" "}
+              {dictionary.productFit.fit} · {dictionary.productFit.availability}{" "}
+              {dictionary.productFit.pass} · {dictionary.productFit.availablePeriod}
+              {dictionary.common.labelSeparator}
+              {formatProductAvailabilityDateRange(
+                product.availableFrom,
+                product.availableTo,
+                locale,
+                dictionary.common.notRecorded,
+              )}
             </p>
           ))}
-          {brief.risks.map((risk) => (
-            <p key={`${risk.title}:${risk.text}`}>
-              风险：{risk.title} — {risk.text}
+          {brief.risks.map((risk, index) => (
+            <p key={`${risk.ruleCode}:${index}`}>
+              {copy.risk}{dictionary.common.labelSeparator}
+              {localizedSalesBriefItem(
+                risk,
+                index,
+                "risk",
+                locale,
+                copy,
+              )}
             </p>
           ))}
         </div>
       </section>
       <section className="rounded-lg border border-violet-200 bg-violet-50/80 p-2.5 text-xs">
         <p className="font-semibold text-violet-950">
-          规则生成建议（非事实层）
+          {copy.ruleGeneratedAdvice}
         </p>
-        <p className="mt-1 text-violet-900">{brief.executiveSummary}</p>
+        <p className="mt-1 text-violet-900">
+          {localizedSalesBriefSummary(brief, locale, copy)}
+        </p>
         <div className="mt-2 space-y-1">
-          {brief.opportunities.map((opportunity) => (
-            <p key={`${opportunity.title}:${opportunity.text}`}>
-              机会：{opportunity.title} — {opportunity.text}
+          {brief.opportunities.map((opportunity, index) => (
+            <p key={`${opportunity.ruleCode}:${index}`}>
+              {copy.opportunity}{dictionary.common.labelSeparator}
+              {localizedSalesBriefItem(
+                opportunity,
+                index,
+                "opportunity",
+                locale,
+                copy,
+              )}
             </p>
           ))}
-          {brief.salesActions.map((action) => (
-            <p key={`${action.priority}:${action.action}`}>
-              [{action.priority}] {action.action}
+          {brief.salesActions.map((action, index) => (
+            <p key={`${action.ruleCode}:${index}`}>
+              {localizedSalesBriefAction(
+                action,
+                index,
+                locale,
+                copy,
+              )}
             </p>
           ))}
         </div>
@@ -751,12 +1035,30 @@ function ToolFacts({ result }: { result: ClientAiToolResult }) {
   );
 }
 
-function ToolResultCard({ result }: { result: ClientAiToolResult }) {
+export function toolResultMayRenderFacts(
+  result: Pick<ClientAiToolResult, "status">,
+): boolean {
+  return result.status !== "error";
+}
+
+function ToolResultCard({
+  countryIso2ByIso3,
+  result,
+}: {
+  countryIso2ByIso3: Readonly<Record<string, string>>;
+  result: ClientAiToolResult;
+}) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.chat;
+  const labels = toolLabels(copy);
+  const statuses = statusLabels(copy);
+  const mayRenderFacts = toolResultMayRenderFacts(result);
   const hasDemoEvidence = resultContainsDemoEvidence(result);
+  const warnings = localizedToolWarnings(result, locale, copy);
 
   return (
     <section
-      aria-label={toolLabels[result.tool]}
+      aria-label={labels[result.tool]}
       className={cn(
         "my-2 space-y-3 rounded-xl border p-3",
         result.status === "ok"
@@ -764,24 +1066,35 @@ function ToolResultCard({ result }: { result: ClientAiToolResult }) {
           : "border-amber-300/60 bg-amber-50/80",
       )}
     >
-      <header className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <FileText aria-hidden="true" className="size-4 text-primary" />
-          <div>
-            <p className="text-xs font-semibold">{toolLabels[result.tool]}</p>
+      <header className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2">
+          <FileText aria-hidden="true" className="size-4 shrink-0 text-primary" />
+          <div className="min-w-0 break-words">
+            <p className="text-xs font-semibold">{labels[result.tool]}</p>
             <p className="text-[11px] text-muted-foreground">
-              确定性事实层 · 查询基准：{result.informationAsOf} · 最近核验：
-              {formatTimestamp(result.latestVerifiedAt)}
+              {mayRenderFacts ? (
+                <>
+                  {copy.deterministicFacts} · {result.tool === "compareMarkets" ? copy.resultGeneratedOn : copy.queryAsOf}{dictionary.common.labelSeparator}{formatUtcDate(result.informationAsOf, locale)} · {copy.latestVerified}{dictionary.common.labelSeparator}
+                  {formatOptionalUtcDate(
+                    result.latestVerifiedAt,
+                    locale,
+                    dictionary.common.notRecorded,
+                  )}
+                </>
+              ) : copy.queryConditions}
             </p>
           </div>
         </div>
-        <span className="rounded-full border bg-background px-2 py-0.5 text-[10px] font-semibold">
-          {statusLabels[result.status]}
+        <span className="shrink-0 whitespace-nowrap rounded-full border bg-background px-2 py-0.5 text-[10px] font-semibold">
+          {statuses[result.status]}
         </span>
       </header>
 
-      {result.tool === "findCompatibleProducts" ||
+      {result.status === "error" ||
+      result.tool === "searchKnowledgeBase" ||
+      result.tool === "findCompatibleProducts" ||
       result.tool === "compareRegulations" ||
+      result.tool === "compareMarkets" ||
       result.tool === "calculateOpportunityScore" ||
       result.tool === "generateSalesBrief" ? (
         <ToolQuerySummary result={result} />
@@ -796,15 +1109,17 @@ function ToolResultCard({ result }: { result: ClientAiToolResult }) {
             aria-hidden="true"
             className="mt-0.5 size-3.5 shrink-0"
           />
-          该结果包含虚构 Demo 证据，不可用于报价、认证声明或销售承诺。
+          {copy.demoEvidenceWarning}
         </div>
       ) : null}
 
-      <ToolFacts result={result} />
+      {mayRenderFacts ? (
+        <ToolFacts countryIso2ByIso3={countryIso2ByIso3} result={result} />
+      ) : null}
 
-      {result.warnings.length > 0 ? (
+      {warnings.length > 0 ? (
         <div className="space-y-1 rounded-lg bg-amber-100/80 p-2 text-xs text-amber-950">
-          {result.warnings.map((warning) => (
+          {warnings.map((warning) => (
             <p className="flex gap-1.5" key={warning}>
               <AlertTriangle
                 aria-hidden="true"
@@ -816,12 +1131,14 @@ function ToolResultCard({ result }: { result: ClientAiToolResult }) {
         </div>
       ) : null}
 
-      <CitationList citations={result.citations} />
+      {mayRenderFacts ? (
+        <CitationList citations={result.citations} />
+      ) : null}
     </section>
   );
 }
 
-type ChatMessagePart = UIMessage["parts"][number];
+type ChatMessagePart = SalesChatUiMessage["parts"][number];
 
 function citationUrlsForMessage(parts: readonly ChatMessagePart[]): string[] {
   const urls = new Set<string>();
@@ -845,7 +1162,8 @@ function citationUrlsForMessage(parts: readonly ChatMessagePart[]): string[] {
 }
 
 function AttachmentPart({ part }: { part: FileUIPart }) {
-  const filename = part.filename ?? "未命名附件";
+  const { dictionary } = useLocale();
+  const filename = part.filename ?? dictionary.chat.unnamedAttachment;
 
   if (part.mediaType.startsWith("image/")) {
     return (
@@ -874,13 +1192,41 @@ function AttachmentPart({ part }: { part: FileUIPart }) {
   );
 }
 
-function ToolPart({ part }: { part: ChatMessagePart }) {
+function ReleasedAttachmentPart({
+  attachment,
+}: {
+  attachment: NonNullable<
+    ReturnType<typeof parseReleasedAttachmentPart>
+  >;
+}) {
+  const { dictionary } = useLocale();
+
+  return (
+    <p className="my-2 text-xs opacity-80">
+      [{formatReleasedAttachment(attachment, dictionary)}]
+    </p>
+  );
+}
+
+function ToolPart({
+  countryIso2ByIso3,
+  part,
+}: {
+  countryIso2ByIso3: Readonly<Record<string, string>>;
+  part: ChatMessagePart;
+}) {
+  const { dictionary } = useLocale();
   if (!isToolUIPart(part)) {
     return null;
   }
   const presentation = toolPartPresentation(part);
   if (presentation.kind === "result") {
-    return <ToolResultCard result={presentation.result} />;
+    return (
+      <ToolResultCard
+        countryIso2ByIso3={countryIso2ByIso3}
+        result={presentation.result}
+      />
+    );
   }
   if (presentation.kind === "error") {
     return (
@@ -889,7 +1235,7 @@ function ToolPart({ part }: { part: ChatMessagePart }) {
         role="alert"
       >
         <AlertTriangle aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-        {presentation.message}
+        {toolPartErrorMessage(presentation.code, dictionary.chat)}
       </div>
     );
   }
@@ -897,38 +1243,53 @@ function ToolPart({ part }: { part: ChatMessagePart }) {
   return (
     <div className="my-2 flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
       <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-      正在执行确定性查询…
+      {dictionary.chat.deterministicQuery}
     </div>
   );
 }
 
 export function SalesChat({
   aiConfigured,
+  countryIso2ByIso3,
   demoMode = false,
   imageUploadsEnabled,
   initialPrompt = "",
   selectedCountryIso3,
   suggestedPrompts = [],
 }: SalesChatProps) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.chat;
   const [sessionId] = useState(() => crypto.randomUUID());
   const [input, setInput] = useState(initialPrompt);
+  const initialPromptPristineRef = useRef(true);
   const [pendingAttachments, setPendingAttachments] = useState<
     PendingAttachment[]
   >([]);
   const [failedSubmission, setFailedSubmission] =
     useState<FailedSubmission | null>(null);
-  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [attachmentError, setAttachmentError] =
+    useState<ChatAttachmentErrorDescriptor | null>(null);
   const [submissionPending, setSubmissionPending] = useState(false);
   const [validatingAttachments, setValidatingAttachments] = useState(false);
   const validatingAttachmentsRef = useRef(false);
   const activeSubmissionRef = useRef<ActiveSubmission | null>(null);
+  const activeSubmissionLocaleRef = useRef(locale);
   const submissionPendingRef = useRef(false);
+  const [settledChatMessages, setSettledChatMessages] = useState<
+    SalesChatUiMessage[]
+  >([]);
+  const [activeChatRequest, setActiveChatRequest] = useState<{
+    locale: Locale;
+  } | null>(null);
+  const [attachmentMessageRelease] = useState(
+    () => new AttachmentMessageReleaseCoordinator(),
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const transport = useMemo(
     () =>
-      new DefaultChatTransport({
+      new DefaultChatTransport<SalesChatUiMessage>({
         api: "/api/chat",
         prepareSendMessagesRequest: ({
           body,
@@ -937,19 +1298,8 @@ export function SalesChat({
           messages,
           trigger,
         }) => {
-          const latestUserMessageIndex = messages.findLastIndex(
-            (message) => message.role === "user",
-          );
-          const requestMessages = messages.map((message, index) =>
-            message.role === "user" && index !== latestUserMessageIndex
-              ? {
-                  ...message,
-                  parts: message.parts.filter(
-                    (part) => part.type !== "file",
-                  ),
-                }
-              : message,
-          );
+          const requestMessages = prepareSalesChatRequestMessages(messages);
+          attachmentMessageRelease.run();
 
           return {
             body: {
@@ -962,8 +1312,12 @@ export function SalesChat({
           };
         },
       }),
-    [],
+    [attachmentMessageRelease],
   );
+  const chatId =
+    activeChatRequest !== null && activeChatRequest.locale !== locale
+      ? `${sessionId}:retired:${locale}`
+      : sessionId;
   const {
     clearError,
     error,
@@ -971,11 +1325,22 @@ export function SalesChat({
     sendMessage,
     setMessages,
     status,
-  } = useChat({
-    onFinish: ({ isError, messages: finishedMessages }) => {
+    stop,
+  } = useChat<SalesChatUiMessage>({
+    id: chatId,
+    messages: settledChatMessages,
+    onFinish: ({ isAbort, isError, messages: finishedMessages }) => {
       const activeSubmission = activeSubmissionRef.current;
-      if (!activeSubmission) {
+      if (!activeSubmission || activeSubmissionLocaleRef.current !== locale) {
         return;
+      }
+
+      if (!isAbort) {
+        // The locale hand-off snapshot must never retain attachment bytes even
+        // though the live Chat releases them a moment later in sendSubmission.
+        setSettledChatMessages(
+          releaseSalesChatMessageAttachments(finishedMessages),
+        );
       }
 
       if (!isError) {
@@ -996,10 +1361,37 @@ export function SalesChat({
     },
     transport,
   });
+
+  useEffect(() => {
+    return attachmentMessageRelease.connect(() => {
+      setMessages(releaseSalesChatMessageAttachments);
+    });
+  }, [attachmentMessageRelease, setMessages]);
+  useEffect(
+    () => () => {
+      // `useChat` does not abort its transport when React retires the instance.
+      // A locale change rotates the id above, while an SPA navigation unmounts
+      // the component; both paths must stop the old provider/tool stream.
+      void stop();
+    },
+    [stop],
+  );
   const messageLogRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
   const waiting = status === "submitted" || status === "streaming";
   const recoveryPending = error !== undefined && failedSubmission !== null;
+
+  useEffect(() => {
+    // A retired locale-owned Chat may still invoke its completion callback.
+    // It no longer owns retry state in the newly localized conversation.
+    activeSubmissionRef.current = null;
+  }, [locale]);
+
+  useEffect(() => {
+    if (initialPromptPristineRef.current) {
+      setInput(initialPrompt);
+    }
+  }, [initialPrompt]);
 
   useEffect(() => {
     const messageLog = messageLogRef.current;
@@ -1032,47 +1424,49 @@ export function SalesChat({
     try {
       const additions: PendingAttachment[] = [];
       for (const file of selectedFiles) {
-        const mediaType = resolveChatAttachmentMediaType(file);
-        if (!mediaType) {
-          setAttachmentError(
-            `${file.name || "所选文件"} 的格式不受支持。请选择 PNG、JPEG、WebP、PDF、TXT、Markdown 或 CSV。`,
-          );
-          return;
-        }
-        if (mediaType.startsWith("image/") && !imageUploadsEnabled) {
-          setAttachmentError(
-            "当前服务端未配置视觉模型；请上传 PDF、TXT、Markdown 或 CSV，或联系管理员启用图片分析。",
-          );
-          return;
-        }
-        const addition = {
-          file,
-          id: crypto.randomUUID(),
-          mediaType,
-        };
-        const prospectiveValidationError = attachmentValidationMessage([
+        const prospectiveValidationError = validateChatAttachments([
           ...pendingAttachments,
           ...additions,
-          addition,
+          { file },
         ]);
         if (prospectiveValidationError) {
           setAttachmentError(prospectiveValidationError);
           return;
         }
+
+        const filename = normalizeChatAttachmentFilename(file.name);
+
+        const mediaType = resolveChatAttachmentMediaType(file);
+        if (!mediaType) {
+          setAttachmentError({
+            kind: "unsupported_file",
+            name: filename,
+          });
+          return;
+        }
+        if (mediaType.startsWith("image/") && !imageUploadsEnabled) {
+          setAttachmentError({ kind: "image_model_unavailable" });
+          return;
+        }
+        const addition = {
+          file,
+          filename,
+          id: crypto.randomUUID(),
+          mediaType,
+        };
         if (mediaType.startsWith("image/")) {
           let bytes: Uint8Array;
           try {
             bytes = new Uint8Array(await file.arrayBuffer());
           } catch {
-            setAttachmentError(
-              `${file.name || "所选图片"} 无法读取，请重新选择。`,
-            );
+            setAttachmentError({
+              kind: "image_read_failed",
+              name: filename,
+            });
             return;
           }
           if (!hasStructurallyValidChatImage(mediaType, bytes)) {
-            setAttachmentError(
-              `${file.name || "所选图片"} 损坏、截断或像素尺寸不受支持。图片宽高均须为 ${MIN_CHAT_IMAGE_DIMENSION.toLocaleString("en-US")}–${MAX_CHAT_IMAGE_DIMENSION.toLocaleString("en-US")} 像素、总计最多 ${MAX_CHAT_IMAGE_PIXELS.toLocaleString("en-US")} 像素。`,
-            );
+            setAttachmentError(imageInvalidAttachmentError(filename));
             return;
           }
         }
@@ -1080,7 +1474,7 @@ export function SalesChat({
       }
 
       const nextAttachments = [...pendingAttachments, ...additions];
-      const validationError = attachmentValidationMessage(nextAttachments);
+      const validationError = validateChatAttachments(nextAttachments);
       if (validationError) {
         setAttachmentError(validationError);
         return;
@@ -1116,34 +1510,20 @@ export function SalesChat({
         attachments.map((attachment) => fileToUiPart(attachment)),
       );
     } catch {
-      setAttachmentError("附件读取失败，请重新选择后再试。");
+      setAttachmentError({ kind: "attachment_read_failed" });
       return null;
     }
-  }
-
-  function releaseMessageAttachmentData() {
-    setMessages((currentMessages) =>
-      currentMessages.map((message) => ({
-        ...message,
-        parts: message.parts.flatMap((part) =>
-          part.type === "file"
-            ? [
-                {
-                  text: `[已发送附件：${part.filename ?? "未命名附件"}；后续追问请重新上传]`,
-                  type: "text" as const,
-                },
-              ]
-            : [part],
-        ),
-      })),
-    );
   }
 
   async function sendSubmission(
     submission: ActiveSubmission,
     files: FileUIPart[],
   ) {
+    const chatRequestOwner = { locale };
     activeSubmissionRef.current = submission;
+    activeSubmissionLocaleRef.current = locale;
+    setActiveChatRequest(chatRequestOwner);
+    attachmentMessageRelease.trackFileParts(files);
     try {
       await sendMessage(
         submission.messageId
@@ -1151,16 +1531,20 @@ export function SalesChat({
           : { files, text: submission.text },
         {
           body: {
+            locale,
             selectedCountryIso3,
             sessionId,
           },
         },
       );
     } finally {
-      releaseMessageAttachmentData();
+      attachmentMessageRelease.run();
       if (activeSubmissionRef.current === submission) {
         activeSubmissionRef.current = null;
       }
+      setActiveChatRequest((currentOwner) =>
+        currentOwner === chatRequestOwner ? null : currentOwner,
+      );
     }
   }
 
@@ -1199,6 +1583,7 @@ export function SalesChat({
         ? currentMessages.slice(0, failedMessageIndex)
         : currentMessages;
     });
+    initialPromptPristineRef.current = false;
     setInput(failedSubmission.text);
     setPendingAttachments(failedSubmission.attachments);
     setFailedSubmission(null);
@@ -1222,6 +1607,7 @@ export function SalesChat({
     }
 
     submissionPendingRef.current = true;
+    initialPromptPristineRef.current = false;
     setSubmissionPending(true);
     try {
       const attachments = pendingAttachments;
@@ -1256,32 +1642,37 @@ export function SalesChat({
           </span>
           <div>
             <h2 className="text-sm font-semibold text-[#17382e]" id="sales-chat-heading">
-              AI 营销分析助手
+              {copy.title}
             </h2>
             <p className="mt-0.5 text-[11px] text-slate-500">
               {demoMode
-                ? "离线 Demo AI（确定性模拟）"
+                ? copy.demoAi
                 : aiConfigured
-                  ? "服务端 AI 已配置"
-                  : "服务端 AI 未配置"} · 地图国家：
-              {selectedCountryIso3 ?? "未选择"}
+                  ? copy.aiConfigured
+                  : copy.aiNotConfigured} · {copy.mapCountry}{dictionary.common.labelSeparator}
+              {selectedCountryIso3 ?? copy.noSelection}
             </p>
           </div>
         </div>
       </header>
 
-      <p aria-live="polite" className="sr-only" role="status">
+      <p
+        aria-busy={status === "submitted" || status === "streaming"}
+        aria-live="polite"
+        className="sr-only"
+        role="status"
+      >
         {status === "submitted"
-          ? "问题已发送，正在选择确定性工具。"
+          ? copy.statusSubmitted
           : status === "streaming"
-            ? "正在生成回答。"
+            ? copy.statusGenerating
             : status === "ready" && messages.length > 0
-              ? "回答已完成。"
+              ? copy.statusComplete
               : ""}
       </p>
 
       <div
-        aria-label="AI 对话记录"
+        aria-label={copy.roleLabel}
         className="min-h-56 flex-1 space-y-4 overflow-y-auto bg-[#fafaf6]/65 p-4 sm:p-6"
         onScroll={(event) => {
           const messageLog = event.currentTarget;
@@ -1298,8 +1689,8 @@ export function SalesChat({
           <div className="rounded-2xl border border-dashed border-emerald-900/15 bg-[#f1f5ec] p-5 text-sm">
             <p className="text-xs leading-6 text-muted-foreground">
               {demoMode
-                ? "离线 Demo 可尝试：“CHN 目前有哪些有效法规？”或“CHN 的 non-road 100 kW 产品是否适配？”；只查询明确标记的虚构 fixture。"
-                : "例如：“CHN 目前有哪些有效法规？”或“DEU 的 non-road 120 kW 产品是否适配？”也可以比较 CHN 与 BRA 并生成结构化销售简报。"}
+                ? copy.emptyDemo
+                : copy.emptyLive}
             </p>
             {suggestedPrompts.length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-2">
@@ -1308,6 +1699,7 @@ export function SalesChat({
                     className="rounded-full border border-emerald-900/10 bg-white px-3 py-1.5 text-left text-xs font-medium text-emerald-900 transition-colors hover:bg-emerald-50"
                     key={prompt}
                     onClick={() => {
+                      initialPromptPristineRef.current = false;
                       setInput(prompt);
                       inputRef.current?.focus();
                     }}
@@ -1338,7 +1730,7 @@ export function SalesChat({
             key={message.id}
           >
             <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider opacity-70">
-              {message.role === "user" ? "你" : "助手"}
+              {message.role === "user" ? copy.user : copy.assistant}
             </p>
             {message.parts.map((part, index) => {
               if (part.type === "text") {
@@ -1349,13 +1741,15 @@ export function SalesChat({
                   >
                     {message.role === "assistant" ? (
                       <p className="text-[10px] font-semibold tracking-wide text-violet-700">
-                        AI 解释/建议（非事实层）
+                        {copy.aiExplanation}
                       </p>
                     ) : null}
                     {message.role === "assistant" ? (
                       <AssistantMarkdown
                         allowedExternalUrls={allowedExternalUrls}
                         content={part.text}
+                        hiddenImage={copy.hiddenModelImage}
+                        hiddenImageWithAlt={copy.hiddenModelImageWithAlt}
                       />
                     ) : (
                       <p className="whitespace-pre-wrap leading-6">
@@ -1375,8 +1769,23 @@ export function SalesChat({
                 );
               }
 
+              const releasedAttachment = parseReleasedAttachmentPart(part);
+              if (releasedAttachment) {
+                return (
+                  <ReleasedAttachmentPart
+                    attachment={releasedAttachment}
+                    key={`${message.id}-released-file-${index}`}
+                  />
+                );
+              }
+
+              if (part.type === "data-releasedAttachment") {
+                return null;
+              }
+
               return (
                 <ToolPart
+                  countryIso2ByIso3={countryIso2ByIso3}
                   key={`${message.id}-part-${index}`}
                   part={part}
                 />
@@ -1387,9 +1796,12 @@ export function SalesChat({
         })}
 
         {status === "submitted" ? (
-          <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
+          <div
+            aria-hidden="true"
+            className="flex items-center gap-2 px-2 text-xs text-muted-foreground"
+          >
             <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
-            正在选择确定性工具…
+            {copy.pendingTools}
           </div>
         ) : null}
 
@@ -1398,19 +1810,19 @@ export function SalesChat({
             className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
             role="alert"
           >
-            <p>{chatErrorMessage(error)}</p>
+            <p>{chatErrorMessage(error, dictionary)}</p>
             {failedSubmission ? (
               <div className="space-y-2 rounded-lg border border-destructive/20 bg-background/70 p-2.5 text-foreground">
-                <p className="font-semibold">失败的问题和附件已在本页保留。</p>
+                <p className="font-semibold">{copy.attachmentFailedBody}</p>
                 <p className="line-clamp-3 text-muted-foreground">
-                  问题：{failedSubmission.text}
+                  {copy.failedQuestion}{dictionary.common.labelSeparator}{failedSubmission.text}
                 </p>
                 {failedSubmission.attachments.length > 0 ? (
                   <p className="break-words text-muted-foreground">
-                    附件：
+                    {copy.attachment}{dictionary.common.labelSeparator}
                     {failedSubmission.attachments
-                      .map(({ file }) => file.name)
-                      .join("、")}
+                      .map(({ filename }) => filename)
+                      .join(locale === "en" ? ", " : "、")}
                   </p>
                 ) : null}
                 <div className="flex flex-wrap gap-2">
@@ -1422,7 +1834,7 @@ export function SalesChat({
                     variant="outline"
                   >
                     <RotateCcw aria-hidden="true" className="size-3.5" />
-                    原样重试
+                    {copy.rawRetry}
                   </Button>
                   <Button
                     className="h-8 gap-1.5 px-3 text-xs"
@@ -1432,11 +1844,11 @@ export function SalesChat({
                     variant="outline"
                   >
                     <PencilLine aria-hidden="true" className="size-3.5" />
-                    编辑后重试
+                    {copy.editRetry}
                   </Button>
                 </div>
                 <p className="text-[10px] leading-4 text-muted-foreground">
-                  系统不会自动重复请求；仅在你选择重试时再次发送。
+                  {copy.recoveryPolicy}
                 </p>
               </div>
             ) : null}
@@ -1452,7 +1864,7 @@ export function SalesChat({
         >
           {pendingAttachments.length > 0 ? (
             <ul
-              aria-label="待发送附件"
+              aria-label={copy.attachmentList}
               className="grid gap-2 sm:grid-cols-2"
             >
               {pendingAttachments.map((attachment) => (
@@ -1463,14 +1875,16 @@ export function SalesChat({
                   <PendingImagePreview attachment={attachment} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">
-                      {attachment.file.name}
+                      {attachment.filename}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {formatChatAttachmentBytes(attachment.file.size)}
+                      {formatChatAttachmentBytes(attachment.file.size, locale)}
                     </p>
                   </div>
                   <Button
-                    aria-label={`移除附件 ${attachment.file.name}`}
+                    aria-label={interpolate(copy.removeAttachment, {
+                      name: attachment.filename,
+                    })}
                     className="size-8 p-0"
                     disabled={
                       waiting || submissionPending || validatingAttachments
@@ -1491,7 +1905,11 @@ export function SalesChat({
               className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2 text-xs text-destructive"
               role="alert"
             >
-              {attachmentError}
+              {formatChatAttachmentError(
+                attachmentError,
+                dictionary,
+                locale,
+              )}
             </p>
           ) : null}
 
@@ -1504,7 +1922,7 @@ export function SalesChat({
                 aria-hidden="true"
                 className="size-3.5 animate-spin"
               />
-              正在验证附件安全性…
+              {copy.attachmentValidating}
             </p>
           ) : null}
 
@@ -1516,7 +1934,9 @@ export function SalesChat({
                   : CHAT_DOCUMENT_ATTACHMENT_ACCEPT
               }
               aria-label={
-                imageUploadsEnabled ? "选择文件或图片" : "选择文件"
+                imageUploadsEnabled
+                  ? copy.attachmentInputImage
+                  : copy.attachmentInput
               }
               className="sr-only"
               disabled={
@@ -1534,10 +1954,10 @@ export function SalesChat({
             <Button
               aria-label={
                 validatingAttachments
-                  ? "正在验证附件"
+                  ? copy.validating
                   : imageUploadsEnabled
-                    ? "添加文件或图片"
-                    : "添加文件"
+                    ? copy.addFileOrImage
+                    : copy.addFile
               }
               className="size-11 rounded-xl border-0 bg-[#f1f4ee] p-0 text-emerald-900 shadow-none hover:bg-[#e6eee2]"
               disabled={
@@ -1561,13 +1981,16 @@ export function SalesChat({
               )}
             </Button>
             <label className="sr-only" htmlFor="sales-chat-input">
-              输入问题
+              {copy.questionInput}
             </label>
             <textarea
-              className="min-h-11 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-slate-400"
+              className="min-h-11 min-w-0 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm outline-none placeholder:text-slate-400"
               id="sales-chat-input"
               maxLength={MAX_CHAT_USER_MESSAGE_CHARACTERS}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(event) => {
+                initialPromptPristineRef.current = false;
+                setInput(event.target.value);
+              }}
               onKeyDown={(event) => {
                 if (
                   event.key === "Enter" &&
@@ -1580,36 +2003,47 @@ export function SalesChat({
               }}
               placeholder={
                 imageUploadsEnabled
-                  ? "输入问题，可附上文件或图片…"
-                  : "输入问题，可附上文件…"
+                  ? copy.placeholderImage
+                  : copy.placeholder
               }
               readOnly={recoveryPending || submissionPending}
               rows={2}
               ref={inputRef}
               value={input}
             />
-            <Button
-              aria-label="发送问题"
-              className="size-11 rounded-xl bg-[#173d31] p-0 text-white shadow-none hover:bg-[#215142]"
-              disabled={
-                waiting ||
-                recoveryPending ||
-                submissionPending ||
-                validatingAttachments ||
-                !input.trim() ||
-                !aiConfigured
-              }
-              type="submit"
-            >
-              {waiting || submissionPending ? (
-                <LoaderCircle
-                  aria-hidden="true"
-                  className="size-4 animate-spin"
-                />
-              ) : (
-                <Send aria-hidden="true" className="size-4" />
-              )}
-            </Button>
+            {waiting ? (
+              <Button
+                aria-label={copy.stopGenerating}
+                className="h-11 shrink-0 gap-1.5 rounded-xl bg-red-800 px-3 text-white shadow-none hover:bg-red-900"
+                onClick={() => void stop()}
+                type="button"
+              >
+                <Square aria-hidden="true" className="size-3.5 fill-current" />
+                <span>{copy.stopGenerating}</span>
+              </Button>
+            ) : (
+              <Button
+                aria-label={copy.send}
+                className="size-11 rounded-xl bg-[#173d31] p-0 text-white shadow-none hover:bg-[#215142]"
+                disabled={
+                  recoveryPending ||
+                  submissionPending ||
+                  validatingAttachments ||
+                  !input.trim() ||
+                  !aiConfigured
+                }
+                type="submit"
+              >
+                {submissionPending ? (
+                  <LoaderCircle
+                    aria-hidden="true"
+                    className="size-4 animate-spin"
+                  />
+                ) : (
+                  <Send aria-hidden="true" className="size-4" />
+                )}
+              </Button>
+            )}
           </div>
         </form>
       </div>

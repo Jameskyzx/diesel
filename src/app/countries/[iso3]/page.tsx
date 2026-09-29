@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { z } from "zod";
 
 import { CountryExplorer } from "@/components/countries/country-explorer";
 import { CountryInitialPanel } from "@/components/countries/country-initial-panel";
-import type { ProductFitInitialFilters } from "@/components/products/product-fit-panel";
+import { LocaleRenderReceipt } from "@/components/i18n/locale-controller";
 import {
-  applicationScopeSchema,
   iso3Schema,
-  isoDateSchema,
-  powerKwSchema,
+  type CountryDetailQuery,
 } from "@/features/database/schemas";
+import { countryDirectoryDisplayIdentity } from "@/features/countries/directory-display";
+import { parseCountryFilters } from "@/features/countries/url-context";
+import { getDictionary, interpolate } from "@/i18n/dictionaries";
+import { formatCountryDisplayName } from "@/i18n/country-name";
+import { buildLocalizedOpenGraph } from "@/i18n/metadata";
+import { getRequestLocale } from "@/i18n/server";
+import { getErrorCode } from "@/lib/api-error";
+import { runPublicDataRenderOperation } from "@/server/http/public-data-admission";
 import {
   getCountryDirectory,
   isKnownCountryIso3,
@@ -19,6 +25,10 @@ import {
   getCountryDetails,
   listCountryMapSummaries,
 } from "@/server/services/country-service";
+
+const COUNTRY_PAGE_DATA_ROUTE = "/countries/:iso3";
+const COUNTRY_PAGE_DATA_UNAVAILABLE =
+  "Country page data is temporarily unavailable.";
 
 type CountryPageProps = {
   params: Promise<{
@@ -32,114 +42,64 @@ export async function generateMetadata({
 }: CountryPageProps): Promise<Metadata> {
   const { iso3 } = await params;
   const parsed = iso3Schema.safeParse(iso3);
+  const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
+
+  if (!parsed.success) {
+    return { title: dictionary.country.unknownCountryTitle };
+  }
+
+  const country = getCountryDirectory().find(
+    ({ iso3: countryIso3 }) => countryIso3 === parsed.data,
+  );
+  if (!country) {
+    return { title: dictionary.country.unknownCountryTitle };
+  }
+
+  const name = formatCountryDisplayName(
+    countryDirectoryDisplayIdentity(country, undefined),
+    locale,
+  );
+  const values = { iso3: country.iso3, name };
+  const title = interpolate(dictionary.country.metadataTitle, values);
+  const description = interpolate(
+    dictionary.country.metadataDescription,
+    values,
+  );
 
   return {
-    title: parsed.success ? `${parsed.data} 国家详情` : "国家详情",
+    description,
+    openGraph: buildLocalizedOpenGraph(locale, {
+      description,
+      imageAlt: dictionary.metadata.openGraphImageAlt,
+      title,
+    }),
+    title,
   };
 }
 
-function firstParam(
-  value: string | string[] | undefined,
-): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
+async function loadCountryPageData(
+  input: CountryDetailQuery,
+  signal: AbortSignal,
+) {
+  const [mapResult, detailResult] = await Promise.allSettled([
+    listCountryMapSummaries({ signal }),
+    getCountryDetails(input, { signal }),
+  ]);
 
-function appendRawParams(
-  params: URLSearchParams,
-  key: string,
-  value: string | string[] | undefined,
-): void {
-  if (value === undefined) {
-    return;
+  // Do not let one rejected branch release the outer admission lease while
+  // the sibling database branch is still running. Promise.allSettled above
+  // observes both branches before either failure is propagated.
+  if (mapResult.status === "rejected") {
+    throw mapResult.reason;
   }
-  for (const item of Array.isArray(value) ? value : [value]) {
-    params.append(key, item);
-  }
-}
-
-const KNOWN_FILTER_KEYS = [
-  "applicationScope",
-  "asOf",
-  "powerKw",
-  "productModelCode",
-] as const;
-
-/**
- * ADR-010/044：查询参数服务端 Zod 校验。逐字段解析已知筛选键，
- * 无效值剔除并重定向到规范化 URL（而非整页 notFound——坏的筛选值
- * 不应让有效国家 404）；未知键（如分析参数）原样保留，不参与比较、
- * 不随重定向丢弃。规范化输出与原始已知键不同时重定向（如
- * `powerKw=300.0 → 300`、型号大写化）；iso3 大小写规范化与筛选
- * 规范化在同一次重定向中完成。
- */
-function parseCountryFilters(
-  raw: Record<string, string | string[] | undefined>,
-): {
-  canonicalQuery: string;
-  filters: ProductFitInitialFilters;
-  needsRedirect: boolean;
-} {
-  const scope = applicationScopeSchema.safeParse(
-    firstParam(raw.applicationScope),
-  );
-  const asOf = isoDateSchema.safeParse(firstParam(raw.asOf));
-  const power = powerKwSchema.safeParse(firstParam(raw.powerKw));
-  const product = z
-    .string()
-    .trim()
-    .min(1)
-    .max(100)
-    .safeParse(firstParam(raw.productModelCode));
-
-  const canonical = new URLSearchParams();
-  const rawKnown = new URLSearchParams();
-  const filters: ProductFitInitialFilters = {};
-
-  const rawScope = firstParam(raw.applicationScope);
-  if (rawScope !== undefined) {
-    appendRawParams(rawKnown, "applicationScope", raw.applicationScope);
-    if (scope.success) {
-      canonical.set("applicationScope", scope.data);
-      filters.applicationScope = scope.data;
-    }
-  }
-  const rawAsOf = firstParam(raw.asOf);
-  if (rawAsOf !== undefined) {
-    appendRawParams(rawKnown, "asOf", raw.asOf);
-    if (asOf.success) {
-      canonical.set("asOf", asOf.data);
-      filters.asOf = asOf.data;
-    }
-  }
-  const rawPower = firstParam(raw.powerKw);
-  if (rawPower !== undefined) {
-    appendRawParams(rawKnown, "powerKw", raw.powerKw);
-    if (power.success) {
-      canonical.set("powerKw", String(power.data));
-      filters.powerKw = power.data;
-    }
-  }
-  const rawProduct = firstParam(raw.productModelCode);
-  if (rawProduct !== undefined) {
-    appendRawParams(rawKnown, "productModelCode", raw.productModelCode);
-    if (product.success) {
-      canonical.set("productModelCode", product.data.toUpperCase());
-      filters.productModelCode = product.data.toUpperCase();
-    }
-  }
-
-  // 未知键原样保留在重定向目标中（兼容分析参数）。
-  for (const [key, value] of Object.entries(raw)) {
-    if (!(KNOWN_FILTER_KEYS as readonly string[]).includes(key)) {
-      appendRawParams(canonical, key, value);
-      appendRawParams(rawKnown, key, value);
-    }
+  if (detailResult.status === "rejected") {
+    throw detailResult.reason;
   }
 
   return {
-    canonicalQuery: canonical.toString(),
-    filters,
-    needsRedirect: canonical.toString() !== rawKnown.toString(),
+    initialCountryDetail: detailResult.value,
+    initialMapResponse: mapResult.value,
   };
 }
 
@@ -169,33 +129,60 @@ export default async function CountryPage({
     );
   }
 
-  const [initialMapResponse, initialCountryDetail] = await Promise.all([
-    listCountryMapSummaries(),
-    getCountryDetails({
+  const operation = await runPublicDataRenderOperation({
+    headers: await headers(),
+    route: COUNTRY_PAGE_DATA_ROUTE,
+    work: (signal) => loadCountryPageData({
       applicationScope: filters.applicationScope,
       asOf: filters.asOf,
       iso3: parsed.data,
       powerKw: filters.powerKw,
-    }),
-  ]);
+    }, signal),
+  });
+  if (operation.status !== "fulfilled") {
+    console.error("Country page data request failed", {
+      errorCode:
+        operation.status === "failed"
+          ? getErrorCode(operation.error)
+          : `PUBLIC_DATA_${operation.status.toUpperCase()}`,
+      route: COUNTRY_PAGE_DATA_ROUTE,
+      status: operation.status,
+    });
+    throw new Error(COUNTRY_PAGE_DATA_UNAVAILABLE);
+  }
+  const { initialCountryDetail, initialMapResponse } = operation.value;
   const countryDirectory = getCountryDirectory();
+  const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
   const directoryEntry = countryDirectory.find(
     ({ iso3: value }) => value === parsed.data,
   );
+  if (!directoryEntry) {
+    notFound();
+  }
 
   return (
-    <CountryExplorer
-      initialCountryDetail={initialCountryDetail}
-      initialCountryIso3={parsed.data}
-      initialCountryIndex={countryDirectory}
-      initialCountryPanel={
-        <CountryInitialPanel
-          detail={initialCountryDetail}
-          hasGeometry={directoryEntry?.hasGeometry ?? false}
-        />
-      }
-      initialFilters={filters}
-      initialMapResponse={initialMapResponse}
-    />
+    <>
+      <LocaleRenderReceipt locale={locale} />
+      <CountryExplorer
+        initialCountryDetail={initialCountryDetail}
+        initialCountryIso3={parsed.data}
+        initialCountryIndex={countryDirectory}
+        initialCountryPanel={
+          <CountryInitialPanel
+            countryDirectoryEntry={directoryEntry}
+            countrySummary={initialMapResponse.countries.find(
+              ({ iso3: countryIso3 }) => countryIso3 === directoryEntry.iso3,
+            )}
+            detail={initialCountryDetail}
+            dictionary={dictionary}
+            hasGeometry={directoryEntry?.hasGeometry ?? false}
+            locale={locale}
+          />
+        }
+        initialFilters={filters}
+        initialMapResponse={initialMapResponse}
+      />
+    </>
   );
 }

@@ -58,7 +58,9 @@ test("runs the fictional CSV governance lifecycle and restores the query", async
   expect(metricId).toBeTruthy();
 
   await page.getByRole("link", { name: "切换 reviewer" }).click();
-  await expect(page.getByText("reviewer@fde-demo.local")).toBeVisible();
+  await expect(
+    page.getByText("角色：reviewer", { exact: true }),
+  ).toBeVisible();
   await page.getByText(/查看 v1 payload、发布差异与依赖/).click();
   await page.getByLabel("审核理由").fill("已核对虚构来源、期间和值字段。");
   await page.getByRole("button", { name: "提交审核确认" }).click();
@@ -101,7 +103,9 @@ test("supports persona switching and CSV field errors on mobile", async ({
   await page.goto("/admin");
   await expect(page.getByTestId("fde-demo-banner")).toBeVisible();
   await page.getByRole("link", { name: "切换 reviewer" }).click();
-  await expect(page.getByText("reviewer@fde-demo.local")).toBeVisible();
+  await expect(
+    page.getByText("角色：reviewer", { exact: true }),
+  ).toBeVisible();
   await page.getByRole("link", { name: "切换 editor" }).click();
   await page
     .getByLabel("CSV 文件")

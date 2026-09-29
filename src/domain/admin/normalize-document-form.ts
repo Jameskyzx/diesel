@@ -19,3 +19,36 @@ export function appendDocumentMetadata(
   formData.set("isDemo", String(isDemo));
   formData.set("demoNotice", value("demoNotice"));
 }
+
+const reprocessMetadataFields = [
+  "applicationScope",
+  "canonicalUrl",
+  "countryIso3",
+  "demoNotice",
+  "documentType",
+  "isDemo",
+  "jurisdictionId",
+  "languageCode",
+  "licenseCode",
+  "publishedOn",
+  "redistributionAllowed",
+  "sourcePublisher",
+  "sourceTitle",
+  "sourceType",
+  "sourceUrl",
+  "title",
+  "validFrom",
+  "validTo",
+] as const;
+
+export function appendDocumentReprocessMetadata(formData: FormData): void {
+  for (const field of reprocessMetadataFields) {
+    const sourceField = `reprocess${field}`;
+    if (!formData.has(sourceField)) continue;
+
+    const value = formData.get(sourceField);
+    if (typeof value === "string") {
+      formData.set(field, value);
+    }
+  }
+}

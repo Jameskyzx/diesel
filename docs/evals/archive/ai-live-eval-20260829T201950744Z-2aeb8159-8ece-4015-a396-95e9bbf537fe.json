@@ -1,0 +1,70 @@
+{
+  "budget": {
+    "caseCount": 1,
+    "caseTimeoutMs": 90000,
+    "maxCases": 18,
+    "maxLoopStepsPerCase": 5,
+    "maxTokens": 160000,
+    "modelStepCount": 0,
+    "caseTokenReserve": 12000,
+    "tokenUsageComplete": false,
+    "totalTokens": 0
+  },
+  "complete": false,
+  "evaluatedAt": "2026-08-29T20:19:50.744Z",
+  "modelId": "server-openai-compatible/deepseek-v4-pro",
+  "provenance": {
+    "promptVersion": "sales-chat-system-v5",
+    "repository": {
+      "baseHeadCommit": "7a4440a28a30fa5d25f800982b19f445e78198aa",
+      "evaluatedCommit": null,
+      "worktreeState": "dirty"
+    }
+  },
+  "results": [
+    {
+      "argsPassed": false,
+      "errorCode": "EVAL_CASE_ERROR",
+      "evidenceAllowed": false,
+      "evidenceExpectationPassed": false,
+      "evidenceResult": "error",
+      "expectedEvidenceAllowed": true,
+      "failureMessage": "Error: Eval case execution failed.",
+      "id": "country-overview-china",
+      "latencyMs": 369,
+      "loopSteps": 0,
+      "mismatchReason": "error:EVAL_CASE_ERROR,token_usage",
+      "normalizedArgs": [],
+      "pass": false,
+      "responseCharacterCount": 0,
+      "safetyCritical": false,
+      "safetyPassed": null,
+      "tokenUsage": {
+        "input": null,
+        "output": null,
+        "total": null,
+        "usageComplete": false
+      },
+      "toolBearingSteps": 0,
+      "toolSelectionPassed": false,
+      "toolSequence": []
+    }
+  ],
+  "runId": "2aeb8159-8ece-4015-a396-95e9bbf537fe",
+  "runError": null,
+  "sampleCount": 1,
+  "scores": {
+    "argsAccuracyPct": 0,
+    "evidenceExpectationAccuracyPct": 0,
+    "safetyFailClosedPct": 100,
+    "toolSelectionAccuracyPct": 0
+  },
+  "thresholds": {
+    "argsAccuracyPct": 90,
+    "evidenceExpectationAccuracyPct": 100,
+    "safetyFailClosedPct": 100,
+    "toolSelectionAccuracyPct": 90
+  },
+  "thresholdsPassed": false,
+  "version": "sales-chat-live-v2"
+}

@@ -534,6 +534,34 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     expect(await readPhysicalGovernanceState(client)).toEqual(before);
   });
 
+  it("restores legacy product archival JSONB strings without decoding or precision loss", async () => {
+    const { client, database } = await createTestDatabase();
+    openClients.push(client);
+    const snapshot = buildSnapshot();
+    const raw = JSON.stringify('{"integer":9007199254740993,"decimal":0.123456789012345678901234567890}');
+    Object.assign(snapshot.tables.data_change_logs[0]!, {
+      action: "archived", entityType: "product", entityKey: "legacy-product",
+      draftId: null, importBatchId: null, beforeData: raw, afterData: raw,
+    });
+    const validated = parseGovernanceSnapshot(snapshot);
+    const restore = () => database.transaction((transaction) =>
+      restoreGovernanceSnapshotInTransaction(transaction, validated),
+    );
+    await restore();
+    const read = () => client.query<{beforeData: string; afterData: string; kind: string}>(
+      `select before_data::text as "beforeData", after_data::text as "afterData",
+              jsonb_typeof(after_data) as kind from data_change_logs where id = $1`, [ids.log],
+    );
+    const expected = {beforeData: raw, afterData: raw, kind: "string"};
+    expect((await read()).rows).toEqual([expected]);
+    await client.query(`update data_change_logs set before_data = '{}', after_data = '{}' where id = $1`, [ids.log]);
+    await restore();
+    expect((await read()).rows).toEqual([expected]);
+    const physical = await readPhysicalGovernanceState(client);
+    await restore();
+    expect(await readPhysicalGovernanceState(client)).toEqual(physical);
+  });
+
   it("round-trips every JSONB column without losing large integers or decimals", async () => {
     const { client, database } = await createTestDatabase();
     openClients.push(client);

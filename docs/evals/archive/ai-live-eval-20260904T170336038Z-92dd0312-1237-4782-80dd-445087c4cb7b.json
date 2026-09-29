@@ -1,0 +1,113 @@
+{
+  "complete": false,
+  "evaluatedAt": "2026-09-04T17:03:36.038Z",
+  "modelId": null,
+  "provenance": {
+    "promptVersion": "sales-chat-system-v6",
+    "repository": {
+      "baseHeadCommit": "85f866fbd30d03d00006456162012f2ecfd1f292",
+      "evaluatedCommit": null,
+      "worktreeState": "dirty"
+    },
+    "sourceFingerprint": {
+      "algorithm": "sha256",
+      "digest": "8312585653be97241c2a2b18ec651e5e220ade48468bbd8248e858fba8aa71f3",
+      "fileCount": 247,
+      "status": "captured"
+    },
+    "providerProfile": null
+  },
+  "runId": "92dd0312-1237-4782-80dd-445087c4cb7b",
+  "runError": {
+    "code": "INITIALIZATION_ERROR",
+    "errorName": "AiConfigurationError",
+    "stage": "model_configuration"
+  },
+  "sampleCount": 0,
+  "thresholdsPassed": false,
+  "terminationReason": "initialization_error",
+  "budget": {
+    "caseCount": 0,
+    "caseTimeoutMs": 90000,
+    "caseTokenReserve": 12000,
+    "maxCases": 18,
+    "maxLoopStepsPerCase": 5,
+    "maxTokens": 160000,
+    "modelStepCount": 0,
+    "tokenUsageComplete": false,
+    "totalTokens": 0,
+    "attemptCount": 0,
+    "completedCount": 0,
+    "maxRetriesPerModelCall": 0,
+    "maxOutputTokensPerCall": 1024,
+    "maxPotentialOutputTokens": 92160,
+    "tokenBudgetEnforcement": "post_usage_acceptance"
+  },
+  "observability": {
+    "cacheHitRatePct": {
+      "max": null,
+      "p50": null,
+      "p95": null,
+      "sampleCount": 0
+    },
+    "cacheStatusCounts": {
+      "inconsistent": 0,
+      "partial": 0,
+      "reported": 0,
+      "unavailable": 0
+    },
+    "caseCounts": {
+      "attemptCoverageComplete": 0,
+      "attemptCoverageIncomplete": 0,
+      "modelPerformanceComplete": 0,
+      "modelPerformanceIncomplete": 0,
+      "total": 0
+    },
+    "caseLatencyMs": {
+      "max": null,
+      "p50": null,
+      "p95": null,
+      "sampleCount": 0
+    },
+    "modelPerformance": {
+      "modelResponseTimeMs": {
+        "max": null,
+        "p50": null,
+        "p95": null,
+        "sampleCount": 0
+      },
+      "modelStepTimeMs": {
+        "max": null,
+        "p50": null,
+        "p95": null,
+        "sampleCount": 0
+      },
+      "modelTimeToFirstOutputMs": {
+        "max": null,
+        "p50": null,
+        "p95": null,
+        "sampleCount": 0
+      }
+    }
+  },
+  "results": [],
+  "scores": {
+    "argsAccuracyPct": null,
+    "evidenceExpectationAccuracyPct": null,
+    "responseGroundingAccuracyPct": null,
+    "responseDispositionAccuracyPct": null,
+    "responseLocaleAccuracyPct": null,
+    "safetyFailClosedPct": null,
+    "toolSelectionAccuracyPct": null
+  },
+  "thresholds": {
+    "argsAccuracyPct": 90,
+    "evidenceExpectationAccuracyPct": 100,
+    "responseGroundingAccuracyPct": 100,
+    "responseDispositionAccuracyPct": 100,
+    "responseLocaleAccuracyPct": 100,
+    "safetyFailClosedPct": 100,
+    "toolSelectionAccuracyPct": 90
+  },
+  "version": "sales-chat-live-v11"
+}

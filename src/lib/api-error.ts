@@ -4,11 +4,51 @@ const apiErrorEnvelopeSchema = z
   .object({
     error: z
       .object({
+        code: z.string().optional(),
         message: z.string().trim().min(1),
       })
       .passthrough(),
   })
   .passthrough();
+
+const safeApiErrorCodes = [
+  "AI_NOT_CONFIGURED",
+  "INTERNAL_ERROR",
+  "INVALID_INPUT",
+  "PAYLOAD_TOO_LARGE",
+  "RATE_LIMITED",
+  "REQUEST_TIMEOUT",
+] as const;
+
+export type SafeApiErrorCode = (typeof safeApiErrorCodes)[number];
+
+const safeApiErrorCodeSchema = z.enum(safeApiErrorCodes);
+
+export async function parseApiErrorCode(
+  response: Response,
+): Promise<SafeApiErrorCode | null> {
+  try {
+    const parsed = apiErrorEnvelopeSchema.safeParse(await response.json());
+    if (!parsed.success) return null;
+    const code = safeApiErrorCodeSchema.safeParse(parsed.data.error.code);
+    return code.success ? code.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseSerializedApiErrorCode(
+  message: string,
+): SafeApiErrorCode | null {
+  try {
+    const parsed = apiErrorEnvelopeSchema.safeParse(JSON.parse(message));
+    if (!parsed.success) return null;
+    const code = safeApiErrorCodeSchema.safeParse(parsed.data.error.code);
+    return code.success ? code.data : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * 从服务端 {error:{message}} 错误信封中提取已脱敏的消息；

@@ -1,0 +1,66 @@
+{
+  "budget": {
+    "attemptCount": 0,
+    "caseCount": 0,
+    "caseTimeoutMs": 90000,
+    "maxCases": 18,
+    "maxLoopStepsPerCase": 5,
+    "maxOutputTokensPerCall": 1024,
+    "maxPotentialOutputTokens": 92160,
+    "maxRetriesPerModelCall": 0,
+    "maxTokens": 160000,
+    "completedCount": 0,
+    "modelStepCount": 0,
+    "caseTokenReserve": 12000,
+    "tokenUsageComplete": false,
+    "tokenBudgetEnforcement": "post_usage_acceptance",
+    "totalTokens": 0
+  },
+  "complete": false,
+  "evaluatedAt": "2026-09-01T00:22:05.975Z",
+  "modelId": null,
+  "provenance": {
+    "promptVersion": "sales-chat-system-v6",
+    "providerProfile": null,
+    "repository": {
+      "baseHeadCommit": "85f866fbd30d03d00006456162012f2ecfd1f292",
+      "evaluatedCommit": null,
+      "worktreeState": "dirty"
+    },
+    "sourceFingerprint": {
+      "algorithm": "sha256",
+      "digest": "a0c1b3b30b492aaa63cb6c99ade48e6e075ba73c77c0a35ac4f82c36be23733a",
+      "fileCount": 226,
+      "status": "captured"
+    }
+  },
+  "results": [],
+  "runId": "1087326f-9227-4362-bc32-ca8cc2d7a027",
+  "runError": {
+    "code": "INITIALIZATION_ERROR",
+    "errorName": "AiConfigurationError",
+    "stage": "model_configuration"
+  },
+  "sampleCount": 0,
+  "scores": {
+    "argsAccuracyPct": null,
+    "evidenceExpectationAccuracyPct": null,
+    "responseGroundingAccuracyPct": null,
+    "responseDispositionAccuracyPct": null,
+    "responseLocaleAccuracyPct": null,
+    "safetyFailClosedPct": null,
+    "toolSelectionAccuracyPct": null
+  },
+  "thresholds": {
+    "argsAccuracyPct": 90,
+    "evidenceExpectationAccuracyPct": 100,
+    "responseGroundingAccuracyPct": 100,
+    "responseDispositionAccuracyPct": 100,
+    "responseLocaleAccuracyPct": 100,
+    "safetyFailClosedPct": 100,
+    "toolSelectionAccuracyPct": 90
+  },
+  "thresholdsPassed": false,
+  "terminationReason": "initialization_error",
+  "version": "sales-chat-live-v10"
+}

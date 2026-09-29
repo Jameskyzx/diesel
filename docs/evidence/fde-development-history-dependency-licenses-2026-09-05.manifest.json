@@ -1,0 +1,115 @@
+{
+  "schemaVersion": "diesel-fde-development-history-dependency-license-evidence-v1",
+  "recordedDate": "2026-09-05",
+  "evidenceLevel": "repository-contained-dated-run-record",
+  "sourceCommit": "6be02895643a3fdf8dcee1a5876c5f3d70d03036",
+  "archive": {
+    "path": "docs/evidence/fde-development-history-dependency-licenses-2026-09-05.raw.json.gz",
+    "byteLength": 4499471,
+    "sha256": "9cef91ee2d5becb83ad925b14abff0469f8142ba31ce6daf9a30bb6820c89f50",
+    "fileCount": 810,
+    "totalByteLength": 13876718
+  },
+  "originalBundle": {
+    "path": "bundle.manifest.json",
+    "byteLength": 314213,
+    "sha256": "5d6b76baf0f7e00d629a40a9ac8db68b29919fc41e5ce627a08b87764cab0e50",
+    "inventoryFileCount": 807,
+    "inventoryByteLength": 13550916
+  },
+  "supportingFiles": [
+    {
+      "path": "README.md",
+      "byteLength": 5059,
+      "sha256": "662a4e1ed809519b36052c1299a499034876ae8bd17407d40b32d8c94838a854"
+    },
+    {
+      "path": "package-evidence.mjs",
+      "byteLength": 6530,
+      "sha256": "a8c6d771f695819df56ed92ee5910c9ab30ee70284858d5bf80ebd94e697abb1"
+    }
+  ],
+  "originalRecordSemantics": "Collection-time local/not-yet-retained statements remain unchanged; this outer record retains those bytes without upgrading prior claims.",
+  "contentSecretScan": {
+    "scope": "uncompressed-810-file-bundle-before-retention",
+    "tool": "gitleaks",
+    "version": "8.21.2",
+    "binarySha256": "90e39dd8b483e30698fc6fbdbe6794b36a6cc49ccde31e2ce9e2d3048838fd74",
+    "policySha256": "14c18cf8c73b67f96d20106cf1bb5348216867c592825a0efe957cc5dc6630dc",
+    "exitCode": 0,
+    "signal": null,
+    "errorCode": null,
+    "stdout": "",
+    "stderr": "2:00PM INF scan completed in 259ms\n2:00PM INF no leaks found\n",
+    "findings": []
+  },
+  "observed": {
+    "successfulFrozenInstalls": 6,
+    "platformLicenseReports": 12,
+    "registryQueries": 175,
+    "graphs": [
+      {
+        "graph": "L1",
+        "representativeState": "S1",
+        "platformIdentities": 680,
+        "productionPlatformIdentities": 403,
+        "registryIdentities": 175,
+        "lockedIdentities": 855,
+        "mplDeclaredIdentities": 25,
+        "lgplContainingDeclaredIdentities": 14
+      },
+      {
+        "graph": "L2",
+        "representativeState": "S3",
+        "platformIdentities": 681,
+        "productionPlatformIdentities": 404,
+        "registryIdentities": 175,
+        "lockedIdentities": 856,
+        "mplDeclaredIdentities": 25,
+        "lgplContainingDeclaredIdentities": 14
+      },
+      {
+        "graph": "L3",
+        "representativeState": "S6",
+        "platformIdentities": 682,
+        "productionPlatformIdentities": 405,
+        "registryIdentities": 175,
+        "lockedIdentities": 857,
+        "mplDeclaredIdentities": 25,
+        "lgplContainingDeclaredIdentities": 14
+      }
+    ],
+    "registryDeclarations": [
+      {
+        "license": "Apache-2.0",
+        "identities": 9
+      },
+      {
+        "license": "Apache-2.0 AND LGPL-3.0-or-later",
+        "identities": 3
+      },
+      {
+        "license": "Apache-2.0 AND LGPL-3.0-or-later AND MIT",
+        "identities": 1
+      },
+      {
+        "license": "LGPL-3.0-or-later",
+        "identities": 9
+      },
+      {
+        "license": "MIT",
+        "identities": 133
+      },
+      {
+        "license": "MPL-2.0",
+        "identities": 20
+      }
+    ]
+  },
+  "licenseApproval": "not-performed",
+  "includesLicenseFullText": false,
+  "crossPlatformInstallationVerified": false,
+  "historicalApplicationRuntimeVerified": false,
+  "publicationPermitted": false,
+  "publicationEffect": "none"
+}

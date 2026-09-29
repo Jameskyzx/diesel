@@ -12,9 +12,14 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/i18n/locale-provider";
+import {
+  buildProductFitDataGapSummary,
+  productFitReasonMessage,
+} from "@/features/ai/client-tool-copy";
 import {
   applicationScopes,
   type ApplicationScope,
@@ -25,8 +30,29 @@ import {
   type ProductFitEvaluation,
   type ProductSummary,
 } from "@/features/product-fit/schemas";
-import { parseApiErrorMessage, toUserFacingErrorMessage } from "@/lib/api-error";
+import {
+  parseApiErrorCode,
+  type SafeApiErrorCode,
+} from "@/lib/api-error";
+import { createPublicApiRequestDeadline } from "@/lib/public-api-request";
+import { subscribeToPublicNavigationIntent } from "@/lib/public-navigation-intent";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
+import type { Dictionary } from "@/i18n/dictionaries";
+import {
+  formatOptionalUtcDate,
+  formatProductAvailabilityDateRange,
+  formatUtcDate,
+} from "@/i18n/date";
+import type { Locale } from "@/i18n/locale";
+import {
+  applicationScopeLabel,
+  applicationScopeListLabel,
+  certificationStatusLabel,
+  jurisdictionDisplayName,
+  nameWithCode,
+  productDisplayName,
+  regulationDisplayName,
+} from "@/i18n/structured-labels";
 
 export type ProductFitInitialFilters = {
   applicationScope?: ApplicationScope;
@@ -39,118 +65,110 @@ export type ProductFitCommittedFilters = Required<ProductFitInitialFilters>;
 
 type ProductListState =
   | { status: "loading" }
-  | { message: string; status: "error" }
+  | { code: SafeApiErrorCode | null; status: "error" }
   | { products: ProductSummary[]; status: "ready" };
 
 type EvaluationState =
   | { status: "idle" }
   | { status: "loading" }
-  | { message: string; status: "error" }
+  | { code: SafeApiErrorCode | null; status: "error" }
   | { evaluation: ProductFitEvaluation; status: "ready" };
 
-const scopeLabels: Record<ApplicationScope, string> = {
-  agriculture: "农业",
-  construction: "工程机械",
-  "generator-set": "发电机组",
-  marine: "船舶",
-  "non-road": "非道路",
-  "on-road": "道路",
-  "on-road-bus": "客车动力",
-  "on-road-truck": "卡车动力",
-};
-
 const quickPowerValues = [50, 100, 150, 300] as const;
+
+export function productListErrorMessage(
+  code: SafeApiErrorCode | null,
+  dictionary: Dictionary,
+): string {
+  return code === "INTERNAL_ERROR" || code === "REQUEST_TIMEOUT"
+    ? dictionary.apiErrors.productListUnavailable
+    : dictionary.productFit.productLoadFallback;
+}
+
+export function productFitErrorMessage(
+  code: SafeApiErrorCode | null,
+  dictionary: Dictionary,
+): string {
+  if (code === "INVALID_INPUT") return dictionary.apiErrors.invalidProductFit;
+  if (code === "PAYLOAD_TOO_LARGE") {
+    return dictionary.apiErrors.productFitPayloadTooLarge;
+  }
+  return code === "INTERNAL_ERROR" || code === "REQUEST_TIMEOUT"
+    ? dictionary.apiErrors.productFitUnavailable
+    : dictionary.productFit.errorFallback;
+}
 
 const fitPresentation = {
   fit: {
     className: "border-emerald-300 bg-emerald-50 text-emerald-950",
     icon: BadgeCheck,
-    label: "明确匹配",
   },
   not_fit: {
     className: "border-rose-300 bg-rose-50 text-rose-950",
     icon: ShieldAlert,
-    label: "明确不匹配",
   },
   unknown: {
     className: "border-amber-300 bg-amber-50 text-amber-950",
     icon: CircleHelp,
-    label: "未知 / 证据不足",
   },
 } as const;
 
 const readinessPresentation = {
   not_ready: {
     className: "border-rose-300 bg-rose-50 text-rose-950",
-    label: "商业未就绪",
   },
   ready: {
     className: "border-emerald-300 bg-emerald-50 text-emerald-950",
-    label: "商业就绪",
   },
   unknown: {
     className: "border-amber-300 bg-amber-50 text-amber-950",
-    label: "商业准备度未知",
   },
 } as const;
 
-function formatRange(minimum: number | null, maximum: number | null): string {
-  if (minimum !== null && maximum !== null) {
-    return `${minimum} kW（含）至 ${maximum} kW（不含），即 [${minimum}, ${maximum}) kW`;
-  }
-  if (minimum !== null) {
-    return `${minimum} kW（含）起，上限开放`;
-  }
-  if (maximum !== null) {
-    return `下限未记录；上限为 ${maximum} kW（不含）`;
-  }
-  return "功率上下限均未记录";
+function formatRange(
+  minimum: number | null,
+  maximum: number | null,
+  missing: string,
+  open: string,
+): string {
+  return `[${minimum ?? missing}, ${maximum ?? open}) kW`;
 }
 
-function formatDateRange(start: string | null, end: string | null): string {
+export function formatCertificationPowerRange(
+  minimum: number | null,
+  maximum: number | null,
+  notRecorded: string,
+  open: string,
+): string {
+  if (minimum === null && maximum === null) {
+    return notRecorded;
+  }
+
+  return `[${minimum ?? notRecorded}, ${maximum ?? open}) kW`;
+}
+
+function formatDateRange(
+  start: string | null,
+  end: string | null,
+  locale: Locale,
+  notRecorded: string,
+  open: string,
+): string {
   if (start === null && end === null) {
-    return "未记录";
+    return notRecorded;
   }
 
-  return `${start ?? "未记录"} → ${end ?? "开放"}`;
+  return `${formatOptionalUtcDate(start, locale, notRecorded)} → ${formatOptionalUtcDate(end, locale, open)}`;
 }
 
-type ProductFitReasonCode =
-  ProductFitEvaluation["reasons"][number]["code"];
-
-function requiredFieldsForReasonCode(code: ProductFitReasonCode): string {
-  if (code === "PRODUCT_NOT_FOUND") {
-    return "产品型号、产品名称、规格版本、应用场景、功率范围、供应期、来源链接、发布日期、最近核验时间";
-  }
-  if (code === "NO_APPLICABLE_REGULATION_DATA") {
-    return "法规名称、法规状态、适用国家或司法辖区、应用场景、功率区间、有效期、法规与限值来源、发布日期、最近核验时间";
-  }
-  if (code.startsWith("CERTIFICATION_")) {
-    return "认证编号、关联法规、认证状态、应用场景、功率范围、有效期、来源链接、发布日期、最近核验时间";
-  }
-  return "与原因码对应的结构化记录、适用范围、有效期、来源链接和最近核验时间";
-}
-
-function buildDataGapSummary(evaluation: ProductFitEvaluation): string {
-  const reasonCodes = evaluation.reasons.map(({ code }) => code);
-  const requiredFields = Array.from(
-    new Set(reasonCodes.map(requiredFieldsForReasonCode)),
-  );
-  const product = evaluation.product
-    ? `${evaluation.product.modelCode} · ${evaluation.product.name}`
-    : evaluation.input.productModelCode;
-
-  return [
-    "产品适配补数摘要（本地生成，尚未创建工单）",
-    `国家：${evaluation.input.countryIso3}`,
-    `产品：${product}`,
-    `应用场景：${scopeLabels[evaluation.input.applicationScope]}（${evaluation.input.applicationScope}）`,
-    `功率：${evaluation.input.powerKw} kW`,
-    `评估日期（asOf）：${evaluation.asOf}`,
-    `原因码：${reasonCodes.join("、")}`,
-    `原因：${evaluation.reasons.map(({ message }) => message).join("；")}`,
-    `所需字段：${requiredFields.join("；")}`,
-  ].join("\n");
+export function formatCertificationValidityRange(
+  start: string | null,
+  end: string | null,
+  locale: Locale,
+  notRecorded: string,
+  open: string,
+): string {
+  return formatDateRange(start, end, locale, notRecorded, open);
 }
 
 export function ProductFitPanel({
@@ -168,6 +186,8 @@ export function ProductFitPanel({
     cancelPendingEvaluation: (() => void) | null,
   ) => void;
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.productFit;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -197,8 +217,18 @@ export function ProductFitPanel({
   // router update as a fresh shared-link load can race with the next user edit
   // and restore a stale result.
   const autoRanRef = useRef(!initialFilters?.productModelCode);
+  const autoRunEpochRef = useRef(0);
+  const productListRequestIdRef = useRef(0);
   const evaluationAbortControllerRef = useRef<AbortController | null>(null);
   const evaluationRequestIdRef = useRef(0);
+  const onEvaluationCommittedRef = useRef(onEvaluationCommitted);
+
+  useLayoutEffect(() => {
+    // An earlier evaluation's own URL acknowledgement can preserve this panel
+    // while a later request is pending. Complete against the latest committed
+    // parent context, never a callback from the request's starting render.
+    onEvaluationCommittedRef.current = onEvaluationCommitted;
+  }, [onEvaluationCommitted]);
 
   function clearEvaluation() {
     evaluationRequestIdRef.current += 1;
@@ -208,55 +238,96 @@ export function ProductFitPanel({
   }
 
   useEffect(() => {
-    const cancelPendingEvaluation = () => {
+    const abortCurrentEvaluation = () => {
       evaluationRequestIdRef.current += 1;
       evaluationAbortControllerRef.current?.abort();
       evaluationAbortControllerRef.current = null;
     };
+    const cancelPendingEvaluation = () => {
+      autoRanRef.current = true;
+      autoRunEpochRef.current += 1;
+      abortCurrentEvaluation();
+    };
 
+    // Header navigation can begin while its RSC keeps this panel mounted.
+    // Retire both unstarted and queued auto-runs as well as the active request.
+    const unsubscribeNavigationIntent = subscribeToPublicNavigationIntent(
+      cancelPendingEvaluation,
+    );
     registerNavigationGuard?.(cancelPendingEvaluation);
     return () => {
-      cancelPendingEvaluation();
+      unsubscribeNavigationIntent();
+      // StrictMode cleanup is not a user navigation and must not retire the
+      // initial shared-link attempt before the catalog is ready.
+      abortCurrentEvaluation();
       registerNavigationGuard?.(null);
     };
   }, [registerNavigationGuard]);
 
   useEffect(() => {
     const abortController = new AbortController();
+    const requestId = productListRequestIdRef.current + 1;
+    productListRequestIdRef.current = requestId;
+    const requestIsCurrent = () =>
+      !abortController.signal.aborted &&
+      productListRequestIdRef.current === requestId;
+    const deadline = createPublicApiRequestDeadline(abortController.signal);
 
     void fetch("/api/products", {
       headers: { accept: "application/json" },
-      signal: abortController.signal,
+      signal: deadline.signal,
     })
       .then(async (response) => {
         if (!response.ok) {
-          throw new Error(
-            await parseApiErrorMessage(response, "产品列表请求失败"),
-          );
+          return {
+            code: await parseApiErrorCode(response),
+            status: "error" as const,
+          };
         }
-        return productListResponseSchema.parse(await response.json());
+        return {
+          response: productListResponseSchema.parse(await response.json()),
+          status: "ready" as const,
+        };
       })
-      .then((response) => {
-        setProductList({ products: response.products, status: "ready" });
+      .then((result) => {
+        if (!requestIsCurrent()) return;
+        if (result.status === "error") {
+          setProductList(result);
+          return;
+        }
+        setProductList({ products: result.response.products, status: "ready" });
         // URL 携带未知型号（如已下架）时回退到第一个产品，避免
         // select 显示与状态不一致。
         setProductModelCode((current) =>
-          response.products.some((product) => product.modelCode === current)
+          result.response.products.some(
+            (product) => product.modelCode === current,
+          )
             ? current
-            : (response.products[0]?.modelCode ?? ""),
+            : (result.response.products[0]?.modelCode ?? ""),
         );
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (
+          !requestIsCurrent() ||
+          error instanceof DOMException &&
+          error.name === "AbortError" &&
+          !deadline.didTimeout()
+        ) {
           return;
         }
         setProductList({
-          message: toUserFacingErrorMessage(error, "产品列表暂时无法加载。"),
+          code: deadline.didTimeout() ? "REQUEST_TIMEOUT" : null,
           status: "error",
         });
-      });
+      })
+      .finally(deadline.dispose);
 
-    return () => abortController.abort();
+    return () => {
+      if (productListRequestIdRef.current === requestId) {
+        productListRequestIdRef.current += 1;
+      }
+      abortController.abort();
+    };
   }, [reloadKey]);
 
   /**
@@ -285,6 +356,7 @@ export function ProductFitPanel({
     evaluationAbortControllerRef.current = abortController;
     const requestId = evaluationRequestIdRef.current + 1;
     evaluationRequestIdRef.current = requestId;
+    const deadline = createPublicApiRequestDeadline(abortController.signal);
     setEvaluation({ status: "loading" });
 
     try {
@@ -302,13 +374,22 @@ export function ProductFitPanel({
           "content-type": "application/json",
         },
         method: "POST",
-        signal: abortController.signal,
+        signal: deadline.signal,
       });
 
       if (!response.ok) {
-        throw new Error(
-          await parseApiErrorMessage(response, "产品适配请求失败"),
-        );
+        const code = await parseApiErrorCode(response);
+        if (
+          abortController.signal.aborted ||
+          evaluationRequestIdRef.current !== requestId
+        ) {
+          return;
+        }
+        setEvaluation({
+          code,
+          status: "error",
+        });
+        return;
       }
 
       const parsed = productFitEvaluationSchema.parse(await response.json());
@@ -325,23 +406,25 @@ export function ProductFitPanel({
         productModelCode: parsed.input.productModelCode,
       };
       setEvaluation({ evaluation: parsed, status: "ready" });
-      onEvaluationCommitted?.(committedFilters);
+      onEvaluationCommittedRef.current?.(committedFilters);
       syncFiltersToUrl(committedFilters);
     } catch (error: unknown) {
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (
+        error instanceof DOMException &&
+        error.name === "AbortError" &&
+        !deadline.didTimeout()
+      ) {
         return;
       }
       if (evaluationRequestIdRef.current !== requestId) {
         return;
       }
       setEvaluation({
-        message: toUserFacingErrorMessage(
-          error,
-          "适配评估暂时无法完成，请检查输入后重试。",
-        ),
+        code: deadline.didTimeout() ? "REQUEST_TIMEOUT" : null,
         status: "error",
       });
     } finally {
+      deadline.dispose();
       if (evaluationAbortControllerRef.current === abortController) {
         evaluationAbortControllerRef.current = null;
       }
@@ -360,12 +443,19 @@ export function ProductFitPanel({
     const known = productList.products.some(
       (product) => product.modelCode === initialFilters.productModelCode,
     );
+    // Catalog readiness settles this initial shared-link attempt even if its
+    // model is unknown. A later manual URL acknowledgement must not revive it
+    // and submit the user's current, unsubmitted draft.
+    autoRanRef.current = true;
     if (!known) {
       return;
     }
-    autoRanRef.current = true;
     // 延迟到当前渲染后执行，避免 effect 内同步 setState 触发级联渲染。
+    const autoRunEpoch = autoRunEpochRef.current;
     const timer = setTimeout(() => {
+      if (autoRunEpochRef.current !== autoRunEpoch) {
+        return;
+      }
       void runEvaluation();
     }, 0);
     return () => clearTimeout(timer);
@@ -377,14 +467,17 @@ export function ProductFitPanel({
       <div className="flex items-center gap-2">
         <PackageCheck aria-hidden="true" className="size-4 text-primary" />
         <h2 className="font-semibold" id="product-fit-heading">
-          产品适配结果
+          {copy.heading}
         </h2>
       </div>
       <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-        由 product-fit-v2 确定性规则分别计算法规/认证适配与查询日供应状态；大模型不参与判断。
+        {copy.formDescription}
       </p>
 
       <form
+        aria-busy={
+          productList.status === "loading" || evaluation.status === "loading"
+        }
         className="mt-3 grid min-w-0 gap-3 rounded-2xl border bg-card p-4"
         data-testid="product-fit-form"
         data-vaul-no-drag
@@ -402,21 +495,16 @@ export function ProductFitPanel({
               productList.products.length === 0)
           }
         >
-          <legend className="text-xs font-medium">产品型号</legend>
+          <legend className="text-xs font-medium">{copy.productModel}</legend>
           {productList.status === "loading" ? (
-            <p className="rounded-xl border bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
-              正在加载产品…
-            </p>
-          ) : null}
-          {productList.status === "error" ? (
-            <p className="rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-3 text-xs text-destructive">
-              产品加载失败
-            </p>
-          ) : null}
-          {productList.status === "ready" &&
-          productList.products.length === 0 ? (
-            <p className="rounded-xl border bg-muted/30 px-3 py-3 text-xs text-muted-foreground">
-              产品目录为空
+            <p
+              aria-atomic="true"
+              aria-busy="true"
+              aria-live="polite"
+              className="rounded-xl border bg-muted/30 px-3 py-3 text-xs text-muted-foreground"
+              role="status"
+            >
+              {copy.loadingProducts}
             </p>
           ) : null}
           {productList.status === "ready" &&
@@ -424,6 +512,11 @@ export function ProductFitPanel({
             <div className="grid min-w-0 gap-2">
               {productList.products.map((product) => {
                 const selected = product.modelCode === productModelCode;
+                const displayName = productDisplayName(
+                  product,
+                  dictionary,
+                  locale,
+                );
 
                 return (
                   <label
@@ -436,7 +529,7 @@ export function ProductFitPanel({
                     key={product.id}
                   >
                     <input
-                      aria-label={`${product.modelCode} · ${product.name}`}
+                      aria-label={`${product.modelCode} · ${displayName}`}
                       checked={selected}
                       className="mt-1 size-4 shrink-0 accent-primary"
                       name="productModelCode"
@@ -453,12 +546,12 @@ export function ProductFitPanel({
                         {product.modelCode}
                       </span>
                       <span className="mt-0.5 block break-words text-[11px] font-normal leading-4 text-muted-foreground">
-                        {product.name}
+                        {displayName}
                       </span>
                     </span>
                     {selected ? (
                       <span className="shrink-0 text-[11px] font-medium text-primary">
-                        已选择
+                        {copy.selected}
                       </span>
                     ) : null}
                   </label>
@@ -470,15 +563,15 @@ export function ProductFitPanel({
             className="text-[11px] font-normal leading-5 text-muted-foreground"
             id="product-model-help"
           >
-            点选型号后，再点击下方“运行确定性匹配”更新结果。
+            {copy.selectionHelp}
           </p>
         </fieldset>
 
         <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="grid min-w-0 gap-1.5 text-xs font-medium">
-            应用场景
+            {copy.application}
             <select
-              aria-label="应用场景"
+              aria-label={copy.application}
               className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 text-sm"
               onChange={(event) => {
                 setApplicationScope(event.target.value as ApplicationScope);
@@ -488,15 +581,15 @@ export function ProductFitPanel({
             >
               {applicationScopes.map((scope) => (
                 <option key={scope} value={scope}>
-                  {scopeLabels[scope]}
+                  {applicationScopeLabel(scope, dictionary)}
                 </option>
               ))}
             </select>
           </label>
           <label className="grid min-w-0 gap-1.5 text-xs font-medium">
-            功率（kW）
+            {copy.power}
             <input
-              aria-label="功率（kW）"
+              aria-label={copy.power}
               className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 text-sm"
               inputMode="decimal"
               min="0"
@@ -516,7 +609,7 @@ export function ProductFitPanel({
 
         <fieldset className="min-w-0">
           <legend className="text-[11px] font-medium text-muted-foreground">
-            快捷选择功率（kW）
+            {copy.quickPower}
           </legend>
           <div className="mt-1.5 grid grid-cols-4 gap-2">
             {quickPowerValues.map((value) => {
@@ -524,7 +617,10 @@ export function ProductFitPanel({
 
               return (
                 <Button
-                  aria-label={`功率 ${value} kW`}
+                  aria-label={copy.quickPowerOption.replace(
+                    "{value}",
+                    String(value),
+                  )}
                   aria-pressed={selected}
                   className="h-11 min-w-0 px-1.5 text-xs"
                   key={value}
@@ -543,14 +639,13 @@ export function ProductFitPanel({
         </fieldset>
 
         <p className="text-[11px] leading-5 text-muted-foreground">
-          功率范围采用下限包含、上限不包含；例如 [50, 150) kW 表示 50
-          kW 在范围内，150 kW 不在范围内。
+          {copy.powerBandHelp}
         </p>
 
         <label className="grid min-w-0 gap-1.5 text-xs font-medium">
-          评估日期
+          {copy.date}
           <input
-            aria-label="评估日期"
+            aria-label={copy.date}
             className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 text-sm"
             onChange={(event) => {
               setEvaluationDate(event.target.value);
@@ -563,30 +658,42 @@ export function ProductFitPanel({
         </label>
 
         {productList.status === "error" ? (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-destructive" role="alert">
-              {productList.message}
+          <div
+            aria-atomic="true"
+            className="flex items-center justify-between gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-3"
+            data-testid="product-fit-catalog-error"
+            role="alert"
+          >
+            <p className="text-xs text-destructive">
+              {productListErrorMessage(productList.code, dictionary)}
             </p>
             <Button
-              onClick={() => setReloadKey((key) => key + 1)}
+              onClick={() => {
+                setProductList({ status: "loading" });
+                setReloadKey((key) => key + 1);
+              }}
               size="sm"
               type="button"
               variant="outline"
             >
               <RotateCcw aria-hidden="true" className="size-3.5" />
-              重试
+              {copy.retry}
             </Button>
           </div>
         ) : null}
 
         {productList.status === "ready" &&
         productList.products.length === 0 ? (
-          <p
+          <div
+            aria-atomic="true"
+            aria-live="polite"
             className="rounded-xl border border-dashed bg-muted/40 p-3 text-xs text-muted-foreground"
             data-testid="product-fit-empty-catalog"
+            role="status"
           >
-            产品目录为空，暂无法运行产品适配评估。
-          </p>
+            <p className="font-medium text-foreground">{copy.emptyCatalog}</p>
+            <p className="mt-1 leading-5">{copy.emptyCatalogBody}</p>
+          </div>
         ) : null}
 
         <Button
@@ -603,8 +710,21 @@ export function ProductFitPanel({
           ) : (
             <PackageCheck aria-hidden="true" className="size-4" />
           )}
-          运行确定性匹配
+          {copy.run}
         </Button>
+
+        {evaluation.status === "loading" ? (
+          <p
+            aria-atomic="true"
+            aria-busy="true"
+            aria-live="polite"
+            className="text-xs text-muted-foreground"
+            data-testid="product-fit-evaluation-loading"
+            role="status"
+          >
+            {copy.runningEvaluation}
+          </p>
+        ) : null}
       </form>
 
       {evaluation.status === "error" ? (
@@ -613,7 +733,9 @@ export function ProductFitPanel({
           role="alert"
         >
           <AlertCircle aria-hidden="true" className="size-4 text-destructive" />
-          <p className="mt-2">{evaluation.message}</p>
+          <p className="mt-2">
+            {productFitErrorMessage(evaluation.code, dictionary)}
+          </p>
         </div>
       ) : null}
 
@@ -629,8 +751,20 @@ function ProductFitResult({
 }: {
   evaluation: ProductFitEvaluation;
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.productFit;
   const presentation = fitPresentation[evaluation.status];
   const readiness = readinessPresentation[evaluation.commercialReadiness];
+  const fitLabel = {
+    fit: copy.fit,
+    not_fit: copy.notFit,
+    unknown: copy.unknownFit,
+  }[evaluation.status];
+  const readinessLabel = {
+    not_ready: copy.commercialNotReady,
+    ready: copy.commercialReady,
+    unknown: copy.commercialUnknown,
+  }[evaluation.commercialReadiness];
   const StatusIcon = presentation.icon;
   const isDemoFit =
     evaluation.status === "fit" &&
@@ -646,18 +780,20 @@ function ProductFitResult({
       >
         <div className="flex items-center gap-2 font-semibold">
           <StatusIcon aria-hidden="true" className="size-5" />
-          法规/认证适配：{isDemoFit ? "演示匹配" : presentation.label}
+          {copy.fitAxis}{dictionary.common.labelSeparator}{isDemoFit ? copy.demoFit : fitLabel}
         </div>
         {isDemoFit ? (
           <p className="mt-2 rounded-lg border border-amber-400/70 bg-amber-100/80 px-3 py-2 text-xs font-semibold leading-5 text-amber-950">
-            包含虚构 Demo 证据；不可用于报价、认证声明或销售承诺。
+            {copy.demoEvidenceWarning}
           </p>
         ) : null}
         <p className="mt-2 text-sm leading-6">
-          {evaluation.reasons[0]?.message}
+          {evaluation.reasons[0]
+            ? productFitReasonMessage(evaluation.reasons[0], locale)
+            : null}
         </p>
         <p className="mt-2 text-xs">
-          规则：{evaluation.rulesetVersion} · 截止：{evaluation.asOf}
+          {copy.resultRule}{dictionary.common.labelSeparator}{evaluation.rulesetVersion} · {copy.resultAsOf}{dictionary.common.labelSeparator}{formatUtcDate(evaluation.asOf, locale)}
         </p>
       </div>
 
@@ -665,9 +801,13 @@ function ProductFitResult({
         className={`rounded-2xl border p-4 ${readiness.className}`}
         data-testid={`commercial-readiness-${evaluation.commercialReadiness}`}
       >
-        <p className="font-semibold">{readiness.label}</p>
+        <p className="font-semibold">{readinessLabel}</p>
         <p className="mt-2 text-sm leading-6">
-          查询日供应状态：{evaluation.productChecks.availability.message}
+          {copy.availability}{dictionary.common.labelSeparator}
+          {productFitReasonMessage(
+            evaluation.productChecks.availability,
+            locale,
+          )}
         </p>
       </div>
 
@@ -677,18 +817,27 @@ function ProductFitResult({
 
       <div className="grid gap-2 text-xs sm:grid-cols-3">
         <TraceCheck
-          label="应用场景"
-          message={evaluation.productChecks.applicationScope.message}
+          label={copy.traceApplication}
+          message={productFitReasonMessage(
+            evaluation.productChecks.applicationScope,
+            locale,
+          )}
           status={evaluation.productChecks.applicationScope.status}
         />
         <TraceCheck
-          label="产品功率"
-          message={evaluation.productChecks.power.message}
+          label={copy.tracePower}
+          message={productFitReasonMessage(
+            evaluation.productChecks.power,
+            locale,
+          )}
           status={evaluation.productChecks.power.status}
         />
         <TraceCheck
-          label="查询日供应"
-          message={evaluation.productChecks.availability.message}
+          label={copy.traceAvailability}
+          message={productFitReasonMessage(
+            evaluation.productChecks.availability,
+            locale,
+          )}
           status={evaluation.productChecks.availability.status}
         />
       </div>
@@ -699,7 +848,7 @@ function ProductFitResult({
           data-testid="product-record-trace"
         >
           <div className="flex items-start justify-between gap-3">
-            <p className="font-semibold">产品记录追溯</p>
+            <p className="font-semibold">{copy.productTrace}</p>
             <DataClassificationBadge
               isDemo={
                 evaluation.product.isDemo || evaluation.product.source.isDemo
@@ -707,33 +856,41 @@ function ProductFitResult({
             />
           </div>
           <dl className="mt-3 grid grid-cols-2 gap-2">
-            <TraceValue label="产品记录 ID" value={evaluation.product.id} />
+            <TraceValue label={copy.productId} value={evaluation.product.id} />
             <TraceValue
-              label="规格版本"
+              label={copy.specification}
               value={evaluation.product.specificationVersion}
             />
             <TraceValue
-              label="应用场景"
-              value={evaluation.product.applicationScopes.join("、")}
-            />
-            <TraceValue
-              label="产品功率"
-              value={formatRange(
-                evaluation.product.powerMinKw,
-                evaluation.product.powerMaxKw,
+              label={copy.application}
+              value={applicationScopeListLabel(
+                evaluation.product.applicationScopes,
+                dictionary,
+                locale,
               )}
             />
             <TraceValue
-              label="产品供应期"
-              value={formatDateRange(
+              label={copy.productPower}
+              value={formatRange(
+                evaluation.product.powerMinKw,
+                evaluation.product.powerMaxKw,
+                copy.noNumber,
+                dictionary.common.open,
+              )}
+            />
+            <TraceValue
+              label={copy.availablePeriod}
+              value={formatProductAvailabilityDateRange(
                 evaluation.product.availableFrom,
                 evaluation.product.availableTo,
+                locale,
+                dictionary.common.notRecorded,
               )}
             />
           </dl>
           <SourceReference
             className="mt-3"
-            label="来源"
+            label={copy.recordSource}
             source={evaluation.product.source}
           />
         </div>
@@ -747,10 +904,18 @@ function ProductFitResult({
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-xs font-semibold tracking-wide text-primary">
-                法规追溯
+                {copy.regulationTrace}
               </p>
               <h3 className="mt-1 text-sm font-semibold">
-                {regulationCheck.regulation.canonicalName}
+                {regulationDisplayName(
+                  {
+                    canonicalName: regulationCheck.regulation.canonicalName,
+                    id: regulationCheck.regulation.regulationId,
+                    isDemo: regulationCheck.regulation.isDemo,
+                  },
+                  dictionary,
+                  locale,
+                )}
               </h3>
             </div>
             <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
@@ -765,46 +930,91 @@ function ProductFitResult({
               />
               <span className="rounded-full bg-secondary px-2 py-1 text-[11px] font-semibold">
                 {regulationCheck.status === "pass"
-                  ? "通过"
+                  ? copy.pass
                   : regulationCheck.status === "fail"
-                    ? "不通过"
-                    : "未知"}
+                    ? copy.fail
+                    : copy.unknown}
               </span>
             </div>
           </div>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {regulationCheck.message}
+            {productFitReasonMessage(regulationCheck, locale)}
           </p>
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <TraceValue
-              label="法规记录 ID"
+              label={copy.regulationId}
               value={regulationCheck.regulation.regulationId}
             />
             <TraceValue
-              label="法规有效期"
-              value={`${regulationCheck.regulation.effectiveFrom ?? "未记录"} → ${regulationCheck.regulation.effectiveTo ?? "开放"}`}
+              label={copy.regulationPeriod}
+              value={formatDateRange(
+                regulationCheck.regulation.effectiveFrom,
+                regulationCheck.regulation.effectiveTo,
+                locale,
+                dictionary.common.notRecorded,
+                dictionary.common.open,
+              )}
             />
           </dl>
 
           <div className="mt-3 border-t pt-3 text-xs">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-semibold">适用性证据</p>
+                <p className="font-semibold">{dictionary.country.applicabilityEvidence}</p>
                 <p className="mt-1 text-muted-foreground">
-                  {regulationCheck.regulation.applicability.jurisdiction.name}（
-                  {regulationCheck.regulation.applicability.jurisdiction.code}
-                  ）适用于{" "}
-                  {regulationCheck.regulation.applicability.countryIso3}；成员有效期{" "}
-                  {
+                  {nameWithCode(
+                    jurisdictionDisplayName(
+                      {
+                        code:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .code,
+                        countryIso3:
+                          regulationCheck.regulation.applicability.countryIso3,
+                        id:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .id,
+                        isDemo:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .isDemo,
+                        name:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .name,
+                        sourceId:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .source.id,
+                        sourceIsDemo:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .source.isDemo,
+                        sourceTitle:
+                          regulationCheck.regulation.applicability.jurisdiction
+                            .source.title,
+                        type: "country",
+                      },
+                      dictionary,
+                      locale,
+                    ),
+                    regulationCheck.regulation.applicability.jurisdiction.code,
+                    locale,
+                  )} · {dictionary.country.applicableJurisdiction}
+                  {dictionary.common.labelSeparator}
+                  {regulationCheck.regulation.applicability.countryIso3} ·{" "}
+                  {dictionary.country.membershipPeriod}
+                  {dictionary.common.labelSeparator}
+                  {formatUtcDate(
                     regulationCheck.regulation.applicability.membership
-                      .validFrom
-                  }{" "}
+                      .validFrom,
+                    locale,
+                  )}{" "}
                   →{" "}
-                  {regulationCheck.regulation.applicability.membership
-                    .validTo ?? "开放"}
+                  {formatOptionalUtcDate(
+                    regulationCheck.regulation.applicability.membership
+                      .validTo,
+                    locale,
+                    dictionary.common.open,
+                  )}
                 </p>
                 <p className="mt-1 break-all text-muted-foreground">
-                  辖区记录 ID：
+                  {copy.jurisdictionId}{dictionary.common.labelSeparator}
                   {regulationCheck.regulation.applicability.jurisdiction.id}
                 </p>
               </div>
@@ -822,14 +1032,14 @@ function ProductFitResult({
             </div>
             <SourceReference
               className="mt-2"
-              label="辖区来源"
+              label={copy.jurisdictionSource}
               source={
                 regulationCheck.regulation.applicability.jurisdiction.source
               }
             />
             <SourceReference
               className="mt-1"
-              label="成员关系来源"
+              label={copy.membershipSource}
               source={regulationCheck.regulation.applicability.membership.source}
             />
           </div>
@@ -843,9 +1053,9 @@ function ProductFitResult({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-semibold">
-                      认证{" "}
+                      {copy.certification}{" "}
                       {certificationCheck.certification.certificateNumber ??
-                        "未编号"}
+                        copy.noNumber}
                     </p>
                     <DataClassificationBadge
                       isDemo={
@@ -855,28 +1065,41 @@ function ProductFitResult({
                     />
                   </div>
                   <p className="mt-1 text-muted-foreground">
-                    状态 {certificationCheck.certification.status} · 功率{" "}
-                    {formatRange(
+                    {copy.status}{dictionary.common.labelSeparator}
+                    {certificationStatusLabel(
+                      certificationCheck.certification.status,
+                      dictionary,
+                    )} · {copy.power}{" "}
+                    {formatCertificationPowerRange(
                       certificationCheck.certification.powerMinKw,
                       certificationCheck.certification.powerMaxKw,
+                      dictionary.common.notRecorded,
+                      dictionary.common.open,
                     )}
                   </p>
                   <p className="mt-1 text-muted-foreground">
-                    有效期{" "}
-                    {certificationCheck.certification.validFrom ?? "开放"} →{" "}
-                    {certificationCheck.certification.validTo ?? "开放"}
+                    {copy.validPeriod}{" "}
+                    {formatCertificationValidityRange(
+                      certificationCheck.certification.validFrom,
+                      certificationCheck.certification.validTo,
+                      locale,
+                      dictionary.common.notRecorded,
+                      dictionary.common.open,
+                    )}
                   </p>
                   <p className="mt-2 leading-5">
                     {certificationCheck.reasons
-                      .map(({ message }) => message)
-                      .join("；")}
+                      .map((reason) =>
+                        productFitReasonMessage(reason, locale),
+                      )
+                      .join(locale === "en" ? "; " : "；")}
                   </p>
                   <p className="mt-2 break-all text-muted-foreground">
-                    认证记录 ID：{certificationCheck.certification.id}
+                    {copy.certificationId}{dictionary.common.labelSeparator}{certificationCheck.certification.id}
                   </p>
                   <SourceReference
                     className="mt-1"
-                    label="来源"
+                    label={copy.recordSource}
                     source={certificationCheck.certification.source}
                   />
                 </div>
@@ -884,19 +1107,19 @@ function ProductFitResult({
             </div>
           ) : (
             <div className="mt-3 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
-              没有可追溯的产品认证记录，因此不会将“缺记录”解释为“不合规”。
+              {copy.certificationMissing}
             </div>
           )}
           <SourceReference
             className="mt-3"
-            label="法规来源"
+            label={copy.regulationSource}
             source={regulationCheck.regulation.source}
           />
           {regulationCheck.regulation.limitSources.map((source) => (
             <SourceReference
               className="mt-1"
               key={source.id}
-              label="适用限值来源"
+              label={copy.limitSource}
               source={source}
             />
           ))}
@@ -911,6 +1134,8 @@ function DataGapCopyAction({
 }: {
   evaluation: ProductFitEvaluation;
 }) {
+  const { dictionary, locale } = useLocale();
+  const copy = dictionary.productFit;
   const [copyState, setCopyState] = useState<"copied" | "error" | "idle">(
     "idle",
   );
@@ -920,7 +1145,18 @@ function DataGapCopyAction({
       if (!navigator.clipboard) {
         throw new Error("Clipboard API is unavailable.");
       }
-      await navigator.clipboard.writeText(buildDataGapSummary(evaluation));
+      const scopeLabel = applicationScopeLabel(
+        evaluation.input.applicationScope,
+        dictionary,
+      );
+      await navigator.clipboard.writeText(
+        buildProductFitDataGapSummary({
+          dictionary,
+          evaluation,
+          locale,
+          scopeLabel,
+        }),
+      );
       setCopyState("copied");
     } catch {
       setCopyState("error");
@@ -929,9 +1165,9 @@ function DataGapCopyAction({
 
   return (
     <div className="rounded-2xl border border-amber-300 bg-amber-50/60 p-4 text-xs text-amber-950">
-      <p className="font-semibold">需要补充结构化证据</p>
+      <p className="font-semibold">{copy.dataGapTitle}</p>
       <p className="mt-1 leading-5">
-        仅复制到本机剪贴板，不会创建、发送或提交工单。
+        {copy.dataGapBody}
       </p>
       <Button
         className="mt-3"
@@ -941,11 +1177,11 @@ function DataGapCopyAction({
         variant="outline"
       >
         <Copy aria-hidden="true" className="size-3.5" />
-        {copyState === "copied" ? "补数摘要已复制" : "复制补数摘要"}
+        {copyState === "copied" ? copy.copied : copy.copy}
       </Button>
       {copyState === "error" ? (
         <p className="mt-2 text-destructive" role="alert">
-          浏览器未允许写入剪贴板，请检查复制权限后重试。
+          {copy.copyDenied}
         </p>
       ) : null}
     </div>
@@ -961,11 +1197,13 @@ function TraceCheck({
   message: string;
   status: "pass" | "fail" | "unknown";
 }) {
+  const { dictionary } = useLocale();
+  const copy = dictionary.productFit;
   return (
     <div className="rounded-xl bg-muted/60 p-3">
       <p className="font-semibold">
         {label} ·{" "}
-        {status === "pass" ? "通过" : status === "fail" ? "不通过" : "未知"}
+        {status === "pass" ? copy.pass : status === "fail" ? copy.fail : copy.unknown}
       </p>
       <p className="mt-1 leading-5 text-muted-foreground">{message}</p>
     </div>
@@ -982,6 +1220,7 @@ function TraceValue({ label, value }: { label: string; value: string }) {
 }
 
 function DataClassificationBadge({ isDemo }: { isDemo: boolean }) {
+  const { dictionary } = useLocale();
   return (
     <span
       className={
@@ -990,7 +1229,7 @@ function DataClassificationBadge({ isDemo }: { isDemo: boolean }) {
           : "shrink-0 rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-900"
       }
     >
-      {isDemo ? "虚构 Demo" : "已核验来源"}
+      {isDemo ? dictionary.common.demo : dictionary.productFit.verifiedBadge}
     </span>
   );
 }
@@ -1006,9 +1245,10 @@ function SourceReference({
   label: string;
   source: FitEvidenceSource;
 }) {
+  const { dictionary, locale } = useLocale();
   return (
     <p className={`${className ?? ""} text-xs text-muted-foreground`}>
-      {label}：
+      {label}{dictionary.common.labelSeparator}
       {isNavigableEvidenceUrl(source.url) ? (
         <a
           className="inline-flex items-center gap-1 text-primary hover:underline"
@@ -1022,11 +1262,13 @@ function SourceReference({
       ) : (
         <span>
           {source.title}
-          {source.isDemo ? "（虚构证据，无外部链接）" : ""}
+          {source.isDemo ? dictionary.country.demoNoExternalSuffix : ""}
         </span>
       )}
-      {source.publishedOn ? ` · 发布 ${source.publishedOn}` : ""} · 核验{" "}
-      {source.verifiedAt.slice(0, 10)}
+      {source.publishedOn
+        ? ` · ${dictionary.country.metricPublished} ${formatUtcDate(source.publishedOn, locale)}`
+        : ""} · {dictionary.country.verifiedAt}{" "}
+      {formatUtcDate(source.verifiedAt, locale)}
     </p>
   );
 }

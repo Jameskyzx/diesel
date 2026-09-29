@@ -16,6 +16,49 @@ export const MAX_LIVE_EVAL_OBSERVATION_STEPS = 5;
 export const MAX_LIVE_EVAL_STEP_TOOL_ITEMS = 8;
 export const MAX_LIVE_EVAL_CASE_TOOL_ITEMS = 32;
 
+type ObservationJson = null | boolean | number | string | ObservationJson[] |
+  { [key: string]: ObservationJson };
+
+/** Match JSON transport's omission of optional object fields, without its
+ * lossy coercion of non-finite numbers, sparse arrays or custom toJSON values. */
+export function projectLiveEvalToolJson(value: unknown): ObservationJson {
+  const ancestors = new Set<object>();
+  let remainingNodes = 100_000;
+  const invalid = () => new Error("Tool observation is not bounded JSON data.");
+  const visit = (input: unknown, depth: number): ObservationJson => {
+    if (--remainingNodes < 0 || depth > 64) throw invalid();
+    if (input === null || typeof input === "string" || typeof input === "boolean") return input;
+    if (typeof input === "number" && Number.isFinite(input)) return input;
+    if (typeof input !== "object" || input === null || ancestors.has(input) ||
+        Object.getOwnPropertySymbols(input).length > 0) throw invalid();
+    ancestors.add(input);
+    try {
+      const descriptors = Object.getOwnPropertyDescriptors(input);
+      if (Array.isArray(input)) {
+        if (Object.getPrototypeOf(input) !== Array.prototype ||
+            input.length > remainingNodes || Object.keys(descriptors).length !== input.length + 1) throw invalid();
+        return Array.from({ length: input.length }, (_, index) => {
+          const descriptor = descriptors[String(index)];
+          if (!descriptor?.enumerable || !("value" in descriptor)) throw invalid();
+          return visit(descriptor.value, depth + 1);
+        });
+      }
+      const prototype: unknown = Object.getPrototypeOf(input);
+      if (prototype !== Object.prototype && prototype !== null) throw invalid();
+      const entries = Object.entries(descriptors);
+      remainingNodes -= entries.length;
+      if (remainingNodes < 0) throw invalid();
+      return Object.fromEntries(entries.flatMap(([key, descriptor]) => {
+        if (!descriptor.enumerable || !("value" in descriptor)) throw invalid();
+        return descriptor.value === undefined ? [] : [[key, visit(descriptor.value, depth + 1)]];
+      }));
+    } finally {
+      ancestors.delete(input);
+    }
+  };
+  return visit(value, 0);
+}
+
 const canonicalBytes = (value: unknown): number =>
   Buffer.byteLength(JSON.stringify(value, null, 2), "utf8");
 

@@ -101,11 +101,11 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20260929T032100736Z-6f1ed4b7-e84f-421e-b257-47907e212189.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20260929T032837667Z-2f27625e-38c2-46f5-8417-bb8d20ae57ae.json",
     "attemptCount": 36,
     "complete": true,
     "completedCount": 36,
-    "evaluatedAt": "2026-09-29T03:21:00.736Z",
+    "evaluatedAt": "2026-09-29T03:28:37.667Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -114,24 +114,24 @@ intentionally fails for merely local or staged evidence.
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
-    "latestOutcome": "failed",
+    "latestOutcome": "passed",
     "latestSampleCount": 18,
     "modelStepCount": 36,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "6f1ed4b7-e84f-421e-b257-47907e212189",
+    "runId": "2f27625e-38c2-46f5-8417-bb8d20ae57ae",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "ba54fd90126ce15e7f31166dbc2fd892b3efddd17e42d8d43525bedcda3de0ce",
+      "digest": "a2c2244d8b37ddbc967ea3255d624b4b4e3d2192b06ccdd4fbbb8fea4b5c032a",
       "fileCount": 298,
       "status": "captured"
     },
     "suiteVersion": "sales-chat-live-v25",
     "suiteCaseCount": 18,
     "terminationReason": "completed",
-    "thresholdsPassed": false,
+    "thresholdsPassed": true,
     "tokenUsageComplete": true,
-    "totalTokens": 81633
+    "totalTokens": 92439
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -785,7 +785,7 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   并保留现场，不自动 rollback，供人工前向修复。
   controller 不迁移 ledger、不 rollback/recover、不关闭 FD 8；publish/finalize 的两个 maintenance
   session、唯一 commit point 与锁释放窗口均未改变。该改动仍是本地待发布，不表示目标 VPS 已执行。
-- 当前中英文等价 system instruction 为 `sales-chat-system-v6`；来源标题和引用原文保持
+- 当前中英文等价 system instruction 为 `sales-chat-system-v7`；来源标题和引用原文保持
   原始语言；live eval 评分合同定义并版本化为 `sales-chat-live-v25`。v5 起还要求全部稳定事实/带极性决策/免责声明 anchor 与
   请求语言匹配；产品 ready 同时要求合规适配通过和供应就绪，否定候选不能借关键词通过。
   v6 强制远端 adapter 请求流式 usage，将每次模型调用的 retry 固定为 0；v7 再把单次输出
@@ -1040,14 +1040,18 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-09-29T03:21:00.736Z`；run ID `6f1ed4b7-e84f-421e-b257-47907e212189`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`36 provider attempts`；`36 completed provider calls`；`36 model steps`；
-  `81633 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20260929T032100736Z-6f1ed4b7-e84f-421e-b257-47907e212189.json`；source fingerprint `ba54fd90126ce15e7f31166dbc2fd892b3efddd17e42d8d43525bedcda3de0ce` across `298` files。
+- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-09-29T03:28:37.667Z`；run ID `2f27625e-38c2-46f5-8417-bb8d20ae57ae`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`36 provider attempts`；`36 completed provider calls`；`36 model steps`；
+  `92439 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20260929T032837667Z-2f27625e-38c2-46f5-8417-bb8d20ae57ae.json`；source fingerprint `a2c2244d8b37ddbc967ea3255d624b4b4e3d2192b06ccdd4fbbb8fea4b5c032a` across `298` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、
   线上应用或现实用户效果通过验收。Provider 路径仅发送固定案例、系统/工具指令与内存
   Demo 工具结果，不查询配置的 PostgreSQL 或读取私有文档。
+- 首次提示词 v7 观测 `2f27625e-38c2-46f5-8417-bb8d20ae57ae` 的模型门槛虽通过，
+  命令仍因工具可选字段的内存 JSON 校验失败退出 1，未获得独立验证确认；该历史归档
+  不代表成功命令或可发布验收。修复仅省略对象中值为 `undefined` 的可选字段，仍拒绝
+  非法 JSON 值，并保留原评分器、18 个案例和门槛。详细边界见 `docs/evals/README.md`。
 - 后续离线诊断复现了 SDK 中止的错误分类丢失：生产每步 30 秒的超时可走 `onAbort` 而绕过
   `onError`，原私有 observer 未收到原因，公开错误再被安全归一化为 `UnknownError`。
   现仅补充私有 observer 的 abort 通知与固定 `TimeoutError` / `AbortError` 安全类别；
@@ -1923,11 +1927,11 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
 
 ## 代码与数据基线
 
-### 2026-09-29 DeepSeek provider switch / 模型切换
+### 2026-09-29 DeepSeek provider-switch baseline / 模型切换基线
 
 The local candidate now selects official DeepSeek V4.1 Flash (`deepseek-flash`),
 using adapter contract v2 with thinking disabled and streaming usage enabled.
-The retained v25 observation completed the original 18 cases and 36 provider
+The initial retained v25 observation completed the original 18 cases and 36 provider
 calls with complete usage (81,712 tokens). Tool selection, argument accuracy,
 evidence expectations, response disposition and safety fail-closed each scored
 100%; response grounding anchors and locale each scored 77.78%. Seven cases

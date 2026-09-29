@@ -639,35 +639,35 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20260929T032100736Z-6f1ed4b7-e84f-421e-b257-47907e212189.json",
+  "archivePath": "archive/ai-live-eval-20260929T032837667Z-2f27625e-38c2-46f5-8417-bb8d20ae57ae.json",
   "attemptCount": 36,
   "complete": true,
   "completedCount": 36,
-  "evaluatedAt": "2026-09-29T03:21:00.736Z",
-  "latestOutcome": "failed",
+  "evaluatedAt": "2026-09-29T03:28:37.667Z",
+  "latestOutcome": "passed",
   "modelStepCount": 36,
-  "runId": "6f1ed4b7-e84f-421e-b257-47907e212189",
+  "runId": "2f27625e-38c2-46f5-8417-bb8d20ae57ae",
   "runError": null,
   "sampleCount": 18,
   "sourceFingerprint": {
     "algorithm": "sha256",
-    "digest": "ba54fd90126ce15e7f31166dbc2fd892b3efddd17e42d8d43525bedcda3de0ce",
+    "digest": "a2c2244d8b37ddbc967ea3255d624b4b4e3d2192b06ccdd4fbbb8fea4b5c032a",
     "fileCount": 298,
     "status": "captured"
   },
   "suiteCaseCount": 18,
   "terminationReason": "completed",
-  "thresholdsPassed": false,
+  "thresholdsPassed": true,
   "tokenUsageComplete": true,
-  "totalTokens": 81633,
+  "totalTokens": 92439,
   "version": "sales-chat-live-v25"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `failed`; evaluatedAt `2026-09-29T03:21:00.736Z`; run ID `6f1ed4b7-e84f-421e-b257-47907e212189`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `36 provider attempts`; `36 completed provider calls`; `36 model steps`; `81633 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=false`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20260929T032100736Z-6f1ed4b7-e84f-421e-b257-47907e212189.json`; source fingerprint `ba54fd90126ce15e7f31166dbc2fd892b3efddd17e42d8d43525bedcda3de0ce` across `298` files.
+Current report result: `passed`; evaluatedAt `2026-09-29T03:28:37.667Z`; run ID `2f27625e-38c2-46f5-8417-bb8d20ae57ae`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `36 provider attempts`; `36 completed provider calls`; `36 model steps`; `92439 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20260929T032837667Z-2f27625e-38c2-46f5-8417-bb8d20ae57ae.json`; source fingerprint `a2c2244d8b37ddbc967ea3255d624b4b4e3d2192b06ccdd4fbbb8fea4b5c032a` across `298` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed
@@ -893,10 +893,24 @@ real sales commitment. The same production prompt serves both the public route
 and live eval. This changes neither the 18 v25 cases, scorer nor thresholds.
 V5/v6 prompt reports remain readable and unchanged; v7 needs a new observation.
 
+The first v7 observation (`2f27625e-38c2-46f5-8417-bb8d20ae57ae`) met all
+response thresholds, but the command exited 1 before the independent verifier
+acknowledged it. Real tool outputs carried optional object fields explicitly set
+to `undefined`; these are omitted on the JSON wire but rejected by the in-memory
+JSON schema. That archive remains an unacknowledged observation, not a successful
+CLI run. Tool observations now omit only undefined object properties before
+validation. Non-finite numbers, sparse/undefined arrays, cycles, accessors,
+custom serialization and non-JSON types still fail closed; independent evidence
+recomputation is unchanged. No model-quality threshold is relaxed.
+
 2026-09-29 的 DeepSeek 本地诊断显示：回答堆砌英文属性名与原因代码，中文说明被
 元数据淹没，部分业务结论仅写成枚举值。提示词 v7 要求简洁中文/英文、完整的开头
 结论、双轴状态与适用范围、原文来源去重引用，禁止把供应期判定扩张为库存或现实承诺。
 公开路径与评估共用同一生产提示词；不修改 v25 的 18 例、评分器或门槛，不改写旧报告。
+
+首次 v7 运行虽然逐例门槛全部通过，但在独立验证确认前因可选字段序列化失败而以 1
+退出；该归档不是成功命令的证明。现仅在观察数据的 JSON 边界省略对象中值为
+`undefined` 的可选属性，其余非法值仍拒绝，独立证据重算不变；失败分支不重复计费记账。
 
 Each invocation captures repository state and the eval-source fingerprint at
 both the start and end. Clean, stable Git state may name an exact

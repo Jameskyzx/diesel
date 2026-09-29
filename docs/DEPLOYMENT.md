@@ -260,6 +260,15 @@ deadline. Native query-constraint SQL and all rejection assertions remain real.
 Chat SSE 集成测试以独立、最多 30 秒的准备 hook 初始化真实 PGlite；WASM 冷启动、migration
 与确定性 seed 不再挤占请求断言原有的 5 秒预算。原生查询约束 SQL 与拒绝断言均保留。
 
+The pre-provider watchdog integration fixture allows three seconds for its real
+Node/tsx startup and explicitly proves the initialization acknowledgement before
+asserting SIGTERM delivery and a zero-call failure report. Its independent
+ten-second safety bound remains enforced. These are test-only budgets; the
+production initialization deadline and termination policy are unchanged.
+Provider 前看门狗集成夹具给真实 Node/tsx 冷启动 3 秒预算，并新增初始化握手已完成的
+断言，再检查 SIGTERM 和零调用失败报告；另有独立 10 秒总安全界限。仅调整测试预算，
+不改生产初始化时限或终止策略。
+
 ## 3. GitHub 原生密钥扫描
 
 CI 的 gitleaks job 覆盖历史扫描。原生 Secret scanning 与 push protection

@@ -1,10 +1,10 @@
 import { spawnSync } from "node:child_process";
-import { readFile, rm } from "node:fs/promises";
+import { lstat, mkdir, readFile, readlink, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { createHostActivationLedgerFixture, TEST_RELEASE_SHA } from "./helpers/deploy-runtime-fixtures";
+import { createHostActivationLedgerFixture, TEST_RELEASE_SHA, writeExecutable } from "./helpers/deploy-runtime-fixtures";
 
 async function handoffFunctions(): Promise<string> {
   const source = await readFile(
@@ -15,6 +15,81 @@ async function handoffFunctions(): Promise<string> {
   expect(source.endsWith(entry)).toBe(true);
   return source.slice(0, -entry.length);
 }
+
+describe("Linux handoff fixed Node fixture", () => {
+  it.each([
+    "fresh", "wrong-version", "existing-target", "symlink-target",
+    "symlink-parent", "missing-corepack", "symlink-node",
+  ] as const)("copies only a fresh pinned distribution: %s", async (scenario) => {
+    const fixture = await createHostActivationLedgerFixture();
+    const source = join(fixture.root, "setup-node");
+    let target = join(fixture.root, "fixed-node");
+    try {
+      await mkdir(join(source, "bin"), { recursive: true });
+      await mkdir(join(source, "lib"));
+      await writeExecutable(join(source, "bin/node"), `#!/bin/bash\nprintf '${scenario === "wrong-version" ? "v22.22.2" : "v22.22.3"}\\n'\n`);
+      await writeExecutable(join(source, "lib/corepack.cjs"), "#!/bin/bash\nexit 0\n");
+      if (scenario !== "missing-corepack") {
+        await symlink("../lib/corepack.cjs", join(source, "bin/corepack"));
+      }
+      if (scenario === "existing-target") {
+        await mkdir(target);
+        await writeFile(join(target, "keep"), "unchanged");
+      } else if (scenario === "symlink-target") {
+        await symlink(source, target);
+      } else if (scenario === "symlink-parent") {
+        await symlink(source, join(fixture.root, "linked-parent"));
+        target = join(fixture.root, "linked-parent/fixed-node");
+      } else if (scenario === "symlink-node") {
+        await rm(join(source, "bin/node"));
+        await symlink("../lib/corepack.cjs", join(source, "bin/node"));
+      }
+      const result = spawnSync("/bin/bash", ["-c", `${await handoffFunctions()}
+# Project only GNU copy/compare flags and root ownership onto this macOS-safe
+# temporary fixture. File copies, modes, links and fail-closed checks are real.
+cp() {
+  [[ "$1 $2 $3 $4 $5" == '-R -P --preserve=mode --reflink=never --' ]] || return 91
+  shift 5
+  /bin/cp -R -P "$@"
+}
+cmp() {
+  [[ "$1 $2" == '--silent --' ]] || return 92
+  shift 2
+  /usr/bin/cmp -s "$@"
+}
+chown() {
+  [[ "$#" -eq 3 && "$1" == -hR && "$2" == root:root && "$3" == "$TEST_TARGET" ]] || return 93
+  printf 'owned-copy\\n'
+}
+linux_release_handoff_install_node_fixture "$TEST_NODE" "$TEST_TARGET"
+`], {
+        env: { NODE_ENV: "test", PATH: fixture.fakePath, TEST_NODE: join(source, "bin/node"), TEST_TARGET: target },
+        encoding: "utf8",
+        timeout: 5_000,
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.status, result.stderr).toBe(scenario === "fresh" ? 0 : 70);
+      expect(result.stdout).toBe(scenario === "fresh" ? "owned-copy\n" : "");
+      if (scenario === "fresh") {
+        expect(await readFile(join(target, "bin/node"), "utf8"))
+          .toBe(await readFile(join(source, "bin/node"), "utf8"));
+        expect((await stat(join(target, "bin/node"))).ino)
+          .not.toBe((await stat(join(source, "bin/node"))).ino);
+        expect((await stat(join(target, "bin/node"))).mode & 0o7777).toBe(0o755);
+        expect(await readlink(join(target, "bin/corepack"))).toBe("../lib/corepack.cjs");
+      } else if (scenario === "existing-target") {
+        expect(await readFile(join(target, "keep"), "utf8")).toBe("unchanged");
+        await expect(lstat(join(target, "bin"))).rejects.toMatchObject({ code: "ENOENT" });
+      } else if (scenario === "symlink-target") {
+        expect(await readlink(target)).toBe(source);
+      } else {
+        await expect(lstat(target)).rejects.toMatchObject({ code: "ENOENT" });
+      }
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("Linux handoff activation fixture", () => {
   it.each(["pending", "missing-lock", "live-drift"] as const)(

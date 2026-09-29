@@ -34,6 +34,36 @@ linux_release_handoff_uid_has_processes() {
   return 70
 }
 
+linux_release_handoff_install_node_fixture() {
+  local source_node="$1"
+  local target_root="$2"
+  local source_root="${source_node%/bin/node}"
+
+  if [[ "${source_root}/bin/node" != "${source_node}" ||
+    ! -f "${source_node}" || -L "${source_node}" ||
+    ! -x "${source_node}" || ! -x "${source_root}/bin/corepack" ]] ||
+    [[ "$(realpath -e -- "${source_root}")" != "${source_root}" ]] ||
+    [[ "$("${source_node}" --version)" != v22.22.3 ]]; then
+    linux_release_handoff_fail 70 "CI Node source does not match the production version/layout"
+    return
+  fi
+  if [[ ! "${target_root}" =~ ^/[^[:cntrl:]]+$ ||
+    -e "${target_root}" || -L "${target_root}" ]] ||
+    [[ "$(realpath -e -- "${target_root%/*}")" != "${target_root%/*}" ]]; then
+    linux_release_handoff_fail 70 "CI Node target must be a fresh canonical path"
+    return
+  fi
+
+  # Copy the pinned setup-node distribution; never execute a package install as
+  # root or reuse/overwrite a pre-existing host toolchain. The ephemeral runner
+  # owns teardown of this exact directory, even if the handoff later fails.
+  mkdir -m 0755 -- "${target_root}"
+  cp -R -P --preserve=mode --reflink=never -- "${source_root}/." "${target_root}/"
+  chown -hR root:root "${target_root}"
+  chmod -R u=rwX,go=rX "${target_root}"
+  cmp --silent -- "${source_node}" "${target_root}/bin/node"
+}
+
 linux_release_handoff_begin_fixture() {
   local release_id="$1"
   local deploy_root="$2"
@@ -585,8 +615,8 @@ linux_release_handoff_main() {
     return
   fi
   for command_name in \
-    awk bash chmod chown corepack cp df dirname findmnt flock getent groupadd \
-    groupdel id install ln mktemp pgrep pkill realpath rm rsync runuser sleep stat \
+    awk bash chmod chown cmp corepack cp df dirname findmnt flock getent groupadd \
+    groupdel id install ln mkdir mktemp pgrep pkill realpath rm rsync runuser sleep stat \
     systemctl systemd systemd-run timeout uname useradd userdel rmdir; do
     if ! command -v "${command_name}" >/dev/null 2>&1; then
       linux_release_handoff_fail 70 \
@@ -652,6 +682,28 @@ linux_release_handoff_main() {
       return
     fi
   done
+
+  # The production preparer intentionally rejects setup-node's tool-cache PATH.
+  # Provision its exact command profile on this disposable GitHub-hosted runner
+  # and run the real boundary before any users, ledger state or build is created.
+  linux_release_handoff_install_node_fixture \
+    "${node_binary}" /opt/node-v22.22.3-linux-x64
+  node_binary=/opt/node-v22.22.3-linux-x64/bin/node
+  fixed_path="${node_binary%/node}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  for candidate_path in /opt /usr/local /usr/local/sbin /usr/local/bin; do
+    if [[ ! -d "${candidate_path}" || -L "${candidate_path}" ]] ||
+      [[ "$(realpath -e -- "${candidate_path}")" != "${candidate_path}" ]]; then
+      linux_release_handoff_fail 70 "CI host command parent must be a canonical directory"
+      return
+    fi
+    chown root:root "${candidate_path}"
+    chmod 0755 "${candidate_path}"
+  done
+  (
+    # shellcheck source=/dev/null
+    source "${release_export}/scripts/deploy/prepare-release-runtime.sh"
+    prepare_release_require_fixed_root_command_boundary "${fixed_path}" "${node_binary}"
+  )
 
   if ! available_kib="$(df -Pk "${runner_temp}" | awk 'NR == 2 { print $4 }')"; then
     linux_release_handoff_fail 70 \
@@ -874,7 +926,6 @@ linux_release_handoff_main() {
     return
   fi
 
-  fixed_path="$(dirname -- "${node_binary}"):/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   linux_release_handoff_run_cgroup_canary \
     "${release_id}" "${deploy_root}" "${release_dir}" \
     "${fixed_path}" "${builder_uid}"

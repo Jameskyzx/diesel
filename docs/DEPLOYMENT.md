@@ -1189,10 +1189,23 @@ cgroup 路径消失；运行中、停止中、非空路径漂移和残留路径�
 不手写 ledger，不创建提交/发布完成标记，不访问真实 Nginx 或凭据。单测执行真实 ledger
 并验证缺锁和 live/backup 漂移失败；真实 Linux systemd/权限证明仍以远端完整演练为准。
 
+候选 `eba221a` 的真实 CI 已通过三项 transient canary，随后因 setup-node 的 tool-cache
+路径不符合生产固定命令边界而失败。CI 现把相同的固定版本 Node/Corepack 复制到一次性
+runner 的 `/opt/node-v22.22.3-linux-x64`（拒绝已存在路径、不安装额外包），独立 root
+所有权且不改变文件内容；只规范固定命令父目录自身的 owner/mode，不递归修改其余系统
+目录。创建用户、ledger 和构建前先运行原生产边界检查，不 mock 或放宽该检查。该复制
+由临时 runner 销毁回收，不在生产主机执行；完整交接仍须远端成功。
+
 候选 `5239b02` 的 Demo CI 有一例首试失败、重试通过，严格门禁因此失败（67 passed /
 1 flaky）。trace 显示首次 `/api/chat` 的完整缓冲/改写传输耗时约 4.5 秒，几乎耗尽卡片的
 5 秒渲染断言期限，失败快照已经出现正确卡片。该测试现在先等待被改写响应完成且为 HTTP
 200，再断言卡片；原单例总时限、渲染断言时限及所有内容断言不变，不能把旧 flaky 记为通过。
+
+候选 `eba221a` 后续 Demo 结果为 65 passed / 3 flaky，失败停在该测试新增的
+`response.finished()` 等待（60 秒），不能据重试通过宣称成功。对于测试拦截器已完整
+缓冲并 fulfill 的 SSE，改以 `route.fulfill()` 的实际完成同步开始卡片断言，仍要求上游和
+浏览器响应都是 HTTP 200，仍保留原内容、排序、布局断言及所有期限；不依赖 Chromium
+是否发出流响应的 network-finished 事件。生产 SSE 逻辑未改。
 
 同次 CI 的 68 项 Demo 浏览器断言全部通过，但 HTML reporter 生成的
 `playwright-demo-report/index.html` 使结束时的工作区变脏，严格证据校验因此失败。该精确

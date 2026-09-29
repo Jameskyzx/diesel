@@ -161,6 +161,12 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 12:58 UTC：候选 `eba221a` 的完整本地 Vitest 为 8,063 passed /
+  5 skipped / 0 failed；远端质量、数据库、安全、部署契约与 FDE 通过，但门禁尚未通过。
+  Linux 三项 systemd canary 已通过，之后拒绝非固定 Node 路径；CI 改为在一次性 runner
+  安装同版本的独立固定路径副本，并原样执行生产边界。Demo 为 65 passed / 3 flaky，
+  失败在测试新增的 SSE network-finished 等待，现改为同步测试拦截器真正完成 fulfill；
+  不放宽断言和期限。新修改须重采浏览器与完整 Vitest，生产和模型凭据尚未切换。
 - 2026-09-29 12:27 UTC：Vitest timer 补丁及安装安全绑定已通过 279 项定向回归、
   独立进度生命周期回归、lint、typecheck、build 和 21 项离线 eval。英文截图已重采并
   目视核验；真实 DeepSeek 新结果见唯一台账（18/18、37 次调用、97,047 token）。

@@ -101,11 +101,11 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20260929T080945782Z-f130c728-e32c-4671-8b05-c5884a7d065c.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20260929T081613894Z-65c52c58-58e6-4781-b735-672dbd8b3625.json",
     "attemptCount": 37,
     "complete": true,
     "completedCount": 37,
-    "evaluatedAt": "2026-09-29T08:09:45.782Z",
+    "evaluatedAt": "2026-09-29T08:16:13.894Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -114,24 +114,24 @@ intentionally fails for merely local or staged evidence.
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
-    "latestOutcome": "failed",
+    "latestOutcome": "passed",
     "latestSampleCount": 18,
     "modelStepCount": 37,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "f130c728-e32c-4671-8b05-c5884a7d065c",
+    "runId": "65c52c58-58e6-4781-b735-672dbd8b3625",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "fe7023dd545c8575019cea9375f599adf6d0d7551ad89955205ebcf7554b7998",
+      "digest": "a8687f0be3e45c0a77c22094b1bb53ffc9f12dea1323777b8b5c5b79ee1e858f",
       "fileCount": 298,
       "status": "captured"
     },
     "suiteVersion": "sales-chat-live-v25",
     "suiteCaseCount": 18,
     "terminationReason": "completed",
-    "thresholdsPassed": false,
+    "thresholdsPassed": true,
     "tokenUsageComplete": true,
-    "totalTokens": 97341
+    "totalTokens": 97282
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -161,6 +161,11 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 08:16 UTC：真实 live eval 曾因销售简报正文遗漏评估日期而失败（17/18），
+  失败 archive 原样保留。服务端公开边界现只在完整证据校验通过后，从工具的
+  `informationAsOf` 补齐本地化日期，不改 case 期望或门槛。323 项定向回归及
+  lint/typecheck/build 通过；修复后的新真实评估 18/18 通过，37 次调用、97,282 token。
+  浏览器与全量 Vitest 证据仍需更新至本次代码，远端 CI 与生产发布尚未完成。
 - 2026-09-29 08:07 UTC：备份失败已定位为 8 条旧产品归档审计的二次编码 JSON 对象。
   候选修复只让恢复快照无损保留此历史格式；74 项快照定向测试、lint、typecheck 和 build
   已通过，未修改生产数据库。只读十表快照已在工作站成功导出并通过 SHA/dry-run 校验，
@@ -1062,9 +1067,9 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-09-29T08:09:45.782Z`；run ID `f130c728-e32c-4671-8b05-c5884a7d065c`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
-  `97341 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20260929T080945782Z-f130c728-e32c-4671-8b05-c5884a7d065c.json`；source fingerprint `fe7023dd545c8575019cea9375f599adf6d0d7551ad89955205ebcf7554b7998` across `298` files。
+- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-09-29T08:16:13.894Z`；run ID `65c52c58-58e6-4781-b735-672dbd8b3625`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
+  `97282 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20260929T081613894Z-65c52c58-58e6-4781-b735-672dbd8b3625.json`；source fingerprint `a8687f0be3e45c0a77c22094b1bb53ffc9f12dea1323777b8b5c5b79ee1e858f` across `298` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、

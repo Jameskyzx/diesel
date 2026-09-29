@@ -253,6 +253,13 @@ negative/malformed IDs, duplicate PIDs and missing sentinels still fail closed.
 Linux 进程列表允许无关行（如内核线程）的 PGID 为零；两个 sentinel 仍必须属于正数
 guardian PGID，负数/畸形 ID、重复 PID 与 sentinel 缺失继续失败关闭。
 
+The chat SSE integration suite initializes its real PGlite database in a
+bounded 30-second setup hook. Cold WASM startup, migrations and deterministic
+seed loading are not charged to the request assertion's unchanged five-second
+deadline. Native query-constraint SQL and all rejection assertions remain real.
+Chat SSE 集成测试以独立、最多 30 秒的准备 hook 初始化真实 PGlite；WASM 冷启动、migration
+与确定性 seed 不再挤占请求断言原有的 5 秒预算。原生查询约束 SQL 与拒绝断言均保留。
+
 ## 3. GitHub 原生密钥扫描
 
 CI 的 gitleaks job 覆盖历史扫描。原生 Secret scanning 与 push protection

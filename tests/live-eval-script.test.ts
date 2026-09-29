@@ -849,9 +849,12 @@ describe("live eval initialization reporting", () => {
     const bootstrapPath = resolve(sourceDirectory, "live-eval-bootstrap.mjs");
     try {
       await writeBootstrapWithDeadlines(workspace, bootstrapPath, {
-        initialization: 250,
-        sigkill: 100,
-        sigterm: 100,
+        // This deadline includes the real Node/tsx cold start. A 250 ms
+        // budget can kill the fixture before its SIGTERM handler exists on
+        // a loaded coverage runner, testing startup instead of a live hang.
+        initialization: 3_000,
+        sigkill: 250,
+        sigterm: 500,
       });
       await writeFile(
         resolve(sourceDirectory, "live-eval-child.ts"),
@@ -869,6 +872,11 @@ describe("live eval initialization reporting", () => {
           const readyMessageId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
           process.on("message", (message) => {
             if (message?.type === "bootstrap_ack" && message.messageId === readyMessageId) {
+              writeFileSync(
+                resolve(process.cwd(), "initialization-acknowledged"),
+                "yes",
+                "utf8",
+              );
               setInterval(() => undefined, 1_000);
             }
           });
@@ -884,12 +892,15 @@ describe("live eval initialization reporting", () => {
           ...process.env,
           TSX_TSCONFIG_PATH: resolve(workspace, "tsconfig.json"),
         },
-        5_000,
+        10_000,
       );
 
       expect(execution.safetyTimedOut).toBe(false);
       expect(execution.code).toBe(1);
       expect(execution.signal).toBeNull();
+      expect(
+        await readFile(resolve(reportWorkspace, "initialization-acknowledged"), "utf8"),
+      ).toBe("yes");
       expect(
         await readFile(resolve(reportWorkspace, "sigterm-observed"), "utf8"),
       ).toBe("yes");
@@ -911,7 +922,7 @@ describe("live eval initialization reporting", () => {
       await rm(sourceDirectory, { force: true, recursive: true });
       await rm(reportWorkspace, { force: true, recursive: true });
     }
-  }, 10_000);
+  }, 15_000);
 
   it("bounds a post-provider hang without fabricating a zero-call report", async () => {
     const workspace = process.cwd();

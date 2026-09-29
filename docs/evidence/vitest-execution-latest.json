@@ -1,20 +1,20 @@
 {
   "command": "pnpm test",
   "complete": true,
-  "completedAt": "2026-09-29T05:03:58.415Z",
+  "completedAt": "2026-09-29T06:19:24.102Z",
   "configPath": "vitest.config.ts",
   "provenance": {
-    "baseHeadCommit": "a134a268935b93d1e6a460a5a89fd3fcaa927943",
-    "evaluatedCommit": "a134a268935b93d1e6a460a5a89fd3fcaa927943",
+    "baseHeadCommit": "d54e49692c5c4d9c65abdc5c396449720f65fceb",
+    "evaluatedCommit": "d54e49692c5c4d9c65abdc5c396449720f65fceb",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "ec781b5c6c98c200bea474ca746aea896fb0a2a1e90225b26dca55b7c95c6796",
-      "fileCount": 846
+      "digest": "6579d90e5c31ae44b9b65ee0d2558a4c62a50958763d2671d511bc0d35a43c92",
+      "fileCount": 848
     },
     "worktreeState": "clean"
   },
-  "runId": "ea9c7b58-33a5-41cb-826c-b5d10b5baace",
-  "startedAt": "2026-09-29T04:51:48.577Z",
+  "runId": "75eb8ebc-ce06-4d4b-a6dc-92242ce68d4f",
+  "startedAt": "2026-09-29T06:07:56.234Z",
   "tests": [
     {
       "id": "0005420a555cc43ee81536366b23ecca4cd57c5195d3eb883e1043fd9a7f6dda",
@@ -134,6 +134,10 @@
     },
     {
       "id": "00eda7869e5fcaf35022a9dfe45f293338805f1f8104fa841e50544c7c3dfe04",
+      "status": "passed"
+    },
+    {
+      "id": "00eee98707ebf74ec21e87b1c709df86751c111c948789a7ae699105df46dbaa",
       "status": "passed"
     },
     {
@@ -790,6 +794,10 @@
     },
     {
       "id": "0654ed00c51d3c22529665dac3e74361516d91ddd5123256043ce51a0c15a987",
+      "status": "passed"
+    },
+    {
+      "id": "0658f3d8a7eb812fe2861c9ce73aa9db718495b4abe10939ae3098bee24e8356",
       "status": "passed"
     },
     {
@@ -2970,6 +2978,10 @@
     },
     {
       "id": "1721a1c73181605e87597023873c47b86dff7ac4a018fba3807926e4bbaf2df8",
+      "status": "passed"
+    },
+    {
+      "id": "172329363615e54f1b40afddddae5b0e81ef793461ee6875ee571a483e709973",
       "status": "passed"
     },
     {
@@ -6665,10 +6677,6 @@
       "status": "passed"
     },
     {
-      "id": "350e5d6886efb76280dfd1bb5e304a2fb0e1db64828217232cb1cc1dbc75c060",
-      "status": "passed"
-    },
-    {
       "id": "350ff6b0747d68bc23fcefe93abd26a58cafa6da70449d25b23f078b411c05a8",
       "status": "passed"
     },
@@ -7182,6 +7190,10 @@
     },
     {
       "id": "38fbdcb816aaf29bd9e3287d6640034d5a5e959857d359ebd24c12834f76a6ff",
+      "status": "passed"
+    },
+    {
+      "id": "3906928772d7f6d02f411e2f0ce0faad61e06cbf7a53a79e167705dfac17640e",
       "status": "passed"
     },
     {
@@ -10242,6 +10254,10 @@
     },
     {
       "id": "51eebb82417e93d9dddbb996541d02a89cde563e67da0ed16101663eb8ffbf79",
+      "status": "passed"
+    },
+    {
+      "id": "5200c542fbeb126854022e5e25e34723852452ab2ad1a32e3f6a7400e2ac2c37",
       "status": "passed"
     },
     {
@@ -13561,6 +13577,10 @@
       "status": "passed"
     },
     {
+      "id": "6d641e55c5b7626ba108c0d24666fae54386f99303da56a81c0eba368d342dbb",
+      "status": "passed"
+    },
+    {
       "id": "6d7138ef89b984e8b5c214b85eebc8c08c27b133c4e6cd86be4a779e15fa9bd1",
       "status": "passed"
     },
@@ -14950,6 +14970,10 @@
     },
     {
       "id": "78e3f8abd7b93594e18fe1234779916e4b147916a035f72db573a525db1c4202",
+      "status": "passed"
+    },
+    {
+      "id": "78ea303be6430d125dfe01f88e2f431541f6871350d7f8546c04e3539022e55f",
       "status": "passed"
     },
     {
@@ -16866,6 +16890,10 @@
     },
     {
       "id": "8813041f4c799f556880dcdae70e892be810dcb50f98bf109279555889adee82",
+      "status": "passed"
+    },
+    {
+      "id": "8815b1370a7af7acad107aa4b565bf89e04571b1c927b118e73da8363cb1b076",
       "status": "passed"
     },
     {
@@ -23945,6 +23973,10 @@
       "status": "passed"
     },
     {
+      "id": "bf0de9f6dc41c4f055b6f98dc18388576543d482b7fc23c38b6df5268d038276",
+      "status": "passed"
+    },
+    {
       "id": "bf158292b7d607ae65163e26bb59ec7c38387f37d4d4a5b98558d0e7e812e817",
       "status": "passed"
     },
@@ -24566,6 +24598,10 @@
     },
     {
       "id": "c4478687189867cf2dcdac009ff8aeb6a119a8d4dc9ff593ae51a3634a4b9cca",
+      "status": "passed"
+    },
+    {
+      "id": "c485d0b1ea0044ffae75e73b4a045f71781773c610726d6cb46b0281b6418d35",
       "status": "passed"
     },
     {
@@ -25462,6 +25498,10 @@
     },
     {
       "id": "cb29830e7ccf1e56c2f8c654e0fcaaa1bcd9165b59983dd5857e17c530a7e7eb",
+      "status": "passed"
+    },
+    {
+      "id": "cb3499425ae9df3a1db0be726e5248e42ebd35f75526d5bb09fdd2ba8da02f41",
       "status": "passed"
     },
     {
@@ -26414,6 +26454,10 @@
     },
     {
       "id": "d2f71424ea6084ec4c3f8b6df88dbe5e0beed36cd512c7e4c8c5706222f8929c",
+      "status": "passed"
+    },
+    {
+      "id": "d2f849f5d3712c5b50d8596c10491eb9f6b42ec51cd05015f36e9887408188fd",
       "status": "passed"
     },
     {
@@ -28030,6 +28074,10 @@
     },
     {
       "id": "dfbcf3b945370349fa61046fcd2551efc91afbdd3fe41a3b391e714b6adbd6cb",
+      "status": "passed"
+    },
+    {
+      "id": "dfc1309c1a45a373b5c7fcf27b71bd102c58bad05f02052e2d52280ca7f3f19d",
       "status": "passed"
     },
     {
@@ -30589,6 +30637,10 @@
       "status": "passed"
     },
     {
+      "id": "f404fd698ce2df0daa36b51479d9a7c902d507eb8b1e85ee3a99faa5e69dc464",
+      "status": "passed"
+    },
+    {
       "id": "f4100355f3a36e9817712dff751873c94989584c27f638f29effcd1eeb2b8a36",
       "status": "passed"
     },
@@ -31933,6 +31985,10 @@
       "status": "passed"
     },
     {
+      "id": "ff69e110a78993677c504f126025da327467539600491f905a9e76bb66a5adad",
+      "status": "passed"
+    },
+    {
       "id": "ff6ca1ada4b008f52df485284df79f3e89c448cca511652f323fb20aa94d7d16",
       "status": "passed"
     },
@@ -32003,10 +32059,10 @@
   ],
   "totals": {
     "collectedFiles": 267,
-    "collectedSuites": 659,
-    "collectedTests": 7996,
+    "collectedSuites": 660,
+    "collectedTests": 8010,
     "failedTests": 0,
-    "passedTests": 7991,
+    "passedTests": 8005,
     "pendingTests": 0,
     "skippedTests": 5,
     "todoTests": 0

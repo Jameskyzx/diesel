@@ -36,13 +36,13 @@ intentionally fails for merely local or staged evidence.
 ```json
 {
   "browserSnapshot": {
-    "artifactByteLength": 177128,
+    "artifactByteLength": 177132,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "046d1cf109bd6ec1fe53875ae9631485ada3b5105bc1a7594187c900bc711510",
-    "baseHeadCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
-    "evaluatedCommit": "e5561480773697c89f1f91084ebfe49259ae0894",
-    "observedAt": "2026-09-29T12:26:53.610Z",
-    "runId": "c45ec15e-9b9e-44f6-9b2b-f6aabf9d0182",
+    "artifactSha256": "1bb8b56642da09c690ca57ceeef9111790bd5c2812158147f14da488a8053c9d",
+    "baseHeadCommit": "b345e1a82e6a18199929690908b1d7fb93e54667",
+    "evaluatedCommit": "b345e1a82e6a18199929690908b1d7fb93e54667",
+    "observedAt": "2026-09-29T13:14:49.279Z",
+    "runId": "68701230-b0e3-48c9-8f99-7ef45e77f8f9",
     "runs": [
       {
         "collected": 413,
@@ -79,7 +79,7 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc",
+      "digest": "a849cfbfc9c224f2badaf49448903ce67a7c4531caf3291ce7a9f5cf1f3d9bd0",
       "fileCount": 345
     },
     "version": "diesel-playwright-evidence-v1",
@@ -161,6 +161,13 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 13:15 UTC：固定 Node 演练路径与 Demo fulfill 同步修复的 33 项定向
+  回归、lint、typecheck、build 均通过。干净候选 `b345e1a` 的四套浏览器采集为
+  420 passed / 67 skipped / 0 failed / 0 flaky；修复涉及的四种语言/视口组合均首试通过。
+  现冻结输入重采完整 Vitest，之后仍须新候选远端 CI 与正式发布。只读核验现网仍是
+  `5b35ced`，本次 health/ready 均 200；共享服务 PM2 online、迁移后 0 次重启。
+  旧备份 68 文件摘要未变，未迁移协议或写入生产候选密钥。此前数据库冷连接导致的
+  间歇 ready 超时风险仍保留，不以单次健康读回宣称消除。
 - 2026-09-29 12:58 UTC：候选 `eba221a` 的完整本地 Vitest 为 8,063 passed /
   5 skipped / 0 failed；远端质量、数据库、安全、部署契约与 FDE 通过，但门禁尚未通过。
   Linux 三项 systemd canary 已通过，之后拒绝非固定 Node 路径；CI 改为在一次性 runner
@@ -1753,15 +1760,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `c45ec15e-9b9e-44f6-9b2b-f6aabf9d0182`，artifact SHA-256 `046d1cf109bd6ec1fe53875ae9631485ada3b5105bc1a7594187c900bc711510`；
-  observedAt `2026-09-29T12:26:53.610Z`，clean worktree / base HEAD `e5561480773697c89f1f91084ebfe49259ae0894`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `68701230-b0e3-48c9-8f99-7ef45e77f8f9`，artifact SHA-256 `1bb8b56642da09c690ca57ceeef9111790bd5c2812158147f14da488a8053c9d`；
+  observedAt `2026-09-29T13:14:49.279Z`，clean worktree / base HEAD `b345e1a82e6a18199929690908b1d7fb93e54667`；
   `public` = `348 passed / 65 skipped / 0 failed / 0 flaky / 413 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
-  聚合为 420 passed / 67 skipped / 0 failed / 0 flaky / 487 collected。artifact 为 177128 bytes；
-  browser source fingerprint 为 345 files / `cb4aef207b0bd7bec5dad3be5acc9230dd96f8eb40958a81bccb9f09756516cc`。
-  因运行发生在 clean worktree，`evaluatedCommit=e5561480773697c89f1f91084ebfe49259ae0894`；它证明该本地候选提交上的浏览器验收，
+  聚合为 420 passed / 67 skipped / 0 failed / 0 flaky / 487 collected。artifact 为 177132 bytes；
+  browser source fingerprint 为 345 files / `a849cfbfc9c224f2badaf49448903ce67a7c4531caf3291ce7a9f5cf1f3d9bd0`。
+  因运行发生在 clean worktree，`evaluatedCommit=b345e1a82e6a18199929690908b1d7fb93e54667`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

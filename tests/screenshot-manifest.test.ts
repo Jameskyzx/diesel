@@ -55,7 +55,7 @@ describe("portfolio screenshot manifest", () => {
   it("recomputes canonical asset bytes, dimensions, and complete source fingerprints", async () => {
     const { text } = await currentManifest();
     await expect(verifyScreenshotManifest(process.cwd(), text)).resolves.toBeUndefined();
-  });
+  }, 30_000);
 
   it("includes transitive page and chat dependencies omitted by the old root list", async () => {
     const [homeSources, chatSources] = await Promise.all([
@@ -98,8 +98,7 @@ describe("portfolio screenshot manifest", () => {
         "src/lib/maplibre-assets.ts",
       ]),
     );
-
-  });
+  }, 30_000);
 
   it.each([...mapLibreScreenshotInputs, "patches/next@16.3.3.patch"])("rejects screenshot evidence after %s changes", async (file) => {
     const { workspace, manifest } = await mapLibreScreenshotFixture();

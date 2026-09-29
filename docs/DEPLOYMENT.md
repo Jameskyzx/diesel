@@ -231,6 +231,17 @@ PostgreSQL 并发 smoke 将驱动的 `Result` 行集转成普通数组后严格�
 元数据差异；行数、顺序、字段类型/值、额外字段及微秒时间差仍严格校验。2026-09-29
 首次发布 PR 运行暴露了该断言问题；本地替身通过不能替代真实 PostgreSQL CI 重跑。
 
+The evidence tool resolver also supports pnpm/action-setup's
+`node_modules/.bin/pnpm` shell-shim layout. It never executes that shim: it
+selects the adjacent package's JS entrypoint and retains the exact package name,
+version, declared-bin and bounded runtime-version checks. A broken first PATH
+candidate is still fatal. Two full-repository screenshot fingerprint tests have
+an explicit 30-second disk/coverage budget; their assertions are unchanged.
+
+证据工具定位兼容 CI 的 pnpm shell 包装入口，但不执行包装脚本；只解析相邻 pnpm 包的
+JS 入口，继续严格核对包名、固定版本、声明入口和有界版本读回。首个 PATH 候选损坏仍
+直接失败。两项全仓库截图指纹扫描明确使用 30 秒测试预算，不改变任何内容断言。
+
 ## 3. GitHub 原生密钥扫描
 
 CI 的 gitleaks job 覆盖历史扫描。原生 Secret scanning 与 push protection

@@ -639,35 +639,35 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20260929T041520655Z-e6272332-a3b8-4d38-9b7e-607dd9140fd1.json",
+  "archivePath": "archive/ai-live-eval-20260929T041942993Z-aca383eb-e4e8-4f5f-8cfe-d107d3d04008.json",
   "attemptCount": 37,
   "complete": true,
   "completedCount": 37,
-  "evaluatedAt": "2026-09-29T04:15:20.655Z",
-  "latestOutcome": "failed",
+  "evaluatedAt": "2026-09-29T04:19:42.993Z",
+  "latestOutcome": "passed",
   "modelStepCount": 37,
-  "runId": "e6272332-a3b8-4d38-9b7e-607dd9140fd1",
+  "runId": "aca383eb-e4e8-4f5f-8cfe-d107d3d04008",
   "runError": null,
   "sampleCount": 18,
   "sourceFingerprint": {
     "algorithm": "sha256",
-    "digest": "c2e58866e20056005ac788dba59cbb3bb486765c6cd380696ee8dc49a0611679",
+    "digest": "e7330ea21411baef3ffdfcd33faaca25b0b05d4badf4d59e110ac0d4581dfaca",
     "fileCount": 298,
     "status": "captured"
   },
   "suiteCaseCount": 18,
   "terminationReason": "completed",
-  "thresholdsPassed": false,
+  "thresholdsPassed": true,
   "tokenUsageComplete": true,
-  "totalTokens": 101223,
+  "totalTokens": 97352,
   "version": "sales-chat-live-v25"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `failed`; evaluatedAt `2026-09-29T04:15:20.655Z`; run ID `e6272332-a3b8-4d38-9b7e-607dd9140fd1`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `37 provider attempts`; `37 completed provider calls`; `37 model steps`; `101223 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=false`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20260929T041520655Z-e6272332-a3b8-4d38-9b7e-607dd9140fd1.json`; source fingerprint `c2e58866e20056005ac788dba59cbb3bb486765c6cd380696ee8dc49a0611679` across `298` files.
+Current report result: `passed`; evaluatedAt `2026-09-29T04:19:42.993Z`; run ID `aca383eb-e4e8-4f5f-8cfe-d107d3d04008`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `37 provider attempts`; `37 completed provider calls`; `37 model steps`; `97352 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20260929T041942993Z-aca383eb-e4e8-4f5f-8cfe-d107d3d04008.json`; source fingerprint `e7330ea21411baef3ffdfcd33faaca25b0b05d4badf4d59e110ac0d4581dfaca` across `298` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed
@@ -939,6 +939,19 @@ v3 运行 `e6272332-a3b8-4d38-9b7e-607dd9140fd1` 仍为 17/18（101,223 tokens�
 JSON 已合法，但模型为满足“并行”要求重复调用当步唯一产品工具。v4 增加请求级系统
 约束：本步只调用一次且保留已请求参数，其他工具留到后续步骤；原语言指令和最终无工具
 回答请求不变。本次失败同样保留，不以局部诊断替代正式验收。
+
+The v7/v4 production-path run `aca383eb-e4e8-4f5f-8cfe-d107d3d04008`
+completed all 18 cases, 37 provider calls and 97,352 tokens with complete usage.
+Every score reached 100%, the independent verifier acknowledged the report and
+observations, and the bootstrap command exited 0. This is one passing local
+observation on its recorded source commit, not a reliability guarantee or a
+production deployment claim. All preceding failed/unacknowledged archives remain
+unchanged, including the malformed-JSON and repeated-tool observations.
+
+v7/v4 生产路径运行 `aca383eb-e4e8-4f5f-8cfe-d107d3d04008` 完成 18 例、37 次模型调用，
+共 97,352 tokens 且 usage 完整；各项评分均为 100%，报告及观察数据经独立验证确认，
+完整命令退出 0。这只证明记录提交上的一次本地通过，不保证未来每次通过，也不代表生产
+已经部署。此前失败及未确认的归档均原样保留。
 
 Each invocation captures repository state and the eval-source fingerprint at
 both the start and end. Clean, stable Git state may name an exact

@@ -101,11 +101,11 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20260929T041520655Z-e6272332-a3b8-4d38-9b7e-607dd9140fd1.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20260929T041942993Z-aca383eb-e4e8-4f5f-8cfe-d107d3d04008.json",
     "attemptCount": 37,
     "complete": true,
     "completedCount": 37,
-    "evaluatedAt": "2026-09-29T04:15:20.655Z",
+    "evaluatedAt": "2026-09-29T04:19:42.993Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -114,24 +114,24 @@ intentionally fails for merely local or staged evidence.
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
-    "latestOutcome": "failed",
+    "latestOutcome": "passed",
     "latestSampleCount": 18,
     "modelStepCount": 37,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "e6272332-a3b8-4d38-9b7e-607dd9140fd1",
+    "runId": "aca383eb-e4e8-4f5f-8cfe-d107d3d04008",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "c2e58866e20056005ac788dba59cbb3bb486765c6cd380696ee8dc49a0611679",
+      "digest": "e7330ea21411baef3ffdfcd33faaca25b0b05d4badf4d59e110ac0d4581dfaca",
       "fileCount": 298,
       "status": "captured"
     },
     "suiteVersion": "sales-chat-live-v25",
     "suiteCaseCount": 18,
     "terminationReason": "completed",
-    "thresholdsPassed": false,
+    "thresholdsPassed": true,
     "tokenUsageComplete": true,
-    "totalTokens": 101223
+    "totalTokens": 97352
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -1040,9 +1040,9 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-09-29T04:15:20.655Z`；run ID `e6272332-a3b8-4d38-9b7e-607dd9140fd1`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
-  `101223 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20260929T041520655Z-e6272332-a3b8-4d38-9b7e-607dd9140fd1.json`；source fingerprint `c2e58866e20056005ac788dba59cbb3bb486765c6cd380696ee8dc49a0611679` across `298` files。
+- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-09-29T04:19:42.993Z`；run ID `aca383eb-e4e8-4f5f-8cfe-d107d3d04008`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
+  `97352 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20260929T041942993Z-aca383eb-e4e8-4f5f-8cfe-d107d3d04008.json`；source fingerprint `e7330ea21411baef3ffdfcd33faaca25b0b05d4badf4d59e110ac0d4581dfaca` across `298` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、
@@ -1945,6 +1945,29 @@ candidate evidence, not a new production deployment or a passed AI quality gate.
 100%，结论要点锚点与语言一致性均为 77.78%，共有 7 例至少一项回答合同不通过。
 命令如实退出 1；不修改 case、门槛或评分器，不重标 Qwen 历史结果。另有 9-token
 连通性探测，不计入基准。本记录不代表生产已切换，也不代表 AI 质量门槛通过。
+
+### 2026-09-29 response and provider repair / 回答与工具调用修复
+
+The local candidate now uses system prompt v7 and DeepSeek adapter contract v4.
+Public explanations are concise and localized; fit and recorded availability
+are separate, evidence-bound conclusions. Tool observations omit only undefined
+optional object fields at the JSON boundary. DeepSeek required-tool requests
+name one permitted tool and require one call per step; the production loop then
+collects the remaining evidence. No case, scorer, threshold, dependency or database
+schema changed. Historical failures remain unchanged in the eval archive.
+
+Run `aca383eb-e4e8-4f5f-8cfe-d107d3d04008` passed all 18 cases and all score
+thresholds with 37 calls / 97,352 tokens; independent verification completed and
+the command exited 0. This is local candidate evidence only. Screenshots, browser
+and full-unit execution are represented by their current evidence artifacts, not
+by this model result. Production release/readback remains the earlier recorded
+release until an actual deployment and readback occur.
+
+本地候选使用提示词 v7、DeepSeek 适配合同 v4：简洁双语说明、适配与供应期双轴结论，
+JSON 边界仅省略对象中的可选 undefined 字段。DeepSeek 每步只请求一个必要工具并明确
+只调用一次，再由原生产循环继续取证；不改 case、评分器、门槛、依赖或数据库 schema。
+上述完整评估 18/18 通过、37 次调用、97,352 tokens，经独立验证后退出 0；历史失败保留。
+截图、浏览器和全量单测分别以当前证据 artifact 为准；本地模型通过不等于生产已部署。
 
 | 项目 | 当前代码状态 | 语义 |
 | --- | --- | --- |

@@ -48,6 +48,27 @@
 明细。该开关默认关闭，只有在目标供应商已验证兼容时才开启；供应商拒绝此字段时请求
 按普通模型错误失败关闭，不自动删除字段重试。
 
+DeepSeek V4.1 Flash uses the official model ID `deepseek-flash` at
+`https://api.deepseek.com` (also accepts the `/v1` base path). Set
+`AI_ENABLE_THINKING=false` and `AI_INCLUDE_USAGE=true`; the existing image route
+can use the same model via `AI_MULTIMODAL_MODEL=deepseek-flash`. Only these exact
+official endpoints use adapter contract v2: `thinking: { type: "disabled" }`.
+An omitted thinking flag also disables thinking; explicit `true` fails before a
+provider request because DeepSeek thinking mode rejects the required tool choice
+used by this application's tool loop. Other endpoints retain the v1
+`enable_thinking` contract. Keys stay server-side and public SSE never includes
+reasoning. Changing providers requires a new live report, not relabeling an old
+one. Sources: [model API](https://api-docs.deepseek.com/zh-cn/) and
+[thinking/tool compatibility](https://api-docs.deepseek.com/guides/thinking_mode/).
+
+DeepSeek V4.1 Flash 的官方模型 ID 是 `deepseek-flash`，地址为
+`https://api.deepseek.com`（亦接受 `/v1`）。设置 `AI_ENABLE_THINKING=false`、
+`AI_INCLUDE_USAGE=true`；已有图片入口可将 `AI_MULTIMODAL_MODEL` 同样设为
+`deepseek-flash`。仅上述官方地址使用 v2 适配合同的 `thinking.type=disabled`；
+未设置时也关闭思考，显式开启则在出网前拒绝，因为当前必选工具流程不兼容其思考模式。
+其他地址保留 v1 的 `enable_thinking`。密钥只留服务端，公开 SSE 不含 reasoning；
+切换供应商必须重新评估，不改写历史报告。
+
 `AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR` 与 `AI_CHAT_RATE_LIMIT_PER_HOUR` 配置按 epoch
 对齐的一小时固定窗口。为保留旧环境兼容性，全局值可省略并缺省为 10000；公开生产示例仍应
 显式写出 global/client `300/30` 与 `AI_CHAT_RATE_LIMIT_BACKEND=postgres`，避免把兼容性上限

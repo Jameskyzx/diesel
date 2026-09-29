@@ -161,6 +161,11 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29：网络恢复后的官方依赖审计发现 fast-uri 3.1.6 两项新增高危；
+  已精确升级到 3.1.7 并同步安装边界和 CI 摘要链，实际安装路径 12 条回归通过。
+  安全门禁现为零高危、零严重，仍有 3 项中危，详见 `DEPENDENCY_SECURITY.md`。
+  未新增风险豁免、依赖、schema 或业务行为；新锁文件的完整证据需重新采集。
+  此记录不是远端 Required CI gate 或生产部署成功声明。
 - 代码与本地数据基线：2026-08-11；稳定 33 国数据纠错已通过本地 fixture 验收，见
   `ACCEPTANCE.md` #166–#198 与 ADR-126/127；MAR/KEN source-only currentness
   纠错已签核为 #199–#200 与 ADR-128，QAT/KWT/OMN/JOR source-only currentness

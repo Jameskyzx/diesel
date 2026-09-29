@@ -173,7 +173,41 @@ a substitute for manual keyboard/screen-reader review. `@vitest/coverage-v8` is
 a development-only Vitest reporter used solely for the repository coverage gate
 and artifacts; production code must not import it.
 
-## Current high/critical advisory register (reviewed 2026-09-12)
+## Current advisory review (2026-09-29)
+
+The fresh official-registry audit reported two high advisories in
+`fast-uri@3.1.6`: [authority injection through ports](https://github.com/fastify/fast-uri/security/advisories/GHSA-qw65-cvwx-89v3)
+and [unbalanced authority brackets](https://github.com/fastify/fast-uri/security/advisories/GHSA-58mr-gqgx-xq4g).
+Both name `3.1.7` as the patched release in the existing major line. Exact
+overrides for the previously locked `3.1.4`, `3.1.5`, and `3.1.6` now resolve to
+`3.1.7`. The lock diff replaces only this dependency identity, integrity and AJV
+edge; no root dependency, lifecycle permission, schema or risk exception changes.
+The workspace, install guard and CI contract hashes are updated together.
+
+After a frozen installation with lifecycle scripts and pnpmfile disabled,
+`pnpm audit:security` exits zero with **0 critical and 0 high**. This is not a
+zero-advisory report: **3 moderate** advisories remain in `undici@7.29.0`
+([decompression error](https://github.com/nodejs/undici/security/advisories/GHSA-3wwx-pv8p-q78v))
+and `ip-address@10.3.1`
+([link-local classification](https://github.com/beaugunderson/ip-address/security/advisories/GHSA-rpw4-54j3-4h4q),
+[NAT64 classification](https://github.com/beaugunderson/ip-address/security/advisories/GHSA-2vr4-cq9g-pvrc)).
+They arrive through shadcn and are not exempted as development-only. Official
+same-major fixes are `undici@7.29.1` and `ip-address@10.5.1`; this bounded change
+addresses the high-severity release blocker only. The exception register stays empty.
+
+Twelve real-installation regressions traverse shadcn's MCP SDK and dotenvx/conf
+AJV paths, check the resolved patch, reject malformed host/port inputs and retain
+valid DNS/IPv6 behavior. The original installation fails ten and passes two;
+the patched installation passes all twelve. These are dependency regressions,
+not a claim that a production application endpoint was exploitable or that the
+candidate has been deployed. Full evidence must be recaptured for the new lock.
+
+2026-09-29 官方审计发现 fast-uri 的两项新增高危，现仅升级到同主版本 3.1.7，
+精确覆盖与 CI 摘要链同步，未增加依赖、安装脚本权限或风险豁免。实际安装路径的
+12 条回归由 10 失败 / 2 通过变为全部通过；安全门禁零高危、零严重，但仍有上述
+3 项中危，不得称为零漏洞或已部署。锁文件变化后的完整证据需重新采集。
+
+## Historical high/critical advisory register (reviewed 2026-09-12)
 
 After the explicitly approved MapLibre 5-to-6 migration, the latest
 observed `pnpm audit:security` exited **0** with official stable
@@ -369,9 +403,10 @@ exception.
 The same workspace override file narrowly replaces only the vulnerable locked
 versions of PostCSS, brace-expansion, fast-uri, js-yaml, and nanoid with the
 same-major releases selected in earlier remediations. Those selections still
-require current advisory review. The two explicit fast-uri selectors cover both the
-previous `3.1.4` lock and the subsequently selected `3.1.5`; both resolve to
-`3.1.6`, which remediates the four 2026-09-02 high advisories. This keeps
+require current advisory review. The earlier two explicit fast-uri selectors covered both the
+previous `3.1.4` lock and the subsequently selected `3.1.5`; both resolved to
+`3.1.6`, which remediated the four 2026-09-02 high advisories. The current
+2026-09-29 review above supersedes that patch selection. This keeps
 upstream dependency ranges observable: if a future lockfile selects a different
 vulnerable version, the override will not silently cover it and the audit gate
 will fail again.

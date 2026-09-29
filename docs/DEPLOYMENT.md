@@ -828,6 +828,11 @@ test "$(stat -c '%U:%G:%a:%h' \
 命令。每次普通发布在创建本次 state 目录前都先要求它存在，随后 `--begin-activation` 才能为
 当前 release 建立 V1 anchor/PENDING。
 
+FD 8 路径检查通过 resolver 自身的 `/proc/self/fd/8` 读取继承的描述符；不得使用
+`/proc/$$/fd/8`，因为 Bash subshell 中 `$$` 仍指向可能没有该 FD 的外层进程。
+锁路径、固定编号和同一 OFD 的非阻塞 flock 验证保持不变。Linux 回归及真实构建 smoke
+必须覆盖外层 FD 8 关闭、仅子进程打开并持锁的路径，不得预先打开父进程 FD 来掩盖错误。
+
 ### One-time pre-protocol host migration / 一次性旧主机迁移
 
 The read-only 2026-09-29 preflight found eight historical `product` / `archived`

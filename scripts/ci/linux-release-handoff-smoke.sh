@@ -1018,15 +1018,16 @@ linux_release_handoff_main() {
   linux_release_handoff_run_status_canary \
     "${release_id}" "${deploy_root}" "${release_dir}" \
     "${fixed_path}" "${builder_uid}" signal
-  # Open in the outer shell: the ledger resolves /proc/$$/fd/8 even inside the
-  # sourced preparer's subshell. Keep the same locked open-file description.
-  exec 8<>"${deploy_root}/.release-lifecycle.lock"
-  flock -n 8
-  export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8
+  # The outer shell intentionally has no FD 8. Exercise initialization and
+  # preparation with the lock owned only by the actual subshell, as in the CLI.
+  exec 8>&-
   LINUX_RELEASE_HANDOFF_BUILD_RELEASE_ID="${release_id}"
   (
     # Keep sourced shell options, traps, and function names inside this child;
     # the outer EXIT trap must remain authoritative for identities and temp root.
+    exec 8<>"${deploy_root}/.release-lifecycle.lock"
+    flock -n 8
+    export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8
     # shellcheck source=/dev/null
     source "${release_dir}/scripts/deploy/prepare-release-runtime.sh"
     linux_release_handoff_begin_fixture \
@@ -1035,8 +1036,6 @@ linux_release_handoff_main() {
       "${release_id}" "${deploy_root}" "${fixed_path}" "${node_binary}" \
       "/proc"
   )
-  exec 8>&-
-  unset DIESEL_RELEASE_LIFECYCLE_LOCK_FD
 
   for marker in .build-complete .deploy-ready; do
     if [[ "$(stat -c '%U:%G:%a' "${release_dir}/${marker}")" != \

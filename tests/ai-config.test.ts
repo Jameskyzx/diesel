@@ -1,4 +1,5 @@
-import { streamText } from "ai";
+import { streamText, tool } from "ai";
+import { z } from "zod";
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -27,6 +28,7 @@ async function captureStreamingRequestBody(
     enableThinking?: boolean;
     includeUsage: boolean;
     model?: string;
+    toolChoice?: "required" | "none" | "auto";
   },
 ) {
   let requestBody: unknown;
@@ -59,6 +61,13 @@ async function captureStreamingRequestBody(
       includeUsage: options.includeUsage,
     }).model,
     prompt: "usage request contract",
+    ...(options.toolChoice ? {
+      toolChoice: options.toolChoice,
+      tools: {
+        firstEvidence: tool({ inputSchema: z.object({ query: z.string() }) }),
+        secondEvidence: tool({ inputSchema: z.object({ country: z.string() }) }),
+      },
+    } : {}),
   });
   await result.text;
 
@@ -183,7 +192,7 @@ describe("server AI configuration", () => {
       includeUsage: true,
     });
     expect(providerProfile).toMatchObject({
-      adapterContractVersion: 2,
+      adapterContractVersion: 3,
       enableThinking: false,
       includeUsage: true,
     });
@@ -199,6 +208,28 @@ describe("server AI configuration", () => {
       enableThinking: true,
     })).toThrow(AiConfigurationError);
     expect(fetchStub).not.toHaveBeenCalled();
+  });
+
+  it("names only the first currently permitted DeepSeek tool without changing its schema", async () => {
+    const body = await captureStreamingRequestBody({
+      baseUrl: "https://api.deepseek.com", includeUsage: true, toolChoice: "required",
+    });
+    expect(body).toMatchObject({ tool_choice: { type: "function", function: { name: "firstEvidence" } } });
+    expect((body as { tools: unknown[] }).tools).toHaveLength(1);
+    expect(body).toMatchObject({ tools: [{ function: { parameters: { required: ["query"], additionalProperties: false } } }] });
+    expect(body).not.toHaveProperty("parallel_tool_calls");
+  });
+
+  it.each(["none", "auto"] as const)("preserves DeepSeek %s tool choice", async (toolChoice) => {
+    const body = await captureStreamingRequestBody({ baseUrl: "https://api.deepseek.com", includeUsage: true, toolChoice });
+    expect(body).toHaveProperty("tool_choice", toolChoice);
+    expect((body as { tools: unknown[] }).tools).toHaveLength(2);
+  });
+
+  it("does not serialize required tools for generic compatible endpoints", async () => {
+    const body = await captureStreamingRequestBody({ includeUsage: true, toolChoice: "required" });
+    expect(body).toHaveProperty("tool_choice", "required");
+    expect((body as { tools: unknown[] }).tools).toHaveLength(2);
   });
 
   it.each([

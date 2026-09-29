@@ -114,7 +114,7 @@ const sourceFingerprintSchema = z.discriminatedUnion("status", [
 ]);
 export const liveEvalProviderProfileSchema = z.object({
   adapter: z.enum(["@ai-sdk/openai-compatible", "portfolio-demo"]),
-  adapterContractVersion: z.union([z.literal(1), z.literal(2)]),
+  adapterContractVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   enableThinking: z.boolean().nullable(),
   endpointSha256: z.string().regex(/^[0-9a-f]{64}$/u).nullable(),
   includeUsage: z.boolean(),
@@ -125,7 +125,7 @@ export const liveEvalProviderProfileSchema = z.object({
     (isDemo &&
       (profile.adapterContractVersion !== 1 ||
         profile.enableThinking !== null || profile.includeUsage)) ||
-    (profile.adapterContractVersion === 2 && profile.enableThinking !== false)
+    (profile.adapterContractVersion >= 2 && profile.enableThinking !== false)
   ) {
     context.addIssue({
       code: "custom",

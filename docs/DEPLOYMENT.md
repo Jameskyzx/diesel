@@ -52,11 +52,13 @@ DeepSeek V4.1 Flash uses the official model ID `deepseek-flash` at
 `https://api.deepseek.com` (also accepts the `/v1` base path). Set
 `AI_ENABLE_THINKING=false` and `AI_INCLUDE_USAGE=true`; the existing image route
 can use the same model via `AI_MULTIMODAL_MODEL=deepseek-flash`. Only these exact
-official endpoints use adapter contract v3: `thinking: { type: "disabled" }`
+official endpoints use adapter contract v4: `thinking: { type: "disabled" }`
 and a named choice for the first currently required tool. The production loop
 then narrows to remaining evidence tools on subsequent steps (still at most five
 steps). This avoids the observed malformed second parallel-call arguments;
-invalid arguments are never repaired or retried. Historical v2 reports remain v2.
+invalid arguments are never repaired or retried. A request-local system rule
+requires exactly one call, preserving requested parameters instead of repeating
+the same tool to simulate parallelism. Historical v2/v3 reports remain unchanged.
 An omitted thinking flag also disables thinking; explicit `true` fails before a
 provider request because DeepSeek thinking mode rejects the required tool choice
 used by this application's tool loop. Other endpoints retain the v1
@@ -69,9 +71,10 @@ and [named tool choice](https://api-docs.deepseek.com/api/create-chat-completion
 DeepSeek V4.1 Flash 的官方模型 ID 是 `deepseek-flash`，地址为
 `https://api.deepseek.com`（亦接受 `/v1`）。设置 `AI_ENABLE_THINKING=false`、
 `AI_INCLUDE_USAGE=true`；已有图片入口可将 `AI_MULTIMODAL_MODEL` 同样设为
-`deepseek-flash`。仅上述官方地址使用 v3 适配合同的 `thinking.type=disabled`，并在每步
+`deepseek-flash`。仅上述官方地址使用 v4 适配合同的 `thinking.type=disabled`，并在每步
 指定首个仍需取证的工具，后续步骤继续动态收窄，最多五步；避免已观测到的第二个并行
-调用参数 JSON 损坏，不猜修参数、不额外重试。历史 v2 报告保持不变；
+调用参数 JSON 损坏。请求级系统规则明确本步只调用一次、保留用户参数，不重复调用同一
+工具模拟并行，不猜修参数、不额外重试。历史 v2/v3 报告保持不变；
 未设置时也关闭思考，显式开启则在出网前拒绝，因为当前必选工具流程不兼容其思考模式。
 其他地址保留 v1 的 `enable_thinking`。密钥只留服务端，公开 SSE 不含 reasoning；
 切换供应商必须重新评估，不改写历史报告。

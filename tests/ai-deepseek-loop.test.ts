@@ -34,6 +34,9 @@ it("uses the real production loop to gather both required tools sequentially bef
     const name = typeof selected.tool_choice === "object" ? selected.tool_choice.function.name : null;
     if (name) expect(selected.tools?.map(t => t.function.name)).toEqual([name]);
     else expect(selected.tools).toBeUndefined();
+    if (name) expect(body).toMatchObject({ messages: expect.arrayContaining([
+      { role: "system", content: expect.stringMatching(/sales_chat_system_prompt[\s\S]*invoke the named tool exactly once/u) },
+    ]) });
     const chunk = (delta: unknown, finishReason: string | null, usage?: unknown) => `data: ${JSON.stringify({
       id: `test-${bodies.length}`, object: "chat.completion.chunk", created: 0, model: "deepseek-flash",
       choices: [{ index: 0, delta, finish_reason: finishReason }], ...(usage ? { usage } : {}),

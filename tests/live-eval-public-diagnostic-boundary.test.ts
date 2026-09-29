@@ -162,7 +162,7 @@ async function observePublicStream(answer: string, noData = false) {
 }
 
 describe("failed diagnostics consume only the actual public evidence-boundary text", () => {
-  it("observes an unchanged supported public answer with a missing topic anchor, without hidden stream fields", async () => {
+  it("observes the exact public answer and verified date with a missing topic anchor, without hidden stream fields", async () => {
     const answer = "  CHN has documented national information.\n";
     const run = await observePublicStream(answer);
     expect(run.evidenceAllowed).toBe(true);
@@ -170,7 +170,8 @@ describe("failed diagnostics consume only the actual public evidence-boundary te
     expect(run.judgement.pass).toBe(false);
     expect(run.response.missingResponseAnchorIds).toEqual(["decision:country-overview"]);
     expect(run.observer).toHaveBeenCalledOnce();
-    expect(run.observer.mock.calls[0][0].responseText).toBe(answer);
+    expect(run.responseText).toBe(`${answer}\n\nEvidence as-of date: 2026-08-13.`);
+    expect(run.observer.mock.calls[0][0].responseText).toBe(run.responseText);
     expect(run.observer.mock.calls[0][0].missingResponseAnchorIds).toEqual(["decision:country-overview"]);
     for (const marker of [hiddenReasoning, hiddenReasoningFile, hiddenToolMetadata]) {
       expect(JSON.stringify(run.observer.mock.calls)).not.toContain(marker);

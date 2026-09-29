@@ -38,11 +38,11 @@ intentionally fails for merely local or staged evidence.
   "browserSnapshot": {
     "artifactByteLength": 177128,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "2972092458896b269fa6b7e02bbb7e5d1104c4512de08c40f8203aea09270e2e",
-    "baseHeadCommit": "3ad5140cd259b8b8ac88506fb8ea547e7729bc89",
-    "evaluatedCommit": "3ad5140cd259b8b8ac88506fb8ea547e7729bc89",
-    "observedAt": "2026-09-29T08:06:56.481Z",
-    "runId": "68d8fab0-f771-406b-8bb4-0e0e2daaaeab",
+    "artifactSha256": "c152e889c8af190eb73002db0217653aae3c1f84fa04071c0978721af4bd6c59",
+    "baseHeadCommit": "dd436122b20a5e6490f69da1ea442aff238fb987",
+    "evaluatedCommit": "dd436122b20a5e6490f69da1ea442aff238fb987",
+    "observedAt": "2026-09-29T08:49:57.403Z",
+    "runId": "22104c3e-2a30-4524-952e-de7b005a780d",
     "runs": [
       {
         "collected": 413,
@@ -79,7 +79,7 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "4082497e2e31ef0da0dad88a4eefeca2b1aa8d6956bee73bc689fa8b8007feb6",
+      "digest": "e93a804fbf6d1b1570e71c27c0c7d1b78ddc4c96d0e5f35c8162e0aebfcb90cc",
       "fileCount": 344
     },
     "version": "diesel-playwright-evidence-v1",
@@ -161,17 +161,21 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
-- 2026-09-29 08:37 UTC：日期消息块修复后的真实模型复验 18/18 通过，37 次 provider
-  调用、97,141 token，结果与失败历史均已归档；构建及完整历史密钥扫描通过。
-  下一步重采四套浏览器与全量 Vitest，仍不代表远端 CI 或生产发布完成。
+- 2026-09-29 08:51 UTC：候选 `dd43612` 已推送；远端 PostgreSQL、依赖/密钥审计和
+  Linux 脚本契约通过，质量门检出旧正文断言、台账重复陈述和截图源码漂移，下游交接未运行。
+  本地四套浏览器为 420 passed / 67 skipped / 0 failed / 0 flaky。正文断言现精确比较
+  含服务端日期的公开文本，文档只在唯一台账记录当前模型结果，240 项相关回归通过。
+  英文截图已重新采集并视觉检查；截图改变 public 指纹，最终浏览器及 Vitest 证据须重采。
+- 2026-09-29 08:37 UTC：日期消息块修复已提交；真实模型结果只见下方唯一评估台账，
+  历史失败报告原样保留。构建及完整历史密钥扫描通过；浏览器与全量 Vitest 证据重采中，
+  仍不代表远端 CI 或生产发布完成。
 - 2026-09-29 08:34 UTC：日期脚注首次浏览器复验暴露额外 Markdown 块回归；public
   348 passed / 65 skipped，Demo 36 passed / 32 failed，采集正确以 1 退出且未替换旧成功证据。
   现将已验证日期合并到原回答末尾，不改变证据门或 case 期望；295 项定向测试、lint、
   typecheck 与桌面/移动端 Demo 68 项均通过。完整浏览器、Vitest 和真实模型证据仍待重采。
-- 2026-09-29 08:16 UTC：真实 live eval 曾因销售简报正文遗漏评估日期而失败（17/18），
-  失败 archive 原样保留。服务端公开边界现只在完整证据校验通过后，从工具的
-  `informationAsOf` 补齐本地化日期，不改 case 期望或门槛。323 项定向回归及
-  lint/typecheck/build 通过；修复后的新真实评估 18/18 通过，37 次调用、97,282 token。
+- 2026-09-29 08:16 UTC：历史 live eval 曾因销售简报正文遗漏日期而失败，历史报告
+  原样保留。服务端公开边界只在完整证据校验通过后，从工具的 `informationAsOf` 补齐
+  本地化日期，不改 case 期望或门槛。323 项定向回归及 lint/typecheck/build 通过。
   浏览器与全量 Vitest 证据仍需更新至本次代码，远端 CI 与生产发布尚未完成。
 - 2026-09-29 08:07 UTC：备份失败已定位为 8 条旧产品归档审计的二次编码 JSON 对象。
   候选修复只让恢复快照无损保留此历史格式；74 项快照定向测试、lint、typecheck 和 build
@@ -1679,15 +1683,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `68d8fab0-f771-406b-8bb4-0e0e2daaaeab`，artifact SHA-256 `2972092458896b269fa6b7e02bbb7e5d1104c4512de08c40f8203aea09270e2e`；
-  observedAt `2026-09-29T08:06:56.481Z`，clean worktree / base HEAD `3ad5140cd259b8b8ac88506fb8ea547e7729bc89`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `22104c3e-2a30-4524-952e-de7b005a780d`，artifact SHA-256 `c152e889c8af190eb73002db0217653aae3c1f84fa04071c0978721af4bd6c59`；
+  observedAt `2026-09-29T08:49:57.403Z`，clean worktree / base HEAD `dd436122b20a5e6490f69da1ea442aff238fb987`；
   `public` = `348 passed / 65 skipped / 0 failed / 0 flaky / 413 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 420 passed / 67 skipped / 0 failed / 0 flaky / 487 collected。artifact 为 177128 bytes；
-  browser source fingerprint 为 344 files / `4082497e2e31ef0da0dad88a4eefeca2b1aa8d6956bee73bc689fa8b8007feb6`。
-  因运行发生在 clean worktree，`evaluatedCommit=3ad5140cd259b8b8ac88506fb8ea547e7729bc89`；它证明该本地候选提交上的浏览器验收，
+  browser source fingerprint 为 344 files / `e93a804fbf6d1b1570e71c27c0c7d1b78ddc4c96d0e5f35c8162e0aebfcb90cc`。
+  因运行发生在 clean worktree，`evaluatedCommit=dd436122b20a5e6490f69da1ea442aff238fb987`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

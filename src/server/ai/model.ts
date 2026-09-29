@@ -29,7 +29,7 @@ export type ConfiguredAiModel = {
 
 export type AiProviderProfile = {
   adapter: "@ai-sdk/openai-compatible" | "portfolio-demo";
-  adapterContractVersion: 1;
+  adapterContractVersion: 1 | 2;
   enableThinking: boolean | null;
   endpointSha256: string | null;
   includeUsage: boolean;
@@ -45,6 +45,12 @@ const invalidModelCostProfile = Object.freeze({ invalid: true });
 
 function endpointSha256(baseUrl: string): string {
   return createHash("sha256").update(baseUrl, "utf8").digest("hex");
+}
+
+function isOfficialDeepSeekEndpoint(baseUrl: string): boolean {
+  const url = new URL(baseUrl);
+  return url.origin === "https://api.deepseek.com" &&
+    (url.pathname === "/" || url.pathname === "/v1");
 }
 
 function finalModelId(value: string): string {
@@ -183,17 +189,31 @@ export function getConfiguredAiModel(
     throw new AiConfigurationError("服务端 AI 配置无效，请检查接口地址和模型名。");
   }
 
+  const usesDeepSeekContract = isOfficialDeepSeekEndpoint(parsedConfig.data.baseUrl);
+  const enableThinking = usesDeepSeekContract
+    ? parsedConfig.data.enableThinking ?? false
+    : parsedConfig.data.enableThinking;
+  if (usesDeepSeekContract && enableThinking) {
+    // DeepSeek thinking mode rejects the required tool choice used by this
+    // application; do not silently downgrade an explicitly enabled setting.
+    throw new AiConfigurationError(
+      "当前 DeepSeek 工具流程要求 AI_ENABLE_THINKING=false。",
+    );
+  }
+
   const provider = createOpenAICompatible({
     apiKey: parsedConfig.data.apiKey,
     baseURL: parsedConfig.data.baseUrl,
     includeUsage: resolvedConfig.includeUsage === true,
     name: "server-openai-compatible",
     transformRequestBody: (body) =>
-      parsedConfig.data.enableThinking === undefined
+      enableThinking === undefined
         ? body
         : {
             ...body,
-            enable_thinking: parsedConfig.data.enableThinking,
+            ...(usesDeepSeekContract
+              ? { thinking: { type: "disabled" } }
+              : { enable_thinking: enableThinking }),
           },
   });
 
@@ -205,8 +225,8 @@ export function getConfiguredAiModel(
     ),
     providerProfile: {
       adapter: "@ai-sdk/openai-compatible",
-      adapterContractVersion: 1,
-      enableThinking: parsedConfig.data.enableThinking ?? null,
+      adapterContractVersion: usesDeepSeekContract ? 2 : 1,
+      enableThinking: enableThinking ?? null,
       endpointSha256: endpointSha256(parsedConfig.data.baseUrl),
       includeUsage: resolvedConfig.includeUsage === true,
     },

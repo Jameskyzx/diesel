@@ -22,9 +22,11 @@ afterEach(() => {
 
 async function captureStreamingRequestBody(
   options: {
+    baseUrl?: string;
     costProfile?: unknown;
     enableThinking?: boolean;
     includeUsage: boolean;
+    model?: string;
   },
 ) {
   let requestBody: unknown;
@@ -49,7 +51,9 @@ async function captureStreamingRequestBody(
     model: getConfiguredAiModel({
       ...userAiConfigSchema.parse({
         ...validConfig,
+        baseUrl: options.baseUrl ?? validConfig.baseUrl,
         enableThinking: options.enableThinking,
+        model: options.model ?? validConfig.model,
       }),
       costProfile: options.costProfile,
       includeUsage: options.includeUsage,
@@ -156,6 +160,60 @@ describe("server AI configuration", () => {
       );
     },
   );
+
+  it.each([
+    { baseUrl: "https://api.deepseek.com/", enableThinking: false },
+    { baseUrl: "https://api.deepseek.com/v1/", enableThinking: false },
+    { baseUrl: "https://api.deepseek.com", enableThinking: undefined },
+  ])("uses the explicit non-thinking DeepSeek contract for $baseUrl", async (config) => {
+    const body = await captureStreamingRequestBody({
+      ...config,
+      includeUsage: true,
+      model: "deepseek-flash",
+    });
+    expect(body).toMatchObject({
+      model: "deepseek-flash",
+      thinking: { type: "disabled" },
+      stream_options: { include_usage: true },
+    });
+    expect(body).not.toHaveProperty("enable_thinking");
+    expect(JSON.stringify(body)).not.toMatch(/send_reasoning|include_reasoning/u);
+    const { providerProfile } = getConfiguredAiModel({
+      ...userAiConfigSchema.parse({ ...validConfig, ...config, model: "deepseek-flash" }),
+      includeUsage: true,
+    });
+    expect(providerProfile).toMatchObject({
+      adapterContractVersion: 2,
+      enableThinking: false,
+      includeUsage: true,
+    });
+  });
+
+  it("rejects incompatible DeepSeek thinking before making any request", () => {
+    const fetchStub = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchStub);
+    expect(() => getConfiguredAiModel({
+      ...validConfig,
+      baseUrl: "https://api.deepseek.com",
+      model: "deepseek-flash",
+      enableThinking: true,
+    })).toThrow(AiConfigurationError);
+    expect(fetchStub).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "https://api.deepseek.com.example.com",
+    "https://api.deepseek.com:8443",
+    "https://api.example.com/deepseek/v1",
+    "https://api.deepseek.com/other",
+  ])("does not infer the DeepSeek wire contract for %s", async (baseUrl) => {
+    const body = await captureStreamingRequestBody({
+      baseUrl, enableThinking: false, includeUsage: true, model: "deepseek-flash",
+    });
+    expect(body).toHaveProperty("enable_thinking", false);
+    expect(body).not.toHaveProperty("thinking");
+    expect(getConfiguredAiModel({ ...validConfig, baseUrl }).providerProfile.adapterContractVersion).toBe(1);
+  });
 
   it.each([
     "http://api.example.com/v1",

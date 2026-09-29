@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { scoreLiveEval } from "@/domain/ai/live-eval";
-import { liveEvalReportSchema } from "../scripts/portfolio/live-eval-report-schema";
+import { liveEvalProviderProfileSchema, liveEvalReportSchema } from "../scripts/portfolio/live-eval-report-schema";
 import { VerificationIssues } from "../scripts/portfolio/verification-issues";
 import { buildSyntheticLiveEvalReport } from "./helpers/live-eval-report-fixture";
 
@@ -25,6 +25,26 @@ async function readLegacyV3Report(): Promise<Record<string, unknown>> {
 }
 
 describe("portfolio versioned live-eval report schema", () => {
+  it("retains v1 profiles and admits only non-thinking provider v2 profiles", () => {
+    const profile = {
+      adapter: "@ai-sdk/openai-compatible",
+      adapterContractVersion: 2,
+      enableThinking: false,
+      endpointSha256: "a".repeat(64),
+      includeUsage: true,
+    };
+    expect(liveEvalProviderProfileSchema.safeParse(profile).success).toBe(true);
+    expect(liveEvalProviderProfileSchema.safeParse({ ...profile, adapterContractVersion: 1 }).success).toBe(true);
+    for (const invalid of [
+      { ...profile, adapterContractVersion: 3 },
+      { ...profile, enableThinking: true },
+      { ...profile, enableThinking: null },
+      { ...profile, adapter: "portfolio-demo", endpointSha256: null, enableThinking: null, includeUsage: false },
+    ]) {
+      expect(liveEvalProviderProfileSchema.safeParse(invalid).success).toBe(false);
+    }
+  });
+
   it("retains the historical honest v6 initialization-failure schema", async () => {
     const report = JSON.parse(
       await readFile(historicalV6ReportPath, "utf8"),

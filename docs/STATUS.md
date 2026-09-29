@@ -106,12 +106,12 @@ intentionally fails for merely local or staged evidence.
     "complete": false,
     "completedCount": 0,
     "evaluatedAt": "2026-09-29T02:13:18.048Z",
-    "expectedModelId": "server-openai-compatible/qwen3.8-flash",
+    "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
-      "adapterContractVersion": 1,
+      "adapterContractVersion": 2,
       "enableThinking": false,
-      "endpointSha256": "5891aed827c4e67b2d7c0c73ea819327ce3f2b6ef72213cd79669486a26b1ead",
+      "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
     "latestOutcome": "failed",

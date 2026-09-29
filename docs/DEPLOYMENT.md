@@ -1185,6 +1185,12 @@ unit unload、cgroup 路径消失和两轮 UID/process 清理证明不变。独�
 global timeout 设为 25 分钟，给框架 teardown、失败收据和 artifact 上传留出时间；每例
 60 秒、两次 retry、所有断言与完整项目矩阵保持不变。超时仍是失败，不是条件跳过或通过。
 
+2026-09-29 后续 list 日志证明该次总超时并非单例挂起：单 worker 在 25 分钟内完成
+272 passed / 18 skipped，123 项尚未执行，没有已失败断言；suite/teardown 总超时仍记为
+失败，不能生成通过收据。完整矩阵现分配 50 分钟，CI job 为 60 分钟，留出 setup、生产
+CSP 和诊断上传余量；每例 60 秒、两次 retry、单 worker、所有项目与断言不变。
+此预算调整必须经完整远端运行证明，不能将未运行用例当作跳过或成功。
+
 工作站完整门禁通过后，normal path 不再由运维人员分别拼接 environment backup、
 begin、prepare、activation 与 governance 命令。下文只从 clean environment 前台调用
 目标 release 的版本化 `host-release-orchestrator.sh`；该单一 root 进程拥有

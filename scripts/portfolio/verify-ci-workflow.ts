@@ -532,7 +532,7 @@ const canonicalMergeBlockingJobDigests = [
   },
   {
     jobId: "e2e",
-    sha256: "d3fb0a121038d34c7bfc0eb38779f618d0c562b1f6e31e1dbddb6fcc7f0e75a2",
+    sha256: "bb144609d472794a10ac1b3969c5d5288770b311ec2261c84489d4846c152eec",
   },
   {
     jobId: "portfolio-demo-e2e",

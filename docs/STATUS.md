@@ -161,6 +161,11 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-29 10:40 UTC：候选 `78e75f2` 的公共浏览器 CI 真实结果为 272 passed /
+  18 skipped / 123 did not run；25 分钟 suite 和 teardown 总超时导致失败，没有已失败
+  断言。仅把完整矩阵预算改为 50 分钟、任务上限 60 分钟，保留每例时限、重试、单 worker
+  和全部项目。cgroup 修复后的完整 Vitest 已通过 8,052 passed / 5 skipped；新的 CI
+  合同修改会改变证据指纹，须重采受影响证据后再推送并等待远端验证，生产仍未切换。
 - 2026-09-29 10:27 UTC：cgroup 修复的聚焦运行中新增 8 项通过，lint、typecheck 和
   build 通过。整组部署回归为 541 passed / 4 skipped / 44 failed；44 项共享失败原因
   是执行沙箱拒绝本地 HTTP fixture 的 `127.0.0.1` 监听（`listen EPERM`），不能记为

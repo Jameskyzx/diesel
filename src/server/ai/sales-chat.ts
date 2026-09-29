@@ -1680,6 +1680,24 @@ function createPublicEvidenceBoundaryTransform({
             });
             controller.enqueue({ id, type: "text-end" });
           }
+          if (toolResults.length > 0) {
+            // The complete evidence contract has passed above. Publish dates
+            // from validated results, never from model prose or an unverified
+            // request. Keep the footer in the answer's existing public text part
+            // so text/fullStream/SSE do not create an extra UI message block.
+            const dates = [...new Set(
+              toolResults.map((result) => result.informationAsOf),
+            )].sort();
+            const footer = locale === "en"
+              ? `\n\nEvidence as-of date: ${dates.join(", ")}.`
+              : `\n\n证据评估日期：${dates.join("、")}。`;
+            const finalAnswerPart = bufferedText.findLast(({ text }) => text.length > 0);
+            if (finalAnswerPart) {
+              finalAnswerPart.text += footer;
+            } else {
+              bufferedText.push({ id: nextPublicTextPartId(), text: footer });
+            }
+          }
           for (const textPart of bufferedText) {
             if (!textPart.text) {
               continue;
@@ -1691,25 +1709,6 @@ function createPublicEvidenceBoundaryTransform({
               type: "text-delta",
             });
             controller.enqueue({ id: textPart.id, type: "text-end" });
-          }
-          if (toolResults.length > 0) {
-            // The complete evidence contract has passed above. Publish dates
-            // from those validated results, never from model prose or an
-            // unverified request. A model can omit this context despite the
-            // prompt; the same deterministic footer reaches text/fullStream/SSE.
-            const dates = [...new Set(
-              toolResults.map((result) => result.informationAsOf),
-            )].sort();
-            const id = "evidence-as-of";
-            controller.enqueue({ id, type: "text-start" });
-            controller.enqueue({
-              id,
-              text: locale === "en"
-                ? `\n\nEvidence as-of date: ${dates.join(", ")}.`
-                : `\n\n证据评估日期：${dates.join("、")}。`,
-              type: "text-delta",
-            });
-            controller.enqueue({ id, type: "text-end" });
           }
           if (
             hasToolResult &&

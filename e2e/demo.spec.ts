@@ -103,6 +103,10 @@ for (const example of [
     await expect(answer).not.toBeEmpty();
     await expect(answer).not.toContainText("This request lacks enough evidence");
     await expect(answer).not.toContainText("At least one query or parameter validation failed");
+    if (example.name === "regulations") {
+      await expect(assistant.getByTestId("assistant-markdown")).toHaveCount(1);
+      await expect(answer).toContainText("Evidence as-of date: 2026-08-20.");
+    }
   });
 }
 

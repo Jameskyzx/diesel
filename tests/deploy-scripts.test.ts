@@ -8191,7 +8191,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
       expect(argumentsUsed).toContain("--proto");
       expect(argumentsUsed).toContain("=https");
       expect(argumentsUsed.at(-1)).toBe(
-        "https://jamesky.site/api/health/ready",
+        "https://diesel.jamesky.site/api/health/ready",
       );
     } finally {
       await rm(fixture, { force: true, recursive: true });
@@ -10124,6 +10124,11 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     "http://127.0.0.1:not-a-port",
     "http://127.0.0.1:80@outside.example",
     "http://127.0.0.1:8788/path",
+    "https://jamesky.site",
+    "http://diesel.jamesky.site",
+    "https://diesel.jamesky.site.evil.example",
+    "https://diesel.jamesky.site@evil.example",
+    "https://diesel.jamesky.site/path",
   ])("rejects unsafe release verification origin %s", async (origin) => {
     const result = await execFileAsync("bash", [
       verifyReleaseScript,
@@ -10136,7 +10141,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
 
   it("pins curl configuration and protocol for allowed verification origins", async () => {
     const publicArguments = await captureFirstVerifyCurlArguments(
-      "https://jamesky.site",
+      "https://diesel.jamesky.site",
     );
     const loopbackArguments = await captureFirstVerifyCurlArguments(
       "http://127.0.0.1:8788",
@@ -10156,7 +10161,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     expect(publicProtocolIndex).toBeGreaterThanOrEqual(0);
     expect(publicArguments[publicProtocolIndex + 1]).toBe("=https");
     expect(publicArguments.at(-1)).toBe(
-      "https://jamesky.site/api/health",
+      "https://diesel.jamesky.site/api/health",
     );
 
     const loopbackProtocolIndex = loopbackArguments.indexOf("--proto");

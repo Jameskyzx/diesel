@@ -34,7 +34,11 @@ describe("security and immutable asset configuration", () => {
       resolve(process.cwd(), "deploy/nginx/jamesky.site.conf"),
       "utf8",
     );
-    expect(nginx.match(/Strict-Transport-Security/g)).toHaveLength(1);
+    // Each TLS server has one policy; redirects must retain HSTS too.
+    expect(nginx.match(/Strict-Transport-Security/g)).toHaveLength(2);
+    for (const server of nginx.split("server {").filter((block) => block.includes("listen 443 ssl;"))) {
+      expect(server.match(/Strict-Transport-Security/g)).toHaveLength(1);
+    }
     expect(nginx.indexOf("Strict-Transport-Security")).toBeLessThan(
       nginx.indexOf("location = /admin"),
     );

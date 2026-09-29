@@ -12,8 +12,8 @@ if [[ "${origin}" =~ ^http://127\.0\.0\.1:([0-9]{1,5})$ ]]; then
     exit 64
   fi
   local_origin=true
-elif [[ "${origin}" != "https://jamesky.site" ]]; then
-  echo "usage: verify-release.sh <http://127.0.0.1:PORT|https://jamesky.site> <expected-version>" >&2
+elif [[ "${origin}" != "https://diesel.jamesky.site" ]]; then
+  echo "usage: verify-release.sh <http://127.0.0.1:PORT|https://diesel.jamesky.site> <expected-version>" >&2
   exit 64
 fi
 [[ "${expected_version}" =~ ^[0-9a-f]{40}$ ]] || {

@@ -5,12 +5,15 @@
 
 [![CI](https://github.com/Jameskyzx/diesel/actions/workflows/ci.yml/badge.svg)](https://github.com/Jameskyzx/diesel/actions/workflows/ci.yml)
 
-[Live demo](https://jamesky.site) ·
-[World map](https://jamesky.site/map) ·
-[AI workspace](https://jamesky.site/chat) ·
+[Live demo](https://diesel.jamesky.site) ·
+[World map](https://diesel.jamesky.site/map) ·
+[AI workspace](https://diesel.jamesky.site/chat) ·
 [FDE case study](docs/FDE_CASE_STUDY.md) ·
 [Current status](docs/STATUS.md) ·
 [中文 README](README.zh-CN.md)
+
+The linked subdomain is the new deployment target. Until migration and readback
+are confirmed in [STATUS.md](docs/STATUS.md), use the local demo for this release.
 
 This project models the work behind an international diesel-engine sales
 decision: which rules apply to a country, date, application, and power band;
@@ -39,14 +42,14 @@ sales commitment.
 
 ### The golden workflow
 
-1. Select a country on the [world map](https://jamesky.site/map); the ISO3 URL
+1. Select a country on the [world map](https://diesel.jamesky.site/map); the ISO3 URL
    is shareable.
 2. Review current `effective` rules, future `adopted` rules, source links, and
    verification dates.
 3. Enter application, power, date, and optionally a model code. `product-fit-v2`
    returns compliance fit, query-date availability, and combined commercial
    readiness as separate deterministic fields.
-4. Ask the [AI workspace](https://jamesky.site/chat) for a comparison or sales
+4. Ask the [AI workspace](https://diesel.jamesky.site/chat) for a comparison or sales
    brief. Structured tool cards and citations remain distinct from model prose.
 5. Missing data, stale evidence, proposed rules, and absent certifications stay
    explicit. The system does not make optimistic geographic or power-band

@@ -1085,7 +1085,7 @@ test("localizes visible country names and dates while preserving the ISO query",
   );
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
-    /\/og\.jpg$/u,
+    "https://diesel.jamesky.site/og.jpg",
   );
   await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
     "content",

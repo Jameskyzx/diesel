@@ -16,6 +16,33 @@ async function handoffFunctions(): Promise<string> {
   return source.slice(0, -entry.length);
 }
 
+describe("Linux handoff failure diagnostics", () => {
+  it.each([TEST_RELEASE_SHA, "invalid-unit"])("limits diagnostics to an exact CI build: %s", async (releaseId) => {
+    const result = spawnSync("/bin/bash", ["-c", `${await handoffFunctions()}
+timeout() {
+  [[ "$1 $2 $3 $4 $5" == '--foreground --signal=TERM --kill-after=2s 10s journalctl' ]] || return 92
+  [[ "$6" == "--unit=diesel-build-$TEST_RELEASE.service" && "$7 $8 \${9}" == '--lines=60 --no-pager --output=cat' ]] || return 93
+  printf 'ERR_PNPM_FETCH_500\\n::error::untrusted\\nAI_API_KEY=sk-private-marker\\npostgresql://private-marker/db\\n'
+  for n in {1..70}; do printf 'row %s\\n' "$n"; done
+  return 1
+}
+linux_release_handoff_report_build_failure "$TEST_RELEASE"
+exit 23
+`], { env: { NODE_ENV: "test", PATH: "/usr/bin:/bin", TEST_RELEASE: releaseId }, encoding: "utf8", timeout: 5_000 });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(23);
+    if (releaseId === TEST_RELEASE_SHA) {
+      expect(result.stdout).toContain("CI builder | ERR_PNPM_FETCH_500");
+      expect(result.stdout).toContain("CI builder | : :error: :untrusted");
+      expect(result.stdout).not.toContain("::");
+      expect(result.stdout).not.toContain("private-marker");
+      expect(result.stdout.trimEnd().split("\n")).toHaveLength(60);
+    } else {
+      expect(result.stdout).toBe("");
+    }
+  });
+});
+
 describe("Linux handoff bounded systemd startup", () => {
   it.each([
     { state: "running", status: 0, transition: false, accepted: true },

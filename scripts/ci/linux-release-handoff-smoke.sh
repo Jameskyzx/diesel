@@ -483,6 +483,26 @@ LINUX_RELEASE_HANDOFF_RUNTIME_UID=''
 LINUX_RELEASE_HANDOFF_BUILDER_UID=''
 LINUX_RELEASE_HANDOFF_RUNTIME_GID=''
 LINUX_RELEASE_HANDOFF_BUILDER_GID=''
+LINUX_RELEASE_HANDOFF_BUILD_RELEASE_ID=''
+
+linux_release_handoff_report_build_failure() {
+  local release_id="$1"
+  [[ "${release_id}" =~ ^[0-9a-f]{40}$ ]] || return 0
+  # CI-only, exact synthetic unit, bounded output. Production secrets are never
+  # supplied to this build. Neutralize workflow-command delimiters, then prefix;
+  # suppress credential-like lines even in this isolated fixture.
+  timeout --foreground --signal=TERM --kill-after=2s 10s \
+    journalctl --unit="diesel-build-${release_id}.service" \
+    --lines=60 --no-pager --output=cat 2>/dev/null | awk '
+      NR <= 60 {
+        line = $0
+        gsub(/[[:cntrl:]]/, "", line)
+        if (tolower(line) ~ /(authorization|bearer|password|secret|api[_-]?key|sk-[a-z0-9]|postgres(ql)?:\/\/)/)
+          line = "[credential-like diagnostic line suppressed]"
+        gsub(/::/, ": :", line)
+        printf "CI builder | %.500s\n", line
+      }' || true
+}
 
 linux_release_handoff_remove_owned_group() {
   local name="$1"
@@ -526,6 +546,11 @@ linux_release_handoff_cleanup() {
   local runtime_user_removed=0
   trap - EXIT
   trap '' INT TERM HUP
+
+  if [[ "${original_status}" -ne 0 ]]; then
+    linux_release_handoff_report_build_failure \
+      "${LINUX_RELEASE_HANDOFF_BUILD_RELEASE_ID}"
+  fi
 
   if [[ "${LINUX_RELEASE_HANDOFF_BUILDER_USER_OWNED}" -eq 1 ]]; then
     if ! cleanup_uid="$(id -u diesel-build 2>/dev/null)" ||
@@ -998,6 +1023,7 @@ linux_release_handoff_main() {
   exec 8<>"${deploy_root}/.release-lifecycle.lock"
   flock -n 8
   export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8
+  LINUX_RELEASE_HANDOFF_BUILD_RELEASE_ID="${release_id}"
   (
     # Keep sourced shell options, traps, and function names inside this child;
     # the outer EXIT trap must remain authoritative for identities and temp root.

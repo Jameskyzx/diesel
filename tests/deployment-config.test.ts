@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { portfolioReleaseCountryIso3s } from "../src/domain/portfolio-evidence";
 
-describe("jamesky.site Nginx boundary", () => {
+describe("diesel.jamesky.site Nginx boundary", () => {
   it("proxies the public app while blocking privileged routes", async () => {
     const configurations = await Promise.all(
       ["jamesky.site.conf", "diesel-demo.conf"].map((filename) =>
@@ -18,8 +18,15 @@ describe("jamesky.site Nginx boundary", () => {
     const [configuration, alternateConfiguration] = configurations;
 
     expect(configuration).toContain(
-      "server_name jamesky.site www.jamesky.site;",
+      "server_name diesel.jamesky.site;",
     );
+    expect(configuration).toContain("server_name diesel.jamesky.site jamesky.site www.jamesky.site;");
+    expect(configuration).toContain("ssl_certificate /etc/letsencrypt/live/diesel.jamesky.site/fullchain.pem;");
+    const legacyRedirect = configuration.slice(configuration.lastIndexOf("server {"));
+    expect(legacyRedirect).toContain("server_name jamesky.site www.jamesky.site;");
+    expect(legacyRedirect).toContain("ssl_certificate /etc/letsencrypt/live/jamesky.site/fullchain.pem;");
+    expect(legacyRedirect).toContain("return 301 https://diesel.jamesky.site$request_uri;");
+    expect(legacyRedirect).not.toContain("proxy_pass");
     expect(configuration).toContain("client_max_body_size 10m;");
     expect(configuration).toContain("location = /api/chat {");
     expect(configuration).toContain("proxy_request_buffering off;");
@@ -104,10 +111,10 @@ describe("jamesky.site Nginx boundary", () => {
     }
 
     expect(alternateConfiguration).toContain(
-      "server_name 111.228.50.85 diesel.jamesky.site;",
+      "server_name 111.228.50.85;",
     );
     expect(alternateConfiguration).toContain(
-      "return 301 https://jamesky.site$request_uri;",
+      "return 301 https://diesel.jamesky.site$request_uri;",
     );
     expect(alternateConfiguration).not.toContain("proxy_pass");
 

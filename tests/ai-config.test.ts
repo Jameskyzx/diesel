@@ -192,7 +192,7 @@ describe("server AI configuration", () => {
       includeUsage: true,
     });
     expect(providerProfile).toMatchObject({
-      adapterContractVersion: 3,
+      adapterContractVersion: 4,
       enableThinking: false,
       includeUsage: true,
     });
@@ -218,12 +218,17 @@ describe("server AI configuration", () => {
     expect((body as { tools: unknown[] }).tools).toHaveLength(1);
     expect(body).toMatchObject({ tools: [{ function: { parameters: { required: ["query"], additionalProperties: false } } }] });
     expect(body).not.toHaveProperty("parallel_tool_calls");
+    expect(body).toMatchObject({ messages: [
+      { role: "system", content: expect.stringContaining("invoke the named tool exactly once") },
+      { role: "user", content: "usage request contract" },
+    ] });
   });
 
   it.each(["none", "auto"] as const)("preserves DeepSeek %s tool choice", async (toolChoice) => {
     const body = await captureStreamingRequestBody({ baseUrl: "https://api.deepseek.com", includeUsage: true, toolChoice });
     expect(body).toHaveProperty("tool_choice", toolChoice);
     expect((body as { tools: unknown[] }).tools).toHaveLength(2);
+    expect(JSON.stringify(body)).not.toContain("invoke the named tool exactly once");
   });
 
   it("does not serialize required tools for generic compatible endpoints", async () => {

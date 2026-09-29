@@ -37,7 +37,7 @@ describe("portfolio versioned live-eval report schema", () => {
     }).success).toBe(false);
   });
 
-  it.each([2, 3])("retains v1 profiles and admits only non-thinking provider v%i profiles", (version) => {
+  it.each([2, 3, 4])("retains v1 profiles and admits only non-thinking provider v%i profiles", (version) => {
     const profile = {
       adapter: "@ai-sdk/openai-compatible",
       adapterContractVersion: version,
@@ -48,7 +48,7 @@ describe("portfolio versioned live-eval report schema", () => {
     expect(liveEvalProviderProfileSchema.safeParse(profile).success).toBe(true);
     expect(liveEvalProviderProfileSchema.safeParse({ ...profile, adapterContractVersion: 1 }).success).toBe(true);
     for (const invalid of [
-      { ...profile, adapterContractVersion: 4 },
+      { ...profile, adapterContractVersion: 5 },
       { ...profile, enableThinking: true },
       { ...profile, enableThinking: null },
       { ...profile, adapter: "portfolio-demo", endpointSha256: null, enableThinking: null, includeUsage: false },

@@ -16,6 +16,7 @@ import {
   isDemoJurisdiction,
   isDemoMarketMetric,
   isDemoRegulation,
+  isDemoRegulationComparisonRow,
   publicMapClassification,
 } from "@/features/countries/publication";
 import {
@@ -392,7 +393,18 @@ async function getCountryDetailsFromRepositories(
             countryIso3s: [iso3],
             powerKw,
           },
-          repositories,
+          {
+            countryRepository,
+            regulationRepository: {
+              async findForComparison(queryInput, queryOptions) {
+                const rows = await repositories.regulationRepository
+                  .findForComparison(queryInput, queryOptions);
+                return includeDemoData
+                  ? rows
+                  : rows.filter((row) => !isDemoRegulationComparisonRow(row));
+              },
+            },
+          },
           options,
         ).then((comparison) => {
           throwIfRequestAborted(options.signal);

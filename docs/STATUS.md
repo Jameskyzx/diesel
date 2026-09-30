@@ -38,11 +38,11 @@ intentionally fails for merely local or staged evidence.
   "browserSnapshot": {
     "artifactByteLength": 177132,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "7ceb1f116bae6ac1ec3ac754e79f7148828693355c34b834daa439bcebd31467",
-    "baseHeadCommit": "ac8a3451177684183ddfcce27e6f3ded022f0eb8",
-    "evaluatedCommit": "ac8a3451177684183ddfcce27e6f3ded022f0eb8",
-    "observedAt": "2026-09-30T01:22:22.209Z",
-    "runId": "ec29ff3f-5fd3-4e26-b467-55e1e3ffc96c",
+    "artifactSha256": "b96ec443b2f715365f4e9908385736019f07ec3ae1ab1b4679e1b1fc8e7be211",
+    "baseHeadCommit": "305a90976b817a5ac2001058ca264517eb951afc",
+    "evaluatedCommit": "305a90976b817a5ac2001058ca264517eb951afc",
+    "observedAt": "2026-09-30T06:16:12.273Z",
+    "runId": "bbb92275-9b27-403e-a891-5adbb88ebfdc",
     "runs": [
       {
         "collected": 413,
@@ -79,7 +79,7 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "09f2f08065220350913209a9b1a6abc916589e6ec1605122dab0836b96f9d8cb",
+      "digest": "d0085c5ae0d42a0876e032156f2cef8c310fc91ad2ba8a4629a998131370a4bc",
       "fileCount": 345
     },
     "version": "diesel-playwright-evidence-v1",
@@ -101,11 +101,11 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20260930T005441508Z-ca06a8d6-e141-4fc6-9abc-b309adfd4702.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20260930T060116800Z-be3aa8f6-69a6-4713-99da-2ea98e75910e.json",
     "attemptCount": 37,
     "complete": true,
     "completedCount": 37,
-    "evaluatedAt": "2026-09-30T00:54:41.508Z",
+    "evaluatedAt": "2026-09-30T06:01:16.800Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -114,24 +114,24 @@ intentionally fails for merely local or staged evidence.
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
-    "latestOutcome": "passed",
+    "latestOutcome": "failed",
     "latestSampleCount": 18,
     "modelStepCount": 37,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "ca06a8d6-e141-4fc6-9abc-b309adfd4702",
+    "runId": "be3aa8f6-69a6-4713-99da-2ea98e75910e",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "634a333b3219bfce17d25ce5ad90dfe910d95594800b034acf71349b569a31cd",
+      "digest": "012e7ab72f6d9463cf7e40930b407ad4dea817b96867e445fa4f26577574b9bb",
       "fileCount": 298,
       "status": "captured"
     },
     "suiteVersion": "sales-chat-live-v25",
     "suiteCaseCount": 18,
     "terminationReason": "completed",
-    "thresholdsPassed": true,
+    "thresholdsPassed": false,
     "tokenUsageComplete": true,
-    "totalTokens": 97515
+    "totalTokens": 97433
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -161,6 +161,16 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-30 05:57 UTC：PR #40 的依赖审计被 brace-expansion 两项高危阻断，已更新
+  现有间接依赖的官方同主版本补丁；12 项实际安装路径回归和安全审计通过，CI 安装边界
+  摘要链同步，未新增风险豁免。锁文件绑定的截图、浏览器、模型与完整测试证据将重采，
+  此前失败记录保留；生产仍待正常门禁、事务恢复和真实部署验收。
+- 2026-09-30：`0b5207c` 已通过 PR/master CI，真实主机构建也成功，但激活及自动回滚
+  均在 PM2 启动后的进程身份校验处失败。只读核验确认旧公开版本仍在运行，环境和 Nginx
+  已恢复，账本仍为 `PENDING:none`，不能记为上线或回滚完成。隔离真实 Next 启动已复现
+  标题异步切换；本轮仅增加严格有界的启动等待、这一事件的受控恢复入口及回归测试。
+  修复仍须完整测试、新 CI 与真实恢复/部署验收。此前 `9cbeeef` 的未激活状态已完成
+  保留原件与独立副本的归档，永久协议未重建，备份未删除。
 - 2026-09-30 01:37 UTC：完整 Vitest 实际完成 270 文件、8,180 用例，8,173 passed /
   6 skipped / 1 failed。唯一报错来自文档去重规则：进度段重复引用了应仅出现在
   规范台账的数值。此次仅校正文档引用和重复表述，测试断言与已有工件保持不变；
@@ -1250,9 +1260,9 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-09-30T00:54:41.508Z`；run ID `ca06a8d6-e141-4fc6-9abc-b309adfd4702`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
-  `97515 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20260930T005441508Z-ca06a8d6-e141-4fc6-9abc-b309adfd4702.json`；source fingerprint `634a333b3219bfce17d25ce5ad90dfe910d95594800b034acf71349b569a31cd` across `298` files。
+- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-09-30T06:01:16.800Z`；run ID `be3aa8f6-69a6-4713-99da-2ea98e75910e`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
+  `97433 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20260930T060116800Z-be3aa8f6-69a6-4713-99da-2ea98e75910e.json`；source fingerprint `012e7ab72f6d9463cf7e40930b407ad4dea817b96867e445fa4f26577574b9bb` across `298` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、
@@ -1855,15 +1865,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `ec29ff3f-5fd3-4e26-b467-55e1e3ffc96c`，artifact SHA-256 `7ceb1f116bae6ac1ec3ac754e79f7148828693355c34b834daa439bcebd31467`；
-  observedAt `2026-09-30T01:22:22.209Z`，clean worktree / base HEAD `ac8a3451177684183ddfcce27e6f3ded022f0eb8`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `bbb92275-9b27-403e-a891-5adbb88ebfdc`，artifact SHA-256 `b96ec443b2f715365f4e9908385736019f07ec3ae1ab1b4679e1b1fc8e7be211`；
+  observedAt `2026-09-30T06:16:12.273Z`，clean worktree / base HEAD `305a90976b817a5ac2001058ca264517eb951afc`；
   `public` = `348 passed / 65 skipped / 0 failed / 0 flaky / 413 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 420 passed / 67 skipped / 0 failed / 0 flaky / 487 collected。artifact 为 177132 bytes；
-  browser source fingerprint 为 345 files / `09f2f08065220350913209a9b1a6abc916589e6ec1605122dab0836b96f9d8cb`。
-  因运行发生在 clean worktree，`evaluatedCommit=ac8a3451177684183ddfcce27e6f3ded022f0eb8`；它证明该本地候选提交上的浏览器验收，
+  browser source fingerprint 为 345 files / `d0085c5ae0d42a0876e032156f2cef8c310fc91ad2ba8a4629a998131370a4bc`。
+  因运行发生在 clean worktree，`evaluatedCommit=305a90976b817a5ac2001058ca264517eb951afc`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

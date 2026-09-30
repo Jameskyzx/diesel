@@ -1395,6 +1395,22 @@ PM2 进程定义，再从目标 ecosystem 启动；这是为了确保首次从�
 ecosystem；两次之间及之后读取 `/proc/<pid>/cwd`、`exe` 与有界 `cmdline`，分别绑定实际
 release、固定 Node binary 和由目标 release 的 Next package version 推导的进程标题。
 实际 OS uid/gid 也必须等于 `diesel`。内部测试可显式传隔离 proc root，但生产 CLI 永远固定
+`/proc`。2026-09-30 隔离的真实 Next 启动探针确认：进程最初保留精确 Node 启动 argv，约
+574 ms 后才设置 `next-server (v...)` 标题，PM2 的 `online` 不能代替这一完成条件。
+activation 和 rollback 现在只在刚刚启动后允许最多 30 秒的有界等待；唯一可等待状态是
+精确启动 argv，且每轮仍验证同一 PID、版本、配置、cwd 和 executable。未知标题、PID/配置
+漂移立即失败；已见正式标题后不得退回启动状态。每次 PM2 子查询另有最多 5 秒超时。
+既有运行进程和 durable/committed 验证仍只接受正式标题，不使用启动宽限。
+
+失败发布 `0b5207c17a6b98260733e0e4f470376f23e377b2` 的回滚因同一时序问题停留在
+`PENDING:none`。新 controller 的 `rollback-host-release.sh <controller-sha>
+--check-pending-0b5207c` / `--recover-pending-0b5207c` 仅处理这一事件：先绑定新 controller
+的完整输入 manifest、固定 failed/previous SHA、原有协议 hash、PENDING 状态及失败候选的完整
+构建 digest，再复用完整 host rollback。只有旧进程、持久化状态及旧版 verifier 全部通过，
+既有状态机才将其迁移为 `ROLLED_BACK`。不修改失败候选，不删除备份，不重建协议，不手写完成
+marker。controller 必须先经正常 CI 授权 staging；恢复完成后才能开始它的正常发布。
+
+生产 proc root 固定为
 `/proc`，不能由环境覆盖。VPS 若尚无 `pm2-root.service`，先以清洁 CLI 环境执行一次
 `pm2 startup systemd -u root --hp /root`；每次保存 dump 后都 fail-closed 确认该 unit
 不只是 `enabled`/`active`：版本化 validator 用两次 `systemctl show` 精确绑定

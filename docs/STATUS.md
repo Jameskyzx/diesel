@@ -161,13 +161,17 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-30 01:37 UTC：完整 Vitest 实际完成 270 文件、8,180 用例，8,173 passed /
+  6 skipped / 1 failed。唯一报错来自文档去重规则：进度段重复引用了应仅出现在
+  规范台账的数值。此次仅校正文档引用和重复表述，测试断言与已有工件保持不变；
+  重新采集完整测试前不发布。
 - 2026-09-30 01:22 UTC：从干净 `ac8a345` 串行重采四套浏览器证据成功，
   420 passed / 67 skipped / 0 failed / 0 flaky，canonical artifact 与上方摘要
   已同步。此前安装指纹拒绝记录保留，不改写为成功；本轮源码及安装目录保持稳定。
   旧版本预检修正后的 304 项聚焦回归、lint/typecheck/build 均通过；接下来冻结完整
   源码重采 Vitest，然后等待新 PR/master CI。生产归档及新应用切换尚未执行。
-- 2026-09-30 01:07 UTC：新依赖下的真实 DeepSeek 评估 18/18 通过，37 次调用、
-  97,515 tokens，已原样归档；英文截图已重采并目视核验。公共浏览器测试实际
+- 2026-09-30 01:07 UTC：新依赖下的模型观测已原样归档，数值和判定见唯一台账；
+  英文截图已重采并目视核验。公共浏览器测试实际
   348 passed / 65 skipped，但并行离线评估改写 Vitest 缓存，安装指纹门禁拒绝
   整轮浏览器证据，未更新 canonical artifact；将串行重跑，不豁免缓存检查。
   归档前验收改用受信任的旧 release verifier，避免依赖尚未构建的新候选；
@@ -1851,15 +1855,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `547cf8d2-9a3c-427a-92bf-e7b1bb30ec0a`，artifact SHA-256 `4b5e1a2980e6786bdaaa6b43b634c5f54648e7ceeff9200a92c1ae1eb64ea0aa`；
-  observedAt `2026-09-29T15:06:19.276Z`，clean worktree / base HEAD `35853a38b2bf1dd3c235390bc6d9b805fd27a6b3`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `ec29ff3f-5fd3-4e26-b467-55e1e3ffc96c`，artifact SHA-256 `7ceb1f116bae6ac1ec3ac754e79f7148828693355c34b834daa439bcebd31467`；
+  observedAt `2026-09-30T01:22:22.209Z`，clean worktree / base HEAD `ac8a3451177684183ddfcce27e6f3ded022f0eb8`；
   `public` = `348 passed / 65 skipped / 0 failed / 0 flaky / 413 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 420 passed / 67 skipped / 0 failed / 0 flaky / 487 collected。artifact 为 177132 bytes；
-  browser source fingerprint 为 345 files / `0139712cd729a6f89bcd542c46fade68819a209ee088d686b1c77ad3fb684e2c`。
-  因运行发生在 clean worktree，`evaluatedCommit=35853a38b2bf1dd3c235390bc6d9b805fd27a6b3`；它证明该本地候选提交上的浏览器验收，
+  browser source fingerprint 为 345 files / `09f2f08065220350913209a9b1a6abc916589e6ec1605122dab0836b96f9d8cb`。
+  因运行发生在 clean worktree，`evaluatedCommit=ac8a3451177684183ddfcce27e6f3ded022f0eb8`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

@@ -850,6 +850,10 @@ identity, Nginx syntax and exact environment/Nginx basis bytes. The filesystem
 helper additionally pins this incident's previous release and permanent protocol
 hash. It rejects extra files, active markers, a built candidate, drift, unsafe
 metadata, links, existing archives and interrupted recovery guards.
+The pre-archive page/readiness check uses the trusted **previous release's**
+verifier, since the controller is deliberately unbuilt and the previous runtime
+does not implement the new public contract. After normal activation, the new
+release's full verifier remains mandatory; this preflight is not its substitute.
 
 After the new controller has passed normal master CI and staging:
 

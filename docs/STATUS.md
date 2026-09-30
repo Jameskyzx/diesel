@@ -161,6 +161,12 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-30 01:07 UTC：新依赖下的真实 DeepSeek 评估 18/18 通过，37 次调用、
+  97,515 tokens，已原样归档；英文截图已重采并目视核验。公共浏览器测试实际
+  348 passed / 65 skipped，但并行离线评估改写 Vitest 缓存，安装指纹门禁拒绝
+  整轮浏览器证据，未更新 canonical artifact；将串行重跑，不豁免缓存检查。
+  归档前验收改用受信任的旧 release verifier，避免依赖尚未构建的新候选；
+  旧验收及新 PM2 进程身份校验均已在真实主机只读通过，正式切换后仍执行新完整验收。
 - 2026-09-30 00:47 UTC：用户明确授权保留并归档 `9cbeeef` 的四文件未激活状态。
   新增仅针对该事故的版本化归档入口，保留原 inode、独立副本及诚实审计收据；
   永久 V1 manifest 不变，处理中断保留阻断发布的 guard，不伪造完成标记。

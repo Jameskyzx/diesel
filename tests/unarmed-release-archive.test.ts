@@ -68,6 +68,14 @@ afterEach(() => {
 });
 
 describe("incident-specific never-activated archival", () => {
+  it("checks the previous runtime without depending on the unbuilt controller", () => {
+    const source = readFileSync(shell, "utf8");
+    expect(source).toContain('verifier="/opt/diesel/releases/${previous}/scripts/deploy/verify-release.sh"');
+    expect(source).toContain('rollback_require_trusted_release_path "${verifier}" file yes');
+    expect(source).not.toContain('verifier="${release}/scripts/deploy/verify-release.sh"');
+    expect(source).not.toContain("rollback_validate_durable_pm2_state ");
+  });
+
   it("checks without writing, moving or modifying any backup", () => {
     const f = fixture();
     const before = lstatSync(f.state);

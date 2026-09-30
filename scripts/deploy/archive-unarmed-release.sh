@@ -72,8 +72,10 @@ rollback_validate_pm2_process "${previous}" "/opt/diesel/releases/${previous}" \
   /opt/diesel/current /proc "${fixed_path}" "${node}" "${runtime_uid}" "${runtime_gid}" \
   "${pm2_exec}" "${PATH}" 8>&- 9>&-
 /usr/sbin/nginx -t 8>&- 9>&-
-verifier="${release}/scripts/deploy/verify-release.sh"
-rollback_require_trusted_release_path "${verifier}" file yes 'versioned release verifier'
+# The controller is intentionally unbuilt. Validate the old runtime with its
+# own trusted verifier; the new contract is required after normal activation.
+verifier="/opt/diesel/releases/${previous}/scripts/deploy/verify-release.sh"
+rollback_require_trusted_release_path "${verifier}" file yes 'previous release verifier'
 /usr/sbin/runuser -u diesel -- /usr/bin/env -i HOME=/var/lib/diesel PATH="${fixed_path}" \
   /usr/bin/bash -- "${verifier}" http://127.0.0.1:8788 "${previous}" 8>&- 9>&-
 

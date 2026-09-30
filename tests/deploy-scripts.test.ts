@@ -8976,7 +8976,8 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
           "wrong-release",
         );
         const failedAttemptMutations = await readMutationLog(fixture);
-        expect(failedAttemptMutations).toContain("pm2-save");
+        // Startup identity is now proven before persisting a replacement.
+        expect(failedAttemptMutations).not.toContain("pm2-save");
         expect(failedAttemptMutations).not.toContain("systemctl-reload:nginx");
         expect(failedAttemptMutations).not.toContain("verify:");
         expect(await readLifecycleLog(fixture)).not.toContain("pm2-helper:");

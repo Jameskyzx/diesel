@@ -2753,8 +2753,17 @@ current_link=${quoteShell(currentLink)}
 proc_cwd=${quoteShell(join(procProcessRoot, "cwd"))}
 proc_exe=${quoteShell(join(procProcessRoot, "exe"))}
 proc_cmdline=${quoteShell(join(procProcessRoot, "cmdline"))}
+startup_count=${quoteShell(join(root, "pm2-startup-count"))}
 case "\${1:-}" in
   jlist)
+    if [[ -f "$startup_count" ]]; then
+      count="$(<"$startup_count")"
+      count="$((count + 1))"
+      printf '%s' "$count" >"$startup_count"
+      if [[ "$count" -ge 3 && ! -f ${quoteShell(join(root, "pm2-start-never-ready"))} ]]; then
+        printf 'next-server (v16.2.12)\\0' >"$proc_cmdline"
+      fi
+    fi
     if [[ -f "$publication_marker_injection" ]]; then
       marker_name="$(<"$publication_marker_injection")"
       case "$marker_name" in
@@ -2812,6 +2821,8 @@ case "\${1:-}" in
     elif [[ -f "$offline_process" ]]; then
       offline_identity="\${identity_json/\"status\":\"online\"/\"status\":\"stopped\"}"
       printf '[{"name":"diesel-demo","pid":321,"pm2_env":%s}]\\n' "$offline_identity"
+    elif [[ -f "$startup_count" && -f ${quoteShell(join(root, "pm2-start-pid-change"))} && "$count" -ge 2 ]]; then
+      printf '[{"name":"diesel-demo","pid":322,"pm2_env":%s}]\\n' "$identity_json"
     elif [[ -f "$state" ]]; then
       printf '[{"name":"diesel-demo","pid":321,"pm2_env":%s}]\\n' "$identity_json"
     else
@@ -2846,6 +2857,13 @@ case "\${1:-}" in
     /bin/rm -f "$proc_exe"
     /bin/ln -s ${quoteShell(nodeBinary)} "$proc_exe"
     printf 'next-server (v16.2.12)\\0' >"$proc_cmdline"
+    if [[ -f ${quoteShell(join(root, "pm2-start-delayed"))} ]]; then
+      printf '0' >"$startup_count"
+      ${quoteShell(process.execPath)} -e 'require("node:fs").writeFileSync(process.argv[1], Buffer.from([process.argv[2], "--env-file=.env.production.local", "node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", "8788", ""].join("\\0")))' "$proc_cmdline" ${quoteShell(nodeBinary)}
+    fi
+    if [[ -f ${quoteShell(join(root, "pm2-start-unknown-title"))} ]]; then
+      printf 'unknown-process\\0' >"$proc_cmdline"
+    fi
     printf 'pm2-start:%s:%s\\n' "$APP_VERSION" "$2" >>"$log"
     printf 'pm2-start:%s:%s\\n' "$APP_VERSION" "$2" >>"$lifecycle_log"
     ;;
@@ -4876,6 +4894,111 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       expect(cleanupFsyncIndex).toBeGreaterThan(switchFailureIndex);
       expect(events).not.toContain("current-switch");
       expect(events).not.toContain(`pm2-start:${TEST_RELEASE_SHA}:`);
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  it.each([
+    ["--check-pending-0b5207c", "none", 0],
+    ["--recover-pending-0b5207c", "none", 0],
+    ["--recover-pending-0b5207c", "preflight", 45],
+    ["--recover-pending-0b5207c", "rollback", 46],
+    ["--recover-pending-0b5207c", "scan", 47],
+  ] as const)("routes incident recovery %s with %s failure honestly", async (mode, fault, expectedCode) => {
+    const root = await mkdtemp(join(tmpdir(), "diesel-recovery-routing-"));
+    try {
+      const source = await readFile(rollbackHostReleaseScript, "utf8");
+      const main = source.slice(source.indexOf("rollback_host_release_main() ("),
+        source.indexOf("\nrollback_prepare_pending_incident() {"));
+      expect(main).toContain("local target_release");
+      const entry = join(root, "entry.sh");
+      const log = join(root, "calls");
+      await writeExecutable(entry, [
+        "#!/bin/bash", "set -Eeuo pipefail",
+        `rollback_prepare_pending_incident() { printf 'preflight:%s\\n' "$1" >>${quoteShell(log)}; return ${fault === "preflight" ? 45 : 0}; }`,
+        `rollback_host_release() { printf 'rollback:%s:%s\\n' "$1" "$2" >>${quoteShell(log)}; return ${fault === "rollback" ? 46 : 0}; }`,
+        `host_activation_ledger_scan_all() { printf 'scan:%s\\n' "$3" >>${quoteShell(log)}; return ${fault === "scan" ? 47 : 0}; }`,
+        main, 'rollback_host_release_main "$@"',
+      ].join("\n"));
+      const result = await execFileAsync("bash", [entry, TEST_RELEASE_SHA, mode])
+        .then(() => 0, (error: unknown) => (error as { code: number }).code);
+      expect(result).toBe(expectedCode);
+      const calls = await readFile(log, "utf8");
+      expect(calls).toContain(`preflight:${TEST_RELEASE_SHA}`);
+      if (fault === "preflight") expect(calls).not.toContain("rollback:");
+      else expect(calls).toContain(`rollback:0b5207c17a6b98260733e0e4f470376f23e377b2:${mode === "--check-pending-0b5207c" ? "--check" : "--abort-if-uncommitted"}`);
+      if (fault === "preflight" || fault === "rollback" || mode === "--check-pending-0b5207c")
+        expect(calls).not.toContain("scan:");
+      else expect(calls).toContain("scan:zero-active");
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("forbids invoking production incident recovery through a sourced test seam", async () => {
+    const result = await execFileAsync("bash", ["-c", 'source "$1"; rollback_prepare_pending_incident "$2"',
+      "recovery-test", rollbackHostReleaseScript, TEST_RELEASE_SHA])
+      .then(() => 0, (error: unknown) => (error as { code: number }).code);
+    expect(result).toBe(64);
+  });
+
+  it.each(["activation", "rollback"] as const)(
+    "waits for the exact Next startup transition during %s",
+    async (operation) => {
+      const fixture = operation === "activation"
+        ? await createActivationFixture() : await createRollbackFixture();
+      try {
+        await writeFile(join(fixture.root, "pm2-start-delayed"), "yes");
+        const result = operation === "activation"
+          ? await executeActivation(fixture)
+          : await executeRollback(fixture, "--abort-if-uncommitted");
+        expect(result.exitCode ?? 0, result.stderr).toBe(0);
+        expect(Number(await readFile(join(fixture.root, "pm2-startup-count"), "utf8"))).toBeGreaterThanOrEqual(3);
+        expect(await readMutationLog(fixture)).toContain("pm2-save");
+      } finally {
+        await rm(fixture.root, { force: true, recursive: true });
+      }
+    }, 30_000,
+  );
+
+  it.each([
+    ["pm2-start-pid-change", 0],
+    ["pm2-start-unknown-title", 0],
+    ["pm2-live-args-drift", 0],
+    ["pm2-live-uid-drift", 0],
+    ["pm2-live-env-version-drift", 0],
+    ["pm2-start-never-ready", 30_000],
+  ] as const)("rejects startup %s without saving or terminalizing", async (fault, minimumMs) => {
+    const fixture = await createRollbackFixture();
+    try {
+      await writeFile(join(fixture.root, "pm2-start-delayed"), "yes");
+      await writeFile(join(fixture.root, fault), "yes");
+      const started = performance.now();
+      const result = await executeRollback(fixture, "--abort-if-uncommitted");
+      expect(result.exitCode).toBe(70);
+      expect(result.stderr).toContain("rollback process identity validation failed");
+      expect(performance.now() - started).toBeGreaterThanOrEqual(minimumMs);
+      expect(await readMutationLog(fixture)).not.toContain("pm2-save");
+      expect(await readLifecycleLog(fixture)).not.toContain("ledger-transition:");
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 45_000);
+
+  it("does not grant a startup grace period to committed-state validation", async () => {
+    const fixture = await createRollbackFixture();
+    try {
+      await writePublishStateMarker(fixture, "PUBLISH_FINALIZED");
+      await writeFile(join(fixture.root, "ledger-terminal"), "COMMITTED:PUBLISH_FINALIZED\n");
+      await writeFile(join(fixture.procRoot, "321", "cmdline"), Buffer.from([
+        fixture.nodeBinary, "--env-file=.env.production.local", "node_modules/next/dist/bin/next",
+        "start", "--hostname", "127.0.0.1", "--port", "8788", "",
+      ].join("\0")));
+      const result = await executeRollback(fixture, "--validate-committed");
+      expect(result.exitCode).toBe(70);
+      expect(result.stderr).toContain("rollback process identity validation failed");
+      expect(await readMutationLog(fixture)).toBe("");
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
     }

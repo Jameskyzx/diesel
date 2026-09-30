@@ -1,20 +1,20 @@
 {
   "command": "pnpm test",
   "complete": true,
-  "completedAt": "2026-09-30T06:29:43.958Z",
+  "completedAt": "2026-09-30T10:01:23.611Z",
   "configPath": "vitest.config.ts",
   "provenance": {
-    "baseHeadCommit": "e13e13470e9870c2aa356b4345e84915ba6b4d61",
-    "evaluatedCommit": "e13e13470e9870c2aa356b4345e84915ba6b4d61",
+    "baseHeadCommit": "bdb852d72f12441d639b7e324d6c40402573e563",
+    "evaluatedCommit": "bdb852d72f12441d639b7e324d6c40402573e563",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "74772d80ed69c96ba2b2c563986eee4312fa706f53b39e637cd9f1e2312c7e35",
-      "fileCount": 863
+      "digest": "3a2c1abb5754ce9a810c5e69810f1286fe224a007eb1ffe55041bcf5697de4ba",
+      "fileCount": 864
     },
     "worktreeState": "clean"
   },
-  "runId": "177cf1e6-18f1-4545-bc8b-beff155195ec",
-  "startedAt": "2026-09-30T06:18:28.899Z",
+  "runId": "da095206-a0d7-413e-b98a-8b25a82b33de",
+  "startedAt": "2026-09-30T09:47:32.308Z",
   "tests": [
     {
       "id": "0005420a555cc43ee81536366b23ecca4cd57c5195d3eb883e1043fd9a7f6dda",
@@ -2066,6 +2066,10 @@
     },
     {
       "id": "0f3c4f761263030379f9137a2557aedfdb5ac5c373f0296a95a53a94d71540da",
+      "status": "passed"
+    },
+    {
+      "id": "0f413802a0fa4ba873d77293969772bb58b27164d23e0702074eac1a0d452ac6",
       "status": "passed"
     },
     {
@@ -7941,6 +7945,10 @@
       "status": "passed"
     },
     {
+      "id": "3cc747fc65162479b3328021f4204639f44bf35f356d3039e562e2125a947b0f",
+      "status": "passed"
+    },
+    {
       "id": "3cc99839fbadabf59dd0dec9a72a5af39555c953ded5eb799897da903d2d54ae",
       "status": "passed"
     },
@@ -8790,6 +8798,10 @@
     },
     {
       "id": "43c1427fbfe9c6cac58b88cb34613e27c8001bc2eea353090d04c6d60b1eaf8b",
+      "status": "passed"
+    },
+    {
+      "id": "43cd660be2eb36e5996f9d8b48220768f19a633290a514e0b8b9942def0301e6",
       "status": "passed"
     },
     {
@@ -32846,11 +32858,11 @@
     }
   ],
   "totals": {
-    "collectedFiles": 271,
-    "collectedSuites": 675,
-    "collectedTests": 8207,
+    "collectedFiles": 272,
+    "collectedSuites": 677,
+    "collectedTests": 8210,
     "failedTests": 0,
-    "passedTests": 8201,
+    "passedTests": 8204,
     "pendingTests": 0,
     "skippedTests": 6,
     "todoTests": 0

@@ -172,9 +172,9 @@ governance_run_node() {
 
 governance_run_tsx() {
   if [[ "${GOVERNANCE_FIXED_NODE_RUNNER}" -eq 1 ]]; then
-    "${GOVERNANCE_NODE_BINARY}" --import tsx "$@"
+    "${GOVERNANCE_NODE_BINARY}" --conditions=react-server --import tsx "$@"
   else
-    corepack pnpm exec tsx "$@"
+    corepack pnpm exec tsx --conditions=react-server "$@"
   fi
 }
 

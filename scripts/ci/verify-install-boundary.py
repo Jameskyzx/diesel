@@ -133,7 +133,7 @@ if present:
     fail("root install lifecycle scripts are forbidden: " + ", ".join(present))
 
 expected_workspace_sha256 = (
-    "6bc023c188caab624b18bd99690abb5470bcb8370f4eadf790ff9b3ee6c8ad0d"
+    "524851418e0b1b411e665655578e2a0fcc967f08f3581c3ffb4a3edac184084a"
 )
 if hashlib.sha256(workspace_bytes).hexdigest() != expected_workspace_sha256:
     fail("pnpm-workspace.yaml does not match the reviewed execution config")

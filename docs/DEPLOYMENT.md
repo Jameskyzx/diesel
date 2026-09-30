@@ -833,6 +833,58 @@ FD 8 路径检查通过 resolver 自身的 `/proc/self/fd/8` 读取继承的描�
 锁路径、固定编号和同一 OFD 的非阻塞 flock 验证保持不变。Linux 回归及真实构建 smoke
 必须覆盖外层 FD 8 关闭、仅子进程打开并持锁的路径，不得预先打开父进程 FD 来掩盖错误。
 
+### Incident-specific unarmed archival / 本次未激活状态归档
+
+After the permanent V1 protocol was initialized, candidate
+`9cbeeef340ca7570b7f84175451383363acc42bb` stopped before activation on the native
+systemd identity check. Its state has exactly the four pre-switch basis files,
+with no anchor, pending/governance marker or build output. The operator explicitly
+authorized preserving and archiving this never-activated state, not resetting
+the protocol or labeling it rolled back.
+
+`archive-unarmed-release.sh` is an incident-specific entry from a **newly staged,
+CI-authorized controller**. It accepts no target, filesystem or runtime override.
+It verifies both immutable release manifests, holds the existing lifecycle and
+build lock inodes, scans the ledger, checks the previous live release, PM2/systemd
+identity, Nginx syntax and exact environment/Nginx basis bytes. The filesystem
+helper additionally pins this incident's previous release and permanent protocol
+hash. It rejects extra files, active markers, a built candidate, drift, unsafe
+metadata, links, existing archives and interrupted recovery guards.
+
+After the new controller has passed normal master CI and staging:
+
+```bash
+/usr/bin/env -i HOME=/root PATH=/usr/sbin:/usr/bin:/sbin:/bin \
+  /bin/bash /opt/diesel/releases/<controller-full-sha>/scripts/deploy/archive-unarmed-release.sh \
+  <controller-full-sha> --check
+/usr/bin/env -i HOME=/root PATH=/usr/sbin:/usr/bin:/sbin:/bin \
+  /bin/bash /opt/diesel/releases/<controller-full-sha>/scripts/deploy/archive-unarmed-release.sh \
+  <controller-full-sha> --apply
+```
+
+The original four-file directory is atomically moved, preserving file inodes, to
+`/opt/diesel/host-migrations/20260930-unarmed-9cbeeef/originals`; an independently
+verified copy and root-only prepared/archived receipts remain beside it. Receipts
+record hashes and the honest `never-activated` classification, never secret bytes
+or fabricated terminal markers. The permanent protocol file is not rewritten.
+No database mutation, environment install, Nginx reload or PM2 repair occurs.
+
+Before any move, a durable `.unarmed-archive-in-progress` guard is written under
+the active backup root. Ordinary ledger scans reject this hidden file. It is
+removed only after the originals, independent copy and archived receipt are
+durable and verified. **An interrupted operation intentionally stays blocked**:
+preserve the guard and both trees for incident review; do not blindly retry,
+delete the guard, reinitialize V1 or synthesize a rollback marker. Successful
+archival permits the fresh release's normal orchestrator; it does not itself
+publish a release or authorize reuse of the failed candidate.
+
+中文：该入口仅处理已获授权的 `9cbeeef` 四文件未激活事故，从新 CI 通过的不可变候选
+执行，不能传入任意目标。持有两把现有锁，验证版本、PM2/systemd、健康检查、Nginx、
+环境及协议摘要；发现任何漂移立即停止。原文件保留 inode 并移入上述 `originals`，
+旁边保存独立校验副本及仅 root 可读的诚实收据。处理中断会留下阻断普通发布的持久
+guard，必须保留并按事故重新审查，不得删除 guard、重置协议或伪造回滚完成记录。
+归档不重启服务、不操作数据库；成功后仍须执行新候选的正常发布流程。
+
 ### One-time pre-protocol host migration / 一次性旧主机迁移
 
 The read-only 2026-09-29 preflight found eight historical `product` / `archived`

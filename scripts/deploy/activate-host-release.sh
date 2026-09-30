@@ -803,7 +803,7 @@ activate_host_release() (
     NODE_ENV=production \
     "${pm2_command[@]}" start "${current_ecosystem_path}" 8>&-
 
-  rollback_validate_pm2_process \
+  rollback_wait_for_pm2_process \
     "${release_id}" "${release_dir}" "${current_link}" \
     "${proc_root}" "${fixed_vps_path}" "${node_binary}" \
     "${runtime_uid}" "${runtime_gid}" \

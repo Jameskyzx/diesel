@@ -38,11 +38,11 @@ intentionally fails for merely local or staged evidence.
   "browserSnapshot": {
     "artifactByteLength": 177132,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "7ceb1f116bae6ac1ec3ac754e79f7148828693355c34b834daa439bcebd31467",
-    "baseHeadCommit": "ac8a3451177684183ddfcce27e6f3ded022f0eb8",
-    "evaluatedCommit": "ac8a3451177684183ddfcce27e6f3ded022f0eb8",
-    "observedAt": "2026-09-30T01:22:22.209Z",
-    "runId": "ec29ff3f-5fd3-4e26-b467-55e1e3ffc96c",
+    "artifactSha256": "b96ec443b2f715365f4e9908385736019f07ec3ae1ab1b4679e1b1fc8e7be211",
+    "baseHeadCommit": "305a90976b817a5ac2001058ca264517eb951afc",
+    "evaluatedCommit": "305a90976b817a5ac2001058ca264517eb951afc",
+    "observedAt": "2026-09-30T06:16:12.273Z",
+    "runId": "bbb92275-9b27-403e-a891-5adbb88ebfdc",
     "runs": [
       {
         "collected": 413,
@@ -79,7 +79,7 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "09f2f08065220350913209a9b1a6abc916589e6ec1605122dab0836b96f9d8cb",
+      "digest": "d0085c5ae0d42a0876e032156f2cef8c310fc91ad2ba8a4629a998131370a4bc",
       "fileCount": 345
     },
     "version": "diesel-playwright-evidence-v1",
@@ -1865,15 +1865,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `ec29ff3f-5fd3-4e26-b467-55e1e3ffc96c`，artifact SHA-256 `7ceb1f116bae6ac1ec3ac754e79f7148828693355c34b834daa439bcebd31467`；
-  observedAt `2026-09-30T01:22:22.209Z`，clean worktree / base HEAD `ac8a3451177684183ddfcce27e6f3ded022f0eb8`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `bbb92275-9b27-403e-a891-5adbb88ebfdc`，artifact SHA-256 `b96ec443b2f715365f4e9908385736019f07ec3ae1ab1b4679e1b1fc8e7be211`；
+  observedAt `2026-09-30T06:16:12.273Z`，clean worktree / base HEAD `305a90976b817a5ac2001058ca264517eb951afc`；
   `public` = `348 passed / 65 skipped / 0 failed / 0 flaky / 413 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 420 passed / 67 skipped / 0 failed / 0 flaky / 487 collected。artifact 为 177132 bytes；
-  browser source fingerprint 为 345 files / `09f2f08065220350913209a9b1a6abc916589e6ec1605122dab0836b96f9d8cb`。
-  因运行发生在 clean worktree，`evaluatedCommit=ac8a3451177684183ddfcce27e6f3ded022f0eb8`；它证明该本地候选提交上的浏览器验收，
+  browser source fingerprint 为 345 files / `d0085c5ae0d42a0876e032156f2cef8c310fc91ad2ba8a4629a998131370a4bc`。
+  因运行发生在 clean worktree，`evaluatedCommit=305a90976b817a5ac2001058ca264517eb951afc`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

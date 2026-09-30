@@ -61,7 +61,7 @@ when their locked versions or the workspace hash changes.
 
 ### Pinned Next static-file cancellation correction
 
-`patches/next@16.3.3.patch` changes only the installed CJS and ESM
+`patches/next@16.3.6.patch` changes only the installed CJS and ESM
 `serve-static.js` handlers. The original implementation settled on `finish`
 but could wait indefinitely when the client disconnected before delivery.
 The correction registers finish/close/error listeners before file I/O and
@@ -70,8 +70,11 @@ a finish event or claiming delivery. Actual source/response/pipe errors before
 settlement still reject; late source errors remain handled after cancellation.
 Already closed/destroyed/finished responses do not start another file read.
 
-The patch is registered through pnpm and the lockfile; no package version,
-dependency, lifecycle hook, or cleanup deadline changes. The pre-install CI
+The patch is registered through pnpm and the lockfile. It was originally applied
+to 16.3.3 without changing the package version, dependency, lifecycle hook or
+cleanup deadline. The 2026-09-30 security update retargets the byte-identical
+patch to 16.3.6; the two installed patched handlers are byte-identical across
+these versions. The pre-install CI
 guard binds both the workspace configuration and the exact patch bytes, and
 its digest remains pinned by every relevant workflow job. Missing, changed or
 symlinked patch files fail before pnpm setup. The 30 installed-runtime
@@ -81,11 +84,12 @@ the test harness; this is not a claim of native Node ESM execution. The original
 working tree reproduced 18 failures / 12 passes before this fix. Other framework
 corrections in the isolated candidate are not implicitly included here.
 
-固定 Next 16.3.3 补丁仅改 CJS/ESM 静态文件处理器：先监听终态，再开始文件读取，
+固定 Next 补丁仅改 CJS/ESM 静态文件处理器：先监听终态，再开始文件读取，
 断连后结束等待但不伪造 finish 或完整送达；真实异常仍失败，取消后的晚到源错误仍被处理。
 pnpm 配置、锁文件和安装前 CI 校验共同绑定补丁字节；缺失、篡改或符号链接会失败关闭。
 三十条已安装运行时回归在原目录修复前为 18 失败 / 12 通过。未迁入隔离候选的其他
-框架补丁，未升级依赖、增加脚本或放宽关闭期限；具体执行结果以本轮检查记录为准。
+框架补丁；原修复未升级依赖、增加脚本或放宽关闭期限。2026-09-30 安全更新将原样补丁
+转至 16.3.6，两版安装后的处理器字节相同；具体执行结果以本轮检查记录为准。
 
 ### Pinned Vitest task-event timer correction
 
@@ -197,6 +201,41 @@ a development-only Vitest reporter used solely for the repository coverage gate
 and artifacts; production code must not import it.
 
 ## Current advisory review (2026-09-30)
+
+The post-merge CI run for `cd81849473fccdf63ad365436a603755ed74ab80`
+was blocked by critical
+[GHSA-vcvr-r3jv-pc5j](https://github.com/vercel/next.js/security/advisories/GHSA-vcvr-r3jv-pc5j),
+covering Node.js `next/og` ImageResponse with attacker-controlled SVG content.
+The affected line is `next >=16.2.0 <16.3.6`; the official
+[16.3.6 release](https://github.com/vercel/next.js/releases/tag/v16.3.6)
+contains the fix. The registry observation before this update had one critical,
+zero high and seven moderate advisory rows. No direct `next/og` or
+`ImageResponse` use was found in current application source or the previous
+deployed source; this does not prove absence of indirect reachability and is
+not grounds for bypassing the critical gate.
+
+Next, its env/SWC packages and eslint-config-next/plugin are now aligned at
+16.3.6; no unrelated locked identities changed. The existing static-file
+cancellation patch remains byte-identical. The script-disabled frozen install
+and `pnpm audit:security` passed at 2026-09-30 16:32 UTC. The exception register
+remains empty. A complete follow-up registry report at 16:33 UTC contains zero
+critical/high and seven moderate rows (ip-address, fast-uri, brace-expansion);
+those moderate findings remain visible and are not waived or silently upgraded.
+The 371 focused regressions, including all 30 installed static-file tests, pass.
+The local build also exposed that TypeScript included the ignored root `tmp`
+backup checkout, mixing Next versions. Its source selection now excludes only
+that root temporary directory, with a real TypeScript-config regression retaining
+maintained source, tests, generated Next types and nested source `tmp` directories.
+No backup is removed. This dependency result does not establish completed runtime
+validation, deployment, or zero vulnerabilities. Lock-bound evidence must be
+recaptured; earlier failing CI and live-eval observations remain retained.
+
+2026-09-30：合并后的安全门禁发现 Next OG 严重漏洞，现仅升级现有 Next 及配套包至
+官方 16.3.6，原静态文件取消补丁原样保留。安装边界与 CI 摘要同步，冻结安装和安全
+审计通过；不增加豁免、不改 CI 门槛、不据此声称已部署或零漏洞。旧失败记录保留，
+锁文件相关证据必须重新采集。未发现直接 OG 使用不等于证明无法间接触达。
+
+### Earlier 2026-09-30 brace-expansion observation
 
 PR #40's dependency gate reported two high findings on the existing
 `brace-expansion@1.1.18` and `5.0.9` installation edges:

@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-09-30T06:02:36.039Z",
+      "capturedAt": "2026-09-30T16:38:31.631Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -39,7 +39,7 @@
         "drizzle/meta/_journal.json",
         "next.config.ts",
         "package.json",
-        "patches/next@16.3.3.patch",
+        "patches/next@16.3.6.patch",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",
         "postcss.config.mjs",
@@ -274,7 +274,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "5311a11c5fed8c3b9fc0b53b9552f1f22638954602a48f7c511b36350fbfe81b",
+      "sourceFingerprint": "82fcc5f80f3a5c1c11d2ef460fc77659c5e3212cd4eb462777beaf0f45a8daf3",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -282,7 +282,7 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-09-30T06:02:38.311Z",
+      "capturedAt": "2026-09-30T16:38:34.925Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
@@ -320,7 +320,7 @@
         "drizzle/meta/_journal.json",
         "next.config.ts",
         "package.json",
-        "patches/next@16.3.3.patch",
+        "patches/next@16.3.6.patch",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",
         "postcss.config.mjs",
@@ -556,7 +556,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "3ccbc4b43a85146c644c33265133186003317ed5d7eb82e4173ca8baddf5048c",
+      "sourceFingerprint": "b9eff323273c562092da71da49eca673ee9b0c2ae9cb1b6effc48c62bcdf31d9",
       "viewport": {
         "height": 1000,
         "width": 1600

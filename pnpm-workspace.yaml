@@ -19,5 +19,5 @@ overrides:
   sharp: 0.35.4
 patchedDependencies:
   "@vitest/runner@4.1.11": patches/@vitest__runner@4.1.11.patch
-  next@16.3.3: patches/next@16.3.3.patch
+  next@16.3.6: patches/next@16.3.6.patch
 verifyDepsBeforeRun: false

@@ -199,7 +199,10 @@ assert_country_detail AUS 1 "Vehicle Standard (Australian Design Rule 80/04" 202
 assert_country_detail PNG 1 "Road Traffic Rules"
 assert_country_detail CAN 2 "On-Road Vehicle and Engine Emission Regulations"
 assert_country_detail USA 2 "40 CFR § 1036.104"
-assert_country_detail CHN 3 "GB 20891-2014" "" "" CN-MEE 10000000-0000-4000-8000-000000000732 10000000-0000-4000-8000-000000000201
+# ACCEPTANCE #261 signs two regulations (GB 17691 / GB 20891) and three
+# sources. HJ 1014 is the jurisdiction's supporting source, not a third
+# regulation; the Stage III/IV history remains within GB 20891 limit rows.
+assert_country_detail CHN 2 "GB 20891-2014" "" "" CN-MEE 10000000-0000-4000-8000-000000000732 10000000-0000-4000-8000-000000000201
 assert_country_detail MLT 2 "EU countries: official country profiles and accession dates"
 assert_country_detail BRN 0 "Road Traffic Regulations (Chapter 68)"
 assert_country_detail BTN 0 "Environmental Standards, 2020"

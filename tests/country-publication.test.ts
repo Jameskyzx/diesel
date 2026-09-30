@@ -6,6 +6,7 @@ import {
   isDemoJurisdiction,
   isDemoMarketMetric,
   isDemoRegulation,
+  isDemoRegulationComparisonRow,
   publicMapClassification,
 } from "@/features/countries/publication";
 
@@ -104,6 +105,10 @@ describe("public country-data classification", () => {
     classifyAsDemo(regulation);
 
     expect(isDemoRegulation(regulation)).toBe(true);
+    expect(isDemoRegulationComparisonRow({
+      ...regulation,
+      limit: { isDemo: false, sourceIsDemo: false },
+    })).toBe(true);
   });
 
   it("keeps a regulation whose complete evidence chain is non-Demo", () => {
@@ -127,5 +132,24 @@ describe("public country-data classification", () => {
     [{ isDemo: false, source: { isDemo: false } }, false],
   ])("classifies market metrics and their sources", (input, expected) => {
     expect(isDemoMarketMetric(input)).toBe(expected);
+  });
+
+  it.each([
+    [{ isDemo: true, sourceIsDemo: false }, true],
+    [{ isDemo: false, sourceIsDemo: true }, true],
+    [{ isDemo: true, sourceIsDemo: true }, true],
+    [{ isDemo: false, sourceIsDemo: false }, false],
+  ])("classifies comparison limits and their sources", (limit, expected) => {
+    expect(isDemoRegulationComparisonRow({
+      applicability: {
+        jurisdictionIsDemo: false,
+        jurisdictionSourceIsDemo: false,
+        membershipIsDemo: false,
+        membershipSourceIsDemo: false,
+      },
+      isDemo: false,
+      source: { isDemo: false },
+      limit,
+    })).toBe(expected);
   });
 });

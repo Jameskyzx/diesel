@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   createRegulationRepository: vi.fn(),
   findByIso3: vi.fn(),
   findDetailsByIso3: vi.fn(),
+  findForComparison: vi.fn(),
   transaction: vi.fn(),
   transactionObject: { marker: "country-detail-snapshot" },
 }));
@@ -42,6 +43,7 @@ import {
   COUNTRY_DETAIL_READ_TRANSACTION_CONFIG,
   getCountryDetails,
 } from "@/server/services/country-service";
+import type { RegulationComparisonRepositories } from "@/server/services/marketing-analysis-service";
 
 describe("country detail read transaction", () => {
   beforeEach(() => {
@@ -51,6 +53,7 @@ describe("country detail read transaction", () => {
     mocks.createRegulationRepository.mockReset();
     mocks.findByIso3.mockReset();
     mocks.findDetailsByIso3.mockReset();
+    mocks.findForComparison.mockReset().mockResolvedValue([]);
     mocks.transaction.mockReset();
 
     mocks.createCountryRepository.mockReturnValue({
@@ -58,7 +61,7 @@ describe("country detail read transaction", () => {
       findDetailsByIso3: mocks.findDetailsByIso3,
     });
     mocks.createRegulationRepository.mockReturnValue({
-      findForComparison: vi.fn(),
+      findForComparison: mocks.findForComparison,
     });
     mocks.findByIso3.mockResolvedValue(null);
     mocks.transaction.mockImplementation(
@@ -116,7 +119,7 @@ describe("country detail read transaction", () => {
     expect(mocks.compareRegulationsFromRepositories).not.toHaveBeenCalled();
   });
 
-  it("passes the transaction-owned repositories into applicability comparison", async () => {
+  it("keeps filtered applicability reads on the transaction-owned repositories", async () => {
     const comparisonFailure = new Error("comparison failed");
     const verifiedAt = new Date("2026-08-30T00:00:00.000Z");
     const profile = {
@@ -146,8 +149,15 @@ describe("country detail read transaction", () => {
       marketMetrics: [],
       regulations: [],
     });
-    mocks.compareRegulationsFromRepositories.mockRejectedValue(
-      comparisonFailure,
+    mocks.compareRegulationsFromRepositories.mockImplementation(
+      async (
+        input: unknown,
+        repositories: RegulationComparisonRepositories,
+        options: Parameters<RegulationComparisonRepositories["regulationRepository"]["findForComparison"]>[1],
+      ) => {
+        await repositories.regulationRepository.findForComparison(input, options);
+        throw comparisonFailure;
+      },
     );
 
     await expect(
@@ -161,8 +171,6 @@ describe("country detail read transaction", () => {
 
     const countryRepository =
       mocks.createCountryRepository.mock.results[0]?.value;
-    const regulationRepository =
-      mocks.createRegulationRepository.mock.results[0]?.value;
     expect(mocks.compareRegulationsFromRepositories).toHaveBeenCalledWith(
       {
         applicationScope: "non-road",
@@ -170,7 +178,19 @@ describe("country detail read transaction", () => {
         countryIso3s: ["CHN"],
         powerKw: 100,
       },
-      { countryRepository, regulationRepository },
+      {
+        countryRepository,
+        regulationRepository: { findForComparison: expect.any(Function) },
+      },
+      {},
+    );
+    expect(mocks.findForComparison).toHaveBeenCalledExactlyOnceWith(
+      {
+        applicationScope: "non-road",
+        asOf: "2026-08-30",
+        countryIso3s: ["CHN"],
+        powerKw: 100,
+      },
       {},
     );
     expect(mocks.callbackRejected).toBe(true);

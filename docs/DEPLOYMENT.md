@@ -1410,6 +1410,14 @@ activation 和 rollback 现在只在刚刚启动后允许最多 30 秒的有界�
 既有状态机才将其迁移为 `ROLLED_BACK`。不修改失败候选，不删除备份，不重建协议，不手写完成
 marker。controller 必须先经正常 CI 授权 staging；恢复完成后才能开始它的正常发布。
 
+治理 TypeScript 命令必须显式传入 `--conditions=react-server`，包括固定 Node 入口和
+隔离环境下的 pnpm fallback；不得依赖 `NODE_OPTIONS` 或 Vitest 的 `server-only` alias。
+2026-09-30 候选 `aad4746` 的构建、激活及恢复演练均已通过，但首个辖区 CLI 在导入
+`src/server/http/request-signal.ts` 时触发真实 `server-only` 保护，因而进入自动恢复，
+不能算作成功发布。真实子进程回归使用无数据库凭据、故意非法的 CLI 参数，证明入口
+先成功解析服务器模块，再由 Zod 拒绝参数；负对照保留缺失条件时的真实导入失败。
+修复不修改失败候选、不跳过恢复比对，仍须新提交、完整门禁和新的不可变 release。
+
 生产 proc root 固定为
 `/proc`，不能由环境覆盖。VPS 若尚无 `pm2-root.service`，先以清洁 CLI 环境执行一次
 `pm2 startup systemd -u root --hp /root`；每次保存 dump 后都 fail-closed 确认该 unit

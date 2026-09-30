@@ -38,11 +38,11 @@ intentionally fails for merely local or staged evidence.
   "browserSnapshot": {
     "artifactByteLength": 177132,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "4b5e1a2980e6786bdaaa6b43b634c5f54648e7ceeff9200a92c1ae1eb64ea0aa",
-    "baseHeadCommit": "35853a38b2bf1dd3c235390bc6d9b805fd27a6b3",
-    "evaluatedCommit": "35853a38b2bf1dd3c235390bc6d9b805fd27a6b3",
-    "observedAt": "2026-09-29T15:06:19.276Z",
-    "runId": "547cf8d2-9a3c-427a-92bf-e7b1bb30ec0a",
+    "artifactSha256": "7ceb1f116bae6ac1ec3ac754e79f7148828693355c34b834daa439bcebd31467",
+    "baseHeadCommit": "ac8a3451177684183ddfcce27e6f3ded022f0eb8",
+    "evaluatedCommit": "ac8a3451177684183ddfcce27e6f3ded022f0eb8",
+    "observedAt": "2026-09-30T01:22:22.209Z",
+    "runId": "ec29ff3f-5fd3-4e26-b467-55e1e3ffc96c",
     "runs": [
       {
         "collected": 413,
@@ -79,7 +79,7 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "0139712cd729a6f89bcd542c46fade68819a209ee088d686b1c77ad3fb684e2c",
+      "digest": "09f2f08065220350913209a9b1a6abc916589e6ec1605122dab0836b96f9d8cb",
       "fileCount": 345
     },
     "version": "diesel-playwright-evidence-v1",
@@ -161,6 +161,11 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-09-30 01:22 UTC：从干净 `ac8a345` 串行重采四套浏览器证据成功，
+  420 passed / 67 skipped / 0 failed / 0 flaky，canonical artifact 与上方摘要
+  已同步。此前安装指纹拒绝记录保留，不改写为成功；本轮源码及安装目录保持稳定。
+  旧版本预检修正后的 304 项聚焦回归、lint/typecheck/build 均通过；接下来冻结完整
+  源码重采 Vitest，然后等待新 PR/master CI。生产归档及新应用切换尚未执行。
 - 2026-09-30 01:07 UTC：新依赖下的真实 DeepSeek 评估 18/18 通过，37 次调用、
   97,515 tokens，已原样归档；英文截图已重采并目视核验。公共浏览器测试实际
   348 passed / 65 skipped，但并行离线评估改写 Vitest 缓存，安装指纹门禁拒绝

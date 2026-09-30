@@ -196,7 +196,29 @@ a substitute for manual keyboard/screen-reader review. `@vitest/coverage-v8` is
 a development-only Vitest reporter used solely for the repository coverage gate
 and artifacts; production code must not import it.
 
-## Current advisory review (2026-09-29)
+## Current advisory review (2026-09-30)
+
+PR #39's dependency gate subsequently reported two high findings against
+`undici@7.29.0`: [unrequested WebSocket subprotocol denial of service](https://github.com/nodejs/undici/security/advisories/GHSA-rfgv-xxqx-mfg5)
+and [BalancedPool dropping function-valued TLS/connection options](https://github.com/nodejs/undici/security/advisories/GHSA-w293-vg96-wgc3).
+The official patch in the existing major line is `7.29.1`. The exact override
+updates both installed shadcn and dotenvx edges, without a new dependency or
+risk exception. The installation configuration, pre-install guard and all
+affected canonical CI job digests are reviewed together. The normal required
+gate remains blocking; the failed run is not relabeled or bypassed.
+
+The frozen, script-disabled installation and `pnpm audit:security` passed at
+2026-09-30 00:37 UTC, with no high/critical advisory accepted by the policy.
+This is not a zero-vulnerability claim. Eight installed-edge regressions verify
+the patched version and retention of custom connector/TLS verification callbacks.
+No production exploitability or successful deployment is inferred from these
+dependency-level results. Lock-sensitive release evidence must be recaptured.
+
+2026-09-30：PR #39 新一轮安全门禁被 undici 的两项高危阻断；精确升级至官方同主版本
+补丁 7.29.1，同时更新安装配置及 CI 摘要链，不新增依赖或风险豁免。冻结安装与安全
+审计通过，8 项实际安装路径回归通过；这不代表零漏洞、线上可被利用或已发布。
+
+### Earlier 2026-09-29 observation
 
 The fresh official-registry audit reported two high advisories in
 `fast-uri@3.1.6`: [authority injection through ports](https://github.com/fastify/fast-uri/security/advisories/GHSA-qw65-cvwx-89v3)

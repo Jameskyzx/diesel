@@ -24,6 +24,7 @@ import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { runInNewContext } from "node:vm";
 
 import { describe, expect, it } from "vitest";
 
@@ -2966,6 +2967,9 @@ if [[ "$#" -eq 3 && "$1" == 'show' &&
   count="$((count + 1))"
   printf '%s' "$count" >"$counter"
   unit_path=${quoteShell(fixtureSystemdManagerUnitPath)}
+  if [[ -f ${quoteShell(join(root, "systemd-manager-includes-absent"))} ]]; then
+    unit_path="$unit_path ${systemdAbsentUnitRoot}"
+  fi
   if [[ "$count" -ge 2 && -f ${quoteShell(
     join(root, "systemd-manager-unit-path-drift"),
   )} ]]; then
@@ -3085,6 +3089,7 @@ if [[ "\${1:-}" == 'show' ]]; then
   )} ]]; then
     unit_wants='network.target'
   fi
+  {
   printf 'Id=pm2-root.service\\n'
   printf 'Names=pm2-root.service\\n'
   printf 'LoadState=loaded\\n'
@@ -3128,6 +3133,15 @@ if [[ "\${1:-}" == 'show' ]]; then
   printf 'FragmentPath=%s\\n' ${quoteShell(pm2UnitFragment)}
   printf 'DropInPaths=%s\\n' "$unit_drop_in_paths"
   printf 'NeedDaemonReload=%s\\n' "$unit_need_daemon_reload"
+  } | while IFS= read -r property; do
+    omit=0
+    if [[ -f ${quoteShell(join(root, "systemd-show-omit"))} ]]; then
+      while IFS= read -r omitted; do
+        if [[ "$property" == "$omitted="* ]]; then omit=1; fi
+      done <${quoteShell(join(root, "systemd-show-omit"))}
+    fi
+    if [[ "$omit" -eq 0 ]]; then printf '%s\\n' "$property"; fi
+  done
   if [[ "$loaded_count" -eq 1 && -f ${quoteShell(
     join(root, "systemd-fragment-ab-drift"),
   )} ]]; then
@@ -3138,6 +3152,38 @@ fi
 if [[ "\${1:-}" == 'reload' ]]; then
   printf 'systemctl-reload:%s\\n' "\${2:-}" >>${quotedMutationLog}
 fi
+`,
+  );
+
+  await writeExecutable(
+    join(fakeBin, "busctl"),
+    `#!/bin/bash
+exec ${quoteShell(process.execPath)} -e ${quoteShell(`
+const fs = require("node:fs");
+const args = process.argv.slice(1);
+if (args.slice(0, 3).join(" ") !== "--system --json=short --timeout=5") process.exit(98);
+const key = args.at(-1) === "org.freedesktop.systemd1.Unit" ? "GetAll" : args.at(-1);
+const configPath = ${JSON.stringify(join(root, "systemd-bus-config.json"))};
+const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, "utf8")) : {};
+const countPath = ${JSON.stringify(join(root, "systemd-bus-count-"))} + key;
+const count = fs.existsSync(countPath) ? Number(fs.readFileSync(countPath, "utf8")) + 1 : 1;
+fs.writeFileSync(countPath, String(count));
+fs.appendFileSync(${JSON.stringify(lifecycleLog)}, "busctl:" + key + "\\n");
+const response = count >= 2 && config[key]?.second ? config[key].second : config[key];
+if (response?.status) process.exit(response.status);
+if (response?.stdout !== undefined) { process.stdout.write(response.stdout); process.exit(0); }
+const defaults = {
+  EnvironmentFiles: { type: "a(sb)", data: [] },
+  ExecCondition: { type: "a(sasbttttuii)", data: [] },
+  ExecStartPre: { type: "a(sasbttttuii)", data: [] },
+  ExecStartPost: { type: "a(sasbttttuii)", data: [] },
+  ExecStopPost: { type: "a(sasbttttuii)", data: [] },
+  GetAll: { type: "a{sv}", data: [{ Id: { type: "s", data: "pm2-root.service" } }] },
+  Version: { type: "s", data: "249.11-0ubuntu3.11" },
+};
+if (!Object.hasOwn(defaults, key)) process.exit(98);
+console.log(JSON.stringify(response?.value ?? defaults[key]));
+`)} -- "$@"
 `,
   );
 
@@ -8548,6 +8594,124 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
       }
     },
   );
+
+  it.each([
+    { name: "upstream vendor ordering", paths: ["/etc/systemd/system", "/usr/local/lib/systemd/system", "/usr/lib/systemd/system", "/lib/systemd/system", "/run/systemd/generator.late"], allowed: true },
+    { name: "Ubuntu 249 vendor ordering", paths: ["/etc/systemd/system", "/usr/local/lib/systemd/system", "/lib/systemd/system", "/usr/lib/systemd/system", "/run/systemd/generator.late"], allowed: true },
+    { name: "optional roots omitted", paths: ["/etc/systemd/system", "/lib/systemd/system"], allowed: true },
+    { name: "reversed administrative precedence", paths: ["/run/systemd/system", "/etc/systemd/system"], allowed: false },
+    { name: "reversed local vendor precedence", paths: ["/lib/systemd/system", "/usr/local/lib/systemd/system"], allowed: false },
+    { name: "duplicate root", paths: ["/etc/systemd/system", "/etc/systemd/system"], allowed: false },
+    { name: "unknown root", paths: ["/etc/systemd/system", "/tmp/units"], allowed: false },
+  ])("native PM2 unit paths: $name", async ({ paths, allowed }) => {
+    const source = await readFile(rollbackHostReleaseScript, "utf8");
+    const orders = source.slice(
+      source.indexOf("const approvedUnitPathOrder = ["),
+      source.indexOf("function readBoundedDescriptor", source.indexOf("const approvedUnitPathOrder = [")),
+    );
+    const predicate = source.slice(
+      source.indexOf("function isOrderedSubset("),
+      source.indexOf("function parseManagerProperties("),
+    );
+    expect(source).toContain("!approvedUnitPathOrders.some((order) =>");
+    expect(runInNewContext(
+      `${orders}\n${predicate}\npaths.every(path => approvedUnitPaths.has(path)) && approvedUnitPathOrders.some(order => isOrderedSubset(paths, order))`,
+      { paths },
+      { timeout: 100 },
+    )).toBe(allowed);
+  });
+
+  it.each(["249.11-0ubuntu3.11", "250", "250.1-1"])(
+    "native PM2 compatibility proves omitted properties on systemd %s without mutation",
+    async (version) => {
+      const fixture = await createRollbackFixture();
+      try {
+        await writeFile(join(fixture.root, "systemd-show-omit"), "EnvironmentFiles\nExecCondition\nExecStartPre\nExecStartPost\nExecStopPost\nUpholds\n");
+        await writeFile(join(fixture.root, "systemd-manager-includes-absent"), "1\n");
+        await writeFile(join(fixture.root, "systemd-bus-config.json"), JSON.stringify({ Version: { value: { type: "s", data: version } } }));
+        await writeFile(join(fixture.procRoot, "111", "cgroup"), "10:net_prio:/\n9:perf_event:/\n8:net_cls:/\n7:freezer:/\n6:devices:/\n3:cpuacct:/\n0::/system.slice/pm2-root.service\n");
+        const before = await captureRollbackTargets(fixture);
+        const result = await executeRollback(fixture, "--check");
+        expect(result, await readLifecycleLog(fixture)).toMatchObject({ exitCode: 0, stderr: "" });
+        await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+        await expect(readMutationLog(fixture)).resolves.toBe("");
+        const log = await readLifecycleLog(fixture);
+        for (const key of ["EnvironmentFiles", "ExecCondition", "ExecStartPre", "ExecStartPost", "ExecStopPost", "GetAll", "Version"]) {
+          expect(log.split(`busctl:${key}\n`).length - 1).toBe(2);
+        }
+      } finally {
+        await rm(fixture.root, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
+
+  it.each([
+    ...["EnvironmentFiles", "ExecCondition", "ExecStartPre", "ExecStartPost", "ExecStopPost"].map((key) => ({
+      name: `nonempty omitted ${key}`,
+      omit: key,
+      config: { [key]: { value: { type: key === "EnvironmentFiles" ? "a(sb)" : "a(sasbttttuii)", data: [["untrusted"]] } } },
+    })),
+    { name: "failed D-Bus read", omit: "EnvironmentFiles", config: { EnvironmentFiles: { status: 1 } } },
+    { name: "malformed D-Bus JSON", omit: "EnvironmentFiles", config: { EnvironmentFiles: { stdout: "not-json\n" } } },
+    { name: "wrong empty array signature", omit: "EnvironmentFiles", config: { EnvironmentFiles: { value: { type: "as", data: [] } } } },
+    { name: "null array", omit: "EnvironmentFiles", config: { EnvironmentFiles: { value: { type: "a(sb)", data: null } } } },
+    { name: "extra D-Bus field", omit: "EnvironmentFiles", config: { EnvironmentFiles: { value: { type: "a(sb)", data: [], extra: true } } } },
+    { name: "D-Bus A/B drift", omit: "EnvironmentFiles", config: { EnvironmentFiles: { second: { value: { type: "a(sb)", data: [["untrusted", false]] } } } } },
+    ...["248", "251", "255.4", "249\n", "249 arbitrary"].map((version) => ({
+      name: `unsupported Upholds omission version ${JSON.stringify(version)}`,
+      omit: "Upholds", config: { Version: { value: { type: "s", data: version } } },
+    })),
+    { name: "existing Upholds despite show omission", omit: "Upholds", config: { GetAll: { value: { type: "a{sv}", data: [{ Id: { type: "s", data: "pm2-root.service" }, Upholds: { type: "as", data: [] } }] } } } },
+    { name: "wrong GetAll unit identity", omit: "Upholds", config: { GetAll: { value: { type: "a{sv}", data: [{ Id: { type: "s", data: "other.service" } }] } } } },
+    { name: "failed capability read", omit: "Upholds", config: { GetAll: { status: 1 } } },
+    { name: "failed manager version read", omit: "Upholds", config: { Version: { status: 1 } } },
+    { name: "unapproved missing property", omit: "RootDirectory", config: {} },
+  ])("native PM2 compatibility rejects $name without mutation", async ({ omit, config }) => {
+    const fixture = await createRollbackFixture();
+    try {
+      await writeFile(join(fixture.root, "systemd-show-omit"), `${omit}\n`);
+      await writeFile(join(fixture.root, "systemd-bus-config.json"), JSON.stringify(config));
+      const before = await captureRollbackTargets(fixture);
+      const result = await executeRollback(fixture, "--check");
+      expect(result.exitCode).toBe(70);
+      const log = await readLifecycleLog(fixture);
+      if (omit === "Upholds") {
+        expect(log).toContain("busctl:GetAll\n");
+      } else if (omit !== "RootDirectory") {
+        expect(log).toContain(`busctl:${omit}\n`);
+      } else {
+        expect(log).not.toContain("busctl:");
+      }
+      await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+      await expect(readMutationLog(fixture)).resolves.toBe("");
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it.each([
+    "0::/other.service\n",
+    "0::/system.slice/pm2-root.service\n0::/system.slice/pm2-root.service\n",
+    "3:cpuacct:/other.service\n0::/system.slice/pm2-root.service\n",
+    "3:name=systemd:/\n0::/system.slice/pm2-root.service\n",
+    "3:cpuacct:/\n3:devices:/\n0::/system.slice/pm2-root.service\n",
+    "3:cpuacct:/\n4:cpuacct:/\n0::/system.slice/pm2-root.service\n",
+    "3:unknown:/\n0::/system.slice/pm2-root.service\n",
+    "3:cpuacct,:/\n0::/system.slice/pm2-root.service\n",
+    "3:cpuacct:/\n",
+  ])("native PM2 compatibility rejects ambiguous cgroup identity %#", async (contents) => {
+    const fixture = await createRollbackFixture();
+    try {
+      await writeFile(join(fixture.procRoot, "111", "cgroup"), contents);
+      const before = await captureRollbackTargets(fixture);
+      expect((await executeRollback(fixture, "--check")).exitCode).toBe(70);
+      await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+      await expect(readMutationLog(fixture)).resolves.toBe("");
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
+  }, 30_000);
 
   it("keeps a successful host rollback check read-only", async () => {
     const fixture = await createRollbackFixture();

@@ -180,6 +180,51 @@ async function runValidator(
 }
 
 describe("public governance validator against signed service payloads", () => {
+  it.each([
+    { applicationScope: "non-road", queryDate: "2026-09-30", regulationIds: [] },
+    { applicationScope: "non-road", queryDate: asOf, regulationIds: [] },
+    {
+      applicationScope: "construction",
+      queryDate: "2026-09-30",
+      regulationIds: [acceptanceFixtureIds.regulation.cnGb20891],
+    },
+    {
+      applicationScope: "agriculture",
+      queryDate: "2026-09-30",
+      regulationIds: [acceptanceFixtureIds.regulation.cnGb20891],
+    },
+  ])("excludes Demo comparison facts from the public $applicationScope summary at $queryDate", async ({ applicationScope, queryDate, regulationIds }) => {
+    // This database deliberately contains both the original Demo regulations
+    // and the existing signed real fixtures, as the production database does.
+    const detail = await getCountryDetails({
+      applicationScope,
+      asOf: queryDate,
+      iso3: "CHN",
+      powerKw: 100,
+    });
+    expect(detail.status).toBe("available");
+    if (detail.status !== "available" || detail.applicabilitySummary === null) {
+      throw new Error("Expected a validated public applicability summary");
+    }
+    const summary = detail.applicabilitySummary;
+    expect(summary.query).toEqual({
+      applicationScope,
+      asOf: queryDate,
+      countryIso3s: ["CHN"],
+      powerKw: 100,
+    });
+    expect(summary.country.currentEffectiveRegulations.map(({ id }) => id))
+      .toEqual(regulationIds);
+    expect(summary.country.futureAdoptedRegulations).toEqual([]);
+    expect(summary.country.status).toBe(regulationIds.length ? "available" : "no_data");
+    expect(summary.sources.every(({ isDemo }) => !isDemo)).toBe(true);
+    if (regulationIds.length === 0) {
+      expect(summary.sources).toEqual([]);
+      expect(summary.lastVerifiedAt).toBeNull();
+      expect(summary.missingData).not.toEqual([]);
+    }
+  });
+
   it("keeps China's two regulations distinct from its three signed sources", () => {
     const target = buildTargetSelection("CHN", buildFixtureLimits());
     expect(target.regulationIds).toEqual(new Set([

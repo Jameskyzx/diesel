@@ -34,6 +34,13 @@ type MarketMetricClassification = {
   source: DemoSource;
 };
 
+type RegulationComparisonClassification = RegulationClassification & {
+  limit: {
+    isDemo: boolean;
+    sourceIsDemo: boolean;
+  };
+};
+
 export function isDemoCountrySummary(
   country: CountrySummaryClassification,
 ): boolean {
@@ -88,4 +95,14 @@ export function isDemoMarketMetric(
   metric: MarketMetricClassification,
 ): boolean {
   return metric.isDemo || metric.source.isDemo;
+}
+
+export function isDemoRegulationComparisonRow(
+  regulation: RegulationComparisonClassification,
+): boolean {
+  return (
+    isDemoRegulation(regulation) ||
+    regulation.limit.isDemo ||
+    regulation.limit.sourceIsDemo
+  );
 }

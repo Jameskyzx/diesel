@@ -1316,7 +1316,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       activationCurrentDurabilityIndex,
     );
     const activationProcessValidationIndex = hostActivator.indexOf(
-      "rollback_validate_pm2_process \\",
+      "rollback_wait_for_pm2_process \\",
       activationPm2StartIndex,
     );
     const activationReadinessIndex = hostActivator.indexOf(

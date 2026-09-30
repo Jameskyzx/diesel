@@ -833,6 +833,62 @@ FD 8 路径检查通过 resolver 自身的 `/proc/self/fd/8` 读取继承的描�
 锁路径、固定编号和同一 OFD 的非阻塞 flock 验证保持不变。Linux 回归及真实构建 smoke
 必须覆盖外层 FD 8 关闭、仅子进程打开并持锁的路径，不得预先打开父进程 FD 来掩盖错误。
 
+### Incident-specific unarmed archival / 本次未激活状态归档
+
+After the permanent V1 protocol was initialized, candidate
+`9cbeeef340ca7570b7f84175451383363acc42bb` stopped before activation on the native
+systemd identity check. Its state has exactly the four pre-switch basis files,
+with no anchor, pending/governance marker or build output. The operator explicitly
+authorized preserving and archiving this never-activated state, not resetting
+the protocol or labeling it rolled back.
+
+`archive-unarmed-release.sh` is an incident-specific entry from a **newly staged,
+CI-authorized controller**. It accepts no target, filesystem or runtime override.
+It verifies both immutable release manifests, holds the existing lifecycle and
+build lock inodes, scans the ledger, checks the previous live release, PM2/systemd
+identity, Nginx syntax and exact environment/Nginx basis bytes. The filesystem
+helper additionally pins this incident's previous release and permanent protocol
+hash. It rejects extra files, active markers, a built candidate, drift, unsafe
+metadata, links, existing archives and interrupted recovery guards.
+The pre-archive page/readiness check uses the trusted **previous release's**
+verifier, since the controller is deliberately unbuilt and the previous runtime
+does not implement the new public contract. After normal activation, the new
+release's full verifier remains mandatory; this preflight is not its substitute.
+
+After the new controller has passed normal master CI and staging:
+
+```bash
+/usr/bin/env -i HOME=/root PATH=/usr/sbin:/usr/bin:/sbin:/bin \
+  /bin/bash /opt/diesel/releases/<controller-full-sha>/scripts/deploy/archive-unarmed-release.sh \
+  <controller-full-sha> --check
+/usr/bin/env -i HOME=/root PATH=/usr/sbin:/usr/bin:/sbin:/bin \
+  /bin/bash /opt/diesel/releases/<controller-full-sha>/scripts/deploy/archive-unarmed-release.sh \
+  <controller-full-sha> --apply
+```
+
+The original four-file directory is atomically moved, preserving file inodes, to
+`/opt/diesel/host-migrations/20260930-unarmed-9cbeeef/originals`; an independently
+verified copy and root-only prepared/archived receipts remain beside it. Receipts
+record hashes and the honest `never-activated` classification, never secret bytes
+or fabricated terminal markers. The permanent protocol file is not rewritten.
+No database mutation, environment install, Nginx reload or PM2 repair occurs.
+
+Before any move, a durable `.unarmed-archive-in-progress` guard is written under
+the active backup root. Ordinary ledger scans reject this hidden file. It is
+removed only after the originals, independent copy and archived receipt are
+durable and verified. **An interrupted operation intentionally stays blocked**:
+preserve the guard and both trees for incident review; do not blindly retry,
+delete the guard, reinitialize V1 or synthesize a rollback marker. Successful
+archival permits the fresh release's normal orchestrator; it does not itself
+publish a release or authorize reuse of the failed candidate.
+
+中文：该入口仅处理已获授权的 `9cbeeef` 四文件未激活事故，从新 CI 通过的不可变候选
+执行，不能传入任意目标。持有两把现有锁，验证版本、PM2/systemd、健康检查、Nginx、
+环境及协议摘要；发现任何漂移立即停止。原文件保留 inode 并移入上述 `originals`，
+旁边保存独立校验副本及仅 root 可读的诚实收据。处理中断会留下阻断普通发布的持久
+guard，必须保留并按事故重新审查，不得删除 guard、重置协议或伪造回滚完成记录。
+归档不重启服务、不操作数据库；成功后仍须执行新候选的正常发布流程。
+
 ### One-time pre-protocol host migration / 一次性旧主机迁移
 
 The read-only 2026-09-29 preflight found eight historical `product` / `archived`
@@ -1055,6 +1111,30 @@ governance marker 共存合同是封闭集合，不得把未知组合当作空�
 `--begin-activation` 在写 anchor 前完成旧 release、PM2/systemd、两份 Nginx backup、旧 verifier、
 `current=previous` 以及 live/basis 字节一致性预检；anchor-only 中断只能由同一 release 重新运行同一
 完整入口。写入 PENDING 后还会再次证明 live/basis、FD 8 和 ledger，才向 outer shell 返回。
+
+PM2 identity checks support both upstream and Debian/Ubuntu compiled unit-path
+orders. The manager list must remain an ordered subset of that exact native list;
+absent roots are bound to their trusted nearest ancestor and included in both
+disk fingerprints. Paths are never sorted to hide precedence changes. Empty
+compound properties omitted by `systemctl show --all` require successful,
+type-checked, bounded `busctl` reads; missing fields never default to empty.
+`Upholds` omission is accepted only when the loaded unit's successful `GetAll`
+proves absence and the manager reports supported legacy v249/v250. The property
+exists from [systemd v251](https://github.com/systemd/systemd/blob/v251/src/core/dbus-unit.c);
+newer/unknown versions, unavailable D-Bus, nonempty arrays and A/B drift fail closed.
+The process must have exactly one v2 membership in `/system.slice/pm2-root.service`;
+coexisting v1 records may name only unique known controllers at `/`, never another
+unit, a named hierarchy or duplicate identity. No unit, daemon or cgroup is changed
+by these read-only checks. This does not authorize recovery of a preserved
+anchorless release directory or mutation of an already staged candidate.
+
+PM2 校验明确支持上游与 Debian/Ubuntu 两种搜索路径顺序；manager 路径必须保持 native
+列表的相对顺序，未存在目录仍须绑定可信父目录并进入前后指纹。缺失的复合属性必须由
+有界、类型正确的 D-Bus 读回证明为空，不直接补默认值。只有 v249/v250 且 `GetAll`
+证明属性不存在时才接受 `Upholds` 缺省；未知版本、查询失败、非空值和前后漂移均拒绝。
+进程必须恰有一条正确的 v2 单元归属；旧 v1 控制器只允许唯一已知控制器的根路径记录。
+这些只读兼容检查不修改主机，也不授权删除无 anchor 的保留现场或改写已暂存候选。
+
 FD 8 的路径相等不单独算持锁证明；每个 helper proof 都重做 `flock -n 8`，以拒绝另一个 OFD 已持锁
 但当前 caller 只打开了 lock inode 的伪 capability。
 `host-activation-ledger.sh` 的公开 CLI 只有一次性 `initialize-protocol` 与 `validate`；不得直接调用

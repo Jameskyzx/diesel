@@ -212,7 +212,8 @@ rollback_require_production_command_boundary() {
     return
   fi
   for command_spec in \
-    bash:/usr/bin/bash chmod:/usr/bin/chmod chown:/usr/bin/chown \
+    bash:/usr/bin/bash busctl:/usr/bin/busctl \
+    chmod:/usr/bin/chmod chown:/usr/bin/chown \
     cmp:/usr/bin/cmp cp:/usr/bin/cp curl:/usr/bin/curl env:/usr/bin/env \
     find:/usr/bin/find flock:/usr/bin/flock id:/usr/bin/id \
     install:/usr/bin/install ln:/usr/bin/ln mktemp:/usr/bin/mktemp \
@@ -688,6 +689,20 @@ rollback_read_pm2_unit_disk_identity() (
           "/run/systemd/generator.late",
         ];
         const approvedUnitPaths = new Set(approvedUnitPathOrder);
+        // Debian/Ubuntu builds search /lib before /usr/lib. Keep both known
+        // orders explicit; do not sort native paths or accept arbitrary order.
+        const debianUnitPathOrder = approvedUnitPathOrder.filter(
+          (path) => path !== "/lib/systemd/system",
+        );
+        debianUnitPathOrder.splice(
+          debianUnitPathOrder.indexOf("/usr/lib/systemd/system"),
+          0,
+          "/lib/systemd/system",
+        );
+        const approvedUnitPathOrders = [
+          approvedUnitPathOrder,
+          debianUnitPathOrder,
+        ];
 
         function readBoundedDescriptor(descriptor, limit) {
           const buffer = Buffer.allocUnsafe(limit + 1);
@@ -1296,11 +1311,13 @@ rollback_read_pm2_unit_disk_identity() (
               (path) =>
                 path !== expectedUnitRoot && !approvedUnitPaths.has(path),
             ) ||
-            !isOrderedSubset(
-              compiledUnitPaths.paths.filter((path) =>
-                approvedUnitPathOrder.includes(path),
+            !approvedUnitPathOrders.some((order) =>
+              isOrderedSubset(
+                compiledUnitPaths.paths.filter((path) =>
+                  approvedUnitPathOrder.includes(path),
+                ),
+                order,
               ),
-              approvedUnitPathOrder,
             ) ||
             !isOrderedSubset(
               compiledUnitPaths.paths.filter((path) =>
@@ -1313,9 +1330,9 @@ rollback_read_pm2_unit_disk_identity() (
           }
           let compiledIndex = -1;
           for (const managerPath of managerProperties.unitPaths) {
-            if (pathExists(managerPath) === undefined) {
-              throw new Error("invalid unit identity");
-            }
+            // systemd 249 includes absent compiled search roots in UnitPath.
+            // validateUnitRoot below binds absence and its trusted ancestor;
+            // both disk snapshots must still produce the same fingerprint.
             compiledIndex = compiledUnitPaths.paths.indexOf(
               managerPath,
               compiledIndex + 1,
@@ -1673,10 +1690,95 @@ rollback_validate_pm2_systemd_identity() (
             }
             properties.set(key, line.slice(separator + 1));
           }
+          for (const key of propertyNames) {
+            if (!properties.has(key)) {
+              properties.set(key, proveOmittedEmptyProperty(key));
+            }
+          }
           if (properties.size !== propertyNames.length) {
             throw new Error("invalid systemd identity");
           }
           return properties;
+        }
+
+        function readBusValue(arguments_, expectedType) {
+          const result = spawnSync(
+            "/usr/bin/env",
+            [
+              "-i", "HOME=/root", "LC_ALL=C", `PATH=${hostCommandPath}`,
+              "busctl", "--system", "--json=short", "--timeout=5",
+              ...arguments_,
+            ],
+            {
+              timeout: 6000,
+              maxBuffer: MAX_SHOW_BYTES,
+              stdio: ["ignore", "pipe", "ignore"],
+            },
+          );
+          if (result.error !== undefined || result.status !== 0 ||
+              !Buffer.isBuffer(result.stdout)) {
+            throw new Error("invalid systemd identity");
+          }
+          const value = JSON.parse(decoder.decode(result.stdout));
+          if (value === null || typeof value !== "object" ||
+              Array.isArray(value) ||
+              Object.keys(value).sort().join(",") !== "data,type" ||
+              value.type !== expectedType) {
+            throw new Error("invalid systemd identity");
+          }
+          return value.data;
+        }
+
+        function proveOmittedEmptyProperty(key) {
+          const destination = "org.freedesktop.systemd1";
+          const unitPath = "/org/freedesktop/systemd1/unit/pm2_2droot_2eservice";
+          const serviceInterface = "org.freedesktop.systemd1.Service";
+          const omittedArrayTypes = new Map([
+            ["EnvironmentFiles", "a(sb)"],
+            ["ExecCondition", "a(sasbttttuii)"],
+            ["ExecStartPre", "a(sasbttttuii)"],
+            ["ExecStartPost", "a(sasbttttuii)"],
+            ["ExecStopPost", "a(sasbttttuii)"],
+          ]);
+          if (omittedArrayTypes.has(key)) {
+            // systemctl omits these compound empty arrays, even with --all.
+            // Only a successful typed D-Bus read proves they are empty.
+            const values = readBusValue(
+              ["get-property", destination, unitPath, serviceInterface, key],
+              omittedArrayTypes.get(key),
+            );
+            if (!Array.isArray(values) || values.length !== 0) {
+              throw new Error("invalid systemd identity");
+            }
+            return "";
+          }
+          if (key === "Upholds") {
+            const unitInterface = "org.freedesktop.systemd1.Unit";
+            const values = readBusValue([
+              "call", destination, unitPath,
+              "org.freedesktop.DBus.Properties", "GetAll", "s", unitInterface,
+            ], "a{sv}");
+            if (!Array.isArray(values) || values.length !== 1 ||
+                values[0] === null || typeof values[0] !== "object" ||
+                Array.isArray(values[0]) ||
+                values[0].Id?.type !== "s" ||
+                values[0].Id?.data !== "pm2-root.service" ||
+                Object.hasOwn(values[0], "Upholds")) {
+              throw new Error("invalid systemd identity");
+            }
+            const version = readBusValue([
+              "get-property", destination, "/org/freedesktop/systemd1",
+              "org.freedesktop.systemd1.Manager", "Version",
+            ], "s");
+            // Upholds was introduced in v251. Only these supported legacy
+            // versions plus an actual successful GetAll omission are accepted.
+            if (typeof version !== "string" ||
+                !/^(?:249|250)(?:[.~-][A-Za-z0-9.+:~_-]+)?$/u.test(version)) {
+              throw new Error("invalid systemd identity");
+            }
+            return "";
+          }
+          throw new Error("invalid systemd identity");
         }
 
         function parseUnitEnvironment(value) {
@@ -1883,7 +1985,39 @@ rollback_validate_pm2_systemd_identity() (
           const cgroup = decoder.decode(
             readBounded(resolve(processRoot, "cgroup"), MAX_CGROUP_BYTES),
           );
-          if (cgroup !== `0::${expectedControlGroup}\n`) {
+          // A unified systemd hierarchy can coexist with leftover v1
+          // controller mounts (Ubuntu 22.04). Require the exact v2 unit and
+          // allow only unique, known v1 controllers at their hierarchy root.
+          const legacyControllers = new Set([
+            "cpuset", "cpu", "cpuacct", "blkio", "memory", "devices",
+            "freezer", "net_cls", "perf_event", "net_prio", "hugetlb",
+            "pids", "rdma", "misc",
+          ]);
+          const seenHierarchies = new Set();
+          const seenControllers = new Set();
+          let unifiedCount = 0;
+          if (!cgroup.endsWith("\n") || cgroup.includes("\r")) {
+            throw new Error("invalid systemd identity");
+          }
+          for (const line of cgroup.slice(0, -1).split("\n")) {
+            if (line === `0::${expectedControlGroup}`) {
+              unifiedCount += 1;
+              continue;
+            }
+            const match = /^([1-9][0-9]{0,8}):([a-z_,]+):\/$/u.exec(line);
+            if (match === null || seenHierarchies.has(match[1])) {
+              throw new Error("invalid systemd identity");
+            }
+            seenHierarchies.add(match[1]);
+            for (const controller of match[2].split(",")) {
+              if (!legacyControllers.has(controller) ||
+                  seenControllers.has(controller)) {
+                throw new Error("invalid systemd identity");
+              }
+              seenControllers.add(controller);
+            }
+          }
+          if (unifiedCount !== 1) {
             throw new Error("invalid systemd identity");
           }
           const environment = parseNulTerminatedEnvironment(

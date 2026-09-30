@@ -33,7 +33,7 @@ const sharedScreenshotEntrypoints = [
 
 const sharedScreenshotBuildInputs = [
   "next.config.ts",
-  "patches/next@16.3.3.patch",
+  "patches/next@16.3.6.patch",
   "package.json",
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
@@ -73,7 +73,7 @@ export const screenshotSpecifications = [
 
 const allowedSourceFiles = new Set([
   "next.config.ts",
-  "patches/next@16.3.3.patch",
+  "patches/next@16.3.6.patch",
   "package.json",
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",

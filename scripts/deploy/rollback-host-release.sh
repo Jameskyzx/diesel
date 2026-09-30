@@ -57,14 +57,15 @@ rollback_sourced_production_root_is_selected() {
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   if [[ "$#" -lt 1 || "$#" -gt 2 ||
     ! "${1:-}" =~ ^[0-9a-f]{40}$ ]]; then
-    echo "usage: rollback-host-release.sh <full-lowercase-git-commit-sha> [--begin-activation|--check|--apply|--abort-if-uncommitted|--restore-governance-host|--validate-committed]" >&2
+    echo "usage: rollback-host-release.sh <full-lowercase-git-commit-sha> [--begin-activation|--check|--apply|--abort-if-uncommitted|--restore-governance-host|--validate-committed|--check-pending-0b5207c|--recover-pending-0b5207c]" >&2
     exit 64
   fi
   case "${2:---check}" in
     --begin-activation | --check | --apply | --abort-if-uncommitted | \
-      --restore-governance-host | --validate-committed) ;;
+      --restore-governance-host | --validate-committed | \
+      --check-pending-0b5207c | --recover-pending-0b5207c) ;;
     *)
-      echo "usage: rollback-host-release.sh <full-lowercase-git-commit-sha> [--begin-activation|--check|--apply|--abort-if-uncommitted|--restore-governance-host|--validate-committed]" >&2
+      echo "usage: rollback-host-release.sh <full-lowercase-git-commit-sha> [--begin-activation|--check|--apply|--abort-if-uncommitted|--restore-governance-host|--validate-committed|--check-pending-0b5207c|--recover-pending-0b5207c]" >&2
       exit 64
       ;;
   esac
@@ -109,7 +110,7 @@ else
 fi
 
 rollback_usage() {
-  echo "usage: rollback-host-release.sh <full-lowercase-git-commit-sha> [--begin-activation|--check|--apply|--abort-if-uncommitted|--restore-governance-host|--validate-committed]" >&2
+  echo "usage: rollback-host-release.sh <full-lowercase-git-commit-sha> [--begin-activation|--check|--apply|--abort-if-uncommitted|--restore-governance-host|--validate-committed|--check-pending-0b5207c|--recover-pending-0b5207c]" >&2
 }
 
 rollback_fail() {
@@ -2150,7 +2151,7 @@ rollback_inspect_pm2_process() {
 }
 
 rollback_validate_pm2_process() {
-  if [[ "$#" -ne 10 ]]; then
+  if [[ "$#" -ne 10 && ( "$#" -ne 11 || "${11:-}" != --wait-for-startup ) ]]; then
     rollback_fail 64 "PM2 process validation requires ten fixed arguments"
     return
   fi
@@ -2214,6 +2215,7 @@ rollback_validate_pm2_process() {
         HOST_COMMAND_PATH="${host_command_path}" \
         PM2_RUNNER_MODE="${pm2_runner_mode}" \
         FIXED_VPS_PATH="${fixed_vps_path}" \
+        WAIT_FOR_STARTUP="${11:-}" \
         "${node_binary}" -e '
           const {
             closeSync,
@@ -2225,6 +2227,7 @@ rollback_validate_pm2_process() {
           } = require("node:fs");
           const { isAbsolute, relative, resolve, sep } = require("node:path");
           const { spawnSync } = require("node:child_process");
+          const { performance } = require("node:perf_hooks");
 
           const MAX_JLIST_BYTES = 16 * 1024 * 1024;
           const MAX_PACKAGE_BYTES = 64 * 1024;
@@ -2451,6 +2454,14 @@ rollback_validate_pm2_process() {
             throw new Error("invalid identity");
           }
           const expectedTitle = Buffer.from(`next-server (v${nextVersion})\0`);
+          // PM2 reports online before Next asynchronously sets process.title.
+          // Only the exact trusted Node launch argv is a retryable state.
+          const expectedStartup = Buffer.from([
+            expectedNode, ...expectedArgs.slice(6), "",
+          ].join("\0"));
+          const waitForStartup = process.env.WAIT_FOR_STARTUP === "--wait-for-startup";
+          const deadline = performance.now() + 30_000;
+          let readyTitleSeen = false;
 
           function validateLiveProcess(pid) {
             const processRoot = resolve(procRoot, String(pid));
@@ -2470,19 +2481,25 @@ rollback_validate_pm2_process() {
               !cmdline.subarray(0, expectedTitle.length).equals(expectedTitle) ||
               !cmdline.subarray(expectedTitle.length).every((byte) => byte === 0)
             ) {
+              if (waitForStartup && !readyTitleSeen && cmdline.equals(expectedStartup)) return false;
               throw new Error("invalid identity");
             }
+            readyTitleSeen = true;
+            return true;
           }
 
+          (async () => {
           try {
             const firstSnapshot = decodeJson(
               readBoundedDescriptor(0, MAX_JLIST_BYTES),
             );
             const pid = validateSnapshot(firstSnapshot);
-            validateLiveProcess(pid);
-
-            const secondResult = pm2RunnerMode === "path-fixture"
-              ? spawnSync(
+            for (;;) {
+              const readyBefore = validateLiveProcess(pid);
+              if (performance.now() >= deadline) throw new Error("startup deadline");
+              const timeout = Math.max(1, Math.min(5000, Math.ceil(deadline - performance.now())));
+              const secondResult = pm2RunnerMode === "path-fixture"
+                ? spawnSync(
                   "/usr/bin/env",
                   [
                     "-i",
@@ -2493,6 +2510,8 @@ rollback_validate_pm2_process() {
                   ],
                   {
                     maxBuffer: MAX_JLIST_BYTES,
+                    timeout,
+                    killSignal: "SIGKILL",
                     stdio: ["ignore", "pipe", "ignore"],
                   },
                 )
@@ -2502,22 +2521,29 @@ rollback_validate_pm2_process() {
                   {
                     env: { HOME: "/root", PATH: hostCommandPath },
                     maxBuffer: MAX_JLIST_BYTES,
+                    timeout,
+                    killSignal: "SIGKILL",
                     stdio: ["ignore", "pipe", "ignore"],
                   },
                 );
-            if (
-              secondResult.error !== undefined ||
-              secondResult.status !== 0 ||
-              !Buffer.isBuffer(secondResult.stdout)
-            ) {
-              throw new Error("invalid identity");
+              if (
+                secondResult.error !== undefined ||
+                secondResult.status !== 0 ||
+                !Buffer.isBuffer(secondResult.stdout)
+              ) {
+                throw new Error("invalid identity");
+              }
+              validateSnapshot(decodeJson(secondResult.stdout), pid);
+              const readyAfter = validateLiveProcess(pid);
+              if (performance.now() >= deadline) throw new Error("startup deadline");
+              if (readyBefore && readyAfter) break;
+              await new Promise((resolve) => setTimeout(resolve, 100));
             }
-            validateSnapshot(decodeJson(secondResult.stdout), pid);
-            validateLiveProcess(pid);
             process.stdout.write(String(pid));
           } catch {
             process.exitCode = 70;
           }
+          })();
         ' 8>&- 2>/dev/null
   )" || [[ -z "${pm2_process_pid}" ]]; then
     rollback_fail 70 "rollback process identity validation failed"
@@ -2532,6 +2558,11 @@ rollback_validate_pm2_process() {
     rollback_fail 70 "rollback process identity validation failed"
     return
   fi
+}
+
+rollback_wait_for_pm2_process() {
+  [[ "$#" -eq 10 ]] || { rollback_fail 64 "PM2 startup requires ten fixed arguments"; return; }
+  rollback_validate_pm2_process "$@" --wait-for-startup
 }
 
 rollback_validate_durable_pm2_state() {
@@ -3504,6 +3535,11 @@ rollback_host_release() (
     APP_VERSION="${previous_release_name}" \
     NODE_ENV=production \
     "${pm2_command[@]}" start "${previous_ecosystem}" 8>&-
+  rollback_wait_for_pm2_process \
+    "${previous_release_name}" "${previous_release}" "${current_link}" \
+    "${proc_root}" "${fixed_vps_path}" "${node_binary}" \
+    "$(id -u diesel)" "$(id -g diesel)" \
+    "${expected_pm2_exec}" "${root_command_path}"
   env -i HOME=/root PATH="${root_command_path}" \
     "${pm2_command[@]}" save 8>&-
   rollback_validate_durable_pm2_state \
@@ -3596,8 +3632,26 @@ rollback_host_release_main() (
     return 64
   fi
 
+  local target_release="$1"
+  local target_mode="${2:---check}"
+  local incident_recovery=0
+  case "${target_mode}" in
+    --check-pending-0b5207c | --recover-pending-0b5207c)
+      # One recorded incident, not a general cross-release override. The first
+      # SHA still binds the executing, freshly CI-authorized controller above.
+      rollback_prepare_pending_incident "$1"
+      target_release=0b5207c17a6b98260733e0e4f470376f23e377b2
+      if [[ "${target_mode}" == --check-pending-0b5207c ]]; then
+        target_mode=--check
+      else
+        target_mode=--abort-if-uncommitted
+        incident_recovery=1
+      fi
+      ;;
+  esac
+
   rollback_host_release \
-    "$1" "${2:---check}" \
+    "${target_release}" "${target_mode}" \
     "/opt/diesel" \
     "/etc/nginx/sites-available" \
     "/opt/node-v22.22.3-linux-x64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
@@ -3606,7 +3660,59 @@ rollback_host_release_main() (
     "/root/.pm2" \
     "/opt/node-v22.22.3-linux-x64/lib/node_modules/pm2/bin/pm2" \
     "/etc/systemd/system/pm2-root.service"
+  if [[ "${incident_recovery}" -eq 1 ]]; then
+    host_activation_ledger_scan_all /opt/diesel \
+      /opt/node-v22.22.3-linux-x64/bin/node zero-active
+  fi
 )
+
+rollback_prepare_pending_incident() {
+  [[ "${BASH_SOURCE[0]}" == "$0" && "$#" -eq 1 && EUID -eq 0 ]] || return 64
+  local controller="$1"
+  local failed=0b5207c17a6b98260733e0e4f470376f23e377b2
+  local previous=5b35ced1e6e52ca1df9fec9d46f355b73b033ec6
+  local release="/opt/diesel/releases/${controller}"
+  local node=/opt/node-v22.22.3-linux-x64/bin/node
+  local fixed_path=/opt/node-v22.22.3-linux-x64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+  local helper
+  [[ "${controller}" =~ ^[0-9a-f]{40}$ && "${controller}" != "${failed}" &&
+     "${controller}" != "${previous}" ]] || return 64
+  rollback_require_production_command_boundary "${fixed_path}" "${node}" \
+    /opt/node-v22.22.3-linux-x64/lib/node_modules/pm2/bin/pm2
+  rollback_acquire_release_lifecycle_lock /opt/diesel
+  rollback_require_regular_file /opt/diesel/.release-build.lock root:root:600 'release build lock'
+  exec 9<>/opt/diesel/.release-build.lock
+  /usr/bin/flock -n 9
+  for helper in release-input-manifest.mjs release-artifact-manifest.mjs; do
+    rollback_require_trusted_release_path "${release}/scripts/deploy/${helper}" file no 'recovery controller helper'
+  done
+  (
+    cd -- "${release}"
+    /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin "${node}" \
+      "${release}/scripts/deploy/release-input-manifest.mjs" verify \
+      "${controller}" .release-input-manifest.json 8>&- 9>&- >/dev/null
+  )
+  host_activation_ledger_scan_all /opt/diesel "${node}" allow-active "${failed}"
+  host_activation_ledger_require_pending "${failed}" /opt/diesel "${node}"
+  [[ "$(/usr/bin/sha256sum /opt/diesel/backups/HOST_ACTIVATION_PROTOCOL_V1)" == \
+     'ed6eaa7ce32451df8e7490f0689fe4dcd7f8ea26fddab0a6862f354cfbfcc054  /opt/diesel/backups/HOST_ACTIVATION_PROTOCOL_V1' ]]
+  [[ "$(/usr/bin/realpath -e /opt/diesel/current)" == "/opt/diesel/releases/${previous}" ]]
+  [[ "$(</opt/diesel/backups/${failed}/previous-release)" == "/opt/diesel/releases/${previous}" ]]
+  # Validate the built failed candidate without modifying/reusing it. The
+  # existing rollback below remains responsible for every host and terminal proof.
+  local artifact_digest
+  artifact_digest="$(
+    cd -- "/opt/diesel/releases/${failed}"
+    /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin "${node}" \
+      "${release}/scripts/deploy/release-artifact-manifest.mjs" check-ready \
+      "${failed}" .build-complete .deploy-ready \
+      0 "$(/usr/bin/id -g diesel)" "$(/usr/bin/id -u diesel)" "$(/usr/bin/id -g diesel)" \
+      8>&- 9>&-
+  )"
+  [[ "${artifact_digest}" == e5c5b029107b015ec563297f1b49d165168965762a80bf20e21d4a1dbf007002 ]]
+  # Build exclusion has served its purpose; never leak FD 9 into rollback children.
+  exec 9>&-
+}
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   rollback_host_release_main "$@"

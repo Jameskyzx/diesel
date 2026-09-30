@@ -227,6 +227,7 @@ publish_governance_country_fixtures_for_root() {
       fi
     else
       if corepack pnpm exec tsx \
+        --conditions=react-server \
         scripts/db/ingest-accepted-fixtures.ts --country="${country_iso3}"; then
         country_status=0
       else

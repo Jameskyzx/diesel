@@ -6774,11 +6774,14 @@ printf '%s\\n' "$value"
         .split("\n");
       expect(invocations).toHaveLength(97);
       expect(invocations[0]).toBe(
-        "pnpm exec tsx scripts/db/ingest-accepted-fixtures.ts --country=CRI",
+        "pnpm exec tsx --conditions=react-server scripts/db/ingest-accepted-fixtures.ts --country=CRI",
       );
       expect(invocations.at(-1)).toBe(
-        "pnpm exec tsx scripts/db/ingest-accepted-fixtures.ts --country=MLT",
+        "pnpm exec tsx --conditions=react-server scripts/db/ingest-accepted-fixtures.ts --country=MLT",
       );
+      expect(invocations.every((invocation) => invocation.startsWith(
+        "pnpm exec tsx --conditions=react-server scripts/db/ingest-accepted-fixtures.ts --country=",
+      ))).toBe(true);
       expect(new Set(invocations).size).toBe(97);
       await expect(readFile(fixture.trapLog, "utf8")).rejects.toMatchObject({
         code: "ENOENT",

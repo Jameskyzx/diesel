@@ -198,6 +198,32 @@ and artifacts; production code must not import it.
 
 ## Current advisory review (2026-09-30)
 
+PR #40's dependency gate reported two high findings on the existing
+`brace-expansion@1.1.18` and `5.0.9` installation edges:
+[nested expansion recursion](https://github.com/advisories/GHSA-qhr7-859c-m2p7)
+and [comma-parser recursion and argument overflow](https://github.com/advisories/GHSA-6j4f-fj2g-mc7p).
+The exact overrides now select the official same-major patches `1.1.20` and
+`5.0.11`. Only those two dependency identities change in the lockfile; no root
+dependency, lifecycle permission, schema or advisory exception is added. The
+workspace, pre-install guard and affected CI job digests are updated together;
+the required gate is unchanged and the failed run remains failed.
+
+Twelve real-installation regressions traverse ESLint/minimatch and
+typescript-estree/minimatch, check the resolved patches, exercise both advisory
+payload families and preserve ordinary nested alternatives/ranges. The original
+installation failed ten and passed two; the patched installation passes all
+twelve. Script-disabled frozen installation and `pnpm audit:security` passed
+at 2026-09-30 05:57 UTC. No high/critical finding is accepted by the policy;
+this is not a zero-vulnerability or production-exploitability claim. Evidence
+bound to the lockfile must be recaptured before release.
+
+2026-09-30：PR #40 安全门禁被 brace-expansion 两项高危阻断，现只更新现有间接依赖
+至官方同主版本补丁 1.1.20 / 5.0.11，并同步安装边界和 CI 摘要链。实际安装路径的
+12 项回归由 10 失败 / 2 通过变为全部通过，冻结安装及安全审计通过；没有新增依赖、
+风险豁免或绕过 CI，也不据此声称零漏洞、线上可被利用或部署完成。
+
+### Earlier 2026-09-30 undici observation
+
 PR #39's dependency gate subsequently reported two high findings against
 `undici@7.29.0`: [unrequested WebSocket subprotocol denial of service](https://github.com/nodejs/undici/security/advisories/GHSA-rfgv-xxqx-mfg5)
 and [BalancedPool dropping function-valued TLS/connection options](https://github.com/nodejs/undici/security/advisories/GHSA-w293-vg96-wgc3).

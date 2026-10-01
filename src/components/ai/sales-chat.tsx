@@ -1060,7 +1060,7 @@ function ToolResultCard({
     <section
       aria-label={labels[result.tool]}
       className={cn(
-        "my-2 space-y-3 rounded-xl border p-3",
+        "my-2 space-y-3 rounded-md border p-3",
         result.status === "ok"
           ? "border-primary/20 bg-primary/5"
           : "border-amber-300/60 bg-amber-50/80",
@@ -1630,18 +1630,18 @@ export function SalesChat({
   return (
     <aside
       aria-labelledby="sales-chat-heading"
-      className="surface-panel flex h-full min-h-[34rem] flex-col overflow-hidden rounded-[1.75rem]"
+      className="surface-panel flex h-full min-w-0 min-h-[34rem] flex-col overflow-hidden rounded-md"
       data-sales-chat-root
       id="sales-chat-panel"
       role="complementary"
     >
-      <header className="flex items-center justify-between border-b border-black/[0.06] bg-[#fffefa]/85 px-5 py-4 sm:px-6">
+      <header className="flex items-center justify-between border-b bg-card px-5 py-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-full bg-[#173d31] text-[#dff29d] shadow-sm">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-primary">
             <Bot aria-hidden="true" className="size-4" />
           </span>
           <div>
-            <h2 className="text-sm font-semibold text-[#17382e]" id="sales-chat-heading">
+            <h2 className="text-sm font-semibold text-foreground" id="sales-chat-heading">
               {copy.title}
             </h2>
             <p className="mt-0.5 text-[11px] text-slate-500">
@@ -1673,7 +1673,7 @@ export function SalesChat({
 
       <div
         aria-label={copy.roleLabel}
-        className="min-h-56 flex-1 space-y-4 overflow-y-auto bg-[#fafaf6]/65 p-4 sm:p-6"
+        className="min-h-56 flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4 sm:p-6"
         onScroll={(event) => {
           const messageLog = event.currentTarget;
           shouldAutoScrollRef.current =
@@ -1686,7 +1686,7 @@ export function SalesChat({
         role="region"
       >
         {messages.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-emerald-900/15 bg-[#f1f5ec] p-5 text-sm">
+          <div className="rounded-md border bg-card p-5 text-sm">
             <p className="text-xs leading-6 text-muted-foreground">
               {demoMode
                 ? copy.emptyDemo
@@ -1696,7 +1696,7 @@ export function SalesChat({
               <div className="mt-3 flex flex-wrap gap-2">
                 {suggestedPrompts.map((prompt) => (
                   <button
-                    className="rounded-full border border-emerald-900/10 bg-white px-3 py-1.5 text-left text-xs font-medium text-emerald-900 transition-colors hover:bg-emerald-50"
+                    className="rounded-lg border bg-card px-3 py-2 text-left text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     key={prompt}
                     onClick={() => {
                       initialPromptPristineRef.current = false;
@@ -1724,7 +1724,7 @@ export function SalesChat({
             className={cn(
               "rounded-2xl px-4 py-3 text-sm shadow-sm",
               message.role === "user"
-                ? "ml-8 bg-[#173d31] text-white sm:ml-24"
+                ? "ml-8 bg-primary text-primary-foreground sm:ml-24"
                 : "mr-2 border border-black/[0.06] bg-white sm:mr-12",
             )}
             key={message.id}
@@ -1807,7 +1807,7 @@ export function SalesChat({
 
         {error ? (
           <div
-            className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
+            className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
             role="alert"
           >
             <p>{chatErrorMessage(error, dictionary)}</p>
@@ -1856,7 +1856,7 @@ export function SalesChat({
         ) : null}
       </div>
 
-      <div className="border-t border-black/[0.06] bg-[#f2f4ee] p-3 sm:p-4">
+      <div className="border-t bg-card p-3 sm:p-4">
         <form
           aria-busy={validatingAttachments || submissionPending}
           className="space-y-2"
@@ -1959,7 +1959,7 @@ export function SalesChat({
                     ? copy.addFileOrImage
                     : copy.addFile
               }
-              className="size-11 rounded-xl border-0 bg-[#f1f4ee] p-0 text-emerald-900 shadow-none hover:bg-[#e6eee2]"
+              className="size-11 rounded-lg border-0 bg-muted p-0 text-muted-foreground shadow-none hover:bg-accent hover:text-primary"
               disabled={
                 waiting ||
                 recoveryPending ||
@@ -2014,7 +2014,7 @@ export function SalesChat({
             {waiting ? (
               <Button
                 aria-label={copy.stopGenerating}
-                className="h-11 shrink-0 gap-1.5 rounded-xl bg-red-800 px-3 text-white shadow-none hover:bg-red-900"
+                className="h-11 shrink-0 gap-1.5 rounded-md bg-red-800 px-3 text-white shadow-none hover:bg-red-900"
                 onClick={() => void stop()}
                 type="button"
               >
@@ -2024,7 +2024,7 @@ export function SalesChat({
             ) : (
               <Button
                 aria-label={copy.send}
-                className="size-11 rounded-xl bg-[#173d31] p-0 text-white shadow-none hover:bg-[#215142]"
+                className="size-11 rounded-lg bg-primary p-0 text-primary-foreground shadow-none hover:bg-primary/90"
                 disabled={
                   recoveryPending ||
                   submissionPending ||

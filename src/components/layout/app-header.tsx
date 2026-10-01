@@ -61,30 +61,43 @@ export function AppHeader() {
   }, [locale, pathname]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-[#f8f7f2]/90 backdrop-blur-xl">
-      <div className="page-shell flex min-h-[4.5rem] items-center gap-1.5 sm:gap-8">
+    <header className="sticky top-0 z-50 border-b bg-card shadow-[0_1px_2px_rgb(24_36_51_/_0.03)]" data-testid="app-navigation-shell">
+      <div className="page-shell flex h-16 items-center gap-3">
         <Link
           aria-label={dictionary.header.brandHome}
-          className="group flex shrink-0 items-center gap-3"
+          className="group flex min-w-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href="/"
           onNavigate={notifyPublicNavigationIntent}
         >
-          <span className="grid size-9 place-items-center rounded-full bg-[#11382d] text-[10px] font-bold tracking-[0.08em] text-[#d9f28f] shadow-[0_8px_24px_rgb(17_56_45_/_0.18)]">
+          <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary text-xs font-bold tracking-tight text-white">
             GD
           </span>
-          <span className="hidden md:block">
-            <span className="display-title block text-[1.05rem] leading-none font-semibold text-[#142b24]">
+          <span className="block min-w-0">
+            <span className="block text-sm leading-none font-semibold tracking-tight text-foreground sm:text-base">
               Global Diesel
             </span>
-            <span className="mt-1 block text-[9px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+            <span className="mt-1.5 hidden text-[10px] text-muted-foreground sm:block">
               {dictionary.header.subtitle}
             </span>
           </span>
         </Link>
-
+        <div className="ml-auto shrink-0">
+          <LocaleToggle />
+        </div>
+        <Link
+          className="hidden h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/25 lg:inline-flex"
+          href="/chat"
+          onNavigate={notifyPublicNavigationIntent}
+          title={dictionary.header.openChat}
+        >
+          {dictionary.header.analyze}
+          <ArrowUpRight aria-hidden="true" className="size-4" />
+        </Link>
+      </div>
+      <div className="border-t">
         <nav
           aria-label={dictionary.header.navLabel}
-          className="ml-auto flex min-w-0 items-center gap-1 overflow-x-auto rounded-full border border-black/[0.06] bg-white/70 p-1 shadow-sm"
+          className="page-shell flex min-w-0 items-center gap-4 overflow-x-auto sm:gap-6"
           ref={navigationRef}
         >
           {navigationItems.map(({ href, icon: Icon, label, matches }) => {
@@ -93,33 +106,22 @@ export function AppHeader() {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-1.5 text-sm font-medium transition-all outline-none focus-visible:ring-[3px] focus-visible:ring-emerald-700/20 sm:px-4",
+                  "inline-flex h-11 shrink-0 items-center gap-2 border-b-2 px-2 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   active
-                    ? "bg-[#163b30] text-white shadow-sm"
-                    : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900",
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
                 href={href}
                 key={href}
                 onNavigate={notifyPublicNavigationIntent}
               >
-                <Icon aria-hidden="true" className="hidden size-4 sm:block" />
+                <Icon aria-hidden="true" className="size-4" />
                 {dictionary.header[label]}
               </Link>
             );
           })}
         </nav>
 
-        <LocaleToggle />
-
-        <Link
-          className="hidden h-10 shrink-0 items-center gap-2 rounded-full bg-[#dff1cc] px-4 text-sm font-semibold text-[#17382e] transition-all hover:bg-[#cfe9b2] focus-visible:ring-[3px] focus-visible:ring-emerald-700/20 lg:inline-flex"
-          href="/chat"
-          onNavigate={notifyPublicNavigationIntent}
-          title={dictionary.header.openChat}
-        >
-          {dictionary.header.analyze}
-          <ArrowUpRight aria-hidden="true" className="size-4" />
-        </Link>
       </div>
     </header>
   );

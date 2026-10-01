@@ -391,8 +391,9 @@ test("updates the tooltip across consecutive country hovers", async ({
   });
   const tooltip = page.getByTestId("map-tooltip");
 
-  // Natural Earth 1:110m 的粗粒度边界在当前固定视图下，该点稳定命中 FRA。
-  await mapContainer.hover({ position: countryPosition(10, 51) });
+  // Use a point inside mainland France in the shipped GeoJSON. (10, 51)
+  // is Germany; its former FRA hit depended on the old viewport projection.
+  await mapContainer.hover({ position: countryPosition(2.5, 46.5) });
   await expect(tooltip).toHaveAttribute("data-country-iso3", "FRA");
   await expect(tooltip).toContainText("法国");
   await expect(tooltip).toContainText("核验：");
@@ -441,10 +442,10 @@ test("localizes a map tooltip when the valid summary response omits that country
       2;
     await mapContainer.hover({
       position: {
-        x: (mapBox?.width ?? 0) / 2 + ((10 - 8) / 360) * worldSize,
+        x: (mapBox?.width ?? 0) / 2 + ((2.5 - 8) / 360) * worldSize,
         y:
           (mapBox?.height ?? 0) / 2 +
-          (mercatorY(51) - mercatorY(18)) * worldSize,
+          (mercatorY(46.5) - mercatorY(18)) * worldSize,
       },
     });
     return page.getByTestId("map-tooltip");

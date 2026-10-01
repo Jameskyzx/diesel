@@ -35,7 +35,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     }
 
     const analysisLink = page.getByRole("banner")
-      .locator('a[href="/chat"]').last();
+      .getByRole("link", { exact: true, name: analysisLinkCopy[locale].name });
     await expect(analysisLink).toBeVisible();
     await expect(analysisLink).toHaveText(analysisLinkCopy[locale].name);
     await expect(analysisLink).toHaveAccessibleName(analysisLinkCopy[locale].name);
@@ -72,13 +72,15 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect(brandLink).toHaveAccessibleName(brandHomeNames[nextLocale]);
 
     await page.setViewportSize({ height: 720, width: 1024 });
-    await expect(analysisLink).toHaveAccessibleName(
+    const localizedAnalysisLink = page.getByRole("banner")
+      .getByRole("link", { exact: true, name: analysisLinkCopy[nextLocale].name });
+    await expect(localizedAnalysisLink).toHaveAccessibleName(
       analysisLinkCopy[nextLocale].name,
     );
-    await expect(analysisLink).toHaveAccessibleDescription(
+    await expect(localizedAnalysisLink).toHaveAccessibleDescription(
       analysisLinkCopy[nextLocale].description,
     );
-    await analysisLink.click();
+    await localizedAnalysisLink.click();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/chat");
     await expect(page.locator("html")).toHaveAttribute("lang", nextLocale);
   });

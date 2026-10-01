@@ -1,22 +1,22 @@
 {
   "complete": true,
-  "evaluatedAt": "2026-10-01T01:04:55.515Z",
+  "evaluatedAt": "2026-10-01T06:09:27.130Z",
   "provenance": {
-    "baseHeadCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
-    "evaluatedCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+    "baseHeadCommit": "b4db777a136b38b533d88effcced6971ae116753",
+    "evaluatedCommit": "b4db777a136b38b533d88effcced6971ae116753",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-      "fileCount": 345
+      "digest": "2a7adf7422a1a25dcdfaa9753e71f35fa1546e7a9ebb2e33833fdf204f26c52f",
+      "fileCount": 346
     },
     "worktreeState": "clean"
   },
-  "runId": "c891666c-9e9f-4006-a46d-eec002acf8b0",
+  "runId": "e3c942f2-af52-4267-bd22-a3baf3759dce",
   "runs": [
     {
       "command": "pnpm test:e2e",
       "complete": true,
-      "completedAt": "2026-10-01T01:03:23.868Z",
+      "completedAt": "2026-10-01T06:08:00.541Z",
       "configPath": "playwright.config.ts",
       "exitCode": 0,
       "globalErrorCount": 0,
@@ -25,20 +25,20 @@
       "projects": [
         {
           "counts": {
-            "collected": 185,
+            "collected": 187,
             "failed": 0,
             "flaky": 0,
-            "passed": 184,
+            "passed": 186,
             "skipped": 1
           },
           "name": "desktop-chromium"
         },
         {
           "counts": {
-            "collected": 185,
+            "collected": 187,
             "failed": 0,
             "flaky": 0,
-            "passed": 135,
+            "passed": 137,
             "skipped": 50
           },
           "name": "mobile-chromium"
@@ -76,27 +76,27 @@
       ],
       "provenance": {
         "completed": {
-          "headCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+          "headCommit": "b4db777a136b38b533d88effcced6971ae116753",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-            "fileCount": 345
+            "digest": "2a7adf7422a1a25dcdfaa9753e71f35fa1546e7a9ebb2e33833fdf204f26c52f",
+            "fileCount": 346
           },
           "worktreeState": "clean"
         },
-        "evaluatedCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+        "evaluatedCommit": "b4db777a136b38b533d88effcced6971ae116753",
         "started": {
-          "headCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+          "headCommit": "b4db777a136b38b533d88effcced6971ae116753",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-            "fileCount": 345
+            "digest": "2a7adf7422a1a25dcdfaa9753e71f35fa1546e7a9ebb2e33833fdf204f26c52f",
+            "fileCount": 346
           },
           "worktreeState": "clean"
         }
       },
       "runStatus": "passed",
-      "startedAt": "2026-10-01T00:52:34.375Z",
+      "startedAt": "2026-10-01T05:57:28.940Z",
       "tests": [
         {
           "attempts": 1,
@@ -126,7 +126,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-0c6a47696b4c064ef40c",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "core-webkit",
           "retryCount": 0
@@ -137,7 +137,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-1a1b42065f3c288b1080",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "core-webkit",
           "retryCount": 0
@@ -148,7 +148,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-2bcdc2df92ae7c0d6f0f",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "core-webkit",
           "retryCount": 0
@@ -159,7 +159,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-de25f3eab6aae531257a",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "core-webkit",
           "retryCount": 0
@@ -368,7 +368,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "skipped",
           "id": "521615c42917fec406e0-1aa274e4c4153e04b09c",
-          "line": 1030,
+          "line": 1034,
           "outcome": "skipped",
           "project": "core-webkit",
           "retryCount": 0
@@ -379,7 +379,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-64e080ef0eeed5f4e461",
-          "line": 1064,
+          "line": 1068,
           "outcome": "expected",
           "project": "core-webkit",
           "retryCount": 0
@@ -390,7 +390,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-045b77e80c7e0691827a",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "core-webkit",
           "retryCount": 0
@@ -401,7 +401,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-0d86ce86648729289741",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "core-webkit",
           "retryCount": 0
@@ -412,7 +412,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-9785ae4ed1f4231e99c6",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "core-webkit",
           "retryCount": 0
@@ -423,7 +423,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-9dacd0474b12163e9aac",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "core-webkit",
           "retryCount": 0
@@ -555,7 +555,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-27fb04f4de98a47eac4c",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -566,7 +566,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-30c9ed81ab70b178493e",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -577,7 +577,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-3589b6d50e7dfc40d1b3",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -588,7 +588,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-90fa4551f85606df72e7",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1589,7 +1589,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-8184d808a2f5ac143a78",
-          "line": 1030,
+          "line": 1034,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1600,7 +1600,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-6ddc0f8444ec51452511",
-          "line": 1064,
+          "line": 1068,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1611,7 +1611,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-396bf881c23542e1a611",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1622,7 +1622,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-b063d4e0e2599535fc73",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1633,7 +1633,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-be93197342caca449de5",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1644,7 +1644,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-c0ffccfb788f719ab5c3",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1864,7 +1864,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-e17729c00ce8f8cd6089",
-          "line": 412,
+          "line": 413,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1875,7 +1875,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-2cbf8ac972923cebf2fe",
-          "line": 466,
+          "line": 467,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1886,7 +1886,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-b0f8d87301cdb6b07c6a",
-          "line": 523,
+          "line": 524,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1897,7 +1897,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-159d0fb910b8592facc4",
-          "line": 545,
+          "line": 546,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1908,7 +1908,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-6fecdaf1535b5a7be548",
-          "line": 573,
+          "line": 574,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1919,7 +1919,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-5ec533320b96f4330f09",
-          "line": 588,
+          "line": 589,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1930,7 +1930,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-1889e3284f44feae0614",
-          "line": 628,
+          "line": 629,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1941,7 +1941,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-789a4bd9899ced15cf27",
-          "line": 709,
+          "line": 710,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1952,7 +1952,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-0e5ff395393f360bee86",
-          "line": 739,
+          "line": 740,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1963,7 +1963,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-c187e4796d70eb7e089b",
-          "line": 774,
+          "line": 775,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1974,7 +1974,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-90c9ceb6b2d571e9e5f2",
-          "line": 855,
+          "line": 856,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1985,7 +1985,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-6c4c5aa64eee9ac88e02",
-          "line": 873,
+          "line": 874,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -1996,7 +1996,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-d183dbc20f3bc5ad3d87",
-          "line": 891,
+          "line": 892,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2007,7 +2007,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-77b0f3166968617c1063",
-          "line": 924,
+          "line": 925,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2018,7 +2018,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-2a89752fe864ef8b2d67",
-          "line": 937,
+          "line": 938,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2029,7 +2029,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-9cb8bc0bd34212b88a93",
-          "line": 970,
+          "line": 971,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2040,7 +2040,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-642eabea1c529805ca80",
-          "line": 1007,
+          "line": 1008,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2051,7 +2051,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-d7818c62774700ff33c4",
-          "line": 1007,
+          "line": 1008,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2062,7 +2062,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-17e5f7e9b496c3dfcb4b",
-          "line": 1072,
+          "line": 1073,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2073,7 +2073,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-6b391d11e2bd4e44f349",
-          "line": 1120,
+          "line": 1121,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2084,7 +2084,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-8101074baaad08e5ff03",
-          "line": 1141,
+          "line": 1142,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2095,7 +2095,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "skipped",
           "id": "2d8799038d2916f69765-29a1beddf687367391a1",
-          "line": 1150,
+          "line": 1151,
           "outcome": "skipped",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2106,7 +2106,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-436f00eb9745d7da79a4",
-          "line": 1210,
+          "line": 1211,
           "outcome": "expected",
           "project": "desktop-chromium",
           "retryCount": 0
@@ -2565,6 +2565,28 @@
         {
           "attempts": 1,
           "expectedStatus": "passed",
+          "file": "e2e/workspace-layout.spec.ts",
+          "finalStatus": "passed",
+          "id": "87206d496e61dcf70a84-04f206ac11747236eedf",
+          "line": 4,
+          "outcome": "expected",
+          "project": "desktop-chromium",
+          "retryCount": 0
+        },
+        {
+          "attempts": 1,
+          "expectedStatus": "passed",
+          "file": "e2e/workspace-layout.spec.ts",
+          "finalStatus": "passed",
+          "id": "87206d496e61dcf70a84-f8c483a7ffc7367fbc71",
+          "line": 4,
+          "outcome": "expected",
+          "project": "desktop-chromium",
+          "retryCount": 0
+        },
+        {
+          "attempts": 1,
+          "expectedStatus": "passed",
           "file": "e2e/global-error-hydration.spec.ts",
           "finalStatus": "passed",
           "id": "c057d5bd960649eefaf9-8bd1a9f930c4740e2267",
@@ -2634,7 +2656,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-08460daf36ae342429ad",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -2645,7 +2667,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-1e5019358dd23c032d7b",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -2656,7 +2678,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-a337ab9c9bbf9e97647f",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -2667,7 +2689,7 @@
           "file": "e2e/accessibility.spec.ts",
           "finalStatus": "passed",
           "id": "ddd864604af8a6a0198f-e8bf2cca8b893de5b194",
-          "line": 93,
+          "line": 95,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3668,7 +3690,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "skipped",
           "id": "521615c42917fec406e0-5ae605b4d7d1cc27e382",
-          "line": 1030,
+          "line": 1034,
           "outcome": "skipped",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3679,7 +3701,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-b637bc12c891ede20ac7",
-          "line": 1064,
+          "line": 1068,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3690,7 +3712,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-11d3cca7433c559987c6",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3701,7 +3723,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-97e6324f46afd2074263",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3712,7 +3734,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-a21a3034e8ab9e07e6e5",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3723,7 +3745,7 @@
           "file": "e2e/locale.spec.ts",
           "finalStatus": "passed",
           "id": "521615c42917fec406e0-c4ffe30cadb2ea1cbd77",
-          "line": 1265,
+          "line": 1269,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3943,7 +3965,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "skipped",
           "id": "2d8799038d2916f69765-f9ba96faba0be20667fb",
-          "line": 412,
+          "line": 413,
           "outcome": "skipped",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3954,7 +3976,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-aa5ef847d226dd83c9b7",
-          "line": 466,
+          "line": 467,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3965,7 +3987,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-0028b79990c6dac4aa9c",
-          "line": 523,
+          "line": 524,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3976,7 +3998,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-7875dd171532b7f040bd",
-          "line": 545,
+          "line": 546,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3987,7 +4009,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-2b68f938721ebe074ce4",
-          "line": 573,
+          "line": 574,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -3998,7 +4020,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-6476149400ef6e47ea53",
-          "line": 588,
+          "line": 589,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4009,7 +4031,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-922b0f28ad7ec13923de",
-          "line": 628,
+          "line": 629,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4020,7 +4042,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-7ee2ea54e175a0628f2a",
-          "line": 709,
+          "line": 710,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4031,7 +4053,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-18e7aee63a97712718c8",
-          "line": 739,
+          "line": 740,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4042,7 +4064,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-104dfb744f16061972fa",
-          "line": 774,
+          "line": 775,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4053,7 +4075,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-7c22f7bda4c940617b68",
-          "line": 855,
+          "line": 856,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4064,7 +4086,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-3f3d19b57b24f3aa71e4",
-          "line": 873,
+          "line": 874,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4075,7 +4097,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-597553b4087e8cda070f",
-          "line": 891,
+          "line": 892,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4086,7 +4108,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-5c4d6abd124adc927a04",
-          "line": 924,
+          "line": 925,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4097,7 +4119,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-81927600237d264a09b2",
-          "line": 937,
+          "line": 938,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4108,7 +4130,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-ca4c34f1c9cdaaa9cdaf",
-          "line": 970,
+          "line": 971,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4119,7 +4141,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-43f6dfa466e5b65c98ec",
-          "line": 1007,
+          "line": 1008,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4130,7 +4152,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-6aa1cc5964a5cb01edee",
-          "line": 1007,
+          "line": 1008,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4141,7 +4163,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-267a8d695b5f3aac2c34",
-          "line": 1072,
+          "line": 1073,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4152,7 +4174,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-ba107f290ef50a692afe",
-          "line": 1120,
+          "line": 1121,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4163,7 +4185,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-6c44a99891474afd143b",
-          "line": 1141,
+          "line": 1142,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4174,7 +4196,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-c296bf9733672c82dc2e",
-          "line": 1150,
+          "line": 1151,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4185,7 +4207,7 @@
           "file": "e2e/map.spec.ts",
           "finalStatus": "passed",
           "id": "2d8799038d2916f69765-b032b67fa3a2cbe5f79e",
-          "line": 1210,
+          "line": 1211,
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
@@ -4640,13 +4662,35 @@
           "outcome": "expected",
           "project": "mobile-chromium",
           "retryCount": 0
+        },
+        {
+          "attempts": 1,
+          "expectedStatus": "passed",
+          "file": "e2e/workspace-layout.spec.ts",
+          "finalStatus": "passed",
+          "id": "87206d496e61dcf70a84-48cdf42d1077f8e9077a",
+          "line": 4,
+          "outcome": "expected",
+          "project": "mobile-chromium",
+          "retryCount": 0
+        },
+        {
+          "attempts": 1,
+          "expectedStatus": "passed",
+          "file": "e2e/workspace-layout.spec.ts",
+          "finalStatus": "passed",
+          "id": "87206d496e61dcf70a84-ec0e5765c2a49c2d27fe",
+          "line": 4,
+          "outcome": "expected",
+          "project": "mobile-chromium",
+          "retryCount": 0
         }
       ],
       "totals": {
-        "collected": 413,
+        "collected": 417,
         "failed": 0,
         "flaky": 0,
-        "passed": 348,
+        "passed": 352,
         "skipped": 65
       },
       "version": "diesel-playwright-run-v1"
@@ -4654,7 +4698,7 @@
     {
       "command": "pnpm test:e2e:demo",
       "complete": true,
-      "completedAt": "2026-10-01T01:04:13.072Z",
+      "completedAt": "2026-10-01T06:08:43.589Z",
       "configPath": "playwright.demo.config.ts",
       "exitCode": 0,
       "globalErrorCount": 0,
@@ -4684,27 +4728,27 @@
       ],
       "provenance": {
         "completed": {
-          "headCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+          "headCommit": "b4db777a136b38b533d88effcced6971ae116753",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-            "fileCount": 345
+            "digest": "2a7adf7422a1a25dcdfaa9753e71f35fa1546e7a9ebb2e33833fdf204f26c52f",
+            "fileCount": 346
           },
           "worktreeState": "clean"
         },
-        "evaluatedCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+        "evaluatedCommit": "b4db777a136b38b533d88effcced6971ae116753",
         "started": {
-          "headCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+          "headCommit": "b4db777a136b38b533d88effcced6971ae116753",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-            "fileCount": 345
+            "digest": "2a7adf7422a1a25dcdfaa9753e71f35fa1546e7a9ebb2e33833fdf204f26c52f",
+            "fileCount": 346
           },
           "worktreeState": "clean"
         }
       },
       "runStatus": "passed",
-      "startedAt": "2026-10-01T01:03:27.462Z",
+      "startedAt": "2026-10-01T06:08:04.168Z",
       "tests": [
         {
           "attempts": 1,
@@ -5467,7 +5511,7 @@
     {
       "command": "pnpm test:e2e:fde",
       "complete": true,
-      "completedAt": "2026-10-01T01:04:27.934Z",
+      "completedAt": "2026-10-01T06:08:57.228Z",
       "configPath": "playwright.fde.config.ts",
       "exitCode": 0,
       "globalErrorCount": 0,
@@ -5497,27 +5541,27 @@
       ],
       "provenance": {
         "completed": {
-          "headCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+          "headCommit": "b4db777a136b38b533d88effcced6971ae116753",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-            "fileCount": 345
+            "digest": "2a7adf7422a1a25dcdfaa9753e71f35fa1546e7a9ebb2e33833fdf204f26c52f",
+            "fileCount": 346
           },
           "worktreeState": "clean"
         },
-        "evaluatedCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+        "evaluatedCommit": "b4db777a136b38b533d88effcced6971ae116753",
         "started": {
-          "headCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+          "headCommit": "b4db777a136b38b533d88effcced6971ae116753",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-            "fileCount": 345
+            "digest": "2a7adf7422a1a25dcdfaa9753e71f35fa1546e7a9ebb2e33833fdf204f26c52f",
+            "fileCount": 346
           },
           "worktreeState": "clean"
         }
       },
       "runStatus": "passed",
-      "startedAt": "2026-10-01T01:04:15.718Z",
+      "startedAt": "2026-10-01T06:08:46.167Z",
       "tests": [
         {
           "attempts": 1,
@@ -5576,7 +5620,7 @@
     {
       "command": "pnpm test:e2e:csp:production",
       "complete": true,
-      "completedAt": "2026-10-01T01:04:55.515Z",
+      "completedAt": "2026-10-01T06:09:27.130Z",
       "configPath": "playwright.production.config.ts",
       "exitCode": 0,
       "globalErrorCount": 0,
@@ -5596,27 +5640,27 @@
       ],
       "provenance": {
         "completed": {
-          "headCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+          "headCommit": "b4db777a136b38b533d88effcced6971ae116753",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-            "fileCount": 345
+            "digest": "2a7adf7422a1a25dcdfaa9753e71f35fa1546e7a9ebb2e33833fdf204f26c52f",
+            "fileCount": 346
           },
           "worktreeState": "clean"
         },
-        "evaluatedCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+        "evaluatedCommit": "b4db777a136b38b533d88effcced6971ae116753",
         "started": {
-          "headCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+          "headCommit": "b4db777a136b38b533d88effcced6971ae116753",
           "sourceFingerprint": {
             "algorithm": "sha256",
-            "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-            "fileCount": 345
+            "digest": "2a7adf7422a1a25dcdfaa9753e71f35fa1546e7a9ebb2e33833fdf204f26c52f",
+            "fileCount": 346
           },
           "worktreeState": "clean"
         }
       },
       "runStatus": "passed",
-      "startedAt": "2026-10-01T01:04:52.952Z",
+      "startedAt": "2026-10-01T06:09:24.604Z",
       "tests": [
         {
           "attempts": 1,
@@ -5652,10 +5696,10 @@
     }
   ],
   "totals": {
-    "collected": 487,
+    "collected": 491,
     "failed": 0,
     "flaky": 0,
-    "passed": 420,
+    "passed": 424,
     "skipped": 67
   },
   "version": "diesel-playwright-evidence-v1"

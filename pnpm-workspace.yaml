@@ -20,4 +20,5 @@ overrides:
 patchedDependencies:
   "@vitest/runner@4.1.11": patches/@vitest__runner@4.1.11.patch
   next@16.3.6: patches/next@16.3.6.patch
+  vaul@1.1.2: patches/vaul@1.1.2.patch
 verifyDepsBeforeRun: false

@@ -152,7 +152,7 @@ readiness 除通用合同外还必须返回完全相同的 version；健康时�
 的 200 响应全部失败关闭。报告顶层记录该 expectedVersion。
 未显式设置外部 base URL 的本地默认 probe 不强制 repository release SHA。
 
-无付费检查覆盖 liveness、readiness、CHN 决策摘要、公开产品列表和确定性
+六项无付费检查覆盖 liveness、readiness、CHN 有证据/无数据两种决策摘要、公开产品列表和确定性
 `chat-direct-sse`；后者使用不调用模型供应商的能力说明直答路径，持续验证公开 chat route、
 request ID、SSE header 与闭合 UI-message v1 正文。产品列表必须恰好包含
 `DEMO-ENG-100`、`DEMO-ENG-200`，两条产品及其来源都标为 Demo，且真实/分类错配产品数为
@@ -160,13 +160,19 @@ request ID、SSE header 与闭合 UI-message v1 正文。产品列表必须恰�
 证据获得批准并同步修改 canary、publication manifest 与发布验收后才能改变。真实 provider
 的 `chat-provider-sse` 是独立的显式付费选项，不控制上述确定性 chat probe。
 所有检查都要求可追踪的 request ID；JSON 会按公开 Zod 合同解析，CHN probe 还会核对
-国家、scope、功率和日期，并把服务计算的 stale 状态视为失败。AI probe 会完整读取最多
-1 MB 的 UI-message v1 SSE，逐 event 复用 AI SDK schema，要求
+国家、scope、功率和日期，并把服务计算的 stale 状态视为失败。当前已批准 CHN 事实按
+`construction` / `agriculture` 发布，不能把通用 `non-road` 当作它们的聚合别名：
+`construction` / 100 kW 必须返回 `available`、来源与非空核验日期；`non-road` / 100 kW
+必须返回明确 `no_data`、空法规/来源、null 核验日期和非空缺口说明。两条查询均使用当前
+UTC 日期，不能相互替代或把任意无数据响应放行。默认 loopback 目标也使用同一已发布
+数据期望，不是零配置 PGlite Demo 的健康检查。AI probe 会完整读取最多 1 MB 的
+UI-message v1 SSE，逐 event 复用 AI SDK schema，要求
 start/text/`finishReason=stop`/`[DONE]` 闭合；`error`、`abort`、reasoning part、未知
 event、内容过滤、长度截断、空流或截断流全部失败关闭。输出只含路径、状态、耗时、
 错误码和 request ID。初始化阶段失败也会以稳定 stage 和 `INITIALIZATION_ERROR` 原子写入
-脱敏报告，不记录异常正文、凭据或响应体。上述语义以 `synthetic-canary-v3` 写入报告；旧版本结果不能
-解释为已验证 SSE 正文或 finish reason。
+脱敏报告，不记录异常正文、凭据或响应体。上述语义以 `synthetic-canary-v4` 写入报告；
+v3 对 CHN 通用 non-road 错误要求 available，保留其失败记录，不将其改写为成功。
+v4 同时验证有依据和证据缺口；v3 以前的结果也不能解释为已验证 SSE 正文或 finish reason。
 
 `.github/workflows/production-canary.yml` 在合入默认分支后以 GitHub schedule 尽力每 6 小时
 运行一次上述无付费检查，并显式设置 `CANARY_STATUS_PATH=docs/STATUS.md`。失败 job 与保留

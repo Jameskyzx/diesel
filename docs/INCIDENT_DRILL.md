@@ -38,12 +38,15 @@
 - For an explicit external `CANARY_BASE_URL`, `pnpm ops:canary` reads the full
   expected release SHA from the STATUS portfolio block (or an explicit
   `CANARY_EXPECTED_VERSION`), requires liveness/readiness to return that exact
-  version, checks the CHN decision summary, and requires the public product list
+  version, checks separate CHN construction/100 kW evidence-backed and generic
+  non-road/100 kW explicit no-data summaries, and requires the public product list
   to contain only the two approved fictional Demo configurations and zero real
   or Demo/source-mismatched products. Every run also exercises the no-provider
   deterministic chat SSE contract; `CANARY_CHECK_AI=true` independently adds
-  the paid provider SSE probe. Initialization failures persist a sanitized v3
-  report with a stable failure stage.
+  the paid provider SSE probe. Initialization failures persist a sanitized v4
+  report with a stable failure stage. The v3 generic non-road availability
+  assumption was incorrect for the approved production data; its failed results
+  remain historical failures, not retroactively passing v4 evidence.
 
 This record is a local controlled drill. A future production drill must record
 the actual release IDs, timestamps, operator, alert path, recovery duration, and

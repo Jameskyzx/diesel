@@ -1,0 +1,71 @@
+{
+  "checkedAt": "2026-10-01T00:08:09.672Z",
+  "expectedVersion": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+  "includeProviderAi": true,
+  "pass": false,
+  "results": [
+    {
+      "durationMs": 166,
+      "errorCode": null,
+      "id": "liveness",
+      "method": "GET",
+      "pass": true,
+      "path": "/api/health/live",
+      "requestId": "c1a0b86d-d0d3-4eed-b2bd-2afb2fbeb41c",
+      "status": 200
+    },
+    {
+      "durationMs": 2097,
+      "errorCode": null,
+      "id": "readiness",
+      "method": "GET",
+      "pass": true,
+      "path": "/api/health/ready",
+      "requestId": "27f4f7d5-7be4-41b0-a59a-5333ffdca872",
+      "status": 200
+    },
+    {
+      "durationMs": 2727,
+      "errorCode": "INVALID_RESPONSE",
+      "id": "country-decision-summary",
+      "method": "GET",
+      "pass": false,
+      "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-01",
+      "requestId": "140f32fc-3e38-4a2e-8ebe-fa5ac4dd42f8",
+      "status": 200
+    },
+    {
+      "durationMs": 170,
+      "errorCode": null,
+      "id": "public-products",
+      "method": "GET",
+      "pass": true,
+      "path": "/api/products",
+      "requestId": "e7abfb6e-fc82-42b8-965c-7cb227c8875d",
+      "status": 200
+    },
+    {
+      "durationMs": 1444,
+      "errorCode": null,
+      "id": "chat-direct-sse",
+      "method": "POST",
+      "pass": true,
+      "path": "/api/chat",
+      "requestId": "e0848bfb-4322-4ebc-82d1-a03c5bc5cb2d",
+      "status": 200
+    },
+    {
+      "durationMs": 9210,
+      "errorCode": null,
+      "id": "chat-provider-sse",
+      "method": "POST",
+      "pass": true,
+      "path": "/api/chat",
+      "requestId": "9936f9d0-97a8-4627-9798-d492daff5b5d",
+      "status": 200
+    }
+  ],
+  "runError": null,
+  "targetOrigin": "https://diesel.jamesky.site",
+  "version": "synthetic-canary-v3"
+}

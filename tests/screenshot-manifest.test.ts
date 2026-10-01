@@ -70,6 +70,7 @@ describe("portfolio screenshot manifest", () => {
         "drizzle/meta/_journal.json",
         "next.config.ts",
         "patches/next@16.3.6.patch",
+        "patches/vaul@1.1.2.patch",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",
         "postcss.config.mjs",
@@ -100,7 +101,7 @@ describe("portfolio screenshot manifest", () => {
     );
   }, 30_000);
 
-  it.each([...mapLibreScreenshotInputs, "patches/next@16.3.6.patch"])("rejects screenshot evidence after %s changes", async (file) => {
+  it.each([...mapLibreScreenshotInputs, "patches/next@16.3.6.patch", "patches/vaul@1.1.2.patch"])("rejects screenshot evidence after %s changes", async (file) => {
     const { workspace, manifest } = await mapLibreScreenshotFixture();
     const text = `${JSON.stringify(manifest, null, 2)}\n`;
     await expect(verifyScreenshotManifest(workspace, text)).resolves.toBeUndefined();

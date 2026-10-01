@@ -22,9 +22,9 @@ test("switches locale from an open country drawer and preserves its shared URL",
 
   const drawer = page.getByRole("dialog");
   await expect(drawer).toBeVisible();
-  const languageGroup = page.getByRole("group", { name: "Language" });
+  const languageGroup = drawer.getByRole("group", { name: "Language" });
   await expect(languageGroup).toBeVisible();
-  await expect(page.getByRole("group", { name: "Language" })).toHaveCount(1);
+  await expect(page.getByRole("group", { name: "Language" })).toHaveCount(2);
 
   const chineseButton = languageGroup.getByRole("button", {
     exact: true,
@@ -66,7 +66,7 @@ test("switches locale from an open country drawer and preserves its shared URL",
       name: "中国（演示数据）",
     }),
   ).toBeVisible();
-  await expect(page.getByRole("group", { name: "语言" })).toHaveCount(1);
+  await expect(page.getByRole("group", { name: "语言" })).toHaveCount(2);
 });
 
 test("keeps the header locale control usable after a stale request and drawer round trip", async ({

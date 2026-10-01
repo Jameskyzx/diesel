@@ -239,9 +239,9 @@ application scope、辖区类型和认证状态由穷尽映射转为本地化标
 “未记录”而不泄漏内部 enum。页面首个可聚焦元素是本地化 skip link，目标为可编程聚焦的
 主内容容器；异步加载状态使用 `role=status`、`aria-live=polite` 与 `aria-busy`。窄屏 Header
 使用双行布局，品牌与语言选择在上、带图标的导航在下，品牌副标题从 `sm` 起显示；英文与中文的
-三个导航文字标签在正常字号的 320px 及已测试响应式边界内同时完整可见，品牌按钮为 36px，
+三个导航文字标签在正常字号的 320px 及已测试响应式边界内同时完整可见，品牌图标为 44px，
 导航链接至少 40px，语言按钮为 32px。品牌首页链接的可访问名称来自同一类型化词典，
-保留可见的 `GD` 与完整品牌名，并明确 `Home`/`首页` 用途；名称不受副标题在小屏隐藏的影响，
+保留 `GD` 品牌简称与完整品牌名，并明确 `Home`/`首页` 用途；名称不受副标题在小屏隐藏的影响，
 随 locale 切换及刷新保持一致。浏览器回归同时核对计算后的名称与真实 Tab/Enter 返回首页路径。
 桌面分析入口直接以可见的 `Start analysis`/`开始分析` 文本形成可访问名称，不用另一句
 `aria-label` 覆盖；原有 `title` 保留为本地化目的地说明，回归同时核对名称、描述和实际跳转。
@@ -252,6 +252,10 @@ application scope、辖区类型和认证状态由穷尽映射转为本地化标
 白色双行顶栏、下划线当前页、6px 基础圆角、浅中性背景和蓝色操作色。保留现有 React / Tailwind /
 shadcn primitives，不复制模板代码、不引入 Bootstrap、Tabler JS 或额外依赖。导航在所有宽度均
 位于页面上方，主内容与 Footer 不再预留旧侧栏空间；保留唯一主导航、键盘顺序和当前页标记。
+品牌区按用户要求使用原创 Q 版柴油机插画，蓝色机身、银色机械部件和透明底；原始 PNG 保存在
+`public/brand/diesel-chibi.png`，通过 Next Image 按 44px 显示并优化传输尺寸。图像使用空 alt 与
+`aria-hidden`，由外层本地化首页链接提供唯一可访问名称；生成方式和完整提示词保存在
+`docs/evidence/diesel-chibi-generation.json`，不引用外部品牌标识，不改变浏览器 favicon。
 首页用紧凑指标卡与原生 progress 展示真实 API 核验比例，不添加虚构
 趋势或覆盖率；无数据时显示破折号而非 0%。地图在 `xl` 起为左侧国家选择与右侧浅色画布，
 窄屏纵向排列，仍使用 MapLibre、ISO3、既有详情 Drawer 与可分享 URL。蓝色代表可查看数据、
@@ -262,12 +266,14 @@ shadcn primitives，不复制模板代码、不引入 Bootstrap、Tabler JS 或�
 抽屉内用国家选择器切换 ISO3 时，Explorer 将该次内部焦点意图与原地图 launcher 分开保存；
 新 Drawer 挂载时由 Vaul `onOpenAutoFocus` 消费内部意图并聚焦新的国家选择器。关闭或 Escape
 仍恢复到最初打开详情的地图入口，内部切换不能覆盖该返回目标。
-Vaul 国家详情 Drawer 保持 `modal=false`，但打开时实际活动可访问树会隐藏 Header 的 locale
-group；因此 Drawer 的国家控件区复用同一个 `LocaleToggle`，并用独立的
-`country-drawer-locale-toggle` test ID 与 Header 副本区分测试定位。打开期间 role query 只暴露
-一个名为 `Language`/`语言` 的活动 group；两个入口共用同一 Cookie、locale request identity 与
-`router.refresh()`，保持当前 path/query，且不复制 locale state 或写入路径。Drawer 关闭后由
-Header 的语言入口继续承担该职责。
+Vaul 国家详情 Drawer 保持 `modal=false`。固定版本 1.1.2 未将该属性传给底层 Radix Dialog，
+导致可操作的背景内容被 `aria-hidden` 隐藏；`patches/vaul@1.1.2.patch` 在 ESM 与 CJS 入口
+各补一行 `modal` 透传，不更改默认模态行为、手势或关闭处理，不新增依赖。补丁经 pnpm 锁文件
+和 CI 安装边界校验。非模态抽屉打开期间，Header、地图和主内容仍对辅助技术可见，焦点可移至
+Header 并继续键盘导航。Drawer 国家控件区保留同一个 `LocaleToggle`，用独立的
+`country-drawer-locale-toggle` test ID 区分；两个名为 `Language`/`语言` 的 group 均可访问，
+共用同一 Cookie、locale request identity 与 `router.refresh()`，保持 path/query，
+不复制 locale state 或写入路径。回归同时检查 axe、双语键盘导航、真实页头点击与关闭焦点返回。
 公开 Client Component 不把已本地化字符串、服务端错误正文或普通 `Error.message` 存入
 跨 render state；状态只保留稳定 code、closed union 或 typed facts，并在每次 render 使用当前
 词典。Home、地图、国家详情、决策摘要、产品目录/评估与 locale 写入使用 15 秒共享短请求

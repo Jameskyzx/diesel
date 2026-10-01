@@ -28,6 +28,16 @@ for (const locale of ["en", "zh-CN"] as const) {
     // Locate the brand link even before it has a descriptive accessible name.
     // The separate Home navigation link is intentionally not the target.
     const brandLink = page.getByRole("banner").locator('a[href="/"]').first();
+    const brandIcon = brandLink.getByTestId("brand-engine-icon");
+    await expect(brandIcon).toBeVisible();
+    await expect(brandIcon).toHaveAttribute("alt", "");
+    await expect(brandIcon).toHaveAttribute("aria-hidden", "true");
+    await expect(brandIcon).toHaveAttribute("width", "44");
+    await expect(brandIcon).toHaveAttribute("height", "44");
+    await expect(brandIcon).toHaveAttribute("src", /diesel-chibi\.png/u);
+    await expect.poll(() => brandIcon.evaluate(
+      (image: HTMLImageElement) => image.complete && image.naturalWidth > 0,
+    )).toBe(true);
     for (const width of [320, 640, 767, 768, 1024]) {
       await page.setViewportSize({ height: 720, width });
       await expect(brandLink).toHaveAccessibleName(brandHomeNames[locale]);
@@ -86,6 +96,31 @@ for (const locale of ["en", "zh-CN"] as const) {
   });
 }
 
+test("keeps non-modal country navigation keyboard-accessible in both locales", async ({
+  page,
+}, testInfo) => {
+  const tabKey = testInfo.project.name === "core-webkit" ? "Alt+Tab" : "Tab";
+  for (const locale of ["en", "zh-CN"] as const) {
+    const response = await page.request.post("/api/preferences/locale", { data: { locale } });
+    expect(response.ok()).toBe(true);
+    await page.goto("/countries/CHN");
+    await expect(page.getByTestId("country-detail")).toBeVisible();
+    const drawer = page.getByRole("dialog");
+    const home = page.getByRole("banner").getByRole("link", { name: brandHomeNames[locale], exact: true });
+    // Moving focus outside must not be pulled back into a hidden modal scope.
+    await home.focus();
+    await expect(home).toBeFocused();
+    await page.keyboard.press(tabKey);
+    await expect(page.getByTestId("locale-toggle").getByRole("button", { name: "EN", exact: true })).toBeFocused();
+    await expect(drawer).toBeVisible();
+    await home.focus();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/");
+    await expect(drawer).toHaveCount(0);
+    await expect(page.locator("html")).toHaveAttribute("lang", locale);
+  }
+});
+
 for (const route of [
   "/",
   "/chat",
@@ -99,6 +134,15 @@ for (const route of [
     await expect(page.locator("main")).toBeVisible();
     if (route.startsWith("/countries/")) {
       await expect(page.getByTestId("product-fit-result")).toBeVisible();
+      // This is a non-modal workspace panel: visible navigation and map
+      // controls must remain in the accessibility tree while it is open.
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await expect(page.getByRole("banner")).toBeVisible();
+      await expect(page.getByRole("main")).toBeVisible();
+      await expect(page.getByRole("navigation", { name: "Primary navigation" })).toBeVisible();
+      await expect(page.getByRole("group", { name: "Language", exact: true })).toHaveCount(2);
+      await expect(page.locator("#main-content")).not.toHaveAttribute("aria-hidden", "true");
+      await expect(page.locator("#main-content")).not.toHaveAttribute("inert");
       const expectedTitle =
         "People's Republic of China (CHN) country details · Global Regulations & Market Intelligence";
       await expect(page).toHaveTitle(expectedTitle);

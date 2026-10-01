@@ -161,6 +161,14 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-10-01：PR #47 首轮 CI 的 Safari 国家详情无障碍扫描出现 `aria-hidden-focus`，
+  重试通过仍按 flaky 阻断发布，旧 run `36824789237` 保留为失败。定位为 Vaul 1.1.2
+  未把 `modal=false` 传给 Radix；现以版本化双入口小补丁修复，增加可访问树及双语键盘
+  回归，未放宽 axe、重试或门禁。定向浏览器结果为 36 passed / 3 原有 skipped，
+  包含 Safari 首试通过；另连续 5 轮、10 项 Safari 回归全部通过。本机旧 Webpack
+  缓存与失败诊断已隔离保留。用户要求的原创
+  Q 版柴油机图标已接入页头，仍待重采完整证据、远端 CI 和正式部署，不能据本条宣称上线。
+
 - 2026-10-01：按用户最终选择调整公开界面为 Tabler 风格的双行顶栏、浅色地图和紧凑卡片；
   保留现有 React/Tailwind 组件、双语与证据边界，不新增 UI 依赖、不改变数据库或 AI 判断。
   定向视觉与可访问性回归已通过，正在重新绑定截图、浏览器和完整测试证据。

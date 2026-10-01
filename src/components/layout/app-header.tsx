@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpRight, House, Map, MessageSquareText } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -69,9 +70,17 @@ export function AppHeader() {
           href="/"
           onNavigate={notifyPublicNavigationIntent}
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary text-xs font-bold tracking-tight text-white">
-            GD
-          </span>
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="size-11 shrink-0 object-contain"
+            data-testid="brand-engine-icon"
+            height={44}
+            preload
+            sizes="44px"
+            src="/brand/diesel-chibi.png"
+            width={44}
+          />
           <span className="block min-w-0">
             <span className="block text-sm leading-none font-semibold tracking-tight text-foreground sm:text-base">
               Global Diesel

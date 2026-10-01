@@ -161,6 +161,21 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-10-01 15:54 UTC：经用户授权完成两站 Nginx 配置隔离，保留原始共享配置及迁移记录。
+  `jamesky.site` / `www.jamesky.site` 继续服务独立博客；Diesel 的历史配置文件名和 ledger
+  路径保留，但模板只声明子域名。11 项独立公开边界读回全部通过，博客首页与部署文件
+  SHA-256 一致；[操作记录](evidence/nginx-isolation-20261001.json) 保留哈希与核验窗口。
+  本次没有重启应用、写数据库或修改 release ledger。公开应用版本没有改变。
+  大 JSON 快照读取已在候选代码缩小为每批 100 行，其余批次仍为 500 行；保留原 SQL/worker
+  超时、同一 MVCC 视图、无损 JSON 和完整闭包校验，并新增白名单式批次/worker 诊断。
+  只读检查中聚合字节计数很快，但实际批量读取较慢；这支持缩小批次，不证明唯一根因或
+  完整导出已经成功。真实候选发布及完整导出仍待验证。
+- 2026-10-01 15:43 UTC：候选 `f6676e4` 的 PR #48/master 十项 CI 首试通过，主机激活完成，
+  但初始治理快照两次 worker 尝试失败，原前台控制器以 70 退出。自动回滚的最终身份
+  校验未完成，随后正常版本化 rollback check/abort 成功，候选账本为 `ROLLED_BACK:none`；
+  未进入治理数据发布。15:43 UTC 旧版内外网 health/readiness 均返回 200，jamesky-api
+  PID 与重启计数保持不变。两次失败候选、全部备份和诊断继续保留，不称新版已上线。
+
 - 2026-10-01 11:39 UTC：Tabler/icon 候选 `aabd900` 的 PR #47 与 master 十项 CI
   均首试通过（runs `36845795167` / `36850475034`），生产构建和产物交接通过，但
   activation 的 durable PM2 systemd 身份校验失败，原控制器于 11:33 UTC 以 70 退出。

@@ -1,0 +1,24 @@
+{
+  "format": "diesel-nginx-isolation-operator-record-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "authorizedScope": "Separate Diesel and the existing blog without changing either application's content",
+  "preflightAt": "2026-10-01T15:52:49.009Z",
+  "completedAt": "2026-10-01T15:53:21.281Z",
+  "publicReadbackAt": "2026-10-01T15:54:10.947Z",
+  "originalConfigurationSha256": "ad1e0fe1177c3b1b3efe71c341dd02acfa41bb4f7a3729ae58bc0b81fe80aecf",
+  "dieselConfigurationSha256": "2f5116e28160652f7cbe916771ea377524c2ecdf4e817cc7baac00c84fda863f",
+  "blogConfigurationSha256": "3931e371f513c1efc6b6867db6adf45cd32d47309974ca6ce9346b6062262af8",
+  "blogHomepageReadbackSha256": "56e6b252580d4998e210093450a0712fc48ee1c040b0c4a6abb00e05a1403bf8",
+  "blogHomepageDeployedFileSha256": "56e6b252580d4998e210093450a0712fc48ee1c040b0c4a6abb00e05a1403bf8",
+  "originalConfigurationBackup": "/opt/diesel/host-migrations/20261001-nginx-origin-isolation/jamesky.site.original",
+  "publicChecks": { "total": 11, "passed": 11, "failed": 0 },
+  "databaseWrites": false,
+  "applicationRestart": false,
+  "releaseLedgerChanged": false,
+  "applicationPublicationClaimed": false,
+  "limitations": [
+    "A timestamped operator record, not a signed attestation or a replay of host execution.",
+    "Checks describe this observation window only; they do not prove future availability.",
+    "The application remained on the previously published release."
+  ]
+}

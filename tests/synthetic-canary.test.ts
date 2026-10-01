@@ -302,6 +302,24 @@ function validUiMessageSse(finishReason: string | null = "stop"): string {
     .join("") + "data: [DONE]\n\n";
 }
 
+function createCountryNoDataSummary() {
+  const response = createCountryDecisionSummary();
+  return {
+    ...response,
+    applicabilitySummary: {
+      ...response.applicabilitySummary,
+      country: {
+        ...response.applicabilitySummary.country,
+        currentEffectiveRegulations: [],
+        status: "no_data",
+      },
+      lastVerifiedAt: null,
+      missingData: ["CHN 在所选范围、功率和日期下没有可比较法规记录。"],
+      sources: [],
+    },
+  };
+}
+
 function createPublicDemoProducts() {
   return {
     products: ["DEMO-ENG-100", "DEMO-ENG-200"].map(
@@ -385,7 +403,7 @@ describe("synthetic canary", () => {
           stage: "base_url",
         },
         targetOrigin: null,
-        version: "synthetic-canary-v3",
+        version: "synthetic-canary-v4",
       });
       expect(serialized).not.toContain("super-secret");
       expect((await readdir(directory)).filter((name) => name.endsWith(".tmp")))
@@ -416,7 +434,24 @@ describe("synthetic canary", () => {
       includeProviderAi: true,
     });
 
-    expect(publicChecks).toHaveLength(5);
+    expect(publicChecks).toHaveLength(6);
+    expect(paidChecks).toHaveLength(7);
+    expect(publicChecks.find(({ id }) => id === "country-decision-summary"))
+      .toMatchObject({
+        jsonExpectation: {
+          applicationScope: "construction",
+          summaryStatus: "available",
+        },
+        path: "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-08-15",
+      });
+    expect(publicChecks.find(({ id }) => id === "country-decision-no-data"))
+      .toMatchObject({
+        jsonExpectation: {
+          applicationScope: "non-road",
+          summaryStatus: "no_data",
+        },
+        path: "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-15",
+      });
     expect(publicChecks.every(({ requireRequestId }) => requireRequestId))
       .toBe(true);
     expect(publicChecks.slice(0, 2)).toEqual([
@@ -543,6 +578,7 @@ describe("synthetic canary", () => {
       asOf: "2026-08-15",
       countryIso3: "CHN",
       powerKw: 100,
+      summaryStatus: "available" as const,
     };
     expect(validateCanaryJson(
       "country-summary",
@@ -604,6 +640,64 @@ describe("synthetic canary", () => {
       status: "ok",
     })).toBe(false);
     expect(validateCanaryJson("products", null)).toBe(false);
+  });
+
+  it("keeps evidence-backed and explicit no-data expectations distinct", () => {
+    const noData = createCountryNoDataSummary();
+    const expectation = {
+      applicationScope: "non-road" as const,
+      asOf: "2026-08-15",
+      countryIso3: "CHN",
+      powerKw: 100,
+      summaryStatus: "no_data" as const,
+    };
+    expect(validateCanaryJson("country-summary", noData, expectation)).toBe(true);
+    expect(validateCanaryJson("country-summary", noData, {
+      ...expectation,
+      summaryStatus: "available",
+    })).toBe(false);
+    expect(validateCanaryJson(
+      "country-summary", createCountryDecisionSummary(), expectation,
+    )).toBe(false);
+  });
+
+  it.each([
+    ["scope", { applicationScope: "construction" as const }],
+    ["date", { asOf: "2026-08-14" }],
+    ["country", { countryIso3: "USA" }],
+    ["power", { powerKw: 101 }],
+  ])("rejects a no-data response for the wrong %s", (_label, override) => {
+    expect(validateCanaryJson("country-summary", createCountryNoDataSummary(), {
+      applicationScope: "non-road",
+      asOf: "2026-08-15",
+      countryIso3: "CHN",
+      powerKw: 100,
+      summaryStatus: "no_data",
+      ...override,
+    })).toBe(false);
+  });
+
+  it.each([
+    ["invented freshness", { lastVerifiedAt: verifiedAt }],
+    ["missing gap", { missingData: [] }],
+    ["unexpected sources", {
+      sources: createCountryDecisionSummary().applicabilitySummary.sources,
+    }],
+    ["unexpected regulations", {
+      country: createCountryDecisionSummary().applicabilitySummary.country,
+    }],
+  ])("rejects no-data with %s", (_label, override) => {
+    const response = createCountryNoDataSummary();
+    expect(validateCanaryJson("country-summary", {
+      ...response,
+      applicabilitySummary: { ...response.applicabilitySummary, ...override },
+    }, {
+      applicationScope: "non-road",
+      asOf: "2026-08-15",
+      countryIso3: "CHN",
+      powerKw: 100,
+      summaryStatus: "no_data",
+    })).toBe(false);
   });
 
   it("accepts a fresh health response with the public no-store policy", async () => {

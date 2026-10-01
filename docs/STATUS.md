@@ -38,11 +38,11 @@ intentionally fails for merely local or staged evidence.
   "browserSnapshot": {
     "artifactByteLength": 177132,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "fe73941d046418cfd1600ca6ae6d19c6960955252d99875578189c8b18fa4e75",
-    "baseHeadCommit": "8b0e3067c7e10777413324661605eab5fdc773fd",
-    "evaluatedCommit": "8b0e3067c7e10777413324661605eab5fdc773fd",
-    "observedAt": "2026-09-30T20:53:38.587Z",
-    "runId": "41e9d692-eb24-4981-aeaf-9e53b692c6d5",
+    "artifactSha256": "d3c0deb32a97f057c9d2916cfce330d72253dc48c3fd6d12e3ffb89b2b52853e",
+    "baseHeadCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+    "evaluatedCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
+    "observedAt": "2026-10-01T01:04:55.515Z",
+    "runId": "c891666c-9e9f-4006-a46d-eec002acf8b0",
     "runs": [
       {
         "collected": 413,
@@ -79,18 +79,18 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "9f5df9a5cdb06ae2ca4f74fab8c7a40d893916e4c7ddb3bd0dfff43aa0b77bcf",
+      "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
       "fileCount": 345
     },
     "version": "diesel-playwright-evidence-v1",
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
+    "commit": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
     "evidenceKind": "historical-operator-record-only",
-    "id": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
-    "observedAt": "2026-08-20T01:29+08:00",
-    "releasePath": "/opt/diesel/releases/5b35ced1e6e52ca1df9fec9d46f355b73b033ec6"
+    "id": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+    "observedAt": "2026-10-01T00:19+00:00",
+    "releasePath": "/opt/diesel/releases/7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -101,11 +101,11 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20260930T203704104Z-0a1ab7fe-302b-4eea-8574-e5ed150b24bb.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20261001T002214987Z-a101f9b8-fe58-4528-b81c-3a45aef7f3fe.json",
     "attemptCount": 37,
     "complete": true,
     "completedCount": 37,
-    "evaluatedAt": "2026-09-30T20:37:04.104Z",
+    "evaluatedAt": "2026-10-01T00:22:14.987Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -114,24 +114,24 @@ intentionally fails for merely local or staged evidence.
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
-    "latestOutcome": "failed",
+    "latestOutcome": "passed",
     "latestSampleCount": 18,
     "modelStepCount": 37,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "0a1ab7fe-302b-4eea-8574-e5ed150b24bb",
+    "runId": "a101f9b8-fe58-4528-b81c-3a45aef7f3fe",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "26b37ac136f7391dd45a4a0241ef54b8bfbbfc97f16dd338d1d3efc77a4f40b3",
+      "digest": "cb91c046dbbe8b63a47bcb5c96fc348e55c2ee9e1264a81d2c28752fbf0b3b92",
       "fileCount": 298,
       "status": "captured"
     },
     "suiteVersion": "sales-chat-live-v25",
     "suiteCaseCount": 18,
     "terminationReason": "completed",
-    "thresholdsPassed": false,
+    "thresholdsPassed": true,
     "tokenUsageComplete": true,
-    "totalTokens": 97456
+    "totalTokens": 97317
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -139,18 +139,18 @@ intentionally fails for merely local or staged evidence.
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-08-20T01:29+08:00",
+    "readbackAt": "2026-10-01T00:19+00:00",
     "status": "ok",
-    "version": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6"
+    "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v1"
   },
   "repositoryHead": {
-    "local": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
-    "observedAt": "2026-08-20T01:29+08:00",
-    "remote": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6"
+    "local": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+    "observedAt": "2026-10-01T00:19+00:00",
+    "remote": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
   }
 }
 ```
@@ -160,6 +160,30 @@ The 178 ISO3 entries are a country directory and published evidence boundary,
 not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
+
+- 2026-10-01 00:50 UTC：巡检收尾候选的完整 Vitest 为 274 文件、8,235 用例，
+  8,228 passed / 6 skipped / 1 failed，真实退出 1，未覆盖成功执行收据。定向复现
+  确认为截图 source fingerprint 过期：截图依赖闭包包含已修改的巡检模块，先前漏掉
+  了重采。此次仅真实重拍英文截图，再重新绑定浏览器和完整测试证据；不改原断言、
+  不手工重签旧图片、不覆盖失败日志，也不重新部署已通过线上验收的应用。
+
+- 2026-10-01 00:19 UTC：`7c3a41a` 已正式部署至 `diesel.jamesky.site`。
+  PR #45 与 master 的十项 CI 均首试通过（runs `36777759362` / `36781250334`）；
+  隔离构建、十表快照恢复演练、97 项签核队列和完整公网校验通过，原始发布进程于
+  00:05:28 UTC 正常退出 0，无断线、重复 owner 或手写完成标记。独立页面、语言
+  Cookie、普通 SSE、重定向、内部路由 404/HSTS 与严格账本复验通过；终态为
+  `COMMITTED:PUBLISH_FINALIZED`，永久协议未变，两项服务 online，`jamesky-api`
+  PID 未变且重启计数为 0，全部备份保留。
+  CHN 泛非道路查询已从 500 修复为合同有效的显式无数据，但旧巡检错误要求其必须
+  available，因此 [v3 原始报告](evidence/production-canary-v3-20261001.json) 仍为失败；
+  同次真实 DeepSeek SSE 通过。巡检 v4 分别严格验证 construction 有证据与 non-road
+  无数据，[六项无付费现网读回](evidence/production-canary-v4-20261001.json) 全部通过，
+  未重复付费探针。v4 通过 SSH stdin 以内存程序执行，不覆盖不可变 release 文件；
+  本次后续提交仅更新外部巡检、回归和证据，不重启应用、不重跑治理发布。
+  00:19 UTC 内的内外网 health/readiness、主机 current、本地 master 与远端 master
+  读回一致，规范观察块现更新为该已部署 SHA。后续文档/巡检提交可以领先于此带时间
+  的运行快照，不代表需要重复部署。模型完整评估见下方唯一台账；暴露过的临时密钥
+  尚待轮换，历史分支仍因权利/许可证决定未完成而不公开。
 
 - 2026-09-30 20:26 UTC：`46954b1` 已通过 PR/master 全部门禁、隔离构建、恢复演练及
   完整签核队列；原 SSH 链路中断后，原主机进程自行完成，严格账本确认
@@ -431,10 +455,10 @@ not a claim that all 178 countries have numerical diesel limits.
   自 `2027-07-01`。BRN/BTN/SLB/TLS/MWI/SLE/SOM/SSD/TCD/SLV/SUR/TTO
   已以 #248–#259 / ADR-134 固定为每国恰好两条当前 source、四 scope no-data，
   统一 `verifiedAt=2026-08-10T23:08:11Z`。
-- 公开只读演示：<https://jamesky.site>。只读核验中，
-  observedAt=`2026-08-20T01:29+08:00`；`/api/health` readbackAt=`2026-08-20T01:29+08:00` returned `status=ok`,
-  `version=5b35ced1e6e52ca1df9fec9d46f355b73b033ec6`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/5b35ced1e6e52ca1df9fec9d46f355b73b033ec6`。因此当前公开 release ID
+- 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
+  observedAt=`2026-10-01T00:19+00:00`；`/api/health` readbackAt=`2026-10-01T00:19+00:00` returned `status=ok`,
+  `version=7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为
@@ -1288,9 +1312,9 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-09-30T20:37:04.104Z`；run ID `0a1ab7fe-302b-4eea-8574-e5ed150b24bb`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
-  `97456 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20260930T203704104Z-0a1ab7fe-302b-4eea-8574-e5ed150b24bb.json`；source fingerprint `26b37ac136f7391dd45a4a0241ef54b8bfbbfc97f16dd338d1d3efc77a4f40b3` across `298` files。
+- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-10-01T00:22:14.987Z`；run ID `a101f9b8-fe58-4528-b81c-3a45aef7f3fe`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
+  `97317 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20261001T002214987Z-a101f9b8-fe58-4528-b81c-3a45aef7f3fe.json`；source fingerprint `cb91c046dbbe8b63a47bcb5c96fc348e55c2ee9e1264a81d2c28752fbf0b3b92` across `298` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、
@@ -1893,15 +1917,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `41e9d692-eb24-4981-aeaf-9e53b692c6d5`，artifact SHA-256 `fe73941d046418cfd1600ca6ae6d19c6960955252d99875578189c8b18fa4e75`；
-  observedAt `2026-09-30T20:53:38.587Z`，clean worktree / base HEAD `8b0e3067c7e10777413324661605eab5fdc773fd`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `c891666c-9e9f-4006-a46d-eec002acf8b0`，artifact SHA-256 `d3c0deb32a97f057c9d2916cfce330d72253dc48c3fd6d12e3ffb89b2b52853e`；
+  observedAt `2026-10-01T01:04:55.515Z`，clean worktree / base HEAD `17765ac73b07adeecf20f6f62b50dc1720d1f82e`；
   `public` = `348 passed / 65 skipped / 0 failed / 0 flaky / 413 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 420 passed / 67 skipped / 0 failed / 0 flaky / 487 collected。artifact 为 177132 bytes；
-  browser source fingerprint 为 345 files / `9f5df9a5cdb06ae2ca4f74fab8c7a40d893916e4c7ddb3bd0dfff43aa0b77bcf`。
-  因运行发生在 clean worktree，`evaluatedCommit=8b0e3067c7e10777413324661605eab5fdc773fd`；它证明该本地候选提交上的浏览器验收，
+  browser source fingerprint 为 345 files / `212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164`。
+  因运行发生在 clean worktree，`evaluatedCommit=17765ac73b07adeecf20f6f62b50dc1720d1f82e`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端
@@ -2240,7 +2264,7 @@ JSON 边界仅省略对象中的可选 undefined 字段。DeepSeek 每步只请�
 | --- | --- | --- | --- | --- |
 | 零配置作品 Demo | `pnpm demo` | 进程内 PGlite + 虚构 fixture | 确定性离线模拟，仍调用只读工具 | 招聘方本地快速体验 |
 | 标准开发 | `pnpm dev` | PostgreSQL / Supabase | 可选服务端 OpenAI-compatible | 开发、真实治理发布与检索 |
-| 公开只读演示 | <https://jamesky.site> | PostgreSQL 中已发布事实 + 明确 Demo | 服务端模型，只读工具 | 作品展示，不是业务生产系统 |
+| 公开只读演示 | <https://diesel.jamesky.site> | PostgreSQL 中已发布事实 + 明确 Demo | 服务端模型，只读工具 | 作品展示，不是业务生产系统 |
 
 零配置 Demo 只能在 `NODE_ENV=development`、`DATABASE_MODE=pglite-demo` 下启用；
 生产误设 `PORTFOLIO_DEMO_MODE=true` 会失败关闭。

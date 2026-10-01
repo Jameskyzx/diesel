@@ -10,9 +10,11 @@
 
 新的公开入口为 `https://diesel.jamesky.site`。部署前必须确认权威 DNS 的 A 记录为
 `111.228.50.85`，且 `/etc/letsencrypt/live/diesel.jamesky.site/` 已有受信任证书及
-续期配置。原 `jamesky.site` / `www.jamesky.site` 的证书保留，切换后 HTTP 与旧 HTTPS
-入口保留 path/query 并重定向至新入口。Nginx 文件名 `jamesky.site`、`diesel-demo` 与
-ledger 回滚文件名不变，以便原子恢复原站点；不得改动 `supplier.jamesky.site`。
+续期配置。`jamesky.site` / `www.jamesky.site` 属于独立博客，保留博客证书与入口，
+不得再重定向到 Diesel。Diesel 的 Nginx 文件名 `jamesky.site`、`diesel-demo` 与
+ledger 回滚文件名保持不变，但前者只声明 `diesel.jamesky.site`；博客块须先完整迁入
+独立的 `sites-available/jamesky-blog` 并单独启用。下一次发布前必须核验此隔离，
+禁止用 Diesel 模板覆盖仍含博客块的旧共享文件。不得改动 `supplier.jamesky.site`。
 DNS/证书准备不等同于应用部署成功，实际切换与读回以 `STATUS.md` 为准。
 
 | 维度 | 标准开发 | 零配置作品 Demo | CI | 公开只读作品站 / 业务生产 |
@@ -508,6 +510,14 @@ child，或作为 PM2/systemd 期望状态进行校验，不参与特权命令�
 当前 Git 提交中的受跟踪文件；工作站授权门会先拒绝任何 tracked/untracked 漂移及任意
 assume-unchanged、skip-worktree 或非 normal index entry。开始前记录当前软链接
 和 Nginx 配置备份路径；这些值是本次回滚凭据。
+
+共享站点一次性隔离必须在新 release 激活之前完成：获取现有 release lifecycle lock，
+保留原始共享配置和独立迁移记录；只接受已审阅的完整源文件 SHA-256，逐字节保留博客
+块，且确认 Diesel 部分与受验模板一致。先验证现有配置，再分离磁盘配置并运行
+`nginx -t`，成功后才 graceful reload；验证失败须恢复原始文件和启用关系，不删除备份。
+隔离不改 PM2、应用软链接、环境变量、数据库或 release ledger。发布后的边界检查
+必须分别验证 Diesel 子域名、博客主域名及 www 到博客的重定向，不能沿用旧的
+“主域名重定向到 Diesel”断言。若博客文件或共享配置在检查后变化，应停止而非覆盖。
 
 先在已通过完整门禁的工作站执行；`release_id` 是 clean `master` HEAD 的完整 commit SHA，不是秘密，
 后续 VPS shell 必须复用同一个值。这样构建期 `APP_VERSION`、release 目录、STATUS 与外部

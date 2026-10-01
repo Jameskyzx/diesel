@@ -2009,7 +2009,7 @@ ruleset。
 
 ## 14. 部署拓扑
 
-当前公开环境采用自托管 VPS：Nginx 在 `jamesky.site` 终止 TLS，只把公开请求代理到
+当前公开环境采用自托管 VPS：Nginx 在 `diesel.jamesky.site` 终止 TLS，只把公开请求代理到
 `127.0.0.1:8788`；root 管理 PM2、Nginx 与 release 软链接，但 ecosystem 将单实例
 Next.js Node 服务降权为无登录的 `diesel:diesel`，因此图片/PDF 解析器不继承 root 权限。
 PM2 从 `/opt/diesel/current` 启动该服务；ecosystem 用 `/usr/bin/env -i` 重建实际应用
@@ -2030,8 +2030,13 @@ deploy root 与 `releases` 同为 controller-owned 0755 真实目录，检查结
 `.env.production.local` 与 `.data`：真实 `shared` 中间目录不可为 symlink，环境目标必须是
 `root:diesel` 0640 单链接文件，数据目标必须与唯一可变 `.next/cache` 同为 `diesel:diesel` 0750。
 因此 finalize 后替换 Nginx、ecosystem、工件、权限/所有权或共享链接不能只靠未变化的 marker 通过激活门。
-HTTP IP/备用域名不承载
-应用或附件，而是保留路径和查询并重定向到主域名 HTTPS。精确 `/api/chat` 请求在 Nginx
+HTTP IP 入口不承载
+应用或附件，而是保留路径和查询并重定向到 Diesel 子域名 HTTPS。`jamesky.site` 与
+`www.jamesky.site` 归独立博客所有，不在 Diesel 的重定向或发布配置范围内。为保留既有
+ledger 路径，Diesel 仍使用历史文件名 `sites-available/jamesky.site`，但内容只属于
+Diesel；博客配置独立存于 `sites-available/jamesky-blog`，新发布及其回滚不得修改它。
+首次隔离须保留原始共享配置，完成 Nginx 检查和两站读回；实际执行状态见 STATUS。
+精确 `/api/chat` 请求在 Nginx
 设 10 MiB 上限、关闭请求体缓冲，并以每客户 3 / 全局 8 连接门拒绝过载；
 随后仍由应用的每客户 2 / 全局 4 in-flight 门、9 MiB 流式请求门和附件格式、解码、页数、像素与文本预算做
 权威校验。
@@ -2133,8 +2138,10 @@ Demo；生产配置成内存或数据库计数失败都会在进入请求解析�
   10 秒执行最小探针，
   60 秒 idle-in-transaction 上限使失活连接快速失败。顶层时间保留
   PostgreSQL 六位微秒，JSONB 以原始 `jsonb::text` 保存，避免 JavaScript 数值舍入。
-  五张小表各用一个短 reader transaction；三张含原始 JSONB 的治理表与生产规模的
-  `regulation_limits`、`market_metrics` 按 UUID 主键每 500 行 keyset 分批，每批使用全新
+  五张小表各用一个短 reader transaction；三张含原始 JSONB 的治理表按 UUID 主键
+  每 100 行 keyset 分批，生产规模的 `regulation_limits`、`market_metrics` 保持每 500 行。
+  较小 JSON 批次限制慢链路上单次读取的负担，不跳过行、不改精度或完整快照校验，
+  也不延长 SQL/worker deadline；完整导出仍需真实运行验证。每批使用全新
   单连接 client，并在任何数据
   查询前以 `SET TRANSACTION SNAPSHOT` 导入锚点视图。行、原始 JSONB 与微秒时间在同一
   reader/batch 中取得并核验主键闭合，避免全表 JSON 解码和末尾无界 timestamp UNION。
@@ -2144,7 +2151,11 @@ Demo；生产配置成内存或数据库计数失败都会在进入请求解析�
   丢失或其他非瞬态错误立即终止 worker。单条 SQL 保持 120 秒上限，短 reader 的
   idle-in-transaction 上限为 5 分钟。导出命令由父进程监督最多两个
   全新 worker；每个 worker 有 45 分钟绝对
-  上限，超时后依次 TERM、2 秒宽限、KILL，且确认旧进程关闭后才允许重试。只有 worker
+  上限，超时后依次 TERM、2 秒宽限、KILL，且确认旧进程关闭后才允许重试。worker
+  的结构化 IPC 进度通过 strict schema 后才输出表名、批次序号和耗时；原始 stderr
+  继续丢弃，不转发 SQL、行、凭据或错误正文。父进程记录实际 worker 退出码、信号与耗时，
+  IPC 非法、超过 10,000 条或诊断输出失败同样先终止并回收 worker，不把日志当成功凭据。
+  只有 worker
   的锚点与全部 reader 只读事务完成、各连接已排队协议写被清空、同连接 teardown
   探针成功、严格 v4 校验和
   `0600` 临时文件全部完成，父进程才以

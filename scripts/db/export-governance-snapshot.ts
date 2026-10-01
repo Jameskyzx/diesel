@@ -52,6 +52,9 @@ export const governanceSnapshotWorkerRetryDelayMs = 1_000;
 export const governanceSnapshotWorkerTimeoutMs = 45 * 60 * 1_000;
 export const governanceSnapshotWorkerTerminationGraceMs = 2_000;
 export const governanceSnapshotDatabaseBatchSize = 500;
+// Raw JSON can be tens of KiB per row. Keep these batches smaller on the
+// production database link without weakening the SQL or worker deadlines.
+export const governanceSnapshotRawJsonBatchSize = 100;
 export const governanceSnapshotReaderMaximumAttempts = 3;
 export const governanceSnapshotAnchorHeartbeatIntervalMs = 10_000;
 const governanceSnapshotClientEndTimeoutSeconds = 5;
@@ -61,6 +64,28 @@ const governanceSnapshotMaximumWorkerOutputBytes = 64 * 1024;
 const governanceSnapshotWorkerFlag = "--internal-governance-snapshot-worker";
 const governanceSnapshotPermanentWorkerExitCode = 65;
 const governanceSnapshotRetryableWorkerExitCode = 75;
+
+const governanceSnapshotProgressSchema = z.object({
+  kind: z.literal("governance-snapshot-progress-v1"),
+  table: z.enum(governanceTableNames),
+  batch: z.number().int().min(1).max(10_000),
+  durationMs: z.number().int().min(0).max(governanceSnapshotWorkerTimeoutMs),
+}).strict();
+type GovernanceSnapshotProgress = z.infer<typeof governanceSnapshotProgressSchema>;
+
+/** Only structured, bounded metadata can cross the worker diagnostics boundary. */
+export function parseGovernanceSnapshotProgress(
+  value: unknown,
+): GovernanceSnapshotProgress | null {
+  const parsed = governanceSnapshotProgressSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+function reportGovernanceSnapshotProgress(progress: GovernanceSnapshotProgress) {
+  if (process.argv[2] === governanceSnapshotWorkerFlag && process.connected) {
+    process.send?.(progress);
+  }
+}
 
 class GovernanceSnapshotPermanentAcquisitionFailure extends Error {
   constructor() {
@@ -670,12 +695,15 @@ function createGovernanceSnapshotReader(
   snapshotId: string,
   assertAnchorHealthy: () => void,
 ) {
+  let batch = 0;
   return async function read<Result>(
+    table: (typeof governanceTableNames)[number],
     query: (
       transaction: GovernanceSnapshotDatabaseTransaction,
     ) => Promise<Result>,
   ): Promise<Result> {
-    return runGovernanceSnapshotReaderBatchWithRetry({
+    const startedAt = performance.now();
+    const result = await runGovernanceSnapshotReaderBatchWithRetry({
       assertAnchorHealthy,
       createClient: () =>
         postgres(databaseUrl, governanceSnapshotPostgresOptions),
@@ -698,6 +726,14 @@ function createGovernanceSnapshotReader(
         );
       },
     });
+    batch += 1;
+    reportGovernanceSnapshotProgress({
+      kind: "governance-snapshot-progress-v1",
+      table,
+      batch,
+      durationMs: Math.round(performance.now() - startedAt),
+    });
+    return result;
   };
 }
 
@@ -733,7 +769,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
         );
         const basePreciseTimestampRows: unknown[] = [];
 
-        const dataSourceBatch = await read(async (transaction) => {
+        const dataSourceBatch = await read("data_sources", async (transaction) => {
           const db = transaction;
           const rows = await db
             .select()
@@ -760,7 +796,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
           ),
         );
 
-        const countryBatch = await read(async (transaction) => {
+        const countryBatch = await read("countries", async (transaction) => {
           const db = transaction;
           const rows = await db
             .select()
@@ -787,7 +823,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
           ),
         );
 
-        const jurisdictionBatch = await read(async (transaction) => {
+        const jurisdictionBatch = await read("jurisdictions", async (transaction) => {
           const db = transaction;
           const rows = await db
             .select()
@@ -814,7 +850,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
           ),
         );
 
-        const membershipBatch = await read(async (transaction) => {
+        const membershipBatch = await read("country_jurisdictions", async (transaction) => {
           const db = transaction;
           const rows = await db
             .select()
@@ -849,7 +885,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
           ),
         );
 
-        const regulationBatch = await read(async (transaction) => {
+        const regulationBatch = await read("regulations", async (transaction) => {
           const db = transaction;
           const rows = await db
             .select()
@@ -878,7 +914,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
 
         const limitRows = await collectGovernanceSnapshotRowsInBatches(
           async (cursor, limit) => {
-            const batch = await read(async (transaction) => {
+            const batch = await read("regulation_limits", async (transaction) => {
               const db = transaction;
               const rows = await db
                 .select()
@@ -918,7 +954,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
 
         const marketMetricRows = await collectGovernanceSnapshotRowsInBatches(
           async (cursor, limit) => {
-            const batch = await read(async (transaction) => {
+            const batch = await read("market_metrics", async (transaction) => {
               const db = transaction;
               const rows = await db
                 .select()
@@ -958,7 +994,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
 
         const governanceDraftRows = await collectGovernanceSnapshotRowsInBatches(
           async (cursor, limit) =>
-            read(async (transaction) => {
+            read("data_governance_drafts", async (transaction) => {
               const db = transaction;
               return db.execute(sql`
               select id::text as "id",
@@ -982,10 +1018,11 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                limit ${limit}
               `);
             }),
+          governanceSnapshotRawJsonBatchSize,
         );
         const marketImportBatchRows = await collectGovernanceSnapshotRowsInBatches(
           async (cursor, limit) =>
-            read(async (transaction) => {
+            read("market_import_batches", async (transaction) => {
               const db = transaction;
               return db.execute(sql`
               select id::text as "id",
@@ -1007,10 +1044,11 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                limit ${limit}
               `);
             }),
+          governanceSnapshotRawJsonBatchSize,
         );
         const changeLogRows = await collectGovernanceSnapshotRowsInBatches(
           async (cursor, limit) =>
-            read(async (transaction) => {
+            read("data_change_logs", async (transaction) => {
               const db = transaction;
               return db.execute(sql`
               select id::text as "id",
@@ -1031,6 +1069,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                limit ${limit}
               `);
             }),
+          governanceSnapshotRawJsonBatchSize,
         );
 
         const selectedTables = {
@@ -1179,6 +1218,7 @@ async function runGovernanceSnapshotWorkerProcess(
     throw new Error("Governance snapshot script path is unavailable");
   }
 
+  const startedAt = performance.now();
   const child = spawn(
     process.execPath,
     [
@@ -1191,14 +1231,26 @@ async function runGovernanceSnapshotWorkerProcess(
     {
       cwd: process.cwd(),
       env: process.env,
-      stdio: ["ignore", "pipe", "ignore"],
+      stdio: ["ignore", "pipe", "ignore", "ipc"],
     },
   );
 
-  return waitForGovernanceSnapshotWorkerProcess(child);
+  const execution = await waitForGovernanceSnapshotWorkerProcess(child, {
+    onProgress: (progress) => {
+      process.stderr.write(`${JSON.stringify(progress)}\n`);
+    },
+  });
+  process.stderr.write(`${JSON.stringify({
+    kind: "governance-snapshot-worker-exit-v1",
+    durationMs: Math.round(performance.now() - startedAt),
+    exitCode: execution.exitCode,
+    signal: execution.signal,
+  })}\n`);
+  return execution;
 }
 
 type GovernanceSnapshotWorkerWaitOptions = {
+  onProgress?: (progress: GovernanceSnapshotProgress) => void;
   terminationGraceMs?: number;
   timeoutMs?: number;
 };
@@ -1229,6 +1281,7 @@ export function waitForGovernanceSnapshotWorkerProcess(
     let forcedTermination = false;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
     let settled = false;
+    let progressCount = 0;
 
     const childHasExited = () =>
       child.exitCode !== null || child.signalCode !== null;
@@ -1259,6 +1312,22 @@ export function waitForGovernanceSnapshotWorkerProcess(
     };
     const workerTimer = setTimeout(requestTermination, timeoutMs);
 
+    const onProgressMessage = (message: unknown) => {
+      progressCount += 1;
+      const progress = parseGovernanceSnapshotProgress(message);
+      if (progressCount > 10_000 || progress === null) {
+        requestTermination();
+        return;
+      }
+      if (!forcedTermination) {
+        try {
+          options.onProgress?.(progress);
+        } catch {
+          requestTermination();
+        }
+      }
+    };
+
     const onStdoutData = (chunk: Buffer) => {
       if (forcedTermination) {
         return;
@@ -1283,10 +1352,12 @@ export function waitForGovernanceSnapshotWorkerProcess(
         clearTimeout(killTimer);
       }
       child.stdout?.off("data", onStdoutData);
+      child.off("message", onProgressMessage);
       resolve(execution);
     };
 
     child.stdout?.on("data", onStdoutData);
+    child.on("message", onProgressMessage);
     child.once("error", () => {
       if (child.pid === undefined) {
         finish({ exitCode: null, signal: null, stdout: "" });

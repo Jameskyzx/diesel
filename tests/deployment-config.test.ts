@@ -20,13 +20,15 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(configuration).toContain(
       "server_name diesel.jamesky.site;",
     );
-    expect(configuration).toContain("server_name diesel.jamesky.site jamesky.site www.jamesky.site;");
+    // This release owns only Diesel's origin. The independently deployed blog
+    // must never be captured by a Diesel template or rollback.
+    expect([...configuration.matchAll(/^[ \t]*server_name\s+([^;]+);/gmu)].map(
+      (match) => match[1],
+    )).toEqual(["diesel.jamesky.site", "diesel.jamesky.site"]);
     expect(configuration).toContain("ssl_certificate /etc/letsencrypt/live/diesel.jamesky.site/fullchain.pem;");
-    const legacyRedirect = configuration.slice(configuration.lastIndexOf("server {"));
-    expect(legacyRedirect).toContain("server_name jamesky.site www.jamesky.site;");
-    expect(legacyRedirect).toContain("ssl_certificate /etc/letsencrypt/live/jamesky.site/fullchain.pem;");
-    expect(legacyRedirect).toContain("return 301 https://diesel.jamesky.site$request_uri;");
-    expect(legacyRedirect).not.toContain("proxy_pass");
+    expect(configuration).not.toContain("www.jamesky.site");
+    expect(configuration).not.toContain("/etc/letsencrypt/live/jamesky.site/");
+    expect(configuration).not.toContain("/var/www/jamesky-blog");
     expect(configuration).toContain("client_max_body_size 10m;");
     expect(configuration).toContain("location = /api/chat {");
     expect(configuration).toContain("proxy_request_buffering off;");

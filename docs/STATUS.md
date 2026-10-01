@@ -101,11 +101,11 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20261001T055558303Z-1aa0ddc4-9a8f-464b-aa69-01af12227e4d.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20261001T090419854Z-62762b1a-8541-4e13-a470-a226a2db8ffb.json",
     "attemptCount": 37,
     "complete": true,
     "completedCount": 37,
-    "evaluatedAt": "2026-10-01T05:55:58.303Z",
+    "evaluatedAt": "2026-10-01T09:04:19.854Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -114,24 +114,24 @@ intentionally fails for merely local or staged evidence.
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
-    "latestOutcome": "passed",
+    "latestOutcome": "failed",
     "latestSampleCount": 18,
     "modelStepCount": 37,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "1aa0ddc4-9a8f-464b-aa69-01af12227e4d",
+    "runId": "62762b1a-8541-4e13-a470-a226a2db8ffb",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "9eec37b0e6826de81c268fec101ef067b1bcb2786322b7045414dd0e79f8566f",
+      "digest": "92edb21a261da5a8d701ae4bc7112debbee3a6758c53848cd8c523787f3cbff5",
       "fileCount": 298,
       "status": "captured"
     },
     "suiteVersion": "sales-chat-live-v25",
     "suiteCaseCount": 18,
     "terminationReason": "completed",
-    "thresholdsPassed": true,
+    "thresholdsPassed": false,
     "tokenUsageComplete": true,
-    "totalTokens": 97219
+    "totalTokens": 97304
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -160,6 +160,13 @@ The 178 ISO3 entries are a country directory and published evidence boundary,
 not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
+
+- 2026-10-01：本次 UI 候选的真实模型评估完整结束并返回失败退出码，详细计数与身份见
+  下方唯一 live-eval 台账。唯一失败案例 `multi-turn-country-conflict` 的工具、参数、
+  证据允许性、语言与拒绝判定均通过，但缺少 `decision:regulation-comparison` 回答锚点；
+  报告不保留模型原文，不能仅凭锚点缺失进一步断言具体措辞。依原定诚实评估要求保留该
+  失败限制，不改期望、不放宽阈值、不为刷分重复请求。该结果不等于参数/证据边界失败，
+  也不能被表述为模型质量全部通过；UI 发布仍须独立通过完整自动化门禁及生产读回。
 
 - 2026-10-01：PR #47 首轮 CI 的 Safari 国家详情无障碍扫描出现 `aria-hidden-focus`，
   重试通过仍按 flaky 阻断发布，旧 run `36824789237` 保留为失败。定位为 Vaul 1.1.2
@@ -1326,9 +1333,9 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-10-01T05:55:58.303Z`；run ID `1aa0ddc4-9a8f-464b-aa69-01af12227e4d`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
-  `97219 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20261001T055558303Z-1aa0ddc4-9a8f-464b-aa69-01af12227e4d.json`；source fingerprint `9eec37b0e6826de81c268fec101ef067b1bcb2786322b7045414dd0e79f8566f` across `298` files。
+- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-10-01T09:04:19.854Z`；run ID `62762b1a-8541-4e13-a470-a226a2db8ffb`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
+  `97304 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20261001T090419854Z-62762b1a-8541-4e13-a470-a226a2db8ffb.json`；source fingerprint `92edb21a261da5a8d701ae4bc7112debbee3a6758c53848cd8c523787f3cbff5` across `298` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、

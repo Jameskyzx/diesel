@@ -36,19 +36,19 @@ intentionally fails for merely local or staged evidence.
 ```json
 {
   "browserSnapshot": {
-    "artifactByteLength": 177132,
+    "artifactByteLength": 179587,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "d3c0deb32a97f057c9d2916cfce330d72253dc48c3fd6d12e3ffb89b2b52853e",
-    "baseHeadCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
-    "evaluatedCommit": "17765ac73b07adeecf20f6f62b50dc1720d1f82e",
-    "observedAt": "2026-10-01T01:04:55.515Z",
-    "runId": "c891666c-9e9f-4006-a46d-eec002acf8b0",
+    "artifactSha256": "a601af672a3c09887dfec031bfb67f3813fef6ec3fdcd99ad62f69c502584db9",
+    "baseHeadCommit": "d143ec82577f8d4cceda2df3bb410491f3f09333",
+    "evaluatedCommit": "d143ec82577f8d4cceda2df3bb410491f3f09333",
+    "observedAt": "2026-10-01T09:21:02.267Z",
+    "runId": "6fd5f751-3eb9-46bc-b085-0312f8628541",
     "runs": [
       {
-        "collected": 413,
+        "collected": 420,
         "failed": 0,
         "flaky": 0,
-        "passed": 348,
+        "passed": 355,
         "skipped": 65,
         "id": "public"
       },
@@ -79,8 +79,8 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164",
-      "fileCount": 345
+      "digest": "33dbb83a0b47fc72c01e6bae01ec41a48852067c3e46c235db36c46864e155e7",
+      "fileCount": 348
     },
     "version": "diesel-playwright-evidence-v1",
     "worktreeState": "clean"
@@ -101,11 +101,11 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20261001T002214987Z-a101f9b8-fe58-4528-b81c-3a45aef7f3fe.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20261001T090419854Z-62762b1a-8541-4e13-a470-a226a2db8ffb.json",
     "attemptCount": 37,
     "complete": true,
     "completedCount": 37,
-    "evaluatedAt": "2026-10-01T00:22:14.987Z",
+    "evaluatedAt": "2026-10-01T09:04:19.854Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -114,24 +114,24 @@ intentionally fails for merely local or staged evidence.
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
-    "latestOutcome": "passed",
+    "latestOutcome": "failed",
     "latestSampleCount": 18,
     "modelStepCount": 37,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "a101f9b8-fe58-4528-b81c-3a45aef7f3fe",
+    "runId": "62762b1a-8541-4e13-a470-a226a2db8ffb",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "cb91c046dbbe8b63a47bcb5c96fc348e55c2ee9e1264a81d2c28752fbf0b3b92",
+      "digest": "92edb21a261da5a8d701ae4bc7112debbee3a6758c53848cd8c523787f3cbff5",
       "fileCount": 298,
       "status": "captured"
     },
     "suiteVersion": "sales-chat-live-v25",
     "suiteCaseCount": 18,
     "terminationReason": "completed",
-    "thresholdsPassed": true,
+    "thresholdsPassed": false,
     "tokenUsageComplete": true,
-    "totalTokens": 97317
+    "totalTokens": 97304
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -160,6 +160,29 @@ The 178 ISO3 entries are a country directory and published evidence boundary,
 not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
+
+- 2026-10-01：UI 候选的模型评估身份、判定和逐例诊断统一见下方唯一台账及其原始归档，
+  不在状态日期段重复维护结果。报告不保留模型原文，不能仅凭回答锚点进一步断言具体措辞；
+  不改期望、不放宽阈值、不为刷分重复请求。UI 发布仍须独立通过完整自动化门禁及生产读回。
+
+- 2026-10-01 09:36 UTC：候选 `b562bc8` 的完整 Vitest 为 275 文件、8,240 用例，
+  8,233 passed / 6 skipped / 1 failed，真实退出 1，未替换成功执行收据。定向复现确认
+  `portfolio-status-snapshot` 检出了本文件重复陈述评估结果；现只保留唯一规范台账和
+  原始归档，不修改报告、测试断言或门禁。文档修正后须重新完成完整测试，生产尚未切换。
+
+- 2026-10-01：PR #47 首轮 CI 的 Safari 国家详情无障碍扫描出现 `aria-hidden-focus`，
+  重试通过仍按 flaky 阻断发布，旧 run `36824789237` 保留为失败。定位为 Vaul 1.1.2
+  未把 `modal=false` 传给 Radix；现以版本化双入口小补丁修复，增加可访问树及双语键盘
+  回归，未放宽 axe、重试或门禁。定向浏览器结果为 36 passed / 3 原有 skipped，
+  包含 Safari 首试通过；另连续 5 轮、10 项 Safari 回归全部通过。本机旧 Webpack
+  缓存与失败诊断已隔离保留。用户要求的原创
+  Q 版柴油机图标已接入页头，仍待重采完整证据、远端 CI 和正式部署，不能据本条宣称上线。
+
+- 2026-10-01：按用户最终选择调整公开界面为 Tabler 风格的双行顶栏、浅色地图和紧凑卡片；
+  保留现有 React/Tailwind 组件、双语与证据边界，不新增 UI 依赖、不改变数据库或 AI 判断。
+  定向视觉与可访问性回归已通过，正在重新绑定截图、浏览器和完整测试证据。
+  本条仅记录发布候选，生产仍以下方带时间的运行快照为准；完成正常 CI、受控发布及读回后
+  才更新规范生产观察块。
 
 - 2026-10-01 00:50 UTC：巡检收尾候选的完整 Vitest 为 274 文件、8,235 用例，
   8,228 passed / 6 skipped / 1 failed，真实退出 1，未覆盖成功执行收据。定向复现
@@ -1312,9 +1335,9 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-10-01T00:22:14.987Z`；run ID `a101f9b8-fe58-4528-b81c-3a45aef7f3fe`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
-  `97317 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20261001T002214987Z-a101f9b8-fe58-4528-b81c-3a45aef7f3fe.json`；source fingerprint `cb91c046dbbe8b63a47bcb5c96fc348e55c2ee9e1264a81d2c28752fbf0b3b92` across `298` files。
+- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-10-01T09:04:19.854Z`；run ID `62762b1a-8541-4e13-a470-a226a2db8ffb`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
+  `97304 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20261001T090419854Z-62762b1a-8541-4e13-a470-a226a2db8ffb.json`；source fingerprint `92edb21a261da5a8d701ae4bc7112debbee3a6758c53848cd8c523787f3cbff5` across `298` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、
@@ -1917,15 +1940,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `c891666c-9e9f-4006-a46d-eec002acf8b0`，artifact SHA-256 `d3c0deb32a97f057c9d2916cfce330d72253dc48c3fd6d12e3ffb89b2b52853e`；
-  observedAt `2026-10-01T01:04:55.515Z`，clean worktree / base HEAD `17765ac73b07adeecf20f6f62b50dc1720d1f82e`；
-  `public` = `348 passed / 65 skipped / 0 failed / 0 flaky / 413 collected`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `6fd5f751-3eb9-46bc-b085-0312f8628541`，artifact SHA-256 `a601af672a3c09887dfec031bfb67f3813fef6ec3fdcd99ad62f69c502584db9`；
+  observedAt `2026-10-01T09:21:02.267Z`，clean worktree / base HEAD `d143ec82577f8d4cceda2df3bb410491f3f09333`；
+  `public` = `355 passed / 65 skipped / 0 failed / 0 flaky / 420 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
-  聚合为 420 passed / 67 skipped / 0 failed / 0 flaky / 487 collected。artifact 为 177132 bytes；
-  browser source fingerprint 为 345 files / `212ee8121dd3d8f8d2b39231743a6fb2ea77eeed6936161dd01f7681b37cf164`。
-  因运行发生在 clean worktree，`evaluatedCommit=17765ac73b07adeecf20f6f62b50dc1720d1f82e`；它证明该本地候选提交上的浏览器验收，
+  聚合为 427 passed / 67 skipped / 0 failed / 0 flaky / 494 collected。artifact 为 179587 bytes；
+  browser source fingerprint 为 348 files / `33dbb83a0b47fc72c01e6bae01ec41a48852067c3e46c235db36c46864e155e7`。
+  因运行发生在 clean worktree，`evaluatedCommit=d143ec82577f8d4cceda2df3bb410491f3f09333`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

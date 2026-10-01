@@ -98,21 +98,21 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   ];
 
   return (
-    <main className="page-shell flex min-h-[calc(100dvh-4.5rem)] flex-col py-8 sm:py-10">
+    <main className="page-shell flex min-h-[calc(100dvh-7rem)] flex-col py-6 sm:py-8">
       <LocaleRenderReceipt locale={locale} />
-      <section className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <section className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="section-kicker flex items-center gap-2"><Bot aria-hidden="true" className="size-4" />{copy.kicker}</div>
-          <h1 className="display-title mt-4 text-4xl font-semibold tracking-[-0.045em] text-[#142821] sm:text-5xl lg:text-6xl">{copy.heading}</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">{copy.description}</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">{copy.heading}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{copy.description}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link className={cn(buttonVariants({ variant: "outline" }), "h-11 gap-2 rounded-full border-black/[0.07] bg-white/80 px-5 text-[#23483b] hover:bg-emerald-50 hover:text-emerald-950")} href="/map"><Map aria-hidden="true" className="size-4" />{copy.mapFirst}</Link>
-          <Link className={cn(buttonVariants(), "h-11 gap-2 rounded-full bg-[#173d31] px-5 text-white hover:bg-[#215142]")} href="/countries/CHN"><FileCheck2 aria-hidden="true" className="size-4" />{copy.exampleCountry}</Link>
+          <Link className={cn(buttonVariants({ variant: "outline" }), "h-10 gap-2 bg-card")} href="/map"><Map aria-hidden="true" className="size-4" />{copy.mapFirst}</Link>
+          <Link className={cn(buttonVariants(), "h-10 gap-2")} href="/countries/CHN"><FileCheck2 aria-hidden="true" className="size-4" />{copy.exampleCountry}</Link>
         </div>
       </section>
 
-      <section className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_15rem]">
         <SalesChat
           aiConfigured={isServerAiConfigured()}
           countryIso2ByIso3={countryIso2ByIso3}
@@ -122,13 +122,13 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
           selectedCountryIso3={context.countryIso3 ?? null}
           suggestedPrompts={conversationStarters}
         />
-        <aside className="surface-panel hidden rounded-[1.75rem] p-6 lg:block">
+        <aside className="surface-panel hidden self-start rounded-md p-5 xl:block">
           <p className="section-kicker">{copy.sidebarKicker}</p>
-          <h2 className="display-title mt-3 text-2xl font-semibold tracking-[-0.03em] text-[#17382e]">{copy.sidebarHeading}</h2>
-          <p className="mt-6 rounded-2xl border border-black/[0.05] bg-[#f5f7f1] px-4 py-3 text-sm leading-6 text-slate-700">
+          <h2 className="mt-2 text-base font-semibold tracking-tight">{copy.sidebarHeading}</h2>
+          <p className="mt-4 rounded-lg bg-muted/60 px-3 py-3 text-xs leading-6 text-muted-foreground">
             {copy.sidebarBody}
           </p>
-          <div className="mt-7 border-t border-black/[0.07] pt-5 text-xs leading-5 text-slate-500">{copy.sidebarFoot}</div>
+          <div className="mt-4 border-t pt-4 text-xs leading-5 text-muted-foreground">{copy.sidebarFoot}</div>
         </aside>
       </section>
     </main>

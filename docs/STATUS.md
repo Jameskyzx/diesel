@@ -86,11 +86,11 @@ intentionally fails for merely local or staged evidence.
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
+    "commit": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
     "evidenceKind": "historical-operator-record-only",
-    "id": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
-    "observedAt": "2026-08-20T01:29+08:00",
-    "releasePath": "/opt/diesel/releases/5b35ced1e6e52ca1df9fec9d46f355b73b033ec6"
+    "id": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+    "observedAt": "2026-10-01T00:19+00:00",
+    "releasePath": "/opt/diesel/releases/7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -139,18 +139,18 @@ intentionally fails for merely local or staged evidence.
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-08-20T01:29+08:00",
+    "readbackAt": "2026-10-01T00:19+00:00",
     "status": "ok",
-    "version": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6"
+    "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v1"
   },
   "repositoryHead": {
-    "local": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
-    "observedAt": "2026-08-20T01:29+08:00",
-    "remote": "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6"
+    "local": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+    "observedAt": "2026-10-01T00:19+00:00",
+    "remote": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
   }
 }
 ```
@@ -160,6 +160,24 @@ The 178 ISO3 entries are a country directory and published evidence boundary,
 not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
+
+- 2026-10-01 00:19 UTC：`7c3a41a` 已正式部署至 `diesel.jamesky.site`。
+  PR #45 与 master 的十项 CI 均首试通过（runs `36777759362` / `36781250334`）；
+  隔离构建、十表快照恢复演练、97 项签核队列和完整公网校验通过，原始发布进程于
+  00:05:28 UTC 正常退出 0，无断线、重复 owner 或手写完成标记。独立页面、语言
+  Cookie、普通 SSE、重定向、内部路由 404/HSTS 与严格账本复验通过；终态为
+  `COMMITTED:PUBLISH_FINALIZED`，永久协议未变，两项服务 online，`jamesky-api`
+  PID 未变且重启计数为 0，全部备份保留。
+  CHN 泛非道路查询已从 500 修复为合同有效的显式无数据，但旧巡检错误要求其必须
+  available，因此 [v3 原始报告](evidence/production-canary-v3-20261001.json) 仍为失败；
+  同次真实 DeepSeek SSE 通过。巡检 v4 分别严格验证 construction 有证据与 non-road
+  无数据，[六项无付费现网读回](evidence/production-canary-v4-20261001.json) 全部通过，
+  未重复付费探针。v4 通过 SSH stdin 以内存程序执行，不覆盖不可变 release 文件；
+  本次后续提交仅更新外部巡检、回归和证据，不重启应用、不重跑治理发布。
+  00:19 UTC 内的内外网 health/readiness、主机 current、本地 master 与远端 master
+  读回一致，规范观察块现更新为该已部署 SHA。后续文档/巡检提交可以领先于此带时间
+  的运行快照，不代表需要重复部署。模型完整评估见下方唯一台账；暴露过的临时密钥
+  尚待轮换，历史分支仍因权利/许可证决定未完成而不公开。
 
 - 2026-09-30 20:26 UTC：`46954b1` 已通过 PR/master 全部门禁、隔离构建、恢复演练及
   完整签核队列；原 SSH 链路中断后，原主机进程自行完成，严格账本确认
@@ -431,10 +449,10 @@ not a claim that all 178 countries have numerical diesel limits.
   自 `2027-07-01`。BRN/BTN/SLB/TLS/MWI/SLE/SOM/SSD/TCD/SLV/SUR/TTO
   已以 #248–#259 / ADR-134 固定为每国恰好两条当前 source、四 scope no-data，
   统一 `verifiedAt=2026-08-10T23:08:11Z`。
-- 公开只读演示：<https://jamesky.site>。只读核验中，
-  observedAt=`2026-08-20T01:29+08:00`；`/api/health` readbackAt=`2026-08-20T01:29+08:00` returned `status=ok`,
-  `version=5b35ced1e6e52ca1df9fec9d46f355b73b033ec6`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/5b35ced1e6e52ca1df9fec9d46f355b73b033ec6`。因此当前公开 release ID
+- 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
+  observedAt=`2026-10-01T00:19+00:00`；`/api/health` readbackAt=`2026-10-01T00:19+00:00` returned `status=ok`,
+  `version=7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为
@@ -2240,7 +2258,7 @@ JSON 边界仅省略对象中的可选 undefined 字段。DeepSeek 每步只请�
 | --- | --- | --- | --- | --- |
 | 零配置作品 Demo | `pnpm demo` | 进程内 PGlite + 虚构 fixture | 确定性离线模拟，仍调用只读工具 | 招聘方本地快速体验 |
 | 标准开发 | `pnpm dev` | PostgreSQL / Supabase | 可选服务端 OpenAI-compatible | 开发、真实治理发布与检索 |
-| 公开只读演示 | <https://jamesky.site> | PostgreSQL 中已发布事实 + 明确 Demo | 服务端模型，只读工具 | 作品展示，不是业务生产系统 |
+| 公开只读演示 | <https://diesel.jamesky.site> | PostgreSQL 中已发布事实 + 明确 Demo | 服务端模型，只读工具 | 作品展示，不是业务生产系统 |
 
 零配置 Demo 只能在 `NODE_ENV=development`、`DATABASE_MODE=pglite-demo` 下启用；
 生产误设 `PORTFOLIO_DEMO_MODE=true` 会失败关闭。

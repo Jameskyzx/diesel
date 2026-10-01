@@ -1,0 +1,71 @@
+{
+  "checkedAt": "2026-10-01T00:18:19.434Z",
+  "expectedVersion": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+  "includeProviderAi": false,
+  "pass": true,
+  "results": [
+    {
+      "durationMs": 90,
+      "errorCode": null,
+      "id": "liveness",
+      "method": "GET",
+      "pass": true,
+      "path": "/api/health/live",
+      "requestId": "b70d8498-b2a8-48dd-abfd-478cd3f401ed",
+      "status": 200
+    },
+    {
+      "durationMs": 2156,
+      "errorCode": null,
+      "id": "readiness",
+      "method": "GET",
+      "pass": true,
+      "path": "/api/health/ready",
+      "requestId": "25bf07c7-4b2a-475d-8d6f-aa694d05a9d6",
+      "status": 200
+    },
+    {
+      "durationMs": 2815,
+      "errorCode": null,
+      "id": "country-decision-summary",
+      "method": "GET",
+      "pass": true,
+      "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-01",
+      "requestId": "77346970-53b2-4260-8e46-cdb182f6c86b",
+      "status": 200
+    },
+    {
+      "durationMs": 2776,
+      "errorCode": null,
+      "id": "country-decision-no-data",
+      "method": "GET",
+      "pass": true,
+      "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-01",
+      "requestId": "22ece0b2-671f-4d86-b70c-004fdad29d97",
+      "status": 200
+    },
+    {
+      "durationMs": 176,
+      "errorCode": null,
+      "id": "public-products",
+      "method": "GET",
+      "pass": true,
+      "path": "/api/products",
+      "requestId": "95425e0e-d62b-4889-bccc-74436b7dd42e",
+      "status": 200
+    },
+    {
+      "durationMs": 1319,
+      "errorCode": null,
+      "id": "chat-direct-sse",
+      "method": "POST",
+      "pass": true,
+      "path": "/api/chat",
+      "requestId": "5f12f00e-63d2-4369-9557-afb1eff5feed",
+      "status": 200
+    }
+  ],
+  "runError": null,
+  "targetOrigin": "https://diesel.jamesky.site",
+  "version": "synthetic-canary-v4"
+}

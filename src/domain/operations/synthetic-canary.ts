@@ -38,6 +38,7 @@ export type CanaryCheck = {
     asOf: string;
     countryIso3: string;
     powerKw: number;
+    summaryStatus: "available" | "no_data";
   };
   productExpectation?: {
     demoModelCodes: readonly string[];
@@ -115,14 +116,20 @@ export function validateCanaryJson(
       return true;
     }
     const summary = parsed.data.applicabilitySummary;
+    const matchesEvidenceState = expectation.summaryStatus === "available"
+      ? summary.country.status === "available" &&
+        summary.lastVerifiedAt !== null && summary.sources.length > 0
+      : summary.country.status === "no_data" &&
+        summary.country.currentEffectiveRegulations.length === 0 &&
+        summary.country.futureAdoptedRegulations.length === 0 &&
+        summary.lastVerifiedAt === null && summary.sources.length === 0 &&
+        summary.missingData.length > 0;
     return (
       parsed.data.asOf === expectation.asOf &&
       parsed.data.country.iso3 === expectation.countryIso3 &&
       !parsed.data.country.isStale &&
       summary.country.countryIso3 === expectation.countryIso3 &&
-      summary.country.status === "available" &&
-      summary.lastVerifiedAt !== null &&
-      summary.sources.length > 0 &&
+      matchesEvidenceState &&
       summary.query.applicationScope === expectation.applicationScope &&
       summary.query.asOf === expectation.asOf &&
       summary.query.countryIso3s.length === 1 &&
@@ -321,10 +328,27 @@ export function createCanaryChecks(input: {
       expectedStatus: 200,
       id: "country-decision-summary",
       jsonExpectation: {
+        applicationScope: "construction",
+        asOf: input.asOf,
+        countryIso3: "CHN",
+        powerKw: 100,
+        summaryStatus: "available",
+      },
+      jsonShape: "country-summary",
+      method: "GET",
+      path: `/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=${input.asOf}`,
+      requireRequestId: true,
+    },
+    {
+      expectedContentType: "application/json",
+      expectedStatus: 200,
+      id: "country-decision-no-data",
+      jsonExpectation: {
         applicationScope: "non-road",
         asOf: input.asOf,
         countryIso3: "CHN",
         powerKw: 100,
+        summaryStatus: "no_data",
       },
       jsonShape: "country-summary",
       method: "GET",

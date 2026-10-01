@@ -133,7 +133,7 @@ if present:
     fail("root install lifecycle scripts are forbidden: " + ", ".join(present))
 
 expected_workspace_sha256 = (
-    "5c575da122468a7202c35979ea3ed99718b6c719ed657e4fafb04a8b1171339d"
+    "a7568e2cba91a5411dd26fbcb5547685f52e4dda471f2b3bf44fa6e49e581663"
 )
 if hashlib.sha256(workspace_bytes).hexdigest() != expected_workspace_sha256:
     fail("pnpm-workspace.yaml does not match the reviewed execution config")
@@ -147,6 +147,11 @@ if hashlib.sha256(runner_patch_bytes).hexdigest() != (
     "43a34fe00371ed7d2a7a972ad80269cbfe7cda5beb045640d3a2ad8ff06d54ee"
 ):
     fail("Vitest runner patch does not match its reviewed source")
+vaul_patch_bytes = read_regular("patches/vaul@1.1.2.patch", 256 * 1024)
+if hashlib.sha256(vaul_patch_bytes).hexdigest() != (
+    "6d0a37b5ddc97a7c29c65f2a0b76771551f87b693e3f1e4c7d634c6e0841da33"
+):
+    fail("Vaul non-modal patch does not match its reviewed source")
 if nvmrc_bytes != b"22.22.3\n":
     fail(".nvmrc must be exactly 22.22.3")
 

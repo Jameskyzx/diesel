@@ -992,7 +992,11 @@ for (const locale of ["en", "zh-CN"] as const) {
           documentOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
           languageControlOutside: toggleBounds.left < 0 || toggleBounds.right > window.innerWidth,
           navigationOverflow: element.scrollWidth > element.clientWidth + 1,
-          overlap: bounds.right > toggleBounds.left + 1,
+          // Navigation and language controls occupy different header rows.
+          overlap: bounds.left < toggleBounds.right - 1 &&
+            bounds.right > toggleBounds.left + 1 &&
+            bounds.top < toggleBounds.bottom - 1 &&
+            bounds.bottom > toggleBounds.top + 1,
           undersizedControls: controls.filter((control) => {
             const rect = control.getBoundingClientRect();
             return rect.width < 32 || rect.height < 32;

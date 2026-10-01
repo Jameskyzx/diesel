@@ -20,7 +20,7 @@ export function assertCiGitleaksGuardSource(source: string | Uint8Array): void {
 export const ciInstallBoundaryPath =
   "scripts/ci/verify-install-boundary.py" as const;
 export const ciInstallBoundarySha256 =
-  "a107f2e9adf6f645608693f9af1d733a77959ca4035de7fba5492ca97f418fc9" as const;
+  "c93b2710d56dcbc8b2bb20f5b156b8d66531f52099295e5f3632643beb43627b" as const;
 const maximumCiInstallBoundarySourceBytes = 64 * 1024;
 
 export function assertCiInstallBoundarySource(
@@ -524,23 +524,23 @@ const playwrightEvidenceCiContracts = [
 const canonicalMergeBlockingJobDigests = [
   {
     jobId: "deploy-contracts",
-    sha256: "6d5feb68349c5fa609c6a59305736a035930c5b6c53542b9ce78625a485534aa",
+    sha256: "eef755f49d7d0e549c452c5adff3647f057c3423865176a029ff203e4d6b0f80",
   },
   {
     jobId: "postgres-migrations",
-    sha256: "728847cbf05b29431b3386ac07daae9332aa93857a4872052a1b4345db6f1d8d",
+    sha256: "ec7a109c01a0653c5e671ff8b28644f7d2d1efc05cd9377acc750fe09c4a4b0c",
   },
   {
     jobId: "e2e",
-    sha256: "8d6c796a2d75217eda1e9a5de7b89effa787fc8cb7ab2219462d8bf4c47a0e37",
+    sha256: "f794a256d80e6807782be8fc72a34ea4f5ec2ab0574c50b47b2a8910a6d467d7",
   },
   {
     jobId: "portfolio-demo-e2e",
-    sha256: "408e40ead3f8755c53709692d70aca5ceefaae5032f96909c8294fb4c6d4f4a9",
+    sha256: "3bc8220fd13afc1623bf54ef18872cb4948fb4ecd5c02a9a69aa780a86a91343",
   },
   {
     jobId: "fde-demo-e2e",
-    sha256: "7b3ce2ec53b3d658dbb9614c7d4212aaae37033a0637c18b53f4603478169f89",
+    sha256: "4936be8bdc110e297886434efe0fea44b7ef17d04546c5cdfd0813d2dd0955d3",
   },
   {
     jobId: "secrets",
@@ -548,11 +548,11 @@ const canonicalMergeBlockingJobDigests = [
   },
   {
     jobId: "audit",
-    sha256: "3c3a87091fb6ebeba3e458840a0c71a4e3fe26664da0940834bdbeb8549c4b6e",
+    sha256: "7b883bba03731fee7efc3c5f4de71a72684593f431dd4e934b617c6f893f686f",
   },
   {
     jobId: "linux-release-handoff",
-    sha256: "feaeb4572481c371c0c9082b4d2a9e39a921566ab9122d7e9ba69c247db564d5",
+    sha256: "9ffc5646cdc2e480f823977f15b32909532d19d1c1b192915541187c418ee178",
   },
 ] as const;
 

@@ -639,35 +639,35 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20261001T002214987Z-a101f9b8-fe58-4528-b81c-3a45aef7f3fe.json",
+  "archivePath": "archive/ai-live-eval-20261001T090419854Z-62762b1a-8541-4e13-a470-a226a2db8ffb.json",
   "attemptCount": 37,
   "complete": true,
   "completedCount": 37,
-  "evaluatedAt": "2026-10-01T00:22:14.987Z",
-  "latestOutcome": "passed",
+  "evaluatedAt": "2026-10-01T09:04:19.854Z",
+  "latestOutcome": "failed",
   "modelStepCount": 37,
-  "runId": "a101f9b8-fe58-4528-b81c-3a45aef7f3fe",
+  "runId": "62762b1a-8541-4e13-a470-a226a2db8ffb",
   "runError": null,
   "sampleCount": 18,
   "sourceFingerprint": {
     "algorithm": "sha256",
-    "digest": "cb91c046dbbe8b63a47bcb5c96fc348e55c2ee9e1264a81d2c28752fbf0b3b92",
+    "digest": "92edb21a261da5a8d701ae4bc7112debbee3a6758c53848cd8c523787f3cbff5",
     "fileCount": 298,
     "status": "captured"
   },
   "suiteCaseCount": 18,
   "terminationReason": "completed",
-  "thresholdsPassed": true,
+  "thresholdsPassed": false,
   "tokenUsageComplete": true,
-  "totalTokens": 97317,
+  "totalTokens": 97304,
   "version": "sales-chat-live-v25"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `passed`; evaluatedAt `2026-10-01T00:22:14.987Z`; run ID `a101f9b8-fe58-4528-b81c-3a45aef7f3fe`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `37 provider attempts`; `37 completed provider calls`; `37 model steps`; `97317 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20261001T002214987Z-a101f9b8-fe58-4528-b81c-3a45aef7f3fe.json`; source fingerprint `cb91c046dbbe8b63a47bcb5c96fc348e55c2ee9e1264a81d2c28752fbf0b3b92` across `298` files.
+Current report result: `failed`; evaluatedAt `2026-10-01T09:04:19.854Z`; run ID `62762b1a-8541-4e13-a470-a226a2db8ffb`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `37 provider attempts`; `37 completed provider calls`; `37 model steps`; `97304 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=false`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20261001T090419854Z-62762b1a-8541-4e13-a470-a226a2db8ffb.json`; source fingerprint `92edb21a261da5a8d701ae4bc7112debbee3a6758c53848cd8c523787f3cbff5` across `298` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed

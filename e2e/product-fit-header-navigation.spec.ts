@@ -208,10 +208,10 @@ async function withPendingFit(
         await expect(page.getByTestId("product-fit-evaluation-loading")).toBeVisible();
         expect(interception.fit.release.resolved).toBe(false);
 
-        // Vaul hides this visible anchor from the accessibility tree while
-        // the drawer is open. Exercise its real pointer path, never force it.
+        // The non-modal drawer must leave this anchor accessible. Exercise
+        // its real pointer path, never force it or opt into hidden elements.
         const label = zh ? "GD · Global Diesel — 首页" : "GD · Global Diesel — Home";
-        const homeLink = page.locator(`header a[aria-label="${label}"]`);
+        const homeLink = page.getByRole("banner").getByRole("link", { name: label, exact: true });
         await expect(homeLink).toBeVisible();
         await expect(homeLink).toHaveAttribute("aria-label", label);
         await expect(homeLink).toHaveAttribute("href", "/");

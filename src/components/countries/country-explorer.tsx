@@ -106,7 +106,7 @@ function MapModuleLoading() {
   return (
     <div
       aria-busy="true"
-      className="grid h-full min-h-[30rem] place-items-center rounded-[1.75rem] border border-black/[0.06] bg-[#edf3ef]"
+      className="grid h-full min-h-[30rem] place-items-center rounded-md border bg-slate-100"
       data-testid="map-module-loading"
       role="status"
     >
@@ -352,31 +352,35 @@ export function CountryExplorer({
   }, [data.status, selectedIso3]);
 
   return (
-    <main className="page-shell py-8 sm:py-10">
-      <section className="mb-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
+    <main className="page-shell py-6 sm:py-8">
+      <section className="mb-6">
         <div>
           <div className="section-kicker flex items-center gap-2">
             <Globe2 aria-hidden="true" className="size-4" />
             {copy.kicker}
           </div>
-          <h1 className="display-title mt-4 text-4xl font-semibold tracking-[-0.045em] text-[#142821] sm:text-5xl lg:text-6xl">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
             {copy.heading}
           </h1>
-          <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
             {copy.description}
           </p>
         </div>
 
-        <div className="surface-panel grid w-full min-w-0 gap-2 rounded-[1.25rem] p-4">
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-[15rem_minmax(0,1fr)]" data-testid="map-workspace">
+      <aside className="surface-panel flex min-w-0 flex-col gap-5 self-start rounded-md p-4">
+        <div className="grid min-w-0 gap-2">
           <label
-            className="text-[11px] font-semibold tracking-[0.12em] text-emerald-800 uppercase"
+            className="text-xs font-semibold text-foreground"
             htmlFor="country-select"
           >
             {copy.quickSelect}
           </label>
           <select
             aria-label={copy.countrySelect}
-            className="h-12 w-full min-w-0 rounded-xl border border-black/[0.08] bg-[#f7f8f3] px-3 text-sm font-medium text-[#17382e] shadow-none outline-none focus-visible:ring-[3px] focus-visible:ring-emerald-700/20"
+            className="h-11 w-full min-w-0 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
             disabled={data.status !== "ready"}
             id="country-select"
             onChange={(event) => {
@@ -401,13 +405,11 @@ export function CountryExplorer({
             ))}
           </select>
         </div>
-      </section>
-
       <section
         aria-label={copy.featuredAria}
-        className="mb-5 flex min-h-10 items-center gap-2 overflow-x-auto pb-1"
+        className="flex min-w-0 flex-wrap items-center gap-2 border-t pt-4 xl:flex-col xl:items-stretch"
       >
-        <span className="mr-1 inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-emerald-900/65">
+        <span className="mr-1 inline-flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground xl:mb-1">
           <Database aria-hidden="true" className="size-3.5" />
           {copy.featuredLabel}
         </span>
@@ -421,8 +423,8 @@ export function CountryExplorer({
               variant={selectedIso3 === country.iso3 ? "default" : "outline"}
               className={
                 selectedIso3 === country.iso3
-                  ? "rounded-full bg-[#173d31] px-4 text-white"
-                  : "rounded-full border-black/[0.07] bg-white/75 px-4 text-slate-600 hover:bg-emerald-50 hover:text-emerald-900"
+                  ? "h-auto min-h-10 justify-start rounded-md bg-primary px-3 py-2 text-left whitespace-normal text-white"
+                  : "h-auto min-h-10 justify-start rounded-md border-transparent bg-muted/60 px-3 py-2 text-left whitespace-normal text-foreground hover:border-border hover:bg-muted"
               }
             >
               {formatCountryDisplayName(country, locale)} · {country.iso3}
@@ -434,12 +436,13 @@ export function CountryExplorer({
           </span>
         ) : null}
       </section>
+      </aside>
 
-      <section className="min-h-[30rem] lg:h-[calc(100dvh-18rem)] lg:min-h-[34rem]">
+      <section className="min-w-0 min-h-[30rem] xl:h-[calc(100dvh-20rem)] xl:min-h-[34rem]">
         {data.status === "loading" ? (
           <div
             aria-busy="true"
-            className="grid h-full min-h-[30rem] place-items-center rounded-[1.75rem] border border-black/[0.06] bg-white/85 shadow-[0_24px_70px_rgb(29_56_47_/_0.08)]"
+            className="grid h-full min-h-[30rem] place-items-center rounded-md border bg-card"
             role="status"
           >
             <div className="text-center">
@@ -456,7 +459,7 @@ export function CountryExplorer({
 
         {data.status === "error" ? (
           <div
-            className="grid h-full min-h-[30rem] place-items-center rounded-[1.75rem] border border-destructive/25 bg-card p-6 text-center"
+            className="grid h-full min-h-[30rem] place-items-center rounded-md border border-destructive/25 bg-card p-6 text-center"
             role="alert"
           >
             <div>
@@ -488,6 +491,7 @@ export function CountryExplorer({
           />
         ) : null}
       </section>
+      </div>
 
       <p className="mt-4 px-1 text-[11px] text-muted-foreground">
         {copy.boundaryAttribution}

@@ -1,0 +1,10 @@
+{
+  "version": "diesel-generated-brand-asset-v1",
+  "asset": "public/brand/diesel-chibi.png",
+  "method": "built-in image_gen",
+  "prompt": "Use case: logo-brand. Asset type: original illustrated mascot icon for the top-left brand link of a diesel-engine regulations website, displayed at about 40 pixels. Primary request: draw one cute Q-version / chibi diesel engine, not a vehicle. Scene/backdrop: genuinely transparent background. Subject: a compact rounded blue diesel engine block in a clear three-quarter view, with a simplified silver cylinder head, one chunky curved exhaust/turbo pipe, a small warm amber oil cap and a round flywheel; a pair of small friendly eyes and a subtle smile integrated into the front face. Style/medium: polished hand-drawn cartoon illustration, bold clean dark-navy outlines, large simple shapes, restrained soft cel shading, charming but professional. Color palette: website blue #066fd1, pale blue highlights, cool silver, navy outlines and one small amber accent. Composition: single centered icon on a square canvas, strong recognizable engine silhouette, fill roughly 84 percent of the square, even transparent padding, all parts visible. Keep the silhouette and face legible at 40px; very few mechanical details, no intricate wires or tiny bolts. No letters, no GD text, no watermark, no brand logos, no frame, no background tile, no ground shadow, no scenery, no wheels of a vehicle, no arms or legs, no smoke or fire.",
+  "transparentBackground": true,
+  "width": 1254,
+  "height": 1254,
+  "sha256": "be8a11494dbb6281f011d3387bd8da65c1f6e4682d82f74af866287c34e0cb57"
+}

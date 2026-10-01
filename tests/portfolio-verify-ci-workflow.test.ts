@@ -59,6 +59,7 @@ const installBoundaryInputPaths = [
   ".nvmrc",
   "patches/next@16.3.6.patch",
   "patches/@vitest__runner@4.1.11.patch",
+  "patches/vaul@1.1.2.patch",
 ] as const;
 
 async function createInstallBoundaryFixture(): Promise<string> {
@@ -1414,7 +1415,7 @@ describe("dependency-free CI install-boundary guard", () => {
     });
   });
 
-  it.each(["patches/next@16.3.6.patch", "patches/@vitest__runner@4.1.11.patch"]
+  it.each(["patches/next@16.3.6.patch", "patches/@vitest__runner@4.1.11.patch", "patches/vaul@1.1.2.patch"]
     .flatMap((path) => ["missing", "changed", "symlink"].map((state) => ({ path, state }))))(
     "rejects a $state $path before installing dependencies",
     async ({ path, state }) => {

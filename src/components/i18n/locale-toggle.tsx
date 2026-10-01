@@ -34,7 +34,7 @@ export function LocaleToggle({
       <div
         aria-busy={requestPending}
         aria-label={dictionary.header.localeLabel}
-        className="flex items-center rounded-full border border-black/[0.07] bg-white/75 p-0.5 text-[11px] font-semibold shadow-sm"
+        className="inline-flex items-center rounded-lg border bg-muted p-0.5 text-xs font-medium"
         data-testid={testId}
         role="group"
       >
@@ -42,10 +42,10 @@ export function LocaleToggle({
           <button
             aria-pressed={locale === option.locale}
             className={cn(
-              "h-8 rounded-full px-2.5 transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-emerald-700/20",
+              "h-8 rounded-md px-2.5 transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25",
               locale === option.locale
-                ? "bg-[#173d31] text-white"
-                : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900",
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-card hover:text-foreground",
             )}
             disabled={!hydrated || disabled}
             key={option.locale}

@@ -50,7 +50,7 @@ const mapStyle: StyleSpecification = {
     {
       id: "background",
       paint: {
-        "background-color": "#e9f2f3",
+        "background-color": "#f4f6f8",
       },
       type: "background",
     },
@@ -68,12 +68,12 @@ const countryFillLayer: FillLayerSpecification = {
     "fill-color": [
       "case",
       ["boolean", ["feature-state", "selected"], false],
-      "#f59e0b",
+      "#f59f00",
       ["boolean", ["feature-state", "hover"], false],
-      "#4d9e82",
+      "#74b4ec",
       ["boolean", ["feature-state", "hasData"], false],
-      "#167260",
-      "#cbd8dc",
+      "#066fd1",
+      "#cbd5df",
     ],
     "fill-opacity": [
       "case",
@@ -96,9 +96,9 @@ const countryLineLayer: LineLayerSpecification = {
     "line-color": [
       "case",
       ["boolean", ["feature-state", "selected"], false],
-      "#92400e",
+      "#9d6800",
       ["boolean", ["feature-state", "hover"], false],
-      "#135f50",
+      "#0664bd",
       "#ffffff",
     ],
     "line-opacity": 0.95,
@@ -448,7 +448,7 @@ export function WorldMap({
   return (
     <div
       aria-label={copy.interactiveAria}
-      className="relative h-full min-h-[30rem] overflow-hidden rounded-[1.75rem] border border-black/[0.07] bg-[#e9f2f3] shadow-[0_28px_80px_rgb(29_56_47_/_0.12)]"
+      className="relative h-full min-h-[30rem] overflow-hidden rounded-md border bg-[#f4f6f8]"
       data-testid="world-map"
       role="region"
     >
@@ -460,10 +460,10 @@ export function WorldMap({
       />
       {loadState === "loading" ? (
         <div
-          className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[#e9f2f3]/85 text-sm text-slate-600 backdrop-blur-sm"
+          className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[#f4f6f8]/90 text-sm text-muted-foreground"
           role="status"
         >
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 shadow-sm">
+          <span className="inline-flex items-center gap-2 rounded-md border bg-card px-4 py-2">
             <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
             {copy.geometryLoading}
           </span>
@@ -471,7 +471,7 @@ export function WorldMap({
       ) : null}
       {loadState === "error" || loadState === "gpu-error" ? (
         <div
-          className="absolute inset-0 z-30 grid place-items-center bg-[#f7f4ed] p-6 text-center"
+          className="absolute inset-0 z-30 grid place-items-center bg-card p-6 text-center"
           role="alert"
         >
           <div className="max-w-sm">
@@ -486,7 +486,7 @@ export function WorldMap({
               {loadState === "gpu-error" ? copy.gpuErrorBody : copy.boundaryErrorBody}
             </p>
             <button
-              className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-4 text-sm font-semibold text-[#17382e] hover:bg-emerald-50"
+              className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg border bg-card px-4 text-sm font-medium text-primary hover:bg-accent"
               onClick={() => setRetryKey((key) => key + 1)}
               type="button"
             >
@@ -498,17 +498,19 @@ export function WorldMap({
       ) : null}
       {loadState === "ready" ? (
         <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-wrap gap-2 text-xs sm:left-5 sm:top-5">
-          <span className="rounded-full border border-emerald-900/10 bg-[#173d31]/95 px-3.5 py-2 font-medium text-white shadow-sm backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-md border bg-card/95 px-3 py-2 font-medium text-foreground">
+            <span aria-hidden="true" className="size-2 rounded-sm bg-primary" />
             {copy.legendData}
           </span>
-          <span className="rounded-full border border-black/[0.06] bg-white/90 px-3.5 py-2 font-medium text-slate-600 shadow-sm backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-md border bg-card/95 px-3 py-2 font-medium text-foreground">
+            <span aria-hidden="true" className="size-2 rounded-sm border border-slate-400 bg-slate-300" />
             {copy.legendNoData}
           </span>
         </div>
       ) : null}
       {tooltip ? (
         <div
-          className="pointer-events-none absolute z-20 w-56 rounded-2xl border border-black/[0.08] bg-[#fffefa]/95 p-4 shadow-[0_20px_50px_rgb(24_53_44_/_0.2)] backdrop-blur"
+          className="pointer-events-none absolute z-20 w-56 rounded-lg border bg-card p-4 shadow-xl"
           data-country-iso3={tooltip.iso3}
           data-testid="map-tooltip"
           style={{
@@ -538,12 +540,12 @@ export function WorldMap({
             ),
           }}
         >
-          <p className="display-title text-lg font-semibold text-[#17382e]">
+          <p className="text-base font-semibold text-foreground">
             {tooltipDisplayIdentity
               ? formatCountryDisplayName(tooltipDisplayIdentity, locale)
               : tooltip.name}
           </p>
-          <p className="mt-0.5 text-[10px] font-semibold tracking-[0.16em] text-emerald-700">
+          <p className="mt-0.5 text-[10px] font-semibold tracking-[0.12em] text-primary">
             {tooltip.iso3}
           </p>
           <p className="mt-2 text-xs">

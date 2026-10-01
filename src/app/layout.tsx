@@ -46,7 +46,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <LocaleProvider dictionary={dictionary} locale={locale}>
           <LocaleControllerProvider>
             <a
-              className="sr-only z-[100] rounded-md bg-[#173d31] px-4 py-2 text-sm font-semibold text-white shadow-lg focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+              className="sr-only z-[100] rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:outline-none focus:ring-4 focus:ring-ring/30"
               href="#main-content"
             >
               {dictionary.header.skipToContent}
@@ -56,9 +56,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               <div className="flex-1" id="main-content" tabIndex={-1}>
                 {children}
               </div>
-              <footer className="mt-12 border-t border-black/[0.06] bg-[#f3f1e9]/80">
-                <div className="page-shell flex flex-col gap-3 py-7 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="display-title text-sm font-semibold text-[#203b32]">
+              <footer className="mt-6 border-t bg-card">
+                <div className="page-shell flex flex-col gap-2 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-semibold text-foreground">
                     Global Diesel
                   </p>
                   <p>{dictionary.footer.tagline}</p>

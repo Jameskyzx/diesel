@@ -1357,6 +1357,20 @@ rollback basis、FD 8、`--begin-activation`、candidate 安装、所有 traps �
 PM2 state root、PM2 executable 与 systemd unit fragment 都由版本化脚本固定，不能由
 发布 shell 环境覆盖。
 
+**发布观察也必须隔离。** 从启动 foreground orchestrator 到该原始进程退出，不要
+为了查询进度反复新建 SSH/PAM 会话；协调其他维护连接也避开这个窗口。PM2 身份校验
+会对 systemd unit 搜索目录做 A/B 元数据摘要，而一次只读 SSH 也会在
+`/run/systemd/transient` 创建并清理会话，使目录 mtime/ctime 改变。2026-10-01 的
+[只读对照记录](evidence/pm2-observer-20261001.json) 证明：同一连接内连续读取摘要相同，
+插入一个执行 `true` 的 SSH 后摘要不同；这足以触发既有漂移防护。原失败日志没有
+记录具体内部拒绝分支，因此不能将这项复现冒充原事件的唯一原因。
+
+运行期间只观察原 foreground 连接的输出、原退出码，以及工作站侧保存的该连接日志；
+不要另开 SSH 轮询 `systemctl`、`journalctl`、`/proc` 或发布目录，也不要为了观察进度
+把 controller 改为 detached/background。待原进程正常退出后，再开启独立 SSH 做完整
+health、PM2、严格 ledger 和公网读回。若校验失败，仍按原控制器分类保留/回滚，保留
+失败版本及账本；不得放宽 A/B 校验、手写完成标记或清除失败状态来复用同一 release。
+
 controller 调用 activation 时，orchestrator 已经持有固定 FD 8、已经建立并复验
 `HOST_ACTIVATION_PENDING`，且已经安装 `HUP/INT/TERM/EXIT` terminalizer。activation 会重验
 `.deploy-ready`、rollback basis、PENDING 与 lifecycle-lock capability，然后完成 Nginx 安装与

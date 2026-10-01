@@ -164,8 +164,9 @@ request ID、SSE header 与闭合 UI-message v1 正文。产品列表必须恰�
 `construction` / `agriculture` 发布，不能把通用 `non-road` 当作它们的聚合别名：
 `construction` / 100 kW 必须返回 `available`、来源与非空核验日期；`non-road` / 100 kW
 必须返回明确 `no_data`、空法规/来源、null 核验日期和非空缺口说明。两条查询均使用当前
-UTC 日期，不能相互替代或把任意无数据响应放行。AI probe 会完整读取最多
-1 MB 的 UI-message v1 SSE，逐 event 复用 AI SDK schema，要求
+UTC 日期，不能相互替代或把任意无数据响应放行。默认 loopback 目标也使用同一已发布
+数据期望，不是零配置 PGlite Demo 的健康检查。AI probe 会完整读取最多 1 MB 的
+UI-message v1 SSE，逐 event 复用 AI SDK schema，要求
 start/text/`finishReason=stop`/`[DONE]` 闭合；`error`、`abort`、reasoning part、未知
 event、内容过滤、长度截断、空流或截断流全部失败关闭。输出只含路径、状态、耗时、
 错误码和 request ID。初始化阶段失败也会以稳定 stage 和 `INITIALIZATION_ERROR` 原子写入

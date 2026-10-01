@@ -17,11 +17,13 @@ import {
   governanceSnapshotDatabaseBatchSize,
   governanceSnapshotMaximumWorkers,
   governanceSnapshotPostgresOptions,
+  governanceSnapshotRawJsonBatchSize,
   governanceSnapshotReaderMaximumAttempts,
   governanceSnapshotWorkerTerminationGraceMs,
   governanceSnapshotWorkerTimeoutMs,
   isRetryableGovernanceSnapshotReaderError,
   parseGovernanceSnapshotId,
+  parseGovernanceSnapshotProgress,
   runGovernanceSnapshotReaderBatchWithRetry,
   runSnapshotAcquisitionAttempt,
   startGovernanceSnapshotAnchorHeartbeat,
@@ -117,6 +119,83 @@ afterEach(async () => {
 });
 
 describe("governance snapshot export reliability", () => {
+  it("allows only bounded table progress, never errors, SQL or row values", () => {
+    const progress = {
+      kind: "governance-snapshot-progress-v1",
+      table: "data_governance_drafts",
+      batch: 1,
+      durationMs: 500,
+    };
+    expect(parseGovernanceSnapshotProgress(progress)).toEqual(progress);
+    for (const invalid of [
+      { ...progress, error: "secret-database-url" },
+      { ...progress, rows: [{ payload: "private" }] },
+      { ...progress, table: "select secret from arbitrary_table" },
+      { ...progress, batch: 0 },
+      { ...progress, batch: 10_001 },
+      { ...progress, durationMs: Number.POSITIVE_INFINITY },
+      { ...progress, durationMs: governanceSnapshotWorkerTimeoutMs + 1 },
+      "secret-database-url",
+      null,
+    ]) expect(parseGovernanceSnapshotProgress(invalid)).toBeNull();
+  });
+
+  it("forwards validated worker progress without mixing it into the final summary", async () => {
+    const { child } = createTermIgnoringFakeChild();
+    const onProgress = vi.fn();
+    const pending = waitForGovernanceSnapshotWorkerProcess(child, { onProgress });
+    const progress = { kind: "governance-snapshot-progress-v1", table: "countries", batch: 1, durationMs: 20 };
+    child.emit("message", progress);
+    (child.stdout as PassThrough).write("summary");
+    child.emit("close", 0, null);
+    expect(await pending).toEqual({ exitCode: 0, signal: null, stdout: "summary" });
+    expect(onProgress).toHaveBeenCalledExactlyOnceWith(progress);
+    expect(child.listenerCount("message")).toBe(0);
+  });
+
+  it("rejects malformed diagnostic messages without exposing their values", async () => {
+    vi.useFakeTimers();
+    const { child, signals } = createTermIgnoringFakeChild();
+    const onProgress = vi.fn();
+    const pending = waitForGovernanceSnapshotWorkerProcess(child, {
+      onProgress, terminationGraceMs: 10,
+    });
+    child.emit("message", { error: "secret-database-url" });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(await pending).toEqual({ exitCode: null, signal: "SIGKILL", stdout: "" });
+    expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
+    expect(onProgress).not.toHaveBeenCalled();
+  });
+
+  it("reaps the worker if its diagnostic sink throws", async () => {
+    vi.useFakeTimers();
+    const { child, signals } = createTermIgnoringFakeChild();
+    const pending = waitForGovernanceSnapshotWorkerProcess(child, {
+      onProgress: () => { throw new Error("private sink failure"); },
+      terminationGraceMs: 10,
+    });
+    child.emit("message", { kind: "governance-snapshot-progress-v1", table: "countries", batch: 1, durationMs: 20 });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(await pending).toEqual({ exitCode: null, signal: "SIGKILL", stdout: "" });
+    expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
+  });
+
+  it("lets a real IPC worker exit after sending bounded progress", async () => {
+    const progress = {
+      kind: "governance-snapshot-progress-v1", table: "countries",
+      batch: 1, durationMs: 20,
+    };
+    const child = spawn(process.execPath, ["-e", [
+      `process.send(${JSON.stringify(progress)});`,
+      'process.stdout.write("summary");',
+    ].join("\n")], { stdio: ["ignore", "pipe", "ignore", "ipc"] });
+    const onProgress = vi.fn();
+    expect(await waitForGovernanceSnapshotWorkerProcess(child, {
+      onProgress, timeoutMs: 5_000, terminationGraceMs: 50,
+    })).toEqual({ exitCode: 0, signal: null, stdout: "summary" });
+    expect(onProgress).toHaveBeenCalledExactlyOnceWith(progress);
+  });
+
   it("flushes deferred protocol writes and probes before closing the client", async () => {
     const events: string[] = [];
     const client = {
@@ -465,6 +544,48 @@ describe("governance snapshot export reliability", () => {
     );
     expect(limitSelection).toContain("gt(regulationLimits.id, cursor)");
     expect(limitSelection).toContain(".limit(limit)");
+  });
+
+  it("preserves every raw JSON row with smaller advancing batches", async () => {
+    const sourceRows = Array.from({ length: 205 }, (_, index) => ({
+      id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+      payload: '{"largeInteger":9007199254740993,"precise":1.234567890123456789}',
+    }));
+    const requestedLimits: number[] = [];
+    const cursors: Array<string | null> = [];
+    const rows = await collectGovernanceSnapshotRowsInBatches(
+      async (cursor, limit) => {
+        requestedLimits.push(limit);
+        cursors.push(cursor);
+        const start = cursor === null
+          ? 0 : sourceRows.findIndex((row) => row.id === cursor) + 1;
+        return sourceRows.slice(start, start + limit);
+      },
+      governanceSnapshotRawJsonBatchSize,
+    );
+    expect(governanceSnapshotRawJsonBatchSize).toBe(100);
+    expect(requestedLimits).toEqual([100, 100, 100]);
+    expect(cursors).toEqual([null, sourceRows[99]!.id, sourceRows[199]!.id]);
+    expect(rows).toEqual(sourceRows);
+  });
+
+  it("uses the smaller batch only for all three raw JSON selections", async () => {
+    const source = await readFile(
+      join(process.cwd(), "scripts/db/export-governance-snapshot.ts"), "utf8",
+    );
+    for (const [start, end] of [
+      ["const governanceDraftRows =", "const marketImportBatchRows ="],
+      ["const marketImportBatchRows =", "const changeLogRows ="],
+      ["const changeLogRows =", "const selectedTables ="],
+    ]) {
+      const selection = source.slice(source.indexOf(start!), source.indexOf(end!));
+      expect(selection).toContain("collectGovernanceSnapshotRowsInBatches");
+      expect(selection).toContain("governanceSnapshotRawJsonBatchSize,");
+      expect(selection).toContain("order by id");
+      expect(selection).toContain("limit ${limit}");
+    }
+    expect(governanceSnapshotDatabaseBatchSize).toBe(500);
+    expect(governanceSnapshotWorkerTimeoutMs).toBe(45 * 60 * 1_000);
   });
 
   it("rejects oversized or non-advancing governance batches", async () => {

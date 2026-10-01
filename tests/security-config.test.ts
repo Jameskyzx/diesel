@@ -34,8 +34,9 @@ describe("security and immutable asset configuration", () => {
       resolve(process.cwd(), "deploy/nginx/jamesky.site.conf"),
       "utf8",
     );
-    // Each TLS server has one policy; redirects must retain HSTS too.
-    expect(nginx.match(/Strict-Transport-Security/g)).toHaveLength(2);
+    // Diesel owns one TLS server; the independently managed blog is not part
+    // of this release's template or redirect policy.
+    expect(nginx.match(/Strict-Transport-Security/g)).toHaveLength(1);
     for (const server of nginx.split("server {").filter((block) => block.includes("listen 443 ssl;"))) {
       expect(server.match(/Strict-Transport-Security/g)).toHaveLength(1);
     }

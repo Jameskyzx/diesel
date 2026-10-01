@@ -1,0 +1,1459 @@
+{
+  "version": "diesel-tabler-release-observation-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "release": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+  "observedAt": "2026-10-01T20:11:09.418Z",
+  "origin": "https://diesel.jamesky.site",
+  "outcome": {
+    "hostDeployment": "passed",
+    "providerAcceptance": "failed",
+    "overallAcceptance": "incomplete"
+  },
+  "originalForegroundConnection": [
+    {
+      "release": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+      "mode": "orchestrate",
+      "startedAt": "2026-10-01T17:49:58.147Z",
+      "completedAt": "2026-10-01T19:54:54.093Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false
+    },
+    {
+      "release": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+      "mode": "verify",
+      "startedAt": "2026-10-01T19:56:09.348Z",
+      "completedAt": "2026-10-01T19:56:27.932Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false
+    },
+    {
+      "release": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+      "mode": "canary",
+      "startedAt": "2026-10-01T19:57:08.001Z",
+      "completedAt": "2026-10-01T19:57:52.382Z",
+      "exitCode": 1,
+      "signal": null,
+      "spawnFailed": false
+    },
+    {
+      "release": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+      "mode": "canary-diagnostic-repeat",
+      "startedAt": "2026-10-01T20:04:52.748Z",
+      "completedAt": "2026-10-01T20:05:37.285Z",
+      "exitCode": 1,
+      "signal": null,
+      "spawnFailed": false,
+      "reason": "One independent bounded diagnostic repeat after observing MODEL_STREAM_ABORTED at the unchanged 30-second production step deadline; original failed canary is retained."
+    },
+    {
+      "release": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+      "mode": "ledger",
+      "startedAt": "2026-10-01T19:55:39.848Z",
+      "completedAt": "2026-10-01T19:55:41.037Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false
+    }
+  ],
+  "snapshotArtifacts": [
+    {
+      "outputPath": "/opt/diesel/backups/516af44c4cf980fce0dc7dd46138152e9e25510f/governance-before.json",
+      "sha256": "6dcd8c0e2638fbee568b8310e12871d07e2df0d9683d0f4782925e886eb10559",
+      "tableCounts": {
+        "countries": 178,
+        "country_jurisdictions": 185,
+        "data_change_logs": 9882,
+        "data_governance_drafts": 3286,
+        "data_sources": 347,
+        "jurisdictions": 155,
+        "market_import_batches": 0,
+        "market_metrics": 50,
+        "regulation_limits": 7195,
+        "regulations": 94
+      }
+    },
+    {
+      "outputPath": "/opt/diesel/backups/516af44c4cf980fce0dc7dd46138152e9e25510f/governance-after-rehearsal.json",
+      "sha256": "01d269bae60bfc40959160fd99108a0183e1fd1dac4b5d87461f9db3865c053c",
+      "tableCounts": {
+        "countries": 178,
+        "country_jurisdictions": 185,
+        "data_change_logs": 9882,
+        "data_governance_drafts": 3286,
+        "data_sources": 347,
+        "jurisdictions": 155,
+        "market_import_batches": 0,
+        "market_metrics": 50,
+        "regulation_limits": 7195,
+        "regulations": 94
+      }
+    }
+  ],
+  "publicationQueue": {
+    "completed": 97,
+    "expected": 97,
+    "countries": [
+      {
+        "ordinal": 1,
+        "iso3": "CRI"
+      },
+      {
+        "ordinal": 2,
+        "iso3": "ECU"
+      },
+      {
+        "ordinal": 3,
+        "iso3": "PAN"
+      },
+      {
+        "ordinal": 4,
+        "iso3": "DOM"
+      },
+      {
+        "ordinal": 5,
+        "iso3": "PHL"
+      },
+      {
+        "ordinal": 6,
+        "iso3": "PAK"
+      },
+      {
+        "ordinal": 7,
+        "iso3": "SAU"
+      },
+      {
+        "ordinal": 8,
+        "iso3": "ARE"
+      },
+      {
+        "ordinal": 9,
+        "iso3": "ISR"
+      },
+      {
+        "ordinal": 10,
+        "iso3": "ZAF"
+      },
+      {
+        "ordinal": 11,
+        "iso3": "EGY"
+      },
+      {
+        "ordinal": 12,
+        "iso3": "GHA"
+      },
+      {
+        "ordinal": 13,
+        "iso3": "KEN"
+      },
+      {
+        "ordinal": 14,
+        "iso3": "RWA"
+      },
+      {
+        "ordinal": 15,
+        "iso3": "TZA"
+      },
+      {
+        "ordinal": 16,
+        "iso3": "ZMB"
+      },
+      {
+        "ordinal": 17,
+        "iso3": "ZWE"
+      },
+      {
+        "ordinal": 18,
+        "iso3": "CIV"
+      },
+      {
+        "ordinal": 19,
+        "iso3": "DZA"
+      },
+      {
+        "ordinal": 20,
+        "iso3": "TUN"
+      },
+      {
+        "ordinal": 21,
+        "iso3": "ETH"
+      },
+      {
+        "ordinal": 22,
+        "iso3": "CMR"
+      },
+      {
+        "ordinal": 23,
+        "iso3": "SEN"
+      },
+      {
+        "ordinal": 24,
+        "iso3": "NGA"
+      },
+      {
+        "ordinal": 25,
+        "iso3": "UGA"
+      },
+      {
+        "ordinal": 26,
+        "iso3": "BWA"
+      },
+      {
+        "ordinal": 27,
+        "iso3": "NAM"
+      },
+      {
+        "ordinal": 28,
+        "iso3": "SWZ"
+      },
+      {
+        "ordinal": 29,
+        "iso3": "KHM"
+      },
+      {
+        "ordinal": 30,
+        "iso3": "LAO"
+      },
+      {
+        "ordinal": 31,
+        "iso3": "LKA"
+      },
+      {
+        "ordinal": 32,
+        "iso3": "MMR"
+      },
+      {
+        "ordinal": 33,
+        "iso3": "MNG"
+      },
+      {
+        "ordinal": 34,
+        "iso3": "LIE"
+      },
+      {
+        "ordinal": 35,
+        "iso3": "SGP"
+      },
+      {
+        "ordinal": 36,
+        "iso3": "MAR"
+      },
+      {
+        "ordinal": 37,
+        "iso3": "QAT"
+      },
+      {
+        "ordinal": 38,
+        "iso3": "KWT"
+      },
+      {
+        "ordinal": 39,
+        "iso3": "OMN"
+      },
+      {
+        "ordinal": 40,
+        "iso3": "JOR"
+      },
+      {
+        "ordinal": 41,
+        "iso3": "IRN"
+      },
+      {
+        "ordinal": 42,
+        "iso3": "IRQ"
+      },
+      {
+        "ordinal": 43,
+        "iso3": "LBN"
+      },
+      {
+        "ordinal": 44,
+        "iso3": "SYR"
+      },
+      {
+        "ordinal": 45,
+        "iso3": "GUY"
+      },
+      {
+        "ordinal": 46,
+        "iso3": "HTI"
+      },
+      {
+        "ordinal": 47,
+        "iso3": "JAM"
+      },
+      {
+        "ordinal": 48,
+        "iso3": "BLZ"
+      },
+      {
+        "ordinal": 49,
+        "iso3": "CUB"
+      },
+      {
+        "ordinal": 50,
+        "iso3": "LBR"
+      },
+      {
+        "ordinal": 51,
+        "iso3": "LBY"
+      },
+      {
+        "ordinal": 52,
+        "iso3": "MLI"
+      },
+      {
+        "ordinal": 53,
+        "iso3": "MRT"
+      },
+      {
+        "ordinal": 54,
+        "iso3": "NER"
+      },
+      {
+        "ordinal": 55,
+        "iso3": "GTM"
+      },
+      {
+        "ordinal": 56,
+        "iso3": "HND"
+      },
+      {
+        "ordinal": 57,
+        "iso3": "NIC"
+      },
+      {
+        "ordinal": 58,
+        "iso3": "PRY"
+      },
+      {
+        "ordinal": 59,
+        "iso3": "URY"
+      },
+      {
+        "ordinal": 60,
+        "iso3": "PRK"
+      },
+      {
+        "ordinal": 61,
+        "iso3": "PSE"
+      },
+      {
+        "ordinal": 62,
+        "iso3": "SDN"
+      },
+      {
+        "ordinal": 63,
+        "iso3": "PRI"
+      },
+      {
+        "ordinal": 64,
+        "iso3": "NCL"
+      },
+      {
+        "ordinal": 65,
+        "iso3": "ERI"
+      },
+      {
+        "ordinal": 66,
+        "iso3": "GAB"
+      },
+      {
+        "ordinal": 67,
+        "iso3": "GMB"
+      },
+      {
+        "ordinal": 68,
+        "iso3": "GNB"
+      },
+      {
+        "ordinal": 69,
+        "iso3": "GNQ"
+      },
+      {
+        "ordinal": 70,
+        "iso3": "MOZ"
+      },
+      {
+        "ordinal": 71,
+        "iso3": "LSO"
+      },
+      {
+        "ordinal": 72,
+        "iso3": "MDG"
+      },
+      {
+        "ordinal": 73,
+        "iso3": "MUS"
+      },
+      {
+        "ordinal": 74,
+        "iso3": "FJI"
+      },
+      {
+        "ordinal": 75,
+        "iso3": "CAF"
+      },
+      {
+        "ordinal": 76,
+        "iso3": "COD"
+      },
+      {
+        "ordinal": 77,
+        "iso3": "COG"
+      },
+      {
+        "ordinal": 78,
+        "iso3": "GIN"
+      },
+      {
+        "ordinal": 79,
+        "iso3": "DJI"
+      },
+      {
+        "ordinal": 80,
+        "iso3": "AUS"
+      },
+      {
+        "ordinal": 81,
+        "iso3": "PNG"
+      },
+      {
+        "ordinal": 82,
+        "iso3": "BRN"
+      },
+      {
+        "ordinal": 83,
+        "iso3": "BTN"
+      },
+      {
+        "ordinal": 84,
+        "iso3": "SLB"
+      },
+      {
+        "ordinal": 85,
+        "iso3": "TLS"
+      },
+      {
+        "ordinal": 86,
+        "iso3": "MWI"
+      },
+      {
+        "ordinal": 87,
+        "iso3": "SLE"
+      },
+      {
+        "ordinal": 88,
+        "iso3": "SOM"
+      },
+      {
+        "ordinal": 89,
+        "iso3": "SSD"
+      },
+      {
+        "ordinal": 90,
+        "iso3": "TCD"
+      },
+      {
+        "ordinal": 91,
+        "iso3": "SLV"
+      },
+      {
+        "ordinal": 92,
+        "iso3": "SUR"
+      },
+      {
+        "ordinal": 93,
+        "iso3": "TTO"
+      },
+      {
+        "ordinal": 94,
+        "iso3": "CAN"
+      },
+      {
+        "ordinal": 95,
+        "iso3": "USA"
+      },
+      {
+        "ordinal": 96,
+        "iso3": "CHN"
+      },
+      {
+        "ordinal": 97,
+        "iso3": "MLT"
+      }
+    ],
+    "failed": 0
+  },
+  "preservedControllerDiagnostics": {
+    "stderrSha256": "11cfed983a0258958badbc2e8267b157b77bfc3fb5a65c8d87086d63ad5f3bd8",
+    "http503LogLineCount": 0,
+    "governanceSnapshotWorkerRetryCount": 0,
+    "snapshotWorkerExecutions": [
+      {
+        "durationMs": 973721,
+        "exitCode": 0,
+        "signal": null
+      },
+      {
+        "durationMs": 809306,
+        "exitCode": 0,
+        "signal": null
+      }
+    ],
+    "interpretation": "Preserve transient HTTP failures even if the original controller later exits successfully; no manual restart or result relabeling is implied."
+  },
+  "ci": [
+    {
+      "id": 36891489712,
+      "event": "pull_request",
+      "headSha": "d9fb8d005ce8c176f0f748b314be2349fca0773e",
+      "attempt": 1,
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "Secret scanning (gitleaks)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "PostgreSQL + pgvector migration smoke",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Lint, typecheck, app coverage, build",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Dependency and workflow supply-chain audit",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux deployment script contracts",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Portfolio demo via pnpm demo",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux release handoff (systemd cgroup + real build)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Failure-first FDE workflow via pnpm demo:fde",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Playwright key flows",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Required CI gate",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "url": "https://github.com/Jameskyzx/diesel/actions/runs/36891489712/attempts/1"
+    },
+    {
+      "id": 36897096675,
+      "event": "push",
+      "headSha": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+      "attempt": 1,
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "Lint, typecheck, app coverage, build",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux deployment script contracts",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Dependency and workflow supply-chain audit",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "PostgreSQL + pgvector migration smoke",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Secret scanning (gitleaks)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Playwright key flows",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Portfolio demo via pnpm demo",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Failure-first FDE workflow via pnpm demo:fde",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux release handoff (systemd cgroup + real build)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Required CI gate",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "url": "https://github.com/Jameskyzx/diesel/actions/runs/36897096675/attempts/1"
+    }
+  ],
+  "host": {
+    "readOnly": true,
+    "observedAt": "2026-10-01T20:11:09.418Z",
+    "release": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+    "current": "/opt/diesel/releases/516af44c4cf980fce0dc7dd46138152e9e25510f",
+    "protocolUnchanged": true,
+    "services": [
+      {
+        "name": "jamesky-api",
+        "pid": 1554881,
+        "status": "online",
+        "restarts": 0,
+        "version": null
+      },
+      {
+        "name": "diesel-demo",
+        "pid": 2763838,
+        "status": "online",
+        "restarts": 0,
+        "version": "516af44c4cf980fce0dc7dd46138152e9e25510f"
+      }
+    ],
+    "checks": [
+      {
+        "origin": "http://127.0.0.1:8788",
+        "route": "/api/health",
+        "httpStatus": 200,
+        "durationMs": 61,
+        "status": "ok",
+        "version": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+        "checks": {}
+      },
+      {
+        "origin": "http://127.0.0.1:8788",
+        "route": "/api/health/ready",
+        "httpStatus": 200,
+        "durationMs": 780,
+        "status": "ok",
+        "version": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+        "checks": {
+          "aiChatAdmission": "ok",
+          "aiChatRateLimit": "ok",
+          "database": "ok"
+        }
+      },
+      {
+        "origin": "https://diesel.jamesky.site",
+        "route": "/api/health",
+        "httpStatus": 200,
+        "durationMs": 50,
+        "status": "ok",
+        "version": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+        "checks": {}
+      },
+      {
+        "origin": "https://diesel.jamesky.site",
+        "route": "/api/health/ready",
+        "httpStatus": 200,
+        "durationMs": 799,
+        "status": "ok",
+        "version": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+        "checks": {
+          "aiChatAdmission": "ok",
+          "aiChatRateLimit": "ok",
+          "database": "ok"
+        }
+      }
+    ],
+    "ledgerNames": [
+      "HOST_ACTIVATION_COMMITTED",
+      "HOST_ACTIVATION_V1",
+      "PUBLISH_FINALIZED",
+      "diesel-demo.pre-switch",
+      "env.production.local.pre-switch",
+      "governance-after-rehearsal.json",
+      "governance-before.json",
+      "jamesky.site.pre-switch",
+      "previous-release",
+      "validate-public-governance.sh"
+    ],
+    "pass": true
+  },
+  "ledger": {
+    "strictValidationExitCode": 0,
+    "terminalStateFromValidatedMarkers": "COMMITTED:PUBLISH_FINALIZED"
+  },
+  "repository": {
+    "readOnly": true,
+    "release": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+    "observedAt": "2026-10-01T20:11:14.548Z",
+    "local": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+    "remote": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+    "pass": true
+  },
+  "publicBoundary": {
+    "readOnly": true,
+    "observedAt": "2026-10-01T19:57:39.157Z",
+    "checks": [
+      {
+        "kind": "redirect",
+        "origin": "http://111.228.50.85",
+        "status": 301,
+        "location": "https://diesel.jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "redirect",
+        "origin": "http://diesel.jamesky.site",
+        "status": 301,
+        "location": "https://diesel.jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "blog-redirect",
+        "origin": "http://jamesky.site",
+        "status": 301,
+        "location": "https://jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "blog-redirect",
+        "origin": "http://www.jamesky.site",
+        "status": 301,
+        "location": "https://jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "blog-redirect",
+        "origin": "https://www.jamesky.site",
+        "status": 301,
+        "location": "https://jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "blog-home",
+        "origin": "https://jamesky.site/",
+        "status": 200,
+        "sha256": "56e6b252580d4998e210093450a0712fc48ee1c040b0c4a6abb00e05a1403bf8",
+        "deployedSha256": "56e6b252580d4998e210093450a0712fc48ee1c040b0c4a6abb00e05a1403bf8",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/admin",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/admin/users",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/api/admin",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/dev",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/api/dev",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      }
+    ],
+    "pass": true,
+    "publicationCompletionClaimed": false
+  },
+  "visual": {
+    "observedAt": "2026-10-01T19:57:28.157Z",
+    "checks": [
+      {
+        "name": "home-desktop",
+        "path": "/",
+        "locale": "en",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 110
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "874c74b51daf07bbc37a951b3483c5c6afa039bb07c0c6478000de9c2cf51796"
+      },
+      {
+        "name": "map-desktop",
+        "path": "/map?country=CHN",
+        "locale": "en",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 110
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "4564044f44941ee4a3505d56676949621d08a454e6868d5911e38dc8d50ffc2a"
+      },
+      {
+        "name": "country-desktop",
+        "path": "/countries/CHN?applicationScope=construction&powerKw=100",
+        "locale": "en",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 110
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "82bbe0496bce8024857445c7540dae7fda27d7c3d17eea6225bc670ed2987837"
+      },
+      {
+        "name": "chat-desktop",
+        "path": "/chat",
+        "locale": "en",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 110
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "b142c42a5cb4638d11278d36a836e6308d7dcf4b7ddd9b50605d1e37e3f3d5eb"
+      },
+      {
+        "name": "home-mobile",
+        "path": "/",
+        "locale": "zh-CN",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 110
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "12ab891802443ef7ebfab0961ca783ea5b145e7580e3f40f428044ba252b2b1c"
+      },
+      {
+        "name": "mobile-locale-switch",
+        "path": "/?releaseCheck=tabler",
+        "bothDirections": true,
+        "refreshPersisted": true,
+        "pathAndQueryPreserved": true,
+        "pass": true
+      }
+    ]
+  },
+  "canary": {
+    "checkedAt": "2026-10-01T19:57:52.333Z",
+    "expectedVersion": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+    "includeProviderAi": true,
+    "pass": false,
+    "results": [
+      {
+        "durationMs": 129,
+        "errorCode": null,
+        "id": "liveness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/live",
+        "requestId": "4c6b6bcd-f2ed-4af8-b3f1-a318fd472b90",
+        "status": 200
+      },
+      {
+        "durationMs": 2087,
+        "errorCode": null,
+        "id": "readiness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/ready",
+        "requestId": "a075eb6c-8c74-4719-b482-4e946486591b",
+        "status": 200
+      },
+      {
+        "durationMs": 2818,
+        "errorCode": null,
+        "id": "country-decision-summary",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-01",
+        "requestId": "b63e23ca-f292-4624-8bdf-f31d1cc6e61a",
+        "status": 200
+      },
+      {
+        "durationMs": 2691,
+        "errorCode": null,
+        "id": "country-decision-no-data",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-01",
+        "requestId": "4b1294a0-2aaa-4e4b-a6d6-06378e441f45",
+        "status": 200
+      },
+      {
+        "durationMs": 172,
+        "errorCode": null,
+        "id": "public-products",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/products",
+        "requestId": "7890350e-b157-4c2f-8c27-1c32564ce05f",
+        "status": 200
+      },
+      {
+        "durationMs": 1388,
+        "errorCode": null,
+        "id": "chat-direct-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "79f5e0da-4dda-4df2-b342-23ec24b073ec",
+        "status": 200
+      },
+      {
+        "durationMs": 33121,
+        "errorCode": "INVALID_RESPONSE",
+        "id": "chat-provider-sse",
+        "method": "POST",
+        "pass": false,
+        "path": "/api/chat",
+        "requestId": "3d6fa97c-1813-4ea3-8c4f-6f6b0a02d69d",
+        "status": 200
+      }
+    ],
+    "runError": null,
+    "targetOrigin": "https://diesel.jamesky.site",
+    "version": "synthetic-canary-v4"
+  },
+  "providerIncident": {
+    "repeatedCanary": {
+      "checkedAt": "2026-10-01T20:05:37.240Z",
+      "expectedVersion": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+      "includeProviderAi": true,
+      "pass": false,
+      "results": [
+        {
+          "durationMs": 123,
+          "errorCode": null,
+          "id": "liveness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/live",
+          "requestId": "264f85d0-db60-4c4e-bd8a-350348a93b8b",
+          "status": 200
+        },
+        {
+          "durationMs": 1991,
+          "errorCode": null,
+          "id": "readiness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/ready",
+          "requestId": "a73daeaa-13ff-40cd-b786-ec724640b929",
+          "status": 200
+        },
+        {
+          "durationMs": 2610,
+          "errorCode": null,
+          "id": "country-decision-summary",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-01",
+          "requestId": "a38f199c-64e5-4ba1-a79c-125e0f6ee114",
+          "status": 200
+        },
+        {
+          "durationMs": 2551,
+          "errorCode": null,
+          "id": "country-decision-no-data",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-01",
+          "requestId": "a0a2196c-3d79-4e13-9dde-012c711997e2",
+          "status": 200
+        },
+        {
+          "durationMs": 161,
+          "errorCode": null,
+          "id": "public-products",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/products",
+          "requestId": "73e89297-3929-494e-b6b0-e506da154ee1",
+          "status": 200
+        },
+        {
+          "durationMs": 1396,
+          "errorCode": null,
+          "id": "chat-direct-sse",
+          "method": "POST",
+          "pass": true,
+          "path": "/api/chat",
+          "requestId": "4f449e73-470b-4d8b-82f0-aa44439d6867",
+          "status": 200
+        },
+        {
+          "durationMs": 34347,
+          "errorCode": "INVALID_RESPONSE",
+          "id": "chat-provider-sse",
+          "method": "POST",
+          "pass": false,
+          "path": "/api/chat",
+          "requestId": "b6727287-89ff-406e-869d-9879fa645b1d",
+          "status": 200
+        }
+      ],
+      "runError": null,
+      "targetOrigin": "https://diesel.jamesky.site",
+      "version": "synthetic-canary-v4"
+    },
+    "completionLogs": [
+      {
+        "observedAt": "2026-10-01T20:03:53.423Z",
+        "requestId": "3d6fa97c-1813-4ea3-8c4f-6f6b0a02d69d",
+        "events": [
+          {
+            "event": "api.request",
+            "requestId": "3d6fa97c-1813-4ea3-8c4f-6f6b0a02d69d",
+            "timestamp": "2026-10-01T19:57:22.306Z",
+            "durationMs": 3089.4326039999723,
+            "errorCode": null,
+            "route": "/api/chat",
+            "status": 200
+          },
+          {
+            "event": "ai.completion",
+            "requestId": "3d6fa97c-1813-4ea3-8c4f-6f6b0a02d69d",
+            "timestamp": "2026-10-01T19:57:52.325Z",
+            "durationMs": 33108.97686799988,
+            "errorCode": "MODEL_STREAM_ABORTED",
+            "evidenceResult": "error",
+            "loopSteps": 0,
+            "modelCallAttemptCount": 1,
+            "modelCallAttemptCoverageComplete": false,
+            "modelCallCompletedCount": 0,
+            "modelPerformanceComplete": false,
+            "modelId": "server-openai-compatible/deepseek-flash",
+            "modelResponseTimeMs": null,
+            "modelStepTimeMs": null,
+            "modelTimeToFirstOutputMs": null,
+            "toolCount": 0,
+            "totalTokens": null,
+            "inputTokens": null,
+            "outputTokens": null,
+            "tokenUsageComplete": false
+          }
+        ]
+      },
+      {
+        "observedAt": "2026-10-01T20:06:55.368Z",
+        "requestId": "b6727287-89ff-406e-869d-9879fa645b1d",
+        "events": [
+          {
+            "event": "api.request",
+            "requestId": "b6727287-89ff-406e-869d-9879fa645b1d",
+            "timestamp": "2026-10-01T20:05:07.230Z",
+            "durationMs": 4330.787918999791,
+            "errorCode": null,
+            "route": "/api/chat",
+            "status": 200
+          },
+          {
+            "event": "ai.completion",
+            "requestId": "b6727287-89ff-406e-869d-9879fa645b1d",
+            "timestamp": "2026-10-01T20:05:37.236Z",
+            "durationMs": 34337.36970799975,
+            "errorCode": "MODEL_STREAM_ABORTED",
+            "evidenceResult": "error",
+            "loopSteps": 0,
+            "modelCallAttemptCount": 1,
+            "modelCallAttemptCoverageComplete": false,
+            "modelCallCompletedCount": 0,
+            "modelPerformanceComplete": false,
+            "modelId": "server-openai-compatible/deepseek-flash",
+            "modelResponseTimeMs": null,
+            "modelStepTimeMs": null,
+            "modelTimeToFirstOutputMs": null,
+            "toolCount": 0,
+            "totalTokens": null,
+            "inputTokens": null,
+            "outputTokens": null,
+            "tokenUsageComplete": false
+          }
+        ]
+      }
+    ],
+    "unauthenticatedReachability": {
+      "readOnly": true,
+      "authenticated": false,
+      "observedAt": "2026-10-01T20:07:02.388Z",
+      "host": "api.deepseek.com",
+      "results": [
+        {
+          "check": "dns",
+          "durationMs": 18,
+          "families": [
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        {
+          "check": "unauthenticated-models",
+          "status": 401,
+          "durationMs": 137
+        }
+      ]
+    },
+    "minimalProviderDiagnostic": {
+      "observedAt": "2026-10-01T20:09:01.440Z",
+      "release": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+      "providerOrigin": "https://api.deepseek.com",
+      "modelId": "deepseek-flash",
+      "diagnosticOnly": true,
+      "promptsFixed": true,
+      "outputDiscarded": true,
+      "deadlineMs": 30000,
+      "maxOutputTokensPerCall": 64,
+      "results": [
+        {
+          "kind": "short-text",
+          "status": 200,
+          "durationMs": 30004,
+          "firstDataMs": 12230,
+          "events": 0,
+          "finishReason": null,
+          "usage": null,
+          "errorCode": "DEADLINE_EXCEEDED"
+        },
+        {
+          "kind": "named-tool",
+          "status": 200,
+          "durationMs": 30001,
+          "firstDataMs": 12098,
+          "events": 0,
+          "finishReason": null,
+          "usage": null,
+          "errorCode": "DEADLINE_EXCEEDED"
+        }
+      ]
+    },
+    "interpretation": "The deployed host is committed and healthy. Both production canaries abort on their first provider call at the unchanged 30-second step deadline. Tiny direct provider calls also fail to complete in 30 seconds despite HTTP 200. This supports upstream-response stalling but does not establish a specific supplier-side root cause or permanent outage. No result is relabeled as successful and no safety limit was relaxed."
+  },
+  "mapReadback": {
+    "observedAt": "2026-10-01T20:11:18.883Z",
+    "checks": [
+      {
+        "engine": "chromium",
+        "geographicClickCountry": "DEU",
+        "countryDialogVisible": true,
+        "returnToMap": true,
+        "pass": true,
+        "screenshotSha256": [
+          "c7cf29a5f652bcf42c66766a6f2501eb58974c3076c0901b1aa8c7a9121b1358",
+          "5ac1b1ff0ee14930c19b66569975fe28381efe94e006347f641ba7c5ee397be6"
+        ]
+      },
+      {
+        "engine": "webkit",
+        "geographicClickCountry": "DEU",
+        "countryDialogVisible": true,
+        "returnToMap": true,
+        "pass": true,
+        "screenshotSha256": [
+          "0b81bd76250243bed7172dac857fb7199218ae8fdc79ea81f3520e80b1c4216c",
+          "a5952b10474a34ae0965fb2bf160f4296a3448e904527107f4bdf02c7463c268"
+        ]
+      }
+    ],
+    "initialPrivateProbe": {
+      "version": "private-map-diagnostic-v1",
+      "observedWindowUtc": "2026-10-01T20:09",
+      "outcome": "failed",
+      "engine": "chromium",
+      "expectedCountry": "DEU",
+      "actualCountry": "BEL",
+      "exitCode": 1,
+      "cause": "The private diagnostic copied a two-viewport shortcut for longitude clamping. At the 1118-pixel viewport, renderWorldCopies=false clamps the initial 8-degree center before the configured world width is exceeded; the probe omitted that intermediate constraint.",
+      "scope": "Diagnostic coordinate calculation, not an application or geographic fixture change.",
+      "screenshotSha256": "c7cf29a5f652bcf42c66766a6f2501eb58974c3076c0901b1aa8c7a9121b1358"
+    },
+    "interpretation": "Initial full-page capture remains partial; map-only captures and post-country round trips show complete geometry. Do not claim browser compositing capture timing is fully resolved."
+  },
+  "preservedPreReleaseObservations": {
+    "oldReleaseReadinessFailure": {
+      "readOnly": true,
+      "observedAt": "2026-10-01T13:17:34.283Z",
+      "release": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+      "current": "/opt/diesel/releases/7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+      "protocolUnchanged": true,
+      "services": [
+        {
+          "name": "jamesky-api",
+          "pid": 1554881,
+          "status": "online",
+          "restarts": 0,
+          "version": null
+        },
+        {
+          "name": "diesel-demo",
+          "pid": 2626288,
+          "status": "online",
+          "restarts": 0,
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
+        }
+      ],
+      "checks": [
+        {
+          "origin": "http://127.0.0.1:8788",
+          "route": "/api/health",
+          "httpStatus": 200,
+          "durationMs": 68,
+          "status": "ok",
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+          "checks": {}
+        },
+        {
+          "origin": "http://127.0.0.1:8788",
+          "route": "/api/health/ready",
+          "httpStatus": 503,
+          "durationMs": 3008,
+          "status": "unavailable",
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+          "checks": {
+            "aiChatAdmission": "ok",
+            "aiChatRateLimit": "ok",
+            "database": "unavailable"
+          }
+        },
+        {
+          "origin": "https://diesel.jamesky.site",
+          "route": "/api/health",
+          "httpStatus": 200,
+          "durationMs": 93,
+          "status": "ok",
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+          "checks": {}
+        },
+        {
+          "origin": "https://diesel.jamesky.site",
+          "route": "/api/health/ready",
+          "httpStatus": 200,
+          "durationMs": 419,
+          "status": "ok",
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+          "checks": {
+            "aiChatAdmission": "ok",
+            "aiChatRateLimit": "ok",
+            "database": "ok"
+          }
+        }
+      ],
+      "ledgerNames": [
+        "HOST_ACTIVATION_COMMITTED",
+        "HOST_ACTIVATION_V1",
+        "PUBLISH_FINALIZED",
+        "diesel-demo.pre-switch",
+        "env.production.local.pre-switch",
+        "governance-after-rehearsal.json",
+        "governance-before.json",
+        "jamesky.site.pre-switch",
+        "previous-release",
+        "validate-public-governance.sh"
+      ],
+      "pass": false
+    },
+    "repeatedOldReleaseReadinessFailure": {
+      "readOnly": true,
+      "observedAt": "2026-10-01T17:05:53.577Z",
+      "release": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+      "current": "/opt/diesel/releases/7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+      "protocolUnchanged": true,
+      "services": [
+        {
+          "name": "jamesky-api",
+          "pid": 1554881,
+          "status": "online",
+          "restarts": 0,
+          "version": null
+        },
+        {
+          "name": "diesel-demo",
+          "pid": 2706094,
+          "status": "online",
+          "restarts": 0,
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
+        }
+      ],
+      "checks": [
+        {
+          "origin": "http://127.0.0.1:8788",
+          "route": "/api/health",
+          "httpStatus": 200,
+          "durationMs": 70,
+          "status": "ok",
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+          "checks": {}
+        },
+        {
+          "origin": "http://127.0.0.1:8788",
+          "route": "/api/health/ready",
+          "httpStatus": 503,
+          "durationMs": 3009,
+          "status": "unavailable",
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+          "checks": {
+            "aiChatAdmission": "ok",
+            "aiChatRateLimit": "ok",
+            "database": "unavailable"
+          }
+        },
+        {
+          "origin": "https://diesel.jamesky.site",
+          "route": "/api/health",
+          "httpStatus": 200,
+          "durationMs": 32,
+          "status": "ok",
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+          "checks": {}
+        },
+        {
+          "origin": "https://diesel.jamesky.site",
+          "route": "/api/health/ready",
+          "httpStatus": 200,
+          "durationMs": 985,
+          "status": "ok",
+          "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+          "checks": {
+            "aiChatAdmission": "ok",
+            "aiChatRateLimit": "ok",
+            "database": "ok"
+          }
+        }
+      ],
+      "ledgerNames": [
+        "HOST_ACTIVATION_COMMITTED",
+        "HOST_ACTIVATION_V1",
+        "PUBLISH_FINALIZED",
+        "diesel-demo.pre-switch",
+        "env.production.local.pre-switch",
+        "governance-after-rehearsal.json",
+        "governance-before.json",
+        "jamesky.site.pre-switch",
+        "previous-release",
+        "validate-public-governance.sh"
+      ],
+      "pass": false
+    },
+    "isolatedReadOnlyConnectionTiming": {
+      "readOnly": true,
+      "diagnosticOnly": true,
+      "observedAt": "2026-10-01T13:19:51.998Z",
+      "release": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+      "isolatedConnection": true,
+      "applicationPoolModified": false,
+      "rows": [
+        {
+          "kind": "fresh-connection",
+          "connectionAndBeginMs": 1796,
+          "localTimeoutMs": 166,
+          "selectMs": 173,
+          "commitMs": 174,
+          "totalMs": 2309
+        },
+        {
+          "kind": "reused-connection",
+          "connectionAndBeginMs": 173,
+          "localTimeoutMs": 557,
+          "selectMs": 173,
+          "commitMs": 173,
+          "totalMs": 1077
+        }
+      ],
+      "pass": true
+    }
+  },
+  "limitations": [
+    "This is an operator record, not externally authenticated or signed production evidence.",
+    "Provider-inclusive canary failed twice; production AI recovery and complete acceptance are not claimed.",
+    "The latest full live-evaluation quality result remains failed and is not replaced by small diagnostics.",
+    "The temporary provider key was not rotated by this release.",
+    "Post-release readiness success does not establish that earlier intermittent database-probe delays are permanently resolved."
+  ]
+}

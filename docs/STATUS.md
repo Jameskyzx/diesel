@@ -86,11 +86,11 @@ intentionally fails for merely local or staged evidence.
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+    "commit": "516af44c4cf980fce0dc7dd46138152e9e25510f",
     "evidenceKind": "historical-operator-record-only",
-    "id": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
-    "observedAt": "2026-10-01T00:19+00:00",
-    "releasePath": "/opt/diesel/releases/7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
+    "id": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+    "observedAt": "2026-10-01T20:11+00:00",
+    "releasePath": "/opt/diesel/releases/516af44c4cf980fce0dc7dd46138152e9e25510f"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -139,18 +139,18 @@ intentionally fails for merely local or staged evidence.
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-01T00:19+00:00",
+    "readbackAt": "2026-10-01T20:11+00:00",
     "status": "ok",
-    "version": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
+    "version": "516af44c4cf980fce0dc7dd46138152e9e25510f"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v1"
   },
   "repositoryHead": {
-    "local": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
-    "observedAt": "2026-10-01T00:19+00:00",
-    "remote": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa"
+    "local": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+    "observedAt": "2026-10-01T20:11+00:00",
+    "remote": "516af44c4cf980fce0dc7dd46138152e9e25510f"
   }
 }
 ```
@@ -160,6 +160,35 @@ The 178 ISO3 entries are a country directory and published evidence boundary,
 not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
+
+- 2026-10-01 20:11 UTC：Tabler 界面、原创 Q 版柴油机页头图标及 Safari 非模态抽屉修复
+  已随 `516af44` 部署至 `diesel.jamesky.site`。发布候选与精确 master 提交
+  的十项 CI 均首试通过（runs `36891489712` / `36897096675`）；原发布控制进程
+  正常退出 0，未跳过恢复演练、签核队列或公网验收。两次完整治理快照均首试成功，
+  恢复演练与 97/97 签核发布完成。独立内外网校验、桌面/移动端页面、图标加载、
+  中英切换和刷新持久化、重定向及内部路径隔离均通过；
+  独立博客首页和 www 重定向同样读回，博客配置不再由 Diesel 发布覆盖。
+  主机账本为 `COMMITTED:PUBLISH_FINALIZED`，永久协议未变，两项服务在线，
+  `jamesky-api` PID 与重启计数保持不变；旧备份与回滚版本保留。
+  **真实模型验收未通过**：19:57 UTC 的 provider-inclusive canary 及 20:05 UTC 的一次
+  独立诊断复测均为 6/7 通过、退出 1；付费 SSE 在首轮模型调用的原 30 秒边界中止，
+  日志为 `MODEL_STREAM_ABORTED`，未完成 provider step、未执行工具。20:07 UTC DNS/HTTPS
+  连通性正常；20:09 UTC 两个固定最小请求（短文本/单命名工具，各最多 64 输出 token）
+  返回 HTTP 200 但均在 30 秒内没有完成，保留 `DEADLINE_EXCEEDED`，不把 HTTP 200
+  视为模型成功。现有证据指向模型端响应停滞，不能据此区分供应商排队或其他上游原因。
+  原失败报告、独立复测和脱敏日志均保留在 [发布操作记录](evidence/tabler-release-516af44c4cf9.json)，
+  本次不放宽超时、不重标失败、不宣称 AI 已恢复或完整验收通过。模型完整评估只见下方
+  唯一台账及原始归档，不以单次 SSE 巡检代替完整质量结论。临时模型密钥仍待轮换。
+  后续仅文档/证据提交可领先于本条运行快照，不因此重复发布或重启生产服务。
+  地图首张整页截图仍复现历史局部捕获现象；随后 Chromium/WebKit 原生地图截图、
+  德国地理点点击和详情往返均通过。一次私有探针把中间视口的经度约束算错，误点 BEL；
+  按已安装 MapLibre 源码修正探针公式后验证 DEU，不改应用坐标或 fixture，保留原失败。
+
+- 2026-10-01 09:38、13:17 与 17:05 UTC：发布前对旧版本 `7c3a41a` 的只读检查中，内部 readiness
+  因数据库探针达到原有 3 秒边界返回 503，紧随其后的公网 readiness 返回 200；
+  两项服务在线、PID 与重启计数未变。保留该瞬时失败，不修改门槛，也不把后来某次
+  就绪验收通过解释为已根治间歇性问题。13:19 UTC 的独立只读连接计时为新连接事务
+  2,309 ms、复用连接 1,077 ms；连接建立占较大部分，但该次未复现超时，不能作为唯一根因。
 
 - 2026-10-01 15:54 UTC：经用户授权完成两站 Nginx 配置隔离，保留原始共享配置及迁移记录。
   `jamesky.site` / `www.jamesky.site` 继续服务独立博客；Diesel 的历史配置文件名和 ledger
@@ -505,9 +534,9 @@ not a claim that all 178 countries have numerical diesel limits.
   已以 #248–#259 / ADR-134 固定为每国恰好两条当前 source、四 scope no-data，
   统一 `verifiedAt=2026-08-10T23:08:11Z`。
 - 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
-  observedAt=`2026-10-01T00:19+00:00`；`/api/health` readbackAt=`2026-10-01T00:19+00:00` returned `status=ok`,
-  `version=7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa`。因此当前公开 release ID
+  observedAt=`2026-10-01T20:11+00:00`；`/api/health` readbackAt=`2026-10-01T20:11+00:00` returned `status=ok`,
+  `version=516af44c4cf980fce0dc7dd46138152e9e25510f`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/516af44c4cf980fce0dc7dd46138152e9e25510f`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为

@@ -1,0 +1,46 @@
+{
+  "version": "diesel-pm2-observer-diagnostic-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "diagnosticOnly": true,
+  "readOnly": true,
+  "incident": {
+    "attemptedRelease": "aabd9004fc92a8f26d5ed96419520e679ae235f6",
+    "orchestratorStartedAt": "2026-10-01T11:24:49.557Z",
+    "orchestratorCompletedAt": "2026-10-01T11:33:09.240Z",
+    "exitCode": 70,
+    "message": "PM2 systemd identity validation failed.",
+    "terminalState": "ROLLED_BACK:none",
+    "governancePublicationStarted": false,
+    "restoredRelease": "7c3a41a1dbfeb61e6a944ee1627abb2c2994e2fa",
+    "postRollbackHealthReadbackAt": "2026-10-01T11:34:04.103Z",
+    "internalAndPublicHealthAndReadinessPassed": true,
+    "otherServiceRestarted": false
+  },
+  "isolatedIdentityRecheck": {
+    "startedAt": "2026-10-01T11:37:10.391Z",
+    "completedAt": "2026-10-01T11:37:12.013Z",
+    "exitCode": 0
+  },
+  "controlledObservation": {
+    "startedAt": "2026-10-01T11:39:51.660Z",
+    "completedAt": "2026-10-01T11:39:53.172Z",
+    "primaryExitCode": 0,
+    "secondaryCommand": "/usr/bin/true",
+    "secondaryExitCode": 0,
+    "beforeSha256": "67168c874b4bea092e1031e992f26870a7e444ef3cbf115cad065a6f4b42c87a",
+    "stableSha256": "67168c874b4bea092e1031e992f26870a7e444ef3cbf115cad065a6f4b42c87a",
+    "afterReadOnlySshSha256": "12a2d4d4ecd8c48e2e277ae0b4503bb5b76819f1fa040b9c93e16f9f0140be9e",
+    "directory": "/run/systemd/transient",
+    "directoryTimestampBefore": "2026-10-01 19:39:52.006593591 +0800",
+    "directoryTimestampAfter": "2026-10-01 19:39:52.978619915 +0800",
+    "stableWithoutNewSsh": true,
+    "changedAfterReadOnlySsh": true,
+    "serviceConfigurationModified": false,
+    "servicesRestarted": false
+  },
+  "limitations": [
+    "This reproduces an observer-induced fingerprint change, not the unrecorded internal rejection branch of the original attempt.",
+    "The record is an operator observation, not externally authenticated evidence of production state.",
+    "No failed release, CI check, or guard result is relabeled as passed."
+  ]
+}

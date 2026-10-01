@@ -101,11 +101,11 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20260930T203704104Z-0a1ab7fe-302b-4eea-8574-e5ed150b24bb.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20261001T002214987Z-a101f9b8-fe58-4528-b81c-3a45aef7f3fe.json",
     "attemptCount": 37,
     "complete": true,
     "completedCount": 37,
-    "evaluatedAt": "2026-09-30T20:37:04.104Z",
+    "evaluatedAt": "2026-10-01T00:22:14.987Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -114,24 +114,24 @@ intentionally fails for merely local or staged evidence.
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
-    "latestOutcome": "failed",
+    "latestOutcome": "passed",
     "latestSampleCount": 18,
     "modelStepCount": 37,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "0a1ab7fe-302b-4eea-8574-e5ed150b24bb",
+    "runId": "a101f9b8-fe58-4528-b81c-3a45aef7f3fe",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "26b37ac136f7391dd45a4a0241ef54b8bfbbfc97f16dd338d1d3efc77a4f40b3",
+      "digest": "cb91c046dbbe8b63a47bcb5c96fc348e55c2ee9e1264a81d2c28752fbf0b3b92",
       "fileCount": 298,
       "status": "captured"
     },
     "suiteVersion": "sales-chat-live-v25",
     "suiteCaseCount": 18,
     "terminationReason": "completed",
-    "thresholdsPassed": false,
+    "thresholdsPassed": true,
     "tokenUsageComplete": true,
-    "totalTokens": 97456
+    "totalTokens": 97317
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -1306,9 +1306,9 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-09-30T20:37:04.104Z`；run ID `0a1ab7fe-302b-4eea-8574-e5ed150b24bb`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
-  `97456 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20260930T203704104Z-0a1ab7fe-302b-4eea-8574-e5ed150b24bb.json`；source fingerprint `26b37ac136f7391dd45a4a0241ef54b8bfbbfc97f16dd338d1d3efc77a4f40b3` across `298` files。
+- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-10-01T00:22:14.987Z`；run ID `a101f9b8-fe58-4528-b81c-3a45aef7f3fe`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
+  `97317 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20261001T002214987Z-a101f9b8-fe58-4528-b81c-3a45aef7f3fe.json`；source fingerprint `cb91c046dbbe8b63a47bcb5c96fc348e55c2ee9e1264a81d2c28752fbf0b3b92` across `298` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、

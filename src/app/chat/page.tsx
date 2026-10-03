@@ -95,7 +95,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   const conversationStarters = [
     copy.starterCurrent,
     demoMode ? copy.starterDemoFit : copy.starterCompare,
-    demoMode ? copy.starterDemoCompare : copy.starterBrief,
+    demoMode ? copy.starterDemoCompare : copy.starterMarket,
   ];
 
   return (

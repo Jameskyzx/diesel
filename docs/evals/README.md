@@ -955,6 +955,23 @@ v7/v4 生产路径运行 `aca383eb-e4e8-4f5f-8cfe-d107d3d04008` 完成 18 例、
 已经部署。此前失败及未确认的归档均原样保留。
 
 Each invocation captures repository state and the eval-source fingerprint at
+both the start and end. The chat-starter repair introduces prompt v8 (no country
+strictness ranking from isolated emission limits; no global absence claims from
+missing query records) and DeepSeek adapter v5 (explicit JSON-only arguments).
+Both retain the same cases, scorer, evidence boundary and token budget. Historical
+v7/v4 observations remain historical; bounded starter probes are not the full eval.
+The separate offline routing harness moves to v2: its unscoped regulatory-status
+case now requires only `getCountryProfile`, matching the documented structured
+facts route. It no longer permits an empty document search to replace available
+country facts. No live case's expected evidence outcome is changed.
+
+每次运行记录起止来源状态。聊天示例修复使用提示词 v8，禁止从孤立限值判断国家整体严格
+程度、将查询缺失说成法规不存在；DeepSeek v5 明确要求参数为合法 JSON。案例、评分器、
+证据门槛与 token 预算不变。旧 v7/v4 结果保留，局部示例诊断不替代完整评估。
+独立的离线路由 harness 升级 v2：无精确范围的法规状态必须走国家结构化档案，不能用
+空文档检索替代现有事实。该修正不反转任何 live case 的证据预期。
+
+Each invocation captures repository state and the eval-source fingerprint at
 both the start and end. Clean, stable Git state may name an exact
 `evaluatedCommit`; stable dirty state records only `baseHeadCommit` and a null
 exact commit. A changing or unavailable Git state, source read failure, or

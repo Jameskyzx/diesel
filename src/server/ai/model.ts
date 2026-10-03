@@ -30,7 +30,7 @@ export type ConfiguredAiModel = {
 
 export type AiProviderProfile = {
   adapter: "@ai-sdk/openai-compatible" | "portfolio-demo";
-  adapterContractVersion: 1 | 2 | 3 | 4;
+  adapterContractVersion: 1 | 2 | 3 | 4 | 5;
   enableThinking: boolean | null;
   endpointSha256: string | null;
   includeUsage: boolean;
@@ -67,11 +67,12 @@ function sequenceDeepSeekRequiredTools(body: Record<string, unknown>): Record<st
     throw new AiConfigurationError("必选工具请求缺少有效工具定义。");
   }
   const messages = z.array(z.record(z.string(), z.unknown())).parse(body.messages);
+  const argumentFormat = "Function arguments must be a single valid JSON object. Quote every property name and string value, separate each property from its value with a colon, and close every object and array. Do not emit XML, DSML, or tool markup inside arguments.";
   const instruction = "For this provider request, invoke the named tool exactly once. Do not repeat this tool, omit requested parameters, or substitute it for another tool to simulate parallel execution. The application will make other required tools available on subsequent steps. A user request for parallel execution does not override this transport constraint.";
   const firstMessage = messages[0];
   const sequencedMessages = firstMessage?.role === "system" && typeof firstMessage.content === "string"
-    ? [{ ...firstMessage, content: `${firstMessage.content}\n<provider_tool_execution>${instruction}</provider_tool_execution>` }, ...messages.slice(1)]
-    : [{ role: "system", content: instruction }, ...messages];
+    ? [{ ...firstMessage, content: `${firstMessage.content}\n${argumentFormat}\n<provider_tool_execution>${instruction}</provider_tool_execution>` }, ...messages.slice(1)]
+    : [{ role: "system", content: `${argumentFormat}\n${instruction}` }, ...messages];
   // Parallel tool arguments were observed to be malformed. Name only the first
   // currently allowed tool; production prepareStep supplies the remaining tools
   // on the next step. Never repair/guess provider arguments or add a retry.
@@ -255,7 +256,7 @@ export function getConfiguredAiModel(
     ),
     providerProfile: {
       adapter: "@ai-sdk/openai-compatible",
-      adapterContractVersion: usesDeepSeekContract ? 4 : 1,
+      adapterContractVersion: usesDeepSeekContract ? 5 : 1,
       enableThinking: enableThinking ?? null,
       endpointSha256: endpointSha256(parsedConfig.data.baseUrl),
       includeUsage: resolvedConfig.includeUsage === true,

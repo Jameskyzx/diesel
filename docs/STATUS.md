@@ -109,7 +109,7 @@ intentionally fails for merely local or staged evidence.
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
-      "adapterContractVersion": 4,
+      "adapterContractVersion": 5,
       "enableThinking": false,
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
@@ -160,6 +160,16 @@ The 178 ISO3 entries are a country directory and published evidence boundary,
 not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
+
+- 2026-10-04（本地候选，尚未发布）：修复聊天示例只填入而不发送的问题；无精确范围的
+  有效法规查询限定为结构化国家档案。公开示例调整为 CHN 法规、CHN/JPN 工程机械
+  120 kW 对比与 CHN 市场指标。真实生产数据读回发现国家档案的模型投影按主题过滤后
+  仍沿用全部来源的核验时间，现按选中来源重算并保留严格一致性校验。
+  销售简报请求真实复现损坏 JSON，DeepSeek 适配 v5 增加明确 JSON 格式指令，不猜修
+  参数、不重试、不降低证据门槛。真实回答人工复查发现一次严格程度方向错误，提示词
+  升级 v8：法规对比逐项列值，不从孤立限值排名国家、不将缺失记录断言为不存在法规。
+  提示词约束不等于正确性保证。此前失败报告原样保留；当前 expectedProviderProfile
+  指向待验证候选，后续完整 live eval 必须重新运行，不能将旧 v4 报告称为 v5 结果。
 
 - 2026-10-03：收尾 PR #52 的 [CI run 37110918395](https://github.com/Jameskyzx/diesel/actions/runs/37110918395)
   在八项检查通过后，被浏览器的 1 个 flaky 用例与最终门禁拒绝合并。

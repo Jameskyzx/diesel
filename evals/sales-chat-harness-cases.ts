@@ -1,7 +1,7 @@
 import type { AiToolName } from "@/features/ai/schemas";
 import type { SalesChatLoopPhase } from "@/server/ai/sales-chat-loop";
 
-export const SALES_CHAT_HARNESS_VERSION = "sales-chat-harness-v1";
+export const SALES_CHAT_HARNESS_VERSION = "sales-chat-harness-v2";
 
 export type SalesChatHarnessCase = {
   expected: {
@@ -38,7 +38,7 @@ export const salesChatHarnessCases = [
   },
   {
     expected: {
-      activeTools: ["searchKnowledgeBase", "getCountryProfile"],
+      activeTools: ["getCountryProfile"],
       missingRequiredParameters: [],
       phase: "gather_evidence",
     },

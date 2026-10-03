@@ -553,9 +553,7 @@ export function buildSalesChatEvidenceContract(input: {
             acceptedTools:
               hasExactRegulationFilters
                 ? ["compareRegulations"]
-                : activeTask === "country_profile" && !asksForRegulation
-                  ? ["getCountryProfile"]
-                  : ["getCountryProfile", "searchKnowledgeBase"],
+                : ["getCountryProfile"],
             query: {
               applicationScope: context.applicationScope,
               asOf,

@@ -38,11 +38,11 @@ intentionally fails for merely local or staged evidence.
   "browserSnapshot": {
     "artifactByteLength": 180634,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "7e075833d64cb1e67eebb2d0a9b8195c6ae8526d6e2d4ae3a6884229e664f650",
-    "baseHeadCommit": "044fdc15452333d6110abc44bd334d8e99037500",
-    "evaluatedCommit": "044fdc15452333d6110abc44bd334d8e99037500",
-    "observedAt": "2026-10-03T03:29:50.049Z",
-    "runId": "543da5d8-81cb-4957-947d-b2ea299204f7",
+    "artifactSha256": "1bc93d37023026bb160da3906b63f2148a679bee63c3ea8d9e8f9ce7b8b56906",
+    "baseHeadCommit": "f6f7838980c26b7910b430ccc51941d1f2ee2ebf",
+    "evaluatedCommit": "f6f7838980c26b7910b430ccc51941d1f2ee2ebf",
+    "observedAt": "2026-10-03T10:00:14.559Z",
+    "runId": "96b8f913-cb3f-4a73-b3c9-3f02ba2e32e1",
     "runs": [
       {
         "collected": 423,
@@ -79,18 +79,18 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "5a6535c8367208686949e9fb5ab08d7cdd4eba9242cd6684cb581b73c5226b80",
+      "digest": "4248d2c45e9ef4955b4889231865824c36ef405cf7e346b6bcc459391ba0204f",
       "fileCount": 349
     },
     "version": "diesel-playwright-evidence-v1",
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "516af44c4cf980fce0dc7dd46138152e9e25510f",
+    "commit": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985",
     "evidenceKind": "historical-operator-record-only",
-    "id": "516af44c4cf980fce0dc7dd46138152e9e25510f",
-    "observedAt": "2026-10-01T20:11+00:00",
-    "releasePath": "/opt/diesel/releases/516af44c4cf980fce0dc7dd46138152e9e25510f"
+    "id": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985",
+    "observedAt": "2026-10-03T08:25+00:00",
+    "releasePath": "/opt/diesel/releases/0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -139,18 +139,18 @@ intentionally fails for merely local or staged evidence.
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-01T20:11+00:00",
+    "readbackAt": "2026-10-03T08:25+00:00",
     "status": "ok",
-    "version": "516af44c4cf980fce0dc7dd46138152e9e25510f"
+    "version": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v1"
   },
   "repositoryHead": {
-    "local": "516af44c4cf980fce0dc7dd46138152e9e25510f",
-    "observedAt": "2026-10-01T20:11+00:00",
-    "remote": "516af44c4cf980fce0dc7dd46138152e9e25510f"
+    "local": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985",
+    "observedAt": "2026-10-03T08:25+00:00",
+    "remote": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985"
   }
 }
 ```
@@ -160,6 +160,34 @@ The 178 ISO3 entries are a country directory and published evidence boundary,
 not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
+
+- 2026-10-03：收尾 PR #52 的 [CI run 37110918395](https://github.com/Jameskyzx/diesel/actions/runs/37110918395)
+  在八项检查通过后，被浏览器的 1 个 flaky 用例与最终门禁拒绝合并。
+  原运行记录 357 passed / 65 skipped / 1 flaky；移动端中文非模态键盘用例在
+  初始化语言偏好的 HTTP POST 时发生 `ECONNRESET`，尚未进入键盘断言，重试后通过
+  也未被当作可发布成功。原失败报告与 trace 保留。候选仅把该键盘夹具的初始语言
+  改为在独立 context 中直接设置权威 Cookie，并增加进入国家页时的 `<html lang>` 断言；
+  独立偏好接口、真实语言切换和原键盘断言保留，不改应用、重试或超时。
+  该夹具修正仍须重新采集完整浏览器和 Vitest 证据、通过正常 CI；现网不因此重发。
+
+- 2026-10-03 08:25 UTC：纵向工作台重构已随 `0668a2c`
+  部署至 `diesel.jamesky.site`：固定桌面侧栏、独立工具栏、国家证据表、并排地图详情、
+  聊天上下文与原创柴油机图标均已公网读回。获批限期安全记录、完整执行证据和
+  精确 master 的十项 Required CI 门禁通过（runs `37094398694` / `37097062554`）；
+  未跳过备份、恢复演练、97 国签核队列或公网验收。原控制器退出 0，
+  主机账本为 `COMMITTED:PUBLISH_FINALIZED`，永久协议未变，旧备份和回滚版本保留。
+  桌面/移动端布局、图标、中英切换与刷新持久化、路径/查询参数保持、最终时点内外网健康、
+  内部路由隔离和独立博客均通过；jamesky-api PID 与重启计数保持不变。
+  生产候选环境逐字节复制现网配置，数据库身份与模型配置未改变，临时模型密钥仍待轮换。
+  发布前旧站内网 readiness 曾达到 3 秒边界返回 503，随后固定八次观察均为 200；
+  原失败和全部观察保留，不修改超时，也不宣称间歇数据库就绪问题已根治。
+  provider-inclusive SSE canary 未通过（真实退出 1）；
+  其中普通真实模型 SSE 通过，readiness 未通过（HTTP 503）。
+  逐项结果与整体验收分别记录，不把单次模型成功称为全部巡检通过。
+  此巡检不替代下方唯一完整质量台账，不重新标记历史失败或放宽门槛。
+  仅该条工具链公告的豁免至 2026-10-09 UTC 含当日有效，之后原 CI 自动阻断；
+  不把豁免称为修复或自动续期。脱敏 [发布操作记录](evidence/workspace-release-0668a2c31e4c.json)
+  保留各阶段身份与真实结果。后续仅文档/证据提交可领先于本条运行快照，不重复部署。
 
 - 2026-10-03 03:12 UTC：原 PR #51 的浏览器 job 还记录了 Safari 导航竞态：
   同一无障碍用例先软导航首页，再改 Cookie 并立即硬导航国家页，旧首页导航打断后者。
@@ -559,9 +587,9 @@ not a claim that all 178 countries have numerical diesel limits.
   已以 #248–#259 / ADR-134 固定为每国恰好两条当前 source、四 scope no-data，
   统一 `verifiedAt=2026-08-10T23:08:11Z`。
 - 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
-  observedAt=`2026-10-01T20:11+00:00`；`/api/health` readbackAt=`2026-10-01T20:11+00:00` returned `status=ok`,
-  `version=516af44c4cf980fce0dc7dd46138152e9e25510f`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/516af44c4cf980fce0dc7dd46138152e9e25510f`。因此当前公开 release ID
+  observedAt=`2026-10-03T08:25+00:00`；`/api/health` readbackAt=`2026-10-03T08:25+00:00` returned `status=ok`,
+  `version=0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为
@@ -2020,15 +2048,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `543da5d8-81cb-4957-947d-b2ea299204f7`，artifact SHA-256 `7e075833d64cb1e67eebb2d0a9b8195c6ae8526d6e2d4ae3a6884229e664f650`；
-  observedAt `2026-10-03T03:29:50.049Z`，clean worktree / base HEAD `044fdc15452333d6110abc44bd334d8e99037500`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `96b8f913-cb3f-4a73-b3c9-3f02ba2e32e1`，artifact SHA-256 `1bc93d37023026bb160da3906b63f2148a679bee63c3ea8d9e8f9ce7b8b56906`；
+  observedAt `2026-10-03T10:00:14.559Z`，clean worktree / base HEAD `f6f7838980c26b7910b430ccc51941d1f2ee2ebf`；
   `public` = `358 passed / 65 skipped / 0 failed / 0 flaky / 423 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 430 passed / 67 skipped / 0 failed / 0 flaky / 497 collected。artifact 为 180634 bytes；
-  browser source fingerprint 为 349 files / `5a6535c8367208686949e9fb5ab08d7cdd4eba9242cd6684cb581b73c5226b80`。
-  因运行发生在 clean worktree，`evaluatedCommit=044fdc15452333d6110abc44bd334d8e99037500`；它证明该本地候选提交上的浏览器验收，
+  browser source fingerprint 为 349 files / `4248d2c45e9ef4955b4889231865824c36ef405cf7e346b6bcc459391ba0204f`。
+  因运行发生在 clean worktree，`evaluatedCommit=f6f7838980c26b7910b430ccc51941d1f2ee2ebf`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

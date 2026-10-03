@@ -200,7 +200,59 @@ a substitute for manual keyboard/screen-reader review. `@vitest/coverage-v8` is
 a development-only Vitest reporter used solely for the repository coverage gate
 and artifacts; production code must not import it.
 
-## Current advisory review (2026-09-30)
+## Current advisory review (2026-10-03)
+
+PR #51's original dependency gate and the independent local audit both failed on
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
+The official advisory identifies `braces <=3.0.3` as high severity: deeply nested
+patterns can exhaust the recursive AST walkers' stack and terminate a process.
+At this review the advisory's first patched version is null, and the official
+npm latest version remains `3.0.3`. Updating the Next ESLint plugin to its latest
+`16.3.8` would still retain `fast-glob@3.3.1`; no unverified fork, version alias,
+or audit suppression is used as a substitute for an upstream fix.
+
+The installed graph reaches `braces@3.0.3` through `micromatch@4.0.8` and
+`fast-glob@3.3.1` under `eslint-config-next@16.3.6`, and through
+`fast-glob@3.3.3` under `shadcn@4.16.0` / `ts-morph@26.0.0`.
+shadcn is a root production dependency, so this is **not** a dev-only lockfile
+finding. Application source references only `shadcn/tailwind.css`, consumed at
+build time, and does not import the affected packages or shadcn's JavaScript
+CLI. A read-only inspection at `2026-10-03T02:54:52.709Z` of the candidate's
+successful production build found zero affected-package paths in all 35 Next
+runtime `.nft.json` files (39,912 listed file entries). Source/trace inspection
+supports the current request-path boundary; it is not a mathematical proof of
+all indirect reachability or package provenance. The full installation still
+contains the vulnerable tooling, and crafted repository/configuration input
+could crash a tool process.
+
+After that bounded review, the maintainer explicitly approved one temporary
+exception for this advisory. The register names owner `Jameskyzx`, review date
+`2026-10-03`, and expiry `2026-10-09` inclusive in UTC: seven calendar dates,
+with the unchanged policy failing from `2026-10-10` UTC even if the advisory
+later disappears. It does not authorize other high findings, any critical
+finding, automatic renewal, or a claim that the vulnerability is fixed.
+Regression tests exercise the actual register's narrow identity and expiry.
+
+Compensating controls remain reviewed committed build inputs, frozen dependency
+installation, disabled repository install hooks, and the existing isolated
+unprivileged VPS builder without production-secret access. Public requests must
+not be routed to ESLint, the shadcn CLI, or glob-pattern tooling. Existing secret
+scanning, dependency/workflow audits, branch protection, all required CI jobs,
+and the production activation/readback protocol remain blocking. Re-review and
+remove the exception when an official fix or reviewed dependency removal is
+available, or before the expiry; otherwise keep the current deployed version.
+The failed original CI run remains a failure. This record alone does not prove
+the candidate passed CI or was deployed.
+
+2026-10-03：经维护者明确批准，仅为 `GHSA-vfj7-8cjw-p6xm` 登记七个 UTC 自然日的
+工具链豁免，至 10 月 9 日含当日有效，10 月 10 日起原门禁自动失败，不自动续期。
+shadcn 属于生产依赖，不能把整条依赖图称为仅开发依赖；当前应用只有构建时 CSS 引用，
+35 份运行时 trace 的 39,912 个文件条目中没有受影响包。该证据支持当前公开请求路径
+边界，不证明绝对不可间接触达或漏洞已修复。恶意源码/配置仍可能使工具进程崩溃；
+已审阅提交、冻结安装、无生产密钥的非特权隔离构建、全部 CI 与发布验收继续强制。
+原失败记录保留；此豁免不等于部署完成或零漏洞。
+
+## Earlier advisory review (2026-09-30)
 
 The post-merge CI run for `cd81849473fccdf63ad365436a603755ed74ab80`
 was blocked by critical

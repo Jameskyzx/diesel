@@ -1,12 +1,13 @@
 "use client";
 
-import { Database, Globe2, LoaderCircle, RotateCcw } from "lucide-react";
+import { Database, LoaderCircle, RotateCcw } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/layout/page-header";
 import { useLocale } from "@/components/i18n/locale-provider";
 import {
   countryMapResponseSchema,
@@ -26,6 +27,7 @@ import type { ProductFitInitialFilters } from "@/components/products/product-fit
 import { interpolate } from "@/i18n/dictionaries";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 import { createPublicApiRequestDeadline } from "@/lib/public-api-request";
+import { cn } from "@/lib/utils";
 
 type ExplorerData =
   | { status: "loading" }
@@ -140,7 +142,7 @@ function CountryDrawerLoading() {
     <aside
       aria-busy="true"
       aria-live="polite"
-      className="fixed inset-y-0 right-0 z-50 grid h-dvh w-[min(94vw,34rem)] place-items-center border-l bg-background p-6 shadow-2xl"
+      className="country-workspace-panel fixed inset-y-0 right-0 z-50 grid h-dvh w-[min(94vw,34rem)] place-items-center border-l bg-card p-6 shadow-2xl"
       role="status"
     >
       <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -352,26 +354,12 @@ export function CountryExplorer({
   }, [data.status, selectedIso3]);
 
   return (
-    <main className="page-shell py-6 sm:py-8">
-      <section className="mb-6">
-        <div>
-          <div className="section-kicker flex items-center gap-2">
-            <Globe2 aria-hidden="true" className="size-4" />
-            {copy.kicker}
-          </div>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-            {copy.heading}
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            {copy.description}
-          </p>
-        </div>
+    <main className={cn("page-shell py-6", selectedIso3 && "country-workspace-selected")}>
+      <PageHeader kicker={copy.kicker} title={copy.heading} description={copy.description} />
 
-      </section>
-
-      <div className="grid gap-4 xl:grid-cols-[15rem_minmax(0,1fr)]" data-testid="map-workspace">
-      <aside className="surface-panel flex min-w-0 flex-col gap-5 self-start rounded-md p-4">
-        <div className="grid min-w-0 gap-2">
+      <div className="surface-panel overflow-hidden rounded-md" data-testid="map-workspace">
+      <aside className="flex min-w-0 flex-col gap-4 border-b bg-card p-4" data-testid="map-country-toolbar">
+        <div className="grid min-w-0 gap-2 sm:max-w-sm">
           <label
             className="text-xs font-semibold text-foreground"
             htmlFor="country-select"
@@ -380,7 +368,7 @@ export function CountryExplorer({
           </label>
           <select
             aria-label={copy.countrySelect}
-            className="h-11 w-full min-w-0 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
+            className="h-10 w-full min-w-0 rounded-md border bg-card px-3 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
             disabled={data.status !== "ready"}
             id="country-select"
             onChange={(event) => {
@@ -407,9 +395,9 @@ export function CountryExplorer({
         </div>
       <section
         aria-label={copy.featuredAria}
-        className="flex min-w-0 flex-wrap items-center gap-2 border-t pt-4 xl:flex-col xl:items-stretch"
+        className="flex min-w-0 flex-wrap items-center gap-2"
       >
-        <span className="mr-1 inline-flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground xl:mb-1">
+        <span className="mr-1 inline-flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground">
           <Database aria-hidden="true" className="size-3.5" />
           {copy.featuredLabel}
         </span>
@@ -423,8 +411,8 @@ export function CountryExplorer({
               variant={selectedIso3 === country.iso3 ? "default" : "outline"}
               className={
                 selectedIso3 === country.iso3
-                  ? "h-auto min-h-10 justify-start rounded-md bg-primary px-3 py-2 text-left whitespace-normal text-white"
-                  : "h-auto min-h-10 justify-start rounded-md border-transparent bg-muted/60 px-3 py-2 text-left whitespace-normal text-foreground hover:border-border hover:bg-muted"
+                  ? "h-auto min-h-9 justify-start rounded-md bg-primary px-3 py-2 text-left whitespace-normal text-white"
+                  : "h-auto min-h-9 justify-start rounded-md bg-card px-3 py-2 text-left whitespace-normal text-foreground hover:bg-muted"
               }
             >
               {formatCountryDisplayName(country, locale)} · {country.iso3}
@@ -438,7 +426,7 @@ export function CountryExplorer({
       </section>
       </aside>
 
-      <section className="min-w-0 min-h-[30rem] xl:h-[calc(100dvh-20rem)] xl:min-h-[34rem]">
+      <section className="min-h-[30rem] min-w-0 lg:h-[calc(100dvh-23rem)] lg:min-h-[34rem]">
         {data.status === "loading" ? (
           <div
             aria-busy="true"
@@ -526,7 +514,7 @@ export function CountryExplorer({
       {selectedIso3 && initialCountryPanel ? (
         <aside
           aria-label={copy.serverSnapshotAria}
-          className="country-server-fallback fixed inset-y-0 right-0 z-40 h-dvh w-[min(94vw,34rem)] overflow-y-auto border-l bg-background shadow-2xl"
+          className="country-server-fallback country-workspace-panel fixed inset-y-0 right-0 z-40 h-dvh w-[min(94vw,34rem)] overflow-y-auto border-l bg-card shadow-2xl"
           data-testid="country-server-initial"
           role="region"
         >

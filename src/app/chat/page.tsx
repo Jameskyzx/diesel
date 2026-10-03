@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Bot, FileCheck2, Map } from "lucide-react";
+import { FileCheck2, Map, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SalesChat } from "@/components/ai/sales-chat";
+import { PageHeader } from "@/components/layout/page-header";
 import { LocaleRenderReceipt } from "@/components/i18n/locale-controller";
 import {
   parseChatUrlContext,
@@ -98,21 +99,34 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   ];
 
   return (
-    <main className="page-shell flex min-h-[calc(100dvh-7rem)] flex-col py-6 sm:py-8">
+    <main className="page-shell py-6">
       <LocaleRenderReceipt locale={locale} />
-      <section className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <div className="section-kicker flex items-center gap-2"><Bot aria-hidden="true" className="size-4" />{copy.kicker}</div>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">{copy.heading}</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{copy.description}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <PageHeader kicker={copy.kicker} title={copy.heading} description={copy.description} actions={<>
           <Link className={cn(buttonVariants({ variant: "outline" }), "h-10 gap-2 bg-card")} href="/map"><Map aria-hidden="true" className="size-4" />{copy.mapFirst}</Link>
           <Link className={cn(buttonVariants(), "h-10 gap-2")} href="/countries/CHN"><FileCheck2 aria-hidden="true" className="size-4" />{copy.exampleCountry}</Link>
-        </div>
-      </section>
+      </>} />
 
-      <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_15rem]">
+      <section className="chat-workbench grid min-h-0 gap-5 xl:grid-cols-[17rem_minmax(0,1fr)]" data-testid="chat-workbench">
+        <aside className="surface-panel self-start overflow-hidden rounded-md" data-testid="chat-query-context">
+          <div className="workspace-card-header"><h2 className="flex items-center gap-2 text-sm font-semibold"><SlidersHorizontal aria-hidden="true" className="size-4 text-primary" />{dictionary.workspace.queryContext}</h2></div>
+          <div className="p-5">
+            <p className="section-kicker">{dictionary.workspace.parameters}</p>
+            {context.countryIso3 ? <dl className="mt-4 divide-y text-xs">
+              <div className="flex flex-wrap justify-between gap-2 py-3"><dt className="text-muted-foreground">{dictionary.workspace.contextCountry}</dt><dd className="font-mono font-semibold">{context.countryIso3}</dd></div>
+              {context.applicationScope ? <div className="flex flex-wrap justify-between gap-2 py-3"><dt className="text-muted-foreground">{dictionary.workspace.contextScope}</dt><dd className="font-medium">{applicationScopeLabel(context.applicationScope, dictionary)}</dd></div> : null}
+              {context.powerKw !== undefined ? <div className="flex flex-wrap justify-between gap-2 py-3"><dt className="text-muted-foreground">{dictionary.workspace.contextPower}</dt><dd className="font-medium">{context.powerKw} kW</dd></div> : null}
+              {context.asOf ? <div className="flex flex-wrap justify-between gap-2 py-3"><dt className="text-muted-foreground">{dictionary.workspace.contextDate}</dt><dd className="font-medium">{formatUtcDate(context.asOf, locale)}</dd></div> : null}
+              {context.productModelCode ? <div className="flex flex-wrap justify-between gap-2 py-3"><dt className="text-muted-foreground">{dictionary.workspace.contextProduct}</dt><dd className="break-all font-mono font-medium">{context.productModelCode}</dd></div> : null}
+            </dl> : <p className="mt-3 text-xs leading-6 text-muted-foreground">{dictionary.workspace.noContext}</p>}
+          </div>
+          <div className="border-t bg-muted/30 p-5">
+            <h3 className="text-xs font-semibold">{dictionary.workspace.evidenceWorkflow}</h3>
+            <ol className="mt-3 space-y-3 text-xs text-muted-foreground">
+              {[dictionary.workspace.regulations, dictionary.workspace.productFit, dictionary.workspace.sources].map((step, index) => <li className="flex items-center gap-3" key={step}><span className="grid size-5 shrink-0 place-items-center rounded-full border bg-card text-[10px] font-semibold text-primary">{index + 1}</span>{step}</li>)}
+            </ol>
+            <p className="mt-5 border-t pt-4 text-xs leading-5 text-muted-foreground">{copy.sidebarFoot}</p>
+          </div>
+        </aside>
         <SalesChat
           aiConfigured={isServerAiConfigured()}
           countryIso2ByIso3={countryIso2ByIso3}
@@ -122,14 +136,6 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
           selectedCountryIso3={context.countryIso3 ?? null}
           suggestedPrompts={conversationStarters}
         />
-        <aside className="surface-panel hidden self-start rounded-md p-5 xl:block">
-          <p className="section-kicker">{copy.sidebarKicker}</p>
-          <h2 className="mt-2 text-base font-semibold tracking-tight">{copy.sidebarHeading}</h2>
-          <p className="mt-4 rounded-lg bg-muted/60 px-3 py-3 text-xs leading-6 text-muted-foreground">
-            {copy.sidebarBody}
-          </p>
-          <div className="mt-4 border-t pt-4 text-xs leading-5 text-muted-foreground">{copy.sidebarFoot}</div>
-        </aside>
       </section>
     </main>
   );

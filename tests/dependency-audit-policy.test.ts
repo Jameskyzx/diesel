@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -193,6 +195,57 @@ describe("dependency advisory policy", () => {
         today: "2026-08-15",
       }),
     ).toEqual([]);
+  });
+});
+
+describe("approved braces tooling exception", () => {
+  const policy = auditPolicySchema.parse(
+    JSON.parse(
+      readFileSync(
+        new URL("../.github/dependency-audit-allowlist.json", import.meta.url),
+        "utf8",
+      ),
+    ) as unknown,
+  );
+  const id = "GHSA-vfj7-8cjw-p6xm";
+
+  it("registers only the approved identity for seven UTC calendar dates", () => {
+    expect(policy.reviewedAt).toBe("2026-10-03");
+    expect(policy.advisories).toHaveLength(1);
+    expect(policy.advisories[0]).toMatchObject({
+      expiresOn: "2026-10-09",
+      id,
+      owner: "Jameskyzx",
+      severity: "high",
+    });
+    expect(policy.advisories[0]?.reason).toContain("never auto-renew");
+  });
+
+  it("admits the registered high advisory through the inclusive expiry", () => {
+    expect(
+      evaluateAuditPolicy({ policy, report: report(id, "high"), today: "2026-10-09" }),
+    ).toEqual([]);
+  });
+
+  it("still rejects a different high advisory and a critical escalation", () => {
+    expect(
+      evaluateAuditPolicy({
+        policy,
+        report: report("GHSA-aaaa-bbbb-cccc", "high"),
+        today: "2026-10-03",
+      }),
+    ).toEqual(["GHSA-aaaa-bbbb-cccc is high and has no registered exception"]);
+    expect(
+      evaluateAuditPolicy({ policy, report: report(id, "critical"), today: "2026-10-03" }),
+    ).toEqual([`${id} is critical and cannot be allowlisted`]);
+  });
+
+  it("fails from October 10 even if the advisory disappears", () => {
+    for (const audit of [report(id, "high"), { advisories: {} }]) {
+      expect(
+        evaluateAuditPolicy({ policy, report: audit, today: "2026-10-10" }),
+      ).toEqual([`${id} exception expired on 2026-10-09`]);
+    }
   });
 });
 

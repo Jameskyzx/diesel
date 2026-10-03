@@ -36,19 +36,19 @@ intentionally fails for merely local or staged evidence.
 ```json
 {
   "browserSnapshot": {
-    "artifactByteLength": 180634,
+    "artifactByteLength": 184816,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "1bc93d37023026bb160da3906b63f2148a679bee63c3ea8d9e8f9ce7b8b56906",
-    "baseHeadCommit": "f6f7838980c26b7910b430ccc51941d1f2ee2ebf",
-    "evaluatedCommit": "f6f7838980c26b7910b430ccc51941d1f2ee2ebf",
-    "observedAt": "2026-10-03T10:00:14.559Z",
-    "runId": "96b8f913-cb3f-4a73-b3c9-3f02ba2e32e1",
+    "artifactSha256": "2504fd5070b249042be98002b7bf00c236d5dbe08e38cc6b3890a058666490ab",
+    "baseHeadCommit": "880a7b2d1d98fa3db1a1721f33b9006d50e3a06a",
+    "evaluatedCommit": "880a7b2d1d98fa3db1a1721f33b9006d50e3a06a",
+    "observedAt": "2026-10-03T18:23:40.699Z",
+    "runId": "0b5db8a1-7f72-453f-872d-d47b69cb5bf9",
     "runs": [
       {
-        "collected": 423,
+        "collected": 435,
         "failed": 0,
         "flaky": 0,
-        "passed": 358,
+        "passed": 370,
         "skipped": 65,
         "id": "public"
       },
@@ -79,8 +79,8 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "4248d2c45e9ef4955b4889231865824c36ef405cf7e346b6bcc459391ba0204f",
-      "fileCount": 349
+      "digest": "7b724b401d5cf01971e41ee117cfc0547c25dc13eb27463c3de4aa02fb3a8d54",
+      "fileCount": 350
     },
     "version": "diesel-playwright-evidence-v1",
     "worktreeState": "clean"
@@ -169,7 +169,11 @@ not a claim that all 178 countries have numerical diesel limits.
   参数、不重试、不降低证据门槛。真实回答人工复查发现一次严格程度方向错误，提示词
   升级 v8：法规对比逐项列值，不从孤立限值排名国家、不将缺失记录断言为不存在法规。
   提示词约束不等于正确性保证。此前失败报告原样保留；当前 expectedProviderProfile
-  指向待验证候选，后续完整 live eval 必须重新运行，不能将旧 v4 报告称为 v5 结果。
+  指向本地候选，不表示现网已升级。v8/v5 完整 live eval 已运行：18 例全部执行，16 例
+  通过；37 次 provider 调用，100,834 tokens。两例缺少明确的业务结论文案，真实退出 1；
+  工具选择、参数、证据预期、语言与安全子指标均为 100%，回答 grounding 为 88.89%。
+  另以公开生产 API 的只读数据快照，经本地生产聊天循环和真实模型验证六个中英文示例，
+  均完成一次工具调用与最终回答；这属于定向诊断，不替代正式评估或生产端到端验收。
 
 - 2026-10-03：收尾 PR #52 的 [CI run 37110918395](https://github.com/Jameskyzx/diesel/actions/runs/37110918395)
   在八项检查通过后，被浏览器的 1 个 flaky 用例与最终门禁拒绝合并。
@@ -2058,15 +2062,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `96b8f913-cb3f-4a73-b3c9-3f02ba2e32e1`，artifact SHA-256 `1bc93d37023026bb160da3906b63f2148a679bee63c3ea8d9e8f9ce7b8b56906`；
-  observedAt `2026-10-03T10:00:14.559Z`，clean worktree / base HEAD `f6f7838980c26b7910b430ccc51941d1f2ee2ebf`；
-  `public` = `358 passed / 65 skipped / 0 failed / 0 flaky / 423 collected`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `0b5db8a1-7f72-453f-872d-d47b69cb5bf9`，artifact SHA-256 `2504fd5070b249042be98002b7bf00c236d5dbe08e38cc6b3890a058666490ab`；
+  observedAt `2026-10-03T18:23:40.699Z`，clean worktree / base HEAD `880a7b2d1d98fa3db1a1721f33b9006d50e3a06a`；
+  `public` = `370 passed / 65 skipped / 0 failed / 0 flaky / 435 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
-  聚合为 430 passed / 67 skipped / 0 failed / 0 flaky / 497 collected。artifact 为 180634 bytes；
-  browser source fingerprint 为 349 files / `4248d2c45e9ef4955b4889231865824c36ef405cf7e346b6bcc459391ba0204f`。
-  因运行发生在 clean worktree，`evaluatedCommit=f6f7838980c26b7910b430ccc51941d1f2ee2ebf`；它证明该本地候选提交上的浏览器验收，
+  聚合为 442 passed / 67 skipped / 0 failed / 0 flaky / 509 collected。artifact 为 184816 bytes；
+  browser source fingerprint 为 350 files / `7b724b401d5cf01971e41ee117cfc0547c25dc13eb27463c3de4aa02fb3a8d54`。
+  因运行发生在 clean worktree，`evaluatedCommit=880a7b2d1d98fa3db1a1721f33b9006d50e3a06a`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

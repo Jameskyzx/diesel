@@ -101,11 +101,11 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20261003T013810420Z-0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20261003T180849850Z-6d5f8540-75b6-4d05-a125-7a65c6357486.json",
     "attemptCount": 37,
     "complete": true,
     "completedCount": 37,
-    "evaluatedAt": "2026-10-03T01:38:10.420Z",
+    "evaluatedAt": "2026-10-03T18:08:49.850Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -119,10 +119,10 @@ intentionally fails for merely local or staged evidence.
     "modelStepCount": 37,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4",
+    "runId": "6d5f8540-75b6-4d05-a125-7a65c6357486",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "bf8be61d3704ceb21ffb77948b37adba4da92d43c618ed5b8c5ddccfe64bb970",
+      "digest": "dad3d803dba1752c25bf23cb78143dc802ff233484f78f4d338ce01dd697b841",
       "fileCount": 299,
       "status": "captured"
     },
@@ -131,7 +131,7 @@ intentionally fails for merely local or staged evidence.
     "terminationReason": "completed",
     "thresholdsPassed": false,
     "tokenUsageComplete": true,
-    "totalTokens": 97366
+    "totalTokens": 100834
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -1453,9 +1453,9 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-10-03T01:38:10.420Z`；run ID `0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
-  `97366 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20261003T013810420Z-0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4.json`；source fingerprint `bf8be61d3704ceb21ffb77948b37adba4da92d43c618ed5b8c5ddccfe64bb970` across `299` files。
+- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-10-03T18:08:49.850Z`；run ID `6d5f8540-75b6-4d05-a125-7a65c6357486`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
+  `100834 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20261003T180849850Z-6d5f8540-75b6-4d05-a125-7a65c6357486.json`；source fingerprint `dad3d803dba1752c25bf23cb78143dc802ff233484f78f4d338ce01dd697b841` across `299` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、

@@ -1,20 +1,20 @@
 {
   "command": "pnpm test",
   "complete": true,
-  "completedAt": "2026-10-03T03:44:35.211Z",
+  "completedAt": "2026-10-03T08:45:27.410Z",
   "configPath": "vitest.config.ts",
   "provenance": {
-    "baseHeadCommit": "3c6d55db185d869a2c0565fdbdda0da52e1f7bdd",
-    "evaluatedCommit": "3c6d55db185d869a2c0565fdbdda0da52e1f7bdd",
+    "baseHeadCommit": "3dd3ce76a289f267f3e410fc205de85d32008c1b",
+    "evaluatedCommit": "3dd3ce76a289f267f3e410fc205de85d32008c1b",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "a81e5618882e9b8e52a0c6f19e0872486d3fa36c31136395a68cf87be16df0ff",
-      "fileCount": 884
+      "digest": "a868a8c645dde777de5e67588c82c925aa3c5cae4d00545ed5b1f9751fe86967",
+      "fileCount": 885
     },
     "worktreeState": "clean"
   },
-  "runId": "24763be7-280d-464b-a0fc-62b0bad97dc9",
-  "startedAt": "2026-10-03T03:30:53.006Z",
+  "runId": "e70d0a37-92d6-44ec-8aa8-44185dc4a7b2",
+  "startedAt": "2026-10-03T08:31:47.572Z",
   "tests": [
     {
       "id": "0005420a555cc43ee81536366b23ecca4cd57c5195d3eb883e1043fd9a7f6dda",

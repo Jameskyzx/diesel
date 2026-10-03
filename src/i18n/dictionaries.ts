@@ -480,10 +480,10 @@ const englishDictionary = {
       "Facts come from deterministic tools. Explanations and recommendations are presented separately from the evidence layer.",
     sidebarHeading: "Try asking",
     sidebarKicker: "Conversation starters",
-    starterBrief:
-      "Build a non-road 120 kW sales brief for AUS and CHN, targeting AUS.",
+    starterMarket:
+      "Show CHN market metrics and their reporting periods.",
     starterCompare:
-      "Compare non-road 120 kW emissions requirements in JPN and KOR.",
+      "Compare construction equipment 120 kW emissions requirements in CHN and JPN.",
     starterCurrent: "Which regulations are currently effective in CHN?",
     starterDemoCompare: "Compare non-road 100 kW regulations in CHN and BRA.",
     starterDemoFit: "Does the non-road 100 kW product fit CHN?",
@@ -517,7 +517,7 @@ const englishDictionary = {
     emptyDemo:
       "In the offline demo, try “Which regulations are currently effective in CHN?” or “Does the non-road 100 kW product fit CHN?” Only explicitly fictional fixtures are queried.",
     emptyLive:
-      "Try “Which regulations are currently effective in CHN?” or “Does a non-road 120 kW product fit DEU?” You can also compare CHN and BRA and build a structured sales brief.",
+      "Select a question to send it immediately. Explore current regulations, compare a specific application, or inspect market data and its sources. Missing evidence is shown explicitly; no real products are currently approved for recommendation.",
     failedQuestion: "Question",
     emptyFile: "{name} is empty and cannot be uploaded.",
     filePreview: "{name} preview",
@@ -1140,8 +1140,8 @@ const chineseDictionary: Dictionary = {
     sidebarFoot: "事实来自确定性工具；解释与建议会与证据层分开呈现。",
     sidebarHeading: "可以这样问",
     sidebarKicker: "问题示例",
-    starterBrief: "为 AUS 与 CHN 的非道路 120 kW 生成销售简报，目标市场 AUS。",
-    starterCompare: "比较 JPN 和 KOR 的非道路 120 kW 排放要求。",
+    starterMarket: "查看 CHN 的市场指标及数据时间。",
+    starterCompare: "比较 CHN 和 JPN 的工程机械 120 kW 排放要求。",
     starterCurrent: "CHN 目前有哪些有效法规？",
     starterDemoCompare: "比较 CHN 和 BRA 的非道路 100 kW 法规。",
     starterDemoFit: "CHN 的非道路 100 kW 产品是否适配？",
@@ -1172,7 +1172,7 @@ const chineseDictionary: Dictionary = {
     deterministicQuery: "正在执行确定性查询…",
     editRetry: "编辑后重试",
     emptyDemo: "离线 Demo 可尝试：“CHN 目前有哪些有效法规？”或“CHN 的非道路 100 kW 产品是否适配？”；只查询明确标记的虚构演示数据。",
-    emptyLive: "例如：“CHN 目前有哪些有效法规？”或“DEU 的非道路 120 kW 产品是否适配？”也可以比较 CHN 与 BRA 并生成结构化销售简报。",
+    emptyLive: "点击问题即可发送。你可以查询有效法规、比较具体应用场景，或查看市场指标及来源。缺少证据时会明确说明；目前没有获准公开推荐的真实产品。",
     failedQuestion: "问题",
     emptyFile: "{name} 是空文件，无法上传。",
     filePreview: "{name} 预览",

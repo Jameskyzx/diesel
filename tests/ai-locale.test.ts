@@ -8,6 +8,15 @@ import {
 } from "@/server/ai/sales-chat";
 
 describe("AI locale contract", () => {
+  it.each([
+    ["en", "without ranking countries as stricter/weaker", 'never "no legal limit"'],
+    ["zh-CN", "不排名哪个国家更严格或更宽松", "不得写成“不设限值”"],
+  ] as const)("keeps regulation comparisons scoped to returned facts in %s", (locale, ranking, absence) => {
+    const prompt = buildSalesChatInstructions(null, locale);
+    expect(prompt).toContain(ranking);
+    expect(prompt).toContain(absence);
+  });
+
   it("accepts only supported optional chat locales without overriding the request cookie fallback", () => {
     const base = {
       messages: [{ id: "m1", parts: [{ text: "hello", type: "text" }], role: "user" }],
@@ -80,7 +89,7 @@ describe("AI locale contract", () => {
     ] },
   ])("requires concise reader-facing $locale explanations without schema dumps", ({ locale, clauses }) => {
     const prompt = buildSalesChatInstructions(null, locale);
-    expect(prompt).toContain('version="sales-chat-system-v7"');
+    expect(prompt).toContain('version="sales-chat-system-v8"');
     for (const clause of clauses) expect(prompt).toContain(clause);
     // Production instructions must be domain-wide, never benchmark fixtures.
     expect(prompt).not.toMatch(/DEMO-ENG-100|DEMO_ADDRESSABLE_UNITS|2026-08-13|country-overview-china/u);

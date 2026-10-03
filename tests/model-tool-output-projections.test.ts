@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { wrapUntrustedKnowledgeExcerpt } from "@/domain/knowledge/retrieval-policy";
+import { latestVerifiedAtFromCitations } from "@/features/ai/evidence-semantics";
 import {
   marketComparisonModelToolOutputSchema,
   marketComparisonResultToModelOutput,
@@ -233,6 +234,39 @@ function projectionPaddedToBytes(
 }
 
 describe("sales-chat model-facing tool projections", () => {
+  it("recomputes country freshness from the selected topic rather than hidden newer sources", () => {
+    const profile = structuredClone(fixtures.full.country.profile);
+    if (profile?.status !== "available") throw new Error("Expected an available profile");
+    const hiddenSource = profile.country.currentEffectiveRegulations[0]?.source;
+    if (!hiddenSource) throw new Error("Expected a regulation source");
+    const newerVerification = "2026-08-12T00:00:00.000Z";
+    // The same source occurs in nested facts and the profile source registry.
+    // Keep all copies consistent, while market/country sources stay older.
+    function updateSource(value: unknown): void {
+      if (Array.isArray(value)) {
+        value.forEach(updateSource);
+      } else if (typeof value === "object" && value !== null) {
+        if (("id" in value && value.id === hiddenSource?.id) ||
+          ("sourceId" in value && value.sourceId === hiddenSource?.id)) {
+          if ("verifiedAt" in value) value.verifiedAt = newerVerification;
+        }
+        Object.values(value).forEach(updateSource);
+      }
+    }
+    updateSource(profile);
+    profile.country.lastVerifiedAt = newerVerification;
+    const full = buildCountryProfileResult({
+      profile, requestedTopics: ["market"], resolvedCountryIso3: "CHN", informationAsOf,
+    });
+    const projected = getCountryProfileResultToModelOutput(full);
+    expect(full.latestVerifiedAt).toBe(newerVerification);
+    expect(projected.latestVerifiedAt).not.toBe(full.latestVerifiedAt);
+    expect(projected.latestVerifiedAt).toBe(latestVerifiedAtFromCitations(projected.sources));
+    expect(getCountryProfileModelToolOutputSchema.safeParse({
+      ...projected, latestVerifiedAt: full.latestVerifiedAt,
+    }).success).toBe(false);
+  });
+
   it("wires all seven sales-chat tools to a model-output projection", () => {
     const tools = createSalesChatTools({
       auditRepository: {

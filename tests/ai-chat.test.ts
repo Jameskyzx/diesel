@@ -4855,7 +4855,7 @@ describe("single-agent sales chat", () => {
     expect(model.doStreamCalls).toHaveLength(2);
     for (const call of model.doStreamCalls) {
       const instructions = call.prompt.filter(({ role }) => role === "system").map(({ content }) => content).join("\n");
-      expect(instructions).toContain(`version="sales-chat-system-v7" locale="${locale}"`);
+      expect(instructions).toContain(`version="sales-chat-system-v8" locale="${locale}"`);
       expect(instructions).toContain(locale === "en"
         ? "conditional vocabulary rules, not findings"
         : "只是条件化术语说明，不是个案事实");
@@ -5992,7 +5992,6 @@ describe("single-agent sales chat", () => {
     expect(text).not.toContain("发动机铭牌");
     expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: "required" });
     expect(model.doStreamCalls[0]?.tools?.map(({ name }) => name)).toEqual([
-      "searchKnowledgeBase",
       "getCountryProfile",
     ]);
   });

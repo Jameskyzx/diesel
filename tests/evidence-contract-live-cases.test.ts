@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
+import { getDictionary } from "@/i18n/dictionaries";
 
 import {
   salesChatLiveCases,
@@ -49,7 +50,43 @@ import {
 } from "@/features/ai/evidence-semantics";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
+
+it.each([
+  "CHN 目前有哪些有效法规？",
+  "Which regulations are currently effective in CHN?",
+])("routes the regulation starter to structured country evidence: %s", (text) => {
+  const contract = buildSalesChatEvidenceContract({
+    selectedCountryIso3: null,
+    userTexts: [text],
+  });
+  expect(contract.missingRequiredParameters).toEqual([]);
+  expect(remainingEvidenceTools(contract, [])).toEqual(["getCountryProfile"]);
+  expect(contract.requirements).toEqual([
+    expect.objectContaining({
+      acceptedTools: ["getCountryProfile"],
+      requiredProfileTopics: ["regulations"],
+      query: expect.objectContaining({ countryIso3s: ["CHN"] }),
+    }),
+  ]);
+});
+
 let demoDatabase: Awaited<ReturnType<typeof getDemoDatabase>>;
+
+it.each(["en", "zh-CN"] as const)("keeps the %s public starters on their intended evidence paths", (locale) => {
+  const copy = getDictionary(locale).chatPage;
+  for (const [text, tools, query] of [
+    [copy.starterCurrent, ["getCountryProfile"], { countryIso3s: ["CHN"] }],
+    [copy.starterCompare, ["compareRegulations"], { countryIso3s: ["CHN", "JPN"], applicationScope: "construction", powerKw: 120 }],
+    [copy.starterMarket, ["getCountryProfile"], { countryIso3s: ["CHN"] }],
+  ] as const) {
+    const contract = buildSalesChatEvidenceContract({ selectedCountryIso3: null, userTexts: [text] });
+    expect(contract.missingRequiredParameters, text).toEqual([]);
+    expect(remainingEvidenceTools(contract, []), text).toEqual(tools);
+    expect(contract.requirements, text).toEqual([
+      expect.objectContaining({ query: expect.objectContaining(query) }),
+    ]);
+  }
+});
 
 beforeAll(async () => {
   process.env.DATABASE_MODE = "pglite-demo";

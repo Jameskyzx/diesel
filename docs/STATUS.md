@@ -36,19 +36,19 @@ intentionally fails for merely local or staged evidence.
 ```json
 {
   "browserSnapshot": {
-    "artifactByteLength": 180634,
+    "artifactByteLength": 184816,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "1bc93d37023026bb160da3906b63f2148a679bee63c3ea8d9e8f9ce7b8b56906",
-    "baseHeadCommit": "f6f7838980c26b7910b430ccc51941d1f2ee2ebf",
-    "evaluatedCommit": "f6f7838980c26b7910b430ccc51941d1f2ee2ebf",
-    "observedAt": "2026-10-03T10:00:14.559Z",
-    "runId": "96b8f913-cb3f-4a73-b3c9-3f02ba2e32e1",
+    "artifactSha256": "2504fd5070b249042be98002b7bf00c236d5dbe08e38cc6b3890a058666490ab",
+    "baseHeadCommit": "880a7b2d1d98fa3db1a1721f33b9006d50e3a06a",
+    "evaluatedCommit": "880a7b2d1d98fa3db1a1721f33b9006d50e3a06a",
+    "observedAt": "2026-10-03T18:23:40.699Z",
+    "runId": "0b5db8a1-7f72-453f-872d-d47b69cb5bf9",
     "runs": [
       {
-        "collected": 423,
+        "collected": 435,
         "failed": 0,
         "flaky": 0,
-        "passed": 358,
+        "passed": 370,
         "skipped": 65,
         "id": "public"
       },
@@ -79,8 +79,8 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "4248d2c45e9ef4955b4889231865824c36ef405cf7e346b6bcc459391ba0204f",
-      "fileCount": 349
+      "digest": "7b724b401d5cf01971e41ee117cfc0547c25dc13eb27463c3de4aa02fb3a8d54",
+      "fileCount": 350
     },
     "version": "diesel-playwright-evidence-v1",
     "worktreeState": "clean"
@@ -101,15 +101,15 @@ intentionally fails for merely local or staged evidence.
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20261003T013810420Z-0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20261003T180849850Z-6d5f8540-75b6-4d05-a125-7a65c6357486.json",
     "attemptCount": 37,
     "complete": true,
     "completedCount": 37,
-    "evaluatedAt": "2026-10-03T01:38:10.420Z",
+    "evaluatedAt": "2026-10-03T18:08:49.850Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
-      "adapterContractVersion": 4,
+      "adapterContractVersion": 5,
       "enableThinking": false,
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
@@ -119,10 +119,10 @@ intentionally fails for merely local or staged evidence.
     "modelStepCount": 37,
     "reportVersion": "sales-chat-live-v25",
     "runError": null,
-    "runId": "0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4",
+    "runId": "6d5f8540-75b6-4d05-a125-7a65c6357486",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "bf8be61d3704ceb21ffb77948b37adba4da92d43c618ed5b8c5ddccfe64bb970",
+      "digest": "dad3d803dba1752c25bf23cb78143dc802ff233484f78f4d338ce01dd697b841",
       "fileCount": 299,
       "status": "captured"
     },
@@ -131,7 +131,7 @@ intentionally fails for merely local or staged evidence.
     "terminationReason": "completed",
     "thresholdsPassed": false,
     "tokenUsageComplete": true,
-    "totalTokens": 97366
+    "totalTokens": 100834
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -160,6 +160,19 @@ The 178 ISO3 entries are a country directory and published evidence boundary,
 not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
+
+- 2026-10-04（本地候选，尚未发布）：修复聊天示例只填入而不发送的问题；无精确范围的
+  有效法规查询限定为结构化国家档案。公开示例调整为 CHN 法规、CHN/JPN 工程机械
+  120 kW 对比与 CHN 市场指标。真实生产数据读回发现国家档案的模型投影按主题过滤后
+  仍沿用全部来源的核验时间，现按选中来源重算并保留严格一致性校验。
+  销售简报请求真实复现损坏 JSON，DeepSeek 适配 v5 增加明确 JSON 格式指令，不猜修
+  参数、不重试、不降低证据门槛。真实回答人工复查发现一次严格程度方向错误，提示词
+  升级 v8：法规对比逐项列值，不从孤立限值排名国家、不将缺失记录断言为不存在法规。
+  提示词约束不等于正确性保证。此前失败报告原样保留；当前 expectedProviderProfile
+  指向本地候选，不表示现网已升级。正式评估的执行身份、结果与 token 消耗
+  仅见上方规范台账及其归档；不在进度说明中重复记录或将失败结果称为通过。
+  另以公开生产 API 的只读数据快照，经本地生产聊天循环和真实模型验证六个中英文示例，
+  均完成一次工具调用与最终回答；这属于定向诊断，不替代正式评估或生产端到端验收。
 
 - 2026-10-03：收尾 PR #52 的 [CI run 37110918395](https://github.com/Jameskyzx/diesel/actions/runs/37110918395)
   在八项检查通过后，被浏览器的 1 个 flaky 用例与最终门禁拒绝合并。
@@ -1188,7 +1201,7 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   并保留现场，不自动 rollback，供人工前向修复。
   controller 不迁移 ledger、不 rollback/recover、不关闭 FD 8；publish/finalize 的两个 maintenance
   session、唯一 commit point 与锁释放窗口均未改变。该改动仍是本地待发布，不表示目标 VPS 已执行。
-- 当前中英文等价 system instruction 为 `sales-chat-system-v7`；来源标题和引用原文保持
+- 当前中英文等价 system instruction 为 `sales-chat-system-v8`；来源标题和引用原文保持
   原始语言；live eval 评分合同定义并版本化为 `sales-chat-live-v25`。v5 起还要求全部稳定事实/带极性决策/免责声明 anchor 与
   请求语言匹配；产品 ready 同时要求合规适配通过和供应就绪，否定候选不能借关键词通过。
   v6 强制远端 adapter 请求流式 usage，将每次模型调用的 retry 固定为 0；v7 再把单次输出
@@ -1443,9 +1456,9 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   原始错误；ACK0 要求 completed=true、error=false、boundary=[]，并由 verifier 推导 error/evidence。
   持久化在首次创建 archive 目录后 `fsync` eval 父目录，并在 archive hard-link、临时名删除和
   latest rename 后同步对应目录；只有 latest 目录项同步成功才声明更新完成。
-- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-10-03T01:38:10.420Z`；run ID `0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
-  `97366 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
-  archive `docs/evals/archive/ai-live-eval-20261003T013810420Z-0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4.json`；source fingerprint `bf8be61d3704ceb21ffb77948b37adba4da92d43c618ed5b8c5ddccfe64bb970` across `299` files。
+- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-10-03T18:08:49.850Z`；run ID `6d5f8540-75b6-4d05-a125-7a65c6357486`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`37 provider attempts`；`37 completed provider calls`；`37 model steps`；
+  `100834 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v25`；`reportVersion=sales-chat-live-v25`；
+  archive `docs/evals/archive/ai-live-eval-20261003T180849850Z-6d5f8540-75b6-4d05-a125-7a65c6357486.json`；source fingerprint `dad3d803dba1752c25bf23cb78143dc802ff233484f78f4d338ce01dd697b841` across `299` files。
 - 上方机器绑定台账是当前 live-eval 数值、身份和归档位置的唯一来源。完整执行、达到质量
   门槛和对应已提交 release 是三个独立维度；归档规则要求失败报告保留实际逐例判定、模型调用和
   用量。源码指纹对应 dirty worktree 时，只作为该本地状态的诊断，不声称已提交版本、
@@ -2048,15 +2061,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `96b8f913-cb3f-4a73-b3c9-3f02ba2e32e1`，artifact SHA-256 `1bc93d37023026bb160da3906b63f2148a679bee63c3ea8d9e8f9ce7b8b56906`；
-  observedAt `2026-10-03T10:00:14.559Z`，clean worktree / base HEAD `f6f7838980c26b7910b430ccc51941d1f2ee2ebf`；
-  `public` = `358 passed / 65 skipped / 0 failed / 0 flaky / 423 collected`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `0b5db8a1-7f72-453f-872d-d47b69cb5bf9`，artifact SHA-256 `2504fd5070b249042be98002b7bf00c236d5dbe08e38cc6b3890a058666490ab`；
+  observedAt `2026-10-03T18:23:40.699Z`，clean worktree / base HEAD `880a7b2d1d98fa3db1a1721f33b9006d50e3a06a`；
+  `public` = `370 passed / 65 skipped / 0 failed / 0 flaky / 435 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
-  聚合为 430 passed / 67 skipped / 0 failed / 0 flaky / 497 collected。artifact 为 180634 bytes；
-  browser source fingerprint 为 349 files / `4248d2c45e9ef4955b4889231865824c36ef405cf7e346b6bcc459391ba0204f`。
-  因运行发生在 clean worktree，`evaluatedCommit=f6f7838980c26b7910b430ccc51941d1f2ee2ebf`；它证明该本地候选提交上的浏览器验收，
+  聚合为 442 passed / 67 skipped / 0 failed / 0 flaky / 509 collected。artifact 为 184816 bytes；
+  browser source fingerprint 为 350 files / `7b724b401d5cf01971e41ee117cfc0547c25dc13eb27463c3de4aa02fb3a8d54`。
+  因运行发生在 clean worktree，`evaluatedCommit=880a7b2d1d98fa3db1a1721f33b9006d50e3a06a`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

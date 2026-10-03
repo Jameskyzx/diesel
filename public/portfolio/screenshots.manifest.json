@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-03T01:36:24.223Z",
+      "capturedAt": "2026-10-03T18:09:28.136Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -277,7 +277,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "1f1a12730958b11b30cfda48e2c97031383e7557ff8e84abae641e0c5a23d4ef",
+      "sourceFingerprint": "6f121ec0871f215b7ad4644065e108b607f70e08c0c6a608e48333963c55c899",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -285,12 +285,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-03T01:36:26.984Z",
+      "capturedAt": "2026-10-03T18:09:30.919Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "84d7ef2cbdff084a8d2804aff512c7b2f5d441d13a58c417d82e7e5cce9bcae1",
+      "sha256": "797d76cabe653a339616980f08c30f01962dc300244527019410ad1f2ca77d12",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -562,7 +562,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "f8509008dbb87458532c1bff036fb90ec4613c8983d7a8b21b8740dac1b114ca",
+      "sourceFingerprint": "866677d3bea4039636bbbda5e29caf74489e94d580b87a6c2c66f929789e8b4e",
       "viewport": {
         "height": 1000,
         "width": 1600

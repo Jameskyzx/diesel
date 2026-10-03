@@ -639,19 +639,19 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20261003T013810420Z-0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4.json",
+  "archivePath": "archive/ai-live-eval-20261003T180849850Z-6d5f8540-75b6-4d05-a125-7a65c6357486.json",
   "attemptCount": 37,
   "complete": true,
   "completedCount": 37,
-  "evaluatedAt": "2026-10-03T01:38:10.420Z",
+  "evaluatedAt": "2026-10-03T18:08:49.850Z",
   "latestOutcome": "failed",
   "modelStepCount": 37,
-  "runId": "0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4",
+  "runId": "6d5f8540-75b6-4d05-a125-7a65c6357486",
   "runError": null,
   "sampleCount": 18,
   "sourceFingerprint": {
     "algorithm": "sha256",
-    "digest": "bf8be61d3704ceb21ffb77948b37adba4da92d43c618ed5b8c5ddccfe64bb970",
+    "digest": "dad3d803dba1752c25bf23cb78143dc802ff233484f78f4d338ce01dd697b841",
     "fileCount": 299,
     "status": "captured"
   },
@@ -659,15 +659,15 @@ decision from discarded text.
   "terminationReason": "completed",
   "thresholdsPassed": false,
   "tokenUsageComplete": true,
-  "totalTokens": 97366,
+  "totalTokens": 100834,
   "version": "sales-chat-live-v25"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `failed`; evaluatedAt `2026-10-03T01:38:10.420Z`; run ID `0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `37 provider attempts`; `37 completed provider calls`; `37 model steps`; `97366 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=false`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20261003T013810420Z-0addcdc8-ed97-4936-8f0d-cc19d0a7f7c4.json`; source fingerprint `bf8be61d3704ceb21ffb77948b37adba4da92d43c618ed5b8c5ddccfe64bb970` across `299` files.
+Current report result: `failed`; evaluatedAt `2026-10-03T18:08:49.850Z`; run ID `6d5f8540-75b6-4d05-a125-7a65c6357486`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `37 provider attempts`; `37 completed provider calls`; `37 model steps`; `100834 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=false`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20261003T180849850Z-6d5f8540-75b6-4d05-a125-7a65c6357486.json`; source fingerprint `dad3d803dba1752c25bf23cb78143dc802ff233484f78f4d338ce01dd697b841` across `299` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed
@@ -953,6 +953,23 @@ v7/v4 生产路径运行 `aca383eb-e4e8-4f5f-8cfe-d107d3d04008` 完成 18 例、
 共 97,352 tokens 且 usage 完整；各项评分均为 100%，报告及观察数据经独立验证确认，
 完整命令退出 0。这只证明记录提交上的一次本地通过，不保证未来每次通过，也不代表生产
 已经部署。此前失败及未确认的归档均原样保留。
+
+Each invocation captures repository state and the eval-source fingerprint at
+both the start and end. The chat-starter repair introduces prompt v8 (no country
+strictness ranking from isolated emission limits; no global absence claims from
+missing query records) and DeepSeek adapter v5 (explicit JSON-only arguments).
+Both retain the same cases, scorer, evidence boundary and token budget. Historical
+v7/v4 observations remain historical; bounded starter probes are not the full eval.
+The separate offline routing harness moves to v2: its unscoped regulatory-status
+case now requires only `getCountryProfile`, matching the documented structured
+facts route. It no longer permits an empty document search to replace available
+country facts. No live case's expected evidence outcome is changed.
+
+每次运行记录起止来源状态。聊天示例修复使用提示词 v8，禁止从孤立限值判断国家整体严格
+程度、将查询缺失说成法规不存在；DeepSeek v5 明确要求参数为合法 JSON。案例、评分器、
+证据门槛与 token 预算不变。旧 v7/v4 结果保留，局部示例诊断不替代完整评估。
+独立的离线路由 harness 升级 v2：无精确范围的法规状态必须走国家结构化档案，不能用
+空文档检索替代现有事实。该修正不反转任何 live case 的证据预期。
 
 Each invocation captures repository state and the eval-source fingerprint at
 both the start and end. Clean, stable Git state may name an exact

@@ -27,7 +27,7 @@ export default async function NotFound() {
   return (
     <main className="grid min-h-[70vh] place-items-center px-6 py-16">
       <LocaleRenderReceipt locale={locale} />
-      <section className="w-full max-w-xl rounded-3xl border bg-card p-8 text-center shadow-sm">
+      <section className="surface-panel w-full max-w-xl rounded-md p-8 text-center">
         <p className="text-sm font-semibold tracking-wide text-primary">
           404
         </p>

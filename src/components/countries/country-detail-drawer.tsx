@@ -87,7 +87,7 @@ function ProductFitLoading() {
     <div
       aria-busy="true"
       aria-live="polite"
-      className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground"
+      className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground"
       role="status"
     >
       {dictionary.country.productFitLoading}
@@ -325,6 +325,7 @@ export function CountryDetailDrawer({
     >
       <DrawerContent
         aria-describedby="country-drawer-description"
+        className="country-workspace-panel bg-card"
         onOpenAutoFocus={(event) => {
           const target = countrySelectRef.current;
           if (!target || !consumeCountrySelectFocusRequest()) {
@@ -394,6 +395,17 @@ export function CountryDetailDrawer({
           </select>
         </div>
 
+        {currentDetail.status === "ready" && currentDetail.response.status === "available" ? (
+          <div aria-label={dictionary.workspace.navigation} className="grid grid-cols-4 border-b bg-muted/30 px-3 text-[11px] font-medium" role="group">
+            {[
+              { id: "current-regulations", label: dictionary.workspace.regulations },
+              { id: "product-fit-heading", label: dictionary.workspace.productFit },
+              { id: "market-metrics", label: dictionary.workspace.market },
+              { id: "country-source", label: dictionary.workspace.sources },
+            ].map(({ id, label }) => <a className="flex min-h-11 items-center justify-center px-1 text-center text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" href={`#${id}`} key={id}>{label}</a>)}
+          </div>
+        ) : null}
+
         <div
           className="flex-1 overflow-y-auto px-5 py-5 sm:px-7"
           data-testid="country-drawer-body"
@@ -419,7 +431,7 @@ export function CountryDetailDrawer({
 
           {currentDetail.status === "error" ? (
             <div
-              className="rounded-2xl border border-destructive/25 bg-destructive/5 p-5"
+              className="rounded-md border border-destructive/25 bg-destructive/5 p-5"
               role="alert"
             >
               <AlertTriangle
@@ -447,7 +459,7 @@ export function CountryDetailDrawer({
             <div
               aria-atomic="true"
               aria-live="polite"
-              className="rounded-2xl border border-dashed bg-muted/40 p-6"
+              className="rounded-md border border-dashed bg-muted/40 p-6"
               data-testid="country-no-data"
               role="status"
             >
@@ -669,9 +681,9 @@ function CountryDetailContent({
   if (waitingForHistoryRoute) return <ProductFitLoading />;
 
   return (
-    <div className="space-y-5" data-testid="country-detail">
+    <div className="country-record-sections space-y-5" data-testid="country-detail">
       {country.isDemo || country.source.isDemo ? (
-        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
           <div className="flex items-center gap-2 font-semibold">
             <AlertTriangle aria-hidden="true" className="size-4" />
             {copy.demoCountryTitle}
@@ -715,7 +727,7 @@ function CountryDetailContent({
             value={countrySubregionLabel(country.subregionCode, dictionary)}
           />
         </dl>
-        <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
+        <p className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-muted-foreground">
           {copy.coverageSemantics}
         </p>
       </section>
@@ -738,7 +750,7 @@ function CountryDetailContent({
 
       <section
         aria-labelledby="country-chat-analysis"
-        className="rounded-2xl border border-primary/20 bg-primary/5 p-4"
+        className="rounded-md border border-primary/20 bg-primary/5 p-4"
       >
         <h2 className="font-semibold" id="country-chat-analysis">
           {copy.chatTitle}
@@ -782,7 +794,7 @@ function CountryDetailContent({
           <div className="mt-3 space-y-3">
             {country.jurisdictions.map((jurisdiction) => (
               <article
-                className="rounded-2xl border bg-card p-4 text-sm"
+                className="rounded-md border bg-card p-4 text-sm"
                 key={jurisdiction.id}
               >
                 <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
@@ -834,7 +846,7 @@ function CountryDetailContent({
             ))}
           </div>
         ) : (
-          <div className="mt-3 rounded-2xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
+          <div className="mt-3 rounded-md border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
             {copy.jurisdictionEmpty}
           </div>
         )}
@@ -851,7 +863,7 @@ function CountryDetailContent({
           <div className="mt-3 space-y-3">
             {country.marketMetrics.map((metric) => (
               <article
-                className="rounded-2xl border bg-card p-4"
+                className="rounded-md border bg-card p-4"
                 key={metric.id}
               >
                 <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
@@ -904,7 +916,7 @@ function CountryDetailContent({
             ))}
           </div>
         ) : (
-          <div className="mt-3 rounded-2xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
+          <div className="mt-3 rounded-md border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
             {copy.marketEmpty}
           </div>
         )}
@@ -920,7 +932,7 @@ function CountryDetailContent({
         <div className="mt-3 space-y-2">
           {country.sources.map((source) => (
             <article
-              className="rounded-2xl border bg-card p-4 text-sm"
+              className="rounded-md border bg-card p-4 text-sm"
               key={source.id}
             >
               <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:justify-between sm:gap-3">
@@ -941,7 +953,7 @@ function CountryDetailContent({
             </article>
           ))}
         </div>
-        <div className="mt-3 rounded-2xl bg-primary/5 p-4 text-sm">
+        <div className="mt-3 rounded-md bg-primary/5 p-4 text-sm">
           <div className="flex items-center gap-2 font-semibold">
             <Orbit aria-hidden="true" className="size-4 text-primary" />
             {copy.detailAsOf}
@@ -998,7 +1010,7 @@ function ApplicabilitySummarySection({
     return (
       <section
         aria-live="polite"
-        className="rounded-2xl border bg-primary/5 p-4 text-sm"
+        className="rounded-md border bg-primary/5 p-4 text-sm"
         role="status"
       >
         {copy.applicabilitySummaryLoading}
@@ -1009,7 +1021,7 @@ function ApplicabilitySummarySection({
   if (errorCode !== undefined) {
     return (
       <section
-        className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
+        className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm"
         role="alert"
       >
         {countryDecisionSummaryErrorMessage(errorCode, dictionary)}
@@ -1019,7 +1031,7 @@ function ApplicabilitySummarySection({
 
   if (!summary) {
     return (
-      <section className="rounded-2xl border border-dashed bg-muted/30 p-4">
+      <section className="rounded-md border border-dashed bg-muted/30 p-4">
         <h2 className="font-semibold">{copy.applicabilitySummary}</h2>
         <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
           {copy.applicabilitySummaryEmpty}
@@ -1044,7 +1056,7 @@ function ApplicabilitySummarySection({
   return (
     <section
       aria-labelledby="country-applicability-summary"
-      className="rounded-2xl border border-primary/25 bg-primary/5 p-4"
+      className="rounded-md border border-primary/25 bg-primary/5 p-4"
       data-testid="country-applicability-summary"
     >
       <h2 className="font-semibold" id="country-applicability-summary">
@@ -1058,7 +1070,7 @@ function ApplicabilitySummarySection({
       {current.length > 0 ? (
         <div className="mt-3 space-y-3">
           {current.map((regulation) => (
-            <article className="rounded-xl border bg-background p-3" key={regulation.id}>
+            <article className="rounded-md border bg-background p-3" key={regulation.id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">
                   {regulationDisplayName(regulation, dictionary, locale)}
@@ -1078,7 +1090,7 @@ function ApplicabilitySummarySection({
           ))}
         </div>
       ) : (
-        <div className="mt-3 rounded-xl border border-dashed bg-background/70 p-3 text-xs leading-5 text-muted-foreground">
+        <div className="mt-3 rounded-md border border-dashed bg-background/70 p-3 text-xs leading-5 text-muted-foreground">
           {copy.decisionNoCurrent}
         </div>
       )}
@@ -1101,7 +1113,7 @@ function ApplicabilitySummarySection({
       ) : null}
 
       {missingDataMessages.length > 0 ? (
-        <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
+        <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
           <p className="font-semibold">{copy.evidenceGap}</p>
           {missingDataMessages.map((message) => (
             <p key={message}>{message}</p>
@@ -1109,7 +1121,7 @@ function ApplicabilitySummarySection({
         </div>
       ) : null}
 
-      <details className="mt-3 rounded-xl border bg-background/70 p-3 text-xs">
+      <details className="mt-3 rounded-md border bg-background/70 p-3 text-xs">
         <summary className="cursor-pointer font-semibold">
           {copy.sourceCount.replace("{count}", String(summary.sources.length))}
         </summary>
@@ -1185,7 +1197,7 @@ function RegulationSection({
         <div className="mt-3 space-y-3">
           {regulations.map((regulation) => (
             <article
-              className="rounded-2xl border bg-card p-4"
+              className="rounded-md border bg-card p-4"
               data-testid="country-regulation-card"
               key={regulation.id}
             >
@@ -1272,7 +1284,7 @@ function RegulationSection({
           ))}
         </div>
       ) : (
-        <div className="mt-3 rounded-2xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
+        <div className="mt-3 rounded-md border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
           {emptyMessage}
         </div>
       )}
@@ -1282,7 +1294,7 @@ function RegulationSection({
 
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-muted/60 px-3 py-2.5">
+    <div className="rounded-md bg-muted/60 px-3 py-2.5">
       <dt className="text-[11px] font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-1 break-words text-sm font-medium">{value}</dd>
     </div>

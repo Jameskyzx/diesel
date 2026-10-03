@@ -1673,7 +1673,7 @@ export function SalesChat({
 
       <div
         aria-label={copy.roleLabel}
-        className="min-h-56 flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4 sm:p-6"
+        className="min-h-56 flex-1 space-y-5 overflow-y-auto bg-muted/30 p-4 sm:p-6"
         onScroll={(event) => {
           const messageLog = event.currentTarget;
           shouldAutoScrollRef.current =
@@ -1686,17 +1686,19 @@ export function SalesChat({
         role="region"
       >
         {messages.length === 0 ? (
-          <div className="rounded-md border bg-card p-5 text-sm">
+          <div className="mx-auto max-w-xl py-8 text-sm sm:py-12">
+            <div aria-hidden="true" className="mb-5 grid size-14 place-items-center rounded-xl border bg-card text-primary"><Bot className="size-7" /></div>
+            <h3 className="mb-3 text-lg font-semibold">{dictionary.chatPage.sidebarHeading}</h3>
             <p className="text-xs leading-6 text-muted-foreground">
               {demoMode
                 ? copy.emptyDemo
                 : copy.emptyLive}
             </p>
             {suggestedPrompts.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-5 grid gap-2">
                 {suggestedPrompts.map((prompt) => (
                   <button
-                    className="rounded-lg border bg-card px-3 py-2 text-left text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="rounded-md border bg-card px-4 py-3 text-left text-sm leading-5 font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     key={prompt}
                     onClick={() => {
                       initialPromptPristineRef.current = false;
@@ -1722,7 +1724,7 @@ export function SalesChat({
           return (
             <article
             className={cn(
-              "rounded-2xl px-4 py-3 text-sm shadow-sm",
+              "rounded-md px-4 py-3 text-sm shadow-sm",
               message.role === "user"
                 ? "ml-8 bg-primary text-primary-foreground sm:ml-24"
                 : "mr-2 border border-black/[0.06] bg-white sm:mr-12",
@@ -1926,7 +1928,7 @@ export function SalesChat({
             </p>
           ) : null}
 
-          <div className="flex gap-2 rounded-2xl border border-black/[0.07] bg-white p-2 shadow-sm focus-within:ring-[3px] focus-within:ring-emerald-700/15">
+          <div className="flex gap-2 rounded-md border bg-white p-2 shadow-sm focus-within:ring-[3px] focus-within:ring-ring/20">
             <input
               accept={
                 imageUploadsEnabled

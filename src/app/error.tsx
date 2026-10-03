@@ -16,7 +16,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
       <section
         aria-atomic="true"
         aria-labelledby="error-title"
-        className="w-full max-w-xl rounded-3xl border bg-card p-8 shadow-sm"
+        className="surface-panel w-full max-w-xl rounded-md border-t-4 border-t-destructive p-8"
         role="alert"
       >
         <p className="text-sm font-semibold text-destructive">

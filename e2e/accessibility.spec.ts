@@ -96,11 +96,14 @@ for (const locale of ["en", "zh-CN"] as const) {
   });
 }
 
-test("keeps non-modal country navigation keyboard-accessible in both locales", async ({
-  page,
-}, testInfo) => {
-  const tabKey = testInfo.project.name === "core-webkit" ? "Alt+Tab" : "Tab";
-  for (const locale of ["en", "zh-CN"] as const) {
+for (const locale of ["en", "zh-CN"] as const) {
+  test(`keeps non-modal country navigation keyboard-accessible in ${locale}`, async ({
+    page,
+  }, testInfo) => {
+    const tabKey = testInfo.project.name === "core-webkit" ? "Alt+Tab" : "Tab";
+    // Each locale starts in a fresh browser context. Re-seeding the cookie in
+    // the previous iteration's still-streaming Home navigation can cause a
+    // locale refresh and WebKit's next hard navigation to race each other.
     const response = await page.request.post("/api/preferences/locale", { data: { locale } });
     expect(response.ok()).toBe(true);
     await page.goto("/countries/CHN");
@@ -118,8 +121,9 @@ test("keeps non-modal country navigation keyboard-accessible in both locales", a
     await expect.poll(() => new URL(page.url()).pathname).toBe("/");
     await expect(drawer).toHaveCount(0);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
-  }
-});
+    await expect(page.getByTestId("home-workspace")).toBeVisible();
+  });
+}
 
 for (const route of [
   "/",

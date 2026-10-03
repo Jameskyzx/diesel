@@ -86,11 +86,11 @@ intentionally fails for merely local or staged evidence.
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985",
+    "commit": "e5c3249f067692a483d4133a313bd5883b166642",
     "evidenceKind": "historical-operator-record-only",
-    "id": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985",
-    "observedAt": "2026-10-03T08:25+00:00",
-    "releasePath": "/opt/diesel/releases/0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985"
+    "id": "e5c3249f067692a483d4133a313bd5883b166642",
+    "observedAt": "2026-10-03T22:02+00:00",
+    "releasePath": "/opt/diesel/releases/e5c3249f067692a483d4133a313bd5883b166642"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -139,18 +139,18 @@ intentionally fails for merely local or staged evidence.
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-03T08:25+00:00",
+    "readbackAt": "2026-10-03T22:02+00:00",
     "status": "ok",
-    "version": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985"
+    "version": "e5c3249f067692a483d4133a313bd5883b166642"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v1"
   },
   "repositoryHead": {
-    "local": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985",
-    "observedAt": "2026-10-03T08:25+00:00",
-    "remote": "0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985"
+    "local": "e5c3249f067692a483d4133a313bd5883b166642",
+    "observedAt": "2026-10-03T22:02+00:00",
+    "remote": "e5c3249f067692a483d4133a313bd5883b166642"
   }
 }
 ```
@@ -161,15 +161,33 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
-- 2026-10-04（本地候选，尚未发布）：修复聊天示例只填入而不发送的问题；无精确范围的
+- 2026-10-03 22:02 UTC：聊天示例修复已随 `e5c3249` 发布至
+  `diesel.jamesky.site`。PR #53 与精确 master 的十项 CI 均首试通过
+  （runs `37145990784` / `37148932050`）；原前台控制器退出 0，
+  两份治理快照、真实恢复演练、97 项既有签核发布及完整公开校验均通过，
+  最终账本为 `COMMITTED:PUBLISH_FINALIZED`。不增加国家、产品、依赖或 schema。
+  实际点击中文桌面端与英文移动端的三类示例，共六次，均只发送一次请求，
+  完成有来源的工具结果、最终 SSE 与可见回答；逐份文本与工具证据及代表截图已复核。
+  两份先行浏览器取证失败记录保留：一次 CDP 响应体不可用/取证文本编码错误，
+  一次字符串谓词被生产 CSP 拒绝。改用保持原响应的 UTF-8 clone 取证和函数谓词，
+  先在禁止 unsafe-eval 的模拟夹具验证，不修改应用 CSP、模型或通过门槛。
+  独立 provider-inclusive 巡检七项通过；内外网健康、语言持久化、关键页面、
+  内部路由隔离和独立博客均通过，jamesky-api PID 与重启计数未变。
+  这不代表历史间歇 readiness 延迟已根治，也不替代上方唯一完整模型质量台账。
+  临时密钥待轮换，既有依赖安全限期记录保持不变。脱敏
+  [发布与真实示例验收记录](evidence/chat-starter-release-e5c3249f0676.json)
+  保留真实执行身份、失败取证记录、最终回答及截图/工具证据摘要。
+  后续仅文档与执行证据提交可领先于运行版本，不重复部署。
+
+- 2026-10-04（发布前候选记录，已由上条部署记录收口）：修复聊天示例只填入而不发送的问题；无精确范围的
   有效法规查询限定为结构化国家档案。公开示例调整为 CHN 法规、CHN/JPN 工程机械
   120 kW 对比与 CHN 市场指标。真实生产数据读回发现国家档案的模型投影按主题过滤后
   仍沿用全部来源的核验时间，现按选中来源重算并保留严格一致性校验。
   销售简报请求真实复现损坏 JSON，DeepSeek 适配 v5 增加明确 JSON 格式指令，不猜修
   参数、不重试、不降低证据门槛。真实回答人工复查发现一次严格程度方向错误，提示词
   升级 v8：法规对比逐项列值，不从孤立限值排名国家、不将缺失记录断言为不存在法规。
-  提示词约束不等于正确性保证。此前失败报告原样保留；当前 expectedProviderProfile
-  指向本地候选，不表示现网已升级。正式评估的执行身份、结果与 token 消耗
+  提示词约束不等于正确性保证。此前失败报告原样保留；当时 expectedProviderProfile
+  仅指向本地候选，不能单独证明现网升级。正式评估的执行身份、结果与 token 消耗
   仅见上方规范台账及其归档；不在进度说明中重复记录或将失败结果称为通过。
   另以公开生产 API 的只读数据快照，经本地生产聊天循环和真实模型验证六个中英文示例，
   均完成一次工具调用与最终回答；这属于定向诊断，不替代正式评估或生产端到端验收。
@@ -600,9 +618,9 @@ not a claim that all 178 countries have numerical diesel limits.
   已以 #248–#259 / ADR-134 固定为每国恰好两条当前 source、四 scope no-data，
   统一 `verifiedAt=2026-08-10T23:08:11Z`。
 - 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
-  observedAt=`2026-10-03T08:25+00:00`；`/api/health` readbackAt=`2026-10-03T08:25+00:00` returned `status=ok`,
-  `version=0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/0668a2c31e4cd0b1a405be4f8780a7ba8a6a2985`。因此当前公开 release ID
+  observedAt=`2026-10-03T22:02+00:00`；`/api/health` readbackAt=`2026-10-03T22:02+00:00` returned `status=ok`,
+  `version=e5c3249f067692a483d4133a313bd5883b166642`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/e5c3249f067692a483d4133a313bd5883b166642`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为

@@ -1,12 +1,12 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-01T09:01:23.515Z",
+      "capturedAt": "2026-10-03T01:36:24.223Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
       "route": "/",
-      "sha256": "4f39cbc03d71d4a12587654cbf20f888a3106763df3eeb32a845884bbb22c3e3",
+      "sha256": "6f21547b6b72025265b685081716fb59734c5e2b83bfa3b8ff4e205f9f0b8a3e",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -111,6 +111,7 @@
         "src/components/i18n/locale-toggle.tsx",
         "src/components/knowledge/knowledge-debug-console.tsx",
         "src/components/layout/app-header.tsx",
+        "src/components/layout/page-header.tsx",
         "src/components/map/world-map.tsx",
         "src/components/products/product-fit-panel.tsx",
         "src/components/ui/button.tsx",
@@ -276,7 +277,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "5f6c5b5ab22426550b0310913a7619b6790f205e93b86b1a636b05b750259174",
+      "sourceFingerprint": "1f1a12730958b11b30cfda48e2c97031383e7557ff8e84abae641e0c5a23d4ef",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -284,12 +285,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-01T09:01:27.080Z",
+      "capturedAt": "2026-10-03T01:36:26.984Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "3c1dc037aa6d00665031f7060d3ec4753ed2ed5dec93f4042bd36fec40a72e35",
+      "sha256": "84d7ef2cbdff084a8d2804aff512c7b2f5d441d13a58c417d82e7e5cce9bcae1",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -395,6 +396,7 @@
         "src/components/i18n/locale-toggle.tsx",
         "src/components/knowledge/knowledge-debug-console.tsx",
         "src/components/layout/app-header.tsx",
+        "src/components/layout/page-header.tsx",
         "src/components/map/world-map.tsx",
         "src/components/products/product-fit-panel.tsx",
         "src/components/ui/button.tsx",
@@ -560,7 +562,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "4557b0d677b7419c62a3a659600043d3f281b5f1ce090d827a8f31de87716b3c",
+      "sourceFingerprint": "f8509008dbb87458532c1bff036fb90ec4613c8983d7a8b21b8740dac1b114ca",
       "viewport": {
         "height": 1000,
         "width": 1600

@@ -51,12 +51,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             >
               {dictionary.header.skipToContent}
             </a>
-            <div className="flex min-h-screen flex-col">
+            <div className="app-frame flex min-h-screen flex-col">
               <AppHeader />
               <div className="flex-1" id="main-content" tabIndex={-1}>
                 {children}
               </div>
-              <footer className="mt-6 border-t bg-card">
+              <footer className="mt-auto border-t">
                 <div className="page-shell flex flex-col gap-2 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm font-semibold text-foreground">
                     Global Diesel

@@ -47,14 +47,14 @@ export function GlobalErrorDocument({
         <title>{copy.heading}</title>
       </head>
       <body>
-        <main className="grid min-h-screen place-items-center bg-slate-950 px-6 py-16 text-white">
+        <main className="grid min-h-screen place-items-center bg-background px-6 py-16 text-foreground">
           <section
             aria-atomic="true"
             aria-labelledby="global-error-title"
-            className="w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8"
+            className="surface-panel w-full max-w-xl rounded-md border-t-4 border-t-destructive p-8"
             role="alert"
           >
-            <p className="text-sm font-semibold text-amber-300">
+            <p className="text-sm font-semibold text-destructive">
               {copy.kicker}
             </p>
             <h1
@@ -63,11 +63,11 @@ export function GlobalErrorDocument({
             >
               {copy.heading}
             </h1>
-            <p className="mt-4 text-sm leading-6 text-slate-300">
+            <p className="mt-4 text-sm leading-6 text-muted-foreground">
               {copy.body}
             </p>
             {error.digest ? (
-              <p className="mt-2 font-mono text-xs text-slate-400">
+              <p className="mt-2 font-mono text-xs text-muted-foreground">
                 {copy.code}{dictionary.common.labelSeparator}{error.digest}
               </p>
             ) : null}

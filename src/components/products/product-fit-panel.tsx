@@ -478,7 +478,7 @@ export function ProductFitPanel({
         aria-busy={
           productList.status === "loading" || evaluation.status === "loading"
         }
-        className="mt-3 grid min-w-0 gap-3 rounded-2xl border bg-card p-4"
+        className="mt-3 grid min-w-0 gap-3 rounded-md border bg-card p-4"
         data-testid="product-fit-form"
         data-vaul-no-drag
         onSubmit={(event) => {
@@ -501,7 +501,7 @@ export function ProductFitPanel({
               aria-atomic="true"
               aria-busy="true"
               aria-live="polite"
-              className="rounded-xl border bg-muted/30 px-3 py-3 text-xs text-muted-foreground"
+              className="rounded-md border bg-muted/30 px-3 py-3 text-xs text-muted-foreground"
               role="status"
             >
               {copy.loadingProducts}
@@ -520,7 +520,7 @@ export function ProductFitPanel({
 
                 return (
                   <label
-                    className={`flex min-h-14 min-w-0 cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                    className={`flex min-h-14 min-w-0 cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition-colors ${
                       selected
                         ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                         : "bg-background hover:border-primary/40"
@@ -660,7 +660,7 @@ export function ProductFitPanel({
         {productList.status === "error" ? (
           <div
             aria-atomic="true"
-            className="flex items-center justify-between gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-3"
+            className="flex items-center justify-between gap-3 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-3"
             data-testid="product-fit-catalog-error"
             role="alert"
           >
@@ -687,7 +687,7 @@ export function ProductFitPanel({
           <div
             aria-atomic="true"
             aria-live="polite"
-            className="rounded-xl border border-dashed bg-muted/40 p-3 text-xs text-muted-foreground"
+            className="rounded-md border border-dashed bg-muted/40 p-3 text-xs text-muted-foreground"
             data-testid="product-fit-empty-catalog"
             role="status"
           >
@@ -729,7 +729,7 @@ export function ProductFitPanel({
 
       {evaluation.status === "error" ? (
         <div
-          className="mt-3 rounded-2xl border border-destructive/25 bg-destructive/5 p-4 text-sm"
+          className="mt-3 rounded-md border border-destructive/25 bg-destructive/5 p-4 text-sm"
           role="alert"
         >
           <AlertCircle aria-hidden="true" className="size-4 text-destructive" />
@@ -774,7 +774,7 @@ function ProductFitResult({
     <div className="mt-3 space-y-3" data-testid="product-fit-result">
       <div
         aria-live="polite"
-        className={`rounded-2xl border p-4 ${presentation.className}`}
+        className={`rounded-md border p-4 ${presentation.className}`}
         data-testid={`product-fit-status-${evaluation.status}`}
         role="status"
       >
@@ -798,7 +798,7 @@ function ProductFitResult({
       </div>
 
       <div
-        className={`rounded-2xl border p-4 ${readiness.className}`}
+        className={`rounded-md border p-4 ${readiness.className}`}
         data-testid={`commercial-readiness-${evaluation.commercialReadiness}`}
       >
         <p className="font-semibold">{readinessLabel}</p>
@@ -844,7 +844,7 @@ function ProductFitResult({
 
       {evaluation.product ? (
         <div
-          className="rounded-2xl border bg-card p-4 text-xs"
+          className="rounded-md border bg-card p-4 text-xs"
           data-testid="product-record-trace"
         >
           <div className="flex items-start justify-between gap-3">
@@ -898,7 +898,7 @@ function ProductFitResult({
 
       {evaluation.regulationChecks.map((regulationCheck) => (
         <article
-          className="rounded-2xl border bg-card p-4"
+          className="rounded-md border bg-card p-4"
           key={regulationCheck.regulation.regulationId}
         >
           <div className="flex items-start justify-between gap-2">
@@ -1048,7 +1048,7 @@ function ProductFitResult({
             <div className="mt-3 space-y-2">
               {regulationCheck.certifications.map((certificationCheck) => (
                 <div
-                  className="rounded-xl bg-muted/60 p-3 text-xs"
+                  className="rounded-md bg-muted/60 p-3 text-xs"
                   key={certificationCheck.certification.id}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -1106,7 +1106,7 @@ function ProductFitResult({
               ))}
             </div>
           ) : (
-            <div className="mt-3 rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+            <div className="mt-3 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
               {copy.certificationMissing}
             </div>
           )}
@@ -1164,7 +1164,7 @@ function DataGapCopyAction({
   }
 
   return (
-    <div className="rounded-2xl border border-amber-300 bg-amber-50/60 p-4 text-xs text-amber-950">
+    <div className="rounded-md border border-amber-300 bg-amber-50/60 p-4 text-xs text-amber-950">
       <p className="font-semibold">{copy.dataGapTitle}</p>
       <p className="mt-1 leading-5">
         {copy.dataGapBody}
@@ -1200,7 +1200,7 @@ function TraceCheck({
   const { dictionary } = useLocale();
   const copy = dictionary.productFit;
   return (
-    <div className="rounded-xl bg-muted/60 p-3">
+    <div className="rounded-md bg-muted/60 p-3">
       <p className="font-semibold">
         {label} ·{" "}
         {status === "pass" ? copy.pass : status === "fail" ? copy.fail : copy.unknown}
@@ -1212,7 +1212,7 @@ function TraceCheck({
 
 function TraceValue({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-muted/60 p-3">
+    <div className="rounded-md bg-muted/60 p-3">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="mt-1 break-all font-medium">{value}</dd>
     </div>

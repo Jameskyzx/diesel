@@ -169,9 +169,8 @@ not a claim that all 178 countries have numerical diesel limits.
   参数、不重试、不降低证据门槛。真实回答人工复查发现一次严格程度方向错误，提示词
   升级 v8：法规对比逐项列值，不从孤立限值排名国家、不将缺失记录断言为不存在法规。
   提示词约束不等于正确性保证。此前失败报告原样保留；当前 expectedProviderProfile
-  指向本地候选，不表示现网已升级。v8/v5 完整 live eval 已运行：18 例全部执行，16 例
-  通过；37 次 provider 调用，100,834 tokens。两例缺少明确的业务结论文案，真实退出 1；
-  工具选择、参数、证据预期、语言与安全子指标均为 100%，回答 grounding 为 88.89%。
+  指向本地候选，不表示现网已升级。正式评估的执行身份、结果与 token 消耗
+  仅见上方规范台账及其归档；不在进度说明中重复记录或将失败结果称为通过。
   另以公开生产 API 的只读数据快照，经本地生产聊天循环和真实模型验证六个中英文示例，
   均完成一次工具调用与最终回答；这属于定向诊断，不替代正式评估或生产端到端验收。
 
@@ -1202,7 +1201,7 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   并保留现场，不自动 rollback，供人工前向修复。
   controller 不迁移 ledger、不 rollback/recover、不关闭 FD 8；publish/finalize 的两个 maintenance
   session、唯一 commit point 与锁释放窗口均未改变。该改动仍是本地待发布，不表示目标 VPS 已执行。
-- 当前中英文等价 system instruction 为 `sales-chat-system-v7`；来源标题和引用原文保持
+- 当前中英文等价 system instruction 为 `sales-chat-system-v8`；来源标题和引用原文保持
   原始语言；live eval 评分合同定义并版本化为 `sales-chat-live-v25`。v5 起还要求全部稳定事实/带极性决策/免责声明 anchor 与
   请求语言匹配；产品 ready 同时要求合规适配通过和供应就绪，否定候选不能借关键词通过。
   v6 强制远端 adapter 请求流式 usage，将每次模型调用的 retry 固定为 0；v7 再把单次输出

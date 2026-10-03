@@ -26,6 +26,22 @@ Tabler is MIT licensed; the upstream notice is preserved below.
   Empty, configured, error and completed responses retain their real states.
   The displayed context comes from the existing validated URL, not model memory.
 
+### Chat starter contract
+
+Starters send immediately through the same guarded submission path as the
+composer (including attachment validation, locale, cancellation and recovery).
+They are disabled while a request or file validation is pending. Browser tests
+cover the request body and rendered reply for all three starters in both locales
+on desktop and mobile; these mocked transport tests are not live-model evidence.
+
+The live entry points are CHN current regulations, CHN/JPN construction-equipment
+120 kW regulation comparison, and CHN market metrics/reporting periods. Generic
+non-road is not silently expanded to construction. The former AUS/CHN sales-brief
+starter was removed because its advertised scope lacked comparable real data;
+real products remain unpublished, and missing evidence must still fail closed.
+Unscoped regulatory status uses structured country profiles. Explicit requests
+for original documents continue to use knowledge retrieval.
+
 English and Chinese share this composition. Small screens use a top brand bar
 and three visible navigation links rather than hiding the primary routes. All
 controls remain keyboard accessible; the decorative engine icon is retained.

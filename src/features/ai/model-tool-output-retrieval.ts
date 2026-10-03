@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
+import { latestVerifiedAtFromCitations } from "@/features/ai/evidence-semantics";
 
 import {
   unwrapUntrustedKnowledgeExcerpt,
@@ -700,7 +701,7 @@ export function getCountryProfileResultToModelOutput(output: unknown) {
     citations,
     evidenceSufficient: result.evidenceSufficient,
     informationAsOf: result.informationAsOf,
-    latestVerifiedAt: result.latestVerifiedAt,
+    latestVerifiedAt: latestVerifiedAtFromCitations(selectedCitations),
     profile,
     projectionVersion: SALES_CHAT_MODEL_TOOL_OUTPUT_VERSION,
     requestedTopics: result.requestedTopics,

@@ -1594,7 +1594,11 @@ export function SalesChat({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const text = input.trim();
+    await submitText(input);
+  }
+
+  async function submitText(value: string) {
+    const text = value.trim();
     if (
       !text ||
       waiting ||
@@ -1698,13 +1702,10 @@ export function SalesChat({
               <div className="mt-5 grid gap-2">
                 {suggestedPrompts.map((prompt) => (
                   <button
-                    className="rounded-md border bg-card px-4 py-3 text-left text-sm leading-5 font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="rounded-md border bg-card px-4 py-3 text-left text-sm leading-5 font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!aiConfigured || waiting || recoveryPending || submissionPending || validatingAttachments}
                     key={prompt}
-                    onClick={() => {
-                      initialPromptPristineRef.current = false;
-                      setInput(prompt);
-                      inputRef.current?.focus();
-                    }}
+                    onClick={() => void submitText(prompt)}
                     type="button"
                   >
                     {prompt}

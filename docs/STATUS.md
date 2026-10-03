@@ -161,6 +161,15 @@ not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
 
+- 2026-10-03：收尾 PR #52 的 [CI run 37110918395](https://github.com/Jameskyzx/diesel/actions/runs/37110918395)
+  在八项检查通过后，被浏览器的 1 个 flaky 用例与最终门禁拒绝合并。
+  原运行记录 357 passed / 65 skipped / 1 flaky；移动端中文非模态键盘用例在
+  初始化语言偏好的 HTTP POST 时发生 `ECONNRESET`，尚未进入键盘断言，重试后通过
+  也未被当作可发布成功。原失败报告与 trace 保留。候选仅把该键盘夹具的初始语言
+  改为在独立 context 中直接设置权威 Cookie，并增加进入国家页时的 `<html lang>` 断言；
+  独立偏好接口、真实语言切换和原键盘断言保留，不改应用、重试或超时。
+  该夹具修正仍须重新采集完整浏览器和 Vitest 证据、通过正常 CI；现网不因此重发。
+
 - 2026-10-03 08:25 UTC：纵向工作台重构已随 `0668a2c`
   部署至 `diesel.jamesky.site`：固定桌面侧栏、独立工具栏、国家证据表、并排地图详情、
   聊天上下文与原创柴油机图标均已公网读回。获批限期安全记录、完整执行证据和

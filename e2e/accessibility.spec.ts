@@ -98,15 +98,25 @@ for (const locale of ["en", "zh-CN"] as const) {
 
 for (const locale of ["en", "zh-CN"] as const) {
   test(`keeps non-modal country navigation keyboard-accessible in ${locale}`, async ({
+    baseURL,
+    context,
     page,
   }, testInfo) => {
     const tabKey = testInfo.project.name === "core-webkit" ? "Alt+Tab" : "Tab";
-    // Each locale starts in a fresh browser context. Re-seeding the cookie in
-    // the previous iteration's still-streaming Home navigation can cause a
-    // locale refresh and WebKit's next hard navigation to race each other.
-    const response = await page.request.post("/api/preferences/locale", { data: { locale } });
-    expect(response.ok()).toBe(true);
+    if (!baseURL) {
+      throw new Error("Country accessibility tests require a configured base URL.");
+    }
+    // This test exercises keyboard navigation, not preference transport. Seed
+    // its authoritative cookie in the fresh context; real preference POSTs and
+    // user-driven language switches remain covered by locale.spec.ts.
+    await context.addCookies([{
+      name: "diesel_locale",
+      value: locale,
+      url: new URL("/", baseURL).toString(),
+      sameSite: "Lax",
+    }]);
     await page.goto("/countries/CHN");
+    await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await expect(page.getByTestId("country-detail")).toBeVisible();
     const drawer = page.getByRole("dialog");
     const home = page.getByRole("banner").getByRole("link", { name: brandHomeNames[locale], exact: true });

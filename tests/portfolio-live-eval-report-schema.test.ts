@@ -25,19 +25,20 @@ async function readLegacyV3Report(): Promise<Record<string, unknown>> {
 }
 
 describe("portfolio versioned live-eval report schema", () => {
-  it("accepts current v7 prompt provenance while preserving v6 history", () => {
+  it("accepts current v8 prompt provenance while preserving v6/v7 history", () => {
     const current = buildSyntheticLiveEvalReport({
       commit: "a".repeat(40), fingerprintDigest: "b".repeat(64), fingerprintFileCount: 1,
     });
-    expect(liveEvalReportSchema.parse(current).provenance.promptVersion).toBe("sales-chat-system-v7");
+    expect(liveEvalReportSchema.parse(current).provenance.promptVersion).toBe("sales-chat-system-v8");
+    expect(liveEvalReportSchema.parse({ ...current, provenance: { ...current.provenance, promptVersion: "sales-chat-system-v7" } }).provenance.promptVersion).toBe("sales-chat-system-v7");
     const historical = { ...current, provenance: { ...current.provenance, promptVersion: "sales-chat-system-v6" } };
     expect(liveEvalReportSchema.parse(historical).provenance.promptVersion).toBe("sales-chat-system-v6");
     expect(liveEvalReportSchema.safeParse({
-      ...current, provenance: { ...current.provenance, promptVersion: "sales-chat-system-v8" },
+      ...current, provenance: { ...current.provenance, promptVersion: "sales-chat-system-v9" },
     }).success).toBe(false);
   });
 
-  it.each([2, 3, 4])("retains v1 profiles and admits only non-thinking provider v%i profiles", (version) => {
+  it.each([2, 3, 4, 5])("retains v1 profiles and admits only non-thinking provider v%i profiles", (version) => {
     const profile = {
       adapter: "@ai-sdk/openai-compatible",
       adapterContractVersion: version,
@@ -48,7 +49,7 @@ describe("portfolio versioned live-eval report schema", () => {
     expect(liveEvalProviderProfileSchema.safeParse(profile).success).toBe(true);
     expect(liveEvalProviderProfileSchema.safeParse({ ...profile, adapterContractVersion: 1 }).success).toBe(true);
     for (const invalid of [
-      { ...profile, adapterContractVersion: 5 },
+      { ...profile, adapterContractVersion: 6 },
       { ...profile, enableThinking: true },
       { ...profile, enableThinking: null },
       { ...profile, adapter: "portfolio-demo", endpointSha256: null, enableThinking: null, includeUsage: false },

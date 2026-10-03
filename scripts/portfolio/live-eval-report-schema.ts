@@ -39,7 +39,8 @@ const liveEvalV24Version = "sales-chat-live-v24" as const;
 const liveEvalV25Version: "sales-chat-live-v25" =
   SALES_CHAT_LIVE_EVAL_VERSION;
 const salesChatSystemPromptV6 = "sales-chat-system-v6" as const;
-const salesChatSystemPromptV7: "sales-chat-system-v7" =
+const salesChatSystemPromptV7 = "sales-chat-system-v7" as const;
+const salesChatSystemPromptV8: "sales-chat-system-v8" =
   SALES_CHAT_SYSTEM_PROMPT_VERSION;
 
 const gitShaSchema = z.string().regex(/^[0-9a-f]{40}$/);
@@ -114,7 +115,7 @@ const sourceFingerprintSchema = z.discriminatedUnion("status", [
 ]);
 export const liveEvalProviderProfileSchema = z.object({
   adapter: z.enum(["@ai-sdk/openai-compatible", "portfolio-demo"]),
-  adapterContractVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  adapterContractVersion: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
   enableThinking: z.boolean().nullable(),
   endpointSha256: z.string().regex(/^[0-9a-f]{64}$/u).nullable(),
   includeUsage: z.boolean(),
@@ -143,6 +144,7 @@ const currentProvenanceSchema = legacyProvenanceSchema.extend({
     z.literal("sales-chat-system-v5"),
     z.literal(salesChatSystemPromptV6),
     z.literal(salesChatSystemPromptV7),
+    z.literal(salesChatSystemPromptV8),
   ]),
   providerProfile: liveEvalProviderProfileSchema.nullable(),
 }).strict();

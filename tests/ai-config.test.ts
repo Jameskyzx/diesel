@@ -192,7 +192,7 @@ describe("server AI configuration", () => {
       includeUsage: true,
     });
     expect(providerProfile).toMatchObject({
-      adapterContractVersion: 4,
+      adapterContractVersion: 5,
       enableThinking: false,
       includeUsage: true,
     });
@@ -220,6 +220,10 @@ describe("server AI configuration", () => {
     expect(body).not.toHaveProperty("parallel_tool_calls");
     expect(body).toMatchObject({ messages: [
       { role: "system", content: expect.stringContaining("invoke the named tool exactly once") },
+      { role: "user", content: "usage request contract" },
+    ] });
+    expect(body).toMatchObject({ messages: [
+      { role: "system", content: expect.stringContaining("Function arguments must be a single valid JSON object.") },
       { role: "user", content: "usage request contract" },
     ] });
   });

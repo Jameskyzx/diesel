@@ -1,0 +1,1049 @@
+{
+  "version": "diesel-chat-starter-release-observation-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "release": "e5c3249f067692a483d4133a313bd5883b166642",
+  "origin": "https://diesel.jamesky.site",
+  "observedAt": "2026-10-03T22:02:47.911Z",
+  "outcome": {
+    "hostDeployment": "passed",
+    "starterExecutionAndRendering": "passed",
+    "syntheticCanaryAcceptance": "passed",
+    "publicRuntimeAcceptance": "passed",
+    "fullModelQualityClaimed": false
+  },
+  "originalForegroundConnection": [
+    {
+      "release": "e5c3249f067692a483d4133a313bd5883b166642",
+      "mode": "orchestrate",
+      "startedAt": "2026-10-03T20:25:12.048Z",
+      "completedAt": "2026-10-03T21:59:23.616Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false
+    },
+    {
+      "release": "e5c3249f067692a483d4133a313bd5883b166642",
+      "mode": "verify",
+      "startedAt": "2026-10-03T21:59:54.006Z",
+      "completedAt": "2026-10-03T22:00:06.213Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false
+    },
+    {
+      "release": "e5c3249f067692a483d4133a313bd5883b166642",
+      "mode": "ledger",
+      "startedAt": "2026-10-03T21:59:59.737Z",
+      "completedAt": "2026-10-03T22:00:00.952Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false
+    },
+    {
+      "release": "e5c3249f067692a483d4133a313bd5883b166642",
+      "mode": "canary",
+      "startedAt": "2026-10-03T22:00:20.906Z",
+      "completedAt": "2026-10-03T22:00:32.623Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false
+    }
+  ],
+  "stage": {
+    "release": "e5c3249f067692a483d4133a313bd5883b166642",
+    "startedAt": "2026-10-03T20:22:51.082Z",
+    "completedAt": "2026-10-03T20:23:31.217Z",
+    "exitCode": 0,
+    "signal": null,
+    "spawnFailed": false,
+    "source": "exact committed docs/DEPLOYMENT.md section 4.2 first bash block"
+  },
+  "environment": {
+    "observedAt": "2026-10-03T20:24:36.671Z",
+    "release": "e5c3249f067692a483d4133a313bd5883b166642",
+    "verified": {
+      "ok": true,
+      "release": "e5c3249f067692a483d4133a313bd5883b166642",
+      "liveEnvironmentUnchanged": true,
+      "candidateByteIdentical": true,
+      "modelConfigurationChanged": false,
+      "databaseIdentityPreserved": true
+    },
+    "exitCode": 0,
+    "signal": null,
+    "pass": true
+  },
+  "ci": [
+    {
+      "readOnly": true,
+      "startedAt": "2026-10-03T18:55:30.741Z",
+      "completedAt": "2026-10-03T19:43:03.123Z",
+      "pass": true,
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 37145990784,
+      "event": "pull_request",
+      "headSha": "d7729b4dd7d19b0f73964235744f939be5500bd8",
+      "jobs": [
+        {
+          "name": "PostgreSQL + pgvector migration smoke",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Secret scanning (gitleaks)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Dependency and workflow supply-chain audit",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Lint, typecheck, app coverage, build",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux deployment script contracts",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Portfolio demo via pnpm demo",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Playwright key flows",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Failure-first FDE workflow via pnpm demo:fde",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux release handoff (systemd cgroup + real build)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Required CI gate",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/Jameskyzx/diesel/actions/runs/37145990784/attempts/1"
+    },
+    {
+      "readOnly": true,
+      "startedAt": "2026-10-03T19:45:02.319Z",
+      "completedAt": "2026-10-03T20:22:16.961Z",
+      "pass": true,
+      "attempt": 1,
+      "conclusion": "success",
+      "databaseId": 37148932050,
+      "event": "push",
+      "headSha": "e5c3249f067692a483d4133a313bd5883b166642",
+      "jobs": [
+        {
+          "name": "Linux deployment script contracts",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Secret scanning (gitleaks)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Lint, typecheck, app coverage, build",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Dependency and workflow supply-chain audit",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "PostgreSQL + pgvector migration smoke",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Portfolio demo via pnpm demo",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Playwright key flows",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux release handoff (systemd cgroup + real build)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Failure-first FDE workflow via pnpm demo:fde",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Required CI gate",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/Jameskyzx/diesel/actions/runs/37148932050/attempts/1"
+    }
+  ],
+  "publication": {
+    "completed": 97,
+    "expected": 97,
+    "failed": 0,
+    "countries": [
+      "CRI",
+      "ECU",
+      "PAN",
+      "DOM",
+      "PHL",
+      "PAK",
+      "SAU",
+      "ARE",
+      "ISR",
+      "ZAF",
+      "EGY",
+      "GHA",
+      "KEN",
+      "RWA",
+      "TZA",
+      "ZMB",
+      "ZWE",
+      "CIV",
+      "DZA",
+      "TUN",
+      "ETH",
+      "CMR",
+      "SEN",
+      "NGA",
+      "UGA",
+      "BWA",
+      "NAM",
+      "SWZ",
+      "KHM",
+      "LAO",
+      "LKA",
+      "MMR",
+      "MNG",
+      "LIE",
+      "SGP",
+      "MAR",
+      "QAT",
+      "KWT",
+      "OMN",
+      "JOR",
+      "IRN",
+      "IRQ",
+      "LBN",
+      "SYR",
+      "GUY",
+      "HTI",
+      "JAM",
+      "BLZ",
+      "CUB",
+      "LBR",
+      "LBY",
+      "MLI",
+      "MRT",
+      "NER",
+      "GTM",
+      "HND",
+      "NIC",
+      "PRY",
+      "URY",
+      "PRK",
+      "PSE",
+      "SDN",
+      "PRI",
+      "NCL",
+      "ERI",
+      "GAB",
+      "GMB",
+      "GNB",
+      "GNQ",
+      "MOZ",
+      "LSO",
+      "MDG",
+      "MUS",
+      "FJI",
+      "CAF",
+      "COD",
+      "COG",
+      "GIN",
+      "DJI",
+      "AUS",
+      "PNG",
+      "BRN",
+      "BTN",
+      "SLB",
+      "TLS",
+      "MWI",
+      "SLE",
+      "SOM",
+      "SSD",
+      "TCD",
+      "SLV",
+      "SUR",
+      "TTO",
+      "CAN",
+      "USA",
+      "CHN",
+      "MLT"
+    ],
+    "scope": "Existing accepted publication set; no schema, dependency, fixture or approval-manifest additions."
+  },
+  "releaseSnapshot": {
+    "startedAt": "2026-10-03T22:02:44.573Z",
+    "observedAt": "2026-10-03T22:02:47.911Z",
+    "localMaster": "e5c3249f067692a483d4133a313bd5883b166642",
+    "remoteMaster": "e5c3249f067692a483d4133a313bd5883b166642",
+    "httpStatus": 200,
+    "status": "ok",
+    "version": "e5c3249f067692a483d4133a313bd5883b166642",
+    "pass": true
+  },
+  "finalState": {
+    "readOnly": true,
+    "observedAt": "2026-10-03T22:00:49.880Z",
+    "release": "e5c3249f067692a483d4133a313bd5883b166642",
+    "current": "/opt/diesel/releases/e5c3249f067692a483d4133a313bd5883b166642",
+    "protocolUnchanged": true,
+    "services": [
+      {
+        "name": "jamesky-api",
+        "pid": 1554881,
+        "status": "online",
+        "restarts": 0,
+        "version": null
+      },
+      {
+        "name": "diesel-demo",
+        "pid": 3817195,
+        "status": "online",
+        "restarts": 0,
+        "version": "e5c3249f067692a483d4133a313bd5883b166642"
+      }
+    ],
+    "checks": [
+      {
+        "origin": "http://127.0.0.1:8788",
+        "route": "/api/health",
+        "httpStatus": 200,
+        "durationMs": 57,
+        "status": "ok",
+        "version": "e5c3249f067692a483d4133a313bd5883b166642",
+        "checks": {}
+      },
+      {
+        "origin": "http://127.0.0.1:8788",
+        "route": "/api/health/ready",
+        "httpStatus": 200,
+        "durationMs": 277,
+        "status": "ok",
+        "version": "e5c3249f067692a483d4133a313bd5883b166642",
+        "checks": {
+          "aiChatAdmission": "ok",
+          "aiChatRateLimit": "ok",
+          "database": "ok"
+        }
+      },
+      {
+        "origin": "https://diesel.jamesky.site",
+        "route": "/api/health",
+        "httpStatus": 200,
+        "durationMs": 29,
+        "status": "ok",
+        "version": "e5c3249f067692a483d4133a313bd5883b166642",
+        "checks": {}
+      },
+      {
+        "origin": "https://diesel.jamesky.site",
+        "route": "/api/health/ready",
+        "httpStatus": 200,
+        "durationMs": 278,
+        "status": "ok",
+        "version": "e5c3249f067692a483d4133a313bd5883b166642",
+        "checks": {
+          "aiChatAdmission": "ok",
+          "aiChatRateLimit": "ok",
+          "database": "ok"
+        }
+      }
+    ],
+    "ledgerNames": [
+      "HOST_ACTIVATION_COMMITTED",
+      "HOST_ACTIVATION_V1",
+      "PUBLISH_FINALIZED",
+      "diesel-demo.pre-switch",
+      "env.production.local.pre-switch",
+      "governance-after-rehearsal.json",
+      "governance-before.json",
+      "jamesky.site.pre-switch",
+      "previous-release",
+      "validate-public-governance.sh"
+    ],
+    "pass": true
+  },
+  "publicBoundary": {
+    "readOnly": true,
+    "observedAt": "2026-10-03T22:00:26.283Z",
+    "checks": [
+      {
+        "kind": "redirect",
+        "origin": "http://111.228.50.85",
+        "status": 301,
+        "location": "https://diesel.jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "redirect",
+        "origin": "http://diesel.jamesky.site",
+        "status": 301,
+        "location": "https://diesel.jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "blog-redirect",
+        "origin": "http://jamesky.site",
+        "status": 301,
+        "location": "https://jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "blog-redirect",
+        "origin": "http://www.jamesky.site",
+        "status": 301,
+        "location": "https://jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "blog-redirect",
+        "origin": "https://www.jamesky.site",
+        "status": 301,
+        "location": "https://jamesky.site/map?country=CHN&scope=construction",
+        "pass": true
+      },
+      {
+        "kind": "blog-home",
+        "origin": "https://jamesky.site/",
+        "status": 200,
+        "sha256": "56e6b252580d4998e210093450a0712fc48ee1c040b0c4a6abb00e05a1403bf8",
+        "deployedSha256": "56e6b252580d4998e210093450a0712fc48ee1c040b0c4a6abb00e05a1403bf8",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/admin",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/admin/users",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/api/admin",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/dev",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      },
+      {
+        "kind": "internal-route",
+        "path": "/api/dev",
+        "status": 404,
+        "hsts": "max-age=31536000",
+        "pass": true
+      }
+    ],
+    "pass": true,
+    "publicationCompletionClaimed": false
+  },
+  "syntheticCanary": {
+    "checkedAt": "2026-10-03T22:00:32.574Z",
+    "expectedVersion": "e5c3249f067692a483d4133a313bd5883b166642",
+    "includeProviderAi": true,
+    "pass": true,
+    "results": [
+      {
+        "durationMs": 120,
+        "errorCode": null,
+        "id": "liveness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/live",
+        "requestId": "cf5157cd-db06-4b6e-9e17-78c39dc682d1",
+        "status": 200
+      },
+      {
+        "durationMs": 297,
+        "errorCode": null,
+        "id": "readiness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/ready",
+        "requestId": "0c07b0c5-289d-4b8b-b659-910dd2120300",
+        "status": 200
+      },
+      {
+        "durationMs": 1789,
+        "errorCode": null,
+        "id": "country-decision-summary",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-03",
+        "requestId": "c780971b-366e-4a6f-88cc-a59e85ee1dcf",
+        "status": 200
+      },
+      {
+        "durationMs": 980,
+        "errorCode": null,
+        "id": "country-decision-no-data",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-03",
+        "requestId": "d4910ff4-b50e-418f-9a6b-b80bb73ce376",
+        "status": 200
+      },
+      {
+        "durationMs": 104,
+        "errorCode": null,
+        "id": "public-products",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/products",
+        "requestId": "f1d80892-a7c3-4e64-bdd4-8cd479ebbd60",
+        "status": 200
+      },
+      {
+        "durationMs": 687,
+        "errorCode": null,
+        "id": "chat-direct-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "9553f4c4-d09c-46d1-8bf6-f244ad0872ef",
+        "status": 200
+      },
+      {
+        "durationMs": 5888,
+        "errorCode": null,
+        "id": "chat-provider-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "25a4a297-e978-47a5-a85b-f5fa418bdeb2",
+        "status": 200
+      }
+    ],
+    "runError": null,
+    "targetOrigin": "https://diesel.jamesky.site",
+    "version": "synthetic-canary-v4"
+  },
+  "publicUiReadback": {
+    "observedAt": "2026-10-03T21:57:04.936Z",
+    "release": "e5c3249f067692a483d4133a313bd5883b166642",
+    "origin": "https://diesel.jamesky.site",
+    "checks": [
+      {
+        "name": "health-version",
+        "status": 200,
+        "version": "e5c3249f067692a483d4133a313bd5883b166642",
+        "pass": true
+      },
+      {
+        "name": "home-desktop",
+        "path": "/",
+        "locale": "en",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 88,
+          "width": 240,
+          "height": 912
+        },
+        "toolbar": {
+          "x": 240,
+          "y": 0,
+          "width": 1200,
+          "height": 64
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "308123384c214ad38f8a65a1605dc706169c03735d28f276037c9d03f9a7226c",
+        "screenshotArtifact": "home-desktop.png"
+      },
+      {
+        "name": "map-desktop",
+        "path": "/map",
+        "locale": "en",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 88,
+          "width": 240,
+          "height": 912
+        },
+        "toolbar": {
+          "x": 240,
+          "y": 0,
+          "width": 1200,
+          "height": 64
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "c6cca4f29c4b2b42091714ae7390a851ef798814a58ccfbf5dcc8cef3083fe0f",
+        "screenshotArtifact": "map-desktop.png"
+      },
+      {
+        "name": "country-desktop",
+        "path": "/countries/CHN?applicationScope=construction&powerKw=100",
+        "locale": "en",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 88,
+          "width": 240,
+          "height": 912
+        },
+        "toolbar": {
+          "x": 240,
+          "y": 0,
+          "width": 1200,
+          "height": 64
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "a8132c12de0607cb6d630204ba5c6fafe59c0947f23a0c2f05f39bc8089bec1d",
+        "screenshotArtifact": "country-desktop.png"
+      },
+      {
+        "name": "chat-desktop",
+        "path": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-01-20",
+        "locale": "en",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 88,
+          "width": 240,
+          "height": 912
+        },
+        "toolbar": {
+          "x": 240,
+          "y": 0,
+          "width": 1200,
+          "height": 64
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "febc8c0c846986fe053e330780d158745426f0397fc4fe6b017936474603fa02",
+        "screenshotArtifact": "chat-desktop.png"
+      },
+      {
+        "name": "home-mobile",
+        "path": "/",
+        "locale": "zh-CN",
+        "viewport": {
+          "width": 320,
+          "height": 900
+        },
+        "status": 200,
+        "navigation": {
+          "x": 0,
+          "y": 64,
+          "width": 320,
+          "height": 45
+        },
+        "toolbar": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 110
+        },
+        "horizontalOverflow": false,
+        "iconLoaded": true,
+        "pass": true,
+        "screenshotSha256": "5b9bd6652aea4b4e002fe7385351ca97260e5188217c946e506d04fd8c03b490",
+        "screenshotArtifact": "home-mobile.png"
+      },
+      {
+        "name": "mobile-locale-switch",
+        "path": "/?releaseCheck=workspace",
+        "bothDirections": true,
+        "refreshPersisted": true,
+        "pathAndQueryPreserved": true,
+        "pass": true
+      }
+    ],
+    "failure": null,
+    "pass": true
+  },
+  "starterReadback": {
+    "release": "e5c3249f067692a483d4133a313bd5883b166642",
+    "origin": "https://diesel.jamesky.site",
+    "observedAt": "2026-10-03T21:54:37.874Z",
+    "captureMethod": "Browser fetch response clone, fatal UTF-8 decoder; original response returned unchanged to application; original CDP capture failure retained.",
+    "scope": "Real production starter clicks, request identity, SSE, evidence and rendered completion; answer text still requires human review.",
+    "records": [
+      {
+        "locale": "zh-CN",
+        "kind": "regulations",
+        "prompt": "CHN 目前有哪些有效法规？",
+        "startedAt": "2026-10-03T21:53:42.907Z",
+        "responseCompletedAt": "2026-10-03T21:53:52.440Z",
+        "completedAt": "2026-10-03T21:53:52.558Z",
+        "requestCount": 1,
+        "httpStatus": 200,
+        "completeStream": true,
+        "evidenceArtifact": "zh-CN-regulations-evidence.json",
+        "tools": [
+          "getCountryProfile"
+        ],
+        "outputs": [
+          {
+            "status": "ok",
+            "evidenceSufficient": true,
+            "citations": 15
+          }
+        ],
+        "errors": [],
+        "text": "截至 2026-10-03，中国（CHN）本次查询返回两项状态为“已生效”的柴油机排放法规，均由生态环境部（MEE）作为适用辖区，未返回已采纳但尚未生效的法规。\n\n关键证据\n- GB 17691-2018《重型柴油车污染物排放限值及测量方法（中国第六阶段）》：状态为已生效，2018-06-22 通过，2019-07-01 起生效，无终止日期。\n- GB 20891-2014《非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单》：状态为已生效，2014-05-16 通过，2014-10-01 起生效，无终止日期。\n- 适用辖区：中华人民共和国生态环境部（MEE），成员关系自 2000-01-01 起持续有效。\n- 本次查询未返回各法规的具体污染物限值、单位、测试循环或功率区间，因此无法据此判断某款产品是否合规。\n\n风险与缺口\n本次结果只覆盖法规状态与适用辖区，未包含限值细节；如需逐项限值或原文页码，需另行检索法规原文。信息参考，不替代正式认证或法律意见。\n\n下一步\n请告知目标车型（重型道路车辆或非道路机械）及功率段，我可进一步核对对应法规的限值要求与产品适配情况。\n\n来源\n- “GB 17691-2018 重型柴油车污染物排放限值及测量方法（中国第六阶段）”，locator：GB 17691-2018，https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201807/t20180703_445995.shtml\n- “GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单”，locator：GB 20891-2014，https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201405/t20140530_276305.shtml\n- “HJ 1014-2020 非道路柴油移动机械污染物排放控制技术要求”，locator：CN-MEE，https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/202012/t20201231_815684.shtml\n\n证据评估日期：2026-10-03。",
+        "executionPassed": true,
+        "rendered": true,
+        "pass": true,
+        "evidenceSha256": "08b6c9543fafed2160a2d463e0917223bc286efaae0036f2541ca9b5d9400181",
+        "screenshotArtifact": "zh-CN-regulations.png",
+        "screenshotSha256": "60018774f9115cf7378295659186b641808f5630a09c8257fc33db31474d0b79",
+        "inputs": [
+          {
+            "toolName": "getCountryProfile",
+            "input": {
+              "asOf": "2026-10-03",
+              "countryIso3": "CHN",
+              "topics": [
+                "regulations"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "locale": "zh-CN",
+        "kind": "comparison",
+        "prompt": "比较 CHN 和 JPN 的工程机械 120 kW 排放要求。",
+        "startedAt": "2026-10-03T21:53:52.561Z",
+        "responseCompletedAt": "2026-10-03T21:54:01.358Z",
+        "completedAt": "2026-10-03T21:54:01.434Z",
+        "requestCount": 1,
+        "httpStatus": 200,
+        "completeStream": true,
+        "evidenceArtifact": "zh-CN-comparison-evidence.json",
+        "tools": [
+          "compareRegulations"
+        ],
+        "outputs": [
+          {
+            "status": "ok",
+            "evidenceSufficient": true,
+            "citations": 17
+          }
+        ],
+        "errors": [],
+        "text": "本次比较的是中国与日本工程机械用 120 kW 柴油机的现行排放要求：两国在 56–130 kW（中国）和 75–130 kW（日本）功率段均有已生效法规，但污染物项目定义不同，不能直接等同或据此判断产品能否合规。\n\n关键证据（截至 2026-10-03，最近核验 2026-08-11）\n\n中国 — GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单，状态：已生效，适用 56–130 kW，限值自 2022-12-01 起：\n- CO 5.000000 g/kWh\n- HC 0.190000 g/kWh\n- NOX 3.300000 g/kWh\n- PM 0.025000 g/kWh\n- PN 5000.000000 e9/kWh\n\n日本 — オフロード法 平成26年（2014年）ディーゼル特殊自動車排出ガス基準，状态：已生效，适用 75–130 kW，限值自 2015-10-01 起：\n- CO 5.000000 g/kWh\n- NMHC 0.190000 g/kWh\n- NOX 0.400000 g/kWh\n- PM 0.020000 g/kWh\n\n风险与缺口：中国列 HC，日本列 NMHC，两者定义不同；中国另有 PN 限值，日本本次未返回 PN 记录；两国测试循环与功率区间划分也可能不同，因此上述数值不可直接横向比较，也不能从孤立数值推断某台 120 kW 机型是否合规。本次查询未返回日本 PN 限值记录，不代表日本不设该限值。\n\n下一步：如需确认具体机型能否满足目标市场，请提供机型与目标国家，我可另行核对产品适配与认证要求。\n\n信息参考，不替代正式认证或法律意见。\n\n来源：\n- \"GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单\"（locator: GB 20891-2014，https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201405/t20140530_276305.shtml）\n- \"特定特殊自動車排出ガスの規制等に関して必要な事項を定める告示（平成十八年三省告示第一号、最終改正令和六年三省告示第四号）\"（locator: 平成26年三省告示第1号（2014年基準），https://www.env.go.jp/content/000398439.pdf）\n\n证据评估日期：2026-10-03。",
+        "executionPassed": true,
+        "rendered": true,
+        "pass": true,
+        "evidenceSha256": "c734983cd11af16428ed386c830fcec83a57945b77c0c35f3244fa09895dd932",
+        "screenshotArtifact": "zh-CN-comparison.png",
+        "screenshotSha256": "07e6ade05c2f5eb09de2019ad8c1f58ced3f1b28a25bebbf767e1a4824a5573d",
+        "inputs": [
+          {
+            "toolName": "compareRegulations",
+            "input": {
+              "applicationScope": "construction",
+              "asOf": "2026-10-03",
+              "countryIso3s": [
+                "CHN",
+                "JPN"
+              ],
+              "powerKw": 120
+            }
+          }
+        ]
+      },
+      {
+        "locale": "zh-CN",
+        "kind": "market",
+        "prompt": "查看 CHN 的市场指标及数据时间。",
+        "startedAt": "2026-10-03T21:54:01.436Z",
+        "responseCompletedAt": "2026-10-03T21:54:10.489Z",
+        "completedAt": "2026-10-03T21:54:10.545Z",
+        "requestCount": 1,
+        "httpStatus": 200,
+        "completeStream": true,
+        "evidenceArtifact": "zh-CN-market-evidence.json",
+        "tools": [
+          "getCountryProfile"
+        ],
+        "outputs": [
+          {
+            "status": "ok",
+            "evidenceSufficient": true,
+            "citations": 15
+          }
+        ],
+        "errors": [],
+        "text": "中国（CHN）本次查询返回的市场指标为年末注册车队存量及其同比变化，覆盖道路货运车辆和道路客运车辆两类，数据期截至 2024 年 1 月 1 日。\n\n关键证据（数据期 2023-01-01 至 2024-01-01，单位与数值均按工具原值）：\n- 道路货运车辆（on-road-truck）年末注册车队：33,589,400 vehicle；同比变化 +1.244556%。\n- 道路客运车辆（on-road-bus）年末注册车队：2,010,900 vehicle；同比变化 -4.005156%。\n- 上一期（2022-01-01 至 2023-01-01）年末注册车队：货运 33,176,500 vehicle；客运 2,094,800 vehicle。\n- 口径说明：货运为载货汽车合计，客运为大型载客汽车与中型载客汽车之和；原表单位为万辆，已换算为辆。\n\n风险与缺口：以上仅为年末注册存量指标，不含销量、保有量结构、排放阶段分布或非道路数据；同比变化为按两期观察值确定性计算，非官方直接发布值。数据信息时点为 2026-10-03，最近核验时间为 2026-08-03。\n\n下一步：如需评估中国市场的法规要求或产品适配，请提供目标污染物/法规范围与功率区间，我再单独取证。\n\n来源：\n- \"World country directory — Natural Earth (public domain)\"（https://www.naturalearthdata.com/，位置 CHN）\n- \"中国统计年鉴 2024 表 16-20 民用汽车拥有量\"（https://www.stats.gov.cn/sj/ndsj/2024/left.htm，位置 market_period 2023-01-01 至 2024-01-01）\n\n信息参考，不替代正式认证或法律意见。\n\n证据评估日期：2026-10-03。",
+        "executionPassed": true,
+        "rendered": true,
+        "pass": true,
+        "evidenceSha256": "a8c98cd3371b2065288d8a4517619ac3043dccda065429b5f7019e8fd8c4a2b1",
+        "screenshotArtifact": "zh-CN-market.png",
+        "screenshotSha256": "e2d334937538f9255f3830c81c61138df99aa4652443627a6104b2d29ff9a336",
+        "inputs": [
+          {
+            "toolName": "getCountryProfile",
+            "input": {
+              "asOf": "2026-10-03",
+              "countryIso3": "CHN",
+              "topics": [
+                "market"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "locale": "en",
+        "kind": "regulations",
+        "prompt": "Which regulations are currently effective in CHN?",
+        "startedAt": "2026-10-03T21:54:10.547Z",
+        "responseCompletedAt": "2026-10-03T21:54:20.304Z",
+        "completedAt": "2026-10-03T21:54:20.383Z",
+        "requestCount": 1,
+        "httpStatus": 200,
+        "completeStream": true,
+        "evidenceArtifact": "en-regulations-evidence.json",
+        "tools": [
+          "getCountryProfile"
+        ],
+        "outputs": [
+          {
+            "status": "ok",
+            "evidenceSufficient": true,
+            "citations": 15
+          }
+        ],
+        "errors": [],
+        "text": "As of 2026-10-03, China (CHN) has two diesel-engine emission regulations recorded as currently effective, both under the jurisdiction of 中华人民共和国生态环境部（MEE）.\n\nKey evidence:\n- \"GB 17691-2018 重型柴油车污染物排放限值及测量方法（中国第六阶段）\" — citation code GB 17691-2018, adopted 2018-06-22, effective from 2019-07-01, no end date recorded.\n- \"GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单\" — citation code GB 20891-2014, adopted 2014-05-16, effective from 2014-10-01, no end date recorded.\n- No future-adopted (not yet effective) regulations were returned for CHN in this query.\n\nRisk/gap: this query returned only the two regulations above; it does not confirm that no other Chinese diesel regulations exist, and no pollutant limits, test cycles or power bands were returned here. For information only; not a substitute for formal certification or legal advice.\n\nNext step: if you need the specific pollutant limits or measurement methods, request the original text or sections for GB 17691-2018 and GB 20891-2014.\n\nSources:\n- \"GB 17691-2018 重型柴油车污染物排放限值及测量方法（中国第六阶段）\" — https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201807/t20180703_445995.shtml\n- \"GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单\" — https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201405/t20140530_276305.shtml\n- \"HJ 1014-2020 非道路柴油移动机械污染物排放控制技术要求\" — https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/202012/t20201231_815684.shtml\n\nEvidence as-of date: 2026-10-03.",
+        "executionPassed": true,
+        "rendered": true,
+        "pass": true,
+        "evidenceSha256": "08b6c9543fafed2160a2d463e0917223bc286efaae0036f2541ca9b5d9400181",
+        "screenshotArtifact": "en-regulations.png",
+        "screenshotSha256": "2f8d6c247f268f1cf190a9d3363a9286a033fe38c104f02857d12fea6708be1e",
+        "inputs": [
+          {
+            "toolName": "getCountryProfile",
+            "input": {
+              "asOf": "2026-10-03",
+              "countryIso3": "CHN",
+              "topics": [
+                "regulations"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "locale": "en",
+        "kind": "comparison",
+        "prompt": "Compare construction equipment 120 kW emissions requirements in CHN and JPN.",
+        "startedAt": "2026-10-03T21:54:20.385Z",
+        "responseCompletedAt": "2026-10-03T21:54:28.080Z",
+        "completedAt": "2026-10-03T21:54:28.142Z",
+        "requestCount": 1,
+        "httpStatus": 200,
+        "completeStream": true,
+        "evidenceArtifact": "en-comparison-evidence.json",
+        "tools": [
+          "compareRegulations"
+        ],
+        "outputs": [
+          {
+            "status": "ok",
+            "evidenceSufficient": true,
+            "citations": 17
+          }
+        ],
+        "errors": [],
+        "text": "For 120 kW construction equipment, the regulatory requirements comparison returned effective standards for both China and Japan, with different pollutant sets and limit values.\n\n**Key evidence (asOf 2026-10-03; latest verification 2026-08-11)**\n- China — \"GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单\" (effective from 2014-10-01; limits valid from 2022-12-01, 56–130 kW): CO 5.0 g/kWh; HC 0.19 g/kWh; NOX 3.3 g/kWh; PM 0.025 g/kWh; PN 5000 e9/kWh.\n- Japan — \"オフロード法 平成26年（2014年）ディーゼル特殊自動車排出ガス基準\" (effective from 2014-10-01; limits valid from 2015-10-01, 75–130 kW): CO 5.0 g/kWh; NMHC 0.19 g/kWh; NOX 0.4 g/kWh; PM 0.02 g/kWh.\n- Both records are marked effective; no future adopted standards were returned for either country.\n\n**Risks/gaps**\nThe two regimes use different pollutant definitions (China reports HC and PN; Japan reports NMHC and no PN), different power bands, and potentially different test cycles, so the numbers are not directly interchangeable and no stricter/weaker ranking is implied. An absent pollutant record means only that it was not returned by this query, not that no limit exists.\n\n**Next step**\nConfirm the exact test cycle and engine category for your 120 kW machine, then run a product compatibility check against each standard.\n\nFor information only; not a substitute for formal certification or legal advice.\n\nSources:\n- \"GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单\" — https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201405/t20140530_276305.shtml\n- \"特定特殊自動車排出ガスの規制等に関して必要な事項を定める告示（平成十八年三省告示第一号、最終改正令和六年三省告示第四号）\" — https://www.env.go.jp/content/000398439.pdf\n\nEvidence as-of date: 2026-10-03.",
+        "executionPassed": true,
+        "rendered": true,
+        "pass": true,
+        "evidenceSha256": "c734983cd11af16428ed386c830fcec83a57945b77c0c35f3244fa09895dd932",
+        "screenshotArtifact": "en-comparison.png",
+        "screenshotSha256": "557f604e28dad010fa6cf25a9edce2a08a43db2db9353179b05ce4f1512e2e3d",
+        "inputs": [
+          {
+            "toolName": "compareRegulations",
+            "input": {
+              "applicationScope": "construction",
+              "asOf": "2026-10-03",
+              "countryIso3s": [
+                "CHN",
+                "JPN"
+              ],
+              "powerKw": 120
+            }
+          }
+        ]
+      },
+      {
+        "locale": "en",
+        "kind": "market",
+        "prompt": "Show CHN market metrics and their reporting periods.",
+        "startedAt": "2026-10-03T21:54:28.143Z",
+        "responseCompletedAt": "2026-10-03T21:54:37.800Z",
+        "completedAt": "2026-10-03T21:54:37.856Z",
+        "requestCount": 1,
+        "httpStatus": 200,
+        "completeStream": true,
+        "evidenceArtifact": "en-market-evidence.json",
+        "tools": [
+          "getCountryProfile"
+        ],
+        "outputs": [
+          {
+            "status": "ok",
+            "evidenceSufficient": true,
+            "citations": 15
+          }
+        ],
+        "errors": [],
+        "text": "China's market metrics returned by this query are year-end registered fleet figures for on-road trucks and on-road buses, covering two reporting periods.\n\nKey evidence:\n- On-road trucks, year-end registered fleet: 33,589,400 vehicles for 2023-01-01 to 2024-01-01; 33,176,500 vehicles for 2022-01-01 to 2023-01-01.\n- On-road buses, year-end registered fleet: 2,010,900 vehicles for 2023-01-01 to 2024-01-01; 2,094,800 vehicles for 2022-01-01 to 2023-01-01.\n- Year-on-year change: trucks +1.244556 percent; buses -4.005156 percent, both for the 2023-01-01 to 2024-01-01 period.\n- Definitions: trucks are the \"载货汽车合计\" line; buses combine \"大型载客汽车 + 中型载客汽车\", converted from 万辆 to vehicles.\n\nRisk/gap: only these fleet-stock metrics were returned; no sales, production, import/export or forecast metrics appeared, and no publishedOn date was provided for the metrics. Data asOf 2026-10-03; latest verification 2026-08-03.\n\nNext step: if you need sales or trade volumes rather than fleet stock, request those specific market metrics.\n\nSources:\n- \"中国统计年鉴 2024 表 16-20 民用汽车拥有量\" — https://www.stats.gov.cn/sj/ndsj/2024/left.htm\n- \"World country directory — Natural Earth (public domain)\" — https://www.naturalearthdata.com/\n\nEvidence as-of date: 2026-10-03.",
+        "executionPassed": true,
+        "rendered": true,
+        "pass": true,
+        "evidenceSha256": "a8c98cd3371b2065288d8a4517619ac3043dccda065429b5f7019e8fd8c4a2b1",
+        "screenshotArtifact": "en-market.png",
+        "screenshotSha256": "d6122c079f24c7888ab7d6f8147734274fa829850affb10fdc9fe3bde21c5c6c",
+        "inputs": [
+          {
+            "toolName": "getCountryProfile",
+            "input": {
+              "asOf": "2026-10-03",
+              "countryIso3": "CHN",
+              "topics": [
+                "market"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "failure": null,
+    "pass": true
+  },
+  "retainedCaptureFailures": [
+    {
+      "artifact": "production-e5c3249f067692a483d4133a313bd5883b166642/report.json",
+      "sha256": "053ab80ef534b9fbc29700756d574288ca30fbb38438fb7d0230872496982020",
+      "pass": false,
+      "completedCaseCount": 1,
+      "failure": {
+        "name": "Error",
+        "message": "response.text: Protocol error (Network.getResponseBody): No data found for resource with given identifier\nResponse body is not available for a response that was navigated away from. Read response.body() before triggering any navigation."
+      }
+    },
+    {
+      "artifact": "production-v2-e5c3249f067692a483d4133a313bd5883b166642/report.json",
+      "sha256": "cf2bdc5e3daf2f352b052f4682c620a1a1e8dea0b466d7bd9e07c51fb64d2588",
+      "pass": false,
+      "completedCaseCount": 0,
+      "failure": {
+        "name": "Error",
+        "message": "page.waitForFunction: EvalError: Evaluating a string as JavaScript violates the following Content Security Policy directive because 'unsafe-eval' is not an allowed source of script: script-src 'self' 'unsafe-inline'\".\n\n    at eval (<anonymous>)\n    at predicate (eval at evaluate (:311:30), <anonymous>:4:60)\n    at next (eval at evaluate (:311:30), <anonymous>:29:33)"
+      }
+    }
+  ],
+  "captureCorrection": {
+    "applicationChanged": false,
+    "providerChanged": false,
+    "assertionsWeakened": false,
+    "originalResponsesReturnedUnchanged": true,
+    "cspBypassed": false,
+    "offlineValidation": "Browser response-clone UTF-8 capture and original response equality verified with a no-unsafe-eval CSP mock before v3.",
+    "limitations": "v1 CDP body unavailable on the second case and mojibake in captured text, although first-case screenshot rendered correctly; v2 string predicate rejected by production CSP. Both failures retained and not reclassified as passes."
+  },
+  "manualReview": {
+    "reviewedAt": "2026-10-03T21:56:29.515Z",
+    "scope": "All six final response texts checked against their saved tool outputs; representative Chinese desktop comparison and English mobile market screenshots inspected.",
+    "observations": [
+      "Regulation names, adopted/effective dates and query-bounded two-record result match tool output.",
+      "CHN/JPN construction 120 kW limits, units, power bands and validity dates match tool output; no stricter/weaker ranking or inference that missing PN proves no legal limit.",
+      "Market fleet values, reporting periods, deterministic year-on-year changes and selected-source verification date match tool evidence."
+    ],
+    "limitations": "This checks consistency with returned project evidence, not independent legal certification or a claim that future stochastic answers are always correct."
+  },
+  "timelineNote": "Browser starter and public UI readbacks ran after the first validated publication commit point while the original controller completed final read-only checks; no additional SSH/PAM observer was opened until the original process exited. Independent verification, canary, ledger, host state and boundary checks followed that exit.",
+  "artifactRetention": {
+    "rawToolOutputsAndScreenshots": "Retained in the local task diagnostic directory; per-case hashes above. They are not external attestations.",
+    "failedRuns": "Original capture reports and screenshots preserved; no retries are hidden."
+  },
+  "remainingBoundaries": [
+    "Canonical live-eval outcome and full quality metrics remain exclusively in docs/STATUS.md and the retained canonical eval archive; starter/canary success does not supersede them.",
+    "The previously observed intermittent database readiness delay is not claimed fixed by this chat change.",
+    "Current production key remains under the previously authorized temporary-use exception and still needs rotation.",
+    "Existing bounded dependency-security exception remains unchanged; no automatic extension."
+  ]
+}

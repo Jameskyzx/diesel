@@ -1,137 +1,81 @@
 "use client";
 
-import { ArrowUpRight, House, Map, MessageSquareText } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Database, House, Map, MessageSquareText, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
 
 import { LocaleToggle } from "@/components/i18n/locale-toggle";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { notifyPublicNavigationIntent } from "@/lib/public-navigation-intent";
 import { cn } from "@/lib/utils";
 
-type NavigationItem = {
-  href: string;
-  icon: typeof House;
-  label: "chat" | "home" | "map";
-  matches: (pathname: string) => boolean;
-};
-
-const navigationItems: NavigationItem[] = [
-  { href: "/", icon: House, label: "home", matches: (pathname) => pathname === "/" },
-  { href: "/chat", icon: MessageSquareText, label: "chat", matches: (pathname) => pathname.startsWith("/chat") },
-  {
-    href: "/map",
-    icon: Map,
-    label: "map",
-    matches: (pathname) => pathname === "/map" || pathname.startsWith("/countries/"),
-  },
-];
+const navigationItems = [
+  { href: "/", icon: House, label: "home", matches: (path: string) => path === "/" },
+  { href: "/chat", icon: MessageSquareText, label: "chat", matches: (path: string) => path.startsWith("/chat") },
+  { href: "/map", icon: Map, label: "map", matches: (path: string) => path === "/map" || path.startsWith("/countries/") },
+] as const;
 
 export function AppHeader() {
   const pathname = usePathname();
-  const { dictionary, locale } = useLocale();
-  const navigationRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const navigation = navigationRef.current;
-    if (!navigation) return;
-
-    const revealCurrentLink = () => {
-      const currentLink = navigation.querySelector<HTMLElement>(
-        '[aria-current="page"]',
-      );
-      if (!currentLink) return;
-
-      const navigationBounds = navigation.getBoundingClientRect();
-      const currentLinkBounds = currentLink.getBoundingClientRect();
-      const visibleLeft = navigationBounds.left + navigation.clientLeft;
-      const visibleRight = navigationBounds.right - navigation.clientLeft;
-
-      if (currentLinkBounds.left < visibleLeft) {
-        navigation.scrollLeft += currentLinkBounds.left - visibleLeft;
-      } else if (currentLinkBounds.right > visibleRight) {
-        navigation.scrollLeft += currentLinkBounds.right - visibleRight;
-      }
-    };
-
-    revealCurrentLink();
-    window.addEventListener("resize", revealCurrentLink);
-    return () => window.removeEventListener("resize", revealCurrentLink);
-  }, [locale, pathname]);
+  const { dictionary } = useLocale();
+  const currentPage = navigationItems.find((item) => item.matches(pathname));
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-card shadow-[0_1px_2px_rgb(24_36_51_/_0.03)]" data-testid="app-navigation-shell">
-      <div className="page-shell flex h-16 items-center gap-3">
-        <Link
-          aria-label={dictionary.header.brandHome}
-          className="group flex min-w-0 items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          href="/"
-          onNavigate={notifyPublicNavigationIntent}
-        >
-          <Image
-            alt=""
-            aria-hidden="true"
-            className="size-11 shrink-0 object-contain"
-            data-testid="brand-engine-icon"
-            height={44}
-            preload
-            sizes="44px"
-            src="/brand/diesel-chibi.png"
-            width={44}
-          />
-          <span className="block min-w-0">
-            <span className="block text-sm leading-none font-semibold tracking-tight text-foreground sm:text-base">
-              Global Diesel
-            </span>
-            <span className="mt-1.5 hidden text-[10px] text-muted-foreground sm:block">
-              {dictionary.header.subtitle}
-            </span>
-          </span>
-        </Link>
-        <div className="ml-auto shrink-0">
-          <LocaleToggle />
+    <header className="app-header" data-testid="app-navigation-shell">
+      <div aria-hidden="true" className="app-sidebar-surface" />
+      <Link
+        aria-label={dictionary.header.brandHome}
+        className="app-brand"
+        href="/"
+        onNavigate={notifyPublicNavigationIntent}
+      >
+        <Image alt="" aria-hidden="true" className="size-11 shrink-0 object-contain" data-testid="brand-engine-icon" height={44} preload sizes="44px" src="/brand/diesel-chibi.png" width={44} />
+        <span className="min-w-0">
+          <span className="block text-base font-semibold tracking-tight">Global Diesel</span>
+          <span className="brand-subtitle mt-1 block text-[10px]">{dictionary.header.subtitle}</span>
+        </span>
+      </Link>
+
+      <div className="app-toolbar">
+        <div className="hidden min-w-0 items-center gap-2 text-xs text-muted-foreground lg:flex">
+          <Database aria-hidden="true" className="size-4" />
+          <span>{dictionary.workspace.name}</span>
+          <ChevronRight aria-hidden="true" className="size-3" />
+          <span className="font-medium text-foreground">{currentPage ? dictionary.header[currentPage.label] : dictionary.workspace.name}</span>
         </div>
+        <div className="ml-auto shrink-0"><LocaleToggle /></div>
         <Link
-          className="hidden h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-ring/25 lg:inline-flex"
+          className="ml-3 hidden h-9 shrink-0 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:inline-flex"
           href="/chat"
           onNavigate={notifyPublicNavigationIntent}
           title={dictionary.header.openChat}
         >
-          {dictionary.header.analyze}
-          <ArrowUpRight aria-hidden="true" className="size-4" />
+          {dictionary.header.analyze}<ArrowUpRight aria-hidden="true" className="size-4" />
         </Link>
       </div>
-      <div className="border-t">
-        <nav
-          aria-label={dictionary.header.navLabel}
-          className="page-shell flex min-w-0 items-center gap-4 overflow-x-auto sm:gap-6"
-          ref={navigationRef}
-        >
-          {navigationItems.map(({ href, icon: Icon, label, matches }) => {
-            const active = matches(pathname);
-            return (
-              <Link
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "inline-flex h-11 shrink-0 items-center gap-2 border-b-2 px-2 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                  active
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-                )}
-                href={href}
-                key={href}
-                onNavigate={notifyPublicNavigationIntent}
-              >
-                <Icon aria-hidden="true" className="size-4" />
-                {dictionary.header[label]}
-              </Link>
-            );
-          })}
-        </nav>
 
-      </div>
+      <nav aria-label={dictionary.header.navLabel} className="app-navigation" data-testid="workspace-sidebar">
+        <p className="sidebar-section-label">{dictionary.workspace.navigation}</p>
+        {navigationItems.map(({ href, icon: Icon, label, matches }) => (
+          <Link
+            aria-current={matches(pathname) ? "page" : undefined}
+            className={cn("sidebar-link", matches(pathname) && "sidebar-link-active")}
+            href={href}
+            key={href}
+            onNavigate={notifyPublicNavigationIntent}
+          >
+            <Icon aria-hidden="true" className="size-5 shrink-0" />
+            <span>{dictionary.header[label]}</span>
+          </Link>
+        ))}
+        <div className="sidebar-evidence-note">
+          <ShieldCheck aria-hidden="true" className="mb-3 size-5" />
+          <p className="text-sm font-medium">{dictionary.workspace.readOnly}</p>
+          <p className="mt-2 text-xs leading-5">{dictionary.workspace.boundaryNote}</p>
+        </div>
+        <p className="sidebar-footnote">{dictionary.workspace.evidenceFirst}</p>
+      </nav>
     </header>
   );
 }

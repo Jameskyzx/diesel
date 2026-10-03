@@ -35,6 +35,18 @@ not establish that it has been deployed: production status remains solely in
 `STATUS.md`, and the normal release checks and public readback are required
 before recording it as published.
 
+## Accessibility test boundary
+
+The bilingual non-modal country keyboard tests each use a fresh browser context
+with an explicitly seeded `diesel_locale` cookie. They assert the server-rendered
+language before exercising real focus, Tab/Enter navigation, drawer state and
+the destination page. Initializing this keyboard fixture does not make an
+unrelated HTTP preference request. Actual preference POSTs and user-driven
+switching remain covered by `e2e/locale.spec.ts`, the header accessibility flows
+and `tests/locale-route.test.ts`; no retry, timeout or keyboard assertion is
+relaxed. Transport diagnostics from earlier CI runs remain failures, not
+replacement release evidence.
+
 ## Upstream MIT notice
 
 The MIT License (MIT)

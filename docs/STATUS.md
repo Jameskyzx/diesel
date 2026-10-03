@@ -38,11 +38,11 @@ intentionally fails for merely local or staged evidence.
   "browserSnapshot": {
     "artifactByteLength": 179587,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "a601af672a3c09887dfec031bfb67f3813fef6ec3fdcd99ad62f69c502584db9",
-    "baseHeadCommit": "d143ec82577f8d4cceda2df3bb410491f3f09333",
-    "evaluatedCommit": "d143ec82577f8d4cceda2df3bb410491f3f09333",
-    "observedAt": "2026-10-01T09:21:02.267Z",
-    "runId": "6fd5f751-3eb9-46bc-b085-0312f8628541",
+    "artifactSha256": "378bd7df47c34b69988c9f116a9a06e36ddd677ec2af5aeaf0cd70c41017b906",
+    "baseHeadCommit": "024e10ff6ca2d2fa7cc2b91363b3792119b384be",
+    "evaluatedCommit": "024e10ff6ca2d2fa7cc2b91363b3792119b384be",
+    "observedAt": "2026-10-03T01:52:35.257Z",
+    "runId": "fb143354-e89a-4b17-85e9-47e4ad976bd0",
     "runs": [
       {
         "collected": 420,
@@ -79,8 +79,8 @@ intentionally fails for merely local or staged evidence.
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "33dbb83a0b47fc72c01e6bae01ec41a48852067c3e46c235db36c46864e155e7",
-      "fileCount": 348
+      "digest": "4a229db246904f632975def88c1aa14b16229069907c5e2a7ab11b447c2357ed",
+      "fileCount": 349
     },
     "version": "diesel-playwright-evidence-v1",
     "worktreeState": "clean"
@@ -160,6 +160,13 @@ The 178 ISO3 entries are a country directory and published evidence boundary,
 not a claim that all 178 countries have numerical diesel limits.
 
 ## 状态日期
+
+- 2026-10-03 01:52 UTC：用户确认发布纵向工作台重构。候选采用固定桌面侧栏、独立工具栏、
+  可搜索国家证据表、并排地图详情与聊天查询上下文，保留中英双语和原创柴油机图标；
+  页面结构见 [公开 UI 说明](PUBLIC_UI.md)。本地构建、静态检查、离线 AI 测试与四套
+  浏览器证据采集已完成；浏览器结果只见下方唯一快照，完整执行证据、精确 master CI
+  与正式部署仍待完成，现网版本不提前更新。真实模型评估的完整报告与失败结果已原样
+  保存并同步唯一台账，不为上线修改期望、评分门槛或模型配置。
 
 - 2026-10-01 20:11 UTC：Tabler 界面、原创 Q 版柴油机页头图标及 Safari 非模态抽屉修复
   已随 `516af44` 部署至 `diesel.jamesky.site`。发布候选与精确 master 提交
@@ -1995,15 +2002,15 @@ CI 和目标环境读回前称为已发布能力；为避免破坏既有工作�
   不能沿用上一次成功证明新源码或发布已通过。模型调用中的实际 JSON schema、非法额外参数
   在检索前拒绝、fullStream/SSE/audit 不泄露 marker，以及合法调用固定 `null/5` 均有回归测试；
   这不替代新契约下的真实模型表现评估。
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `6fd5f751-3eb9-46bc-b085-0312f8628541`，artifact SHA-256 `a601af672a3c09887dfec031bfb67f3813fef6ec3fdcd99ad62f69c502584db9`；
-  observedAt `2026-10-01T09:21:02.267Z`，clean worktree / base HEAD `d143ec82577f8d4cceda2df3bb410491f3f09333`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `fb143354-e89a-4b17-85e9-47e4ad976bd0`，artifact SHA-256 `378bd7df47c34b69988c9f116a9a06e36ddd677ec2af5aeaf0cd70c41017b906`；
+  observedAt `2026-10-03T01:52:35.257Z`，clean worktree / base HEAD `024e10ff6ca2d2fa7cc2b91363b3792119b384be`；
   `public` = `355 passed / 65 skipped / 0 failed / 0 flaky / 420 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 427 passed / 67 skipped / 0 failed / 0 flaky / 494 collected。artifact 为 179587 bytes；
-  browser source fingerprint 为 348 files / `33dbb83a0b47fc72c01e6bae01ec41a48852067c3e46c235db36c46864e155e7`。
-  因运行发生在 clean worktree，`evaluatedCommit=d143ec82577f8d4cceda2df3bb410491f3f09333`；它证明该本地候选提交上的浏览器验收，
+  browser source fingerprint 为 349 files / `4a229db246904f632975def88c1aa14b16229069907c5e2a7ab11b447c2357ed`。
+  因运行发生在 clean worktree，`evaluatedCommit=024e10ff6ca2d2fa7cc2b91363b3792119b384be`；它证明该本地候选提交上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 - v25 本批完整浏览器采集在 `2026-09-13T17:22:23.170Z` 返回 1：public 为 311 collected，
   264 通过、2 失败、43 跳过、2 未执行；后续三个套件未由该采集执行。桌面及移动端

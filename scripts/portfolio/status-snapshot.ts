@@ -487,7 +487,7 @@ function findUniqueStatusBullet(
   ) {
     end += 1;
   }
-  return lines.slice(starts[0], end).join("\n");
+  return lines.slice(starts[0], end).join("\n").trimEnd();
 }
 
 export function parseStatusSnapshot(markdown: string): StatusSnapshot {

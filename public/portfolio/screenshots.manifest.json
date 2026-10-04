@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-04T02:02:39.966Z",
+      "capturedAt": "2026-10-04T08:34:43.014Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -230,6 +230,7 @@
         "src/server/config/opportunity-score-config.ts",
         "src/server/config/portfolio-demo.ts",
         "src/server/config/public-product-publication.ts",
+        "src/server/db/admission-client.ts",
         "src/server/db/client.ts",
         "src/server/db/demo-client.ts",
         "src/server/db/environment.ts",
@@ -278,7 +279,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "3305f864e7e9bfe69a40b6d14251446ee6c9894f33bd6309fb98550129ad8df3",
+      "sourceFingerprint": "a58d0cbe08c89e5e1bafba59b1a4c9fdf1e79be9a2d5f3bf172e1a491bd91093",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -286,12 +287,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-04T02:02:43.302Z",
+      "capturedAt": "2026-10-04T08:34:46.298Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "98688611013722cea0bd0b3fca30a75e5c8046782ec71a1318e142020508245e",
+      "sha256": "db9e691829c02f6aaa1635df36f6127ef5e063cdbf1a56dc0e0c70f97a5084f0",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -516,6 +517,7 @@
         "src/server/config/opportunity-score-config.ts",
         "src/server/config/portfolio-demo.ts",
         "src/server/config/public-product-publication.ts",
+        "src/server/db/admission-client.ts",
         "src/server/db/client.ts",
         "src/server/db/demo-client.ts",
         "src/server/db/environment.ts",
@@ -564,7 +566,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "68ff359deb8727691591ae5cdcba64ec257bbdfbb3b98f20772a4dc685f1f322",
+      "sourceFingerprint": "a8ff4ce829d55d3be8e180f928f57ce9dbdbc813751a476b72fdfa4d737ec882",
       "viewport": {
         "height": 1000,
         "width": 1600

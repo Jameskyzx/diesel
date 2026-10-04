@@ -149,7 +149,7 @@ function buildEvidence(
       skippedTests: 0,
       todoTests: 0,
     },
-    version: "diesel-vitest-execution-evidence-v1",
+    version: "diesel-vitest-execution-evidence-v2",
     vitestVersion: "4.1.11",
   };
 }

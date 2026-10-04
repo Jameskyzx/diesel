@@ -32,6 +32,7 @@
     "portfolio:verify-playwright-runs": "node --import tsx scripts/portfolio/verify-playwright-runs.ts",
     "test:e2e": "playwright test",
     "test:e2e:csp:production": "playwright test --config playwright.production.config.ts",
+    "test:e2e:live": "playwright test --config playwright.live.config.ts",
     "test:e2e:demo": "playwright test --config playwright.demo.config.ts",
     "test:e2e:fde": "playwright test --config playwright.fde.config.ts",
     "playwright": "playwright",

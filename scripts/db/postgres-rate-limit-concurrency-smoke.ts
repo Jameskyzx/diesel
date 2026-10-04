@@ -9,6 +9,7 @@ import {
 import postgres, { type Sql } from "postgres";
 
 import * as schema from "../../src/server/db/schema";
+import { admissionConnectionOptions } from "../../src/server/db/admission-client";
 import {
   AI_CHAT_RATE_LIMIT_WINDOW_MS,
   createPostgresRateLimiter,
@@ -213,17 +214,14 @@ export function validatePostgresRateLimitScenarioReadback(
 
 function createSmokePool(databaseUrl: URL, index: number): SmokePool {
   const client = postgres(databaseUrl.toString(), {
-    connect_timeout: 5,
+    ...admissionConnectionOptions,
     connection: {
       application_name: `diesel-rate-limit-concurrency-smoke-${index}`,
       idle_in_transaction_session_timeout: 10_000,
       lock_timeout: 5_000,
       statement_timeout: 10_000,
     },
-    idle_timeout: 5,
     max: repositoryPoolSize,
-    max_lifetime: 60,
-    prepare: false,
   });
   return {
     client,

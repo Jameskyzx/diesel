@@ -22,6 +22,44 @@ function firstWebServer(
 }
 
 describe("Playwright server contracts", () => {
+  it.each([
+    ["", "a".repeat(40)],
+    ["false", "a".repeat(40)],
+    ["true", ""],
+    ["true", "master"],
+    ["true", "A".repeat(40)],
+  ])("refuses paid live browser execution without explicit opt-in and an exact release (%s, %s)", (optIn, release) => {
+    const result = spawnSync(process.execPath, ["--import", "tsx", "playwright.live.config.ts"], {
+      encoding: "utf8",
+      timeout: 10_000,
+      env: { ...process.env, DIESEL_LIVE_ACCEPTANCE: optIn, DIESEL_LIVE_RELEASE: release },
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).not.toBe(0);
+  });
+
+  it("bounds paid live acceptance to the production origin without retries or a local server", () => {
+    const result = spawnSync(process.execPath, [
+      "--import", "tsx", "--input-type=module", "--eval",
+      "const imported = (await import(process.argv[1])).default; process.stdout.write(JSON.stringify(imported.default ?? imported));",
+      pathToFileURL(resolve("playwright.live.config.ts")).href,
+    ], {
+      encoding: "utf8",
+      timeout: 10_000,
+      env: { ...process.env, DIESEL_LIVE_ACCEPTANCE: "true", DIESEL_LIVE_RELEASE: "a".repeat(40) },
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe("");
+    const config: unknown = JSON.parse(result.stdout);
+    expect(config).toMatchObject({
+      testDir: "./e2e-live", forbidOnly: true, fullyParallel: false, workers: 1,
+      retries: 0, maxFailures: 1, timeout: 120_000, globalTimeout: 900_000,
+      use: { baseURL: "https://diesel.jamesky.site", serviceWorkers: "block" },
+    });
+    expect(config).not.toHaveProperty("webServer");
+  });
+
   it("leaves CI time for honest interruption receipts and prints case progress", async () => {
     const result = spawnSync(process.execPath, [
       "--import", "tsx", "--input-type=module", "--eval",

@@ -5,6 +5,8 @@ import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { describe, expect, it, vi } from "vitest";
+import { buildCountryProfileResult } from "@/server/ai/tool-results";
+import { countryDetailResponseSchema } from "@/features/countries/schemas";
 
 import {
   CANARY_HEALTH_CACHE_CONTROL,
@@ -350,7 +352,7 @@ function createPublicDemoProducts() {
 }
 
 describe("synthetic canary", () => {
-  it("schedules the no-cost production checks and keeps paid AI manual", async () => {
+  it("schedules one bounded real AI starter and permits explicit manual opt-out", async () => {
     const workflow = await readFile(
       resolve(process.cwd(), ".github/workflows/production-canary.yml"),
       "utf8",
@@ -359,7 +361,9 @@ describe("synthetic canary", () => {
     expect(workflow).toContain('cron: "23 */6 * * *"');
     expect(workflow).toContain("CANARY_BASE_URL: https://diesel.jamesky.site");
     expect(workflow).toContain("inputs.include_ai");
-    expect(workflow).toContain("default: false");
+    expect(workflow).toContain("default: true");
+    expect(workflow).toContain("github.event_name == 'schedule' || inputs.include_ai == true");
+    expect(workflow).not.toContain("continue-on-error");
     expect(workflow).toContain("CANARY_STATUS_PATH: docs/STATUS.md");
     expect(workflow).toContain("if: ${{ always() }}");
     expect(workflow).toContain("if-no-files-found: error");
@@ -403,7 +407,7 @@ describe("synthetic canary", () => {
           stage: "base_url",
         },
         targetOrigin: null,
-        version: "synthetic-canary-v4",
+        version: "synthetic-canary-v5",
       });
       expect(serialized).not.toContain("super-secret");
       expect((await readdir(directory)).filter((name) => name.endsWith(".tmp")))
@@ -476,6 +480,7 @@ describe("synthetic canary", () => {
       id: "chat-provider-sse",
       requireRequestId: true,
       streamShape: "ui-message-v1",
+      toolExpectation: { name: "getCountryProfile", evidenceSufficient: true },
     });
     expect(JSON.parse(providerCheck?.body ?? "{}")).toMatchObject({
       locale: "zh-CN",
@@ -841,6 +846,41 @@ describe("synthetic canary", () => {
       ].join(""),
     ]) {
       await expect(validateUiMessageSse(invalidStream)).resolves.toBe(false);
+    }
+  });
+
+  it("does not count a text-only refusal as a successful provider starter", async () => {
+    await expect(validateUiMessageSse(validUiMessageSse(), {
+      name: "getCountryProfile", evidenceSufficient: true,
+    })).resolves.toBe(false);
+  });
+
+  it("requires matching, schema-valid, sourced tool evidence", async () => {
+    const output = buildCountryProfileResult({
+      informationAsOf: "2026-08-15",
+      profile: countryDetailResponseSchema.parse(createCountryDecisionSummary()),
+      requestedTopics: ["regulations"],
+      resolvedCountryIso3: "CHN",
+    });
+    const inputEvent = { type: "tool-input-available", toolCallId: "call-1", toolName: "getCountryProfile", input: { countryIso3: "CHN" } };
+    const outputEvent = { type: "tool-output-available", toolCallId: "call-1", output };
+    const stream = (events: unknown[]) => validUiMessageSse().replace(
+      'data: {"type":"start"}\n\n',
+      'data: {"type":"start"}\n\n' + events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""),
+    );
+    const expectation = { name: "getCountryProfile", evidenceSufficient: true } as const;
+    await expect(validateUiMessageSse(stream([inputEvent, outputEvent]), expectation)).resolves.toBe(true);
+    for (const events of [
+      [inputEvent],
+      [outputEvent],
+      [inputEvent, outputEvent, outputEvent],
+      [inputEvent, { ...outputEvent, toolCallId: "unmatched" }],
+      [{ ...inputEvent, toolName: "compareRegulations" }, outputEvent],
+      [inputEvent, { ...outputEvent, output: { ...output, citations: [] } }],
+      [inputEvent, { ...outputEvent, output: { ...output, evidenceSufficient: false } }],
+      [inputEvent, { type: "tool-output-error", toolCallId: "call-1", errorText: "Failed" }],
+    ]) {
+      await expect(validateUiMessageSse(stream(events), expectation)).resolves.toBe(false);
     }
   });
 

@@ -6,6 +6,13 @@
 
 ## Verifiable portfolio snapshot / 可验证作品快照
 
+2026-10-04 收尾候选：补充证据验证后的双语回答任务提示（prompt v9，保留既有评估
+case/期望/评分器），移除未使用的 shadcn CLI 与 Next lint 的 braces 依赖链及临时
+漏洞例外，更新 brace-expansion 官方补丁，并将数据库就绪检查改为一条可复用连接的
+单次查询。此段只说明候选工作，不更新下方已观测公开 release；完整模型结果、测试
+计数与发布状态仍以各自唯一台账为准。密钥配置未变更。探针减少连接空闲回收及事务
+往返开销，但不能据此宣称外部数据库网络永久无故障。详见 ADR-273。
+
 This machine-readable block is the single current source for the observed
 repository/public-runtime lineage, the last fully documented timestamped
 release, Vitest execution-evidence pointer, browser-run artifact, live-eval contract and

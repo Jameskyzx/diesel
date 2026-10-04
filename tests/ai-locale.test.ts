@@ -89,7 +89,7 @@ describe("AI locale contract", () => {
     ] },
   ])("requires concise reader-facing $locale explanations without schema dumps", ({ locale, clauses }) => {
     const prompt = buildSalesChatInstructions(null, locale);
-    expect(prompt).toContain('version="sales-chat-system-v8"');
+    expect(prompt).toContain('version="sales-chat-system-v9"');
     for (const clause of clauses) expect(prompt).toContain(clause);
     // Production instructions must be domain-wide, never benchmark fixtures.
     expect(prompt).not.toMatch(/DEMO-ENG-100|DEMO_ADDRESSABLE_UNITS|2026-08-13|country-overview-china/u);

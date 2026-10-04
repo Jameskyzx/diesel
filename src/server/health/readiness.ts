@@ -2,12 +2,13 @@ import "server-only";
 
 import { sql } from "drizzle-orm";
 
-import { getDatabase } from "@/server/db/client";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { getDatabaseMode } from "@/server/db/environment";
+import { probePostgresReadiness } from "@/server/health/postgres-readiness";
+
+export { DATABASE_READINESS_STATEMENT_TIMEOUT_MS } from "@/server/health/postgres-readiness";
 
 export const DATABASE_READINESS_TIMEOUT_MS = 3_000;
-export const DATABASE_READINESS_STATEMENT_TIMEOUT_MS = 2_500;
 export const DATABASE_READINESS_FAILURE_COOLDOWN_MS = 1_000;
 
 async function runDatabaseProbe(): Promise<void> {
@@ -17,12 +18,7 @@ async function runDatabaseProbe(): Promise<void> {
     return;
   }
 
-  await getDatabase().transaction(async (transaction) => {
-    await transaction.execute(
-      sql`select set_config('statement_timeout', ${String(DATABASE_READINESS_STATEMENT_TIMEOUT_MS)}, true)`,
-    );
-    await transaction.execute(sql`select 1`);
-  });
+  await probePostgresReadiness();
 }
 
 export type DatabaseReadinessCoordinator = {

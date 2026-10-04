@@ -7,8 +7,28 @@ import {
   type ChatRuntimeContext,
 } from "@/domain/ai/chat-runtime-context";
 import type { Locale } from "@/i18n/locale";
+import type { AiToolName } from "@/features/ai/schemas";
 
 export { SALES_CHAT_SYSTEM_PROMPT_VERSION } from "@/features/ai/constants";
+
+/** Trusted, task-specific writing guidance, only after the evidence gate passes. */
+export function buildFinalAnswerGuidance(tools: readonly AiToolName[], locale: Locale = "en"): string {
+  const topics: string[] = [];
+  if (tools.includes("compareRegulations")) {
+    topics.push(locale === "en"
+      ? "State the regulatory requirements in your opening sentence, including the returned scope, power and date. Explain the actual per-country differences without a stricter/weaker ranking."
+      : "开头用完整句子说明本次法规要求的核对结果，并包含工具返回的适用场景、功率和日期；逐国说明实际差异，不作严格或宽松排名。");
+  }
+  if (tools.includes("generateSalesBrief")) {
+    topics.push(locale === "en"
+      ? "Open with a complete sentence identifying this as a sales brief for the returned target market. Summarize its actual score, product readiness, risks and next action; never replace unknown outcomes with positive claims."
+      : "开头用完整句子明确这是一份销售简报，并说明工具返回的目标市场；概括实际评分、产品就绪情况、风险和下一步，未知结果不得改成肯定结论。");
+  }
+  if (topics.length === 0) return "";
+  return `\n<final_answer_task>\n${topics.join("\n")}\n${locale === "en"
+    ? "Use only this turn's validated evidence. These instructions describe the task, not its findings. Preserve all gaps, Demo limitations, citations and the disclaimer."
+    : "只使用本轮已验证证据；以上是写作任务，不是个案结论。保留全部缺口、Demo 限制、来源和免责声明。"}\n</final_answer_task>`;
+}
 
 export function buildSalesChatInstructions(
   selectedCountryIso3: string | null,

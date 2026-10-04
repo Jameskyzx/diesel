@@ -3,8 +3,9 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 overrides:
-  "brace-expansion@1.1.16": 1.1.20
-  "brace-expansion@5.0.8": 5.0.11
+  "@next/eslint-plugin-next@16.3.6>fast-glob": "-"
+  "brace-expansion@1.1.16": 1.1.21
+  "brace-expansion@5.0.8": 5.0.12
   "drizzle-kit@0.31.10>@esbuild-kit/esm-loader": "-"
   "fast-uri@3.1.4": 3.1.7
   "fast-uri@3.1.5": 3.1.7
@@ -17,7 +18,12 @@ overrides:
   "qs@6.15.3": 6.16.0
   "undici@7.29.0": 7.29.1
   sharp: 0.35.4
+packageExtensions:
+  "@next/eslint-plugin-next@16.3.6":
+    dependencies:
+      tinyglobby: 0.2.17
 patchedDependencies:
+  '@next/eslint-plugin-next@16.3.6': patches/@next__eslint-plugin-next@16.3.6.patch
   "@vitest/runner@4.1.11": patches/@vitest__runner@4.1.11.patch
   next@16.3.6: patches/next@16.3.6.patch
   vaul@1.1.2: patches/vaul@1.1.2.patch

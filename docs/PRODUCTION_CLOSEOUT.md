@@ -17,8 +17,23 @@ Hourly rate limits and daily provider-call reservations now share an isolated
 two-connection PostgreSQL pool. Built-in scalar types do not require catalog
 discovery. Idle connections are retained, with a 30-minute maximum lifetime.
 Business queries and readiness retain their independent pools. No quota, SQL
-atomicity, fail-closed behavior, request deadline, or schema is relaxed. The
+atomicity, fail-closed behavior, SQL deadline, or schema is relaxed. The
 PostgreSQL concurrency smoke uses the same connection options as production.
+
+The retained pool did not eliminate cold admission failures: the deployed
+`eb85fe4c40b5aff8274f835494a65770af8af611` process recorded three chat HTTP 503s,
+including its first recorded chat request. Those failures remain in the
+[historical observation](evidence/operations/production-closeout-latest.json).
+On 2026-10-04 the user approved increasing only the hourly-admission application
+wait from 3,000 to 8,000 ms. Slow legitimate decisions now have five more seconds
+to settle, including connection setup and transaction round trips. This can
+increase failure latency and admission-slot occupancy; it is not a faster
+database or an availability guarantee. At eight seconds the request still
+fails closed, and unfinished database work retains its in-flight lease until
+settled. Daily admission/audit setup remains 10 seconds; SQL lock/statement/idle
+limits remain 1.5/2.5/5 seconds, and readiness remains three seconds. Quotas and
+the four-global/two-per-client concurrency bounds are unchanged. Production
+acceptance of the new wait budget is still required before claiming it fixed.
 
 Acceptance must include a cold first chat request, another after at least 25
 seconds idle, all six real starter clicks, and the provider-inclusive canary.

@@ -163,7 +163,56 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
     }
   });
 
-  it("returns after a shared-limiter deadline but retains admission until the database work settles", async () => {
+  it.each([
+    { allowed: true, expectedStatus: 200 },
+    { allowed: false, expectedStatus: 429 },
+  ])("honors a slow shared-limiter decision after three seconds: allowed=$allowed", async ({ allowed, expectedStatus }) => {
+    vi.useFakeTimers();
+    const check = vi.fn(
+      () => new Promise<{
+        allowed: boolean;
+        limit: number;
+        remaining: number;
+        retryAfterSeconds: number;
+      }>((resolve) => {
+        setTimeout(() => resolve({
+          allowed,
+          limit: 10,
+          remaining: allowed ? 9 : 0,
+          retryAfterSeconds: allowed ? 0 : 60,
+        }), 3_500);
+      }),
+    );
+    (globalThis as { __aiChatRateLimiter?: unknown }).__aiChatRateLimiter = {
+      check,
+      reset: vi.fn(),
+    };
+    let response: Response | undefined;
+    try {
+      const pending = routeModule.POST(chatRequest()).then((result) => {
+        response = result;
+        return result;
+      });
+      await vi.advanceTimersByTimeAsync(3_000);
+      expect(response).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(500);
+      const completed = await pending;
+      expect(completed.status).toBe(expectedStatus);
+      expect(check).toHaveBeenCalledOnce();
+      if (allowed) {
+        expect(completed.headers.get("content-type")).toContain("text/event-stream");
+        expect(await completed.text()).toContain("[DONE]");
+      } else {
+        expect(completed.headers.get("Retry-After")).toBe("60");
+      }
+    } finally {
+      vi.useRealTimers();
+      delete (globalThis as { __aiChatRateLimiter?: unknown })
+        .__aiChatRateLimiter;
+    }
+  });
+
+  it("returns at eight seconds but retains admission until the database work settles", async () => {
     vi.useFakeTimers();
     try {
       vi.resetModules();
@@ -218,7 +267,12 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
 
       const firstPromise = freshRoute.POST(requestForClient());
       expect(check).toHaveBeenCalledOnce();
-      await vi.advanceTimersByTimeAsync(MAX_CHAT_RATE_LIMIT_CHECK_MS);
+      let responseCompleted = false;
+      void firstPromise.then(() => { responseCompleted = true; });
+      expect(MAX_CHAT_RATE_LIMIT_CHECK_MS).toBe(8_000);
+      await vi.advanceTimersByTimeAsync(7_999);
+      expect(responseCompleted).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
       const first = await firstPromise;
       expect(first.status).toBe(503);
       expect(first.headers.get("Retry-After")).toBe("60");

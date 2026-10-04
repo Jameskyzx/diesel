@@ -121,5 +121,26 @@
   "limitations": [
     "Readiness returned one genuine database-unavailable 503 before a later 200; this failure is not erased.",
     "This record does not establish deployment or production acceptance of the new eight-second wait budget."
-  ]
+  ],
+  "fullVitestFirstAttempt": {
+    "name": "vitest",
+    "head": "4fcce354773fa585b6cc630b15d4c4f0863b9c93",
+    "startedAt": "2026-10-04T16:20:36.057Z",
+    "completedAt": "2026-10-04T16:34:20.664Z",
+    "exitCode": 1,
+    "signal": null,
+    "spawnFailed": false,
+    "totals": {
+      "files": 279,
+      "collected": 8296,
+      "passed": 8289,
+      "failed": 1,
+      "skipped": 6
+    },
+    "failureFile": "tests/screenshot-manifest.test.ts",
+    "failure": "Screenshot source drift: public/portfolio/live-dashboard.jpg",
+    "diagnosis": "The changed shared request-limit constant invalidated transitive screenshot source fingerprints. The original screenshot evidence was stale, not a runtime assertion failure.",
+    "repair": "Ran pnpm portfolio:capture-screenshots to capture actual current Demo images and revalidated the manifest; no checksum-only rewrite or weakened assertion.",
+    "followUp": "Refresh browser evidence for the newly captured image bytes, then rerun full Vitest from clean source. No additional live model run is required unless its source fingerprint changes."
+  }
 }

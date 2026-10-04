@@ -200,7 +200,34 @@ a substitute for manual keyboard/screen-reader review. `@vitest/coverage-v8` is
 a development-only Vitest reporter used solely for the repository coverage gate
 and artifacts; production code must not import it.
 
-## Current advisory review (2026-10-03)
+## Current remediation (2026-10-04, candidate workspace)
+
+The vulnerable `braces` chain is removed, not renamed, ignored, or accepted under
+an extended exception. The unused `shadcn` CLI dependency and its unused Tailwind
+utility import are removed; existing local UI components and `tw-animate-css`
+remain. No component uses that import's custom variants, accordion keyframes,
+scroll-fade, shimmer or no-scrollbar utilities.
+
+The exact `@next/eslint-plugin-next@16.3.6` patch replaces its sole `fast-glob`
+import with `tinyglobby@0.2.17`. A narrow package extension declares that dependency;
+the matching override removes `fast-glob`. This is a local compatibility patch,
+not an upstream security release. It preserves the Next rule set, default root,
+directory-only matching, absolute/relative paths, slash normalization and explicit
+root arrays. Directory expansion is disabled and trailing slashes normalized to
+match the old caller's contract. Tests execute the real internal-link rule and
+check globs, braces, extglobs, hidden/missing paths and the absence of the old
+chain from the lockfile. `tinyglobby` already existed in the build tool graph;
+its new declared purpose is only Next ESLint root-directory discovery.
+
+The official [braces advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+still has no published patched version at this review. The exception register is
+now empty because no installed dependency requires `braces`, not because that
+advisory was dismissed. Reintroduction of the high finding fails the unchanged
+audit policy. The new [brace-expansion advisory](https://github.com/advisories/GHSA-q2hr-2g5m-vwhr)
+is addressed with its official `1.1.21` and `5.0.12` patches. Production remains
+on the release identified in STATUS until a separate verified deployment.
+
+## Historical advisory review (2026-10-03)
 
 PR #51's original dependency gate and the independent local audit both failed on
 [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).

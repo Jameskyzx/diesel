@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-03T18:09:28.136Z",
+      "capturedAt": "2026-10-04T02:02:39.966Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -240,6 +240,7 @@
         "src/server/db/seed/country-catalog.ts",
         "src/server/db/seed/demo-data.ts",
         "src/server/demo/fde-demo-mode.ts",
+        "src/server/health/postgres-readiness.ts",
         "src/server/health/readiness.ts",
         "src/server/http/admin-dashboard-response.ts",
         "src/server/http/admin-route.ts",
@@ -277,7 +278,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "6f121ec0871f215b7ad4644065e108b607f70e08c0c6a608e48333963c55c899",
+      "sourceFingerprint": "3305f864e7e9bfe69a40b6d14251446ee6c9894f33bd6309fb98550129ad8df3",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -285,12 +286,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-03T18:09:30.919Z",
+      "capturedAt": "2026-10-04T02:02:43.302Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "797d76cabe653a339616980f08c30f01962dc300244527019410ad1f2ca77d12",
+      "sha256": "98688611013722cea0bd0b3fca30a75e5c8046782ec71a1318e142020508245e",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -525,6 +526,7 @@
         "src/server/db/seed/country-catalog.ts",
         "src/server/db/seed/demo-data.ts",
         "src/server/demo/fde-demo-mode.ts",
+        "src/server/health/postgres-readiness.ts",
         "src/server/health/readiness.ts",
         "src/server/http/admin-dashboard-response.ts",
         "src/server/http/admin-route.ts",
@@ -562,7 +564,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "866677d3bea4039636bbbda5e29caf74489e94d580b87a6c2c66f929789e8b4e",
+      "sourceFingerprint": "68ff359deb8727691591ae5cdcba64ec257bbdfbb3b98f20772a4dc685f1f322",
       "viewport": {
         "height": 1000,
         "width": 1600

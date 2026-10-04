@@ -8,8 +8,8 @@ import { z } from "zod";
 const repository = createRequire(resolve("package.json"));
 const eslint = createRequire(repository.resolve("eslint"));
 const consumers = [
-  ["eslint/minimatch", eslint, "1.1.20"],
-  ["typescript-estree/minimatch", createRequire(eslint.resolve("@typescript-eslint/typescript-estree")), "5.0.11"],
+  ["eslint/minimatch", eslint, "1.1.21"],
+  ["typescript-estree/minimatch", createRequire(eslint.resolve("@typescript-eslint/typescript-estree")), "5.0.12"],
 ] as const;
 type Expand = (pattern: string, options?: { max: number; maxLength: number; maxDepth: number }) => string[];
 

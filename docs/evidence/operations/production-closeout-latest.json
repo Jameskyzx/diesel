@@ -1,53 +1,177 @@
 {
-  "version": "diesel-production-closeout-observation-v1",
+  "version": "diesel-production-closeout-observation-v2",
   "evidenceKind": "historical-operator-record-only",
-  "observedAt": "2026-10-04T14:15:25.011Z",
-  "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
-  "outcome": "deployed_with_failed_cold_admission_acceptance",
+  "observedAt": "2026-10-04T20:31:57.373Z",
+  "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+  "outcome": "terminal_release_independently_verified_after_transport_loss_with_passing_bounded_chat_acceptance",
+  "productionAcceptancePassed": true,
   "allReportedProblemsResolved": false,
-  "productionAcceptancePassed": false,
+  "approvedChange": {
+    "hourlyChatAdmissionWaitMs": {
+      "before": 3000,
+      "after": 8000
+    },
+    "sqlTimeoutsChanged": false,
+    "readinessTimeoutChanged": false,
+    "quotasChanged": false,
+    "concurrencyChanged": false,
+    "schemaChanged": false,
+    "credentialsChanged": false
+  },
   "deployment": {
-    "pullRequest": "https://github.com/Jameskyzx/diesel/pull/56",
+    "pullRequest": "https://github.com/Jameskyzx/diesel/pull/58",
     "originalProcess": {
-      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
       "mode": "orchestrate",
-      "startedAt": "2026-10-04T10:37:39.588Z",
-      "completedAt": "2026-10-04T13:54:10.422Z",
-      "exitCode": 0,
+      "startedAt": "2026-10-04T18:23:40.366Z",
+      "completedAt": "2026-10-04T20:10:19.551Z",
+      "exitCode": 255,
       "signal": null,
       "spawnFailed": false
     },
-    "durationMs": 11790834,
+    "originalConnectionDurationMs": 6399185,
+    "transportInterruption": {
+      "originalSshExitCode": 255,
+      "originalRemoteExitCode": null,
+      "originalConnectionSucceeded": false,
+      "error": "Connection to 111.228.50.85 closed by remote host.",
+      "firstIndependentPostInterruptionState": {
+        "readOnly": true,
+        "observedAt": "2026-10-04T20:11:05.673Z",
+        "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+        "current": "/opt/diesel/releases/877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+        "protocolUnchanged": true,
+        "services": [
+          {
+            "name": "jamesky-api",
+            "pid": 1554881,
+            "status": "online",
+            "restarts": 0,
+            "version": null
+          },
+          {
+            "name": "diesel-demo",
+            "pid": 165582,
+            "status": "online",
+            "restarts": 0,
+            "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220"
+          }
+        ],
+        "checks": [
+          {
+            "origin": "http://127.0.0.1:8788",
+            "route": "/api/health",
+            "httpStatus": 200,
+            "durationMs": 86,
+            "status": "ok",
+            "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+            "checks": {}
+          },
+          {
+            "origin": "http://127.0.0.1:8788",
+            "route": "/api/health/ready",
+            "httpStatus": 200,
+            "durationMs": 126,
+            "status": "ok",
+            "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+            "checks": {
+              "aiChatAdmission": "ok",
+              "aiChatRateLimit": "ok",
+              "database": "ok"
+            }
+          },
+          {
+            "origin": "https://diesel.jamesky.site",
+            "route": "/api/health",
+            "httpStatus": 200,
+            "durationMs": 32,
+            "status": "ok",
+            "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+            "checks": {}
+          },
+          {
+            "origin": "https://diesel.jamesky.site",
+            "route": "/api/health/ready",
+            "httpStatus": 200,
+            "durationMs": 124,
+            "status": "ok",
+            "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+            "checks": {
+              "aiChatAdmission": "ok",
+              "aiChatRateLimit": "ok",
+              "database": "ok"
+            }
+          }
+        ],
+        "ledgerNames": [
+          "HOST_ACTIVATION_PENDING",
+          "HOST_ACTIVATION_V1",
+          "RECOVERY_REQUIRED",
+          "diesel-demo.pre-switch",
+          "env.production.local.pre-switch",
+          "governance-after-rehearsal.json",
+          "governance-before.json",
+          "jamesky.site.pre-switch",
+          "previous-release",
+          "validate-public-governance.sh"
+        ],
+        "disk": {
+          "path": "/opt/diesel",
+          "totalBytes": 63089594368,
+          "usedBytes": 55044452352,
+          "availableBytes": 5034754048
+        },
+        "pass": false
+      },
+      "originalProcessObserver": {
+        "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+        "startedAt": "2026-10-04T20:12:41.850Z",
+        "completedAt": "2026-10-04T20:25:43.188Z",
+        "exitCode": 0,
+        "signal": null,
+        "prefix": "/private/tmp/diesel-acceptance-release.6eWh1o/original-observer-1791144761849"
+      },
+      "originalProcessObservedAbsentAt": "2026-10-04T20:25:43.154Z",
+      "originalObserverLog": {
+        "byteLength": 29786,
+        "sha256": "e72f0ebb68c8a3d3d25b79d8de614cbb2892b56c7cf5d2c219178d5cb42998c2"
+      },
+      "originalExitWasNotReconstructed": true,
+      "originalReleaseWasNotRerun": true,
+      "completionBasis": "Independent original-process absence, strict versioned ledger validation, committed/finalized host state and fresh runtime/browser/provider readbacks; not a replacement success exit code for the interrupted connection.",
+      "operatorObservationLimitation": "After the foreground transport was lost, read-only diagnostic SSH connections and one bounded read-only observer were opened. This departed from the normal no-additional-SSH observation recommendation. No identity check was relaxed, and no causal claim is inferred.",
+      "rootCause": "unproven"
+    },
     "snapshotExports": [
       {
-        "outputPath": "/opt/diesel/backups/eb85fe4c40b5aff8274f835494a65770af8af611/governance-before.json",
-        "sha256": "56182e7936e918a6ea015bbd78ac2bfcb99b7fc1af95cf07b01a99cfa14fe212",
+        "outputPath": "/opt/diesel/backups/877ce9f667bfc03233423d5ebe6a5317cc6c5220/governance-before.json",
+        "sha256": "445ff12956ebeed1aa6ef56aecf2603dc5fda8620ba6d9a9d15813e294559339",
         "tableCounts": {
           "countries": 178,
           "country_jurisdictions": 185,
-          "data_change_logs": 13788,
-          "data_governance_drafts": 4588,
+          "data_change_logs": 15090,
+          "data_governance_drafts": 5022,
           "data_sources": 347,
           "jurisdictions": 155,
           "market_import_batches": 0,
           "market_metrics": 50,
-          "regulation_limits": 9148,
+          "regulation_limits": 9799,
           "regulations": 94
         }
       },
       {
-        "outputPath": "/opt/diesel/backups/eb85fe4c40b5aff8274f835494a65770af8af611/governance-after-rehearsal.json",
-        "sha256": "741977f19369ee97d2d90c500e8c3bda419c9023e1382323b56ae0664ce22681",
+        "outputPath": "/opt/diesel/backups/877ce9f667bfc03233423d5ebe6a5317cc6c5220/governance-after-rehearsal.json",
+        "sha256": "c3e817af4d8727873fb1bdea91900cfeecc1e0450a51d0e257af276983fcaa20",
         "tableCounts": {
           "countries": 178,
           "country_jurisdictions": 185,
-          "data_change_logs": 13788,
-          "data_governance_drafts": 4588,
+          "data_change_logs": 15090,
+          "data_governance_drafts": 5022,
           "data_sources": 347,
           "jurisdictions": 155,
           "market_import_batches": 0,
           "market_metrics": 50,
-          "regulation_limits": 9148,
+          "regulation_limits": 9799,
           "regulations": 94
         }
       }
@@ -55,13 +179,13 @@
     "snapshotWorkers": [
       {
         "kind": "governance-snapshot-worker-exit-v1",
-        "durationMs": 1857344,
+        "durationMs": 2073375,
         "exitCode": 0,
         "signal": null
       },
       {
         "kind": "governance-snapshot-worker-exit-v1",
-        "durationMs": 1876332,
+        "durationMs": 323687,
         "exitCode": 0,
         "signal": null
       }
@@ -69,42 +193,106 @@
     "restoreRehearsalAndStructuredComparisonPassed": true,
     "publishedCountryCount": 97,
     "ledgerValidation": {
-      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
       "mode": "ledger",
-      "startedAt": "2026-10-04T13:54:39.167Z",
-      "completedAt": "2026-10-04T13:54:40.352Z",
+      "startedAt": "2026-10-04T20:25:58.483Z",
+      "completedAt": "2026-10-04T20:25:59.654Z",
       "exitCode": 0,
       "signal": null,
       "spawnFailed": false
     },
     "independentVerifier": {
       "originalProcess": {
-        "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
         "mode": "verify",
-        "startedAt": "2026-10-04T13:55:02.055Z",
-        "completedAt": "2026-10-04T13:56:36.886Z",
+        "startedAt": "2026-10-04T20:26:09.961Z",
+        "completedAt": "2026-10-04T20:26:20.771Z",
         "exitCode": 0,
         "signal": null,
         "spawnFailed": false
       },
-      "retryObserved": true,
-      "failures": [
-        {
-          "timestamp": "2026-10-04T13:55:15.987Z",
-          "route": "/api/chat",
-          "status": 503,
-          "durationMs": 3002.967940000817,
-          "errorCode": "RATE_LIMIT_TIMEOUT",
-          "requestId": "13ec8e17-fce6-4cfa-b7db-158f2fe24af0"
-        }
-      ],
-      "limitation": "The verifier exited zero after retrying a real chat 503; this is not a clean acceptance pass."
+      "metadataReadback": {
+        "readOnly": true,
+        "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+        "observedAt": "2026-10-04T20:27:34.290Z",
+        "startedAt": "2026-10-04T20:26:09.961Z",
+        "completedAt": "2026-10-04T20:26:20.771Z",
+        "logPath": "/root/.pm2/logs/diesel-demo-out-22.log",
+        "records": [
+          {
+            "timestamp": "2026-10-04T20:26:10.532Z",
+            "route": "/api/health",
+            "status": 200,
+            "durationMs": 0.6298289997503161,
+            "errorCode": null,
+            "requestId": "d9d705ec-ac3f-4547-ae4c-be504113fa8a"
+          },
+          {
+            "timestamp": "2026-10-04T20:26:10.760Z",
+            "route": "/api/health/ready",
+            "status": 200,
+            "durationMs": 126.37401199992746,
+            "errorCode": null,
+            "requestId": "1893d603-7ee7-47db-b084-8f0486cc32db"
+          },
+          {
+            "timestamp": "2026-10-04T20:26:11.362Z",
+            "route": "/api/products",
+            "status": 200,
+            "durationMs": 580.3898930000141,
+            "errorCode": null,
+            "requestId": "e3c4ac8c-6148-46ca-887c-87101c50a167"
+          },
+          {
+            "timestamp": "2026-10-04T20:26:15.436Z",
+            "route": "/api/chat",
+            "status": 200,
+            "durationMs": 1802.8440919993445,
+            "errorCode": null,
+            "requestId": "360f56d3-30fb-4363-88e5-3363ea141bb8"
+          },
+          {
+            "timestamp": "2026-10-04T20:26:15.660Z",
+            "route": "/api/health",
+            "status": 200,
+            "durationMs": 0.2684909999370575,
+            "errorCode": null,
+            "requestId": "bf9e8948-b7a7-4c43-a8d4-83bcd91575d5"
+          },
+          {
+            "timestamp": "2026-10-04T20:26:15.959Z",
+            "route": "/api/health/ready",
+            "status": 200,
+            "durationMs": 113.29290000069886,
+            "errorCode": null,
+            "requestId": "aca02674-a55c-46fe-bfe2-870d7c91736d"
+          },
+          {
+            "timestamp": "2026-10-04T20:26:16.121Z",
+            "route": "/api/products",
+            "status": 200,
+            "durationMs": 53.91191999986768,
+            "errorCode": null,
+            "requestId": "b9e16075-be61-407c-8331-429011101784"
+          },
+          {
+            "timestamp": "2026-10-04T20:26:20.656Z",
+            "route": "/api/chat",
+            "status": 200,
+            "durationMs": 1223.6769069992006,
+            "errorCode": null,
+            "requestId": "db50a07c-100a-43de-bc90-fcac35b42766"
+          }
+        ]
+      },
+      "failures": [],
+      "limitation": "The verifier exit code alone does not establish a first-attempt pass; recorded HTTP failures and first-chat observations are separately retained."
     },
     "finalHostReadback": {
       "readOnly": true,
-      "observedAt": "2026-10-04T14:15:25.011Z",
-      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
-      "current": "/opt/diesel/releases/eb85fe4c40b5aff8274f835494a65770af8af611",
+      "observedAt": "2026-10-04T20:31:57.373Z",
+      "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+      "current": "/opt/diesel/releases/877ce9f667bfc03233423d5ebe6a5317cc6c5220",
       "protocolUnchanged": true,
       "services": [
         {
@@ -116,10 +304,10 @@
         },
         {
           "name": "diesel-demo",
-          "pid": 4179051,
+          "pid": 165582,
           "status": "online",
           "restarts": 0,
-          "version": "eb85fe4c40b5aff8274f835494a65770af8af611"
+          "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220"
         }
       ],
       "checks": [
@@ -127,18 +315,18 @@
           "origin": "http://127.0.0.1:8788",
           "route": "/api/health",
           "httpStatus": 200,
-          "durationMs": 60,
+          "durationMs": 78,
           "status": "ok",
-          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
           "checks": {}
         },
         {
           "origin": "http://127.0.0.1:8788",
           "route": "/api/health/ready",
           "httpStatus": 200,
-          "durationMs": 134,
+          "durationMs": 147,
           "status": "ok",
-          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
           "checks": {
             "aiChatAdmission": "ok",
             "aiChatRateLimit": "ok",
@@ -149,9 +337,9 @@
           "origin": "https://diesel.jamesky.site",
           "route": "/api/health",
           "httpStatus": 200,
-          "durationMs": 27,
+          "durationMs": 31,
           "status": "ok",
-          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
           "checks": {}
         },
         {
@@ -160,7 +348,7 @@
           "httpStatus": 200,
           "durationMs": 123,
           "status": "ok",
-          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
           "checks": {
             "aiChatAdmission": "ok",
             "aiChatRateLimit": "ok",
@@ -183,35 +371,35 @@
       "disk": {
         "path": "/opt/diesel",
         "totalBytes": 63089594368,
-        "usedBytes": 54149255168,
-        "availableBytes": 5929951232
+        "usedBytes": 55089319936,
+        "availableBytes": 4989886464
       },
       "pass": true
     },
     "repositorySnapshot": {
       "readOnly": true,
-      "startedAt": "2026-10-04T14:15:27.831Z",
-      "observedAt": "2026-10-04T14:15:31.216Z",
-      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
-      "localMaster": "eb85fe4c40b5aff8274f835494a65770af8af611",
-      "remoteMaster": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "startedAt": "2026-10-04T20:31:56.170Z",
+      "observedAt": "2026-10-04T20:31:59.412Z",
+      "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+      "localMaster": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+      "remoteMaster": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
       "pass": true
     }
   },
   "ci": [
     {
       "readOnly": true,
-      "startedAt": "2026-10-04T09:11:12.727Z",
-      "completedAt": "2026-10-04T09:58:40.612Z",
+      "startedAt": "2026-10-04T17:06:04.559Z",
+      "completedAt": "2026-10-04T17:42:35.121Z",
       "pass": true,
       "attempt": 1,
       "conclusion": "success",
-      "databaseId": 37191307640,
+      "databaseId": 37219199120,
       "event": "pull_request",
-      "headSha": "76594ea07f6ba316ade88d8c96f6a94dce886f2c",
+      "headSha": "e51dfbd8414bc2088ef0d8de09579065051cd602",
       "jobs": [
         {
-          "name": "Dependency and workflow supply-chain audit",
+          "name": "PostgreSQL + pgvector migration smoke",
           "status": "completed",
           "conclusion": "success"
         },
@@ -226,17 +414,17 @@
           "conclusion": "success"
         },
         {
+          "name": "Dependency and workflow supply-chain audit",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
           "name": "Lint, typecheck, app coverage, build",
           "status": "completed",
           "conclusion": "success"
         },
         {
-          "name": "PostgreSQL + pgvector migration smoke",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Playwright key flows",
+          "name": "Linux release handoff (systemd cgroup + real build)",
           "status": "completed",
           "conclusion": "success"
         },
@@ -246,7 +434,7 @@
           "conclusion": "success"
         },
         {
-          "name": "Linux release handoff (systemd cgroup + real build)",
+          "name": "Playwright key flows",
           "status": "completed",
           "conclusion": "success"
         },
@@ -262,36 +450,26 @@
         }
       ],
       "status": "completed",
-      "url": "https://github.com/Jameskyzx/diesel/actions/runs/37191307640/attempts/1"
+      "url": "https://github.com/Jameskyzx/diesel/actions/runs/37219199120/attempts/1"
     },
     {
       "readOnly": true,
-      "startedAt": "2026-10-04T09:59:40.567Z",
-      "completedAt": "2026-10-04T10:35:53.191Z",
+      "startedAt": "2026-10-04T17:43:46.336Z",
+      "completedAt": "2026-10-04T18:22:14.399Z",
       "pass": true,
       "attempt": 1,
       "conclusion": "success",
-      "databaseId": 37193878021,
+      "databaseId": 37221559107,
       "event": "push",
-      "headSha": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "headSha": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
       "jobs": [
-        {
-          "name": "PostgreSQL + pgvector migration smoke",
-          "status": "completed",
-          "conclusion": "success"
-        },
         {
           "name": "Lint, typecheck, app coverage, build",
           "status": "completed",
           "conclusion": "success"
         },
         {
-          "name": "Secret scanning (gitleaks)",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Dependency and workflow supply-chain audit",
+          "name": "PostgreSQL + pgvector migration smoke",
           "status": "completed",
           "conclusion": "success"
         },
@@ -301,7 +479,17 @@
           "conclusion": "success"
         },
         {
-          "name": "Failure-first FDE workflow via pnpm demo:fde",
+          "name": "Dependency and workflow supply-chain audit",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Secret scanning (gitleaks)",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Playwright key flows",
           "status": "completed",
           "conclusion": "success"
         },
@@ -311,7 +499,7 @@
           "conclusion": "success"
         },
         {
-          "name": "Playwright key flows",
+          "name": "Failure-first FDE workflow via pnpm demo:fde",
           "status": "completed",
           "conclusion": "success"
         },
@@ -327,71 +515,75 @@
         }
       ],
       "status": "completed",
-      "url": "https://github.com/Jameskyzx/diesel/actions/runs/37193878021/attempts/1"
+      "url": "https://github.com/Jameskyzx/diesel/actions/runs/37221559107/attempts/1"
     }
   ],
   "firstChatAdmission": {
-    "startedAt": "2026-10-04T14:07:38.496Z",
-    "completedAt": "2026-10-04T14:07:39.540Z",
-    "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
-    "exitCode": 1,
+    "startedAt": "2026-10-04T20:31:11.983Z",
+    "completedAt": "2026-10-04T20:31:13.147Z",
+    "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+    "exitCode": 0,
     "signal": null,
     "spawnFailed": false,
     "stderrBytes": 0,
     "observation": {
       "version": "diesel-first-chat-admission-observation-v1",
       "readOnly": true,
-      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
-      "observedAt": "2026-10-04T14:07:39.504Z",
+      "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+      "observedAt": "2026-10-04T20:31:13.113Z",
       "process": {
-        "pid": 4179051,
-        "startedAt": "2026-10-04T10:46:34.271Z",
+        "pid": 165582,
+        "startedAt": "2026-10-04T18:31:38.919Z",
         "restarts": 0
       },
       "coversProcessStart": true,
       "firstRecordedChatAfterProcessStart": {
         "route": "/api/chat",
-        "timestamp": "2026-10-04T12:35:21.653Z",
-        "durationMs": 3005.7072860002518,
-        "status": 503,
-        "errorCode": "RATE_LIMIT_TIMEOUT",
-        "requestId": "68998e67-0040-416a-8f30-5ad56e36b30e"
+        "timestamp": "2026-10-04T20:26:15.436Z",
+        "durationMs": 1802.8440919993445,
+        "status": 200,
+        "errorCode": null,
+        "requestId": "360f56d3-30fb-4363-88e5-3363ea141bb8"
       },
-      "chatRequestCount": 13,
-      "failedChatRequestCount": 3,
-      "pass": false,
+      "chatRequestCount": 10,
+      "failedChatRequestCount": 0,
+      "pass": true,
       "limitation": "First recorded chat HTTP admission after the current process started; this does not prove a successful model stream, a measured database-only latency, or a universal cold-start SLO."
     },
-    "pass": false
+    "pass": true
   },
   "productionStarterAcceptance": {
     "outcome": "six_first_attempt_cases_passed",
     "childProcessObservation": {
       "version": "diesel-real-starters-process-v1",
-      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
-      "startedAt": "2026-10-04T14:03:47.884Z",
-      "completedAt": "2026-10-04T14:05:04.610Z",
+      "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+      "authorizationBasis": {
+        "kind": "independently-verified-terminal-release-after-transport-loss",
+        "originalSshExitCode": 255,
+        "originalRemoteExitCode": null,
+        "stateReceipt": "/private/tmp/diesel-final-release.aM9ywO/final-state-1791145642313.json",
+        "observerReceipt": "/private/tmp/diesel-acceptance-release.6eWh1o/original-observer-1791144761849.process.json"
+      },
+      "startedAt": "2026-10-04T20:27:49.234Z",
+      "completedAt": "2026-10-04T20:28:40.903Z",
       "exitCode": 0,
       "signal": null,
       "spawnFailed": false,
       "reports": [
-        "test-results/live-1791122628348/report.json",
-        "test-results/live-1791122628675/report.json"
+        "test-results/live-1791145669667/report.json"
       ]
     },
     "rawProcessReceipt": {
-      "byteLength": 440,
-      "sha256": "fa0b473825d8bd93b3578b67df405577cd4152717bbf0a5a246d7f096f0d2838"
+      "byteLength": 743,
+      "sha256": "9655c4923a5849fba92832b88a3b36c56d67926865fb477612362d8e40fb0051"
     },
-    "supervisorExitCode": 1,
-    "supervisorIssue": "The wrapper initially counted two output directories as two reports. Exactly one report.json exists; the other directory contains no report. The original receipt and supervisor failure are preserved, and no model test was rerun. Report paths above are normalized relative to the repository.",
     "actualReport": {
-      "byteLength": 2333026,
-      "sha256": "63d07e829c103399cba4f3aa2e5f39dd12fd0a90a2b685e0b73e6374bee9db8d"
+      "byteLength": 2349996,
+      "sha256": "93bbb7d09a899f418bfac626ce2bffa6e0a649edb27cd586552bb8723ae3240d"
     },
     "statistics": {
-      "startTime": "2026-10-04T14:03:48.349Z",
-      "duration": 76245.45000000001,
+      "startTime": "2026-10-04T20:27:49.668Z",
+      "duration": 51219.421,
       "expected": 6,
       "skipped": 0,
       "unexpected": 0,
@@ -400,194 +592,194 @@
     "cases": [
       {
         "status": 200,
-        "requestId": "8ec9b052-eeab-4e37-b5ef-5410630f7c15",
+        "requestId": "6167c7fe-408a-4503-b1f1-87fab0155ac3",
         "locale": "zh-CN",
         "kind": "regulations",
-        "durationMs": 14451,
+        "durationMs": 9234,
         "retry": 0,
         "outcome": "passed",
         "publicSse": {
-          "byteLength": 29614,
-          "sha256": "3b6a4fe7e8aa88b6063ab8d15cbb3a25e4769ac2710b8a2ec9ff8d541171ef00"
+          "byteLength": 29546,
+          "sha256": "69ad50d3b2e27429933f6f7a82affcf86ccdda7550f7baffb340be8202c1decd"
         },
         "screenshot": {
-          "byteLength": 202904,
-          "sha256": "b0dbb0fd7cb8da9bf2bd39f4a101f16decf2f533e70aa391a0ce4d9de7f6aaf2"
+          "byteLength": 201237,
+          "sha256": "2785df95f11179a59ecdfa627a3b8eb163ec97d549863af1d674c6d023c54290"
         }
       },
       {
         "status": 200,
-        "requestId": "1bfd157d-60b4-4e5c-9bcb-b224ec428230",
+        "requestId": "4a5a8eae-0728-4388-8297-88da293343fe",
         "locale": "zh-CN",
         "kind": "comparison",
-        "durationMs": 13197,
+        "durationMs": 9152,
         "retry": 0,
         "outcome": "passed",
         "publicSse": {
-          "byteLength": 54488,
-          "sha256": "db643db1ab6b2d6ccd41248309a7adae4d5980eb404ec5fdc5ef0d15e0e272e2"
+          "byteLength": 54409,
+          "sha256": "5eb4d5dadcb2508f25241adf4dcb88192893a14828c1478b85d0752e6353d802"
         },
         "screenshot": {
-          "byteLength": 185136,
-          "sha256": "80edb460430840f174721e674ac02efee6db6281599e4b767d9dbcbb66058d9b"
+          "byteLength": 185137,
+          "sha256": "fddc06507bfb7f55b4c5a0f1c9410d1ae161144cc6065e03b173aff4586c5fe4"
         }
       },
       {
         "status": 200,
-        "requestId": "a71e455c-0c1e-464a-8b11-26b883acea48",
+        "requestId": "f42752ca-0d2a-439a-b0a1-5f886157953f",
         "locale": "zh-CN",
         "kind": "market",
-        "durationMs": 14317,
+        "durationMs": 7693,
         "retry": 0,
         "outcome": "passed",
         "publicSse": {
-          "byteLength": 29319,
-          "sha256": "a7fd92e195539cb775de800bc9993004c854506d5f9fe4eefc2a9fdf414ee0a1"
+          "byteLength": 29249,
+          "sha256": "495226ee4a77c1eef2042a07c8232ebabbd2a068a27e2f00247c6cb1b195f478"
         },
         "screenshot": {
-          "byteLength": 203652,
-          "sha256": "6fa845b1f8aa24431abef8b542670b6d016a4c7c0e1cd3e6e38d4f3f7ac2d57b"
+          "byteLength": 202640,
+          "sha256": "a949b6810e330c98fa6504bd58453274b33b601577f85883943752111775f723"
         }
       },
       {
         "status": 200,
-        "requestId": "0661a460-e247-4889-a98c-af822a629403",
+        "requestId": "5c84e5ce-57d5-4945-ae7c-5609c07d2977",
         "locale": "en",
         "kind": "regulations",
-        "durationMs": 11489,
+        "durationMs": 8004,
         "retry": 0,
         "outcome": "passed",
         "publicSse": {
-          "byteLength": 29576,
-          "sha256": "25fca6d20aa9f74c1a40639c547fa4182b95ced35ca7684b51874e0a0489c40d"
+          "byteLength": 29471,
+          "sha256": "11756a8b99aaf0d1e318bc1ebd0341d71dc6b588eeca1294d7ae6ebfb14650a7"
         },
         "screenshot": {
-          "byteLength": 303023,
-          "sha256": "208125db014e64ff57682866597b9ea33dcdf51fc20b88b88bb58b373897dca0"
+          "byteLength": 290939,
+          "sha256": "dd68ffb3e4263f39cef1928caad785dbd46806d0a2b1b9eeba16e1a16abd5058"
         }
       },
       {
         "status": 200,
-        "requestId": "0a0a0350-20f8-4036-bb86-dfca7ec2fc02",
+        "requestId": "f9675631-5f02-4a7f-8efe-4ef14ab19b7e",
         "locale": "en",
         "kind": "comparison",
-        "durationMs": 10747,
+        "durationMs": 8249,
         "retry": 0,
         "outcome": "passed",
         "publicSse": {
-          "byteLength": 54286,
-          "sha256": "9eed01d5bec3d11c2cfe314dba6f7c6da735d6706bdb9c945821528b8595cf6c"
+          "byteLength": 54422,
+          "sha256": "cc9c66229b3c23e6f6c6129df64ca04ebc84274987016c74e4cb56ece009112e"
         },
         "screenshot": {
-          "byteLength": 373454,
-          "sha256": "aadbea019bb34f8fc26efde2c261f3fedc21f24bd1aba09c2177de375a49b74e"
+          "byteLength": 387821,
+          "sha256": "721c9f349864f128d25879dd11e6ecc1c86a55e53790cf92767b4e224f05b155"
         }
       },
       {
         "status": 200,
-        "requestId": "efd6aaca-dcb1-4122-9feb-606d34d9835a",
+        "requestId": "74e7c2d7-e93f-4dbd-ba19-59c316b6c2c4",
         "locale": "en",
         "kind": "market",
-        "durationMs": 11355,
+        "durationMs": 8119,
         "retry": 0,
         "outcome": "passed",
         "publicSse": {
-          "byteLength": 28991,
-          "sha256": "5b9b2ad6c96929f3a5795748fdb86903a643cd7ca08e3297ab13d8511f65b5ba"
+          "byteLength": 29074,
+          "sha256": "a0f473b132e73875f9439929a312860aca0a57b63530c7adda7e5a1d2493a1d4"
         },
         "screenshot": {
-          "byteLength": 244642,
-          "sha256": "822af6d56c47ad8c1afc7f3216cc41fc306293e00f91a77599b9e973cdee2c0f"
+          "byteLength": 257877,
+          "sha256": "457da6667f684168e3d7e9739cbc9a01046f7e3afc4bb838340d74f3cd2d3711"
         }
       }
     ]
   },
   "providerCanary": {
     "originalProcess": {
-      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
       "mode": "canary",
-      "startedAt": "2026-10-04T14:06:36.158Z",
-      "completedAt": "2026-10-04T14:07:02.720Z",
+      "startedAt": "2026-10-04T20:30:26.604Z",
+      "completedAt": "2026-10-04T20:30:38.105Z",
       "exitCode": 0,
       "signal": null,
       "spawnFailed": false
     },
-    "controlledIdleBeforeStartMs": 91548,
+    "controlledIdleBeforeStartMs": 105701,
     "controlledIdleLimitation": "Gap between this operator suite and canary; not a guarantee of global traffic inactivity.",
     "report": {
-      "checkedAt": "2026-10-04T14:07:02.672Z",
-      "expectedVersion": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "checkedAt": "2026-10-04T20:30:37.979Z",
+      "expectedVersion": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
       "includeProviderAi": true,
       "pass": true,
       "results": [
         {
-          "durationMs": 143,
+          "durationMs": 116,
           "errorCode": null,
           "id": "liveness",
           "method": "GET",
           "pass": true,
           "path": "/api/health/live",
-          "requestId": "ed466cd9-d0be-495e-b213-19fd1d6b5c52",
+          "requestId": "e30337c2-4f10-440c-94ad-2708db35318f",
           "status": 200
         },
         {
-          "durationMs": 135,
+          "durationMs": 133,
           "errorCode": null,
           "id": "readiness",
           "method": "GET",
           "pass": true,
           "path": "/api/health/ready",
-          "requestId": "f2b27d73-01bb-45c2-8c38-b392ea9ffabf",
+          "requestId": "c7c1edac-95a1-4df7-820b-cfa3e889ac9b",
           "status": 200
         },
         {
-          "durationMs": 7147,
+          "durationMs": 1472,
           "errorCode": null,
           "id": "country-decision-summary",
           "method": "GET",
           "pass": true,
           "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-04",
-          "requestId": "c9d2d7b1-6302-449b-bd0e-e52057ed4437",
+          "requestId": "1a22a671-034a-48ab-9e9a-897e9671c759",
           "status": 200
         },
         {
-          "durationMs": 4544,
+          "durationMs": 923,
           "errorCode": null,
           "id": "country-decision-no-data",
           "method": "GET",
           "pass": true,
           "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-04",
-          "requestId": "dd312b6a-2c0f-4f08-bfc9-86357f1162d4",
+          "requestId": "ea9dba1b-6244-4c08-925c-723d893fff78",
           "status": 200
         },
         {
-          "durationMs": 131,
+          "durationMs": 67,
           "errorCode": null,
           "id": "public-products",
           "method": "GET",
           "pass": true,
           "path": "/api/products",
-          "requestId": "f4a93b6b-2378-4749-acef-81c5c799d890",
+          "requestId": "9a13abc5-4c6c-4f59-9d0c-161b5bef29a3",
           "status": 200
         },
         {
-          "durationMs": 1382,
+          "durationMs": 1365,
           "errorCode": null,
           "id": "chat-direct-sse",
           "method": "POST",
           "pass": true,
           "path": "/api/chat",
-          "requestId": "d54f430d-ca61-48db-9653-97786f766ce3",
+          "requestId": "3eee672c-a6ac-4983-9887-781bcfe8b95f",
           "status": 200
         },
         {
-          "durationMs": 11206,
+          "durationMs": 5404,
           "errorCode": null,
           "id": "chat-provider-sse",
           "method": "POST",
           "pass": true,
           "path": "/api/chat",
-          "requestId": "d1f899e8-9371-4812-8287-788c41e9aa94",
+          "requestId": "a3602fd8-253b-4a27-b7c1-3eaf709d8343",
           "status": 200
         }
       ],
@@ -596,107 +788,22 @@
       "version": "synthetic-canary-v5"
     }
   },
-  "earlierScheduledCanary": {
-    "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/37202569802",
-    "report": {
-      "checkedAt": "2026-10-04T12:35:25.017Z",
-      "expectedVersion": "e5c3249f067692a483d4133a313bd5883b166642",
-      "includeProviderAi": true,
-      "pass": false,
-      "results": [
-        {
-          "durationMs": 2829,
-          "errorCode": "INVALID_RESPONSE",
-          "id": "liveness",
-          "method": "GET",
-          "pass": false,
-          "path": "/api/health/live",
-          "requestId": "4dd6c234-1a97-495a-a97e-5b96a53b397c",
-          "status": 200
-        },
-        {
-          "durationMs": 4509,
-          "errorCode": "INVALID_RESPONSE",
-          "id": "readiness",
-          "method": "GET",
-          "pass": false,
-          "path": "/api/health/ready",
-          "requestId": "bb4ffa29-b43b-4a3a-b35f-dafe00229971",
-          "status": 200
-        },
-        {
-          "durationMs": 7255,
-          "errorCode": null,
-          "id": "country-decision-summary",
-          "method": "GET",
-          "pass": true,
-          "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-04",
-          "requestId": "311ca757-0131-4a6f-a4bf-921abd214999",
-          "status": 200
-        },
-        {
-          "durationMs": 4633,
-          "errorCode": null,
-          "id": "country-decision-no-data",
-          "method": "GET",
-          "pass": true,
-          "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-04",
-          "requestId": "cb591f58-7d99-49d0-962f-1a6596c5e9eb",
-          "status": 200
-        },
-        {
-          "durationMs": 1886,
-          "errorCode": null,
-          "id": "public-products",
-          "method": "GET",
-          "pass": true,
-          "path": "/api/products",
-          "requestId": "0690315c-a8e2-4e8f-8af8-a30b939cd41c",
-          "status": 200
-        },
-        {
-          "durationMs": 3749,
-          "errorCode": "STATUS_MISMATCH",
-          "id": "chat-direct-sse",
-          "method": "POST",
-          "pass": false,
-          "path": "/api/chat",
-          "requestId": "68998e67-0040-416a-8f30-5ad56e36b30e",
-          "status": 503
-        },
-        {
-          "durationMs": 3219,
-          "errorCode": "STATUS_MISMATCH",
-          "id": "chat-provider-sse",
-          "method": "POST",
-          "pass": false,
-          "path": "/api/chat",
-          "requestId": "b2e8e54d-2c47-49aa-acea-4cc4c600e2c5",
-          "status": 503
-        }
-      ],
-      "runError": null,
-      "targetOrigin": "https://diesel.jamesky.site",
-      "version": "synthetic-canary-v5"
-    },
-    "interpretation": "The run expected the previous release while deployment was in progress. Health returned 200 but failed validation. Both chat probes returned 503; the first request ID matches the recorded cold admission timeout. This failure is not replaced by the later passing canary."
-  },
   "readiness": {
     "version": "diesel-post-release-readiness-observation-v1",
     "readOnly": true,
-    "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+    "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
     "origin": "https://diesel.jamesky.site",
     "probeHost": "111.228.50.85",
-    "observedAt": "2026-10-04T14:06:15.813Z",
+    "observedAt": "2026-10-04T20:30:09.307Z",
     "records": [
       {
-        "startedAt": "2026-10-04T14:05:48.656Z",
-        "completedAt": "2026-10-04T14:05:49.548Z",
+        "startedAt": "2026-10-04T20:29:42.833Z",
+        "completedAt": "2026-10-04T20:29:43.063Z",
         "delayMs": 0,
-        "elapsedMs": 892,
+        "elapsedMs": 230,
         "httpStatus": 200,
         "status": "ok",
-        "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
         "checks": {
           "aiChatAdmission": "ok",
           "aiChatRateLimit": "ok",
@@ -705,13 +812,13 @@
         "pass": true
       },
       {
-        "startedAt": "2026-10-04T14:06:14.563Z",
-        "completedAt": "2026-10-04T14:06:14.691Z",
+        "startedAt": "2026-10-04T20:30:08.063Z",
+        "completedAt": "2026-10-04T20:30:08.188Z",
         "delayMs": 25000,
-        "elapsedMs": 128,
+        "elapsedMs": 125,
         "httpStatus": 200,
         "status": "ok",
-        "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
         "checks": {
           "aiChatAdmission": "ok",
           "aiChatRateLimit": "ok",
@@ -720,13 +827,13 @@
         "pass": true
       },
       {
-        "startedAt": "2026-10-04T14:06:15.692Z",
-        "completedAt": "2026-10-04T14:06:15.813Z",
+        "startedAt": "2026-10-04T20:30:09.189Z",
+        "completedAt": "2026-10-04T20:30:09.307Z",
         "delayMs": 1000,
-        "elapsedMs": 121,
+        "elapsedMs": 118,
         "httpStatus": 200,
         "status": "ok",
-        "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
         "checks": {
           "aiChatAdmission": "ok",
           "aiChatRateLimit": "ok",
@@ -739,14 +846,14 @@
     "limitation": "Three bounded production observations from the VPS through public HTTPS, including a 25-second idle interval; not a global uptime or latency guarantee."
   },
   "publicPages": {
-    "observedAt": "2026-10-04T14:14:42.599Z",
-    "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+    "observedAt": "2026-10-04T20:30:57.976Z",
+    "release": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
     "origin": "https://diesel.jamesky.site",
     "checks": [
       {
         "name": "health-version",
         "status": 200,
-        "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
         "pass": true
       },
       {
@@ -913,7 +1020,7 @@
   },
   "publicBoundary": {
     "readOnly": true,
-    "observedAt": "2026-10-04T14:14:29.405Z",
+    "observedAt": "2026-10-04T20:30:53.165Z",
     "checks": [
       {
         "kind": "redirect",
@@ -997,245 +1104,1405 @@
     "pass": true,
     "publicationCompletionClaimed": false
   },
-  "readOnlyDiagnostics": [
-    {
-      "rawArtifact": {
-        "byteLength": 6995,
-        "sha256": "d8c422e35a10c0f353488c37089deed3de071049ffe4647f3c80368a5129a704"
-      },
-      "startedAt": "2026-10-04T14:08:23.667Z",
-      "completedAt": "2026-10-04T14:09:19.288Z",
-      "exitCode": 1,
-      "signal": null,
-      "stderrBytes": 0,
-      "summary": {
-        "kind": "read-only-roundtrip-summary",
-        "readOnly": true,
+  "priorFailedProductionObservation": {
+    "version": "diesel-production-closeout-observation-v1",
+    "evidenceKind": "historical-operator-record-only",
+    "observedAt": "2026-10-04T14:15:25.011Z",
+    "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+    "outcome": "deployed_with_failed_cold_admission_acceptance",
+    "allReportedProblemsResolved": false,
+    "productionAcceptancePassed": false,
+    "deployment": {
+      "pullRequest": "https://github.com/Jameskyzx/diesel/pull/56",
+      "originalProcess": {
         "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
-        "observedAt": "2026-10-04T14:09:19.252Z",
-        "rows": [
+        "mode": "orchestrate",
+        "startedAt": "2026-10-04T10:37:39.588Z",
+        "completedAt": "2026-10-04T13:54:10.422Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false
+      },
+      "durationMs": 11790834,
+      "snapshotExports": [
+        {
+          "outputPath": "/opt/diesel/backups/eb85fe4c40b5aff8274f835494a65770af8af611/governance-before.json",
+          "sha256": "56182e7936e918a6ea015bbd78ac2bfcb99b7fc1af95cf07b01a99cfa14fe212",
+          "tableCounts": {
+            "countries": 178,
+            "country_jurisdictions": 185,
+            "data_change_logs": 13788,
+            "data_governance_drafts": 4588,
+            "data_sources": 347,
+            "jurisdictions": 155,
+            "market_import_batches": 0,
+            "market_metrics": 50,
+            "regulation_limits": 9148,
+            "regulations": 94
+          }
+        },
+        {
+          "outputPath": "/opt/diesel/backups/eb85fe4c40b5aff8274f835494a65770af8af611/governance-after-rehearsal.json",
+          "sha256": "741977f19369ee97d2d90c500e8c3bda419c9023e1382323b56ae0664ce22681",
+          "tableCounts": {
+            "countries": 178,
+            "country_jurisdictions": 185,
+            "data_change_logs": 13788,
+            "data_governance_drafts": 4588,
+            "data_sources": 347,
+            "jurisdictions": 155,
+            "market_import_batches": 0,
+            "market_metrics": 50,
+            "regulation_limits": 9148,
+            "regulations": 94
+          }
+        }
+      ],
+      "snapshotWorkers": [
+        {
+          "kind": "governance-snapshot-worker-exit-v1",
+          "durationMs": 1857344,
+          "exitCode": 0,
+          "signal": null
+        },
+        {
+          "kind": "governance-snapshot-worker-exit-v1",
+          "durationMs": 1876332,
+          "exitCode": 0,
+          "signal": null
+        }
+      ],
+      "restoreRehearsalAndStructuredComparisonPassed": true,
+      "publishedCountryCount": 97,
+      "ledgerValidation": {
+        "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "mode": "ledger",
+        "startedAt": "2026-10-04T13:54:39.167Z",
+        "completedAt": "2026-10-04T13:54:40.352Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false
+      },
+      "independentVerifier": {
+        "originalProcess": {
+          "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "mode": "verify",
+          "startedAt": "2026-10-04T13:55:02.055Z",
+          "completedAt": "2026-10-04T13:56:36.886Z",
+          "exitCode": 0,
+          "signal": null,
+          "spawnFailed": false
+        },
+        "retryObserved": true,
+        "failures": [
           {
-            "profile": "current-five-roundtrips",
-            "delayMs": 0,
-            "startedAt": "2026-10-04T14:08:24.258Z",
-            "durationMs": 2078,
-            "steps": [
-              {
-                "step": "transaction-open",
-                "elapsedMs": 1171
-              },
-              {
-                "step": "configure-timeouts",
-                "elapsedMs": 1311
-              },
-              {
-                "step": "first-read",
-                "elapsedMs": 1450
-              },
-              {
-                "step": "read-and-assert-timeouts",
-                "elapsedMs": 1590
-              }
-            ],
-            "pass": true
-          },
-          {
-            "profile": "current-five-roundtrips",
-            "delayMs": 0,
-            "startedAt": "2026-10-04T14:08:26.337Z",
-            "durationMs": 696,
-            "steps": [
-              {
-                "step": "transaction-open",
-                "elapsedMs": 140
-              },
-              {
-                "step": "configure-timeouts",
-                "elapsedMs": 280
-              },
-              {
-                "step": "first-read",
-                "elapsedMs": 419
-              },
-              {
-                "step": "read-and-assert-timeouts",
-                "elapsedMs": 558
-              }
-            ],
-            "pass": true
-          },
-          {
-            "profile": "current-five-roundtrips",
-            "delayMs": 25000,
-            "startedAt": "2026-10-04T14:08:52.035Z",
-            "durationMs": 700,
-            "steps": [
-              {
-                "step": "transaction-open",
-                "elapsedMs": 140
-              },
-              {
-                "step": "configure-timeouts",
-                "elapsedMs": 280
-              },
-              {
-                "step": "first-read",
-                "elapsedMs": 420
-              },
-              {
-                "step": "read-and-assert-timeouts",
-                "elapsedMs": 561
-              }
-            ],
-            "pass": true
-          },
-          {
-            "profile": "startup-timeouts-three-roundtrips",
-            "delayMs": 0,
-            "startedAt": "2026-10-04T14:08:52.875Z",
-            "durationMs": 895,
-            "steps": [
-              {
-                "step": "transaction-open",
-                "elapsedMs": 783
-              }
-            ],
-            "pass": false,
-            "errorCode": "TIMEOUT_OR_READ_ONLY_MISMATCH"
-          },
-          {
-            "profile": "startup-timeouts-three-roundtrips",
-            "delayMs": 0,
-            "startedAt": "2026-10-04T14:08:53.770Z",
-            "durationMs": 174,
-            "steps": [
-              {
-                "step": "transaction-open",
-                "elapsedMs": 59
-              }
-            ],
-            "pass": false,
-            "errorCode": "TIMEOUT_OR_READ_ONLY_MISMATCH"
-          },
-          {
-            "profile": "startup-timeouts-three-roundtrips",
-            "delayMs": 25000,
-            "startedAt": "2026-10-04T14:09:18.950Z",
-            "durationMs": 225,
-            "steps": [
-              {
-                "step": "transaction-open",
-                "elapsedMs": 71
-              }
-            ],
-            "pass": false,
-            "errorCode": "TIMEOUT_OR_READ_ONLY_MISMATCH"
+            "timestamp": "2026-10-04T13:55:15.987Z",
+            "route": "/api/chat",
+            "status": 503,
+            "durationMs": 3002.967940000817,
+            "errorCode": "RATE_LIMIT_TIMEOUT",
+            "requestId": "13ec8e17-fce6-4cfa-b7db-158f2fe24af0"
           }
         ],
-        "pass": false,
-        "limitation": "Sequential SELECT-only timings; no quota writes, no model calls, no proof of lock/concurrency behavior or an availability guarantee."
+        "limitation": "The verifier exited zero after retrying a real chat 503; this is not a clean acceptance pass."
+      },
+      "finalHostReadback": {
+        "readOnly": true,
+        "observedAt": "2026-10-04T14:15:25.011Z",
+        "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "current": "/opt/diesel/releases/eb85fe4c40b5aff8274f835494a65770af8af611",
+        "protocolUnchanged": true,
+        "services": [
+          {
+            "name": "jamesky-api",
+            "pid": 1554881,
+            "status": "online",
+            "restarts": 0,
+            "version": null
+          },
+          {
+            "name": "diesel-demo",
+            "pid": 4179051,
+            "status": "online",
+            "restarts": 0,
+            "version": "eb85fe4c40b5aff8274f835494a65770af8af611"
+          }
+        ],
+        "checks": [
+          {
+            "origin": "http://127.0.0.1:8788",
+            "route": "/api/health",
+            "httpStatus": 200,
+            "durationMs": 60,
+            "status": "ok",
+            "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+            "checks": {}
+          },
+          {
+            "origin": "http://127.0.0.1:8788",
+            "route": "/api/health/ready",
+            "httpStatus": 200,
+            "durationMs": 134,
+            "status": "ok",
+            "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+            "checks": {
+              "aiChatAdmission": "ok",
+              "aiChatRateLimit": "ok",
+              "database": "ok"
+            }
+          },
+          {
+            "origin": "https://diesel.jamesky.site",
+            "route": "/api/health",
+            "httpStatus": 200,
+            "durationMs": 27,
+            "status": "ok",
+            "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+            "checks": {}
+          },
+          {
+            "origin": "https://diesel.jamesky.site",
+            "route": "/api/health/ready",
+            "httpStatus": 200,
+            "durationMs": 123,
+            "status": "ok",
+            "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+            "checks": {
+              "aiChatAdmission": "ok",
+              "aiChatRateLimit": "ok",
+              "database": "ok"
+            }
+          }
+        ],
+        "ledgerNames": [
+          "HOST_ACTIVATION_COMMITTED",
+          "HOST_ACTIVATION_V1",
+          "PUBLISH_FINALIZED",
+          "diesel-demo.pre-switch",
+          "env.production.local.pre-switch",
+          "governance-after-rehearsal.json",
+          "governance-before.json",
+          "jamesky.site.pre-switch",
+          "previous-release",
+          "validate-public-governance.sh"
+        ],
+        "disk": {
+          "path": "/opt/diesel",
+          "totalBytes": 63089594368,
+          "usedBytes": 54149255168,
+          "availableBytes": 5929951232
+        },
+        "pass": true
+      },
+      "repositorySnapshot": {
+        "readOnly": true,
+        "startedAt": "2026-10-04T14:15:27.831Z",
+        "observedAt": "2026-10-04T14:15:31.216Z",
+        "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "localMaster": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "remoteMaster": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "pass": true
       }
     },
-    {
-      "rawArtifact": {
-        "byteLength": 4074,
-        "sha256": "060cbedd90c026858ebb6a01a4c1752cbb51e0ae8b4c3b1b687e737e42c116bb"
-      },
-      "startedAt": "2026-10-04T14:12:33.075Z",
-      "completedAt": "2026-10-04T14:13:04.513Z",
-      "exitCode": 0,
-      "signal": null,
-      "stderrBytes": 0,
-      "summary": {
-        "kind": "read-only-pipeline-summary",
+    "ci": [
+      {
         "readOnly": true,
-        "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
-        "observedAt": "2026-10-04T14:13:04.477Z",
-        "rows": [
+        "startedAt": "2026-10-04T09:11:12.727Z",
+        "completedAt": "2026-10-04T09:58:40.612Z",
+        "pass": true,
+        "attempt": 1,
+        "conclusion": "success",
+        "databaseId": 37191307640,
+        "event": "pull_request",
+        "headSha": "76594ea07f6ba316ade88d8c96f6a94dce886f2c",
+        "jobs": [
           {
-            "profile": "pipelined-transaction-settings-and-read",
-            "delayMs": 0,
-            "startedAt": "2026-10-04T14:12:33.664Z",
-            "durationMs": 3340,
-            "steps": [
-              {
-                "step": "transaction-open",
-                "elapsedMs": 1966
-              },
-              {
-                "step": "configured-read-completed",
-                "elapsedMs": 3202
-              },
-              {
-                "step": "read-and-assert-timeouts",
-                "elapsedMs": 3202
-              }
-            ],
-            "pass": true
+            "name": "Dependency and workflow supply-chain audit",
+            "status": "completed",
+            "conclusion": "success"
           },
           {
-            "profile": "pipelined-transaction-settings-and-read",
-            "delayMs": 0,
-            "startedAt": "2026-10-04T14:12:37.004Z",
-            "durationMs": 1506,
-            "steps": [
-              {
-                "step": "transaction-open",
-                "elapsedMs": 138
-              },
-              {
-                "step": "configured-read-completed",
-                "elapsedMs": 1369
-              },
-              {
-                "step": "read-and-assert-timeouts",
-                "elapsedMs": 1369
-              }
-            ],
-            "pass": true
+            "name": "Linux deployment script contracts",
+            "status": "completed",
+            "conclusion": "success"
           },
           {
-            "profile": "pipelined-transaction-settings-and-read",
-            "delayMs": 25000,
-            "startedAt": "2026-10-04T14:13:03.515Z",
-            "durationMs": 824,
-            "steps": [
-              {
-                "step": "transaction-open",
-                "elapsedMs": 138
-              },
-              {
-                "step": "configured-read-completed",
-                "elapsedMs": 687
-              },
-              {
-                "step": "read-and-assert-timeouts",
-                "elapsedMs": 687
-              }
-            ],
-            "pass": true
+            "name": "Secret scanning (gitleaks)",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Lint, typecheck, app coverage, build",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "PostgreSQL + pgvector migration smoke",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Playwright key flows",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Portfolio demo via pnpm demo",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Linux release handoff (systemd cgroup + real build)",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Failure-first FDE workflow via pnpm demo:fde",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Required CI gate",
+            "status": "completed",
+            "conclusion": "success"
           }
         ],
+        "status": "completed",
+        "url": "https://github.com/Jameskyzx/diesel/actions/runs/37191307640/attempts/1"
+      },
+      {
+        "readOnly": true,
+        "startedAt": "2026-10-04T09:59:40.567Z",
+        "completedAt": "2026-10-04T10:35:53.191Z",
         "pass": true,
-        "limitation": "Sequential SELECT-only timings; no quota writes, no model calls, no proof of lock/concurrency behavior or an availability guarantee."
+        "attempt": 1,
+        "conclusion": "success",
+        "databaseId": 37193878021,
+        "event": "push",
+        "headSha": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "jobs": [
+          {
+            "name": "PostgreSQL + pgvector migration smoke",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Lint, typecheck, app coverage, build",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Secret scanning (gitleaks)",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Dependency and workflow supply-chain audit",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Linux deployment script contracts",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Failure-first FDE workflow via pnpm demo:fde",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Portfolio demo via pnpm demo",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Playwright key flows",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Linux release handoff (systemd cgroup + real build)",
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Required CI gate",
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ],
+        "status": "completed",
+        "url": "https://github.com/Jameskyzx/diesel/actions/runs/37193878021/attempts/1"
       }
+    ],
+    "firstChatAdmission": {
+      "startedAt": "2026-10-04T14:07:38.496Z",
+      "completedAt": "2026-10-04T14:07:39.540Z",
+      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "exitCode": 1,
+      "signal": null,
+      "spawnFailed": false,
+      "stderrBytes": 0,
+      "observation": {
+        "version": "diesel-first-chat-admission-observation-v1",
+        "readOnly": true,
+        "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "observedAt": "2026-10-04T14:07:39.504Z",
+        "process": {
+          "pid": 4179051,
+          "startedAt": "2026-10-04T10:46:34.271Z",
+          "restarts": 0
+        },
+        "coversProcessStart": true,
+        "firstRecordedChatAfterProcessStart": {
+          "route": "/api/chat",
+          "timestamp": "2026-10-04T12:35:21.653Z",
+          "durationMs": 3005.7072860002518,
+          "status": 503,
+          "errorCode": "RATE_LIMIT_TIMEOUT",
+          "requestId": "68998e67-0040-416a-8f30-5ad56e36b30e"
+        },
+        "chatRequestCount": 13,
+        "failedChatRequestCount": 3,
+        "pass": false,
+        "limitation": "First recorded chat HTTP admission after the current process started; this does not prove a successful model stream, a measured database-only latency, or a universal cold-start SLO."
+      },
+      "pass": false
+    },
+    "productionStarterAcceptance": {
+      "outcome": "six_first_attempt_cases_passed",
+      "childProcessObservation": {
+        "version": "diesel-real-starters-process-v1",
+        "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "startedAt": "2026-10-04T14:03:47.884Z",
+        "completedAt": "2026-10-04T14:05:04.610Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "reports": [
+          "test-results/live-1791122628348/report.json",
+          "test-results/live-1791122628675/report.json"
+        ]
+      },
+      "rawProcessReceipt": {
+        "byteLength": 440,
+        "sha256": "fa0b473825d8bd93b3578b67df405577cd4152717bbf0a5a246d7f096f0d2838"
+      },
+      "supervisorExitCode": 1,
+      "supervisorIssue": "The wrapper initially counted two output directories as two reports. Exactly one report.json exists; the other directory contains no report. The original receipt and supervisor failure are preserved, and no model test was rerun. Report paths above are normalized relative to the repository.",
+      "actualReport": {
+        "byteLength": 2333026,
+        "sha256": "63d07e829c103399cba4f3aa2e5f39dd12fd0a90a2b685e0b73e6374bee9db8d"
+      },
+      "statistics": {
+        "startTime": "2026-10-04T14:03:48.349Z",
+        "duration": 76245.45000000001,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "cases": [
+        {
+          "status": 200,
+          "requestId": "8ec9b052-eeab-4e37-b5ef-5410630f7c15",
+          "locale": "zh-CN",
+          "kind": "regulations",
+          "durationMs": 14451,
+          "retry": 0,
+          "outcome": "passed",
+          "publicSse": {
+            "byteLength": 29614,
+            "sha256": "3b6a4fe7e8aa88b6063ab8d15cbb3a25e4769ac2710b8a2ec9ff8d541171ef00"
+          },
+          "screenshot": {
+            "byteLength": 202904,
+            "sha256": "b0dbb0fd7cb8da9bf2bd39f4a101f16decf2f533e70aa391a0ce4d9de7f6aaf2"
+          }
+        },
+        {
+          "status": 200,
+          "requestId": "1bfd157d-60b4-4e5c-9bcb-b224ec428230",
+          "locale": "zh-CN",
+          "kind": "comparison",
+          "durationMs": 13197,
+          "retry": 0,
+          "outcome": "passed",
+          "publicSse": {
+            "byteLength": 54488,
+            "sha256": "db643db1ab6b2d6ccd41248309a7adae4d5980eb404ec5fdc5ef0d15e0e272e2"
+          },
+          "screenshot": {
+            "byteLength": 185136,
+            "sha256": "80edb460430840f174721e674ac02efee6db6281599e4b767d9dbcbb66058d9b"
+          }
+        },
+        {
+          "status": 200,
+          "requestId": "a71e455c-0c1e-464a-8b11-26b883acea48",
+          "locale": "zh-CN",
+          "kind": "market",
+          "durationMs": 14317,
+          "retry": 0,
+          "outcome": "passed",
+          "publicSse": {
+            "byteLength": 29319,
+            "sha256": "a7fd92e195539cb775de800bc9993004c854506d5f9fe4eefc2a9fdf414ee0a1"
+          },
+          "screenshot": {
+            "byteLength": 203652,
+            "sha256": "6fa845b1f8aa24431abef8b542670b6d016a4c7c0e1cd3e6e38d4f3f7ac2d57b"
+          }
+        },
+        {
+          "status": 200,
+          "requestId": "0661a460-e247-4889-a98c-af822a629403",
+          "locale": "en",
+          "kind": "regulations",
+          "durationMs": 11489,
+          "retry": 0,
+          "outcome": "passed",
+          "publicSse": {
+            "byteLength": 29576,
+            "sha256": "25fca6d20aa9f74c1a40639c547fa4182b95ced35ca7684b51874e0a0489c40d"
+          },
+          "screenshot": {
+            "byteLength": 303023,
+            "sha256": "208125db014e64ff57682866597b9ea33dcdf51fc20b88b88bb58b373897dca0"
+          }
+        },
+        {
+          "status": 200,
+          "requestId": "0a0a0350-20f8-4036-bb86-dfca7ec2fc02",
+          "locale": "en",
+          "kind": "comparison",
+          "durationMs": 10747,
+          "retry": 0,
+          "outcome": "passed",
+          "publicSse": {
+            "byteLength": 54286,
+            "sha256": "9eed01d5bec3d11c2cfe314dba6f7c6da735d6706bdb9c945821528b8595cf6c"
+          },
+          "screenshot": {
+            "byteLength": 373454,
+            "sha256": "aadbea019bb34f8fc26efde2c261f3fedc21f24bd1aba09c2177de375a49b74e"
+          }
+        },
+        {
+          "status": 200,
+          "requestId": "efd6aaca-dcb1-4122-9feb-606d34d9835a",
+          "locale": "en",
+          "kind": "market",
+          "durationMs": 11355,
+          "retry": 0,
+          "outcome": "passed",
+          "publicSse": {
+            "byteLength": 28991,
+            "sha256": "5b9b2ad6c96929f3a5795748fdb86903a643cd7ca08e3297ab13d8511f65b5ba"
+          },
+          "screenshot": {
+            "byteLength": 244642,
+            "sha256": "822af6d56c47ad8c1afc7f3216cc41fc306293e00f91a77599b9e973cdee2c0f"
+          }
+        }
+      ]
+    },
+    "providerCanary": {
+      "originalProcess": {
+        "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "mode": "canary",
+        "startedAt": "2026-10-04T14:06:36.158Z",
+        "completedAt": "2026-10-04T14:07:02.720Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false
+      },
+      "controlledIdleBeforeStartMs": 91548,
+      "controlledIdleLimitation": "Gap between this operator suite and canary; not a guarantee of global traffic inactivity.",
+      "report": {
+        "checkedAt": "2026-10-04T14:07:02.672Z",
+        "expectedVersion": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "includeProviderAi": true,
+        "pass": true,
+        "results": [
+          {
+            "durationMs": 143,
+            "errorCode": null,
+            "id": "liveness",
+            "method": "GET",
+            "pass": true,
+            "path": "/api/health/live",
+            "requestId": "ed466cd9-d0be-495e-b213-19fd1d6b5c52",
+            "status": 200
+          },
+          {
+            "durationMs": 135,
+            "errorCode": null,
+            "id": "readiness",
+            "method": "GET",
+            "pass": true,
+            "path": "/api/health/ready",
+            "requestId": "f2b27d73-01bb-45c2-8c38-b392ea9ffabf",
+            "status": 200
+          },
+          {
+            "durationMs": 7147,
+            "errorCode": null,
+            "id": "country-decision-summary",
+            "method": "GET",
+            "pass": true,
+            "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-04",
+            "requestId": "c9d2d7b1-6302-449b-bd0e-e52057ed4437",
+            "status": 200
+          },
+          {
+            "durationMs": 4544,
+            "errorCode": null,
+            "id": "country-decision-no-data",
+            "method": "GET",
+            "pass": true,
+            "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-04",
+            "requestId": "dd312b6a-2c0f-4f08-bfc9-86357f1162d4",
+            "status": 200
+          },
+          {
+            "durationMs": 131,
+            "errorCode": null,
+            "id": "public-products",
+            "method": "GET",
+            "pass": true,
+            "path": "/api/products",
+            "requestId": "f4a93b6b-2378-4749-acef-81c5c799d890",
+            "status": 200
+          },
+          {
+            "durationMs": 1382,
+            "errorCode": null,
+            "id": "chat-direct-sse",
+            "method": "POST",
+            "pass": true,
+            "path": "/api/chat",
+            "requestId": "d54f430d-ca61-48db-9653-97786f766ce3",
+            "status": 200
+          },
+          {
+            "durationMs": 11206,
+            "errorCode": null,
+            "id": "chat-provider-sse",
+            "method": "POST",
+            "pass": true,
+            "path": "/api/chat",
+            "requestId": "d1f899e8-9371-4812-8287-788c41e9aa94",
+            "status": 200
+          }
+        ],
+        "runError": null,
+        "targetOrigin": "https://diesel.jamesky.site",
+        "version": "synthetic-canary-v5"
+      }
+    },
+    "earlierScheduledCanary": {
+      "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/37202569802",
+      "report": {
+        "checkedAt": "2026-10-04T12:35:25.017Z",
+        "expectedVersion": "e5c3249f067692a483d4133a313bd5883b166642",
+        "includeProviderAi": true,
+        "pass": false,
+        "results": [
+          {
+            "durationMs": 2829,
+            "errorCode": "INVALID_RESPONSE",
+            "id": "liveness",
+            "method": "GET",
+            "pass": false,
+            "path": "/api/health/live",
+            "requestId": "4dd6c234-1a97-495a-a97e-5b96a53b397c",
+            "status": 200
+          },
+          {
+            "durationMs": 4509,
+            "errorCode": "INVALID_RESPONSE",
+            "id": "readiness",
+            "method": "GET",
+            "pass": false,
+            "path": "/api/health/ready",
+            "requestId": "bb4ffa29-b43b-4a3a-b35f-dafe00229971",
+            "status": 200
+          },
+          {
+            "durationMs": 7255,
+            "errorCode": null,
+            "id": "country-decision-summary",
+            "method": "GET",
+            "pass": true,
+            "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-04",
+            "requestId": "311ca757-0131-4a6f-a4bf-921abd214999",
+            "status": 200
+          },
+          {
+            "durationMs": 4633,
+            "errorCode": null,
+            "id": "country-decision-no-data",
+            "method": "GET",
+            "pass": true,
+            "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-04",
+            "requestId": "cb591f58-7d99-49d0-962f-1a6596c5e9eb",
+            "status": 200
+          },
+          {
+            "durationMs": 1886,
+            "errorCode": null,
+            "id": "public-products",
+            "method": "GET",
+            "pass": true,
+            "path": "/api/products",
+            "requestId": "0690315c-a8e2-4e8f-8af8-a30b939cd41c",
+            "status": 200
+          },
+          {
+            "durationMs": 3749,
+            "errorCode": "STATUS_MISMATCH",
+            "id": "chat-direct-sse",
+            "method": "POST",
+            "pass": false,
+            "path": "/api/chat",
+            "requestId": "68998e67-0040-416a-8f30-5ad56e36b30e",
+            "status": 503
+          },
+          {
+            "durationMs": 3219,
+            "errorCode": "STATUS_MISMATCH",
+            "id": "chat-provider-sse",
+            "method": "POST",
+            "pass": false,
+            "path": "/api/chat",
+            "requestId": "b2e8e54d-2c47-49aa-acea-4cc4c600e2c5",
+            "status": 503
+          }
+        ],
+        "runError": null,
+        "targetOrigin": "https://diesel.jamesky.site",
+        "version": "synthetic-canary-v5"
+      },
+      "interpretation": "The run expected the previous release while deployment was in progress. Health returned 200 but failed validation. Both chat probes returned 503; the first request ID matches the recorded cold admission timeout. This failure is not replaced by the later passing canary."
+    },
+    "readiness": {
+      "version": "diesel-post-release-readiness-observation-v1",
+      "readOnly": true,
+      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "origin": "https://diesel.jamesky.site",
+      "probeHost": "111.228.50.85",
+      "observedAt": "2026-10-04T14:06:15.813Z",
+      "records": [
+        {
+          "startedAt": "2026-10-04T14:05:48.656Z",
+          "completedAt": "2026-10-04T14:05:49.548Z",
+          "delayMs": 0,
+          "elapsedMs": 892,
+          "httpStatus": 200,
+          "status": "ok",
+          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "checks": {
+            "aiChatAdmission": "ok",
+            "aiChatRateLimit": "ok",
+            "database": "ok"
+          },
+          "pass": true
+        },
+        {
+          "startedAt": "2026-10-04T14:06:14.563Z",
+          "completedAt": "2026-10-04T14:06:14.691Z",
+          "delayMs": 25000,
+          "elapsedMs": 128,
+          "httpStatus": 200,
+          "status": "ok",
+          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "checks": {
+            "aiChatAdmission": "ok",
+            "aiChatRateLimit": "ok",
+            "database": "ok"
+          },
+          "pass": true
+        },
+        {
+          "startedAt": "2026-10-04T14:06:15.692Z",
+          "completedAt": "2026-10-04T14:06:15.813Z",
+          "delayMs": 1000,
+          "elapsedMs": 121,
+          "httpStatus": 200,
+          "status": "ok",
+          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "checks": {
+            "aiChatAdmission": "ok",
+            "aiChatRateLimit": "ok",
+            "database": "ok"
+          },
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "limitation": "Three bounded production observations from the VPS through public HTTPS, including a 25-second idle interval; not a global uptime or latency guarantee."
+    },
+    "publicPages": {
+      "observedAt": "2026-10-04T14:14:42.599Z",
+      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "origin": "https://diesel.jamesky.site",
+      "checks": [
+        {
+          "name": "health-version",
+          "status": 200,
+          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "pass": true
+        },
+        {
+          "name": "home-desktop",
+          "path": "/",
+          "locale": "en",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "status": 200,
+          "navigation": {
+            "x": 0,
+            "y": 88,
+            "width": 240,
+            "height": 912
+          },
+          "toolbar": {
+            "x": 240,
+            "y": 0,
+            "width": 1200,
+            "height": 64
+          },
+          "horizontalOverflow": false,
+          "iconLoaded": true,
+          "pass": true,
+          "screenshot": {
+            "name": "home-desktop.png",
+            "byteLength": 183199,
+            "sha256": "308123384c214ad38f8a65a1605dc706169c03735d28f276037c9d03f9a7226c"
+          }
+        },
+        {
+          "name": "map-desktop",
+          "path": "/map",
+          "locale": "en",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "status": 200,
+          "navigation": {
+            "x": 0,
+            "y": 88,
+            "width": 240,
+            "height": 912
+          },
+          "toolbar": {
+            "x": 240,
+            "y": 0,
+            "width": 1200,
+            "height": 64
+          },
+          "horizontalOverflow": false,
+          "iconLoaded": true,
+          "pass": true,
+          "screenshot": {
+            "name": "map-desktop.png",
+            "byteLength": 152776,
+            "sha256": "c6cca4f29c4b2b42091714ae7390a851ef798814a58ccfbf5dcc8cef3083fe0f"
+          }
+        },
+        {
+          "name": "country-desktop",
+          "path": "/countries/CHN?applicationScope=construction&powerKw=100",
+          "locale": "en",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "status": 200,
+          "navigation": {
+            "x": 0,
+            "y": 88,
+            "width": 240,
+            "height": 912
+          },
+          "toolbar": {
+            "x": 240,
+            "y": 0,
+            "width": 1200,
+            "height": 64
+          },
+          "horizontalOverflow": false,
+          "iconLoaded": true,
+          "pass": true,
+          "screenshot": {
+            "name": "country-desktop.png",
+            "byteLength": 292842,
+            "sha256": "a8132c12de0607cb6d630204ba5c6fafe59c0947f23a0c2f05f39bc8089bec1d"
+          }
+        },
+        {
+          "name": "chat-desktop",
+          "path": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-01-20",
+          "locale": "en",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "status": 200,
+          "navigation": {
+            "x": 0,
+            "y": 88,
+            "width": 240,
+            "height": 912
+          },
+          "toolbar": {
+            "x": 240,
+            "y": 0,
+            "width": 1200,
+            "height": 64
+          },
+          "horizontalOverflow": false,
+          "iconLoaded": true,
+          "pass": true,
+          "screenshot": {
+            "name": "chat-desktop.png",
+            "byteLength": 154690,
+            "sha256": "febc8c0c846986fe053e330780d158745426f0397fc4fe6b017936474603fa02"
+          }
+        },
+        {
+          "name": "home-mobile",
+          "path": "/",
+          "locale": "zh-CN",
+          "viewport": {
+            "width": 320,
+            "height": 900
+          },
+          "status": 200,
+          "navigation": {
+            "x": 0,
+            "y": 64,
+            "width": 320,
+            "height": 45
+          },
+          "toolbar": {
+            "x": 0,
+            "y": 0,
+            "width": 320,
+            "height": 110
+          },
+          "horizontalOverflow": false,
+          "iconLoaded": true,
+          "pass": true,
+          "screenshot": {
+            "name": "home-mobile.png",
+            "byteLength": 134991,
+            "sha256": "5b9bd6652aea4b4e002fe7385351ca97260e5188217c946e506d04fd8c03b490"
+          }
+        },
+        {
+          "name": "mobile-locale-switch",
+          "path": "/?releaseCheck=workspace",
+          "bothDirections": true,
+          "refreshPersisted": true,
+          "pathAndQueryPreserved": true,
+          "pass": true
+        }
+      ],
+      "failure": null,
+      "pass": true
+    },
+    "publicBoundary": {
+      "readOnly": true,
+      "observedAt": "2026-10-04T14:14:29.405Z",
+      "checks": [
+        {
+          "kind": "redirect",
+          "origin": "http://111.228.50.85",
+          "status": 301,
+          "location": "https://diesel.jamesky.site/map?country=CHN&scope=construction",
+          "pass": true
+        },
+        {
+          "kind": "redirect",
+          "origin": "http://diesel.jamesky.site",
+          "status": 301,
+          "location": "https://diesel.jamesky.site/map?country=CHN&scope=construction",
+          "pass": true
+        },
+        {
+          "kind": "blog-redirect",
+          "origin": "http://jamesky.site",
+          "status": 301,
+          "location": "https://jamesky.site/map?country=CHN&scope=construction",
+          "pass": true
+        },
+        {
+          "kind": "blog-redirect",
+          "origin": "http://www.jamesky.site",
+          "status": 301,
+          "location": "https://jamesky.site/map?country=CHN&scope=construction",
+          "pass": true
+        },
+        {
+          "kind": "blog-redirect",
+          "origin": "https://www.jamesky.site",
+          "status": 301,
+          "location": "https://jamesky.site/map?country=CHN&scope=construction",
+          "pass": true
+        },
+        {
+          "kind": "blog-home",
+          "origin": "https://jamesky.site/",
+          "status": 200,
+          "sha256": "56e6b252580d4998e210093450a0712fc48ee1c040b0c4a6abb00e05a1403bf8",
+          "deployedSha256": "56e6b252580d4998e210093450a0712fc48ee1c040b0c4a6abb00e05a1403bf8",
+          "pass": true
+        },
+        {
+          "kind": "internal-route",
+          "path": "/admin",
+          "status": 404,
+          "hsts": "max-age=31536000",
+          "pass": true
+        },
+        {
+          "kind": "internal-route",
+          "path": "/admin/users",
+          "status": 404,
+          "hsts": "max-age=31536000",
+          "pass": true
+        },
+        {
+          "kind": "internal-route",
+          "path": "/api/admin",
+          "status": 404,
+          "hsts": "max-age=31536000",
+          "pass": true
+        },
+        {
+          "kind": "internal-route",
+          "path": "/dev",
+          "status": 404,
+          "hsts": "max-age=31536000",
+          "pass": true
+        },
+        {
+          "kind": "internal-route",
+          "path": "/api/dev",
+          "status": 404,
+          "hsts": "max-age=31536000",
+          "pass": true
+        }
+      ],
+      "pass": true,
+      "publicationCompletionClaimed": false
+    },
+    "readOnlyDiagnostics": [
+      {
+        "rawArtifact": {
+          "byteLength": 6995,
+          "sha256": "d8c422e35a10c0f353488c37089deed3de071049ffe4647f3c80368a5129a704"
+        },
+        "startedAt": "2026-10-04T14:08:23.667Z",
+        "completedAt": "2026-10-04T14:09:19.288Z",
+        "exitCode": 1,
+        "signal": null,
+        "stderrBytes": 0,
+        "summary": {
+          "kind": "read-only-roundtrip-summary",
+          "readOnly": true,
+          "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "observedAt": "2026-10-04T14:09:19.252Z",
+          "rows": [
+            {
+              "profile": "current-five-roundtrips",
+              "delayMs": 0,
+              "startedAt": "2026-10-04T14:08:24.258Z",
+              "durationMs": 2078,
+              "steps": [
+                {
+                  "step": "transaction-open",
+                  "elapsedMs": 1171
+                },
+                {
+                  "step": "configure-timeouts",
+                  "elapsedMs": 1311
+                },
+                {
+                  "step": "first-read",
+                  "elapsedMs": 1450
+                },
+                {
+                  "step": "read-and-assert-timeouts",
+                  "elapsedMs": 1590
+                }
+              ],
+              "pass": true
+            },
+            {
+              "profile": "current-five-roundtrips",
+              "delayMs": 0,
+              "startedAt": "2026-10-04T14:08:26.337Z",
+              "durationMs": 696,
+              "steps": [
+                {
+                  "step": "transaction-open",
+                  "elapsedMs": 140
+                },
+                {
+                  "step": "configure-timeouts",
+                  "elapsedMs": 280
+                },
+                {
+                  "step": "first-read",
+                  "elapsedMs": 419
+                },
+                {
+                  "step": "read-and-assert-timeouts",
+                  "elapsedMs": 558
+                }
+              ],
+              "pass": true
+            },
+            {
+              "profile": "current-five-roundtrips",
+              "delayMs": 25000,
+              "startedAt": "2026-10-04T14:08:52.035Z",
+              "durationMs": 700,
+              "steps": [
+                {
+                  "step": "transaction-open",
+                  "elapsedMs": 140
+                },
+                {
+                  "step": "configure-timeouts",
+                  "elapsedMs": 280
+                },
+                {
+                  "step": "first-read",
+                  "elapsedMs": 420
+                },
+                {
+                  "step": "read-and-assert-timeouts",
+                  "elapsedMs": 561
+                }
+              ],
+              "pass": true
+            },
+            {
+              "profile": "startup-timeouts-three-roundtrips",
+              "delayMs": 0,
+              "startedAt": "2026-10-04T14:08:52.875Z",
+              "durationMs": 895,
+              "steps": [
+                {
+                  "step": "transaction-open",
+                  "elapsedMs": 783
+                }
+              ],
+              "pass": false,
+              "errorCode": "TIMEOUT_OR_READ_ONLY_MISMATCH"
+            },
+            {
+              "profile": "startup-timeouts-three-roundtrips",
+              "delayMs": 0,
+              "startedAt": "2026-10-04T14:08:53.770Z",
+              "durationMs": 174,
+              "steps": [
+                {
+                  "step": "transaction-open",
+                  "elapsedMs": 59
+                }
+              ],
+              "pass": false,
+              "errorCode": "TIMEOUT_OR_READ_ONLY_MISMATCH"
+            },
+            {
+              "profile": "startup-timeouts-three-roundtrips",
+              "delayMs": 25000,
+              "startedAt": "2026-10-04T14:09:18.950Z",
+              "durationMs": 225,
+              "steps": [
+                {
+                  "step": "transaction-open",
+                  "elapsedMs": 71
+                }
+              ],
+              "pass": false,
+              "errorCode": "TIMEOUT_OR_READ_ONLY_MISMATCH"
+            }
+          ],
+          "pass": false,
+          "limitation": "Sequential SELECT-only timings; no quota writes, no model calls, no proof of lock/concurrency behavior or an availability guarantee."
+        }
+      },
+      {
+        "rawArtifact": {
+          "byteLength": 4074,
+          "sha256": "060cbedd90c026858ebb6a01a4c1752cbb51e0ae8b4c3b1b687e737e42c116bb"
+        },
+        "startedAt": "2026-10-04T14:12:33.075Z",
+        "completedAt": "2026-10-04T14:13:04.513Z",
+        "exitCode": 0,
+        "signal": null,
+        "stderrBytes": 0,
+        "summary": {
+          "kind": "read-only-pipeline-summary",
+          "readOnly": true,
+          "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "observedAt": "2026-10-04T14:13:04.477Z",
+          "rows": [
+            {
+              "profile": "pipelined-transaction-settings-and-read",
+              "delayMs": 0,
+              "startedAt": "2026-10-04T14:12:33.664Z",
+              "durationMs": 3340,
+              "steps": [
+                {
+                  "step": "transaction-open",
+                  "elapsedMs": 1966
+                },
+                {
+                  "step": "configured-read-completed",
+                  "elapsedMs": 3202
+                },
+                {
+                  "step": "read-and-assert-timeouts",
+                  "elapsedMs": 3202
+                }
+              ],
+              "pass": true
+            },
+            {
+              "profile": "pipelined-transaction-settings-and-read",
+              "delayMs": 0,
+              "startedAt": "2026-10-04T14:12:37.004Z",
+              "durationMs": 1506,
+              "steps": [
+                {
+                  "step": "transaction-open",
+                  "elapsedMs": 138
+                },
+                {
+                  "step": "configured-read-completed",
+                  "elapsedMs": 1369
+                },
+                {
+                  "step": "read-and-assert-timeouts",
+                  "elapsedMs": 1369
+                }
+              ],
+              "pass": true
+            },
+            {
+              "profile": "pipelined-transaction-settings-and-read",
+              "delayMs": 25000,
+              "startedAt": "2026-10-04T14:13:03.515Z",
+              "durationMs": 824,
+              "steps": [
+                {
+                  "step": "transaction-open",
+                  "elapsedMs": 138
+                },
+                {
+                  "step": "configured-read-completed",
+                  "elapsedMs": 687
+                },
+                {
+                  "step": "read-and-assert-timeouts",
+                  "elapsedMs": 687
+                }
+              ],
+              "pass": true
+            }
+          ],
+          "pass": true,
+          "limitation": "Sequential SELECT-only timings; no quota writes, no model calls, no proof of lock/concurrency behavior or an availability guarantee."
+        }
+      }
+    ],
+    "pendingDecisions": {
+      "chatAdmissionDeadline": "Current 3000 ms deadline is unchanged. User approval was requested before considering an 8000 ms application wait; no relaxation has been implemented.",
+      "releaseProtocol": "App/data release decoupling is not implemented. The existing permanent V1 protocol and recovery safeguards remain unchanged."
+    },
+    "remainingGates": [
+      "Cold/long-idle admission can still return RATE_LIMIT_TIMEOUT before a model call.",
+      "Latest formal 18-case live eval remains failed (run b76ab06d-aeb3-4202-bce1-da4881c005cf); six starter passes do not replace it.",
+      "No approved real product/certification fixtures, independent expert signoff or real customer pilot evidence.",
+      "FDE history redistribution rights and authorized private-corpus/storage/retrieval decisions remain unresolved.",
+      "Rebuildable cache cleanup is not a permanent backup-retention or disk-capacity policy."
+    ],
+    "limitations": [
+      "This is an operator observation, not externally authenticated or signed release evidence.",
+      "A healthy deployment, passing warm chat samples and passing local/CI tests do not establish a zero-error production SLO.",
+      "Raw process logs, browser report and screenshots were retained locally; this record contains sanitized observations and hashes, not model credentials or private message bodies.",
+      "Read-only timing experiments do not exercise quota writes or establish lock/concurrency safety; no experimental limiter change was deployed."
+    ]
+  },
+  "preflightObservations": {
+    "version": "diesel-admission-wait-preflight-v1",
+    "evidenceKind": "historical-operator-record-only",
+    "sourceCommit": "b8fab4b28849ac4abeb6bc70519a5f8d52067921",
+    "userApprovedChange": {
+      "hourlyAdmissionWaitMs": {
+        "before": 3000,
+        "after": 8000
+      },
+      "sqlTimeoutsChanged": false,
+      "quotasChanged": false,
+      "concurrencyChanged": false,
+      "readinessTimeoutChanged": false
+    },
+    "browserCaptureFirstAttempt": {
+      "version": "diesel-local-capture-attempt-observation-v1",
+      "sourceCommitAbbreviation": "b8fab4b",
+      "command": "pnpm portfolio:capture-playwright-evidence",
+      "sessionId": 33127,
+      "exitCode": 1,
+      "publicTestResults": {
+        "passed": 370,
+        "skipped": 65,
+        "failed": 0
+      },
+      "failure": "Playwright pnpm installation state node_modules closure changed: node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/results.json.",
+      "cause": "The operator ran pnpm ai:eval concurrently with browser evidence capture, modifying the Vitest cache included in the installation boundary.",
+      "releaseEvidenceCreated": false,
+      "nextAttemptReason": "Rerun serially without concurrent Vitest or other installation-directory writes; retain all existing integrity checks.",
+      "evidenceKind": "historical-operator-record-only",
+      "publicReceiptSha256": "f43671354528a6a0eabcfefa54d8aa225e74bc9f1f490c5300d85c831ed38504"
+    },
+    "existingProductionPreflight": {
+      "readOnly": true,
+      "observedAt": "2026-10-04T16:03:10.413Z",
+      "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+      "current": "/opt/diesel/releases/eb85fe4c40b5aff8274f835494a65770af8af611",
+      "protocolUnchanged": true,
+      "services": [
+        {
+          "name": "jamesky-api",
+          "pid": 1554881,
+          "status": "online",
+          "restarts": 0,
+          "version": null
+        },
+        {
+          "name": "diesel-demo",
+          "pid": 4179051,
+          "status": "online",
+          "restarts": 0,
+          "version": "eb85fe4c40b5aff8274f835494a65770af8af611"
+        }
+      ],
+      "checks": [
+        {
+          "origin": "http://127.0.0.1:8788",
+          "route": "/api/health",
+          "httpStatus": 200,
+          "durationMs": 74,
+          "status": "ok",
+          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "checks": {}
+        },
+        {
+          "origin": "http://127.0.0.1:8788",
+          "route": "/api/health/ready",
+          "httpStatus": 503,
+          "durationMs": 3009,
+          "status": "unavailable",
+          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "checks": {
+            "aiChatAdmission": "ok",
+            "aiChatRateLimit": "ok",
+            "database": "unavailable"
+          }
+        },
+        {
+          "origin": "https://diesel.jamesky.site",
+          "route": "/api/health",
+          "httpStatus": 200,
+          "durationMs": 59,
+          "status": "ok",
+          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "checks": {}
+        },
+        {
+          "origin": "https://diesel.jamesky.site",
+          "route": "/api/health/ready",
+          "httpStatus": 200,
+          "durationMs": 2647,
+          "status": "ok",
+          "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+          "checks": {
+            "aiChatAdmission": "ok",
+            "aiChatRateLimit": "ok",
+            "database": "ok"
+          }
+        }
+      ],
+      "ledgerNames": [
+        "HOST_ACTIVATION_COMMITTED",
+        "HOST_ACTIVATION_V1",
+        "PUBLISH_FINALIZED",
+        "diesel-demo.pre-switch",
+        "env.production.local.pre-switch",
+        "governance-after-rehearsal.json",
+        "governance-before.json",
+        "jamesky.site.pre-switch",
+        "previous-release",
+        "validate-public-governance.sh"
+      ],
+      "disk": {
+        "path": "/opt/diesel",
+        "totalBytes": 63089594368,
+        "usedBytes": 54229336064,
+        "availableBytes": 5849870336
+      },
+      "pass": false
+    },
+    "limitations": [
+      "Readiness returned one genuine database-unavailable 503 before a later 200; this failure is not erased.",
+      "This record does not establish deployment or production acceptance of the new eight-second wait budget."
+    ],
+    "fullVitestFirstAttempt": {
+      "name": "vitest",
+      "head": "4fcce354773fa585b6cc630b15d4c4f0863b9c93",
+      "startedAt": "2026-10-04T16:20:36.057Z",
+      "completedAt": "2026-10-04T16:34:20.664Z",
+      "exitCode": 1,
+      "signal": null,
+      "spawnFailed": false,
+      "totals": {
+        "files": 279,
+        "collected": 8296,
+        "passed": 8289,
+        "failed": 1,
+        "skipped": 6
+      },
+      "failureFile": "tests/screenshot-manifest.test.ts",
+      "failure": "Screenshot source drift: public/portfolio/live-dashboard.jpg",
+      "diagnosis": "The changed shared request-limit constant invalidated transitive screenshot source fingerprints. The original screenshot evidence was stale, not a runtime assertion failure.",
+      "repair": "Ran pnpm portfolio:capture-screenshots to capture actual current Demo images and revalidated the manifest; no checksum-only rewrite or weakened assertion.",
+      "followUp": "Refresh browser evidence for the newly captured image bytes, then rerun full Vitest from clean source. No additional live model run is required unless its source fingerprint changes."
     }
-  ],
-  "pendingDecisions": {
-    "chatAdmissionDeadline": "Current 3000 ms deadline is unchanged. User approval was requested before considering an 8000 ms application wait; no relaxation has been implemented.",
-    "releaseProtocol": "App/data release decoupling is not implemented. The existing permanent V1 protocol and recovery safeguards remain unchanged."
   },
   "remainingGates": [
-    "Cold/long-idle admission can still return RATE_LIMIT_TIMEOUT before a model call.",
-    "Latest formal 18-case live eval remains failed (run b76ab06d-aeb3-4202-bce1-da4881c005cf); six starter passes do not replace it.",
+    "The original release SSH transport exited 255. Its remote exit code is unknown and the transport interruption has no proven root cause. Later independent terminal-state and acceptance checks do not erase that failure.",
+    "Passing bounded observations do not establish a zero-error availability or cold-start latency SLO; the old-release readiness 503 and cold-admission failures remain recorded.",
     "No approved real product/certification fixtures, independent expert signoff or real customer pilot evidence.",
     "FDE history redistribution rights and authorized private-corpus/storage/retrieval decisions remain unresolved.",
+    "App/data release decoupling was not approved or implemented; permanent V1 release safeguards are unchanged.",
     "Rebuildable cache cleanup is not a permanent backup-retention or disk-capacity policy."
   ],
   "limitations": [
-    "This is an operator observation, not externally authenticated or signed release evidence.",
-    "A healthy deployment, passing warm chat samples and passing local/CI tests do not establish a zero-error production SLO.",
-    "Raw process logs, browser report and screenshots were retained locally; this record contains sanitized observations and hashes, not model credentials or private message bodies.",
-    "Read-only timing experiments do not exercise quota writes or establish lock/concurrency safety; no experimental limiter change was deployed."
+    "This is a historical operator record, not externally authenticated or signed release evidence.",
+    "An eight-second application wait is not faster database execution; failure latency and occupied admission slots may increase.",
+    "First recorded chat HTTP admission does not by itself prove a successful model stream or a database-only latency measurement.",
+    "Raw process logs, browser reports and screenshots remain local; this record contains sanitized metadata and hashes, not credentials or private message bodies."
   ]
 }

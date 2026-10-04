@@ -1,0 +1,33 @@
+{
+  "version": "diesel-cache-cleanup-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedOn": "2026-10-04",
+  "target": "111.228.50.85",
+  "exitCode": 0,
+  "currentReleaseBeforeAndAfter": "e5c3249f067692a483d4133a313bd5883b166642",
+  "scope": "Contents of .next/cache in 14 explicitly enumerated inactive releases; cache directories and metadata retained",
+  "lifecycleAndBuildLocksHeld": true,
+  "buildUserProcessesAbsent": true,
+  "activeWorkingDirectoriesExcluded": true,
+  "releases": [
+    "20260814103720",
+    "6df63bb8abdebe0418ad0ade7b6b3a94cf1bbf4e",
+    "cd1b1cc48e0548858d31c7a3dc01d5a30d49ba01",
+    "20260814142820",
+    "b233c78db862bb7fa409e457daa17ddcf435a873",
+    "20260814144537",
+    "5b35ced1e6e52ca1df9fec9d46f355b73b033ec6",
+    "379b138b377f710b92ed04741f49946acb1ec62e",
+    "832563d85ca42faf1bcf2fb26713224a088173e0",
+    "4f9ba69a7a3a669cfab8e0f41807ce225887e77a",
+    "df8f7a3ea19961eeb6182e436e887180c85ec9de-2",
+    "260c7b211f7896eec4ff4642b571d55377292536",
+    "7c1c6390ffdfb661a1ab3782cbb020f4b736f742",
+    "da05affe54bf67b6f85927f314dc4d87dc689f20"
+  ],
+  "before": { "usedBytes": 58154622976, "availableBytes": 1924583424, "usedPercent": 97 },
+  "after": { "usedBytes": 53247602688, "availableBytes": 6831603712, "usedPercent": 89 },
+  "preserved": ["all runtime artifacts", "all database backups", "all logs", "current release cache", "immediate rollback cache", "failed candidate cache", "credentials"],
+  "recovery": "Deleted cache contents have no retained copy; rebuildable from unchanged source/runtime inputs.",
+  "limitation": "Point-in-time operator record, not continuous disk monitoring or an external signed attestation. No service restart was performed."
+}

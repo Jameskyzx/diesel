@@ -11,9 +11,10 @@ import { z } from "zod";
 
 import { runTrustedGit } from "./trusted-git";
 import { assertVerificationEqual } from "./verification-issues";
+import { isIndependentOperatorRecord, normalizeVitestSourceBytes } from "./vitest-source-policy";
 
 export const VITEST_EXECUTION_EVIDENCE_VERSION =
-  "diesel-vitest-execution-evidence-v1" as const;
+  "diesel-vitest-execution-evidence-v2" as const;
 export const EXPECTED_VITEST_VERSION = "4.1.11" as const;
 export const vitestExecutionEvidencePath =
   "docs/evidence/vitest-execution-latest.json" as const;
@@ -22,7 +23,7 @@ export const VITEST_JSON_REPORTER_MAX_BYTES = 32 * 1024 * 1024;
 
 const SOURCE_FILE_MAX_BYTES = 32 * 1024 * 1024;
 const SOURCE_FINGERPRINT_DOMAIN = Buffer.from(
-  "diesel-vitest-execution-source-fingerprint-v1",
+  "diesel-vitest-execution-source-fingerprint-v2",
   "utf8",
 );
 const TEST_ID_DOMAIN = Buffer.from(
@@ -368,7 +369,7 @@ function fingerprintEntries(
   for (const entry of entries) {
     frame(hash, Buffer.from(entry.mode, "utf8"));
     frame(hash, Buffer.from(entry.path, "utf8"));
-    frame(hash, entry.bytes);
+    frame(hash, normalizeVitestSourceBytes(entry.path, entry.bytes));
   }
   return vitestExecutionSourceFingerprintSchema.parse({
     algorithm: "sha256",
@@ -399,7 +400,7 @@ function gitVisiblePaths(
     .filter((path) => path.length > 0)
     .map((path) => relativePathSchema.parse(path))
     .filter((path) =>
-      path !== vitestExecutionEvidencePath && !excludedPaths.has(path)
+      path !== vitestExecutionEvidencePath && !isIndependentOperatorRecord(path) && !excludedPaths.has(path)
     )
     .sort(compareText);
   if (new Set(paths).size !== paths.length) {
@@ -574,7 +575,7 @@ export function captureVitestExecutionSourceFingerprintAtRevision(
       );
     }
     return { mode: match[1], objectId: match[2], path };
-  }).filter(({ path }) => path !== vitestExecutionEvidencePath)
+  }).filter(({ path }) => path !== vitestExecutionEvidencePath && !isIndependentOperatorRecord(path))
     .sort((left, right) => compareText(left.path, right.path));
   if (new Set(entries.map(({ path }) => path)).size !== entries.length) {
     throw new Error("Vitest execution revision inventory contains duplicate paths.");

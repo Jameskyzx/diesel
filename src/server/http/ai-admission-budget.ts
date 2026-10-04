@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 
 import { MAX_AI_TOOL_STEPS } from "@/features/ai/constants";
 import { env } from "@/env";
-import { getDatabase } from "@/server/db/client";
+import { getAdmissionDatabase } from "@/server/db/admission-client";
 import { resolveAiChatRateLimitBackend } from "@/server/http/rate-limit";
 import {
   createRateLimitRepository,
@@ -300,7 +300,7 @@ export function getAiChatAdmissionBudget(): AiChatAdmissionBudget {
       backend === "postgres"
         ? createPostgresAiChatAdmissionBudget({
             config,
-            repository: createRateLimitRepository(getDatabase()),
+            repository: createRateLimitRepository(getAdmissionDatabase()),
           })
         : createInMemoryAiChatAdmissionBudget(config);
   }

@@ -76,6 +76,7 @@ async function interceptNavigation(page: Page, record: RecordEvent) {
   };
   let fitRequest: Request | null = null;
   let headerClicked = false;
+  let homeInterceptionArmed = false;
   const fitWasAborted = () => fitRequest !== null && failedRequests.get(fitRequest) === "net::ERR_ABORTED";
   const onRequest = (request: Request) => {
     const url = new URL(request.url());
@@ -121,7 +122,7 @@ async function interceptNavigation(page: Page, record: RecordEvent) {
         record("fit-delivery-finished", { fitAborted: fitWasAborted() });
         return;
       }
-      if (url.pathname === "/" && request.headers().rsc === "1") {
+      if (homeInterceptionArmed && url.pathname === "/" && request.headers().rsc === "1") {
         const observed = {
           url: request.url(), afterHeaderClick: headerClicked,
           prefetch: request.headers()["next-router-prefetch"] ?? null,
@@ -152,6 +153,7 @@ async function interceptNavigation(page: Page, record: RecordEvent) {
 
   return {
     fit, home, observations, fitWasAborted,
+    armHomeInterception() { homeInterceptionArmed = true; record("home-interception-armed"); },
     markHeaderClick() { headerClicked = true; record("Header-click-started"); },
     async wait(signal: ReturnType<typeof createSignal>) {
       await signal.promise;
@@ -196,6 +198,15 @@ async function withPendingFit(
           url: testInfo.project.use.baseURL ?? "http://127.0.0.1:3100",
         }]);
         const zh = locale === "zh-CN";
+        // Compile Home and the API before holding a real fit response. A cold
+        // destination compilation can otherwise broadcast a Next dev reload
+        // into the source document and invalidate the controlled navigation race.
+        await page.goto("/");
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        await expect(page.getByRole("button", { name: "EN", exact: true })).toBeEnabled();
+        const invalidFit = await page.request.post("/api/product-fit", { data: {} });
+        expect(invalidFit.status()).toBe(400);
+        record("home-and-invalid-fit-preflight-ready", { status: invalidFit.status() });
         // No initial product model means there is no automatic evaluation.
         await page.goto(initialUrl);
         await expect(page.locator("html")).toHaveAttribute("lang", locale);
@@ -203,6 +214,9 @@ async function withPendingFit(
         await page.getByRole("radio", { name: /^DEMO-ENG-100/ }).check();
         expect(interception.observations.browserPosts).toBe(0);
         await page.getByLabel(zh ? "功率（kW）" : "Power (kW)", { exact: true }).fill("150");
+        // Setup-only Home RSC traffic must settle before we hold the response
+        // under test. All Home requests during the actual fit race are tracked.
+        interception.armHomeInterception();
         await page.getByRole("button", { name: zh ? "运行确定性匹配" : "Run deterministic fit", exact: true }).click();
         await interception.wait(interception.fit.ready);
         await expect(page.getByTestId("product-fit-evaluation-loading")).toBeVisible();
@@ -292,6 +306,27 @@ for (const locale of ["en", "zh-CN"] as const) {
 
 test("keeps the current fit running when the Header brand opens a new tab", async ({ page }, testInfo) => {
   await withPendingFit(page, testInfo, "en", async (interception, homeLink, record) => {
+    await page.exposeFunction("__dieselRecordHeaderActivation", (event: unknown) => {
+      record("Header-native-activation", { event });
+    });
+    await page.evaluate(() => {
+      Object.defineProperty(document, "__dieselHeaderPendingDocument", { value: true });
+    });
+    await homeLink.evaluate((element) => {
+      const report = (window as typeof window & {
+        __dieselRecordHeaderActivation(event: Record<string, unknown>): Promise<void>;
+      }).__dieselRecordHeaderActivation;
+      for (const type of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+        element.addEventListener(type, (event) => {
+          if (!(event instanceof MouseEvent)) return;
+          queueMicrotask(() => { void report({
+            type, button: event.button, ctrlKey: event.ctrlKey, metaKey: event.metaKey,
+            defaultPrevented: event.defaultPrevented, isTrusted: event.isTrusted,
+            visibility: document.visibilityState, focused: document.hasFocus(),
+          }); });
+        });
+      }
+    });
     const context = page.context();
     const existingPages = new Set(context.pages());
     const addedPages = new Set<Page>();
@@ -312,6 +347,7 @@ test("keeps the current fit running when the Header brand opens a new tab", asyn
       ]);
       await expect(newPage).toHaveURL((url) => url.pathname === "/" && url.search === "");
       await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === initialUrl);
+      expect(await page.evaluate(() => Object.hasOwn(document, "__dieselHeaderPendingDocument"))).toBe(true);
       await expect(page.getByTestId("product-fit-evaluation-loading")).toBeVisible();
       expect(interception.fitWasAborted()).toBe(false);
       expect(interception.fit.release.resolved).toBe(false);

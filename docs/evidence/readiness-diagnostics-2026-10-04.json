@@ -1,0 +1,48 @@
+{
+  "version": "readiness-read-only-diagnostics-v1",
+  "scope": "Independent candidate probe connections on the existing VPS/database; not a deployment or SLO claim",
+  "businessDataMutated": false,
+  "productionProcessChanged": false,
+  "initialComparison": {
+    "observedAt": "2026-10-04T01:40:07.914Z",
+    "oldTransactionMs": [1789, 388, 433, 423],
+    "rejectedTwoSecondConnectTimeout": { "firstCallMs": 2002, "firstCallSucceeded": false },
+    "decision": "Do not shorten the connection timeout to two seconds"
+  },
+  "rejectedStartupTimeoutOnly": {
+    "observedAt": "2026-10-04T01:55:46.782Z",
+    "requestedStatementTimeoutMs": 2500,
+    "actualStatementTimeout": "2min",
+    "threeSecondSleepCancelled": false,
+    "decision": "Pooler startup parameters do not establish the timeout; require explicit SET LOCAL"
+  },
+  "driverCompatibility": {
+    "failedDiagnosticCount": 2,
+    "cause": "Diagnostic assumed one array per SQL command; postgres.js groups BEGIN/SET and SELECT/COMMIT into two Result arrays",
+    "decision": "Validate the actual two-result protocol shape; do not treat a malformed result as success"
+  },
+  "explicitTransactionBatch": {
+    "observedAt": "2026-10-04T02:02:59.282Z",
+    "sql": "BEGIN READ ONLY; SET LOCAL statement_timeout = '2500ms'; SELECT 1 AS ready; COMMIT",
+    "coldMs": 1081,
+    "coldReady": true,
+    "observedStatementTimeout": "2500ms",
+    "resultCount": 2,
+    "finalCommand": "COMMIT",
+    "idleSeconds": 25,
+    "afterIdleMs": 131,
+    "afterIdleReady": true,
+    "sameBackendAfterIdle": true,
+    "threeSecondSleepCancelled": true,
+    "cancelledSqlState": "57014",
+    "cancellationObservedMs": 2630,
+    "recoveryOnFreshConnectionMs": 958,
+    "recoveryReady": true
+  },
+  "limitations": [
+    "Timing observations are individual measurements, not benchmarks or guaranteed latency",
+    "A real connection stall or database outage still fails the unchanged three-second readiness deadline",
+    "The independent probe does not test business-pool saturation",
+    "The deployed application is unchanged by these diagnostics"
+  ]
+}

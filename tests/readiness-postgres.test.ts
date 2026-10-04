@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ unsafe: vi.fn(), end: vi.fn(), postgres: vi.fn() }));
+const mocks = vi.hoisted(() => ({ unsafe: vi.fn(), simple: vi.fn(), end: vi.fn(), postgres: vi.fn() }));
 vi.mock("postgres", () => ({ default: mocks.postgres }));
 vi.mock("@/server/db/environment", () => ({
   getDatabaseMode: () => "postgres",
@@ -11,7 +11,8 @@ import { closeReadinessConnection, probePostgresReadiness } from "@/server/healt
 
 beforeEach(() => {
   mocks.postgres.mockReturnValue({ unsafe: mocks.unsafe, end: mocks.end });
-  mocks.unsafe.mockResolvedValue([{ ready: 1 }]);
+  mocks.unsafe.mockReturnValue({ simple: mocks.simple });
+  mocks.simple.mockResolvedValue([[], [{ ready: 1 }]]);
   mocks.end.mockResolvedValue(undefined);
 });
 afterEach(async () => {
@@ -20,9 +21,10 @@ afterEach(async () => {
 });
 
 describe("PostgreSQL readiness probe", () => {
-  it("uses one SQL round trip with a connection-level statement timeout", async () => {
+  it("uses one round trip with an explicit transaction-local timeout for pooling proxies", async () => {
     await expect(checkDatabaseReadiness({ timeoutMs: 100 })).resolves.toBe(true);
-    expect(mocks.unsafe).toHaveBeenCalledExactlyOnceWith("select 1 as ready");
+    expect(mocks.unsafe).toHaveBeenCalledExactlyOnceWith("BEGIN READ ONLY; SET LOCAL statement_timeout = '2500ms'; SELECT 1 AS ready; COMMIT");
+    expect(mocks.simple).toHaveBeenCalledOnce();
     expect(mocks.postgres).toHaveBeenCalledExactlyOnceWith("postgres://test.invalid/readiness", {
       connect_timeout: 10,
       connection: {
@@ -39,16 +41,24 @@ describe("PostgreSQL readiness probe", () => {
     expect(mocks.postgres).toHaveBeenCalledTimes(1);
     expect(mocks.unsafe).toHaveBeenCalledTimes(2);
   });
-  it.each([{ rows: [] }, { rows: [{ ready: 0 }] }, { rows: [{ ready: "1" }] }, { rows: [{ ready: 1 }, { ready: 1 }] }])("fails closed on an invalid result $rows", async ({ rows }) => {
-    mocks.unsafe.mockResolvedValue(rows);
+  it.each([{ rows: [] }, { rows: [[], [{ ready: 0 }]] }, { rows: [[], [{ ready: "1" }]] }, { rows: [[], [{ ready: 1 }, { ready: 1 }]] }])("fails closed on an invalid result $rows", async ({ rows }) => {
+    mocks.simple.mockResolvedValue(rows);
     await expect(checkDatabaseReadiness({ probe: probePostgresReadiness })).resolves.toBe(false);
   });
   it("does not turn a query failure or slow connection into a cached success", async () => {
     await probePostgresReadiness();
-    mocks.unsafe.mockRejectedValueOnce(new Error("unavailable"));
+    mocks.simple.mockRejectedValueOnce(new Error("unavailable"));
     await expect(checkDatabaseReadiness({ probe: probePostgresReadiness })).resolves.toBe(false);
-    mocks.unsafe.mockReturnValueOnce(new Promise(() => undefined));
+    expect(mocks.end).toHaveBeenCalledExactlyOnceWith({ timeout: 1 });
+    mocks.simple.mockReturnValueOnce(new Promise(() => undefined));
     await expect(checkDatabaseReadiness({ probe: probePostgresReadiness, timeoutMs: 5 })).resolves.toBe(false);
+  });
+  it("retires a failed transaction before opening a new connection", async () => {
+    mocks.simple.mockRejectedValueOnce(new Error("statement timeout"));
+    await expect(probePostgresReadiness()).rejects.toThrow("statement timeout");
+    expect(mocks.end).toHaveBeenCalledExactlyOnceWith({ timeout: 1 });
+    await expect(probePostgresReadiness()).resolves.toBeUndefined();
+    expect(mocks.postgres).toHaveBeenCalledTimes(2);
   });
   it("closes its own bounded connection without touching the business pool", async () => {
     await probePostgresReadiness();

@@ -1,9 +1,21 @@
 import "server-only";
 
 import postgres from "postgres";
+import { z } from "zod";
 import { getDatabaseUrl } from "@/server/db/environment";
 
 export const DATABASE_READINESS_STATEMENT_TIMEOUT_MS = 2_500;
+
+// A transaction-pooling proxy may ignore startup timeout parameters. Send the
+// explicit transaction and SET LOCAL in one simple-protocol packet instead.
+export const DATABASE_READINESS_SQL = "BEGIN READ ONLY; SET LOCAL statement_timeout = '2500ms'; SELECT 1 AS ready; COMMIT";
+const emptyCommandResult = z.array(z.unknown()).length(0);
+const readinessBatchSchema = z.tuple([
+  // postgres.js starts a new Result on RowDescription, not CommandComplete:
+  // BEGIN/SET share the empty result; SELECT/COMMIT share the row result.
+  emptyCommandResult,
+  z.array(z.object({ ready: z.literal(1) })).length(1),
+]);
 
 function createReadinessConnection() {
   return postgres(getDatabaseUrl(), {
@@ -28,9 +40,15 @@ let connection: ReturnType<typeof createReadinessConnection> | undefined;
 
 export async function probePostgresReadiness(): Promise<void> {
   connection ??= createReadinessConnection();
-  const rows = await connection.unsafe("select 1 as ready");
-  if (rows.length !== 1 || rows[0]?.ready !== 1) {
-    throw new Error("Database readiness returned an unexpected result");
+  const activeConnection = connection;
+  try {
+    readinessBatchSchema.parse(await activeConnection.unsafe(DATABASE_READINESS_SQL).simple());
+  } catch (error: unknown) {
+    // A failed simple-protocol transaction skips COMMIT. Retire this bounded
+    // client rather than returning a possibly aborted transaction to our pool.
+    if (connection === activeConnection) connection = undefined;
+    await activeConnection.end({ timeout: 1 });
+    throw error;
   }
 }
 

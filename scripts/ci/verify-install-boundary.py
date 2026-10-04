@@ -133,7 +133,7 @@ if present:
     fail("root install lifecycle scripts are forbidden: " + ", ".join(present))
 
 expected_workspace_sha256 = (
-    "a7568e2cba91a5411dd26fbcb5547685f52e4dda471f2b3bf44fa6e49e581663"
+    "79674ef4508d1a38c7a1a3983492efbf571699b0cf776691ea75c0ef1e552757"
 )
 if hashlib.sha256(workspace_bytes).hexdigest() != expected_workspace_sha256:
     fail("pnpm-workspace.yaml does not match the reviewed execution config")
@@ -142,6 +142,11 @@ if hashlib.sha256(next_patch_bytes).hexdigest() != (
     "c4bab236a65a0e52fa62f88e892e007d2ca2936a2df20d02579e759ea973d2a3"
 ):
     fail("Next static-file patch does not match its reviewed source")
+next_lint_patch_bytes = read_regular("patches/@next__eslint-plugin-next@16.3.6.patch", 256 * 1024)
+if hashlib.sha256(next_lint_patch_bytes).hexdigest() != (
+    "c5871d65306a6b3f1d9a9f35eb5fd37d01f70b4f6107cd065476257d9ce51b67"
+):
+    fail("Next lint glob patch does not match its reviewed source")
 runner_patch_bytes = read_regular("patches/@vitest__runner@4.1.11.patch", 256 * 1024)
 if hashlib.sha256(runner_patch_bytes).hexdigest() != (
     "43a34fe00371ed7d2a7a972ad80269cbfe7cda5beb045640d3a2ad8ff06d54ee"

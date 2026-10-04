@@ -20,7 +20,7 @@ export function assertCiGitleaksGuardSource(source: string | Uint8Array): void {
 export const ciInstallBoundaryPath =
   "scripts/ci/verify-install-boundary.py" as const;
 export const ciInstallBoundarySha256 =
-  "c93b2710d56dcbc8b2bb20f5b156b8d66531f52099295e5f3632643beb43627b" as const;
+  "0bb2dfec1a365eef47b45db2eadcd0755f854a5be6f804badb2249be6eb96915" as const;
 const maximumCiInstallBoundarySourceBytes = 64 * 1024;
 
 export function assertCiInstallBoundarySource(

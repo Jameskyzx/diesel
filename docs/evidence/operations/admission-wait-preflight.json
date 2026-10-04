@@ -1,0 +1,125 @@
+{
+  "version": "diesel-admission-wait-preflight-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "sourceCommit": "b8fab4b28849ac4abeb6bc70519a5f8d52067921",
+  "userApprovedChange": {
+    "hourlyAdmissionWaitMs": {
+      "before": 3000,
+      "after": 8000
+    },
+    "sqlTimeoutsChanged": false,
+    "quotasChanged": false,
+    "concurrencyChanged": false,
+    "readinessTimeoutChanged": false
+  },
+  "browserCaptureFirstAttempt": {
+    "version": "diesel-local-capture-attempt-observation-v1",
+    "sourceCommitAbbreviation": "b8fab4b",
+    "command": "pnpm portfolio:capture-playwright-evidence",
+    "sessionId": 33127,
+    "exitCode": 1,
+    "publicTestResults": {
+      "passed": 370,
+      "skipped": 65,
+      "failed": 0
+    },
+    "failure": "Playwright pnpm installation state node_modules closure changed: node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/results.json.",
+    "cause": "The operator ran pnpm ai:eval concurrently with browser evidence capture, modifying the Vitest cache included in the installation boundary.",
+    "releaseEvidenceCreated": false,
+    "nextAttemptReason": "Rerun serially without concurrent Vitest or other installation-directory writes; retain all existing integrity checks.",
+    "evidenceKind": "historical-operator-record-only",
+    "publicReceiptSha256": "f43671354528a6a0eabcfefa54d8aa225e74bc9f1f490c5300d85c831ed38504"
+  },
+  "existingProductionPreflight": {
+    "readOnly": true,
+    "observedAt": "2026-10-04T16:03:10.413Z",
+    "release": "eb85fe4c40b5aff8274f835494a65770af8af611",
+    "current": "/opt/diesel/releases/eb85fe4c40b5aff8274f835494a65770af8af611",
+    "protocolUnchanged": true,
+    "services": [
+      {
+        "name": "jamesky-api",
+        "pid": 1554881,
+        "status": "online",
+        "restarts": 0,
+        "version": null
+      },
+      {
+        "name": "diesel-demo",
+        "pid": 4179051,
+        "status": "online",
+        "restarts": 0,
+        "version": "eb85fe4c40b5aff8274f835494a65770af8af611"
+      }
+    ],
+    "checks": [
+      {
+        "origin": "http://127.0.0.1:8788",
+        "route": "/api/health",
+        "httpStatus": 200,
+        "durationMs": 74,
+        "status": "ok",
+        "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "checks": {}
+      },
+      {
+        "origin": "http://127.0.0.1:8788",
+        "route": "/api/health/ready",
+        "httpStatus": 503,
+        "durationMs": 3009,
+        "status": "unavailable",
+        "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "checks": {
+          "aiChatAdmission": "ok",
+          "aiChatRateLimit": "ok",
+          "database": "unavailable"
+        }
+      },
+      {
+        "origin": "https://diesel.jamesky.site",
+        "route": "/api/health",
+        "httpStatus": 200,
+        "durationMs": 59,
+        "status": "ok",
+        "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "checks": {}
+      },
+      {
+        "origin": "https://diesel.jamesky.site",
+        "route": "/api/health/ready",
+        "httpStatus": 200,
+        "durationMs": 2647,
+        "status": "ok",
+        "version": "eb85fe4c40b5aff8274f835494a65770af8af611",
+        "checks": {
+          "aiChatAdmission": "ok",
+          "aiChatRateLimit": "ok",
+          "database": "ok"
+        }
+      }
+    ],
+    "ledgerNames": [
+      "HOST_ACTIVATION_COMMITTED",
+      "HOST_ACTIVATION_V1",
+      "PUBLISH_FINALIZED",
+      "diesel-demo.pre-switch",
+      "env.production.local.pre-switch",
+      "governance-after-rehearsal.json",
+      "governance-before.json",
+      "jamesky.site.pre-switch",
+      "previous-release",
+      "validate-public-governance.sh"
+    ],
+    "disk": {
+      "path": "/opt/diesel",
+      "totalBytes": 63089594368,
+      "usedBytes": 54229336064,
+      "availableBytes": 5849870336
+    },
+    "pass": false
+  },
+  "limitations": [
+    "Readiness returned one genuine database-unavailable 503 before a later 200; this failure is not erased.",
+    "This record does not establish deployment or production acceptance of the new eight-second wait budget."
+  ]
+}

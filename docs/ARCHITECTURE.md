@@ -1404,7 +1404,9 @@ deadline，并在成功、超限、损坏和超时路径取消 reader、清理 p
 完成。在任何共享限流数据库访问以及读取/解析请求体之前，应用必须先取得单实例
 in-flight 门：全局最多 4 个、每客户最多 2 个，直到共享限流检查与后续响应流正常完成、
 失败或取消才释放；超额请求不得占用数据库连接，也不得进入 base64/PDF/图片解码。
-共享限流检查有 3 秒应用 deadline，PostgreSQL 事务另设 1.5 秒 lock timeout、2.5 秒
+共享小时限流检查有 8 秒应用 deadline（2026-10-04 经用户批准由 3 秒调整），用于覆盖冷连接
+和事务多次网络往返，不是最终回答时限；后续日预算/审计准备仍共用独立的 10 秒窗口。
+PostgreSQL 事务另设 1.5 秒 lock timeout、2.5 秒
 statement timeout 与 5 秒 idle-in-transaction timeout。客户端取消或应用 deadline 先结束
 HTTP 请求时，不能安全取消的底层限流 Promise 仍继续占用原 admission lease，直到实际
 settle 后才释放，避免反复超时累积后台数据库工作。公共数据库池也设置连接、空闲连接、

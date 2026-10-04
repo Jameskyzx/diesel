@@ -1,6 +1,8 @@
 // 6 MiB decoded attachment budget plus base64/JSON framing and short text history.
 export const MAX_CHAT_REQUEST_BYTES = 9 * 1024 * 1024;
-export const MAX_CHAT_RATE_LIMIT_CHECK_MS = 3_000;
+// Includes connection setup and all hourly-admission transaction round trips.
+// SQL timeouts and the in-flight lease remain independently enforced.
+export const MAX_CHAT_RATE_LIMIT_CHECK_MS = 8_000;
 export const MAX_CHAT_REQUEST_BODY_READ_MS = 30_000;
 export const MAX_CHAT_SETUP_MS = 10_000;
 export const MAX_CHAT_RESPONSE_LEASE_MS = 120_000;

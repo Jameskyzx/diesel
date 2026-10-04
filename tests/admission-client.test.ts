@@ -17,6 +17,7 @@ import {
 } from "@/server/db/admission-client";
 import { MAX_CHAT_RATE_LIMIT_CHECK_MS } from "@/server/http/request-limits";
 import {
+  RATE_LIMIT_IDLE_TRANSACTION_TIMEOUT_MS,
   RATE_LIMIT_LOCK_TIMEOUT_MS,
   RATE_LIMIT_STATEMENT_TIMEOUT_MS,
 } from "@/server/repositories/rate-limit-repository";
@@ -68,10 +69,11 @@ describe("dedicated PostgreSQL admission pool", () => {
     expect(mocks.postgres).toHaveBeenCalledTimes(2);
   });
 
-  it("does not relax the public admission, statement or lock deadlines", () => {
-    expect(MAX_CHAT_RATE_LIMIT_CHECK_MS).toBe(3000);
+  it("allows the approved eight-second admission wait without relaxing SQL deadlines", () => {
+    expect(MAX_CHAT_RATE_LIMIT_CHECK_MS).toBe(8000);
     expect(RATE_LIMIT_STATEMENT_TIMEOUT_MS).toBe(2500);
     expect(RATE_LIMIT_LOCK_TIMEOUT_MS).toBe(1500);
+    expect(RATE_LIMIT_IDLE_TRANSACTION_TIMEOUT_MS).toBe(5000);
   });
 
   it("propagates configuration and client creation failures without a cached fallback", () => {

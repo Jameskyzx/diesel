@@ -2145,9 +2145,11 @@ Demo；生产配置成内存或数据库计数失败都会在进入请求解析�
   五张小表各用一个短 reader transaction；三张含原始 JSONB 的治理表按 UUID 主键
   每 100 行 keyset 分批，生产规模的 `regulation_limits`、`market_metrics` 保持每 500 行。
   较小 JSON 批次限制慢链路上单次读取的负担，不跳过行、不改精度或完整快照校验，
-  也不延长 SQL/worker deadline；完整导出仍需真实运行验证。每批使用全新
-  单连接 client，并在任何数据
-  查询前以 `SET TRANSACTION SNAPSHOT` 导入锚点视图。行、原始 JSONB 与微秒时间在同一
+  也不延长 SQL/worker deadline；完整导出仍需真实运行验证。连续成功批次复用同一个
+  单连接 client，避免每批重新连接和发现类型；每批仍开启独立只读 repeatable-read
+  transaction，并在任何数据查询前以 `SET TRANSACTION SNAPSHOT` 导入锚点视图。
+  只有协议写清空且同连接探针成功才保留 reader；读取或探针失败必须先关闭该 client
+  再重试，导出结束（包括异常路径）必须显式关闭保留的 reader。行、原始 JSONB 与微秒时间在同一
   reader/batch 中取得并核验主键闭合，避免全表 JSON 解码和末尾无界 timestamp UNION。
   锚点与至多一个 reader 串行共存。reader 只对连接类 SQLSTATE、`57P01`–`57P03`、
   `57014`、`25P03`、明确传输错误及 postgres-js 无错误码的 closed-socket `TypeError`

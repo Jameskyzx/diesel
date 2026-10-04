@@ -193,11 +193,15 @@ pnpm audit:security
 
 `pnpm portfolio:capture-vitest-evidence` 会运行完整 canonical Vitest suite；只有退出码为零且
 运行前后源码状态完全一致时，才替换 `docs/evidence/vitest-execution-latest.json`。公开 artifact
-只保留匿名测试 ID、闭合的结果算术、运行时间、base HEAD、worktree 状态，以及除 artifact
-自身之外所有 Git-visible 文件的指纹；不保存测试标题、路径、失败消息或 stack。
+只保留匿名测试 ID、闭合的结果算术、运行时间、base HEAD、worktree 状态，以及 Git-visible
+执行输入的 v2 指纹；不保存测试标题、路径、失败消息或 stack。
 `pnpm portfolio:verify` 会重新列举当前 suite，并要求匿名身份 inventory 与当前源码指纹都和
 该执行 artifact 一致。dirty 本地 capture 可用于迭代，但不会记录 evaluated commit，也不能满足
 release-evidence 模式。
+v2 仅将 STATUS 中四个生产观测字段及两个镜像段落、历史 `docs/evidence/operations/*.json`
+操作记录与执行输入分开。每次 verifier 仍核验 STATUS 原始发布事实及已提交字节。
+代码、测试、部署手册、普通说明、fixture 计数和测试/模型/浏览器证据仍绑定指纹。
+已提交的生产读回更新因此无需重跑整个 suite；这不豁免任意文档修改，也不把操作记录当作签名发布证明。
 capture 使用空的私有 HOME 调用已锁定版本的本地 pnpm，并启用 offline 和依赖漂移即报错；执行前后
 还会核验实际安装的 Vitest 版本。这些属于本地一致性检查，不是包签名或供应链证明。capture 与
 verify 要求 Unix 主机允许并可执行精确的 `/bin/ps -axo pid=,pgid=` inventory。bounded-command
@@ -354,9 +358,12 @@ job-body 合同，而不是只信任 job ID；它还会扫描每个 `.yml` 与 `
 `master` 保护最后于 2026-09-01 在线读回为 strict、管理员同样
 受限、禁止 force-push/deletion，且只要求这一汇总 context；发布前仍需重新读回。
 
-本地已接线的外部 canary 在合入默认分支后，会把 liveness/readiness 绑定到 STATUS machine
+外部 canary 在对应 workflow 修订合入默认分支后，会把 liveness/readiness 绑定到 STATUS machine
 block 中记录的完整 release SHA；若公开产品列表不再恰好是两个虚构 Demo 配置且真实产品数
 为 0，检查会失败关闭。
+每六小时还运行一个具有来源证据的真实 AI 示例（最多五个 provider step，不自动重试）。
+独立、显式开启的 `pnpm test:e2e:live` 会直接点击线上中英六个示例，不模拟接口；
+精确 release 绑定与付费调用开关见部署手册。
 
 ## 标准开发环境
 

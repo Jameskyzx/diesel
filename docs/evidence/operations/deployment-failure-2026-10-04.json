@@ -1,0 +1,92 @@
+{
+  "version": "diesel-deployment-outcome-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedAt": "2026-10-04T07:25:30.807Z",
+  "outcome": "pushed-but-deployment-failed-and-rolled-back",
+  "deploymentComplete": false,
+  "repository": {
+    "pullRequest": "https://github.com/Jameskyzx/diesel/pull/55",
+    "mergeCommit": "cf86edca3a33e087d4e5b88b54171b7010f5bb41",
+    "prCiRun": "37179253575",
+    "masterCiRun": "37181465809",
+    "bothCiAttempts": 1,
+    "bothCiJobCounts": 10,
+    "bothCiPassed": true
+  },
+  "attempt": {
+    "release": "cf86edca3a33e087d4e5b88b54171b7010f5bb41",
+    "stagingExitCode": 0,
+    "orchestratorConnectionStartedAt": "2026-10-04T06:43:59.247Z",
+    "orchestratorConnectionClosedAt": "2026-10-04T07:05:15.673Z",
+    "sshExitCode": 255,
+    "sshError": "Connection closed by remote host",
+    "originalRemoteExitCode": null,
+    "originalProcessStillRunningAt": "2026-10-04T07:20:31.651Z",
+    "originalProcessObservedAbsentAt": "2026-10-04T07:21:31.707Z",
+    "originalProcessExitWasNotReconstructed": true,
+    "stateAfterOriginalProcessExit": "PENDING:none",
+    "completedGovernanceSnapshotsObserved": 0,
+    "governancePublicationWasNotClaimed": true,
+    "operatorObservationLimitation": "After losing the foreground connection, read-only incident-diagnosis SSH sessions and one bounded read-only observer were opened. This deviated from the normal no-additional-SSH observation recommendation; no identity checks were relaxed, and no cause is inferred from that deviation."
+  },
+  "acceptance": {
+    "publicPageAndLocaleChecks": {
+      "passed": 7,
+      "failed": 0
+    },
+    "actualStarter": {
+      "prompt": "CHN 目前有哪些有效法规？",
+      "locale": "zh-CN",
+      "httpStatus": 503,
+      "requestId": "53eb8f4a-fde0-461e-9a3e-dac627d95100",
+      "serverErrorCode": "RATE_LIMIT_TIMEOUT",
+      "serverDurationMs": 3013.4304349999875,
+      "passed": false,
+      "providerCalled": false
+    },
+    "fullSixStarterAcceptanceCompleted": false,
+    "limitedAdditionalAdmissionDiagnostic": "Two additional requests failed at the pre-body rate-limit gate with RATE_LIMIT_TIMEOUT; a third reached body validation and returned INVALID_INPUT because the diagnostic omitted sessionId. Those diagnostic requests are not successful greeting or starter acceptance evidence."
+  },
+  "rollback": {
+    "versionedPreflightExitCode": 0,
+    "versionedAbortIfUncommittedExitCode": 0,
+    "completedAt": "2026-10-04T07:24:17.243Z",
+    "failedReleaseTerminalState": "ROLLED_BACK:none",
+    "currentRelease": "e5c3249f067692a483d4133a313bd5883b166642",
+    "currentReleaseState": "COMMITTED:PUBLISH_FINALIZED",
+    "remainingReleaseProcesses": 0,
+    "remainingLifecycleLocks": 0,
+    "permanentProtocolUnchanged": true,
+    "jameskyApi": {
+      "pid": 1554881,
+      "status": "online",
+      "restarts": 0,
+      "unchanged": true
+    },
+    "credentialsChanged": false,
+    "backupsDeleted": false
+  },
+  "postRollbackObservations": [
+    {
+      "observedAt": "2026-10-04T07:25:23.323Z",
+      "internalHealth": 200,
+      "publicHealth": 200,
+      "internalReadiness": 503,
+      "publicReadiness": 503
+    },
+    {
+      "observedAt": "2026-10-04T07:25:30.807Z",
+      "internalHealth": 200,
+      "internalReadiness": 200,
+      "internalReadinessDurationMs": 601
+    }
+  ],
+  "unresolved": [
+    "The requested changes are merged on master but are not the current production release.",
+    "The SSH transport interruption has not been assigned a proven root cause.",
+    "Chat rate-limit database admission exceeded its 3-second request deadline in production; the exact database latency cause remains to be diagnosed.",
+    "Readiness is intermittent on the restored previous release; a later passing sample does not erase earlier failures.",
+    "The rolled-back release is terminal and must not be reactivated by deleting markers or bypassing the release protocol."
+  ],
+  "nextSmallestTask": "Diagnose and fix the production chat admission timeout, then publish a new CI-approved release while preserving this failed release and its audit evidence."
+}

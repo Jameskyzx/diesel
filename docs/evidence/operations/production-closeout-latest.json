@@ -1,0 +1,13 @@
+{
+  "version": "diesel-production-closeout-observation-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedAt": "2026-10-04T08:35:00Z",
+  "outcome": "in_progress",
+  "deployment": "not_attempted_for_new_source",
+  "productionStarterAcceptance": "not_run_for_new_source",
+  "limitations": [
+    "Local checks do not prove production recovery.",
+    "The failed cf86edca3a33e087d4e5b88b54171b7010f5bb41 candidate remains rolled back.",
+    "This is an operator record, not externally authenticated release evidence."
+  ]
+}

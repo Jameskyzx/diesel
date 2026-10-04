@@ -106,7 +106,7 @@ async function main(): Promise<void> {
       results,
       runError: null,
       targetOrigin,
-      version: "synthetic-canary-v4",
+      version: "synthetic-canary-v5",
     };
     const serialized = serializeReport(report);
 
@@ -131,7 +131,7 @@ async function main(): Promise<void> {
       results,
       runError,
       targetOrigin,
-      version: "synthetic-canary-v4",
+      version: "synthetic-canary-v5",
     };
     const serialized = serializeReport(report);
     if (reportPath) {

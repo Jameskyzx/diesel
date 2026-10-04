@@ -983,7 +983,7 @@ describe("Vitest execution evidence", () => {
     })).toThrow(/complete passing run/u);
   });
 
-  it("fingerprints every Git-visible source while excluding only the exact sink", () => {
+  it("fingerprints Git-visible execution inputs while excluding the exact sink", () => {
     const workspace = createWorkspace();
     const head = git(workspace, ["rev-parse", "HEAD"]);
     const baseline = captureVitestExecutionRepositoryState(workspace);
@@ -1008,6 +1008,27 @@ describe("Vitest execution evidence", () => {
       baseline.sourceFingerprint,
     );
     expect(nearbyChanged.worktreeState).toBe("dirty");
+  });
+
+  it("binds the same v2 scope in worktree and revision while keeping operator edits dirty", () => {
+    const workspace = createWorkspace();
+    const status = readFileSync(resolve(process.cwd(), "docs/STATUS.md"), "utf8");
+    writeWorkspaceFile(workspace, "docs/STATUS.md", status);
+    git(workspace, ["add", "."]);
+    git(workspace, ["commit", "-m", "Bind status semantics"]);
+    const baseline = captureVitestExecutionRepositoryState(workspace);
+    writeWorkspaceFile(workspace, "docs/evidence/operations/release.json", "{\"status\":\"failed\"}\n");
+    writeWorkspaceFile(workspace, "docs/STATUS.md", status.replace(/(observedAt=)`[^`]+`/u, "$1`2030-01-01T00:00+00:00`"));
+    const pending = captureVitestExecutionRepositoryState(workspace);
+    expect(pending.sourceFingerprint).toEqual(baseline.sourceFingerprint);
+    expect(pending.worktreeState).toBe("dirty");
+    git(workspace, ["add", "."]);
+    git(workspace, ["commit", "-m", "Retain operator observation"]);
+    const committed = captureVitestExecutionRepositoryState(workspace);
+    expect(committed.worktreeState).toBe("clean");
+    expect(captureVitestExecutionSourceFingerprintAtRevision(workspace, committed.headCommit)).toEqual(baseline.sourceFingerprint);
+    writeWorkspaceFile(workspace, "docs/evidence/operations/run.ts", "export const command = 1;\n");
+    expect(captureVitestExecutionRepositoryState(workspace).sourceFingerprint).not.toEqual(baseline.sourceFingerprint);
   });
 
   it("binds source bytes, paths, and executable modes", () => {

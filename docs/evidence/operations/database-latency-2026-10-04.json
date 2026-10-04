@@ -1,0 +1,336 @@
+{
+  "startedAt": "2026-10-04T07:50:19.857Z",
+  "completedAt": "2026-10-04T07:51:19.940Z",
+  "exitCode": 0,
+  "signal": null,
+  "stderrBytes": 0,
+  "rows": [
+    {
+      "kind": "latency-sample",
+      "sample": {
+        "profile": "existing-client",
+        "delayMs": 0,
+        "startedAt": "2026-10-04T07:50:20.423Z",
+        "durationMs": 3204,
+        "steps": [
+          {
+            "step": "transaction-open",
+            "elapsedMs": 2754
+          },
+          {
+            "step": "timeouts",
+            "elapsedMs": 2867
+          },
+          {
+            "step": "read-1",
+            "elapsedMs": 2979
+          },
+          {
+            "step": "read-2",
+            "elapsedMs": 3091
+          }
+        ],
+        "pass": true
+      }
+    },
+    {
+      "kind": "latency-sample",
+      "sample": {
+        "profile": "existing-client",
+        "delayMs": 0,
+        "startedAt": "2026-10-04T07:50:23.627Z",
+        "durationMs": 883,
+        "steps": [
+          {
+            "step": "transaction-open",
+            "elapsedMs": 113
+          },
+          {
+            "step": "timeouts",
+            "elapsedMs": 226
+          },
+          {
+            "step": "read-1",
+            "elapsedMs": 658
+          },
+          {
+            "step": "read-2",
+            "elapsedMs": 771
+          }
+        ],
+        "pass": true
+      }
+    },
+    {
+      "kind": "latency-sample",
+      "sample": {
+        "profile": "existing-client",
+        "delayMs": 25000,
+        "startedAt": "2026-10-04T07:50:49.511Z",
+        "durationMs": 2655,
+        "steps": [
+          {
+            "step": "transaction-open",
+            "elapsedMs": 1857
+          },
+          {
+            "step": "timeouts",
+            "elapsedMs": 2299
+          },
+          {
+            "step": "read-1",
+            "elapsedMs": 2417
+          },
+          {
+            "step": "read-2",
+            "elapsedMs": 2536
+          }
+        ],
+        "pass": true
+      }
+    },
+    {
+      "kind": "latency-sample",
+      "sample": {
+        "profile": "retained-no-type-discovery",
+        "delayMs": 0,
+        "startedAt": "2026-10-04T07:50:52.284Z",
+        "durationMs": 1394,
+        "steps": [
+          {
+            "step": "transaction-open",
+            "elapsedMs": 937
+          },
+          {
+            "step": "timeouts",
+            "elapsedMs": 1054
+          },
+          {
+            "step": "read-1",
+            "elapsedMs": 1170
+          },
+          {
+            "step": "read-2",
+            "elapsedMs": 1284
+          }
+        ],
+        "pass": true
+      }
+    },
+    {
+      "kind": "latency-sample",
+      "sample": {
+        "profile": "retained-no-type-discovery",
+        "delayMs": 0,
+        "startedAt": "2026-10-04T07:50:53.678Z",
+        "durationMs": 528,
+        "steps": [
+          {
+            "step": "transaction-open",
+            "elapsedMs": 111
+          },
+          {
+            "step": "timeouts",
+            "elapsedMs": 217
+          },
+          {
+            "step": "read-1",
+            "elapsedMs": 317
+          },
+          {
+            "step": "read-2",
+            "elapsedMs": 422
+          }
+        ],
+        "pass": true
+      }
+    },
+    {
+      "kind": "latency-sample",
+      "sample": {
+        "profile": "retained-no-type-discovery",
+        "delayMs": 25000,
+        "startedAt": "2026-10-04T07:51:19.215Z",
+        "durationMs": 574,
+        "steps": [
+          {
+            "step": "transaction-open",
+            "elapsedMs": 116
+          },
+          {
+            "step": "timeouts",
+            "elapsedMs": 232
+          },
+          {
+            "step": "read-1",
+            "elapsedMs": 347
+          },
+          {
+            "step": "read-2",
+            "elapsedMs": 459
+          }
+        ],
+        "pass": true
+      }
+    },
+    {
+      "kind": "database-latency-summary",
+      "readOnly": true,
+      "observedAt": "2026-10-04T07:51:19.899Z",
+      "release": "e5c3249f067692a483d4133a313bd5883b166642",
+      "rows": [
+        {
+          "profile": "existing-client",
+          "delayMs": 0,
+          "startedAt": "2026-10-04T07:50:20.423Z",
+          "durationMs": 3204,
+          "steps": [
+            {
+              "step": "transaction-open",
+              "elapsedMs": 2754
+            },
+            {
+              "step": "timeouts",
+              "elapsedMs": 2867
+            },
+            {
+              "step": "read-1",
+              "elapsedMs": 2979
+            },
+            {
+              "step": "read-2",
+              "elapsedMs": 3091
+            }
+          ],
+          "pass": true
+        },
+        {
+          "profile": "existing-client",
+          "delayMs": 0,
+          "startedAt": "2026-10-04T07:50:23.627Z",
+          "durationMs": 883,
+          "steps": [
+            {
+              "step": "transaction-open",
+              "elapsedMs": 113
+            },
+            {
+              "step": "timeouts",
+              "elapsedMs": 226
+            },
+            {
+              "step": "read-1",
+              "elapsedMs": 658
+            },
+            {
+              "step": "read-2",
+              "elapsedMs": 771
+            }
+          ],
+          "pass": true
+        },
+        {
+          "profile": "existing-client",
+          "delayMs": 25000,
+          "startedAt": "2026-10-04T07:50:49.511Z",
+          "durationMs": 2655,
+          "steps": [
+            {
+              "step": "transaction-open",
+              "elapsedMs": 1857
+            },
+            {
+              "step": "timeouts",
+              "elapsedMs": 2299
+            },
+            {
+              "step": "read-1",
+              "elapsedMs": 2417
+            },
+            {
+              "step": "read-2",
+              "elapsedMs": 2536
+            }
+          ],
+          "pass": true
+        },
+        {
+          "profile": "retained-no-type-discovery",
+          "delayMs": 0,
+          "startedAt": "2026-10-04T07:50:52.284Z",
+          "durationMs": 1394,
+          "steps": [
+            {
+              "step": "transaction-open",
+              "elapsedMs": 937
+            },
+            {
+              "step": "timeouts",
+              "elapsedMs": 1054
+            },
+            {
+              "step": "read-1",
+              "elapsedMs": 1170
+            },
+            {
+              "step": "read-2",
+              "elapsedMs": 1284
+            }
+          ],
+          "pass": true
+        },
+        {
+          "profile": "retained-no-type-discovery",
+          "delayMs": 0,
+          "startedAt": "2026-10-04T07:50:53.678Z",
+          "durationMs": 528,
+          "steps": [
+            {
+              "step": "transaction-open",
+              "elapsedMs": 111
+            },
+            {
+              "step": "timeouts",
+              "elapsedMs": 217
+            },
+            {
+              "step": "read-1",
+              "elapsedMs": 317
+            },
+            {
+              "step": "read-2",
+              "elapsedMs": 422
+            }
+          ],
+          "pass": true
+        },
+        {
+          "profile": "retained-no-type-discovery",
+          "delayMs": 25000,
+          "startedAt": "2026-10-04T07:51:19.215Z",
+          "durationMs": 574,
+          "steps": [
+            {
+              "step": "transaction-open",
+              "elapsedMs": 116
+            },
+            {
+              "step": "timeouts",
+              "elapsedMs": 232
+            },
+            {
+              "step": "read-1",
+              "elapsedMs": 347
+            },
+            {
+              "step": "read-2",
+              "elapsedMs": 459
+            }
+          ],
+          "pass": true
+        }
+      ],
+      "limitation": "Read-only transaction timings on the production network; no quota writes, no model calls, not a complete admission or availability benchmark."
+    }
+  ]
+}

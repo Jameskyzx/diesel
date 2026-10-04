@@ -258,6 +258,60 @@ describe("governance snapshot export reliability", () => {
     expect(client.end).toHaveBeenCalledWith({ timeout: 5 });
   });
 
+  it("retains only settled successful readers and closes the final lease explicitly", async () => {
+    const client = { end: vi.fn(async () => undefined), unsafe: vi.fn(async () => undefined) };
+    const retain = vi.fn();
+    await expect(runSnapshotAcquisitionAttempt(client, async () => "first batch", retain)).resolves.toBe("first batch");
+    await expect(runSnapshotAcquisitionAttempt(client, async () => "second batch", retain)).resolves.toBe("second batch");
+    expect(retain).toHaveBeenCalledTimes(2);
+    expect(retain).toHaveBeenLastCalledWith(client);
+    expect(client.unsafe).toHaveBeenCalledTimes(2);
+    expect(client.end).not.toHaveBeenCalled();
+    await runSnapshotAcquisitionAttempt(client, async () => undefined);
+    expect(client.end).toHaveBeenCalledExactlyOnceWith({ timeout: 5 });
+  });
+
+  it.each(["read", "probe"])("never retains a reader after %s failure", async (stage) => {
+    const failure = new Error("bounded failure");
+    const client = {
+      end: vi.fn(async () => undefined),
+      unsafe: vi.fn(async () => { if (stage === "probe") throw failure; }),
+    };
+    const retain = vi.fn();
+    await expect(runSnapshotAcquisitionAttempt(client, async () => {
+      if (stage === "read") throw failure;
+    }, retain)).rejects.toBe(failure);
+    expect(retain).not.toHaveBeenCalled();
+    expect(client.end).toHaveBeenCalledExactlyOnceWith({ timeout: 5 });
+  });
+
+  it("replaces a failed retained connection without advancing the batch or snapshot", async () => {
+    const clients = [1, 2].map((id) => ({ id, end: vi.fn(async () => undefined), unsafe: vi.fn(async () => undefined) }));
+    let retained: typeof clients[number] | undefined;
+    let next = 0;
+    const readClients: number[] = [];
+    const run = (failFirst: boolean) => runGovernanceSnapshotReaderBatchWithRetry({
+      assertAnchorHealthy: () => undefined,
+      createClient: () => { const client = retained ?? clients[next++]; retained = undefined; return client; },
+      retainSuccessfulClient: (client) => { retained = client; },
+      read: async (client) => {
+        readClients.push(client.id);
+        if (failFirst && client.id === 1) throw Object.assign(new Error("transport"), { code: "ECONNRESET" });
+        return "same bounded batch";
+      },
+      waitBeforeRetry: async () => undefined,
+    });
+    await run(false);
+    await run(true);
+    await run(false);
+    expect(readClients).toEqual([1, 1, 2, 2]);
+    expect(next).toBe(2);
+    expect(clients[0].end).toHaveBeenCalledTimes(1);
+    expect(clients[1].end).not.toHaveBeenCalled();
+    await runSnapshotAcquisitionAttempt(retained!, async () => undefined);
+    expect(clients[1].end).toHaveBeenCalledTimes(1);
+  });
+
   it("accepts only PostgreSQL exported snapshot identifiers", () => {
     expect(parseGovernanceSnapshotId("00000003-0000001B-1")).toBe(
       "00000003-0000001B-1",

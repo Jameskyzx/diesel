@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   createSalesChatTools: vi.fn(),
   getAiAuditRepository: vi.fn(),
   getConfiguredAiModel: vi.fn(),
+  getAdmissionDatabase: vi.fn(),
   getDatabase: vi.fn(),
   streamSalesChat: vi.fn(),
 }));
@@ -24,6 +25,10 @@ vi.mock("@/server/services/ai-audit-service", () => ({
 
 vi.mock("@/server/db/client", () => ({
   getDatabase: mocks.getDatabase,
+}));
+
+vi.mock("@/server/db/admission-client", () => ({
+  getAdmissionDatabase: mocks.getAdmissionDatabase,
 }));
 
 type AdmissionConfigRuntime = typeof globalThis & {
@@ -83,6 +88,7 @@ describe("POST /api/chat production admission configuration", () => {
     expect(response.status).toBe(200);
     await expect(response.text()).resolves.toContain("structured facts");
     expect(mocks.getDatabase).not.toHaveBeenCalled();
+    expect(mocks.getAdmissionDatabase).not.toHaveBeenCalled();
     expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
     expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();
     expect(mocks.streamSalesChat).not.toHaveBeenCalled();
@@ -149,6 +155,7 @@ describe("POST /api/chat production admission configuration", () => {
         { errorCode: "Error" },
       );
       expect(mocks.getDatabase).not.toHaveBeenCalled();
+      expect(mocks.getAdmissionDatabase).not.toHaveBeenCalled();
       expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
       expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();
       expect(mocks.streamSalesChat).not.toHaveBeenCalled();

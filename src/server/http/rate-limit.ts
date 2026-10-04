@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 
 import { env } from "@/env";
 import { getErrorCode } from "@/lib/api-error";
-import { getDatabase } from "@/server/db/client";
+import { getAdmissionDatabase } from "@/server/db/admission-client";
 import {
   createRateLimitRepository,
   type RateLimitRepository,
@@ -425,7 +425,7 @@ export function getAiChatRateLimiter(): RateLimiter {
             globalLimit: config.globalLimitPerHour,
             globalScope: AI_CHAT_RATE_LIMIT_GLOBAL_SCOPE,
             limit: config.perClientLimitPerHour,
-            repository: createRateLimitRepository(getDatabase()),
+            repository: createRateLimitRepository(getAdmissionDatabase()),
             scope: AI_CHAT_RATE_LIMIT_CLIENT_SCOPE,
             windowMs: AI_CHAT_RATE_LIMIT_WINDOW_MS,
           })

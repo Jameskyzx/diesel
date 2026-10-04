@@ -166,7 +166,10 @@ request ID、SSE header 与闭合 UI-message v1 正文。产品列表必须恰�
 `DEMO-ENG-100`、`DEMO-ENG-200`，两条产品及其来源都标为 Demo，且真实/分类错配产品数为
 0。这是当前作品站“零获批真实产品”边界，不是永久的通用产品目录合同；未来只有在产品
 证据获得批准并同步修改 canary、publication manifest 与发布验收后才能改变。真实 provider
-的 `chat-provider-sse` 是独立的显式付费选项，不控制上述确定性 chat probe。
+的 `chat-provider-sse` 是独立的付费选项，不控制上述确定性 chat probe；CLI 仍需显式开启，
+定时 workflow 默认开启。它发送页面上的 CHN 有效法规示例，要求恰好一次
+`getCountryProfile` 调用及匹配的、通过完整 Zod 语义校验的工具结果，`status=ok`、
+`evidenceSufficient=true` 且来源非空。只有文字的拒绝、工具失败、错配或重复输出不算通过。
 所有检查都要求可追踪的 request ID；JSON 会按公开 Zod 合同解析，CHN probe 还会核对
 国家、scope、功率和日期，并把服务计算的 stale 状态视为失败。当前已批准 CHN 事实按
 `construction` / `agriculture` 发布，不能把通用 `non-road` 当作它们的聚合别名：
@@ -178,16 +181,31 @@ UI-message v1 SSE，逐 event 复用 AI SDK schema，要求
 start/text/`finishReason=stop`/`[DONE]` 闭合；`error`、`abort`、reasoning part、未知
 event、内容过滤、长度截断、空流或截断流全部失败关闭。输出只含路径、状态、耗时、
 错误码和 request ID。初始化阶段失败也会以稳定 stage 和 `INITIALIZATION_ERROR` 原子写入
-脱敏报告，不记录异常正文、凭据或响应体。上述语义以 `synthetic-canary-v4` 写入报告；
+脱敏报告，不记录异常正文、凭据或响应体。上述语义以 `synthetic-canary-v5` 写入报告；
 v3 对 CHN 通用 non-road 错误要求 available，保留其失败记录，不将其改写为成功。
-v4 同时验证有依据和证据缺口；v3 以前的结果也不能解释为已验证 SSE 正文或 finish reason。
+v4 同时验证有依据和证据缺口，但未要求付费 probe 返回成功工具证据；v5 补上此门槛。
+v3 以前的结果也不能解释为已验证 SSE 正文或 finish reason。旧报告均保留原语义，不回写。
 
 `.github/workflows/production-canary.yml` 在合入默认分支后以 GitHub schedule 尽力每 6 小时
-运行一次上述无付费检查，并显式设置 `CANARY_STATUS_PATH=docs/STATUS.md`。失败 job 与保留
+运行一次上述六项无付费检查及一个真实 AI 示例，并显式设置 `CANARY_STATUS_PATH=docs/STATUS.md`。失败 job 与保留
 14 天的脱敏 JSON artifact 是当前告警信号；artifact 缺失本身也会令 workflow 失败。
-`workflow_dispatch` 才能显式打开付费 AI probe。GitHub schedule 可能延迟或停用，因此这只是
+每天最多四次定时 AI 请求，每次最多五个 provider step，无自动重试；沿用服务端配额，
+不持有模型密钥。`workflow_dispatch` 可显式关闭付费项。GitHub schedule 可能延迟或停用，因此这只是
 轻量外部 canary，不代表已建立 SLO、on-call 或独立监控供应商。故障预期与恢复命令见
 [INCIDENT_DRILL.md](INCIDENT_DRILL.md)。
+
+真实浏览器发布验收独立于本地 mock 套件：
+
+```bash
+DIESEL_LIVE_ACCEPTANCE=true DIESEL_LIVE_RELEASE=<40-char-release-sha> pnpm test:e2e:live
+```
+
+固定访问生产域名，先核对 release，再依次点击中文桌面和英文移动端六个示例；
+使用真实 PostgreSQL admission、业务查询和模型，不拦截或模拟 `/api/chat`。
+每个示例必须只发送一次，具有匹配的有效工具证据、完整 SSE 和可见回答；零重试，
+首个失败即停止，报告保留未执行项而非算作成功。每次输出到独立的
+`test-results/live-<timestamp>`，包括 request ID、公开回答/工具证据及截图。
+这些固定公开示例的工件可供人工核对模型措辞，不包含服务端密钥；不可将本套件改为采集真实用户私有会话。
 
 ## 2. 分支保护与合并门（仓库设置）
 

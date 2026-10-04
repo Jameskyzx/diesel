@@ -233,12 +233,19 @@ evidence, not rewriting a report's recorded fingerprint.
 suite and replaces `docs/evidence/vitest-execution-latest.json` only after a
 zero exit and an unchanged source state. The public artifact keeps anonymous
 test IDs, closed result arithmetic, run time, base HEAD, worktree state, and a
-fingerprint of every Git-visible file except the artifact itself; it contains
+v2 fingerprint of Git-visible execution inputs; it contains
 no test titles, paths, failure messages, or stacks. `pnpm portfolio:verify`
 re-lists the current suite and requires its anonymous identity inventory and
 current source fingerprint to match that execution artifact. A dirty local
 capture is useful for iteration but records no evaluated commit and cannot
 satisfy release-evidence mode.
+V2 separates only STATUS's four production-observation fields and their two
+mirrored bullets, plus historical `docs/evidence/operations/*.json` records.
+The verifier checks the original STATUS release facts and committed bytes on
+every run. Code, tests, deployment instructions, ordinary prose, fixture counts
+and test/model/browser evidence remain bound. This permits a committed production
+readback update without rerunning the entire suite; it does not exempt arbitrary
+documentation changes or turn operator records into signed deployment proof.
 The capture invokes the pinned local pnpm entrypoint with an empty private HOME,
 offline mode, and dependency-drift-as-error; it also checks the installed
 Vitest version before and after execution. These are local consistency checks,
@@ -472,10 +479,14 @@ protection rule was last observed on 2026-09-01 with strict
 mode, administrator enforcement, force-push/deletion disabled, and only this
 aggregate context required; it must be read back again before release.
 
-The locally wired external canary will, once merged into the default branch,
+The external canary, after the corresponding workflow revision is merged,
 bind liveness/readiness to the full release SHA recorded in the STATUS machine
 block and fail if the public product list is not exactly the two fictional Demo
 configurations with zero real products.
+It schedules one real, sourced AI starter every six hours (at most five provider
+steps, no retry). The separate opt-in `pnpm test:e2e:live` suite clicks all six
+English/Chinese starters against the deployed application without API mocks;
+see the deployment runbook for the exact release binding and paid-call opt-in.
 
 ## Standard development environment
 

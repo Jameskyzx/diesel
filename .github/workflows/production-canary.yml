@@ -7,7 +7,7 @@ on:
     inputs:
       include_ai:
         description: Run the paid AI SSE contract check
-        default: false
+        default: true
         required: true
         type: boolean
 
@@ -42,10 +42,12 @@ jobs:
       - name: Check public production contracts
         env:
           CANARY_BASE_URL: https://diesel.jamesky.site
-          CANARY_CHECK_AI: ${{ github.event_name == 'workflow_dispatch' && inputs.include_ai && 'true' || 'false' }}
+          # One real starter, at most five provider steps, four scheduled runs/day.
+          # No automatic retry; paid failures remain failures in the saved report.
+          CANARY_CHECK_AI: ${{ github.event_name == 'schedule' || inputs.include_ai == true }}
           CANARY_REPORT_PATH: artifacts/production-canary.json
           CANARY_STATUS_PATH: docs/STATUS.md
-          CANARY_TIMEOUT_MS: "30000"
+          CANARY_TIMEOUT_MS: "45000"
         run: pnpm ops:canary
 
       - name: Upload sanitized canary report

@@ -1,5 +1,8 @@
 import { uiMessageChunkSchema } from "ai";
 
+import { aiToolResultSchema, type AiToolName } from "@/features/ai/schemas";
+import { getDictionary } from "@/i18n/dictionaries";
+
 import {
   healthResponseSchema,
   readinessResponseSchema,
@@ -49,6 +52,7 @@ export type CanaryCheck = {
   path: string;
   requireRequestId?: boolean;
   streamShape?: "ui-message-v1";
+  toolExpectation?: { name: AiToolName; evidenceSufficient: boolean };
 };
 
 export type CanaryCheckResult = {
@@ -179,7 +183,10 @@ function hasExpectedHealthCachePolicy(headers: Headers): boolean {
     headers.get("pragma") === CANARY_HEALTH_PRAGMA;
 }
 
-export async function validateUiMessageSse(value: string): Promise<boolean> {
+export async function validateUiMessageSse(
+  value: string,
+  toolExpectation?: CanaryCheck["toolExpectation"],
+): Promise<boolean> {
   const payloads = value
     .replace(/\r\n/gu, "\n")
     .split(/\n\n+/u)
@@ -196,6 +203,8 @@ export async function validateUiMessageSse(value: string): Promise<boolean> {
   let sawStart = false;
   let sawTextDelta = false;
   const openTextIds = new Set<string>();
+  const toolCalls = new Map<string, string>();
+  const completedTools = new Set<string>();
   const validateChunk = uiMessageChunkSchema().validate;
   if (!validateChunk) {
     return false;
@@ -230,11 +239,30 @@ export async function validateUiMessageSse(value: string): Promise<boolean> {
     if (
       event.type.startsWith("reasoning") ||
       event.type === "abort" ||
-      event.type === "error"
+      event.type === "error" ||
+      event.type === "tool-input-error" ||
+      event.type === "tool-output-error"
     ) {
       return false;
     }
-    if (event.type === "start") {
+    if (event.type === "tool-input-available") {
+      if (toolCalls.has(event.toolCallId)) return false;
+      toolCalls.set(event.toolCallId, event.toolName);
+    } else if (event.type === "tool-output-available") {
+      const name = toolCalls.get(event.toolCallId);
+      if (!name || completedTools.has(event.toolCallId)) return false;
+      completedTools.add(event.toolCallId);
+      if (toolExpectation) {
+        const result = aiToolResultSchema.safeParse(event.output);
+        if (!result.success || name !== toolExpectation.name ||
+          result.data.tool !== name ||
+          result.data.evidenceSufficient !== toolExpectation.evidenceSufficient ||
+          result.data.status !== (toolExpectation.evidenceSufficient ? "ok" : "no_data") ||
+          (toolExpectation.evidenceSufficient && result.data.citations.length === 0)) {
+          return false;
+        }
+      }
+    } else if (event.type === "start") {
       if (sawStart) {
         return false;
       }
@@ -275,7 +303,9 @@ export async function validateUiMessageSse(value: string): Promise<boolean> {
     }
   }
 
-  return sawStart && sawTextDelta && sawFinish && sawDone;
+  return sawStart && sawTextDelta && sawFinish && sawDone &&
+    toolCalls.size === completedTools.size &&
+    (!toolExpectation || toolCalls.size === 1);
 }
 
 export function validateCanaryBaseUrl(value: string): URL {
@@ -397,7 +427,7 @@ export function createCanaryChecks(input: {
         messages: [
           {
             id: crypto.randomUUID(),
-            parts: [{ text: "核对 CHN non-road 100 kW 当前法规。", type: "text" }],
+            parts: [{ text: getDictionary("zh-CN").chatPage.starterCurrent, type: "text" }],
             role: "user",
           },
         ],
@@ -411,6 +441,7 @@ export function createCanaryChecks(input: {
       path: "/api/chat",
       requireRequestId: true,
       streamShape: "ui-message-v1",
+      toolExpectation: { name: "getCountryProfile", evidenceSufficient: true },
     });
   }
 
@@ -543,7 +574,7 @@ export async function runCanaryCheck(input: {
       const responseText = await readResponseText(response);
       if (
         responseText === null ||
-        !(await validateUiMessageSse(responseText))
+        !(await validateUiMessageSse(responseText, input.check.toolExpectation))
       ) {
         errorCode = "INVALID_RESPONSE";
       }

@@ -181,6 +181,7 @@ export async function runSnapshotAcquisitionAttempt<
 >(
   client: Client,
   acquire: (client: Client) => Promise<Result>,
+  retainSuccessfulClient?: (client: Client) => void,
 ): Promise<Result> {
   const acquisition = await acquire(client).then(
     (value) => ({ ok: true as const, value }),
@@ -204,6 +205,18 @@ export async function runSnapshotAcquisitionAttempt<
     () => ({ ok: true as const }),
     (error: unknown) => ({ error, ok: false as const }),
   );
+  // Retain only after COMMIT/ROLLBACK writes have drained and the probe passed.
+  // Failed reads/probes still close the client before any retry. The owner must
+  // explicitly close the retained client when the exported snapshot ends.
+  if (acquisition.ok && settlement.ok && retainSuccessfulClient) {
+    try {
+      retainSuccessfulClient(client);
+      return acquisition.value;
+    } catch (error) {
+      await client.end({ timeout: governanceSnapshotClientEndTimeoutSeconds });
+      throw error;
+    }
+  }
   const teardown = await client
     .end({ timeout: governanceSnapshotClientEndTimeoutSeconds })
     .then(
@@ -282,6 +295,7 @@ type GovernanceSnapshotReaderBatchInput<
   createClient: () => Client;
   maximumAttempts?: number;
   read: (client: Client) => Promise<Result>;
+  retainSuccessfulClient?: (client: Client) => void;
   waitBeforeRetry?: () => Promise<void>;
 };
 
@@ -300,7 +314,7 @@ export async function runGovernanceSnapshotReaderBatchWithRetry<
     input.assertAnchorHealthy();
     try {
       const client = input.createClient();
-      const result = await runSnapshotAcquisitionAttempt(client, input.read);
+      const result = await runSnapshotAcquisitionAttempt(client, input.read, input.retainSuccessfulClient);
       input.assertAnchorHealthy();
       return result;
     } catch (error: unknown) {
@@ -696,7 +710,8 @@ function createGovernanceSnapshotReader(
   assertAnchorHealthy: () => void,
 ) {
   let batch = 0;
-  return async function read<Result>(
+  let retainedClient: ReturnType<typeof postgres> | undefined;
+  async function read<Result>(
     table: (typeof governanceTableNames)[number],
     query: (
       transaction: GovernanceSnapshotDatabaseTransaction,
@@ -705,8 +720,12 @@ function createGovernanceSnapshotReader(
     const startedAt = performance.now();
     const result = await runGovernanceSnapshotReaderBatchWithRetry({
       assertAnchorHealthy,
-      createClient: () =>
-        postgres(databaseUrl, governanceSnapshotPostgresOptions),
+      createClient: () => {
+        const client = retainedClient;
+        retainedClient = undefined;
+        return client ?? postgres(databaseUrl, governanceSnapshotPostgresOptions);
+      },
+      retainSuccessfulClient: (client) => { retainedClient = client; },
       read: (client) => {
         const db = drizzle(client);
         return db.transaction(
@@ -734,7 +753,14 @@ function createGovernanceSnapshotReader(
       durationMs: Math.round(performance.now() - startedAt),
     });
     return result;
-  };
+  }
+  return Object.assign(read, {
+    async close() {
+      const client = retainedClient;
+      retainedClient = undefined;
+      if (client) await runSnapshotAcquisitionAttempt(client, async () => undefined);
+    },
+  });
 }
 
 function parseMatchingTimestampBatch(
@@ -767,378 +793,391 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
           snapshotId,
           assertAnchorHealthy,
         );
-        const basePreciseTimestampRows: unknown[] = [];
+        let failed = false;
+        let acquisitionError: unknown;
+        try {
+          const basePreciseTimestampRows: unknown[] = [];
 
-        const dataSourceBatch = await read("data_sources", async (transaction) => {
-          const db = transaction;
-          const rows = await db
-            .select()
-            .from(dataSources)
-            .orderBy(asc(dataSources.id));
-          const timestamps = await db.execute(sql`
-            select 'data_sources' as "tableName", id::text as "rowKey",
-                   jsonb_build_object(
-                     'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
-                   ) as timestamps
-              from data_sources
-             order by id
-          `);
-          return { rows, timestamps };
-        });
-        basePreciseTimestampRows.push(
-          ...parseMatchingTimestampBatch(
-            dataSourceBatch.rows.map((row) => row.id),
-            dataSourceBatch.timestamps,
-            "data_sources",
-          ),
-        );
-
-        const countryBatch = await read("countries", async (transaction) => {
-          const db = transaction;
-          const rows = await db
-            .select()
-            .from(countries)
-            .orderBy(asc(countries.iso3));
-          const timestamps = await db.execute(sql`
-            select 'countries' as "tableName", iso3 as "rowKey",
-                   jsonb_build_object(
-                     'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
-                   ) as timestamps
-              from countries
-             order by iso3
-          `);
-          return { rows, timestamps };
-        });
-        basePreciseTimestampRows.push(
-          ...parseMatchingTimestampBatch(
-            countryBatch.rows.map((row) => row.iso3),
-            countryBatch.timestamps,
-            "countries",
-          ),
-        );
-
-        const jurisdictionBatch = await read("jurisdictions", async (transaction) => {
-          const db = transaction;
-          const rows = await db
-            .select()
-            .from(jurisdictions)
-            .orderBy(asc(jurisdictions.id));
-          const timestamps = await db.execute(sql`
-            select 'jurisdictions' as "tableName", id::text as "rowKey",
-                   jsonb_build_object(
-                     'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
-                   ) as timestamps
-              from jurisdictions
-             order by id
-          `);
-          return { rows, timestamps };
-        });
-        basePreciseTimestampRows.push(
-          ...parseMatchingTimestampBatch(
-            jurisdictionBatch.rows.map((row) => row.id),
-            jurisdictionBatch.timestamps,
-            "jurisdictions",
-          ),
-        );
-
-        const membershipBatch = await read("country_jurisdictions", async (transaction) => {
-          const db = transaction;
-          const rows = await db
-            .select()
-            .from(countryJurisdictions)
-            .orderBy(
-              asc(countryJurisdictions.countryIso3),
-              asc(countryJurisdictions.jurisdictionId),
-              asc(countryJurisdictions.validFrom),
-            );
-          const timestamps = await db.execute(sql`
-            select 'country_jurisdictions' as "tableName",
-                   country_iso3 || ':' || jurisdiction_id::text || ':' || valid_from::text as "rowKey",
-                   jsonb_build_object(
-                     'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
-                   ) as timestamps
-              from country_jurisdictions
-             order by country_iso3, jurisdiction_id, valid_from
-          `);
-          return { rows, timestamps };
-        });
-        basePreciseTimestampRows.push(
-          ...parseMatchingTimestampBatch(
-            membershipBatch.rows.map(
-              (row) =>
-                `${row.countryIso3}:${row.jurisdictionId}:${row.validFrom}`,
+          const dataSourceBatch = await read("data_sources", async (transaction) => {
+            const db = transaction;
+            const rows = await db
+              .select()
+              .from(dataSources)
+              .orderBy(asc(dataSources.id));
+            const timestamps = await db.execute(sql`
+              select 'data_sources' as "tableName", id::text as "rowKey",
+                     jsonb_build_object(
+                       'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                     ) as timestamps
+                from data_sources
+               order by id
+            `);
+            return { rows, timestamps };
+          });
+          basePreciseTimestampRows.push(
+            ...parseMatchingTimestampBatch(
+              dataSourceBatch.rows.map((row) => row.id),
+              dataSourceBatch.timestamps,
+              "data_sources",
             ),
-            membershipBatch.timestamps,
-            "country_jurisdictions",
-          ),
-        );
+          );
 
-        const regulationBatch = await read("regulations", async (transaction) => {
-          const db = transaction;
-          const rows = await db
-            .select()
-            .from(regulations)
-            .orderBy(asc(regulations.id));
-          const timestamps = await db.execute(sql`
-            select 'regulations' as "tableName", id::text as "rowKey",
-                   jsonb_build_object(
-                     'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                     'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
-                   ) as timestamps
-              from regulations
-             order by id
-          `);
-          return { rows, timestamps };
-        });
-        basePreciseTimestampRows.push(
-          ...parseMatchingTimestampBatch(
-            regulationBatch.rows.map((row) => row.id),
-            regulationBatch.timestamps,
-            "regulations",
-          ),
-        );
+          const countryBatch = await read("countries", async (transaction) => {
+            const db = transaction;
+            const rows = await db
+              .select()
+              .from(countries)
+              .orderBy(asc(countries.iso3));
+            const timestamps = await db.execute(sql`
+              select 'countries' as "tableName", iso3 as "rowKey",
+                     jsonb_build_object(
+                       'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                     ) as timestamps
+                from countries
+               order by iso3
+            `);
+            return { rows, timestamps };
+          });
+          basePreciseTimestampRows.push(
+            ...parseMatchingTimestampBatch(
+              countryBatch.rows.map((row) => row.iso3),
+              countryBatch.timestamps,
+              "countries",
+            ),
+          );
 
-        const limitRows = await collectGovernanceSnapshotRowsInBatches(
-          async (cursor, limit) => {
-            const batch = await read("regulation_limits", async (transaction) => {
-              const db = transaction;
-              const rows = await db
-                .select()
-                .from(regulationLimits)
-                .where(
-                  cursor === null ? undefined : gt(regulationLimits.id, cursor),
-                )
-                .orderBy(asc(regulationLimits.id))
-                .limit(limit);
-              const timestamps = await db.execute(sql`
-                select 'regulation_limits' as "tableName", id::text as "rowKey",
-                       jsonb_build_object(
-                         'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                         'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                         'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                         'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
-                       ) as timestamps
-                  from regulation_limits
+          const jurisdictionBatch = await read("jurisdictions", async (transaction) => {
+            const db = transaction;
+            const rows = await db
+              .select()
+              .from(jurisdictions)
+              .orderBy(asc(jurisdictions.id));
+            const timestamps = await db.execute(sql`
+              select 'jurisdictions' as "tableName", id::text as "rowKey",
+                     jsonb_build_object(
+                       'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                     ) as timestamps
+                from jurisdictions
+               order by id
+            `);
+            return { rows, timestamps };
+          });
+          basePreciseTimestampRows.push(
+            ...parseMatchingTimestampBatch(
+              jurisdictionBatch.rows.map((row) => row.id),
+              jurisdictionBatch.timestamps,
+              "jurisdictions",
+            ),
+          );
+
+          const membershipBatch = await read("country_jurisdictions", async (transaction) => {
+            const db = transaction;
+            const rows = await db
+              .select()
+              .from(countryJurisdictions)
+              .orderBy(
+                asc(countryJurisdictions.countryIso3),
+                asc(countryJurisdictions.jurisdictionId),
+                asc(countryJurisdictions.validFrom),
+              );
+            const timestamps = await db.execute(sql`
+              select 'country_jurisdictions' as "tableName",
+                     country_iso3 || ':' || jurisdiction_id::text || ':' || valid_from::text as "rowKey",
+                     jsonb_build_object(
+                       'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                     ) as timestamps
+                from country_jurisdictions
+               order by country_iso3, jurisdiction_id, valid_from
+            `);
+            return { rows, timestamps };
+          });
+          basePreciseTimestampRows.push(
+            ...parseMatchingTimestampBatch(
+              membershipBatch.rows.map(
+                (row) =>
+                  `${row.countryIso3}:${row.jurisdictionId}:${row.validFrom}`,
+              ),
+              membershipBatch.timestamps,
+              "country_jurisdictions",
+            ),
+          );
+
+          const regulationBatch = await read("regulations", async (transaction) => {
+            const db = transaction;
+            const rows = await db
+              .select()
+              .from(regulations)
+              .orderBy(asc(regulations.id));
+            const timestamps = await db.execute(sql`
+              select 'regulations' as "tableName", id::text as "rowKey",
+                     jsonb_build_object(
+                       'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                     ) as timestamps
+                from regulations
+               order by id
+            `);
+            return { rows, timestamps };
+          });
+          basePreciseTimestampRows.push(
+            ...parseMatchingTimestampBatch(
+              regulationBatch.rows.map((row) => row.id),
+              regulationBatch.timestamps,
+              "regulations",
+            ),
+          );
+
+          const limitRows = await collectGovernanceSnapshotRowsInBatches(
+            async (cursor, limit) => {
+              const batch = await read("regulation_limits", async (transaction) => {
+                const db = transaction;
+                const rows = await db
+                  .select()
+                  .from(regulationLimits)
+                  .where(
+                    cursor === null ? undefined : gt(regulationLimits.id, cursor),
+                  )
+                  .orderBy(asc(regulationLimits.id))
+                  .limit(limit);
+                const timestamps = await db.execute(sql`
+                  select 'regulation_limits' as "tableName", id::text as "rowKey",
+                         jsonb_build_object(
+                           'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                         ) as timestamps
+                    from regulation_limits
+                   where (${cursor}::uuid is null or id > ${cursor}::uuid)
+                   order by id
+                   limit ${limit}
+                `);
+                return { rows, timestamps };
+              });
+              const rows = governanceSnapshotBatchedRowSchema.array().parse(
+                batch.rows,
+              );
+              const timestamps = parseMatchingTimestampBatch(
+                rows.map((row) => row.id),
+                batch.timestamps,
+                "regulation_limits",
+              );
+              basePreciseTimestampRows.push(...timestamps);
+              return rows;
+            },
+          );
+
+          const marketMetricRows = await collectGovernanceSnapshotRowsInBatches(
+            async (cursor, limit) => {
+              const batch = await read("market_metrics", async (transaction) => {
+                const db = transaction;
+                const rows = await db
+                  .select()
+                  .from(marketMetrics)
+                  .where(
+                    cursor === null ? undefined : gt(marketMetrics.id, cursor),
+                  )
+                  .orderBy(asc(marketMetrics.id))
+                  .limit(limit);
+                const timestamps = await db.execute(sql`
+                  select 'market_metrics' as "tableName", id::text as "rowKey",
+                         jsonb_build_object(
+                           'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                         ) as timestamps
+                    from market_metrics
+                   where (${cursor}::uuid is null or id > ${cursor}::uuid)
+                   order by id
+                   limit ${limit}
+                `);
+                return { rows, timestamps };
+              });
+              const rows = governanceSnapshotBatchedRowSchema.array().parse(
+                batch.rows,
+              );
+              const timestamps = parseMatchingTimestampBatch(
+                rows.map((row) => row.id),
+                batch.timestamps,
+                "market_metrics",
+              );
+              basePreciseTimestampRows.push(...timestamps);
+              return rows;
+            },
+          );
+
+          const governanceDraftRows = await collectGovernanceSnapshotRowsInBatches(
+            async (cursor, limit) =>
+              read("data_governance_drafts", async (transaction) => {
+                const db = transaction;
+                return db.execute(sql`
+                select id::text as "id",
+                       entity_type::text as "entityType",
+                       entity_key as "entityKey",
+                       version,
+                       workflow_status::text as "workflowStatus",
+                       payload::text as "payload",
+                       change_reason as "changeReason",
+                       created_by as "createdBy",
+                       reviewed_by as "reviewedBy",
+                       published_by as "publishedBy",
+                       to_char(reviewed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "reviewedAt",
+                       to_char(published_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "publishedAt",
+                       to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "archivedAt",
+                       to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt",
+                       to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "updatedAt"
+                  from data_governance_drafts
                  where (${cursor}::uuid is null or id > ${cursor}::uuid)
                  order by id
                  limit ${limit}
-              `);
-              return { rows, timestamps };
-            });
-            const rows = governanceSnapshotBatchedRowSchema.array().parse(
-              batch.rows,
-            );
-            const timestamps = parseMatchingTimestampBatch(
-              rows.map((row) => row.id),
-              batch.timestamps,
-              "regulation_limits",
-            );
-            basePreciseTimestampRows.push(...timestamps);
-            return rows;
-          },
-        );
-
-        const marketMetricRows = await collectGovernanceSnapshotRowsInBatches(
-          async (cursor, limit) => {
-            const batch = await read("market_metrics", async (transaction) => {
-              const db = transaction;
-              const rows = await db
-                .select()
-                .from(marketMetrics)
-                .where(
-                  cursor === null ? undefined : gt(marketMetrics.id, cursor),
-                )
-                .orderBy(asc(marketMetrics.id))
-                .limit(limit);
-              const timestamps = await db.execute(sql`
-                select 'market_metrics' as "tableName", id::text as "rowKey",
-                       jsonb_build_object(
-                         'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                         'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                         'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-                         'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
-                       ) as timestamps
-                  from market_metrics
+                `);
+              }),
+            governanceSnapshotRawJsonBatchSize,
+          );
+          const marketImportBatchRows = await collectGovernanceSnapshotRowsInBatches(
+            async (cursor, limit) =>
+              read("market_import_batches", async (transaction) => {
+                const db = transaction;
+                return db.execute(sql`
+                select id::text as "id",
+                       status::text as "status",
+                       original_filename as "originalFilename",
+                       content_sha256 as "contentSha256",
+                       preview_rows::text as "previewRows",
+                       validation_errors::text as "validationErrors",
+                       total_rows as "totalRows",
+                       valid_rows as "validRows",
+                       invalid_rows as "invalidRows",
+                       created_by as "createdBy",
+                       confirmed_by as "confirmedBy",
+                       to_char(committed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "committedAt",
+                       to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt"
+                  from market_import_batches
                  where (${cursor}::uuid is null or id > ${cursor}::uuid)
                  order by id
                  limit ${limit}
-              `);
-              return { rows, timestamps };
-            });
-            const rows = governanceSnapshotBatchedRowSchema.array().parse(
-              batch.rows,
-            );
-            const timestamps = parseMatchingTimestampBatch(
-              rows.map((row) => row.id),
-              batch.timestamps,
-              "market_metrics",
-            );
-            basePreciseTimestampRows.push(...timestamps);
-            return rows;
-          },
-        );
+                `);
+              }),
+            governanceSnapshotRawJsonBatchSize,
+          );
+          const changeLogRows = await collectGovernanceSnapshotRowsInBatches(
+            async (cursor, limit) =>
+              read("data_change_logs", async (transaction) => {
+                const db = transaction;
+                return db.execute(sql`
+                select id::text as "id",
+                       entity_type::text as "entityType",
+                       entity_key as "entityKey",
+                       action::text as "action",
+                       actor_email as "actorEmail",
+                       actor_role::text as "actorRole",
+                       draft_id::text as "draftId",
+                       import_batch_id::text as "importBatchId",
+                       before_data::text as "beforeData",
+                       after_data::text as "afterData",
+                       reason,
+                       to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt"
+                  from data_change_logs
+                 where (${cursor}::uuid is null or id > ${cursor}::uuid)
+                 order by id
+                 limit ${limit}
+                `);
+              }),
+            governanceSnapshotRawJsonBatchSize,
+          );
 
-        const governanceDraftRows = await collectGovernanceSnapshotRowsInBatches(
-          async (cursor, limit) =>
-            read("data_governance_drafts", async (transaction) => {
-              const db = transaction;
-              return db.execute(sql`
-              select id::text as "id",
-                     entity_type::text as "entityType",
-                     entity_key as "entityKey",
-                     version,
-                     workflow_status::text as "workflowStatus",
-                     payload::text as "payload",
-                     change_reason as "changeReason",
-                     created_by as "createdBy",
-                     reviewed_by as "reviewedBy",
-                     published_by as "publishedBy",
-                     to_char(reviewed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "reviewedAt",
-                     to_char(published_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "publishedAt",
-                     to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "archivedAt",
-                     to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt",
-                     to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "updatedAt"
-                from data_governance_drafts
-               where (${cursor}::uuid is null or id > ${cursor}::uuid)
-               order by id
-               limit ${limit}
-              `);
-            }),
-          governanceSnapshotRawJsonBatchSize,
-        );
-        const marketImportBatchRows = await collectGovernanceSnapshotRowsInBatches(
-          async (cursor, limit) =>
-            read("market_import_batches", async (transaction) => {
-              const db = transaction;
-              return db.execute(sql`
-              select id::text as "id",
-                     status::text as "status",
-                     original_filename as "originalFilename",
-                     content_sha256 as "contentSha256",
-                     preview_rows::text as "previewRows",
-                     validation_errors::text as "validationErrors",
-                     total_rows as "totalRows",
-                     valid_rows as "validRows",
-                     invalid_rows as "invalidRows",
-                     created_by as "createdBy",
-                     confirmed_by as "confirmedBy",
-                     to_char(committed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "committedAt",
-                     to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt"
-                from market_import_batches
-               where (${cursor}::uuid is null or id > ${cursor}::uuid)
-               order by id
-               limit ${limit}
-              `);
-            }),
-          governanceSnapshotRawJsonBatchSize,
-        );
-        const changeLogRows = await collectGovernanceSnapshotRowsInBatches(
-          async (cursor, limit) =>
-            read("data_change_logs", async (transaction) => {
-              const db = transaction;
-              return db.execute(sql`
-              select id::text as "id",
-                     entity_type::text as "entityType",
-                     entity_key as "entityKey",
-                     action::text as "action",
-                     actor_email as "actorEmail",
-                     actor_role::text as "actorRole",
-                     draft_id::text as "draftId",
-                     import_batch_id::text as "importBatchId",
-                     before_data::text as "beforeData",
-                     after_data::text as "afterData",
-                     reason,
-                     to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt"
-                from data_change_logs
-               where (${cursor}::uuid is null or id > ${cursor}::uuid)
-               order by id
-               limit ${limit}
-              `);
-            }),
-          governanceSnapshotRawJsonBatchSize,
-        );
-
-        const selectedTables = {
-          countries: countryBatch.rows,
-          country_jurisdictions: membershipBatch.rows,
-          data_change_logs: changeLogRows,
-          data_governance_drafts: governanceDraftRows,
-          data_sources: dataSourceBatch.rows,
-          jurisdictions: jurisdictionBatch.rows,
-          market_import_batches: marketImportBatchRows,
-          market_metrics: marketMetricRows,
-          regulation_limits: limitRows,
-          regulations: regulationBatch.rows,
-        };
-        const preciseTimestampRows = [
-          ...parsePreciseGovernanceTimestampRows(basePreciseTimestampRows),
-          ...governanceDraftRows.map((row) => ({
-            rowKey: row.id,
-            tableName: "data_governance_drafts",
-            timestamps: {
-              archivedAt: row.archivedAt,
-              createdAt: row.createdAt,
-              publishedAt: row.publishedAt,
-              reviewedAt: row.reviewedAt,
-              updatedAt: row.updatedAt,
-            },
-          })),
-          ...marketImportBatchRows.map((row) => ({
-            rowKey: row.id,
-            tableName: "market_import_batches",
-            timestamps: {
-              committedAt: row.committedAt,
-              createdAt: row.createdAt,
-            },
-          })),
-          ...changeLogRows.map((row) => ({
-            rowKey: row.id,
-            tableName: "data_change_logs",
-            timestamps: { createdAt: row.createdAt },
-          })),
-        ];
-        const rawJsonRows = [
-          ...governanceDraftRows.map((row) => ({
-            jsonValues: { payload: row.payload },
-            rowKey: row.id,
-            tableName: "data_governance_drafts",
-          })),
-          ...marketImportBatchRows.map((row) => ({
-            jsonValues: {
-              previewRows: row.previewRows,
-              validationErrors: row.validationErrors,
-            },
-            rowKey: row.id,
-            tableName: "market_import_batches",
-          })),
-          ...changeLogRows.map((row) => ({
-            jsonValues: {
-              afterData: row.afterData,
-              beforeData: row.beforeData,
-            },
-            rowKey: row.id,
-            tableName: "data_change_logs",
-          })),
-        ];
-        return {
-          preciseTimestampResult: preciseTimestampRows,
-          rawJsonResult: rawJsonRows,
-          selectedTables,
-        };
+          const selectedTables = {
+            countries: countryBatch.rows,
+            country_jurisdictions: membershipBatch.rows,
+            data_change_logs: changeLogRows,
+            data_governance_drafts: governanceDraftRows,
+            data_sources: dataSourceBatch.rows,
+            jurisdictions: jurisdictionBatch.rows,
+            market_import_batches: marketImportBatchRows,
+            market_metrics: marketMetricRows,
+            regulation_limits: limitRows,
+            regulations: regulationBatch.rows,
+          };
+          const preciseTimestampRows = [
+            ...parsePreciseGovernanceTimestampRows(basePreciseTimestampRows),
+            ...governanceDraftRows.map((row) => ({
+              rowKey: row.id,
+              tableName: "data_governance_drafts",
+              timestamps: {
+                archivedAt: row.archivedAt,
+                createdAt: row.createdAt,
+                publishedAt: row.publishedAt,
+                reviewedAt: row.reviewedAt,
+                updatedAt: row.updatedAt,
+              },
+            })),
+            ...marketImportBatchRows.map((row) => ({
+              rowKey: row.id,
+              tableName: "market_import_batches",
+              timestamps: {
+                committedAt: row.committedAt,
+                createdAt: row.createdAt,
+              },
+            })),
+            ...changeLogRows.map((row) => ({
+              rowKey: row.id,
+              tableName: "data_change_logs",
+              timestamps: { createdAt: row.createdAt },
+            })),
+          ];
+          const rawJsonRows = [
+            ...governanceDraftRows.map((row) => ({
+              jsonValues: { payload: row.payload },
+              rowKey: row.id,
+              tableName: "data_governance_drafts",
+            })),
+            ...marketImportBatchRows.map((row) => ({
+              jsonValues: {
+                previewRows: row.previewRows,
+                validationErrors: row.validationErrors,
+              },
+              rowKey: row.id,
+              tableName: "market_import_batches",
+            })),
+            ...changeLogRows.map((row) => ({
+              jsonValues: {
+                afterData: row.afterData,
+                beforeData: row.beforeData,
+              },
+              rowKey: row.id,
+              tableName: "data_change_logs",
+            })),
+          ];
+          return {
+            preciseTimestampResult: preciseTimestampRows,
+            rawJsonResult: rawJsonRows,
+            selectedTables,
+          };
+        } catch (error: unknown) {
+          failed = true;
+          acquisitionError = error;
+          throw error;
+        } finally {
+          try { await read.close(); } catch (error: unknown) {
+            if (failed) throw new AggregateError([acquisitionError, error], "Snapshot acquisition and retained-client cleanup failed");
+            throw error;
+          }
+        }
       },
     ),
   );

@@ -524,11 +524,11 @@ const playwrightEvidenceCiContracts = [
 const canonicalMergeBlockingJobDigests = [
   {
     jobId: "deploy-contracts",
-    sha256: "eef755f49d7d0e549c452c5adff3647f057c3423865176a029ff203e4d6b0f80",
+    sha256: "28e5f4b9a7b4cd685c58aac1e0cddfb779d06a0492b3d5a2158505398c4b56a9",
   },
   {
     jobId: "postgres-migrations",
-    sha256: "ec7a109c01a0653c5e671ff8b28644f7d2d1efc05cd9377acc750fe09c4a4b0c",
+    sha256: "2557dbabb8ccd8efb0f297479e1ed44bdc4ea1e9c39b94daf421ee874288290a",
   },
   {
     jobId: "e2e",
@@ -548,11 +548,11 @@ const canonicalMergeBlockingJobDigests = [
   },
   {
     jobId: "audit",
-    sha256: "7b883bba03731fee7efc3c5f4de71a72684593f431dd4e934b617c6f893f686f",
+    sha256: "b7340c19a6931510e3cb484cf56445b82e3dc9550b9722491b27aece772ada82",
   },
   {
     jobId: "linux-release-handoff",
-    sha256: "9ffc5646cdc2e480f823977f15b32909532d19d1c1b192915541187c418ee178",
+    sha256: "f764be3f0753e29cc9f3cb11c4b219425cda806fdbc07d5923162464c595e1dc",
   },
 ] as const;
 

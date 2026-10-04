@@ -1,12 +1,4 @@
 {
-  "reviewedAt": "2026-10-03",
-  "advisories": [
-    {
-      "expiresOn": "2026-10-09",
-      "id": "GHSA-vfj7-8cjw-p6xm",
-      "owner": "Jameskyzx",
-      "reason": "Explicitly approved seven-calendar-day tooling exception; no official braces fix exists. ESLint/shadcn CLI paths only, with shadcn CSS the sole application reference and no affected-package entries in 35 production runtime traces. Reviewed committed inputs and isolated unprivileged builds remain required. See docs/DEPENDENCY_SECURITY.md; re-review or remediate before 2026-10-10 UTC, never auto-renew.",
-      "severity": "high"
-    }
-  ]
+  "reviewedAt": "2026-10-04",
+  "advisories": []
 }

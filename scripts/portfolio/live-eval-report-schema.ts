@@ -40,7 +40,8 @@ const liveEvalV25Version: "sales-chat-live-v25" =
   SALES_CHAT_LIVE_EVAL_VERSION;
 const salesChatSystemPromptV6 = "sales-chat-system-v6" as const;
 const salesChatSystemPromptV7 = "sales-chat-system-v7" as const;
-const salesChatSystemPromptV8: "sales-chat-system-v8" =
+const salesChatSystemPromptV8 = "sales-chat-system-v8" as const;
+const salesChatSystemPromptV9: "sales-chat-system-v9" =
   SALES_CHAT_SYSTEM_PROMPT_VERSION;
 
 const gitShaSchema = z.string().regex(/^[0-9a-f]{40}$/);
@@ -145,6 +146,7 @@ const currentProvenanceSchema = legacyProvenanceSchema.extend({
     z.literal(salesChatSystemPromptV6),
     z.literal(salesChatSystemPromptV7),
     z.literal(salesChatSystemPromptV8),
+    z.literal(salesChatSystemPromptV9),
   ]),
   providerProfile: liveEvalProviderProfileSchema.nullable(),
 }).strict();

@@ -198,7 +198,7 @@ describe("dependency advisory policy", () => {
   });
 });
 
-describe("approved braces tooling exception", () => {
+describe("remediated braces tooling exception", () => {
   const policy = auditPolicySchema.parse(
     JSON.parse(
       readFileSync(
@@ -209,22 +209,15 @@ describe("approved braces tooling exception", () => {
   );
   const id = "GHSA-vfj7-8cjw-p6xm";
 
-  it("registers only the approved identity for seven UTC calendar dates", () => {
-    expect(policy.reviewedAt).toBe("2026-10-03");
-    expect(policy.advisories).toHaveLength(1);
-    expect(policy.advisories[0]).toMatchObject({
-      expiresOn: "2026-10-09",
-      id,
-      owner: "Jameskyzx",
-      severity: "high",
-    });
-    expect(policy.advisories[0]?.reason).toContain("never auto-renew");
+  it("removes the exception after removing the vulnerable dependency graph", () => {
+    expect(policy.reviewedAt).toBe("2026-10-04");
+    expect(policy.advisories).toEqual([]);
   });
 
-  it("admits the registered high advisory through the inclusive expiry", () => {
+  it("rejects a reintroduced braces finding even before the old expiry", () => {
     expect(
       evaluateAuditPolicy({ policy, report: report(id, "high"), today: "2026-10-09" }),
-    ).toEqual([]);
+    ).toEqual([`${id} is high and has no registered exception`]);
   });
 
   it("still rejects a different high advisory and a critical escalation", () => {
@@ -240,12 +233,10 @@ describe("approved braces tooling exception", () => {
     ).toEqual([`${id} is critical and cannot be allowlisted`]);
   });
 
-  it("fails from October 10 even if the advisory disappears", () => {
-    for (const audit of [report(id, "high"), { advisories: {} }]) {
-      expect(
-        evaluateAuditPolicy({ policy, report: audit, today: "2026-10-10" }),
-      ).toEqual([`${id} exception expired on 2026-10-09`]);
-    }
+  it("does not retain an expired exception for a removed dependency", () => {
+    expect(evaluateAuditPolicy({ policy, report: { advisories: {} }, today: "2026-10-10" })).toEqual([]);
+    expect(evaluateAuditPolicy({ policy, report: report(id, "high"), today: "2026-10-10" }))
+      .toEqual([`${id} is high and has no registered exception`]);
   });
 });
 

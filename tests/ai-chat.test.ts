@@ -4855,7 +4855,7 @@ describe("single-agent sales chat", () => {
     expect(model.doStreamCalls).toHaveLength(2);
     for (const call of model.doStreamCalls) {
       const instructions = call.prompt.filter(({ role }) => role === "system").map(({ content }) => content).join("\n");
-      expect(instructions).toContain(`version="sales-chat-system-v8" locale="${locale}"`);
+      expect(instructions).toContain(`version="sales-chat-system-v9" locale="${locale}"`);
       expect(instructions).toContain(locale === "en"
         ? "conditional vocabulary rules, not findings"
         : "只是条件化术语说明，不是个案事实");
@@ -6737,6 +6737,29 @@ describe("single-agent sales chat", () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+
+  it.each([false, true])("adds final task guidance only after validated comparison evidence (invalid=%s)", async invalid => {
+    const fixture = createRegulationComparisonEvidence();
+    if (fixture.tool !== "compareRegulations") throw new Error("Expected comparison fixture");
+    const comparison = structuredClone(fixture.comparison);
+    if (invalid) comparison.countries[0]!.currentEffectiveRegulations[0]!.source.sourceId = "00000000-0000-4000-8000-000000000999";
+    const auditRepository = { recordToolCall: vi.fn(async () => undefined) };
+    const model = regulationComparisonMockModel("这是本次法规要求的核对结果。");
+    const sessionId = "00000000-0000-4000-8000-000000000954";
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const result = streamSalesChat({
+        auditRepository, locale: "zh-CN", model, selectedCountryIso3: null, sessionId,
+        messages: [{ content: "比较 CHN 和 BRA 当前 non-road 100 kW 法规。", role: "user" }],
+        tools: createSalesChatTools({ auditRepository, selectedCountryIso3: null, sessionId, services: { compareRegulations: async () => comparison } }),
+      });
+      const text = await result.text;
+      expect(JSON.stringify(model.doStreamCalls[0]?.prompt)).not.toContain("<final_answer_task>");
+      expect(JSON.stringify(model.doStreamCalls[1]?.prompt).includes("<final_answer_task>")).toBe(!invalid);
+      if (invalid) expect(text).toContain("没有足够证据");
+      else expect(text).toContain("法规要求的核对结果");
+    } finally { log.mockRestore(); }
   });
 
   it("withholds fullStream prose when a regulation fact borrows another valid source identity", async () => {

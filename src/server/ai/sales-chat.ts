@@ -100,7 +100,7 @@ import {
   evidenceNeedsRegulatoryDisclaimer,
   type SalesChatEvidenceContract,
 } from "@/server/ai/evidence-contract";
-import { buildSalesChatInstructions } from "@/server/ai/sales-chat-prompt";
+import { buildFinalAnswerGuidance, buildSalesChatInstructions } from "@/server/ai/sales-chat-prompt";
 import { knowledgeQuerySatisfies, knowledgeTermsIn } from "@/server/ai/knowledge-request-context";
 import {
   collectSalesChatStepEvidence,
@@ -2674,13 +2674,10 @@ export function streamSalesChat(input: {
     },
   };
 
+  const instructions = buildSalesChatInstructions(input.selectedCountryIso3, input.locale, runtimeContext);
   const rawResult = streamText({
     abortSignal: input.abortSignal,
-    instructions: buildSalesChatInstructions(
-      input.selectedCountryIso3,
-      input.locale,
-      runtimeContext,
-    ),
+    instructions,
     maxRetries: input.maxRetries ?? 1,
     maxOutputTokens,
     messages: input.messages,
@@ -2780,6 +2777,9 @@ export function streamSalesChat(input: {
 
       return {
         activeTools: policy.activeTools,
+        instructions: instructions + (policy.phase === "final_answer"
+          ? buildFinalAnswerGuidance(stepEvidence.results.map(result => result.tool), input.locale)
+          : ""),
         toolChoice: policy.toolChoice,
         toolOrder: SALES_CHAT_TOOL_ORDER,
       };

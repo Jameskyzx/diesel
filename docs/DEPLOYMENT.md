@@ -1507,7 +1507,11 @@ commit 或迁移恢复账本。
 `/api/health/ready` 均返回数据库、`aiChatAdmission` 与 `aiChatRateLimit` 三个独立探针 `ok`
 和同一版本。readiness 在 AI 侧只验证生产日限额、小时 global/client 关系与 PostgreSQL backend
 的配置合同，不预留预算、不消费小时请求、不连接 provider；
-在数据库侧使用 2.5 秒 statement timeout，并在应用进程内对未完成探针 single-flight、对快速失败
+在数据库侧使用至多一条专用连接、连接级 2.5 秒 statement timeout 和单次 `SELECT 1`，
+不做类型发现或 BEGIN/SET/SELECT/COMMIT 多次往返。探针连接不因空闲 20 秒而关闭，
+最大寿命 30 分钟；业务连接池和业务查询超时不变。公开响应仍以 3 秒为界，
+真实慢连接或数据库故障仍返回 503，不缓存成功、不通过重试掩盖失败。
+应用进程内对未完成探针 single-flight、对快速失败
 短暂冷却，避免公网重复健康请求在数据库故障时累积连接或查询。首页、
 `/chat`、代表国家页返回 200；HTTP IP/备用域名跳转到 `https://diesel.jamesky.site`；主域名
 发送超过 1 MiB 但仍在应用 9 MiB 上限内的合法附件时，请求必须到达应用而不是返回

@@ -25,16 +25,17 @@ async function readLegacyV3Report(): Promise<Record<string, unknown>> {
 }
 
 describe("portfolio versioned live-eval report schema", () => {
-  it("accepts current v8 prompt provenance while preserving v6/v7 history", () => {
+  it("accepts current v9 prompt provenance while preserving v6/v7/v8 history", () => {
     const current = buildSyntheticLiveEvalReport({
       commit: "a".repeat(40), fingerprintDigest: "b".repeat(64), fingerprintFileCount: 1,
     });
-    expect(liveEvalReportSchema.parse(current).provenance.promptVersion).toBe("sales-chat-system-v8");
+    expect(liveEvalReportSchema.parse(current).provenance.promptVersion).toBe("sales-chat-system-v9");
+    expect(liveEvalReportSchema.parse({ ...current, provenance: { ...current.provenance, promptVersion: "sales-chat-system-v8" } }).provenance.promptVersion).toBe("sales-chat-system-v8");
     expect(liveEvalReportSchema.parse({ ...current, provenance: { ...current.provenance, promptVersion: "sales-chat-system-v7" } }).provenance.promptVersion).toBe("sales-chat-system-v7");
     const historical = { ...current, provenance: { ...current.provenance, promptVersion: "sales-chat-system-v6" } };
     expect(liveEvalReportSchema.parse(historical).provenance.promptVersion).toBe("sales-chat-system-v6");
     expect(liveEvalReportSchema.safeParse({
-      ...current, provenance: { ...current.provenance, promptVersion: "sales-chat-system-v9" },
+      ...current, provenance: { ...current.provenance, promptVersion: "sales-chat-system-v10" },
     }).success).toBe(false);
   });
 

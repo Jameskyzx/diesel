@@ -23,9 +23,9 @@ This is the only current release/evidence index. Historical implementation notes
 以下为带时间的历史生产观测，不声明仓库当前 HEAD 等于线上版本：
 
 - 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
-  observedAt=`2026-10-04T14:15+00:00`；`/api/health` readbackAt=`2026-10-04T14:15+00:00` returned `status=ok`,
-  `version=eb85fe4c40b5aff8274f835494a65770af8af611`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/eb85fe4c40b5aff8274f835494a65770af8af611`。因此当前公开 release ID
+  observedAt=`2026-10-04T20:31+00:00`；`/api/health` readbackAt=`2026-10-04T20:31+00:00` returned `status=ok`,
+  `version=877ce9f667bfc03233423d5ebe6a5317cc6c5220`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/877ce9f667bfc03233423d5ebe6a5317cc6c5220`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为
@@ -114,11 +114,11 @@ This is the only current release/evidence index. Historical implementation notes
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "eb85fe4c40b5aff8274f835494a65770af8af611",
+    "commit": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
     "evidenceKind": "historical-operator-record-only",
-    "id": "eb85fe4c40b5aff8274f835494a65770af8af611",
-    "observedAt": "2026-10-04T14:15+00:00",
-    "releasePath": "/opt/diesel/releases/eb85fe4c40b5aff8274f835494a65770af8af611"
+    "id": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+    "observedAt": "2026-10-04T20:31+00:00",
+    "releasePath": "/opt/diesel/releases/877ce9f667bfc03233423d5ebe6a5317cc6c5220"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -167,18 +167,18 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-04T14:15+00:00",
+    "readbackAt": "2026-10-04T20:31+00:00",
     "status": "ok",
-    "version": "eb85fe4c40b5aff8274f835494a65770af8af611"
+    "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v2"
   },
   "repositoryHead": {
-    "local": "eb85fe4c40b5aff8274f835494a65770af8af611",
-    "observedAt": "2026-10-04T14:15+00:00",
-    "remote": "eb85fe4c40b5aff8274f835494a65770af8af611"
+    "local": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+    "observedAt": "2026-10-04T20:31+00:00",
+    "remote": "877ce9f667bfc03233423d5ebe6a5317cc6c5220"
   }
 }
 ```

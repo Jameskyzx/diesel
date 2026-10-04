@@ -6658,6 +6658,8 @@
 - 依赖：移除未使用的 shadcn CLI/CSS，给 Next ESLint 唯一 glob 调用增加可审查的
   tinyglobby 兼容补丁与精确依赖扩展，保持所有 lint 规则；移除 braces 临时例外，
   更新 brace-expansion 官方安全补丁。详见 DEPENDENCY_SECURITY.md，不冒充官方 Next 补丁。
+  shadcn 的 fast-uri/undici 两组旧回归测试改为验证已移除的消费者和锁文件节点不再存在，
+  而不是跳过测试或重新安装无用依赖；若再次引入这些依赖，测试会要求重新安全审查。
 - 就绪：VPS 只读诊断观察到冷连接比已建立连接慢，旧探针还有事务多次网络往返；
   试验性 2 秒连接超时出现失败，未采用。改为最多一条复用连接、跳过不需要的类型发现、
   单次 simple-protocol 请求发送只读事务、SET LOCAL、SELECT 1、COMMIT。

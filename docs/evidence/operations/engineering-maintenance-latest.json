@@ -52,7 +52,11 @@
     "correctedVersion": "sales-chat-live-v26",
     "requestsExpectationsAndThresholdsUnchanged": true,
     "historicalReportRescored": false,
-    "freshVersionAcceptancePending": true
+    "freshVersionAcceptancePending": false,
+    "freshRunId": "dfec0966-d0be-4ee3-a2c5-3399b04f62c3",
+    "freshRunPassedCases": 18,
+    "freshRunProviderCalls": 37,
+    "freshRunTokens": 101390
   },
   "capacity": {
     "policyImplemented": true,

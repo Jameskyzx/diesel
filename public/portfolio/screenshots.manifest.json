@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-05T07:08:51.016Z",
+      "capturedAt": "2026-10-05T15:02:46.364Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -235,11 +235,14 @@
         "src/server/db/demo-client.ts",
         "src/server/db/environment.ts",
         "src/server/db/governance-maintenance-lock.ts",
+        "src/server/db/postgres.ts",
         "src/server/db/schema/index.ts",
         "src/server/db/seed/acceptance-fixtures.ts",
         "src/server/db/seed/accepted-market-fixtures.ts",
         "src/server/db/seed/country-catalog.ts",
         "src/server/db/seed/demo-data.ts",
+        "src/server/db/supabase-root-ca.ts",
+        "src/server/db/tls.ts",
         "src/server/demo/fde-demo-mode.ts",
         "src/server/health/postgres-readiness.ts",
         "src/server/health/readiness.ts",
@@ -279,7 +282,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "498331ffe70660747fd852706b7fd0b4b975eeeb88ffc7e285c2224dc18e8169",
+      "sourceFingerprint": "280daf2c6af1ca5ed5e4007ac4e176ad4cbe47ff6ad21137e7c3c5bfe48363bb",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -287,12 +290,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-05T07:08:53.171Z",
+      "capturedAt": "2026-10-05T15:02:48.010Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "22a7614305719932e39202a08b1a6d93c463232fa8784dafefb958eddc0a3694",
+      "sha256": "667c17b6628155ee60db4dd81d3a9b3ec0a1cba111cf101651377306404aa712",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -522,11 +525,14 @@
         "src/server/db/demo-client.ts",
         "src/server/db/environment.ts",
         "src/server/db/governance-maintenance-lock.ts",
+        "src/server/db/postgres.ts",
         "src/server/db/schema/index.ts",
         "src/server/db/seed/acceptance-fixtures.ts",
         "src/server/db/seed/accepted-market-fixtures.ts",
         "src/server/db/seed/country-catalog.ts",
         "src/server/db/seed/demo-data.ts",
+        "src/server/db/supabase-root-ca.ts",
+        "src/server/db/tls.ts",
         "src/server/demo/fde-demo-mode.ts",
         "src/server/health/postgres-readiness.ts",
         "src/server/health/readiness.ts",
@@ -566,7 +572,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "1fe8888d3db043a2d0e4f2305c2ad9beadca6d68a5daa754cfb5996f03f1405f",
+      "sourceFingerprint": "d2e57668ea9e9dc6a65ada3ae6f7e36707fa653fbe09234a1ed96de5fa81302c",
       "viewport": {
         "height": 1000,
         "width": 1600

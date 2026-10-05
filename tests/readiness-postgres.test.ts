@@ -2,12 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ unsafe: vi.fn(), simple: vi.fn(), end: vi.fn(), postgres: vi.fn() }));
 vi.mock("postgres", () => ({ default: mocks.postgres }));
-vi.mock("@/server/db/environment", () => ({
+vi.mock("@/server/db/environment", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/server/db/environment")>(),
   getDatabaseMode: () => "postgres",
   getDatabaseUrl: () => "postgres://test.invalid/readiness",
 }));
 import { checkDatabaseReadiness, DATABASE_READINESS_TIMEOUT_MS } from "@/server/health/readiness";
 import { closeReadinessConnection, probePostgresReadiness } from "@/server/health/postgres-readiness";
+import { getDatabaseTlsOptions } from "@/server/db/tls";
 
 beforeEach(() => {
   mocks.postgres.mockReturnValue({ unsafe: mocks.unsafe, end: mocks.end });
@@ -32,6 +34,7 @@ describe("PostgreSQL readiness probe", () => {
         statement_timeout: 2500, lock_timeout: 2500, idle_in_transaction_session_timeout: 2500,
       },
       fetch_types: false, idle_timeout: 0, max: 1, max_lifetime: 1800, prepare: false,
+      ssl: getDatabaseTlsOptions("postgres://test.invalid/readiness"),
     });
     expect(DATABASE_READINESS_TIMEOUT_MS).toBe(8000);
   });

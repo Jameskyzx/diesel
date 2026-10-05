@@ -1,7 +1,7 @@
 import { stat, readFile } from "node:fs/promises";
 
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import postgres from "../../src/server/db/postgres";
 import { ZodError } from "zod";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";

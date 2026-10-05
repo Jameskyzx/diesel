@@ -22,7 +22,7 @@ describe("production PostgreSQL backup command", () => {
       PGHOST: "example.com",
       PGPASSWORD: "p@ss",
       PGPORT: "6543",
-      PGSSLMODE: "require",
+      PGSSLMODE: "verify-full",
       PGUSER: "diesel",
     });
     expect(result.environment.DATABASE_URL).toBeUndefined();

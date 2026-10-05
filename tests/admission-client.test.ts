@@ -9,13 +9,17 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("postgres", () => ({ default: mocks.postgres }));
 vi.mock("drizzle-orm/postgres-js", () => ({ drizzle: mocks.drizzle }));
-vi.mock("@/server/db/environment", () => ({ getDatabaseUrl: mocks.url }));
+vi.mock("@/server/db/environment", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/server/db/environment")>(),
+  getDatabaseUrl: mocks.url,
+}));
 
 import {
   closeAdmissionConnection,
   getAdmissionDatabase,
 } from "@/server/db/admission-client";
 import { MAX_CHAT_RATE_LIMIT_CHECK_MS } from "@/server/http/request-limits";
+import { getDatabaseTlsOptions } from "@/server/db/tls";
 import {
   RATE_LIMIT_IDLE_TRANSACTION_TIMEOUT_MS,
   RATE_LIMIT_LOCK_TIMEOUT_MS,
@@ -49,6 +53,7 @@ describe("dedicated PostgreSQL admission pool", () => {
         max: 2,
         max_lifetime: 1800,
         prepare: false,
+        ssl: getDatabaseTlsOptions("postgres://test.invalid/admission"),
       },
     );
   });

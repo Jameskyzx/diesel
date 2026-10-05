@@ -102,6 +102,20 @@
     "fix": "Pin Git archive tar.umask=0022 for the synthetic CI release; preserve production trusted-path rejection.",
     "remoteFixAcceptancePending": true
   },
+  "browserDeadlineObservation": {
+    "runId": 37287099407,
+    "attempt": 2,
+    "case": "exits public loading and disabled states when APIs never respond",
+    "failure": "The raw intercepted request count was three instead of two in all three CI attempts.",
+    "normalSpeedLocalRepeatsPassed": 5,
+    "eightfoldCpuSlowdownOriginalTestFailures": 5,
+    "localTraceObservation": "One aborted first-mount country GET, one pending country GET and one pending locale POST; consistent with development Strict Mode replay.",
+    "ciTraceRetained": false,
+    "ciTraceLimitation": "A subsequent push canceled the old run after the assertions failed and before failure-only trace upload; textual failed assertions remain in its job log.",
+    "fix": "Assert current request lifetimes and exactly one locale write; add normal/slow browser coverage and unconditional route cleanup.",
+    "freshBrowserAcceptancePending": true,
+    "fixedLocalZeroRetryRunsPassed": 10
+  },
   "limitations": [
     "The PR has not passed its final required CI gate or been deployed.",
     "The original SSH 255 root cause remains unproven; durable execution removes connection dependence, not historical uncertainty.",

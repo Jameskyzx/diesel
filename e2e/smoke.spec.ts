@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page, type Request as BrowserRequest, type Route } from "@playwright/test";
 
 import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
 
@@ -123,79 +123,100 @@ test("does not claim the home data is online when the country summary fails", as
   await expect(page.getByRole("button", { name: "重试" })).toBeVisible();
 });
 
-test("exits public loading and disabled states when APIs never respond", async ({
-  page,
-}, testInfo) => {
-  test.skip(
-    testInfo.project.name !== "desktop-chromium",
-    "The controlled client deadline only needs one browser project.",
-  );
+for (const cpuRate of [1, 8]) {
+  test(`exits public loading and disabled states when APIs never respond (${cpuRate}x CPU slowdown)`, async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "desktop-chromium",
+      "The controlled client deadline only needs one browser project.",
+    );
 
-  let releaseRequests = () => {};
-  const requestGate = new Promise<void>((resolve) => {
-    releaseRequests = resolve;
-  });
-  let startedRequests = 0;
-  let settledRequests = 0;
-  const holdRequest = async (route: Route) => {
-    startedRequests += 1;
-    await requestGate;
+    const session = await page.context().newCDPSession(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: cpuRate });
+    let releaseRequests = () => {};
+    const requestGate = new Promise<void>((resolve) => {
+      releaseRequests = resolve;
+    });
+    const heldRequests: BrowserRequest[] = [];
+    let settledRequests = 0;
+    const requestsFor = (path: string) => heldRequests.filter(
+      (request) => new URL(request.url()).pathname === path,
+    );
+    const activeRequests = () => ({
+      countries: requestsFor("/api/countries").filter((request) => request.failure() === null).length,
+      locale: requestsFor("/api/preferences/locale").filter((request) => request.failure() === null).length,
+    });
+    const holdRequest = async (route: Route) => {
+      heldRequests.push(route.request());
+      await requestGate;
+      try {
+        await route.fulfill({
+          body: JSON.stringify({ message: "DO NOT RENDER timeout reason" }),
+          contentType: "application/json",
+          status: 503,
+        });
+      } catch {
+        // The client deadline intentionally aborts these held requests.
+      } finally {
+        settledRequests += 1;
+      }
+    };
+
     try {
-      await route.fulfill({
-        body: JSON.stringify({ message: "DO NOT RENDER timeout reason" }),
-        contentType: "application/json",
-        status: 503,
-      });
-    } catch {
-      // The client deadline intentionally aborts these held requests.
+      await page.clock.install();
+      await page.route("**/api/countries", holdRequest);
+      await page.route("**/api/preferences/locale", holdRequest);
+      await page.goto("/");
+      await expect(
+        page.getByRole("status").filter({ hasText: "正在同步国家摘要…" }),
+      ).toBeVisible();
+
+      const localeToggle = page.getByTestId("locale-toggle");
+      await localeToggle.getByRole("button", { name: "EN", exact: true }).click();
+      // Strict Mode cancels the first mount's GET. On a slower browser it may
+      // reach interception before cancellation. Count live work, not obsolete
+      // requests; never tolerate duplicate language preference writes.
+      await expect.poll(activeRequests).toEqual({ countries: 1, locale: 1 });
+      expect(requestsFor("/api/preferences/locale")).toHaveLength(1);
+      await expect(
+        localeToggle.getByRole("button", { name: "中文", exact: true }),
+      ).toBeDisabled();
+      await expect(localeToggle).toHaveAttribute("aria-busy", "true");
+      await expect(
+        page.getByRole("status").filter({ hasText: "正在切换语言…" }),
+      ).toHaveText("正在切换语言…");
+
+      await page.clock.fastForward(PUBLIC_API_REQUEST_TIMEOUT_MS + 1);
+
+      await expect(
+        page.getByRole("alert").filter({
+          hasText: "国家覆盖摘要暂时无法加载，请进入地图重试。",
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("语言切换失败。", { exact: true }),
+      ).toHaveAttribute("role", "alert");
+      await expect(
+        localeToggle.getByRole("button", { name: "中文", exact: true }),
+      ).toBeEnabled();
+      await expect(localeToggle).toHaveAttribute("aria-busy", "false");
+      await expect(
+        page.getByRole("status").filter({ hasText: "正在切换语言…" }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByText("DO NOT RENDER timeout reason", { exact: true }),
+      ).toHaveCount(0);
+
+      await expect.poll(activeRequests).toEqual({ countries: 0, locale: 0 });
+      expect(requestsFor("/api/preferences/locale")).toHaveLength(1);
     } finally {
-      settledRequests += 1;
+      releaseRequests();
+      await expect.poll(() => heldRequests.length - settledRequests).toBe(0);
+      await session.detach();
     }
-  };
-
-  await page.clock.install();
-  await page.route("**/api/countries", holdRequest);
-  await page.route("**/api/preferences/locale", holdRequest);
-  await page.goto("/");
-  await expect(
-    page.getByRole("status").filter({ hasText: "正在同步国家摘要…" }),
-  ).toBeVisible();
-
-  const localeToggle = page.getByTestId("locale-toggle");
-  await localeToggle.getByRole("button", { name: "EN", exact: true }).click();
-  await expect.poll(() => startedRequests).toBe(2);
-  await expect(
-    localeToggle.getByRole("button", { name: "中文", exact: true }),
-  ).toBeDisabled();
-  await expect(localeToggle).toHaveAttribute("aria-busy", "true");
-  await expect(
-    page.getByRole("status").filter({ hasText: "正在切换语言…" }),
-  ).toHaveText("正在切换语言…");
-
-  await page.clock.fastForward(PUBLIC_API_REQUEST_TIMEOUT_MS + 1);
-
-  await expect(
-    page.getByRole("alert").filter({
-      hasText: "国家覆盖摘要暂时无法加载，请进入地图重试。",
-    }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("语言切换失败。", { exact: true }),
-  ).toHaveAttribute("role", "alert");
-  await expect(
-    localeToggle.getByRole("button", { name: "中文", exact: true }),
-  ).toBeEnabled();
-  await expect(localeToggle).toHaveAttribute("aria-busy", "false");
-  await expect(
-    page.getByRole("status").filter({ hasText: "正在切换语言…" }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByText("DO NOT RENDER timeout reason", { exact: true }),
-  ).toHaveCount(0);
-
-  releaseRequests();
-  await expect.poll(() => settledRequests).toBe(2);
-});
+  });
+}
 
 test("opens the dedicated chat workspace from primary navigation", async ({ page }) => {
   await page.goto("/");

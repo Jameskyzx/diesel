@@ -176,6 +176,14 @@ tool-choice error. Full-stream, SSE and bilingual desktop/mobile checks cover it
 Removed MapLibre 6.9.0 copies are recoverable from Git; replacement 6.11.2 assets
 retain their complete license/notice files.
 
+The public deadline browser test also runs at normal and eightfold CPU slowdown.
+React development Strict Mode may expose an already-aborted first-mount country
+GET to interception. The test requires exactly one still-pending country GET and
+one locale POST, then zero pending requests after the unchanged 15-second deadline.
+It still rejects duplicate locale writes, checks error/disabled-state recovery,
+and releases every held route even on failure; raw total request count is not a
+portable proxy for current work. No production request behavior is changed.
+
 No country, regulatory fixture, real product, database schema or business effect
 claim is added. External product approval, regulatory expert signoff and real
 customer outcomes are not engineering-maintenance completions.

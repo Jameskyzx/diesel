@@ -29,6 +29,19 @@
     "latestProviderSsePassed": true,
     "limitation": "Observed executions, not a complete scheduled-window availability denominator. Only the latest failure was inspected here; no claim that every failure had the same cause."
   },
+  "liveEvalRepeatability": {
+    "sourceFingerprint": "730a0f642f3fd6208fa2f64b7bec524ecadcb5d74d26439e61ea2ab8a62ef430",
+    "failedCleanRunId": "23bc5300-5373-4597-a9eb-c9e2599a5e8c",
+    "failedCaseId": "cross-country-regulation",
+    "failedAnchorId": "decision:regulation-comparison",
+    "failedRunPassedCases": 17,
+    "diagnosticRepeatRunId": "70716b69-2720-4139-a6af-9dc30ffd1f56",
+    "diagnosticRepeatPassedCases": 18,
+    "suiteCases": 18,
+    "scorerOrThresholdChanged": false,
+    "rootCauseProven": false,
+    "limitation": "One diagnostic repeat passed on identical evaluated source. The first run did not retain public answer text, so an omitted topic versus unrecognized phrasing remains unproven; both reports are retained. No claim of deterministic model output."
+  },
   "capacity": {
     "policyImplemented": true,
     "productionTimerInstalled": false,

@@ -1,8 +1,8 @@
 {
   "version": "diesel-engineering-maintenance-observation-v1",
   "evidenceKind": "historical-operator-record-only",
-  "observedAt": "2026-10-05T12:20:37.408Z",
-  "outcome": "merged_full_release_in_progress",
+  "observedAt": "2026-10-05T12:48:33.306Z",
+  "outcome": "merged_full_release_in_progress_with_failed_chat_observation",
   "allEngineeringMaintenanceItemsAccepted": false,
   "pullRequest": "https://github.com/Jameskyzx/diesel/pull/67",
   "productionRelease": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
@@ -120,6 +120,26 @@
     "preterminalVerifierHasCurlRetries": true,
     "terminalStateAndIndependentAcceptancePending": true
   },
+  "preterminalLiveBrowserObservation": {
+    "release": "ebd499f8840d7148f3c1bb952eda757707206c9b",
+    "startedAt": "2026-10-05T12:41:04.882Z",
+    "observedDuring": "read-only governance snapshot export before publication terminal state",
+    "passed": 0,
+    "failed": 1,
+    "notRun": 5,
+    "retries": 0,
+    "requestId": "83711622-6aa2-470d-8053-5627fca23378",
+    "httpStatus": 503,
+    "serverErrorCode": "RATE_LIMIT_TIMEOUT",
+    "serverDurationMs": 8004.109489999944,
+    "providerReached": false,
+    "originalReportRetainedPrivately": true,
+    "originalReportSha256": "6be70d183ccbc7917dd5a4126032aea416636a612cec244dc462324ee162539e",
+    "originalTraceSha256": "d6f46d65e908d21e1e4eaff8e77f180607a895b0279f18807c45824b3d07c115",
+    "precedingRecordedChat": { "observedAt": "2026-10-05T12:31:59.495Z", "httpStatus": 200, "serverDurationMs": 2128.727726999903 },
+    "rootCauseProven": false,
+    "limitation": "The failed hourly admission exceeded the actual eight-second wait; the independent rollback benchmark does not measure this HTTP process or prove all cold/long-idle requests pass. Publication was still running. Preserve the failure and require a fresh post-terminal browser/provider acceptance; do not claim a permanent fix from a later pass."
+  },
   "ciToolchainCompatibility": {
     "failedRunId": 37280653582,
     "failedTests": 17,
@@ -196,6 +216,7 @@
   },
   "limitations": [
     "PR 67 and its exact master commit passed Required CI gate. The first full durable production release is running and is not yet accepted; the later application-only release and capacity timer still need production validation.",
+    "A real preterminal starter request returned RATE_LIMIT_TIMEOUT at eight seconds; the original trace and failure are retained and are not replaced by the passing isolated benchmark.",
     "The original SSH 255 root cause remains unproven; durable execution removes connection dependence, not historical uncertainty.",
     "The observed canary history includes real readiness failures; changing the connection envelope is not proof of long-term availability.",
     "Same-disk compressed journals are recoverable but are not offsite disaster-recovery backups."

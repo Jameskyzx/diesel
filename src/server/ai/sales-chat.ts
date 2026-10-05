@@ -2525,7 +2525,12 @@ export function streamSalesChat(input: {
       totalTokens: observability.tokenUsage.totalTokens.value,
     });
   };
+  let privateStreamErrorReported = false;
   const notifyPrivateStreamError = (error: unknown) => {
+    // SDK versions may notify both a provider error part and its terminal
+    // wrapper. Preserve the first cause exactly once; usage still drains below.
+    if (privateStreamErrorReported) return;
+    privateStreamErrorReported = true;
     try {
       input.onStreamError?.(error);
     } catch {

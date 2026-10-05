@@ -593,7 +593,7 @@ describe("live eval initialization reporting", () => {
           sampleCount: 0,
           thresholdsPassed: false,
           terminationReason: "initialization_error",
-          version: "sales-chat-live-v25",
+          version: "sales-chat-live-v26",
         });
         expect(liveEvalReportSchema.safeParse(report).success).toBe(true);
         expect(report.runId).toEqual(expect.any(String));

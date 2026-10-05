@@ -461,7 +461,7 @@ release_publication_controller_return_classified_status() {
 
   case "${ledger_state}" in
     PENDING:PUBLISH_COMMITTED | PENDING:PUBLISH_FINALIZED | \
-      COMMITTED:PUBLISH_FINALIZED)
+      COMMITTED:PUBLISH_FINALIZED | PENDING:APPLICATION_VERIFIED_V2 | COMMITTED:APPLICATION_VERIFIED_V2)
       return "${RELEASE_PUBLICATION_CONTROLLER_PRESERVE_STATUS}"
       ;;
     PENDING:none)
@@ -666,7 +666,7 @@ release_publication_controller_run_governance_mode() (
   local database_environment="${RELEASE_PUBLICATION_CONTROLLER_DEPLOY_ROOT}/backups/${release_id}/env.production.local.pre-switch"
 
   case "${mode}" in
-    publish | finalize-committed) ;;
+    publish | finalize-committed | application | finalize-application) ;;
     *)
       release_publication_controller_fail \
         "${RELEASE_PUBLICATION_CONTROLLER_USAGE_STATUS}" \
@@ -783,6 +783,21 @@ release_publication_controller_reconcile_committed() (
 # Pure orchestration entry point. All filesystem, process, database, and state
 # reads are delegated through the dependency functions above so tests can
 # exercise the closed state table without a synthetic root filesystem.
+release_publication_controller_reconcile_application() {
+  local release_id="$1"
+  local mode="$2"
+  local phase_status=0
+  local strict_state
+  release_publication_controller_run_governance_mode "${mode}" "${release_id}" || phase_status=$?
+  if ! strict_state="$(release_publication_controller_read_strict_state "${release_id}")"; then return 75; fi
+  if [[ "${phase_status}" -eq 0 && "${strict_state}" == "COMMITTED:APPLICATION_VERIFIED_V2" &&
+    "${RELEASE_PUBLICATION_CONTROLLER_SIGNAL_STATUS:-0}" -eq 0 ]]; then return 0; fi
+  # An after-fingerprint failure explicitly asks for preservation even when
+  # no marker exists. Never classify that as safe host-only rollback.
+  if [[ "${phase_status}" -eq 75 || "${strict_state}" != "PENDING:none" ]]; then return 75; fi
+  release_publication_controller_return_precommit_status "${phase_status}"
+}
+
 release_publication_controller_reconcile() (
   set -uo pipefail
 
@@ -795,6 +810,7 @@ release_publication_controller_reconcile() (
   local phase_status
   local state_status
   local strict_state
+  case "${DIESEL_RELEASE_KIND:-full}" in full | application) ;; *) return 64 ;; esac
   RELEASE_PUBLICATION_CONTROLLER_SIGNAL_STATUS=0
   trap 'RELEASE_PUBLICATION_CONTROLLER_SIGNAL_STATUS=129' HUP
   trap 'RELEASE_PUBLICATION_CONTROLLER_SIGNAL_STATUS=130' INT
@@ -841,6 +857,11 @@ release_publication_controller_reconcile() (
   fi
   if [[ "${state_status}" -ne 0 ]]; then
     release_publication_controller_return_precommit_status "${state_status}"
+    return $?
+  fi
+
+  if [[ "${DIESEL_RELEASE_KIND:-full}" == "application" ]]; then
+    release_publication_controller_reconcile_application "${release_id}" application
     return $?
   fi
 
@@ -989,7 +1010,7 @@ release_publication_controller_impl() {
   fi
   case "${ledger_state}" in
     PENDING:none | PENDING:PUBLISH_COMMITTED | PENDING:PUBLISH_FINALIZED | \
-      COMMITTED:PUBLISH_FINALIZED) ;;
+      COMMITTED:PUBLISH_FINALIZED | PENDING:APPLICATION_VERIFIED_V2 | COMMITTED:APPLICATION_VERIFIED_V2) ;;
     *)
       release_publication_controller_fail \
         "${RELEASE_PUBLICATION_CONTROLLER_FAILURE_STATUS}" \
@@ -1072,7 +1093,7 @@ release_publication_controller_impl() {
   if [[ "${RELEASE_PUBLICATION_CONTROLLER_SUPERVISOR_SIGNAL_STATUS:-0}" -ne 0 ]]; then
     case "${ledger_state}" in
       PENDING:PUBLISH_COMMITTED | PENDING:PUBLISH_FINALIZED | \
-        COMMITTED:PUBLISH_FINALIZED)
+        COMMITTED:PUBLISH_FINALIZED | PENDING:APPLICATION_VERIFIED_V2 | COMMITTED:APPLICATION_VERIFIED_V2)
         return "${RELEASE_PUBLICATION_CONTROLLER_PRESERVE_STATUS}"
         ;;
       *)
@@ -1081,6 +1102,10 @@ release_publication_controller_impl() {
     esac
   fi
   case "${ledger_state}" in
+    PENDING:APPLICATION_VERIFIED_V2 | COMMITTED:APPLICATION_VERIFIED_V2)
+      release_publication_controller_reconcile_application "${release_id}" finalize-application
+      return $?
+      ;;
     PENDING:none)
       release_publication_controller_run_classified_preflight \
         "${ledger_state}" host_activation_ledger_require_pending \

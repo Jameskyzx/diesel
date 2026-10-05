@@ -766,10 +766,12 @@ host_release_orchestrator_readback_environment() {
 }
 
 host_release_orchestrator_run_controller() {
+  case "${DIESEL_RELEASE_KIND:-full}" in full | application) ;; *) return 64 ;; esac
   /usr/bin/env -i \
     HOME=/root LANG=C LC_ALL=C \
     PATH="${HOST_RELEASE_ORCHESTRATOR_ROOT_PATH}" \
     DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8 \
+    DIESEL_RELEASE_KIND="${DIESEL_RELEASE_KIND:-full}" \
     /usr/bin/bash --noprofile --norc -- \
       "${HOST_RELEASE_ORCHESTRATOR_CONTROLLER}" \
       "${HOST_RELEASE_ORCHESTRATOR_RELEASE_ID}"
@@ -1007,7 +1009,7 @@ host_release_orchestrator_abort_once() {
 
   case "${HOST_RELEASE_ORCHESTRATOR_STRICT_STATE}" in
     PENDING:PUBLISH_COMMITTED | PENDING:PUBLISH_FINALIZED | \
-      COMMITTED:PUBLISH_FINALIZED)
+      COMMITTED:PUBLISH_FINALIZED | PENDING:APPLICATION_VERIFIED_V2 | COMMITTED:APPLICATION_VERIFIED_V2)
       HOST_RELEASE_ORCHESTRATOR_TERMINAL_STATUS="${HOST_RELEASE_ORCHESTRATOR_PRESERVE_STATUS}"
       host_release_orchestrator_close_lock || true
       return "${HOST_RELEASE_ORCHESTRATOR_TERMINAL_STATUS}"

@@ -7,7 +7,7 @@ the schema version declared by the live case suite.
 
 ## Current suite and latest observation
 
-The suite contract is now `sales-chat-live-v25`. It retains the v3 final-response
+The suite contract is now `sales-chat-live-v26`. It retains the v3 final-response
 classification, v4 provider-call attempt coverage, v5 deterministic
 response-grounding/locale contract, v6 auditable provider-usage and retry
 policy, and v7 explicit output cap and post-usage budget classification. V8
@@ -447,13 +447,23 @@ or Markdown parsing. The v24 product response's Chinese narrative and high title
 density motivated this control, but candidate title lists in offline tests are
 explicit counterfactuals, not reconstructed historical metadata.
 
-Portfolio verification also strictly parses every modern v3-v25 archive. The
+V26 recognizes the finite Chinese regulation-topic phrase `法规记录`. The
+same-run public diagnostic for v25 run `7956de7a-72b5-4c43-81ef-bd03fe85f0a6`
+explicitly described CHN/BRA regulation records, status, dates, power, pollutant
+limits and differences, but this phrase was absent from the scorer vocabulary.
+The 17/18 failed report remains byte-identical; v26 requires a fresh observation,
+not a rescore. All 18 requests, tool/argument and evidence expectations, factual
+anchors, disclaimer, quotation boundaries and thresholds remain unchanged.
+An earlier failure without retained public text (`23bc5300-5373-4597-a9eb-c9e2599a5e8c`)
+still has an unproven exact cause; this later diagnostic does not reconstruct it.
+
+Portfolio verification also strictly parses every modern v3-v26 archive. The
 two modern v2 compatibility files predate that schema and
 are accepted only when their full-file SHA-256 matches the frozen value.
 The versioned archive parser keeps v3/v4 bound to their historical
 `sales-chat-system-v5` prompt and can inspect v5 reports from system prompt v5
-or v6. Release verification is stricter: a current-suite v25 report accepted as
-a passing latest must use the `sales-chat-system-v6` prompt, so archive
+or v6. Release verification is stricter: a current-suite v26 report accepted as
+a passing latest must use the `sales-chat-system-v9` prompt, so archive
 compatibility cannot mask prompt drift.
 V6 forces the remote adapter to request streaming usage before the first model
 call, sets SDK retries to zero per model call, and persists
@@ -639,19 +649,19 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20261004T161956264Z-ccdc6060-50f5-42a6-9ee9-f646dd10db1d.json",
+  "archivePath": "archive/ai-live-eval-20261005T082910735Z-dfec0966-d0be-4ee3-a2c5-3399b04f62c3.json",
   "attemptCount": 37,
   "complete": true,
   "completedCount": 37,
-  "evaluatedAt": "2026-10-04T16:19:56.264Z",
+  "evaluatedAt": "2026-10-05T08:29:10.735Z",
   "latestOutcome": "passed",
   "modelStepCount": 37,
-  "runId": "ccdc6060-50f5-42a6-9ee9-f646dd10db1d",
+  "runId": "dfec0966-d0be-4ee3-a2c5-3399b04f62c3",
   "runError": null,
   "sampleCount": 18,
   "sourceFingerprint": {
     "algorithm": "sha256",
-    "digest": "713d74661eb089f2ef37942b93f3f7393bb78bb2c57e19f579c06597091ea4cf",
+    "digest": "2a79264e4f3c222e412f95d3d681ca80a44b21fc804ab785d6372cb0659ee374",
     "fileCount": 302,
     "status": "captured"
   },
@@ -659,15 +669,15 @@ decision from discarded text.
   "terminationReason": "completed",
   "thresholdsPassed": true,
   "tokenUsageComplete": true,
-  "totalTokens": 101471,
-  "version": "sales-chat-live-v25"
+  "totalTokens": 101390,
+  "version": "sales-chat-live-v26"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `passed`; evaluatedAt `2026-10-04T16:19:56.264Z`; run ID `ccdc6060-50f5-42a6-9ee9-f646dd10db1d`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `37 provider attempts`; `37 completed provider calls`; `37 model steps`; `101471 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20261004T161956264Z-ccdc6060-50f5-42a6-9ee9-f646dd10db1d.json`; source fingerprint `713d74661eb089f2ef37942b93f3f7393bb78bb2c57e19f579c06597091ea4cf` across `302` files.
+Current report result: `passed`; evaluatedAt `2026-10-05T08:29:10.735Z`; run ID `dfec0966-d0be-4ee3-a2c5-3399b04f62c3`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `37 provider attempts`; `37 completed provider calls`; `37 model steps`; `101390 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20261005T082910735Z-dfec0966-d0be-4ee3-a2c5-3399b04f62c3.json`; source fingerprint `2a79264e4f3c222e412f95d3d681ca80a44b21fc804ab785d6372cb0659ee374` across `302` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed

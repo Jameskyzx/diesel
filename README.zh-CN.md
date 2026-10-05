@@ -203,7 +203,10 @@ v2 仅将 STATUS 中四个生产观测字段及两个镜像段落、历史 `docs
 代码、测试、部署手册、普通说明、fixture 计数和测试/模型/浏览器证据仍绑定指纹。
 已提交的生产读回更新因此无需重跑整个 suite；这不豁免任意文档修改，也不把操作记录当作签名发布证明。
 capture 使用空的私有 HOME 调用已锁定版本的本地 pnpm，并启用 offline 和依赖漂移即报错；执行前后
-还会核验实际安装的 Vitest 版本。这些属于本地一致性检查，不是包签名或供应链证明。capture 与
+还会核验实际安装的 Vitest 版本。已锁定 pnpm Action 的 `.bin/bin` self-update 布局只通过
+一条有界 `cmd-shim-target` 元数据解析，目标必须留在该物理 pnpm home 内，再核对真实包名、
+版本与声明的可执行入口。缺失、重复、越界或不匹配一律失败关闭；不执行 shim，也不回退到后续
+PATH 项。这些属于本地一致性检查，不是包签名或供应链证明。capture 与
 verify 要求 Unix 主机允许并可执行精确的 `/bin/ps -axo pid=,pgid=` inventory。bounded-command
 helper 会在启动任何 workload 前证明 detached leader 与同组 inspector；capture/verify 还会在获取
 仓库锁之前先运行该证明，不支持的主机会失败关闭且不留下该锁。

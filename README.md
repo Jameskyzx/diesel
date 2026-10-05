@@ -248,8 +248,13 @@ readback update without rerunning the entire suite; it does not exempt arbitrary
 documentation changes or turn operator records into signed deployment proof.
 The capture invokes the pinned local pnpm entrypoint with an empty private HOME,
 offline mode, and dependency-drift-as-error; it also checks the installed
-Vitest version before and after execution. These are local consistency checks,
-not a package-signature or supply-chain attestation. Capture and verification
+Vitest version before and after execution. The pinned pnpm Action's `.bin/bin` self-update layout
+is resolved through one bounded `cmd-shim-target` record, confined to that
+physical pnpm home, then checked against the real package name, version and
+declared executable. Missing, duplicate, escaped or mismatched targets fail
+closed; the shim is never evaluated and later PATH entries are not a fallback.
+These are local consistency checks, not a package-signature or supply-chain
+attestation. Capture and verification
 require a Unix host where the exact `/bin/ps -axo pid=,pgid=` inventory is
 executable and permitted. The bounded-command helper proves a detached leader
 and same-group inspector before starting any workload; capture and verification

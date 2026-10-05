@@ -336,19 +336,20 @@ describe("portfolio versioned live-eval report schema", () => {
       fingerprintFileCount: 1,
     });
     expect(liveEvalReportSchema.safeParse(current).success).toBe(true);
-    expect(current.version).toBe("sales-chat-live-v25");
+    expect(current.version).toBe("sales-chat-live-v26");
     expect(liveEvalReportSchema.safeParse({ ...current, version: "sales-chat-live-v20" }).success).toBe(true);
     expect(liveEvalReportSchema.safeParse({ ...current, version: "sales-chat-live-v21" }).success).toBe(true);
     expect(liveEvalReportSchema.safeParse({ ...current, version: "sales-chat-live-v22" }).success).toBe(true);
     expect(liveEvalReportSchema.safeParse({ ...current, version: "sales-chat-live-v23" }).success).toBe(true);
     expect(liveEvalReportSchema.safeParse({ ...current, version: "sales-chat-live-v24" }).success).toBe(true);
-    expect(liveEvalReportSchema.safeParse({ ...current, version: "sales-chat-live-v26" }).success).toBe(false);
+    expect(liveEvalReportSchema.safeParse({ ...current, version: "sales-chat-live-v25" }).success).toBe(true);
+    expect(liveEvalReportSchema.safeParse({ ...current, version: "sales-chat-live-v27" }).success).toBe(false);
     const historicalClockResults = current.results.map((result) => {
       const legacy = { ...result };
       Reflect.deleteProperty(legacy, "toolTraceStatus");
       return legacy;
     });
-    for (const version of ["sales-chat-live-v20", "sales-chat-live-v21", "sales-chat-live-v22", "sales-chat-live-v23", "sales-chat-live-v24", "sales-chat-live-v25"]) {
+    for (const version of ["sales-chat-live-v20", "sales-chat-live-v21", "sales-chat-live-v22", "sales-chat-live-v23", "sales-chat-live-v24", "sales-chat-live-v25", "sales-chat-live-v26"]) {
       expect(liveEvalReportSchema.safeParse({ ...current, results: historicalClockResults, version }).success).toBe(false);
     }
     // Historical rows never acquire v20's trace availability interpretation.

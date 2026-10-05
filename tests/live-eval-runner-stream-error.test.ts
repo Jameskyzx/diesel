@@ -794,7 +794,7 @@ describe("live eval runner stream failures", () => {
       },
       terminationReason: "case_error",
       thresholdsPassed: false,
-      version: "sales-chat-live-v25",
+      version: "sales-chat-live-v26",
     });
     expect(report.results).toHaveLength(1);
     expect(report.results[0]).toMatchObject({
@@ -852,7 +852,7 @@ describe("live eval runner stream failures", () => {
       runError: null,
       terminationReason: "case_error",
       thresholdsPassed: false,
-      version: "sales-chat-live-v25",
+      version: "sales-chat-live-v26",
     });
     expect(report.results).toHaveLength(1);
     expect(report.results[0]).toMatchObject({
@@ -887,7 +887,7 @@ describe("live eval runner stream failures", () => {
     expect(harness.reports).toHaveLength(1);
     const report = harness.reports[0] as CapturedReport;
     expect(report).toMatchObject({
-      version: "sales-chat-live-v25",
+      version: "sales-chat-live-v26",
       complete: false,
       terminationReason: "case_error",
       thresholdsPassed: false,
@@ -993,7 +993,7 @@ describe("live eval runner stream failures", () => {
       },
       terminationReason: "completed",
       thresholdsPassed: false,
-      version: "sales-chat-live-v25",
+      version: "sales-chat-live-v26",
     });
     expect(report.results).toHaveLength(18);
     expect(report.results[0]).toMatchObject({

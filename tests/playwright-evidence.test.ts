@@ -176,7 +176,7 @@ function receipt(
       `2026-09-03T01:${String(minute + 1).padStart(2, "0")}:00.000Z`,
     globalErrorCount: 0,
     id: contract.id,
-    playwrightVersion: "1.62.0",
+    playwrightVersion: "1.63.0",
     provenance: {
       completed: overrides.completed ?? STATE,
       started: overrides.started ?? STATE,
@@ -1055,8 +1055,8 @@ describe("Playwright portfolio evidence", () => {
     expect(parseCanonicalPlaywrightRunReceipt(canonical).id).toBe("public");
     expect(() => parseCanonicalPlaywrightRunReceipt(
       canonical.replace(
-        '"playwrightVersion": "1.62.0"',
         '"playwrightVersion": "1.63.0"',
+        '"playwrightVersion": "1.62.0"',
       ),
     )).toThrow();
     expect(() => parseCanonicalPlaywrightRunReceipt(canonical.trimEnd())).toThrow(

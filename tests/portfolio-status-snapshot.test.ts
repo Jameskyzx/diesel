@@ -119,18 +119,18 @@ function buildBrowserEvidence(): PlaywrightEvidence {
     const minute = 52 + contractIndex * 2;
     return buildPlaywrightRunReceipt({
       completedAt: contractIndex === playwrightRunContracts.length - 1
-        ? observedAt
-        : `2026-08-31T11:${String(minute + 1).padStart(2, "0")}+08:00`,
+        ? "2026-08-31T12:00:00+08:00"
+        : `2026-08-31T11:${String(minute + 1).padStart(2, "0")}:00+08:00`,
       globalErrorCount: 0,
       id: contract.id,
-      playwrightVersion: "1.62.0",
+      playwrightVersion: "1.63.0",
       provenance: {
         completed: browserRepositoryState,
         started: browserRepositoryState,
       },
       runStatus: "passed",
       startedAt:
-        `2026-08-31T11:${String(minute).padStart(2, "0")}+08:00`,
+        `2026-08-31T11:${String(minute).padStart(2, "0")}:00+08:00`,
       tests,
     });
   });
@@ -1181,7 +1181,7 @@ describe("portfolio live-eval visible ledger", () => {
     "The online / offline AI eval passed 18/18 cases.",
     "The live or offline AI eval passed 18/18 cases.",
     "线上及离线 AI 评估通过 18 条用例。",
-    "Offline harness passed; current sales-chat-live-v25 passed 18/18.",
+    "Offline harness passed; current sales-chat-live-v26 passed 18/18.",
   ])("does not let offline wording hide a live or ambiguous result: %s", (statement) => {
     expect(() => assertNoConcreteCurrentLiveEvalClaims({
       documentLabel: "test document", markdown: statement,

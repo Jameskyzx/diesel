@@ -8,6 +8,11 @@ updates:
       time: "03:45"
       timezone: Asia/Shanghai
     open-pull-requests-limit: 5
+    # Runtime is deliberately pinned to Node 22; types must describe that API.
+    # Reconsider this exception together with the .nvmrc/VPS runtime migration.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
     groups:
       production-dependencies:
         dependency-type: production

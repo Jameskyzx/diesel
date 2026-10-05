@@ -1,7 +1,7 @@
 {
   "version": "diesel-engineering-maintenance-observation-v1",
   "evidenceKind": "historical-operator-record-only",
-  "observedAt": "2026-10-05T07:00:57Z",
+  "observedAt": "2026-10-05T10:25:36.893Z",
   "outcome": "implementation_in_validation_not_deployed",
   "allEngineeringMaintenanceItemsAccepted": false,
   "pullRequest": "https://github.com/Jameskyzx/diesel/pull/67",
@@ -120,8 +120,10 @@
     "ciTraceRetained": false,
     "ciTraceLimitation": "A subsequent push canceled the old run after the assertions failed and before failure-only trace upload; textual failed assertions remain in its job log.",
     "fix": "Assert current request lifetimes and exactly one locale write; add normal/slow browser coverage and unconditional route cleanup.",
-    "freshBrowserAcceptancePending": true,
-    "fixedLocalZeroRetryRunsPassed": 10
+    "freshBrowserAcceptancePending": false,
+    "fixedLocalZeroRetryRunsPassed": 10,
+    "freshCompleteBrowserRunId": "d357e554-24f5-4157-b340-d05a8115aded",
+    "freshBrowserTotals": { "collected": 511, "passed": 443, "skipped": 68, "failed": 0, "flaky": 0 }
   },
   "nativePopupObservation": {
     "failedEvaluatedCommit": "31dbf41835d957e23bea7f0d44029901236f8384",
@@ -133,6 +135,8 @@
     "diagnosticOnlyInputObservationAdded": true,
     "applicationBehaviorOrTimeoutChanged": false,
     "rootCauseProven": false,
+    "freshCompleteBrowserRunId": "d357e554-24f5-4157-b340-d05a8115aded",
+    "freshCompleteSuitePassed": true,
     "limitation": "Passing focused repetitions cannot prove a permanent fix. Preserve the original timeout and report a fresh complete-suite observation separately."
   },
   "limitations": [

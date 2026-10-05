@@ -184,6 +184,12 @@ It still rejects duplicate locale writes, checks error/disabled-state recovery,
 and releases every held route even on failure; raw total request count is not a
 portable proxy for current work. No production request behavior is changed.
 
+Native modified-click navigation tests retain validated modifier/focus/default-
+prevention metadata, without changing input or navigation behavior. One local
+Chinese new-tab timeout remains an unproven historical observation despite six
+passing focused diagnostic repetitions; a fresh full-suite pass does not rewrite
+that failure or establish that its root cause is permanently fixed.
+
 No country, regulatory fixture, real product, database schema or business effect
 claim is added. External product approval, regulatory expert signoff and real
 customer outcomes are not engineering-maintenance completions.

@@ -78,6 +78,28 @@
     "requestedPackageVersionVerified": "11.9.0",
     "realIsolatedInstallAndResolutionPassed": true,
     "focusedRegressionTestsPassed": 192,
+    "remoteFixAcceptancePending": false,
+    "acceptedQualityRunId": 37287099407,
+    "acceptedQualityAttempt": 2
+  },
+  "ciWorkerObservation": {
+    "runId": 37287099407,
+    "failedAttempt": 1,
+    "failure": "A Vitest worker exited unexpectedly during governed-documents integration tests; 64 cases remained uncompleted.",
+    "rootCauseProven": false,
+    "sameShaDiagnosticAttempt": 2,
+    "diagnosticQualityPassed": true,
+    "localAppCoveragePassed": true,
+    "limitation": "No worker exit signal or kernel evidence was retained. A passing bounded retry is not proof that the original worker failure is permanently resolved."
+  },
+  "linuxDurableFixturePermissions": {
+    "failedRunId": 37287099407,
+    "failedAttempt": 2,
+    "failedJobId": 111696085012,
+    "failure": "The durable controller refused submission before real build; root Git archive extraction retained group-writable 0775 directories and 0664 files.",
+    "isolatedRootTarReproductionPassed": true,
+    "productionApplicationFilesTouchedByReproduction": false,
+    "fix": "Pin Git archive tar.umask=0022 for the synthetic CI release; preserve production trusted-path rejection.",
     "remoteFixAcceptancePending": true
   },
   "limitations": [

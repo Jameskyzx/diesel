@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import postgres from "../../src/server/db/postgres";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
 import { assertGovernanceMaintenanceAuthorized } from "../../src/server/db/governance-maintenance-lock";

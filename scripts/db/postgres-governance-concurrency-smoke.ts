@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres, { type Sql } from "postgres";
+import postgres, { type Sql } from "../../src/server/db/postgres";
 
 import { governanceMaintenanceTokenEnvironmentVariable } from "../../src/server/db/governance-maintenance-lock";
 import {

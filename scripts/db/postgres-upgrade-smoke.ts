@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import postgres, { type Sql } from "postgres";
+import postgres, { type Sql } from "../../src/server/db/postgres";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
 import { normalizePostgresConstraintDefinition } from "./postgres-constraint-definition";

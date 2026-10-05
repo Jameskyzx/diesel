@@ -6,7 +6,7 @@ import {
   drizzle,
   type PostgresJsDatabase,
 } from "drizzle-orm/postgres-js";
-import postgres, { type Sql } from "postgres";
+import postgres, { type Sql } from "../../src/server/db/postgres";
 
 import * as schema from "../../src/server/db/schema";
 import { admissionConnectionOptions } from "../../src/server/db/admission-client";

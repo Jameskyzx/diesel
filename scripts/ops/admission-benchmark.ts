@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import postgres from "../../src/server/db/postgres";
 import { z } from "zod";
 
 import { admissionConnectionOptions } from "../../src/server/db/admission-client";

@@ -1,6 +1,6 @@
 import "server-only";
 
-import postgres from "postgres";
+import postgres from "@/server/db/postgres";
 import { z } from "zod";
 import { getDatabaseUrl } from "@/server/db/environment";
 

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import postgres from "postgres";
+import postgres from "../../src/server/db/postgres";
 import { z } from "zod";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";

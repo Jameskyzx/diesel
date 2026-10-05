@@ -41,6 +41,29 @@ Any 429/503, incomplete SSE, missing evidence or wrong release remains a failure
 
 ## Evidence and operations
 
+### Database TLS identity verification
+
+All application and operational PostgreSQL constructors use the shared
+`src/server/db/postgres.ts` boundary. Remote connections always encrypt and
+validate both the CA chain and the URL hostname, even if a legacy URL says
+`sslmode=require`; the exact URL bytes remain unchanged for rollback identity.
+Only explicit `localhost`, `127.0.0.1` and `::1` are exempt for local development
+and CI. Destination overrides are rejected. The reviewed public Supabase Root
+2021 CA is scoped to Supabase database/pooler hostnames, not globally installed;
+other remote hosts use Node's normal CA trust. `pg_dump` likewise uses
+`verify-full` and the same Supabase CA. No plaintext/unverified retry exists.
+
+The public certificate's PEM SHA-256 is
+`700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7`,
+and it expires on 2031-04-26. Tests bind the runtime and backup copies to these
+reviewed bytes. Certificate renewal requires a normal reviewed release.
+Sources: [Supabase SSL modes](https://supabase.com/docs/guides/platform/ssl-enforcement)
+and the [official certificate URL configuration](https://github.com/supabase/supabase/blob/0f453c89fa0b07d926f85d0b3911a6b2dcd47fe5/apps/studio/hooks/custom-content/custom-content.json).
+
+This is TLS hardening, not proof that the historical eight-second admission
+timeout is fixed. Production recovery and zero-retry real-chat acceptance remain
+independent gates. No schema, rate limit or timeout is changed.
+
 - Production browser suite: `e2e-live/chat-starters.spec.ts`, opt-in only,
   exact release, desktop Chinese/mobile English, no API mocks and no retries.
 - Provider canary: one real sourced starter every six hours; uses existing

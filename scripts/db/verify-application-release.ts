@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { constants, closeSync, fsyncSync, lstatSync, openSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import postgres from "postgres";
+import postgres from "../../src/server/db/postgres";
 import { z } from "zod";
 import { getDatabaseUrl } from "../../src/server/db/environment";
 import { applicationDataTables, applicationFingerprintSchema, assertApplicationDataUnchanged, compareApplicationInputs } from "../deploy/application-release-contract";

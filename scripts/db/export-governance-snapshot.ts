@@ -14,7 +14,7 @@ import { isDeepStrictEqual } from "node:util";
 
 import { asc, gt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import postgres, { type Options } from "../../src/server/db/postgres";
 import { z } from "zod";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
@@ -45,7 +45,7 @@ export const governanceSnapshotPostgresOptions = {
   max: 1,
   max_lifetime: null,
   prepare: false,
-} as const satisfies postgres.Options<Record<string, never>>;
+} as const satisfies Options<Record<string, never>>;
 
 export const governanceSnapshotMaximumWorkers = 2;
 export const governanceSnapshotWorkerRetryDelayMs = 1_000;

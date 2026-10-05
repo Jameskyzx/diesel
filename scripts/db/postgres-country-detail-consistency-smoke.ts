@@ -3,7 +3,7 @@ import { pathToFileURL } from "node:url";
 
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres, { type Sql } from "postgres";
+import postgres, { type Sql } from "../../src/server/db/postgres";
 
 import * as schema from "../../src/server/db/schema";
 import { createCountryRepository } from "../../src/server/repositories/country-repository";

@@ -1,0 +1,39 @@
+{
+  "version": "diesel-database-tls-implementation-verification-v1",
+  "startedAt": "2026-10-05T14:51:54.297Z",
+  "completedAt": "2026-10-05T14:51:55.907Z",
+  "readOnly": true,
+  "providerCalls": 0,
+  "credentialsExposed": false,
+  "environment": "workstation-to-configured-database",
+  "caSha256": "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7",
+  "samples": [
+    {
+      "kind": "actual-factory",
+      "durationMs": 758,
+      "querySucceeded": true,
+      "errorCode": null,
+      "expectedFailure": false,
+      "passed": true
+    },
+    {
+      "kind": "wrong-hostname",
+      "durationMs": 287,
+      "querySucceeded": false,
+      "errorCode": "ERR_TLS_CERT_ALTNAME_INVALID",
+      "expectedFailure": true,
+      "passed": true
+    },
+    {
+      "kind": "wrong-ca",
+      "durationMs": 564,
+      "querySucceeded": false,
+      "errorCode": "SELF_SIGNED_CERT_IN_CHAIN",
+      "expectedFailure": true,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "productionConfigurationChanged": false,
+  "productionAcceptancePassed": false
+}

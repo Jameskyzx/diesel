@@ -31,7 +31,7 @@ import { randomUUID } from "node:crypto";
 
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import postgres from "../../src/server/db/postgres";
 
 import {
   acceptedLimitUnavailableRegulationIds,

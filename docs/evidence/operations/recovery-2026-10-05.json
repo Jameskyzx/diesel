@@ -1,0 +1,188 @@
+{
+  "version": "diesel-recovery-observation-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "scope": "Recovery of the failed full release; not acceptance of a new deployment or of real AI starters.",
+  "observedAt": "2026-10-05T15:39:49.783Z",
+  "failedRelease": "ebd499f8840d7148f3c1bb952eda757707206c9b",
+  "acceptedPreviousRelease": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+  "durable": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "ebd499f8840d7148f3c1bb952eda757707206c9b",
+      "operationId": "fdb6ab71-54fb-439f-9e0e-fb05a4546a60",
+      "mode": "full",
+      "createdAt": "2026-10-05T12:02:43.958Z",
+      "inputDigest": "b4122a5bda75ed03bd1531475bb30c6261f00c3aec3ace6bbc04a16ce9b0b5f1",
+      "runnerSha256": "58972352671451a73d1cedc5efbd0feeaa841d00c1c12c86d8dc75e3c2522cf7"
+    },
+    "state": "failed",
+    "unit": {
+      "Id": "diesel-release-ebd499f8840d7148f3c1bb952eda757707206c9b.service",
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "Result": "exit-code",
+      "InvocationID": "619708e9859c4d239b45a638508f93ee",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 70,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 515424
+    },
+    "completion": {
+      "operationId": "fdb6ab71-54fb-439f-9e0e-fb05a4546a60",
+      "invocationId": "619708e9859c4d239b45a638508f93ee",
+      "startedAt": "2026-10-05T12:02:44.705Z",
+      "workerPid": 515424,
+      "completedAt": "2026-10-05T15:38:50.466Z",
+      "exitCode": 70,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 11192,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 155215,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "ledger": "ROLLED_BACK:HOST_ROLLBACK_COMPLETED",
+  "originalSnapshot": {
+    "bytes": 85621633,
+    "sha256": "5b80ce99e376b5148f4350a51094df760438b57a9b81ab55a07fe75f4d0699ff",
+    "preserved": true
+  },
+  "snapshotWorkerExits": [
+    {
+      "kind": "governance-snapshot-worker-exit-v1",
+      "durationMs": 2152164,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "kind": "governance-snapshot-worker-exit-v1",
+      "durationMs": 2700040,
+      "exitCode": null,
+      "signal": "SIGTERM"
+    },
+    {
+      "kind": "governance-snapshot-worker-exit-v1",
+      "durationMs": 2700029,
+      "exitCode": null,
+      "signal": "SIGTERM"
+    },
+    {
+      "kind": "governance-snapshot-worker-exit-v1",
+      "durationMs": 2700041,
+      "exitCode": null,
+      "signal": "SIGTERM"
+    },
+    {
+      "kind": "governance-snapshot-worker-exit-v1",
+      "durationMs": 479706,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "kind": "governance-snapshot-worker-exit-v1",
+      "durationMs": 471363,
+      "exitCode": 0,
+      "signal": null
+    },
+    {
+      "kind": "governance-snapshot-worker-exit-v1",
+      "durationMs": 469727,
+      "exitCode": 0,
+      "signal": null
+    }
+  ],
+  "snapshotNote": "The original direct export succeeded. Three direct comparison exports hit the unchanged 45-minute deadline. Three fresh recovery comparison exports succeeded via the temporary release-only route; no failed result was discarded or changed to success.",
+  "temporaryForward": {
+    "userAuthorized": true,
+    "scope": "Only new PostgreSQL connections from the exact release systemd cgroup. Website and blog runtime routes were unchanged.",
+    "maximumLifetimeSeconds": 7200,
+    "routeProof": {
+      "version": "diesel-scoped-forward-route-probe-v1",
+      "at": "2026-10-05T15:11:25.278Z",
+      "release": "ebd499f8840d7148f3c1bb952eda757707206c9b",
+      "readOnly": true,
+      "routeCounterIncreased": true,
+      "newConnectionsObserved": 1,
+      "coldMs": 1277,
+      "transferMs": 659,
+      "rows": 100,
+      "decodedJsonBytes": 407625,
+      "tlsVerified": true,
+      "applicationRouteChanged": false,
+      "credentialsOrRowsExposed": false
+    },
+    "exit": {
+      "kind": "diesel-temporary-forward-exit-v1",
+      "at": "2026-10-05T15:38:52.846Z",
+      "code": 0,
+      "signal": null,
+      "stderrBytes": 0
+    },
+    "cleanup": {
+      "version": "diesel-scoped-forward-cleanup-readback-v1",
+      "observedAt": "2026-10-05T15:39:47.333Z",
+      "release": "ebd499f8840d7148f3c1bb952eda757707206c9b",
+      "id": "b5fdfdc37038",
+      "automaticCleanupReceipt": {
+        "at": "2026-10-05T15:38:54.311Z",
+        "id": "b5fdfdc37038",
+        "removed": true,
+        "listenerClosed": true
+      },
+      "listenerClosed": true,
+      "ownedFirewallRulesAbsent": true,
+      "watchdog": {
+        "Result": "success",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "applicationDatabaseConfigurationChanged": false,
+      "cleanupVerified": true
+    },
+    "permanentNetworkOrDatabaseUrlChange": false
+  },
+  "services": [
+    {
+      "name": "diesel-demo",
+      "pid": 603551,
+      "status": "online",
+      "restarts": 0
+    },
+    {
+      "name": "jamesky-api",
+      "pid": 1554881,
+      "status": "online",
+      "restarts": 0
+    }
+  ],
+  "publicHealth": {
+    "httpStatus": 200,
+    "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+    "status": "ok"
+  },
+  "blog": {
+    "httpStatus": 200,
+    "sha256": "56e6b252580d4998e210093450a0712fc48ee1c040b0c4a6abb00e05a1403bf8",
+    "unchanged": true
+  },
+  "recoveryTerminalVerified": true,
+  "failedReleaseReused": false,
+  "productionTlsHardeningAccepted": false,
+  "newReleaseAccepted": false,
+  "realChatAcceptanceRequired": true
+}
+

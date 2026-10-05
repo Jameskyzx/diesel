@@ -1,8 +1,8 @@
 {
   "version": "diesel-engineering-maintenance-observation-v1",
   "evidenceKind": "historical-operator-record-only",
-  "observedAt": "2026-10-05T10:25:36.893Z",
-  "outcome": "implementation_in_validation_not_deployed",
+  "observedAt": "2026-10-05T12:20:37.408Z",
+  "outcome": "merged_full_release_in_progress",
   "allEngineeringMaintenanceItemsAccepted": false,
   "pullRequest": "https://github.com/Jameskyzx/diesel/pull/67",
   "productionRelease": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
@@ -13,7 +13,17 @@
     "localToProductionDatabaseSamples": 40,
     "localObservedFailures": 0,
     "localP95Ms": 2169.896,
-    "vpsNetworkAccepted": false,
+    "vpsNetworkAccepted": true,
+    "vpsReportPath": "docs/evidence/operations/admission-benchmark-vps-2026-10-05.json",
+    "vpsReportSha256": "efb2e0a9049ed0825d8e7b578907a1fb21c69d27c09ff1dbcf3d3e8f88630620",
+    "vpsRunId": "7c21fd4e-d6b2-4406-a310-1b607408854d",
+    "vpsSamples": 40,
+    "vpsObservedFailures": 0,
+    "vpsP95Ms": 3875.077,
+    "vpsMaximumMs": 4203.276,
+    "vpsAfterIdleMs": 1794.506,
+    "vpsSummaryIndependentlyRecomputed": true,
+    "vpsObservationContext": "Measured during the full release's read-only governance snapshot export; not an idle-host benchmark or long-term SLO. Isolated counters were forcibly rolled back and zero residual buckets verified. No model calls or public quota consumption.",
     "longTermSloEstablished": false
   },
   "canaryBaseline": {
@@ -68,7 +78,47 @@
   "dependencies": {
     "replacementImplementedForPullRequests": [59, 60, 62, 63, 64, 65],
     "node26TypesHeldForNode22Runtime": 61,
-    "queueClosed": false
+    "queueClosed": true,
+    "closedPullRequests": [59, 60, 61, 62, 63, 64, 65],
+    "replacementMergedPullRequest": 67,
+    "replacementMergeCommit": "ebd499f8840d7148f3c1bb952eda757707206c9b",
+    "closedWithoutDuplicateMerge": true
+  },
+  "mergedReleaseCi": {
+    "commit": "ebd499f8840d7148f3c1bb952eda757707206c9b",
+    "pullRequestRunId": 37298308706,
+    "masterRunId": 37301998094,
+    "masterRequiredGateJobId": 111751331611,
+    "requiredGatePassed": true,
+    "branchProtectionBypassed": false,
+    "masterAppUnitPassed": 7578,
+    "masterAppUnitSkipped": 1,
+    "masterPublicBrowserPassed": 371,
+    "masterPublicBrowserSkipped": 66,
+    "masterPublicBrowserFlaky": 0,
+    "masterRealLinuxBuildHandoffPassed": true
+  },
+  "acceptanceRecordLocalChecks": {
+    "lintPassed": true,
+    "typecheckPassed": true,
+    "testFilesPassed": 288,
+    "testsPassed": 8412,
+    "testsSkipped": 6,
+    "testsFailed": 0,
+    "buildPassed": true,
+    "formalExecutionEvidenceReplaced": false,
+    "scope": "Post-merge operator-record-only changes; the source-bound formal Vitest, browser and live-eval artifacts remain unchanged."
+  },
+  "fullReleaseSubmission": {
+    "release": "ebd499f8840d7148f3c1bb952eda757707206c9b",
+    "operationId": "fdb6ab71-54fb-439f-9e0e-fb05a4546a60",
+    "createdAt": "2026-10-05T12:02:43.958Z",
+    "systemdInvocationId": "619708e9859c4d239b45a638508f93ee",
+    "continuedAfterSubmittingSshSessionEnded": true,
+    "unexpectedDisconnectInjectedIntoProduction": false,
+    "preterminalPublicVerifierPassed": true,
+    "preterminalVerifierHasCurlRetries": true,
+    "terminalStateAndIndependentAcceptancePending": true
   },
   "ciToolchainCompatibility": {
     "failedRunId": 37280653582,
@@ -145,7 +195,7 @@
     "limitation": "Passing focused repetitions cannot prove a permanent fix. Preserve the original timeout and report a fresh complete-suite observation separately."
   },
   "limitations": [
-    "The PR has not passed its final required CI gate or been deployed.",
+    "PR 67 and its exact master commit passed Required CI gate. The first full durable production release is running and is not yet accepted; the later application-only release and capacity timer still need production validation.",
     "The original SSH 255 root cause remains unproven; durable execution removes connection dependence, not historical uncertainty.",
     "The observed canary history includes real readiness failures; changing the connection envelope is not proof of long-term availability.",
     "Same-disk compressed journals are recoverable but are not offsite disaster-recovery backups."

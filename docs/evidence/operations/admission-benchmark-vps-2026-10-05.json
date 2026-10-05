@@ -1,0 +1,273 @@
+{
+  "version": "diesel-admission-benchmark-v1",
+  "runId": "7c21fd4e-d6b2-4406-a310-1b607408854d",
+  "startedAt": "2026-10-05T12:19:26.221Z",
+  "completedAt": "2026-10-05T12:20:37.408Z",
+  "configuredSamples": 40,
+  "idleSeconds": 25,
+  "poolSize": 2,
+  "concurrency": 4,
+  "applicationDeadlineMs": 8000,
+  "providerCalls": 0,
+  "persistentFixtureWritesExpected": 0,
+  "measurementBoundary": "repository transaction, connection setup, nested savepoint and forced rollback; not HTTP/model latency or an availability SLO",
+  "samples": [
+    {
+      "phase": "cold",
+      "durationMs": 2942.676,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "cold",
+      "durationMs": 2721.024,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "cold",
+      "durationMs": 2732.16,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "warm",
+      "durationMs": 1749.726,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "warm",
+      "durationMs": 1162.357,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "warm",
+      "durationMs": 1836.166,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "warm",
+      "durationMs": 1501.716,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "after-idle",
+      "durationMs": 1794.506,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1109.125,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 2360.396,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 2760.647,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 4006.348,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1188.558,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1502.326,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 3017.511,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 3619.822,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1171.976,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1509.669,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 3467.436,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 4203.276,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1029.881,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1413.016,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 2908.469,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 3875.077,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1680.501,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 2100.35,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 2920.761,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 3352.975,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1167.345,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1808.205,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 2207.487,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 3156.048,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1173.757,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1510.384,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 2840.342,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 3271.542,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 1491.353,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 2324.696,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 2746.911,
+      "passed": true,
+      "error": null
+    },
+    {
+      "phase": "concurrent",
+      "durationMs": 3544.991,
+      "passed": true,
+      "error": null
+    }
+  ],
+  "summary": {
+    "sampleCount": 40,
+    "failedCount": 0,
+    "p50Ms": 2207.487,
+    "p95Ms": 3875.077,
+    "p99Ms": 4203.276,
+    "maximumMs": 4203.276,
+    "phases": {
+      "cold": 3,
+      "warm": 4,
+      "after-idle": 1,
+      "concurrent": 32
+    },
+    "passed": true
+  },
+  "runError": null,
+  "passed": true
+}

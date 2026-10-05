@@ -361,6 +361,40 @@ host_activation_ledger_parse_publication_marker() {
   fi
 }
 
+host_activation_ledger_application_payload() {
+  local release_id="$1"
+  local deploy_root="$2"
+  local state_directory="${deploy_root}/backups/${release_id}"
+  local proof_path
+  local proof_size
+  local payload="diesel-application-release-v2"$'\t'"${release_id}"
+  host_activation_ledger_parse_anchor "${release_id}" "${deploy_root}" || return $?
+  for proof_path in "${state_directory}/HOST_ACTIVATION_V1" \
+    "${state_directory}/application-before.json" "${state_directory}/application-after.json"; do
+    host_activation_ledger_require_file "${proof_path}" "root:root:600" "application verification proof" || return $?
+    proof_size="$(stat -c '%s' -- "${proof_path}")" || return 70
+    [[ "${proof_size}" =~ ^[0-9]+$ ]] && (( proof_size > 0 && proof_size <= 16384 )) || return 70
+    host_activation_ledger_hash_file "${proof_path}" || return $?
+    payload+=$'\t'"${HOST_ACTIVATION_LEDGER_HASH}"
+  done
+  HOST_ACTIVATION_LEDGER_APPLICATION_PAYLOAD="${payload}"
+}
+
+host_activation_ledger_parse_application_marker() {
+  local release_id="$1"
+  local deploy_root="$2"
+  local marker="${deploy_root}/backups/${release_id}/APPLICATION_VERIFIED_V2"
+  local size
+  host_activation_ledger_application_payload "${release_id}" "${deploy_root}" || return $?
+  host_activation_ledger_require_file "${marker}" "root:root:600" "application-only verification marker" || return $?
+  size="$(stat -c '%s' -- "${marker}")" || return 70
+  if [[ "${size}" != "$((${#HOST_ACTIVATION_LEDGER_APPLICATION_PAYLOAD} + 1))" ||
+    "$(<"${marker}")" != "${HOST_ACTIVATION_LEDGER_APPLICATION_PAYLOAD}" ]]; then
+    host_activation_ledger_fail 70 "application-only verification binding is invalid"
+    return
+  fi
+}
+
 host_activation_ledger_detect_governance_state() {
   local release_id="$1"
   local deploy_root="$2"
@@ -381,6 +415,11 @@ host_activation_ledger_detect_governance_state() {
         "${marker_path}" "${release_id}" "${deploy_root}" || return $?
     fi
   done
+  if [[ -e "${state_directory}/APPLICATION_VERIFIED_V2" || -L "${state_directory}/APPLICATION_VERIFIED_V2" ]]; then
+    count=$((count + 1))
+    HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE="APPLICATION_VERIFIED_V2"
+    host_activation_ledger_parse_application_marker "${release_id}" "${deploy_root}" || return $?
+  fi
   if [[ "${count}" -gt 1 ]]; then
     host_activation_ledger_fail 70 \
       "governance publication markers have an invalid coexistence"
@@ -405,7 +444,7 @@ host_activation_ledger_require_no_unknown_records() {
         HOST_ACTIVATION_ROLLED_BACK | HOST_ACTIVATION_COMMITTED | \
         RECOVERY_REQUIRED | HOST_ROLLBACK_REQUIRED | \
         HOST_ROLLBACK_COMPLETED | PUBLISH_COMMITTED | \
-        PUBLISH_FINALIZED) ;;
+        PUBLISH_FINALIZED | APPLICATION_VERIFIED_V2) ;;
       .* | *[A-Z]* | HOST_ACTIVATION_* | HOST_ROLLBACK_* | PUBLISH_* | RECOVERY_*)
         host_activation_ledger_fail 70 \
           "an unknown or incomplete state record blocks host activation"
@@ -596,7 +635,8 @@ host_activation_ledger_require_unarmed_candidate() {
     "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/HOST_ROLLBACK_REQUIRED" \
     "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/HOST_ROLLBACK_COMPLETED" \
     "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/PUBLISH_COMMITTED" \
-    "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/PUBLISH_FINALIZED"; do
+    "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/PUBLISH_FINALIZED" \
+    "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/APPLICATION_VERIFIED_V2"; do
     host_activation_ledger_require_absent \
       "${marker_path}" "unarmed candidate ledger" || return $?
   done
@@ -631,7 +671,8 @@ host_activation_ledger_require_resumable_anchor() {
     "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/HOST_ROLLBACK_REQUIRED" \
     "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/HOST_ROLLBACK_COMPLETED" \
     "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/PUBLISH_COMMITTED" \
-    "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/PUBLISH_FINALIZED"; do
+    "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/PUBLISH_FINALIZED" \
+    "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/APPLICATION_VERIFIED_V2"; do
     host_activation_ledger_require_absent \
       "${marker_path}" "resumable anchor companion state" || return $?
   done
@@ -881,11 +922,11 @@ host_activation_ledger_validate_release_state() {
   case "${HOST_ACTIVATION_LEDGER_STATE}:${HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE}" in
     PENDING:none | PENDING:RECOVERY_REQUIRED | \
       PENDING:HOST_ROLLBACK_REQUIRED | PENDING:PUBLISH_COMMITTED | \
-      PENDING:PUBLISH_FINALIZED | ROLLED_BACK:HOST_ROLLBACK_REQUIRED)
+      PENDING:PUBLISH_FINALIZED | PENDING:APPLICATION_VERIFIED_V2 | ROLLED_BACK:HOST_ROLLBACK_REQUIRED)
       HOST_ACTIVATION_LEDGER_CLASSIFICATION="active"
       ;;
     ROLLED_BACK:none | ROLLED_BACK:HOST_ROLLBACK_COMPLETED | \
-      COMMITTED:PUBLISH_FINALIZED)
+      COMMITTED:PUBLISH_FINALIZED | COMMITTED:APPLICATION_VERIFIED_V2)
       HOST_ACTIVATION_LEDGER_CLASSIFICATION="terminal"
       ;;
     *)
@@ -931,7 +972,8 @@ host_activation_ledger_scan_all() {
         ! -name HOST_ROLLBACK_COMPLETED \) -o \
       \( -name 'PUBLISH_*' \
         ! -name PUBLISH_COMMITTED ! -name PUBLISH_FINALIZED \) -o \
-      \( -name 'RECOVERY_*' ! -name RECOVERY_REQUIRED \) \) \
+      \( -name 'RECOVERY_*' ! -name RECOVERY_REQUIRED \) -o \
+      \( -name 'APPLICATION_*' ! -name APPLICATION_VERIFIED_V2 \) \) \
     -print -quit)"; then
     host_activation_ledger_fail 70 "could not scan host activation state"
     return
@@ -946,7 +988,7 @@ host_activation_ledger_scan_all() {
       -name HOST_ACTIVATION_ROLLED_BACK -o -name HOST_ACTIVATION_COMMITTED -o \
       -name RECOVERY_REQUIRED -o -name HOST_ROLLBACK_REQUIRED -o \
       -name HOST_ROLLBACK_COMPLETED -o -name PUBLISH_COMMITTED -o \
-      -name PUBLISH_FINALIZED \) -print)"; then
+      -name PUBLISH_FINALIZED -o -name APPLICATION_VERIFIED_V2 \) -print)"; then
     host_activation_ledger_fail 70 "could not scan host activation state"
     return
   fi
@@ -1164,7 +1206,8 @@ host_activation_ledger_begin() {
     "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/HOST_ROLLBACK_REQUIRED" \
     "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/HOST_ROLLBACK_COMPLETED" \
     "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/PUBLISH_COMMITTED" \
-    "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/PUBLISH_FINALIZED"; do
+    "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/PUBLISH_FINALIZED" \
+    "${HOST_ACTIVATION_LEDGER_STATE_DIRECTORY}/APPLICATION_VERIFIED_V2"; do
     host_activation_ledger_require_absent \
       "${host_marker}" "pre-activation state marker" || return $?
   done
@@ -1281,7 +1324,7 @@ host_activation_ledger_transition() {
         destination_marker="${HOST_ACTIVATION_LEDGER_COMMITTED}"
       elif [[ "${HOST_ACTIVATION_LEDGER_STATE}" == "PENDING" ]] &&
         [[ "${HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE}" == \
-          "PUBLISH_FINALIZED" ]]; then
+          "PUBLISH_FINALIZED" || "${HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE}" == "APPLICATION_VERIFIED_V2" ]]; then
         source_marker="${HOST_ACTIVATION_LEDGER_PENDING}"
         destination_marker="${HOST_ACTIVATION_LEDGER_COMMITTED}"
       else

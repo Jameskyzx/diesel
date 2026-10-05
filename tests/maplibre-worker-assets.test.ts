@@ -89,8 +89,8 @@ afterEach(() => {
 
 describe("versioned MapLibre worker assets", () => {
   it("pins the same-origin ESM worker and verifies the real installed assets", () => {
-    expect(MAPLIBRE_VERSION).toBe("6.9.0");
-    expect(MAPLIBRE_WORKER_URL).toBe("/maplibre/6.9.0/maplibre-gl-worker.mjs");
+    expect(MAPLIBRE_VERSION).toBe("6.11.2");
+    expect(MAPLIBRE_WORKER_URL).toBe("/maplibre/6.11.2/maplibre-gl-worker.mjs");
     expect(mapLibreWorkerNoticeSources).toHaveLength(16);
     expect(() => assertMapLibreWorkerAssets()).not.toThrow();
   });

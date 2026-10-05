@@ -1,9 +1,9 @@
-Third-party notices for MapLibre GL JS 6.9.0 worker/shared assets.
+Third-party notices for MapLibre GL JS 6.11.2 worker/shared assets.
 Texts are reproduced from the current pinned installation. The versions below
 identify installed notice sources, not proof of upstream bundle build versions.
 MapLibre's own notices remain unchanged in the adjacent LICENSE.txt.
 
-===== @maplibre/maplibre-gl-style-spec | installed notice source 26.4.2 | LICENSE.txt =====
+===== @maplibre/maplibre-gl-style-spec | installed notice source 26.4.4 | LICENSE.txt =====
 Copyright (c) 2020, MapLibre contributors
 
 All rights reserved.
@@ -459,7 +459,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-===== @maplibre/mlt | installed notice source 1.2.1 | LICENSE.txt =====
+===== @maplibre/mlt | installed notice source 1.3.0 | LICENSE.txt =====
 ===== MIT License =====
 MIT License
 

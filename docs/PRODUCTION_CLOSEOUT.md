@@ -59,6 +59,11 @@ Any 429/503, incomplete SSE, missing evidence or wrong release remains a failure
 
 ## Required engineering acceptance
 
+The maintenance implementation and explicit remaining runtime/observation
+gates are tracked in [ENGINEERING_MAINTENANCE.md](ENGINEERING_MAINTENANCE.md).
+In particular, application-only v2 never fabricates a data-publication marker;
+the durable runner's completion is not independent deployment acceptance.
+
 - New-source full checks, strict evidence capture, protected merge and deployment.
   The [production observation](evidence/operations/production-closeout-latest.json)
   records their actual completion or failure; this checklist alone is not proof.

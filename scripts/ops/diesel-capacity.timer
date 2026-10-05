@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly Diesel capacity warning
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=300
+Persistent=true
+Unit=diesel-capacity.service
+
+[Install]
+WantedBy=timers.target

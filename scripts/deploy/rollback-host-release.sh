@@ -2854,7 +2854,9 @@ rollback_host_release() (
         return 0
         ;;
       COMMITTED:PUBLISH_FINALIZED:--abort-if-uncommitted | \
-        COMMITTED:PUBLISH_FINALIZED:--validate-committed)
+        COMMITTED:PUBLISH_FINALIZED:--validate-committed | \
+        COMMITTED:APPLICATION_VERIFIED_V2:--abort-if-uncommitted | \
+        COMMITTED:APPLICATION_VERIFIED_V2:--validate-committed)
         # The terminal pair is durable history, but these two modes are also
         # used as current-release acceptance gates. Re-parse the ledger, then
         # continue through current/PM2/UID/durable-dump validation below.
@@ -2889,14 +2891,22 @@ rollback_host_release() (
     committed_marker_label="publish finalized marker"
   fi
 
+  if [[ "${HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE}" == "APPLICATION_VERIFIED_V2" ]]; then
+    [[ -z "${committed_marker:-}" ]] || return 70
+    host_activation_ledger_parse_application_marker "${release_id}" "${deploy_root}"
+    committed_marker="${state_dir}/APPLICATION_VERIFIED_V2"
+    committed_marker_label="application-only verification marker"
+  fi
   if [[ -n "${committed_marker:-}" ]]; then
     if ! command -v sha256sum >/dev/null 2>&1; then
       rollback_fail 70 "required rollback command is unavailable: sha256sum"
       return
     fi
-    rollback_validate_publish_commit_marker \
-      "${committed_marker}" "${governance_snapshot}" \
-      "${committed_marker_label}"
+    if [[ "${HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE}" != "APPLICATION_VERIFIED_V2" ]]; then
+      rollback_validate_publish_commit_marker \
+        "${committed_marker}" "${governance_snapshot}" \
+        "${committed_marker_label}"
+    fi
     rollback_require_absent "${recovery_marker}" "governance recovery marker"
     rollback_require_absent \
       "${host_rollback_marker}" "governance host rollback marker"

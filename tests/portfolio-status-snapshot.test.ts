@@ -123,7 +123,7 @@ function buildBrowserEvidence(): PlaywrightEvidence {
         : `2026-08-31T11:${String(minute + 1).padStart(2, "0")}+08:00`,
       globalErrorCount: 0,
       id: contract.id,
-      playwrightVersion: "1.62.0",
+      playwrightVersion: "1.63.0",
       provenance: {
         completed: browserRepositoryState,
         started: browserRepositoryState,

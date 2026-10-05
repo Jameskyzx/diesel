@@ -29,6 +29,7 @@ type CommandResult = {
 };
 
 type ControllerScenario = {
+  kind?: "full" | "application";
   activateStatus?: number;
   currentStatus?: number;
   entryPoint?: "reconcile" | "reconcile-committed";
@@ -306,8 +307,8 @@ const reconcileHarness = [
   'release_publication_controller_run_governance_mode() {',
   '  controller_test_log "governance:$1:$2"',
   '  case "$1" in',
-  '    publish) return "${PUBLISH_STATUS}" ;;',
-  '    finalize-committed) return "${FINALIZE_STATUS}" ;;',
+  '    publish | application) return "${PUBLISH_STATUS}" ;;',
+  '    finalize-committed | finalize-application) return "${FINALIZE_STATUS}" ;;',
   '    *) return 64 ;;',
   '  esac',
   '}',
@@ -394,6 +395,7 @@ async function runScenario(
       ],
       {
         ...process.env,
+        DIESEL_RELEASE_KIND: scenario.kind ?? "full",
         ACTIVATE_STATUS: String(scenario.activateStatus ?? 0),
         CONTROLLER_ENTRY: scenario.entryPoint ?? "reconcile",
         CONTROLLER_LOG: logPath,
@@ -418,6 +420,26 @@ async function runScenario(
     await rm(root, { force: true, recursive: true });
   }
 }
+
+describe("application-only controller extension", () => {
+  it("prepares once and delegates activation/readback to the maintenance-locked application protocol", async () => {
+    const result = await runScenario({ kind: "application", strictStates: ["COMMITTED:APPLICATION_VERIFIED_V2"] });
+    expect(result.exitCode).toBe(0);
+    expect(result.events).toContain(`governance:application:${RELEASE_ID}`);
+    expect(result.events.some((event) => event.startsWith("activate:") || event.startsWith("governance:publish:") || event.startsWith("governance:finalize-committed:"))).toBe(false);
+  });
+  it.each([
+    { publishStatus: 75, strictStates: ["PENDING:none"], expected: 75 },
+    { publishStatus: 70, strictStates: ["PENDING:none"], expected: 70 },
+    { publishStatus: 0, strictStates: ["PENDING:none"], expected: 70 },
+    { publishStatus: 70, strictStates: ["PENDING:APPLICATION_VERIFIED_V2"], expected: 75 },
+    { publishStatus: 70, strictStates: ["COMMITTED:APPLICATION_VERIFIED_V2"], expected: 75 },
+    { publishStatus: 0, strictStates: ["COMMITTED:PUBLISH_FINALIZED"], expected: 75 },
+    { publishStatus: 0, readFailureAt: 1, expected: 75 },
+  ])("preserves honest application failure classification %j", async ({ expected, ...scenario }) => {
+    expect((await runScenario({ kind: "application", ...scenario })).exitCode).toBe(expected);
+  });
+});
 
 async function runProductionEntryScenario(
   ledgerState: string,
@@ -1062,7 +1084,7 @@ describe("release-publication-controller.sh", () => {
     const source = await readFile(controllerScript, "utf8");
 
     expect(source).toContain("release_publication_controller_reconcile");
-    expect(source).toContain("publish | finalize-committed)");
+    expect(source.includes("publish | finalize-committed | application | finalize-application)")).toBe(true);
     expect(source).not.toMatch(
       /host_activation_ledger_(?:begin|transition|write_record)/,
     );

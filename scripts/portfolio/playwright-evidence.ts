@@ -16,7 +16,7 @@ export const PLAYWRIGHT_RUN_RECEIPT_VERSION =
   "diesel-playwright-run-v1" as const;
 export const PLAYWRIGHT_EVIDENCE_VERSION =
   "diesel-playwright-evidence-v1" as const;
-export const EXPECTED_PLAYWRIGHT_VERSION = "1.62.0" as const;
+export const EXPECTED_PLAYWRIGHT_VERSION = "1.63.0" as const;
 export const playwrightEvidencePath =
   "docs/evidence/playwright-e2e-latest.json" as const;
 export const PLAYWRIGHT_TEST_SOURCE_MAX_BYTES = 2 * 1024 * 1024;

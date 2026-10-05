@@ -909,7 +909,7 @@ describe("Playwright CI evidence contracts", () => {
       "      - name: Upload FDE Playwright traces and screenshots\n",
       "      - name: Upload unreviewed browser state\n" +
         "        if: ${{ always() }}\n" +
-        "        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02\n" +
+        "        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a\n" +
         "        with:\n" +
         "          name: browser-state\n" +
         "          path: test-results/\n\n" +

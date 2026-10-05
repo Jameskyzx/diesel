@@ -22,10 +22,10 @@ async function currentManifest() {
 
 const mapLibreScreenshotInputs = [
   "scripts/maplibre-worker-assets.ts",
-  "public/maplibre/6.9.0/maplibre-gl-worker.mjs",
-  "public/maplibre/6.9.0/maplibre-gl-shared.mjs",
-  "public/maplibre/6.9.0/LICENSE.txt",
-  "public/maplibre/6.9.0/THIRD-PARTY-NOTICES.txt",
+  "public/maplibre/6.11.2/maplibre-gl-worker.mjs",
+  "public/maplibre/6.11.2/maplibre-gl-shared.mjs",
+  "public/maplibre/6.11.2/LICENSE.txt",
+  "public/maplibre/6.11.2/THIRD-PARTY-NOTICES.txt",
 ] as const;
 
 // Synthetic evidence fixture only: reuse image bytes, never claim a new capture.

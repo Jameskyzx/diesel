@@ -1,0 +1,52 @@
+{
+  "version": "diesel-closed-journal-archive-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedAt": "2026-10-05T06:56:45Z",
+  "target": "111.228.50.85",
+  "authorization": "User explicitly approved controlled compression and verified restoration of closed old journals, excluding current logs and database backups.",
+  "archiveExitCode": 0,
+  "independentAuditExitCode": 0,
+  "archiveDirectory": "/opt/diesel/log-archives/closed-journal-20261005.KxliFwY1",
+  "archiveDirectoryMode": "root:root:0700",
+  "archiveFileMode": "root:root:0600",
+  "manifestSha256": "e5ef80cd7e1bfb9437430b7df9c554e6ecdf1c1561ab64c7a391b54468f98b35",
+  "closedFilesArchived": 30,
+  "originalLogicalBytes": 4018143232,
+  "compressedLogicalBytes": 676830191,
+  "archiveAllocatedBytesIncludingReceipts": 677187584,
+  "lifecycleAndBuildLocksHeld": true,
+  "verificationBeforeRemovingEachOriginal": [
+    "Exact canonical closed-journal path, root ownership, mode and single-link metadata",
+    "journalctl --verify on original",
+    "gzip integrity check and full decompression into private staging",
+    "Restored SHA-256 equals original SHA-256",
+    "journalctl --verify on restored file",
+    "Original inode, size, modification/change times and SHA-256 remain unchanged",
+    "Archive and recovery metadata synced to disk before unlinking exact original"
+  ],
+  "independentVerification": [
+    "All 30 compressed-file hashes match the private manifest",
+    "All 30 decompressed streams match original hashes again",
+    "All 30 original uncompressed paths are absent",
+    "Original and restored verification logs retained privately",
+    "Active system.journal still exists",
+    "Current release unchanged; Nginx and PM2 system services active"
+  ],
+  "diskBefore": { "usedBytes": 54755418112, "availableBytes": 5323788288, "dfUsedPercent": 92 },
+  "diskAfter": { "usedBytes": 51565395968, "availableBytes": 8513810432, "dfUsedPercent": 86 },
+  "observedAvailableBytesIncrease": 3190022144,
+  "databaseBackupAllocatedBytesAfter": 996032512,
+  "currentReleaseBeforeAndAfter": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+  "healthReadback": {
+    "readbackAt": "2026-10-05T06:56:46.978Z",
+    "status": "ok",
+    "version": "877ce9f667bfc03233423d5ebe6a5317cc6c5220"
+  },
+  "preserved": ["active journal", "all database backups", "runtime releases", "rollback releases", "deployment and incident records", "credentials"],
+  "recovery": "Root-only RECOVERY.txt and manifest.tsv describe checksum verification, decompression, original path/uid/gid/mode/mtime and journalctl --file inspection. Restore to private staging; never overwrite an existing journal.",
+  "limitations": [
+    "Archives remain on the same disk, not independent disaster-recovery storage.",
+    "Available space remains below the new 8 GiB warning threshold; this is not unlimited backup retention.",
+    "Point-in-time operator observation, not signed external evidence or a production deployment acceptance."
+  ]
+}

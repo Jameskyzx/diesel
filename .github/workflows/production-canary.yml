@@ -56,5 +56,6 @@ jobs:
         with:
           name: production-canary-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/production-canary.json
-          retention-days: 14
+          # Keep the full 28-day observation window plus seven days for review.
+          retention-days: 35
           if-no-files-found: error

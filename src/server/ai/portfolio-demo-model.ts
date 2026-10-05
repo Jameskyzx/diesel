@@ -409,18 +409,27 @@ export function createPortfolioDemoModel() {
     doStream: async (options) => {
       step += 1;
 
-      if (step === 1) {
+      // The production loop can request more evidence after a successful tool
+      // result whose delivered locators do not satisfy the request. Respect
+      // that tool choice instead of emitting premature prose (newer SDKs
+      // correctly reject it). The shared five-step bound still ends the turn
+      // with a deterministic evidence gap when the fixture cannot satisfy it.
+      if (step === 1 || options.toolChoice?.type === "required" || options.toolChoice?.type === "tool") {
         selectedTool = selectPortfolioDemoTool(
           latestUserText(options.prompt),
           userTexts(options.prompt),
         );
+        if (!options.tools?.some(({ name }) => name === selectedTool?.toolName) ||
+          (options.toolChoice?.type === "tool" && options.toolChoice.toolName !== selectedTool.toolName)) {
+          throw new Error("Demo routing does not match the allowed production tools.");
+        }
         return {
           stream: simulateReadableStream({
             chunks: [
               { type: "stream-start" as const, warnings: [] },
               {
                 input: JSON.stringify(selectedTool.input),
-                toolCallId: `portfolio-demo-${selectedTool.toolName}`,
+                toolCallId: `portfolio-demo-${selectedTool.toolName}${step === 1 ? "" : `-${step}`}`,
                 toolName: selectedTool.toolName,
                 type: "tool-call" as const,
               },

@@ -8,7 +8,11 @@ import { probePostgresReadiness } from "@/server/health/postgres-readiness";
 
 export { DATABASE_READINESS_STATEMENT_TIMEOUT_MS } from "@/server/health/postgres-readiness";
 
-export const DATABASE_READINESS_TIMEOUT_MS = 3_000;
+// The HTTP budget includes DNS/TCP/TLS/pool admission, not just SQL execution.
+// VPS measurements observed a healthy cold connection at 3239 ms; the old
+// 3-second envelope rejected it. Keep the independent 2500 ms SQL limit,
+// single-flight and no-retry policy; an unavailable DB still fails closed.
+export const DATABASE_READINESS_TIMEOUT_MS = 8_000;
 export const DATABASE_READINESS_FAILURE_COOLDOWN_MS = 1_000;
 
 async function runDatabaseProbe(): Promise<void> {

@@ -1,12 +1,12 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-04T16:35:04.375Z",
+      "capturedAt": "2026-10-05T07:08:51.016Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
       "route": "/",
-      "sha256": "6f21547b6b72025265b685081716fb59734c5e2b83bfa3b8ff4e205f9f0b8a3e",
+      "sha256": "65f3ecd83691b3c6082ab6bdfbd8eacc8aba8626ff36e0c09954eb0e13358460",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -45,10 +45,10 @@
         "pnpm-workspace.yaml",
         "postcss.config.mjs",
         "public/brand/diesel-chibi.png",
-        "public/maplibre/6.9.0/LICENSE.txt",
-        "public/maplibre/6.9.0/THIRD-PARTY-NOTICES.txt",
-        "public/maplibre/6.9.0/maplibre-gl-shared.mjs",
-        "public/maplibre/6.9.0/maplibre-gl-worker.mjs",
+        "public/maplibre/6.11.2/LICENSE.txt",
+        "public/maplibre/6.11.2/THIRD-PARTY-NOTICES.txt",
+        "public/maplibre/6.11.2/maplibre-gl-shared.mjs",
+        "public/maplibre/6.11.2/maplibre-gl-worker.mjs",
         "public/og.jpg",
         "scripts/demo/server.ts",
         "scripts/format-error.ts",
@@ -279,7 +279,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "d27d05282cd31784b2e4383eaf994c45eb43606c8cd1a3335d66b9602f025edf",
+      "sourceFingerprint": "498331ffe70660747fd852706b7fd0b4b975eeeb88ffc7e285c2224dc18e8169",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -287,12 +287,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-04T16:35:07.126Z",
+      "capturedAt": "2026-10-05T07:08:53.171Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "57ffd851c868d2f436a86d5bff5c81ef022781de76e72fe65f6379f136bed2ed",
+      "sha256": "22a7614305719932e39202a08b1a6d93c463232fa8784dafefb958eddc0a3694",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -332,10 +332,10 @@
         "postcss.config.mjs",
         "public/brand/diesel-chibi.png",
         "public/geo/world-countries-index.json",
-        "public/maplibre/6.9.0/LICENSE.txt",
-        "public/maplibre/6.9.0/THIRD-PARTY-NOTICES.txt",
-        "public/maplibre/6.9.0/maplibre-gl-shared.mjs",
-        "public/maplibre/6.9.0/maplibre-gl-worker.mjs",
+        "public/maplibre/6.11.2/LICENSE.txt",
+        "public/maplibre/6.11.2/THIRD-PARTY-NOTICES.txt",
+        "public/maplibre/6.11.2/maplibre-gl-shared.mjs",
+        "public/maplibre/6.11.2/maplibre-gl-worker.mjs",
         "public/og.jpg",
         "scripts/demo/server.ts",
         "scripts/format-error.ts",
@@ -566,7 +566,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "ccf88c4ab6dccc9dc4b8a3f06cd20bbd6c75eeea998a65c159fda975dd6abd58",
+      "sourceFingerprint": "1fe8888d3db043a2d0e4f2305c2ad9beadca6d68a5daa754cfb5996f03f1405f",
       "viewport": {
         "height": 1000,
         "width": 1600

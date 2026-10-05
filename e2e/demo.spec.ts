@@ -352,12 +352,21 @@ for (const locale of ["en", "zh-CN"] as const) {
     // Use only the unchanged displayed excerpt for a high-similarity control.
     const topic = `CHN non-road ${tokenizeKnowledgeText(sourceText.split("中国")[0]!)
       .filter((term) => term !== "or").join(" ")}`;
+    let completedCardCount = 1;
     for (const [index, locator] of (english
       ? ["page 2 section 2", "page 1 section 1"]
       : ["第 2 页 第 2 节", "第 1 页 第 1 节"]).entries()) {
       await textbox.fill(request(`${topic} ${locator}`));
       await send.click();
-      await expect(cards).toHaveCount(index + 2);
+      // Missing locators keep the production loop in required-tool mode.
+      // The Demo model must honor all five bounded steps before failing closed;
+      // the positive page/section control needs only one evidence call.
+      completedCardCount += index === 0 ? 5 : 1;
+      await expect(cards).toHaveCount(completedCardCount);
+      await expect(send).toBeVisible();
+      await expect(assistant.getByRole("alert").filter({
+        hasText: english ? "The chat request failed." : "聊天请求失败。",
+      })).toHaveCount(0);
       const card = cards.last();
       await card.locator("summary").click();
       // Retrieval succeeded in both cases, but only page/section 1 exists.

@@ -1056,7 +1056,7 @@ describe("Playwright portfolio evidence", () => {
     expect(() => parseCanonicalPlaywrightRunReceipt(
       canonical.replace(
         '"playwrightVersion": "1.63.0"',
-        '"playwrightVersion": "1.63.0"',
+        '"playwrightVersion": "1.62.0"',
       ),
     )).toThrow();
     expect(() => parseCanonicalPlaywrightRunReceipt(canonical.trimEnd())).toThrow(

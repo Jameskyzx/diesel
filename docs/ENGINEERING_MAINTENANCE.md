@@ -92,6 +92,19 @@ PostgreSQL concurrency smoke remains the atomicity/saturation check.
 生产网络复验、真实中英聊天和已有每六小时 provider canary 仍需分别读取结果。
 至少积累 28 天观测，并明确统计缺失/失败的调度窗口，才能讨论长期稳定性；
 不能把尚未经过的时间补成漂亮分数。
+Canary artifacts are retained for 35 days: the 28-day observation window plus
+seven days for review. Retention does not fill missing runs or turn failures
+into passing observations.
+
+The existing canary history is not all green: on 2026-10-05 the latest scheduled
+run failed readiness (503) while its provider SSE check passed. A VPS-local
+readback reproduced one 503 followed by three 200s. Direct runs of the deployed
+read-only probe measured cold requests at 3239/2239/1446 ms and warm requests at
+465/122/123 ms. This branch therefore gives the HTTP readiness envelope eight
+seconds for connection establishment while keeping its independent SQL limit
+at 2500 ms, single-flight, no success cache and no retries. This is a changed,
+explicit readiness latency budget, not a claim that a 3-second SLO now passes.
+Deployment and subsequent scheduled observations must verify the adjustment.
 
 ## 4. Backup retention and capacity / 备份与容量
 
@@ -109,12 +122,21 @@ Install the checked-in service/timer only after the new release is deployed and
 verify the first invocation and next timer run. No application/model secret is
 required or logged.
 
-Inactive, explicitly reviewed rebuildable caches are the only cleanup target;
-current/rollback/failed-candidate caches and all backups stay protected. If that
-is insufficient, pause new releases and approve external archival with checksum
-and restore testing, or expand the disk. Retaining every backup on a finite
-local disk is not an unlimited-capacity strategy. The user storage decision is
-kept separate from the implemented warning/interlock.
+Routine cleanup is limited to inactive, explicitly reviewed rebuildable caches;
+current/rollback/failed-candidate caches and all backups stay protected. Separately,
+the user approved lossless archival of closed historical system journal files on
+2026-10-05. This operation excludes the active journal: each archive must be fully
+decompressed, SHA-256 compared, and checked with `journalctl --verify` before its
+exact original can be removed. Private archives retain original metadata and
+recovery instructions; the resulting operation receipt records actual completion,
+not this authorization alone. Journal contents are never published in Git.
+[The 2026-10-05 archive receipt](evidence/operations/journal-archive-2026-10-05.json)
+records the completed per-file restore checks and independent second readback.
+
+If capacity is still insufficient, pause new releases and approve external archival
+with checksum and restore testing, or expand the disk. Retaining every backup on a
+finite local disk is not an unlimited-capacity strategy. The user storage decision
+is kept separate from the implemented warning/interlock.
 
 ## 5. Dependency queue / 依赖积压
 
@@ -138,6 +160,11 @@ report a model stream's first private error only once while continuing to drain
 usage; retain the Drizzle legacy-loader exclusion; bind the SDK's new undici
 edge to reviewed 7.29.1; regenerate same-origin MapLibre assets and all bundled
 licenses; update Playwright's execution-version contract and recapture evidence.
+The real map tests use the canonical worker URL instead of a retired version.
+The offline Demo model also honors repeated required-tool choices and uses unique
+call IDs. Missing page/section evidence can consume the shared five-step bound
+before the deterministic refusal; it must not produce premature prose or an SDK
+tool-choice error. Full-stream, SSE and bilingual desktop/mobile checks cover it.
 Removed MapLibre 6.9.0 copies are recoverable from Git; replacement 6.11.2 assets
 retain their complete license/notice files.
 

@@ -54,6 +54,16 @@
     "node26TypesHeldForNode22Runtime": 61,
     "queueClosed": false
   },
+  "ciToolchainCompatibility": {
+    "failedRunId": 37280653582,
+    "failedTests": 17,
+    "cause": "pnpm/action-setup v6 self-update creates a PNPM_HOME/bin shell shim, not a direct package entry; the previous resolver looked for package.json at the wrong root.",
+    "officialBootstrapVersionReproduced": "11.25.0",
+    "requestedPackageVersionVerified": "11.9.0",
+    "realIsolatedInstallAndResolutionPassed": true,
+    "focusedRegressionTestsPassed": 192,
+    "remoteFixAcceptancePending": true
+  },
   "limitations": [
     "The PR has not passed its final required CI gate or been deployed.",
     "The original SSH 255 root cause remains unproven; durable execution removes connection dependence, not historical uncertainty.",

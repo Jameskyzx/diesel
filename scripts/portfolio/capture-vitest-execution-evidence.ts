@@ -448,11 +448,47 @@ function assertPnpmPackageIdentity(pnpmEntrypoint: string): void {
   }
 }
 
+function resolvePnpmSelfUpdateEntrypoint(shim: string): string {
+  const before = lstatSync(shim);
+  if (!before.isFile() || before.size === 0 || before.size > 32 * 1024) {
+    throw new Error("pnpm self-update shim must be a bounded regular file.");
+  }
+  const bytes = readFileSync(shim);
+  const after = lstatSync(shim);
+  if (bytes.byteLength !== before.size || before.dev !== after.dev ||
+    before.ino !== after.ino || before.mode !== after.mode ||
+    before.mtimeMs !== after.mtimeMs || before.ctimeMs !== after.ctimeMs ||
+    before.size !== after.size) {
+    throw new Error("pnpm self-update shim changed while read.");
+  }
+  const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  const targets = [...text.matchAll(/^# cmd-shim-target=(.+)$/gmu)];
+  if (!text.startsWith("#!/bin/sh\n") || targets.length !== 1) {
+    throw new Error("pnpm self-update shim requires one target metadata record.");
+  }
+  const target = targets[0]![1]!;
+  const pnpmHome = dirname(dirname(shim));
+  if (!text.trimEnd().endsWith(`# cmd-shim-target=${target}`) ||
+    !isAbsolute(target) || normalize(target) !== target || /\p{Cc}/u.test(target) ||
+    !target.startsWith(`${pnpmHome}${sep}`)) {
+    throw new Error("pnpm self-update target must remain inside its physical home.");
+  }
+  const entrypoint = realpathSync(target);
+  if (!entrypoint.startsWith(`${pnpmHome}${sep}`)) {
+    throw new Error("pnpm self-update target resolves outside its physical home.");
+  }
+  // cmd-shim's comment is a path hint, never executable shell or proof of
+  // identity. The caller still validates the declared pnpm package/version.
+  return entrypoint;
+}
+
 /**
  * Resolves the first executable `pnpm` on inherited PATH, removes symlink
  * indirection, and verifies its exact package identity. For node_modules/.bin
  * shell shims, select the adjacent pnpm package's verified JS entrypoint without
- * evaluating the shim. Runtime version output
+ * evaluating the shim. pnpm/action-setup v6 self-update shims in .bin/bin use
+ * bounded cmd-shim target metadata and the same package identity checks.
+ * Runtime version output
  * is checked later behind the same bounded supervisor as the test workload.
  */
 export function resolvePnpmEntrypoint(
@@ -481,7 +517,12 @@ export function resolvePnpmEntrypoint(
     const isPackageBinShim = dirname(physicalCandidate).endsWith(
       `${sep}node_modules${sep}.bin`,
     );
-    const entrypoint = isPackageBinShim
+    const isSelfUpdateShim = dirname(physicalCandidate).endsWith(
+      `${sep}node_modules${sep}.bin${sep}bin`,
+    );
+    const entrypoint = isSelfUpdateShim
+      ? resolvePnpmSelfUpdateEntrypoint(physicalCandidate)
+      : isPackageBinShim
       ? declaredPnpmPackageEntrypoint(
           realpathSync(resolve(dirname(physicalCandidate), "../pnpm")),
         )

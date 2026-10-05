@@ -36,6 +36,40 @@ const fitResponseSchema = z.object({
 });
 type RecordEvent = (type: string, fields?: Record<string, unknown>) => void;
 
+const nativeClickPrefix = "diesel-product-fit-native-click:";
+const nativeClickSchema = z.object({
+  altKey: z.boolean(), button: z.number().int(), ctrlKey: z.boolean(),
+  metaKey: z.boolean(), shiftKey: z.boolean(), defaultPrevented: z.boolean(),
+  trusted: z.boolean(), focused: z.boolean(), visibility: z.enum(["hidden", "visible"]),
+  chatAnchor: z.boolean(), targetTag: z.string().max(30),
+}).strict();
+
+async function observeNativeClicks(page: Page, record: RecordEvent) {
+  const onConsole = (message: import("@playwright/test").ConsoleMessage) => {
+    if (!message.text().startsWith(nativeClickPrefix)) return;
+    try {
+      const observation = nativeClickSchema.parse(JSON.parse(message.text().slice(nativeClickPrefix.length)));
+      record("native-click-observed", observation);
+    } catch { record("native-click-diagnostic-invalid"); }
+  };
+  page.on("console", onConsole);
+  await page.addInitScript((prefix) => {
+    // Observe after React's delegated root handler, without changing default
+    // navigation, input, focus, or request deadlines. No text/form values logged.
+    document.addEventListener("click", (event) => {
+      if (!(event instanceof MouseEvent) || !(event.target instanceof Element)) return;
+      const anchor = event.target.closest("a");
+      console.debug(prefix + JSON.stringify({
+        altKey: event.altKey, button: event.button, ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey, shiftKey: event.shiftKey, defaultPrevented: event.defaultPrevented,
+        trusted: event.isTrusted, focused: document.hasFocus(), visibility: document.visibilityState,
+        chatAnchor: anchor?.pathname === "/chat", targetTag: event.target.tagName,
+      }));
+    });
+  }, nativeClickPrefix);
+  return () => page.off("console", onConsole);
+}
+
 function createSignal() {
   let complete = () => {};
   let resolved = false;
@@ -205,6 +239,7 @@ async function withPendingFit(
   const record: RecordEvent = (type, fields = {}) => {
     events.push({ type, elapsedMs: performance.now() - startedAt, ...fields });
   };
+  const stopObservingNativeClicks = await observeNativeClicks(page, record);
   const interception = await interceptChatNavigation(page, record);
   const context = page.context();
   const existingPages = new Set(context.pages());
@@ -293,6 +328,7 @@ async function withPendingFit(
       throwFailures(failures, "Product-fit chat navigation failed.");
     });
   } finally {
+    stopObservingNativeClicks();
     await testInfo.attach("product-fit-chat-navigation-observations", {
       contentType: "application/json",
       body: Buffer.from(JSON.stringify({

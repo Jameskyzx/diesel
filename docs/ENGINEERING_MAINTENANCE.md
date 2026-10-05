@@ -29,6 +29,14 @@ or unknown, not a success. The Linux CI smoke uses a synthetic orchestrator to
 exercise caller HUP, duplicate submission, exit 37 and worker SIGKILL. It does not
 substitute for a real deployment/rollback rehearsal.
 
+The synthetic Git archive pins `tar.umask=0022` at the command boundary. Root
+tar otherwise preserves Git's default group-writable directory/file modes,
+which the production controller correctly rejects before submission. Regression
+tests execute the shipped export pipeline with permissive extraction and hostile
+repository masks, checking directory 0755, regular-file 0644, executable 0755
+and unchanged bytes. This fixes only the CI fixture; trusted-path checks are
+not relaxed, and local permission tests do not replace the full Linux run.
+
 以前两次 SSH 255 的根因仍未被证明。本改动消除“SSH 连接必须持续存在”的执行依赖，
 不是把旧失败改写为成功，也不关闭主机信号、锁或恢复检查。
 

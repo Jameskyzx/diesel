@@ -38,7 +38,9 @@ for scenario in completed failed killed; do
   [[ "${release_id}" =~ ^[0-9a-f]{40}$ ]] || exit 70
   release_dir="/opt/diesel/releases/${release_id}"
   /usr/bin/install -d -m 0755 "${release_dir}"
-  /usr/bin/git -C "${fixture}" archive "${release_id}" | /usr/bin/tar -xf - -C "${release_dir}"
+  # Root tar preserves archive modes: Git's default 0002 mask would leave
+  # group-writable paths that the production controller correctly rejects.
+  /usr/bin/git -c tar.umask=0022 -C "${fixture}" archive "${release_id}" | /usr/bin/tar -xf - -C "${release_dir}"
   (cd "${fixture}"; "${node}" scripts/deploy/release-input-manifest.mjs create "${release_id}" "${release_dir}/.release-input-manifest.json")
   /usr/bin/install -d -m 0700 "/opt/diesel/release-inputs/${release_id}"
   /usr/bin/install -m 0600 /dev/null "/opt/diesel/release-inputs/${release_id}/env.production.local"

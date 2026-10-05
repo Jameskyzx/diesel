@@ -160,7 +160,7 @@ describe("live eval report provenance", () => {
             ]),
           }),
         ]),
-        version: "sales-chat-live-v25",
+        version: "sales-chat-live-v26",
       });
     } finally {
       await rm(temporaryWorkspace, { force: true, recursive: true });

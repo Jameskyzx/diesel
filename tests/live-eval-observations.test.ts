@@ -51,11 +51,11 @@ function buildReport() {
 }
 
 describe("live eval in-memory observations", () => {
-  it.each(["sales-chat-live-v17", "sales-chat-live-v18", "sales-chat-live-v19", "sales-chat-live-v20", "sales-chat-live-v21", "sales-chat-live-v22", "sales-chat-live-v23", "sales-chat-live-v24"] as const)("does not apply current response scoring to a schema-readable %s report", (version) => {
+  it.each(["sales-chat-live-v17", "sales-chat-live-v18", "sales-chat-live-v19", "sales-chat-live-v20", "sales-chat-live-v21", "sales-chat-live-v22", "sales-chat-live-v23", "sales-chat-live-v24", "sales-chat-live-v25"] as const)("does not apply current response scoring to a schema-readable %s report", (version) => {
     const report = buildReport();
     const results = report.results.map((result) => {
       const legacy = { ...result };
-      if (version !== "sales-chat-live-v20" && version !== "sales-chat-live-v21" && version !== "sales-chat-live-v22" && version !== "sales-chat-live-v23" && version !== "sales-chat-live-v24") {
+      if (version !== "sales-chat-live-v20" && version !== "sales-chat-live-v21" && version !== "sales-chat-live-v22" && version !== "sales-chat-live-v23" && version !== "sales-chat-live-v24" && version !== "sales-chat-live-v25") {
         Reflect.deleteProperty(legacy, "toolTraceStatus");
       }
       return legacy;

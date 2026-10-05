@@ -1181,7 +1181,7 @@ describe("portfolio live-eval visible ledger", () => {
     "The online / offline AI eval passed 18/18 cases.",
     "The live or offline AI eval passed 18/18 cases.",
     "线上及离线 AI 评估通过 18 条用例。",
-    "Offline harness passed; current sales-chat-live-v25 passed 18/18.",
+    "Offline harness passed; current sales-chat-live-v26 passed 18/18.",
   ])("does not let offline wording hide a live or ambiguous result: %s", (statement) => {
     expect(() => assertNoConcreteCurrentLiveEvalClaims({
       documentLabel: "test document", markdown: statement,

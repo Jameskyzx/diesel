@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 // can still produce a schema-valid, zero-provider-call failure observation.
 // The spawned-process contract tests bind these duplicated current literals to the
 // canonical TypeScript constants.
-const LIVE_EVAL_VERSION = "sales-chat-live-v25";
+const LIVE_EVAL_VERSION = "sales-chat-live-v26";
 const SYSTEM_PROMPT_VERSION = "sales-chat-system-v9";
 const LIVE_EVAL_CASE_COUNT = 18;
 const LIVE_EVAL_CASE_TIMEOUT_MS = 90_000;

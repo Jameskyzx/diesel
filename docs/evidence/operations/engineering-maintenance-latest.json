@@ -42,6 +42,18 @@
     "rootCauseProven": false,
     "limitation": "One diagnostic repeat passed on identical evaluated source. The first run did not retain public answer text, so an omitted topic versus unrecognized phrasing remains unproven; both reports are retained. No claim of deterministic model output."
   },
+  "liveEvalScorerCorrection": {
+    "failedRunId": "7956de7a-72b5-4c43-81ef-bd03fe85f0a6",
+    "failedCaseId": "cross-country-regulation",
+    "failedVersion": "sales-chat-live-v25",
+    "passedCases": 17,
+    "sameRunPublicAnswerRetainedPrivately": true,
+    "cause": "The public answer explicitly described regulation records and country differences, but the finite topic vocabulary omitted 法规记录.",
+    "correctedVersion": "sales-chat-live-v26",
+    "requestsExpectationsAndThresholdsUnchanged": true,
+    "historicalReportRescored": false,
+    "freshVersionAcceptancePending": true
+  },
   "capacity": {
     "policyImplemented": true,
     "productionTimerInstalled": false,

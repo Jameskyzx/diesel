@@ -2117,6 +2117,67 @@ process.exit(66);
     })).toThrow();
   });
 
+  it.each([["11.9.0", false], ["11.9.0", true], ["11.8.0", false], ["11.8.0", true]] as const)(
+    "resolves the action self-update shim through its declared package (%s, linked=%s)",
+    (version, linked) => {
+      const workspace = createWorkspace();
+      const home = "setup-pnpm/node_modules/.bin";
+      const packagePath = `${home}/store/v11/links/pnpm/node_modules/pnpm`;
+      const entry = resolve(workspace, packagePath, "bin/pnpm.mjs");
+      const shim = `${home}/bin/pnpm`;
+      writeWorkspaceFile(workspace, `${packagePath}/package.json`, JSON.stringify({
+        name: "pnpm", version, bin: { pnpm: "bin/pnpm.mjs" },
+      }));
+      writeWorkspaceFile(workspace, `${packagePath}/bin/pnpm.mjs`, "#!/usr/bin/env node\nthrow new Error('not executed during resolution');\n");
+      let target = entry;
+      if (linked) {
+        const modules = resolve(workspace, home, "global/v11/fixture/node_modules");
+        mkdirSync(modules, { recursive: true });
+        symlinkSync(resolve(workspace, packagePath), resolve(modules, "pnpm"), "dir");
+        target = resolve(modules, "pnpm/bin/pnpm.mjs");
+      }
+      writeWorkspaceFile(workspace, shim,
+        `#!/bin/sh\nexit 99 # Never execute this shim.\n# cmd-shim-target=${target}\n`);
+      chmodSync(resolve(workspace, shim), 0o755);
+      chmodSync(entry, 0o755);
+      const resolveEntry = () => resolvePnpmEntrypoint({
+        PATH: `${resolve(workspace, home, "bin")}${delimiter}${process.env.PATH ?? ""}`,
+      });
+      if (version === "11.9.0") expect(resolveEntry()).toBe(entry);
+      else expect(resolveEntry).toThrow(/pnpm package metadata/u);
+    },
+  );
+
+  it.each(["missing", "duplicate", "relative", "outside", "symlink-outside", "oversized", "invalid-utf8", "wrong-bin"])(
+    "rejects a %s self-update shim without falling through PATH",
+    (fault) => {
+      const workspace = createWorkspace();
+      const home = "setup-pnpm/node_modules/.bin";
+      const packagePath = fault === "outside" ? "outside/pnpm" : `${home}/global/v11/fixture/node_modules/pnpm`;
+      const entry = resolve(workspace, packagePath, "bin/pnpm.mjs");
+      writeWorkspaceFile(workspace, `${packagePath}/package.json`, JSON.stringify({
+        name: "pnpm", version: "11.9.0", bin: { pnpm: fault === "wrong-bin" ? "bin/other.mjs" : "bin/pnpm.mjs" },
+      }));
+      writeWorkspaceFile(workspace, `${packagePath}/bin/pnpm.mjs`, "#!/usr/bin/env node\nprocess.exit(99);\n");
+      writeWorkspaceFile(workspace, `${packagePath}/bin/other.mjs`, "#!/usr/bin/env node\nprocess.exit(99);\n");
+      chmodSync(entry, 0o755);
+      if (fault === "symlink-outside") {
+        writeWorkspaceFile(workspace, "outside-target.mjs", "process.exit(99);\n");
+        rmSync(entry);
+        symlinkSync(resolve(workspace, "outside-target.mjs"), entry);
+      }
+      const record = `# cmd-shim-target=${fault === "relative" ? "../pnpm/bin/pnpm.mjs" : entry}\n`;
+      const shim = `${home}/bin/pnpm`;
+      writeWorkspaceFile(workspace, shim,
+        `#!/bin/sh\nexit 99\n${fault === "oversized" ? "#".repeat(32 * 1024) + "\n" : ""}${fault === "missing" ? "" : record}${fault === "duplicate" ? record : ""}`);
+      if (fault === "invalid-utf8") writeFileSync(resolve(workspace, shim), Buffer.from([0xff]));
+      chmodSync(resolve(workspace, shim), 0o755);
+      expect(() => resolvePnpmEntrypoint({
+        PATH: `${resolve(workspace, home, "bin")}${delimiter}${process.env.PATH ?? ""}`,
+      })).toThrow();
+    },
+  );
+
   it("exposes only verified node and pnpm links through the private tool bin", () => {
     const tools = createVitestExecutionToolBin();
     try {

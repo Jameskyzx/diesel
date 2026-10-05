@@ -1,0 +1,16 @@
+[Unit]
+Description=Diesel backup-preserving capacity check
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/bin/bash /opt/diesel/current/scripts/ops/check-host-capacity.sh
+TimeoutStartSec=30
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+StandardOutput=journal
+StandardError=journal

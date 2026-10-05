@@ -3,10 +3,11 @@ import { Buffer } from "node:buffer";
 import { expect, test, type ElementHandle, type Page, type TestInfo } from "@playwright/test";
 
 import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
+import { MAPLIBRE_WORKER_URL } from "../src/lib/maplibre-assets";
 
 test.describe.configure({ timeout: 30_000 });
 
-const workerPath = "/maplibre/6.9.0/maplibre-gl-worker.mjs";
+const workerPath = MAPLIBRE_WORKER_URL;
 const probeKey = "__dieselMapRuntimeProbe";
 type FaultMode = "healthy" | "no-webgl" | "webgl1-only" | "map-canvas-only";
 type RemoveMapObservation = {

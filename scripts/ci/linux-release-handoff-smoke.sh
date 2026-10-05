@@ -787,6 +787,7 @@ linux_release_handoff_main() {
     linux_release_handoff_wait_systemd_ready
     prepare_release_require_systemd_host /proc
   )
+  /bin/bash "${release_export}/scripts/ci/linux-durable-release-smoke.sh" "${release_export}"
 
   if ! available_kib="$(df -Pk "${runner_temp}" | awk 'NR == 2 { print $4 }')"; then
     linux_release_handoff_fail 70 \

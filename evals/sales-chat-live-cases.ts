@@ -24,7 +24,7 @@ const liveEvalToolNames = [
 const liveEvalLocales = ["en", "zh-CN"] as const satisfies readonly Locale[];
 const liveEvalToolNameSchema = z.enum(liveEvalToolNames);
 
-export const SALES_CHAT_LIVE_EVAL_VERSION = "sales-chat-live-v25";
+export const SALES_CHAT_LIVE_EVAL_VERSION = "sales-chat-live-v26";
 
 const queryTermGroupSchema = z
   .object({
@@ -267,6 +267,7 @@ const responseAnchors = {
       "现行法规",
       "法规状态",
       "法规详情",
+      "法规记录",
     ],
     id: "decision:regulation-comparison",
   },

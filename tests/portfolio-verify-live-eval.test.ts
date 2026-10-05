@@ -592,7 +592,7 @@ describe("portfolio current live-eval detailed verification", () => {
         complete: true,
         sampleCount: 18,
         thresholdsPassed: true,
-        version: "sales-chat-live-v25",
+        version: "sales-chat-live-v26",
       });
       await expect(
         verifyLiveEvalEvidence({

@@ -1529,7 +1529,8 @@ commit 或迁移恢复账本。
 `SET LOCAL statement_timeout`、`SELECT 1`、`COMMIT` 合为一个 simple-protocol 请求，
 不做类型发现或四次网络往返。不能依赖连接启动参数：实际池化代理可能忽略它。
 失败事务关闭专用客户端，不把失败事务放回池中。探针连接不因空闲 20 秒而关闭，
-最大寿命 30 分钟；业务连接池和业务查询超时不变。公开响应仍以 3 秒为界，
+最大寿命 30 分钟；业务连接池和业务查询超时不变。公开响应以 8 秒为界（包含冷连接
+DNS/TCP/TLS/池化等待；2026-10-05 VPS 实测健康冷探针 3239 ms，旧 3 秒边界会拒绝它），
 真实慢连接或数据库故障仍返回 503，不缓存成功、不通过重试掩盖失败。
 应用进程内对未完成探针 single-flight、对快速失败
 短暂冷却，避免公网重复健康请求在数据库故障时累积连接或查询。首页、
@@ -2308,6 +2309,17 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
 2015-01-01、2015-01-01、2015-08-12、2015-01-01。公开 `/api/countries` 返回
 175 国、175 `covered` / 0 `no_data`；19 个详情 API、19 个 `/countries/{ISO3}` 页面、
 首页与 `/api/health` 均返回成功。网页动态读取 PostgreSQL，本批无需重建或切换 VPS。
+
+### 4.3 工程维护发布扩展（实施中，未替代生产验收）
+
+在保留上述 master/CI 授权、不可变 staging、锁与独立读回的前提下，新增
+[持久化任务和 application-only v2 合同](ENGINEERING_MAINTENANCE.md)。
+`durable-release.bundle.mjs start <sha>` 将完整发布交给 systemd；
+`start-application <sha>` 只接受未改变受保护数据输入的候选。
+`status <sha>` 只报告进程及回执，不代表生产验收通过；禁止收到 SSH 错误后重复启动。
+此扩展首次发布仍走完整数据协议。永久 V1 manifest 不变，代码发布使用独立
+`APPLICATION_VERIFIED_V2`，绝不伪造 `PUBLISH_FINALIZED`。
+容量检查失败时保留现场与全部备份，不绕过空间门槛。
 
 ## 5. 性能、许可与可访问性基线（历史测量）
 

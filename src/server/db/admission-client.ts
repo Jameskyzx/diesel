@@ -7,7 +7,7 @@ import { getDatabaseUrl } from "@/server/db/environment";
 import * as schema from "@/server/db/schema";
 
 // Admission only uses built-in scalar PostgreSQL types. Avoid catalog discovery
-// and 20-second idle eviction on the latency-critical, three-second entry gate.
+// and 20-second idle eviction on the latency-critical admission path.
 // Keep it separate from long-running business queries and the readiness probe.
 export const admissionConnectionOptions = {
   connect_timeout: 10,

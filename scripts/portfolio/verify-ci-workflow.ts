@@ -20,7 +20,7 @@ export function assertCiGitleaksGuardSource(source: string | Uint8Array): void {
 export const ciInstallBoundaryPath =
   "scripts/ci/verify-install-boundary.py" as const;
 export const ciInstallBoundarySha256 =
-  "0bb2dfec1a365eef47b45db2eadcd0755f854a5be6f804badb2249be6eb96915" as const;
+  "c1377848442b9c61ad9653453723a00a92f59b3d347e9d64e548fabc86b2b825" as const;
 const maximumCiInstallBoundarySourceBytes = 64 * 1024;
 
 export function assertCiInstallBoundarySource(
@@ -249,7 +249,7 @@ const qualityCiJob = `  quality:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # portfolio:verify resolves both the current public runtime commit
           # and the last fully documented release lineage.
@@ -261,10 +261,10 @@ ${ciInstallBoundaryGuardStep}
       # 版本（pnpm@11.9.0），必须先于 setup-node，使 pnpm 缓存键与 store
       # 路径来自同一版本。
       - name: Install pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -305,7 +305,7 @@ ${ciInstallBoundaryGuardStep}
 
       - name: Upload coverage report
         if: \${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage-report
           path: coverage/
@@ -376,7 +376,7 @@ const playwrightEvidenceCiContracts = [
         run: pnpm portfolio:verify-playwright-runs -- public production-csp`,
       `      - name: Upload public Playwright receipt
         if: \${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-public-receipt
           path: test-results/public/playwright-run.json
@@ -384,7 +384,7 @@ const playwrightEvidenceCiContracts = [
           if-no-files-found: warn`,
       `      - name: Upload production CSP Playwright receipt
         if: \${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-production-csp-receipt
           path: test-results/production-csp/playwright-run.json
@@ -392,7 +392,7 @@ const playwrightEvidenceCiContracts = [
           if-no-files-found: warn`,
       `      - name: Upload Playwright report
         if: \${{ failure() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report
           path: playwright-report/
@@ -400,7 +400,7 @@ const playwrightEvidenceCiContracts = [
           if-no-files-found: warn`,
       `      - name: Upload Playwright traces and screenshots
         if: \${{ failure() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-test-results
           path: test-results/
@@ -444,7 +444,7 @@ const playwrightEvidenceCiContracts = [
         run: pnpm portfolio:verify-playwright-runs -- demo`,
       `      - name: Upload portfolio demo Playwright receipt
         if: \${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-demo-receipt
           path: test-results/demo/playwright-run.json
@@ -452,7 +452,7 @@ const playwrightEvidenceCiContracts = [
           if-no-files-found: warn`,
       `      - name: Upload portfolio demo report
         if: \${{ failure() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-demo-report
           path: playwright-demo-report/
@@ -460,7 +460,7 @@ const playwrightEvidenceCiContracts = [
           if-no-files-found: warn`,
       `      - name: Upload Playwright traces and screenshots
         if: \${{ failure() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-demo-test-results
           path: test-results/
@@ -503,7 +503,7 @@ const playwrightEvidenceCiContracts = [
         run: pnpm portfolio:verify-playwright-runs -- fde`,
       `      - name: Upload failure-first FDE Playwright receipt
         if: \${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-fde-receipt
           path: test-results/fde/playwright-run.json
@@ -511,7 +511,7 @@ const playwrightEvidenceCiContracts = [
           if-no-files-found: warn`,
       `      - name: Upload FDE Playwright traces and screenshots
         if: \${{ failure() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-fde-test-results
           path: test-results/
@@ -524,35 +524,35 @@ const playwrightEvidenceCiContracts = [
 const canonicalMergeBlockingJobDigests = [
   {
     jobId: "deploy-contracts",
-    sha256: "28e5f4b9a7b4cd685c58aac1e0cddfb779d06a0492b3d5a2158505398c4b56a9",
+    sha256: "789e77b2b9cb7e946792f8d67f50e085a3e2327b30dab63941fefa7a09959edc",
   },
   {
     jobId: "postgres-migrations",
-    sha256: "2557dbabb8ccd8efb0f297479e1ed44bdc4ea1e9c39b94daf421ee874288290a",
+    sha256: "dd7e62a2d5830a00c41ebce059ca841ec82a2fc9e238b36cad43ce3dc0c4ea38",
   },
   {
     jobId: "e2e",
-    sha256: "c99ec9ca12ff58adb2d92f5d59f07391e61b39a916ccfc0c962bddd47ff71d0c",
+    sha256: "aba928d74749d75ca0a5a2ac6caadaf14edf49c2d8683dead20c80ddad2ff6bc",
   },
   {
     jobId: "portfolio-demo-e2e",
-    sha256: "edad064f9104c0a9db0822229bbf222656bfb21a6044354d9216a6460434fffe",
+    sha256: "7e7b0acad07c6daab2c66a766497bfecb36d3791ed39d11a3e4103a991acc31f",
   },
   {
     jobId: "fde-demo-e2e",
-    sha256: "de162660af6596fd233f13ae998eb729dd1aa698d81ecf04522df2e9bb150221",
+    sha256: "5beb95531526d6df0f92fffc1d9e809109578320c45a62f1e809a2bc63d3e882",
   },
   {
     jobId: "secrets",
-    sha256: "5599d2dfad7bff8937636c5c35c6d828057c62b3aabb3eff31f21de63dac860a",
+    sha256: "39054b96cd3980f09aa30f453ec2cab961a37b5cc5b5eb0029000a0219353aa6",
   },
   {
     jobId: "audit",
-    sha256: "b7340c19a6931510e3cb484cf56445b82e3dc9550b9722491b27aece772ada82",
+    sha256: "c812e4444b17a08c17f93b57fc4c28c03698a2c549cfebe5569d69a607b18a8c",
   },
   {
     jobId: "linux-release-handoff",
-    sha256: "f764be3f0753e29cc9f3cb11c4b219425cda806fdbc07d5923162464c595e1dc",
+    sha256: "a360429e388834bcea4d97f3afd765cbd6e93803b4288944d5c938056b5b9895",
   },
 ] as const;
 

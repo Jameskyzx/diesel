@@ -36,7 +36,8 @@ const liveEvalV21Version = "sales-chat-live-v21" as const;
 const liveEvalV22Version = "sales-chat-live-v22" as const;
 const liveEvalV23Version = "sales-chat-live-v23" as const;
 const liveEvalV24Version = "sales-chat-live-v24" as const;
-const liveEvalV25Version: "sales-chat-live-v25" =
+const liveEvalV25Version = "sales-chat-live-v25" as const;
+const liveEvalV26Version: "sales-chat-live-v26" =
   SALES_CHAT_LIVE_EVAL_VERSION;
 const salesChatSystemPromptV6 = "sales-chat-system-v6" as const;
 const salesChatSystemPromptV7 = "sales-chat-system-v7" as const;
@@ -346,7 +347,7 @@ const capturedClockV20ResultSchema = liveEvalV20ResultSchema.safeExtend({
 });
 
 function capturedClockReportSchema<
-  const Version extends "sales-chat-live-v14" | "sales-chat-live-v15" | "sales-chat-live-v16" | "sales-chat-live-v17" | "sales-chat-live-v18" | "sales-chat-live-v19" | "sales-chat-live-v20" | "sales-chat-live-v21" | "sales-chat-live-v22" | "sales-chat-live-v23" | "sales-chat-live-v24" | "sales-chat-live-v25",
+  const Version extends "sales-chat-live-v14" | "sales-chat-live-v15" | "sales-chat-live-v16" | "sales-chat-live-v17" | "sales-chat-live-v18" | "sales-chat-live-v19" | "sales-chat-live-v20" | "sales-chat-live-v21" | "sales-chat-live-v22" | "sales-chat-live-v23" | "sales-chat-live-v24" | "sales-chat-live-v25" | "sales-chat-live-v26",
   ResultSchema extends typeof capturedClockV12ResultSchema | typeof capturedClockV20ResultSchema,
 >(version: Version, resultSchema: ResultSchema) {
   return z.object({
@@ -523,4 +524,7 @@ export const liveEvalReportSchema = z.discriminatedUnion("version", [
   // V25 changes bounded response scoring, not persisted clock/trace fields.
   // Keep v24 readable with its original stored judgements, never rescored.
   capturedClockReportSchema(liveEvalV25Version, capturedClockV20ResultSchema),
+  // V26 adds one equivalent regulation-topic phrase. V25 archives retain
+  // their stored decisions and are not reinterpreted with the new scorer.
+  capturedClockReportSchema(liveEvalV26Version, capturedClockV20ResultSchema),
 ]);

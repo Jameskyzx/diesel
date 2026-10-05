@@ -140,7 +140,7 @@ describe("installed Drizzle toolchain dependency boundary", () => {
   it("omits the legacy loader chain and retains the supported esbuild consumers", async () => {
     const manifestSchema = z.object({ version: z.string() });
     const drizzleManifest = manifestSchema.parse(JSON.parse(await readFile(join(dirname(drizzleEntry), "package.json"), "utf8")));
-    expect(drizzleManifest.version).toBe("0.31.10");
+    expect(drizzleManifest.version).toBe("0.31.11");
     for (const lockPath of ["pnpm-lock.yaml", "node_modules/.pnpm/lock.yaml"]) {
       const lock = await readFile(join(repository, lockPath), "utf8");
       const legacyIdentities = lock.split("\n").filter((line) =>

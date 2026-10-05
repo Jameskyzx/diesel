@@ -2015,6 +2015,11 @@ ruleset。
 
 ## 14. 部署拓扑
 
+工程维护扩展见 [ENGINEERING_MAINTENANCE.md](ENGINEERING_MAINTENANCE.md)：systemd
+独立托管发布进程、绑定退出回执；application-only v2 在治理锁内校验切换前后数据
+指纹，并使用独立验收标记。既有完整发布、失败关闭、备份和永久 V1 账本不被绕过。
+这些是代码合同，线上采用状态仍以 STATUS.md 的实际验收记录为准。
+
 当前公开环境采用自托管 VPS：Nginx 在 `diesel.jamesky.site` 终止 TLS，只把公开请求代理到
 `127.0.0.1:8788`；root 管理 PM2、Nginx 与 release 软链接，但 ecosystem 将单实例
 Next.js Node 服务降权为无登录的 `diesel:diesel`，因此图片/PDF 解析器不继承 root 权限。

@@ -285,6 +285,48 @@ async function executePrepareWithContendedLifecycleLock(
 }
 
 describe("host activation ledger", { timeout: 30_000 }, () => {
+  it("commits application verification without a fabricated publication marker or changing the V1 manifest", async () => {
+    const fixture = await createHostActivationLedgerFixture();
+    try {
+      expect((await initializeHostActivationProtocol(fixture)).exitCode).toBe(0);
+      const protocol = await readFile(fixture.manifest);
+      await writeV1HostActivationState(fixture, "PENDING", "none");
+      for (const phase of ["before", "after"]) {
+        await writeFile(join(fixture.stateDir, `application-${phase}.json`), '{"fixture":"hash-binding-only"}\n', { mode: 0o600 });
+      }
+      const result = await executeHostActivationCommand(fixture, [
+        'host_activation_ledger_set_paths "$1" "$2"',
+        'host_activation_ledger_application_payload "$1" "$2"',
+        'host_activation_ledger_write_record "$2/backups/$1/APPLICATION_VERIFIED_V2" "$HOST_ACTIVATION_LEDGER_APPLICATION_PAYLOAD" "$3"',
+        'host_activation_ledger_transition "$1" "$2" "$3" COMMITTED',
+        'host_activation_ledger_revalidate_terminal "$1" "$2" "$3"',
+        'printf "%s:%s\\n" "$HOST_ACTIVATION_LEDGER_STATE" "$HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE"',
+      ].join("\n"), [TEST_RELEASE_SHA, fixture.deployRoot, fixture.nodeBinary]);
+      expect(result).toMatchObject({ exitCode: 0, stdout: "COMMITTED:APPLICATION_VERIFIED_V2\n" });
+      expect(await readFile(fixture.manifest)).toEqual(protocol);
+      await expect(lstat(join(fixture.stateDir, "PUBLISH_FINALIZED"))).rejects.toThrow();
+      await expect(lstat(join(fixture.stateDir, "governance-before.json"))).rejects.toThrow();
+      await writeFile(join(fixture.stateDir, "application-after.json"), '{"drift":true}\n');
+      expect((await executeHostActivationMode(fixture, "validate")).exitCode).not.toBe(0);
+    } finally { await rm(fixture.root, { recursive: true, force: true }); }
+  });
+
+  it("rejects simultaneous application and publication markers and disallows rollback after application verification", async () => {
+    const fixture = await createHostActivationLedgerFixture();
+    try {
+      expect((await initializeHostActivationProtocol(fixture)).exitCode).toBe(0);
+      await writeV1HostActivationState(fixture, "PENDING", "none");
+      for (const phase of ["before", "after"]) await writeFile(join(fixture.stateDir, `application-${phase}.json`), '{}\n', { mode: 0o600 });
+      const written = await executeHostActivationCommand(fixture,
+        'host_activation_ledger_set_paths "$1" "$2"; host_activation_ledger_application_payload "$1" "$2"; host_activation_ledger_write_record "$2/backups/$1/APPLICATION_VERIFIED_V2" "$HOST_ACTIVATION_LEDGER_APPLICATION_PAYLOAD" "$3"',
+        [TEST_RELEASE_SHA, fixture.deployRoot, fixture.nodeBinary]);
+      expect(written.exitCode).toBe(0);
+      expect((await executeHostActivationMode(fixture, "mark-rolled-back")).exitCode).toBe(70);
+      await writeGovernanceLedgerMarker(fixture.deployRoot, TEST_RELEASE_SHA, "PUBLISH_FINALIZED");
+      expect((await executeHostActivationMode(fixture, "validate")).exitCode).toBe(70);
+    } finally { await rm(fixture.root, { recursive: true, force: true }); }
+  });
+
   it("keeps public CLI mutation modes internal-only", async () => {
     for (const mode of [
       "begin",

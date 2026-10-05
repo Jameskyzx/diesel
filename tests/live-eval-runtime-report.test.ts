@@ -64,12 +64,12 @@ describe("captured-clock report recomputation (v14 onward)", () => {
 
   it.each([
     "sales-chat-live-v14", "sales-chat-live-v15", "sales-chat-live-v16", "sales-chat-live-v17",
-    "sales-chat-live-v18", "sales-chat-live-v19", "sales-chat-live-v20", "sales-chat-live-v21", "sales-chat-live-v22", "sales-chat-live-v23", "sales-chat-live-v24",
+    "sales-chat-live-v18", "sales-chat-live-v19", "sales-chat-live-v20", "sales-chat-live-v21", "sales-chat-live-v22", "sales-chat-live-v23", "sales-chat-live-v24", "sales-chat-live-v25",
   ] as const)("keeps a synthetic %s shape readable without treating it as current scoring evidence", async (version) => {
     const input = buildReport();
     const results = input.results.map((result) => {
       const legacy = { ...result };
-      if (version !== "sales-chat-live-v20" && version !== "sales-chat-live-v21" && version !== "sales-chat-live-v22" && version !== "sales-chat-live-v23" && version !== "sales-chat-live-v24") {
+      if (version !== "sales-chat-live-v20" && version !== "sales-chat-live-v21" && version !== "sales-chat-live-v22" && version !== "sales-chat-live-v23" && version !== "sales-chat-live-v24" && version !== "sales-chat-live-v25") {
         Reflect.deleteProperty(legacy, "toolTraceStatus");
       }
       return legacy;
@@ -145,6 +145,25 @@ describe("captured-clock report recomputation (v14 onward)", () => {
     expect(report.results.filter(({ pass }) => pass)).toHaveLength(16);
     expect(report.budget.totalTokens).toBe(90_231);
     expect(report.results.every((result) => "toolTraceStatus" in result && result.toolTraceStatus === "complete")).toBe(true);
+    expect(report.complete).toBe(true);
+    expect(report.thresholdsPassed).toBe(false);
+    await expect(verifyLiveEvalReportConsistency(report)).rejects.toThrow(/incompatible report version/u);
+  });
+
+  it("preserves the actual v25 regulation-topic false negative without rescoring", async () => {
+    const text = await readFile(resolve(process.cwd(),
+      "docs/evals/archive/ai-live-eval-20261005T081806686Z-7956de7a-72b5-4c43-81ef-bd03fe85f0a6.json"), "utf8");
+    expect(createHash("sha256").update(text, "utf8").digest("hex")).toBe(
+      "01dd5e8d5d87aa4619e9e16a9b5b4c96e0782e048f221ac82c371044e48e2a7a",
+    );
+    const report = liveEvalReportSchema.parse(JSON.parse(text) as unknown);
+    expect(report.version).toBe("sales-chat-live-v25");
+    expect(report.results).toHaveLength(18);
+    expect(report.results.filter(({ pass }) => pass)).toHaveLength(17);
+    expect(report.results.find(({ id }) => id === "cross-country-regulation")).toMatchObject({
+      missingResponseAnchorIds: ["decision:regulation-comparison"],
+      pass: false, responseGroundingPassed: false, toolTraceStatus: "complete",
+    });
     expect(report.complete).toBe(true);
     expect(report.thresholdsPassed).toBe(false);
     await expect(verifyLiveEvalReportConsistency(report)).rejects.toThrow(/incompatible report version/u);

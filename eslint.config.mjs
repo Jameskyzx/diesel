@@ -15,6 +15,7 @@ export default defineConfig([
     "playwright-report/**",
     "public/maplibre/**",
     "scripts/deploy/verify-release-authorization.bundle.mjs",
+    "scripts/deploy/durable-release.bundle.mjs",
     "test-results/**",
     "tests/fixtures/**/.next/**",
     "tmp/**",

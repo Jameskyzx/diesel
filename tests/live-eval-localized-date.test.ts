@@ -53,7 +53,7 @@ describe("v13 localized calendar-date evidence", () => {
   });
 
   it("versions the changed date contract without changing the 18 case identities", () => {
-    expect(SALES_CHAT_LIVE_EVAL_VERSION).toBe("sales-chat-live-v25");
+    expect(SALES_CHAT_LIVE_EVAL_VERSION).toBe("sales-chat-live-v26");
     expect(salesChatLiveCases).toHaveLength(18);
   });
 

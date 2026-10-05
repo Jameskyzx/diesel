@@ -2309,6 +2309,17 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
 175 国、175 `covered` / 0 `no_data`；19 个详情 API、19 个 `/countries/{ISO3}` 页面、
 首页与 `/api/health` 均返回成功。网页动态读取 PostgreSQL，本批无需重建或切换 VPS。
 
+### 4.3 工程维护发布扩展（实施中，未替代生产验收）
+
+在保留上述 master/CI 授权、不可变 staging、锁与独立读回的前提下，新增
+[持久化任务和 application-only v2 合同](ENGINEERING_MAINTENANCE.md)。
+`durable-release.bundle.mjs start <sha>` 将完整发布交给 systemd；
+`start-application <sha>` 只接受未改变受保护数据输入的候选。
+`status <sha>` 只报告进程及回执，不代表生产验收通过；禁止收到 SSH 错误后重复启动。
+此扩展首次发布仍走完整数据协议。永久 V1 manifest 不变，代码发布使用独立
+`APPLICATION_VERIFIED_V2`，绝不伪造 `PUBLISH_FINALIZED`。
+容量检查失败时保留现场与全部备份，不绕过空间门槛。
+
 ## 5. 性能、许可与可访问性基线（历史测量）
 
 以下数字是 2026-07-30 至 2026-08-05 的带日期快照，不是当前运行库计数。最新目录、

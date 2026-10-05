@@ -35,7 +35,7 @@ type NoticeSource = {
 // These versions identify the installed notice sources, not the upstream
 // bundler's build environment. Keep this bounded to the two shipped modules.
 export const mapLibreWorkerNoticeSources: readonly NoticeSource[] = [
-  { name: "@maplibre/maplibre-gl-style-spec", version: "26.4.2", file: "LICENSE.txt" },
+  { name: "@maplibre/maplibre-gl-style-spec", version: "26.4.4", file: "LICENSE.txt" },
   { name: "@mapbox/point-geometry", version: "1.1.0", file: "LICENSE" },
   { name: "@mapbox/unitbezier", version: "1.0.0", file: "LICENSE" },
   { name: "gl-matrix", version: "3.4.4", file: "LICENSE.md" },
@@ -49,7 +49,7 @@ export const mapLibreWorkerNoticeSources: readonly NoticeSource[] = [
   { name: "pbf", version: "5.1.2", file: "LICENSE" },
   { name: "potpack", version: "2.1.0", file: "LICENSE" },
   { name: "@maplibre/vt-pbf", version: "4.3.2", file: "LICENSE" },
-  { name: "@maplibre/mlt", version: "1.2.1", file: "LICENSE.txt" },
+  { name: "@maplibre/mlt", version: "1.3.0", file: "LICENSE.txt" },
   { name: "kdbush", version: "4.1.0", file: "LICENSE", via: "@maplibre/geojson-vt" },
 ];
 

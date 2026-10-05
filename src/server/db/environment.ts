@@ -45,6 +45,11 @@ function hasUnsafeDatabaseUrlControlCharacters(value: string): boolean {
 export const databaseUrlSchema = z
   .string()
   .trim()
+  // Reject the source before Zod/WHATWG URL normalization removes HT/LF/CR.
+  .refine((value) => !databaseUrlControlCharacters.test(value), {
+    message: "DATABASE_URL must not contain control characters",
+  })
+  .pipe(z.string()
   .url()
   .refine(
     (value) => {
@@ -69,7 +74,7 @@ export const databaseUrlSchema = z
   )
   .refine((value) => !hasUnsafeDatabaseUrlControlCharacters(value), {
     message: "DATABASE_URL must not contain control characters",
-  });
+  }));
 
 export function getDatabaseUrl(
   environment: Readonly<Record<string, string | undefined>> = process.env,

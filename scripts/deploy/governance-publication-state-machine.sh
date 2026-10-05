@@ -58,7 +58,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   if [[ "$#" -ne 2 ||
     ! "$2" =~ ^[0-9a-f]{40}$ ]] ||
     [[ "$1" != "publish" && "$1" != "recover-required" &&
-      "$1" != "finalize-committed" ]]; then
+      "$1" != "finalize-committed" && "$1" != "application" && "$1" != "finalize-application" ]]; then
     echo "usage: governance-publication-state-machine.sh <publish|recover-required|finalize-committed> <full-lowercase-git-commit-sha>" >&2
     exit 64
   fi
@@ -1896,6 +1896,73 @@ governance_finalize_committed_release() {
     "${publish_finalized_marker}" "${expected_release_id}" "${deploy_root}"
 }
 
+governance_application_release() {
+  local mode="$1"
+  local expected_release_id="$2"
+  local deploy_root="$3"
+  local release_dir="${deploy_root}/releases/${expected_release_id}"
+  local state_dir="${deploy_root}/backups/${expected_release_id}"
+  local marker="${state_dir}/APPLICATION_VERIFIED_V2"
+  local previous_release
+  local proof
+  governance_validate_common_layout "${deploy_root}"
+  governance_validate_release_directory "${expected_release_id}" "${deploy_root}"
+  governance_resolve_node_binary
+  governance_require_stable_database_identity "${expected_release_id}" "${deploy_root}"
+  host_activation_ledger_scan_all "${deploy_root}" "${GOVERNANCE_NODE_BINARY}" allow-active "${expected_release_id}"
+  for proof in scripts/db/verify-application-release.ts scripts/deploy/application-release-contract.ts; do
+    governance_require_exact_file "${release_dir}/${proof}" "root:diesel:640" "application-only verifier input"
+  done
+  governance_require_exact_file "${release_dir}/scripts/deploy/validate-public-governance.sh" "root:diesel:750" "public readback"
+  governance_require_exact_file "${release_dir}/scripts/deploy/activate-host-release.sh" "root:diesel:750" "host activation"
+  governance_require_exact_file "${release_dir}/scripts/deploy/rollback-host-release.sh" "root:diesel:750" "host verification"
+  cd -- "${release_dir}"
+  governance_assert_maintenance_lock "${release_dir}"
+  if [[ "${mode}" == "application" ]]; then
+    host_activation_ledger_require_pending "${expected_release_id}" "${deploy_root}" "${GOVERNANCE_NODE_BINARY}"
+    governance_require_absent "${marker}" "application verification marker"
+    previous_release="$(<"${state_dir}/previous-release")"
+    previous_release="${previous_release##*/}"
+    governance_require_safe_release_id "${previous_release}"
+    host_activation_ledger_validate_release_state "${previous_release}" "${deploy_root}"
+    if [[ "${HOST_ACTIVATION_LEDGER_CLASSIFICATION}" != "terminal" ||
+      "${HOST_ACTIVATION_LEDGER_STATE}" != "COMMITTED" ]]; then
+      governance_publication_fail 70 "application-only release requires a committed predecessor"
+      return
+    fi
+    host_activation_ledger_require_pending "${expected_release_id}" "${deploy_root}" "${GOVERNANCE_NODE_BINARY}"
+    if ! governance_run_tsx scripts/db/verify-application-release.ts before "${expected_release_id}"; then return 70; fi
+    governance_assert_maintenance_lock "${release_dir}"
+    governance_run_isolated_host_validator "${release_dir}/scripts/deploy/activate-host-release.sh" "${expected_release_id}"
+    governance_validate_current_release "${deploy_root}" "${expected_release_id}"
+    governance_run_isolated_runtime_verifier "${release_dir}/scripts/deploy/validate-public-governance.sh" "${expected_release_id}"
+    governance_assert_maintenance_lock "${release_dir}"
+    # A failed/mismatching after-read is not proof of unchanged data. Do not
+    # attempt an unbacked database restore or infer success from activation.
+    if ! governance_run_tsx scripts/db/verify-application-release.ts after "${expected_release_id}"; then return 75; fi
+    host_activation_ledger_require_pending "${expected_release_id}" "${deploy_root}" "${GOVERNANCE_NODE_BINARY}"
+    governance_assert_maintenance_lock "${release_dir}"
+    host_activation_ledger_application_payload "${expected_release_id}" "${deploy_root}"
+    host_activation_ledger_write_record "${marker}" "${HOST_ACTIVATION_LEDGER_APPLICATION_PAYLOAD}" "${GOVERNANCE_NODE_BINARY}"
+  else
+    host_activation_ledger_validate_release_state "${expected_release_id}" "${deploy_root}"
+    case "${HOST_ACTIVATION_LEDGER_STATE}:${HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE}" in
+      PENDING:APPLICATION_VERIFIED_V2 | COMMITTED:APPLICATION_VERIFIED_V2) ;;
+      *) return 75 ;;
+    esac
+    governance_validate_current_release "${deploy_root}" "${expected_release_id}"
+    if ! governance_run_tsx scripts/db/verify-application-release.ts revalidate "${expected_release_id}"; then return 75; fi
+    governance_run_isolated_runtime_verifier "${release_dir}/scripts/deploy/validate-public-governance.sh" "${expected_release_id}"
+  fi
+  governance_assert_maintenance_lock "${release_dir}"
+  governance_validate_current_release "${deploy_root}" "${expected_release_id}"
+  governance_run_isolated_host_validator "${release_dir}/scripts/deploy/rollback-host-release.sh" "${expected_release_id}" --validate-committed
+  host_activation_ledger_parse_application_marker "${expected_release_id}" "${deploy_root}"
+  governance_assert_maintenance_lock "${release_dir}"
+  host_activation_ledger_transition "${expected_release_id}" "${deploy_root}" "${GOVERNANCE_NODE_BINARY}" COMMITTED
+  host_activation_ledger_revalidate_terminal "${expected_release_id}" "${deploy_root}" "${GOVERNANCE_NODE_BINARY}"
+}
+
 governance_publication_state_machine() (
   set -Eeuo pipefail
   trap - ERR INT TERM HUP EXIT
@@ -1918,7 +1985,7 @@ governance_publication_state_machine() (
   governance_require_safe_release_id "${expected_release_id}"
   governance_require_safe_deploy_root "${deploy_root}"
   case "${mode}" in
-    publish | recover-required | finalize-committed) ;;
+    publish | recover-required | finalize-committed | application | finalize-application) ;;
     *)
       governance_publication_fail 64 \
         "mode must be publish, recover-required, or finalize-committed"
@@ -1930,6 +1997,10 @@ governance_publication_state_machine() (
   governance_require_host_activation_commands
 
   case "${mode}" in
+    application | finalize-application)
+      governance_require_maintenance_environment "${expected_release_id}"
+      governance_application_release "${mode}" "${expected_release_id}" "${deploy_root}"
+      ;;
     publish)
       governance_require_maintenance_environment "${expected_release_id}"
       governance_publish_release "${expected_release_id}" "${deploy_root}"
@@ -1961,7 +2032,7 @@ governance_publication_state_machine_main() (
   fi
   governance_require_safe_release_id "$2" || return $?
   case "$1" in
-    publish | recover-required | finalize-committed) ;;
+    publish | recover-required | finalize-committed | application | finalize-application) ;;
     *)
       governance_publication_fail 64 \
         "mode must be publish, recover-required, or finalize-committed"

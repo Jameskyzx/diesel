@@ -1,5 +1,8 @@
 import { createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
+
+import { isLoopbackDatabaseHost, isSupabaseDatabaseHost } from "../../src/server/db/tls";
 
 export type PostgresBackupConnection = {
   environment: NodeJS.ProcessEnv;
@@ -18,7 +21,9 @@ export function createPostgresBackupConnection(
   if (!url.hostname || !databaseName || !url.username) {
     throw new Error("DATABASE_URL must include host, database and user.");
   }
-  const sslMode = url.searchParams.get("sslmode") ?? "prefer";
+  const sslMode = isLoopbackDatabaseHost(url.hostname)
+    ? url.searchParams.get("sslmode") ?? "prefer"
+    : "verify-full";
   const environment: NodeJS.ProcessEnv = {
     LANG: process.env.LANG,
     LC_ALL: process.env.LC_ALL,
@@ -29,6 +34,11 @@ export function createPostgresBackupConnection(
     PGPASSWORD: decodeURIComponent(url.password),
     PGPORT: url.port || "5432",
     PGSSLMODE: sslMode,
+    ...(isSupabaseDatabaseHost(url.hostname) ? {
+      PGSSLROOTCERT: fileURLToPath(new URL(
+        "../../deploy/certificates/supabase-prod-ca-2021.crt", import.meta.url,
+      )),
+    } : {}),
     PGUSER: decodeURIComponent(url.username),
   };
   return {

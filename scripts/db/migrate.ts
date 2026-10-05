@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import postgres from "postgres";
+import postgres from "../../src/server/db/postgres";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
 

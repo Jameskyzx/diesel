@@ -10,7 +10,7 @@ import {
 import { pathToFileURL } from "node:url";
 import { parseEnv, TextDecoder } from "node:util";
 
-import postgres from "postgres";
+import postgres, { type Options } from "../../src/server/db/postgres";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
 import {
@@ -25,7 +25,7 @@ export const governanceMaintenancePostgresOptions = {
   max: 1,
   max_lifetime: null,
   prepare: false,
-} as const satisfies postgres.Options<Record<string, never>>;
+} as const satisfies Options<Record<string, never>>;
 
 export const governanceMaintenanceHeartbeatIntervalMs = 10_000;
 export const governanceMaintenanceHeartbeatTimeoutMs = 30_000;

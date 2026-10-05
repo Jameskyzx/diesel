@@ -33,7 +33,7 @@ describe("PostgreSQL readiness probe", () => {
       },
       fetch_types: false, idle_timeout: 0, max: 1, max_lifetime: 1800, prepare: false,
     });
-    expect(DATABASE_READINESS_TIMEOUT_MS).toBe(3000);
+    expect(DATABASE_READINESS_TIMEOUT_MS).toBe(8000);
   });
   it("reuses one connection but runs fresh SQL for every settled check", async () => {
     await probePostgresReadiness();
@@ -66,5 +66,25 @@ describe("PostgreSQL readiness probe", () => {
     expect(mocks.end).toHaveBeenCalledExactlyOnceWith({ timeout: 2 });
     await probePostgresReadiness();
     expect(mocks.postgres).toHaveBeenCalledTimes(2);
+  });
+  it("allows a healthy cold handshake within its explicit HTTP budget without retrying", async () => {
+    vi.useFakeTimers();
+    try {
+      const probe = vi.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 4000)));
+      const result = checkDatabaseReadiness({ probe });
+      await vi.advanceTimersByTimeAsync(4000);
+      await expect(result).resolves.toBe(true);
+      expect(probe).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
+  });
+  it("still fails a stuck connection at the eight-second deadline without a success cache", async () => {
+    vi.useFakeTimers();
+    try {
+      const probe = vi.fn(() => new Promise<void>(() => undefined));
+      const result = checkDatabaseReadiness({ probe });
+      await vi.advanceTimersByTimeAsync(8000);
+      await expect(result).resolves.toBe(false);
+      expect(probe).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
   });
 });

@@ -4,6 +4,7 @@ import { expect, test, type ConsoleMessage, type Response } from "@playwright/te
 import { z } from "zod";
 
 import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
+import { MAPLIBRE_VERSION, MAPLIBRE_WORKER_URL } from "../src/lib/maplibre-assets";
 
 type SecurityPolicyViolation = {
   blockedUri: string;
@@ -15,8 +16,8 @@ type SecurityPolicyViolation = {
 
 const securityPolicyViolationMarker = "__DIESEL_CSP_VIOLATION__";
 const workerMarker = "__DIESEL_MODULE_WORKER__";
-const workerPath = "/maplibre/6.9.0/maplibre-gl-worker.mjs";
-const sharedPath = "/maplibre/6.9.0/maplibre-gl-shared.mjs";
+const workerPath = MAPLIBRE_WORKER_URL;
+const sharedPath = `/maplibre/${MAPLIBRE_VERSION}/maplibre-gl-shared.mjs`;
 const workerObservationSchema = z.object({
   event: z.enum(["created", "error"]),
   message: z.string().optional(),

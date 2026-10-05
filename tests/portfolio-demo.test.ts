@@ -5,6 +5,7 @@ import {
   countryIso3sIn,
 } from "@/server/ai/conversation-context";
 import {
+  createPortfolioDemoModel,
   salesBriefSummaryFromPrompt,
   selectPortfolioDemoTool,
 } from "@/server/ai/portfolio-demo-model";
@@ -15,6 +16,7 @@ import {
 } from "@/server/ai/tool-results";
 import { generateSalesBrief } from "@/server/services/marketing-analysis-service";
 import { salesBriefResultToModelOutput } from "@/features/ai/model-tool-output";
+import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
 const portfolioBriefInput = {
@@ -68,6 +70,26 @@ function salesBriefPrompt(hasScore: boolean): unknown[] {
 }
 
 describe("portfolio demo runtime", () => {
+  it.each(["en", "zh-CN"] as const)("keeps the structured brief summary through actual Demo tool calls in %s", async (locale) => {
+    const text = locale === "en"
+      ? "Generate a sales brief for DEMO-ENG-100 in CHN and BRA non-road 100 kW as of 2026-08-12, targeting CHN."
+      : "为 CHN 和 BRA 生成 DEMO-ENG-100 在 non-road 100 kW 的销售简报，日期 2026-08-12，目标 CHN。";
+    const auditRepository = { recordToolCall: async () => undefined };
+    const sessionId = crypto.randomUUID();
+    const errors: unknown[] = [];
+    const result = streamSalesChat({
+      auditRepository, locale, model: createPortfolioDemoModel(), messages: [{ role: "user", content: text }],
+      onStreamError: (error) => errors.push(error), selectedCountryIso3: null, sessionId,
+      tools: createSalesChatTools({ auditRepository, selectedCountryIso3: null, sessionId }), trustedUserTexts: [text],
+    });
+    const parts = await Array.fromAsync(result.fullStream);
+    expect(errors).toEqual([]);
+    expect(parts.filter((part) => part.type === "tool-result")).toHaveLength(1);
+    const answer = parts.flatMap((part) => part.type === "text-delta" ? [part.text] : []).join("");
+    expect(answer).toContain(locale === "en" ? "The structured brief identifies" : "结构化简报识别到");
+    expect(answer).toContain(locale === "en" ? "rule-generated action(s)" : "项规则生成行动");
+  });
+
   it("only enables the simulation for development + pglite-demo", () => {
     expect(
       resolvePortfolioDemoMode({

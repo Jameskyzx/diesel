@@ -8,6 +8,7 @@ import { z } from "zod";
 import { getDatabaseUrl } from "../../src/server/db/environment";
 import { applicationDataTables, applicationFingerprintSchema, assertApplicationDataUnchanged, compareApplicationInputs } from "../deploy/application-release-contract";
 import { assertProductionMigrationLineage, type MigrationIdentity } from "./production-readback";
+import { applicationFingerprintQuery } from "./application-fingerprint-query";
 
 const fixedNode = "/opt/node-v22.22.3-linux-x64/bin/node";
 function readTrusted(path: string, maximumBytes: number, privateFile = false): string {
@@ -56,15 +57,7 @@ async function main(): Promise<void> {
       assertProductionMigrationLineage({ actual, expected: expectedMigrations });
       const rows = [];
       for (const table of applicationDataTables) {
-        // Fixed allowlist only. Hash each row on the server; document content,
-        // raw JSON and credentials never leave PostgreSQL in this receipt.
-        // LIMIT bounds aggregation and a 100001st row fails the schema below.
-        const qualified = table === "drizzle.__drizzle_migrations" ? table : `public.${table}`;
-        const [row] = await transaction.unsafe<{ count: number; sha256: string }[]>(`
-          select count(*)::integer as count,
-            encode(sha256(convert_to(coalesce(string_agg(h, '' order by h collate "C"), ''), 'UTF8')), 'hex') as sha256
-          from (select encode(sha256(convert_to(row_to_json(t)::text, 'UTF8')), 'hex') as h
-            from only ${qualified} t limit 100001) fingerprints`);
+        const [row] = await transaction.unsafe<{ count: number; sha256: string }[]>(applicationFingerprintQuery(table));
         if (!row) throw new Error("missing fingerprint");
         rows.push({ table, ...row });
       }

@@ -367,6 +367,7 @@ describe("synthetic canary", () => {
     expect(workflow).toContain("CANARY_STATUS_PATH: docs/STATUS.md");
     expect(workflow).toContain("if: ${{ always() }}");
     expect(workflow).toContain("if-no-files-found: error");
+    expect(workflow).toContain("retention-days: 35");
     expect(workflow).not.toMatch(/CANARY_CHECK_AI:\s*true/u);
   });
 

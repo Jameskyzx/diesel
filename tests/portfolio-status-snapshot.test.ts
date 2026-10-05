@@ -119,8 +119,8 @@ function buildBrowserEvidence(): PlaywrightEvidence {
     const minute = 52 + contractIndex * 2;
     return buildPlaywrightRunReceipt({
       completedAt: contractIndex === playwrightRunContracts.length - 1
-        ? observedAt
-        : `2026-08-31T11:${String(minute + 1).padStart(2, "0")}+08:00`,
+        ? "2026-08-31T12:00:00+08:00"
+        : `2026-08-31T11:${String(minute + 1).padStart(2, "0")}:00+08:00`,
       globalErrorCount: 0,
       id: contract.id,
       playwrightVersion: "1.63.0",
@@ -130,7 +130,7 @@ function buildBrowserEvidence(): PlaywrightEvidence {
       },
       runStatus: "passed",
       startedAt:
-        `2026-08-31T11:${String(minute).padStart(2, "0")}+08:00`,
+        `2026-08-31T11:${String(minute).padStart(2, "0")}:00+08:00`,
       tests,
     });
   });

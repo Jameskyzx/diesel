@@ -1,0 +1,50 @@
+{
+  "version": "diesel-engineering-maintenance-observation-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedAt": "2026-10-05T07:00:57Z",
+  "outcome": "implementation_in_validation_not_deployed",
+  "allEngineeringMaintenanceItemsAccepted": false,
+  "pullRequest": "https://github.com/Jameskyzx/diesel/pull/67",
+  "productionRelease": "877ce9f667bfc03233423d5ebe6a5317cc6c5220",
+  "durableRelease": { "implemented": true, "realLinuxSmokeAccepted": false, "productionAccepted": false },
+  "applicationOnlyRelease": { "implemented": true, "schemaChanged": false, "productionAccepted": false },
+  "admissionBenchmark": {
+    "implemented": true,
+    "localToProductionDatabaseSamples": 40,
+    "localObservedFailures": 0,
+    "localP95Ms": 2169.896,
+    "vpsNetworkAccepted": false,
+    "longTermSloEstablished": false
+  },
+  "canaryBaseline": {
+    "firstObservedRunCreatedAt": "2026-09-29T22:25:17Z",
+    "latestObservedRunCreatedAt": "2026-10-05T05:55:48Z",
+    "observedCompletedRuns": 19,
+    "successes": 5,
+    "failures": 14,
+    "scheduledRuns": 18,
+    "manualRuns": 1,
+    "latestRunId": 37269950824,
+    "latestReadinessHttpStatus": 503,
+    "latestProviderSsePassed": true,
+    "limitation": "Observed executions, not a complete scheduled-window availability denominator. Only the latest failure was inspected here; no claim that every failure had the same cause."
+  },
+  "capacity": {
+    "policyImplemented": true,
+    "productionTimerInstalled": false,
+    "journalArchiveReceipt": "docs/evidence/operations/journal-archive-2026-10-05.json",
+    "databaseBackupsPreserved": true,
+    "independentOffsiteBackupConfigured": false
+  },
+  "dependencies": {
+    "replacementImplementedForPullRequests": [59, 60, 62, 63, 64, 65],
+    "node26TypesHeldForNode22Runtime": 61,
+    "queueClosed": false
+  },
+  "limitations": [
+    "The PR has not passed its final required CI gate or been deployed.",
+    "The original SSH 255 root cause remains unproven; durable execution removes connection dependence, not historical uncertainty.",
+    "The observed canary history includes real readiness failures; changing the connection envelope is not proof of long-term availability.",
+    "Same-disk compressed journals are recoverable but are not offsite disaster-recovery backups."
+  ]
+}

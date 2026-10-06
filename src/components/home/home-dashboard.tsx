@@ -26,6 +26,7 @@ import { formatCountryDisplayName } from "@/i18n/country-name";
 import { formatUtcDate } from "@/i18n/date";
 import { createPublicApiRequestDeadline } from "@/lib/public-api-request";
 import { cn } from "@/lib/utils";
+import { portfolioPublicationSummary } from "@/domain/portfolio-evidence";
 
 type DashboardState =
   | { status: "loading" }
@@ -210,12 +211,25 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
         </>}
       />
 
-      <section aria-label={copy.coverageAria} className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      {!demoMode ? <section aria-label={copy.publicationTitle} className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold">{copy.publicationTitle}</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <MetricCard icon={Globe2} label={copy.publicationJurisdictions} loading={false} value={portfolioPublicationSummary.jurisdictions} />
+          <MetricCard icon={FileCheck2} label={copy.publicationRegulations} loading={false} value={portfolioPublicationSummary.regulations} />
+          <MetricCard icon={FileCheck2} label={copy.publicationLimits} loading={false} value={portfolioPublicationSummary.limits} />
+          <MetricCard icon={Search} label={copy.publicationSources} loading={false} value={portfolioPublicationSummary.sources} />
+          <MetricCard icon={FileCheck2} label={copy.publicationProducts} loading={false} value={portfolioPublicationSummary.approvedRealProducts} />
+          <MetricCard icon={MapIcon} label={copy.catalog} loading={state.status === "loading"} value={state.status === "ready" ? metrics.total : null} />
+        </div>
+        <p className="mt-3 text-xs leading-5 text-muted-foreground">{copy.publicationExplanation}</p>
+      </section> : null}
+
+      {demoMode ? <section aria-label={copy.coverageAria} className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <MetricCard icon={Globe2} label={copy.catalog} loading={state.status === "loading"} value={state.status === "ready" ? metrics.total : null} />
         <MetricCard icon={MapIcon} label={reviewedLabel} loading={state.status === "loading"} value={state.status === "ready" ? metrics.evidenceReviewed : null} />
         <MetricCard icon={FileCheck2} label={freshLabel} loading={state.status === "loading"} value={state.status === "ready" ? metrics.evidenceReviewFresh : null} />
         <MetricCard icon={Search} label={demoMode ? dictionary.workspace.unreviewedDemo : dictionary.workspace.unreviewed} loading={state.status === "loading"} value={state.status === "ready" ? metrics.total - metrics.evidenceReviewed : null} />
-      </section>
+      </section> : null}
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <section className="surface-panel min-w-0 overflow-hidden rounded-md" data-testid="country-evidence-table">
@@ -300,10 +314,14 @@ export function HomeDashboard({ demoMode }: { demoMode: boolean }) {
             </div>
             <div className="p-5">
               <p className="section-kicker">{coverageKicker}</p>
-              <p className="mt-3 text-4xl font-semibold tabular-nums tracking-tight">{evidenceReviewRate === null ? "—" : evidenceReviewRate + "%"}</p>
+              <p className="mt-3 text-sm font-medium tabular-nums">{reviewedLabel}{dictionary.common.labelSeparator}{state.status === "ready" ? metrics.evidenceReviewed + " / " + metrics.total : "—"}</p>
               <p className="mt-2 text-xs leading-5 text-muted-foreground" data-screenshot-label>{coverageRateLabel}</p>
               <div className="mt-3">{evidenceReviewRate !== null ? <progress aria-label={coverageRateLabel} className="evidence-progress" max={100} value={evidenceReviewRate} /> : <div aria-hidden="true" className="h-1.5 rounded-full bg-muted" />}</div>
               <p className="mt-4 text-xs leading-5 text-muted-foreground">{coverageExplanation}</p>
+              <dl className="mt-3 space-y-2 text-xs">
+                <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{freshLabel}</dt><dd>{state.status === "ready" ? metrics.evidenceReviewFresh : "—"}</dd></div>
+                <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{demoMode ? dictionary.workspace.unreviewedDemo : dictionary.workspace.unreviewed}</dt><dd>{state.status === "ready" ? metrics.total - metrics.evidenceReviewed : "—"}</dd></div>
+              </dl>
               <dl className="mt-4 border-t pt-3 text-xs"><dt className="text-muted-foreground">{copy.latestVerification}</dt><dd className="mt-1 font-medium">{latestVerificationLabel}</dd></dl>
             </div>
           </section>

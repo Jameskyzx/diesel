@@ -371,6 +371,20 @@ function appendCountry(countries: readonly string[], countryIso3: string) {
     : [...countries, countryIso3].slice(0, 5);
 }
 
+/** A replacement mentions the old and new country, not two new peers. */
+function countryReplacementIn(text: string): { from: string; to: string } | null {
+  const mentions = countryMentionsIn(text);
+  if (mentions.length !== 2) return null;
+  const [from, to] = mentions;
+  const prefix = text.slice(0, from!.index);
+  const connector = text.slice(from!.index + from!.length, to!.index);
+  if (
+    !/(?:把|将|从|\b(?:replace|change|switch)(?:\s+from)?)\s*$/iu.test(prefix) ||
+    !/^\s*(?:换成|换为|替换为|改成|改为|切换到|切换为|with|to)\s*$/iu.test(connector)
+  ) return null;
+  return { from: from!.countryIso3, to: to!.countryIso3 };
+}
+
 /**
  * Reduces trusted user turns into business parameters. A new complete country
  * set replaces the old set, while a target-country update changes only the
@@ -410,13 +424,31 @@ export function buildConversationBusinessContext(
       explicitTargetCountryIso3 !== null ||
       targetCountryIntentPattern.test(metadataText) ||
       (countries.length === 1 && salesBriefIntentPattern.test(metadataText));
+    const replacement = isTargetCountryTurn ? null : countryReplacementIn(metadataText);
 
     context.activeTask = explicitTask ?? context.activeTask;
     if (explicitTask === "country_profile") {
       context.profileTopics = countryProfileTopicsIn(text);
     }
 
-    if (countries.length >= 2) {
+    if (replacement) {
+      if (!context.countryIso3s.includes(replacement.from)) {
+        // A replacement cannot establish the missing original comparison.
+        // Leave the evidence gate to request an explicit country set.
+        context.countryIso3s = [];
+        context.focusedCountryIso3 = null;
+        context.targetCountryIso3 = null;
+      } else {
+        context.countryIso3s = [...new Set(context.countryIso3s.map((country) =>
+          country === replacement.from ? replacement.to : country))];
+        if (context.focusedCountryIso3 === replacement.from) {
+          context.focusedCountryIso3 = replacement.to;
+        }
+        if (context.targetCountryIso3 === replacement.from) {
+          context.targetCountryIso3 = replacement.to;
+        }
+      }
+    } else if (countries.length >= 2) {
       context.countryIso3s = countries;
       context.focusedCountryIso3 = countries[0] ?? null;
       context.targetCountryIso3 =

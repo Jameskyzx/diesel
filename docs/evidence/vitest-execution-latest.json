@@ -1,20 +1,20 @@
 {
   "command": "pnpm test",
   "complete": true,
-  "completedAt": "2026-10-06T10:30:39.444Z",
+  "completedAt": "2026-10-06T11:18:57.497Z",
   "configPath": "vitest.config.ts",
   "provenance": {
-    "baseHeadCommit": "93e9f55ed080d6fe1d6bbf1b100b5fd5282372c7",
-    "evaluatedCommit": "93e9f55ed080d6fe1d6bbf1b100b5fd5282372c7",
+    "baseHeadCommit": "d12cefbbf5b1cf48761970bda429243b2c049d88",
+    "evaluatedCommit": "d12cefbbf5b1cf48761970bda429243b2c049d88",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "4921a68f8ff602644eec0bcffd3d3f1ae0a58247e6785355e67cb5c524efd431",
-      "fileCount": 952
+      "digest": "1606b38cafe71a6d1a30f58ec5789751efd8fa3c72e7b6efa64faca547f3b9b9",
+      "fileCount": 954
     },
     "worktreeState": "clean"
   },
-  "runId": "3ca05495-4cb0-4ce1-9107-bc738565cf40",
-  "startedAt": "2026-10-06T10:16:50.537Z",
+  "runId": "05f33667-53b6-4da8-b816-03c599501ab1",
+  "startedAt": "2026-10-06T11:05:18.596Z",
   "tests": [
     {
       "id": "0005420a555cc43ee81536366b23ecca4cd57c5195d3eb883e1043fd9a7f6dda",
@@ -2622,6 +2622,10 @@
     },
     {
       "id": "1366743a39d7bb03c4328a27c529f52be00b35b41676169c79676e1cf2b708d8",
+      "status": "passed"
+    },
+    {
+      "id": "1367ee7fb09b12d54b5cc619caa0cf91a7268b930c2b085a44401acbbc056327",
       "status": "passed"
     },
     {
@@ -8697,6 +8701,10 @@
       "status": "passed"
     },
     {
+      "id": "408cbedbb1fd75be8d865a53b5284e30a03960c24c8cfd0f36f3a744458dbae6",
+      "status": "passed"
+    },
+    {
       "id": "408d25b5372a31a110a52acc117b8a6d8f8e0be24555ac2b6ef4d7a6e03e308b",
       "status": "passed"
     },
@@ -10150,6 +10158,10 @@
     },
     {
       "id": "4c5b88893d4eb3ef3bcc82b351b8445d9a62b9b5e374fdfd8f9aaf7d651ebe3a",
+      "status": "passed"
+    },
+    {
+      "id": "4c70a6ddd97f59edd2f106db389af1a53c315d34b5e6e63500c5f7d8a483d72f",
       "status": "passed"
     },
     {
@@ -12173,6 +12185,10 @@
       "status": "passed"
     },
     {
+      "id": "5ca0111bf3778a5d5dd152f2ca03f290b327c2b7e0f6f92f2e462292866677f6",
+      "status": "passed"
+    },
+    {
       "id": "5ca6444efa60e9161c5f75f890a96012a4cbecd83b9323c6dcc632021200e064",
       "status": "passed"
     },
@@ -12666,6 +12682,10 @@
     },
     {
       "id": "601634cd14140e1024dd122103e6348df0508d29acaeb81a8fada33b4c18368f",
+      "status": "passed"
+    },
+    {
+      "id": "601dff8a01479732ccef53941314d32053b350c0d16b80700eb2608d274a3f48",
       "status": "passed"
     },
     {
@@ -22385,6 +22405,10 @@
       "status": "passed"
     },
     {
+      "id": "a89be8979c50de6c7b0a843aa225f40598d7c60fb2133046c2b14c96e4e8db88",
+      "status": "passed"
+    },
+    {
       "id": "a89ff1514d69b0b640a9ff7dd27d3b31cb93983b2e4406d35a0e0e38244efef0",
       "status": "passed"
     },
@@ -23809,6 +23833,10 @@
       "status": "passed"
     },
     {
+      "id": "b2da626fd9ebbc6b577c8b0edeae08f613732ed027cefe5a4b25f485eb6ec61d",
+      "status": "passed"
+    },
+    {
       "id": "b2ed31ff3538dbec42ee58548125bdd366423f8f3b791a100175b4cc3a933d4b",
       "status": "passed"
     },
@@ -24634,6 +24662,10 @@
     },
     {
       "id": "b938200149a8b27796ff60e70684285cb88b56e6874f66bdded756b141ff5530",
+      "status": "passed"
+    },
+    {
+      "id": "b9460d12a56f744642c0b5928fcde45bde5162ec9fe171caa828e7bb8280cd12",
       "status": "passed"
     },
     {
@@ -32197,6 +32229,10 @@
       "status": "passed"
     },
     {
+      "id": "f26b604f940afb1104de939c337e0bd738cf79eeedc485142f4e78356a285bec",
+      "status": "passed"
+    },
+    {
       "id": "f27088c351ade406331e4f5795d748021fd354ce48f959b14a3e25753c6a33c1",
       "status": "passed"
     },
@@ -33922,11 +33958,11 @@
     }
   ],
   "totals": {
-    "collectedFiles": 293,
-    "collectedSuites": 718,
-    "collectedTests": 8476,
+    "collectedFiles": 294,
+    "collectedSuites": 720,
+    "collectedTests": 8485,
     "failedTests": 0,
-    "passedTests": 8470,
+    "passedTests": 8479,
     "pendingTests": 0,
     "skippedTests": 6,
     "todoTests": 0

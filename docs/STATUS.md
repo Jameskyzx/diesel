@@ -38,6 +38,9 @@ This is the only current release/evidence index. Historical implementation notes
   原始 exit 70 与 `ROLLED_BACK:none` 保留；`2026-10-06T13:00:47.733Z` 独立健康读回仍为上述旧版 `30daa51`。
   现有官方 Corepack 的 pnpm 入口已补齐，构建用户的固定版本 registry 查询通过；这不是新版本上线声明。
   [失败及主机修复记录](evidence/operations/deployment-failure-and-pnpm-recovery-2026-10-06.json)。后续只能以新的 CI-approved SHA 走完整发布，不重用失败候选。
+  同日后续候选 `5f1d6a73719dcc3179b9b24279bf4959f0a3a58f` 的 master CI 也全部通过，但必需 Next 包的官方 registry 下载超时，
+  原始 exit 70 与第二个 `ROLLED_BACK:none` 保留；`2026-10-06T15:04:41.132Z` 独立健康读回仍为旧版 `30daa51`。
+  [第二次失败与有界传输探针](evidence/operations/deployment-network-failure-2026-10-06.json)。下载并发/时限的修复尚须通过新 CI 与真实完整发布，不能用小文件探针宣称已上线。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

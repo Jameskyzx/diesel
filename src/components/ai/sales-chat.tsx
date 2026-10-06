@@ -76,12 +76,15 @@ import {
   toolPartErrorMessage,
 } from "@/features/ai/client-tool-copy";
 import { toolPartPresentation } from "@/features/ai/tool-part-presentation";
+import { toolDisplayEvidence } from "@/features/ai/tool-display-evidence";
 import { MAX_CHAT_USER_MESSAGE_CHARACTERS } from "@/features/ai/constants";
+import { CHAT_HISTORY_STORAGE_KEY, parseChatHistory, serializeChatHistory } from "@/features/ai/chat-history";
 import {
   parseSerializedApiErrorCode,
   type SafeApiErrorCode,
 } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
+import { formatDecimalForDisplay } from "@/lib/decimal-format";
 import { interpolate, type Dictionary } from "@/i18n/dictionaries";
 import {
   formatOptionalUtcDate,
@@ -93,6 +96,7 @@ import {
   applicationScopeLabel,
   jurisdictionDisplayName,
   localizedList,
+  marketMetricDisplayName,
   nameWithCode,
   productDisplayName,
   regulationDisplayName,
@@ -103,6 +107,7 @@ type SalesChatProps = {
   countryIso2ByIso3: Readonly<Record<string, string>>;
   demoMode?: boolean;
   imageUploadsEnabled: boolean;
+  historyKey?: string;
   initialPrompt?: string;
   selectedCountryIso3: string | null;
   suggestedPrompts?: readonly string[];
@@ -642,7 +647,7 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
   );
 }
 
-function ToolFacts({
+export function ToolFacts({
   countryIso2ByIso3,
   result,
 }: {
@@ -662,6 +667,28 @@ function ToolFacts({
 
     return (
       <div className="space-y-2 text-xs">
+        {result.requestedTopics.includes("market") ? (
+          <div className="space-y-2" data-testid="profile-market-facts">
+            {result.profile.country.marketMetrics.length === 0 ? <p>{dictionary.country.marketEmpty}</p> : null}
+            {result.profile.country.marketMetrics.map((metric) => (
+              <div className="min-w-0 space-y-1 rounded-md bg-background/70 p-2" key={metric.id}>
+                <p className="font-medium">{marketMetricDisplayName({
+                  isDemo: metric.isDemo, metricCode: metric.metricCode,
+                  metricIds: [metric.id], metricName: metric.metricName,
+                }, dictionary, locale)}</p>
+                <p className="text-base font-semibold tabular-nums">{formatDecimalForDisplay(metric.valueNumeric)} {metric.unitCode || copy.marketUnitNotRecorded}</p>
+                <p>{metric.applicationScope ? applicationScopeLabel(metric.applicationScope, dictionary) : dictionary.common.notRecorded}</p>
+                <p className="text-muted-foreground">{copy.marketPeriodStart}{dictionary.common.labelSeparator}{formatUtcDate(metric.periodStart, locale)} · {copy.marketPeriodEnd}{dictionary.common.labelSeparator}{formatUtcDate(metric.periodEnd, locale)}</p>
+                <p className="text-muted-foreground">{dictionary.common.source}{dictionary.common.labelSeparator}{metric.source.title} · {copy.latestVerified}{dictionary.common.labelSeparator}{formatUtcDate(metric.verifiedAt, locale)}</p>
+              </div>
+            ))}
+            <p className="text-muted-foreground">{copy.marketHistoricalNotice}</p>
+          </div>
+        ) : null}
+        {result.requestedTopics.includes("country") ? (
+          <p>{copy.countryProfileTopicCountry}{dictionary.common.labelSeparator}{result.profile.country.iso3}</p>
+        ) : null}
+        {result.requestedTopics.includes("regulations") ? <>
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg bg-background/70 p-2">
             <span className="text-muted-foreground">
@@ -731,6 +758,7 @@ function ToolFacts({
             )}
           </p>
         ))}
+        </> : null}
       </div>
     );
   }
@@ -1041,7 +1069,7 @@ export function toolResultMayRenderFacts(
   return result.status !== "error";
 }
 
-function ToolResultCard({
+export function ToolResultCard({
   countryIso2ByIso3,
   result,
 }: {
@@ -1051,14 +1079,18 @@ function ToolResultCard({
   const { dictionary, locale } = useLocale();
   const copy = dictionary.chat;
   const labels = toolLabels(copy);
+  const label = result.tool === "getCountryProfile"
+    ? result.requestedTopics.map((topic) => countryProfileTopicLabel(topic, dictionary)).join(copy.listSeparator)
+    : labels[result.tool];
   const statuses = statusLabels(copy);
   const mayRenderFacts = toolResultMayRenderFacts(result);
   const hasDemoEvidence = resultContainsDemoEvidence(result);
   const warnings = localizedToolWarnings(result, locale, copy);
+  const displayEvidence = toolDisplayEvidence(result);
 
   return (
     <section
-      aria-label={labels[result.tool]}
+      aria-label={label}
       className={cn(
         "my-2 space-y-3 rounded-md border p-3",
         result.status === "ok"
@@ -1070,13 +1102,13 @@ function ToolResultCard({
         <div className="flex min-w-0 items-center gap-2">
           <FileText aria-hidden="true" className="size-4 shrink-0 text-primary" />
           <div className="min-w-0 break-words">
-            <p className="text-xs font-semibold">{labels[result.tool]}</p>
+            <p className="text-xs font-semibold">{label}</p>
             <p className="text-[11px] text-muted-foreground">
               {mayRenderFacts ? (
                 <>
                   {copy.deterministicFacts} · {result.tool === "compareMarkets" ? copy.resultGeneratedOn : copy.queryAsOf}{dictionary.common.labelSeparator}{formatUtcDate(result.informationAsOf, locale)} · {copy.latestVerified}{dictionary.common.labelSeparator}
                   {formatOptionalUtcDate(
-                    result.latestVerifiedAt,
+                    displayEvidence.latestVerifiedAt,
                     locale,
                     dictionary.common.notRecorded,
                   )}
@@ -1132,7 +1164,7 @@ function ToolResultCard({
       ) : null}
 
       {mayRenderFacts ? (
-        <CitationList citations={result.citations} />
+        <CitationList citations={displayEvidence.citations} />
       ) : null}
     </section>
   );
@@ -1253,13 +1285,18 @@ export function SalesChat({
   countryIso2ByIso3,
   demoMode = false,
   imageUploadsEnabled,
+  historyKey,
   initialPrompt = "",
   selectedCountryIso3,
   suggestedPrompts = [],
 }: SalesChatProps) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.chat;
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
+  const [historyLoaded, setHistoryLoaded] = useState(historyKey === undefined);
+  const [historyRestored, setHistoryRestored] = useState(false);
+  const [historyUnavailable, setHistoryUnavailable] = useState(false);
+  const historyRestoreAttemptedRef = useRef(false);
   const [input, setInput] = useState(initialPrompt);
   const initialPromptPristineRef = useRef(true);
   const [pendingAttachments, setPendingAttachments] = useState<
@@ -1343,6 +1380,20 @@ export function SalesChat({
         );
       }
 
+      if (historyKey && !isAbort && !isError) {
+        try {
+          const serialized = serializeChatHistory({ contextKey: historyKey,
+            sessionId, messages: finishedMessages });
+          if (serialized === null) {
+            window.sessionStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
+            setHistoryUnavailable(true);
+          } else {
+            window.sessionStorage.setItem(CHAT_HISTORY_STORAGE_KEY, serialized);
+            setHistoryUnavailable(false);
+          }
+        } catch { setHistoryUnavailable(true); }
+      }
+
       if (!isError) {
         setFailedSubmission(null);
         return;
@@ -1361,6 +1412,31 @@ export function SalesChat({
     },
     transport,
   });
+
+  useEffect(() => {
+    if (!historyKey || historyRestoreAttemptedRef.current) return;
+    // Read browser-only storage on the first client frame; keep the initial
+    // document stable and submissions disabled until restoration completes.
+    const frame = requestAnimationFrame(() => {
+      historyRestoreAttemptedRef.current = true;
+      try {
+        const serialized = window.sessionStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+        const snapshot = parseChatHistory(serialized, historyKey);
+        if (snapshot) {
+          setSessionId(snapshot.sessionId);
+          setSettledChatMessages(snapshot.messages);
+          setMessages(snapshot.messages);
+          initialPromptPristineRef.current = false;
+          setInput("");
+          setHistoryRestored(true);
+        } else if (serialized !== null) {
+          window.sessionStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
+        }
+      } catch { setHistoryUnavailable(true); }
+      setHistoryLoaded(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [historyKey, setMessages]);
 
   useEffect(() => {
     return attachmentMessageRelease.connect(() => {
@@ -1601,6 +1677,7 @@ export function SalesChat({
     const text = value.trim();
     if (
       !text ||
+      !historyLoaded ||
       waiting ||
       recoveryPending ||
       validatingAttachmentsRef.current ||
@@ -1631,6 +1708,26 @@ export function SalesChat({
     }
   }
 
+  function startNewConversation() {
+    if (waiting || submissionPendingRef.current || validatingAttachmentsRef.current || !historyLoaded) return;
+    attachmentMessageRelease.run();
+    activeSubmissionRef.current = null;
+    clearError();
+    setMessages([]);
+    setSettledChatMessages([]);
+    setSessionId(crypto.randomUUID());
+    setFailedSubmission(null);
+    setPendingAttachments([]);
+    setAttachmentError(null);
+    initialPromptPristineRef.current = true;
+    setInput(initialPrompt);
+    setHistoryRestored(false);
+    try {
+      window.sessionStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
+      setHistoryUnavailable(false);
+    } catch { setHistoryUnavailable(true); }
+  }
+
   return (
     <aside
       aria-labelledby="sales-chat-heading"
@@ -1640,11 +1737,11 @@ export function SalesChat({
       role="complementary"
     >
       <header className="flex items-center justify-between border-b bg-card px-5 py-4 sm:px-6">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-primary">
             <Bot aria-hidden="true" className="size-4" />
           </span>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-sm font-semibold text-foreground" id="sales-chat-heading">
               {copy.title}
             </h2>
@@ -1658,7 +1755,12 @@ export function SalesChat({
             </p>
           </div>
         </div>
+        {historyKey ? <Button className="ml-3 shrink-0 text-xs" disabled={!historyLoaded || waiting || submissionPending || validatingAttachments} onClick={startNewConversation} size="sm" type="button" variant="outline">{copy.newConversation}</Button> : null}
       </header>
+
+      {historyKey ? <p className="border-b px-5 py-2 text-[11px] leading-5 text-muted-foreground" role={historyRestored || historyUnavailable ? "status" : undefined}>
+        {historyUnavailable ? copy.historyUnavailable : historyRestored ? copy.historyRestored : copy.historyNotice}
+      </p> : null}
 
       <p
         aria-busy={status === "submitted" || status === "streaming"}
@@ -1703,7 +1805,7 @@ export function SalesChat({
                 {suggestedPrompts.map((prompt) => (
                   <button
                     className="rounded-md border bg-card px-4 py-3 text-left text-sm leading-5 font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={!aiConfigured || waiting || recoveryPending || submissionPending || validatingAttachments}
+                    disabled={!aiConfigured || !historyLoaded || waiting || recoveryPending || submissionPending || validatingAttachments}
                     key={prompt}
                     onClick={() => void submitText(prompt)}
                     type="button"
@@ -1943,6 +2045,7 @@ export function SalesChat({
               }
               className="sr-only"
               disabled={
+                !historyLoaded ||
                 waiting ||
                 recoveryPending ||
                 submissionPending ||
@@ -1964,6 +2067,7 @@ export function SalesChat({
               }
               className="size-11 rounded-lg border-0 bg-muted p-0 text-muted-foreground shadow-none hover:bg-accent hover:text-primary"
               disabled={
+                !historyLoaded ||
                 waiting ||
                 recoveryPending ||
                 submissionPending ||
@@ -2029,6 +2133,7 @@ export function SalesChat({
                 aria-label={copy.send}
                 className="size-11 rounded-lg bg-primary p-0 text-primary-foreground shadow-none hover:bg-primary/90"
                 disabled={
+                  !historyLoaded ||
                   recoveryPending ||
                   submissionPending ||
                   validatingAttachments ||

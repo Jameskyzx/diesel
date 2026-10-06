@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
+import { getDictionary } from "../src/i18n/dictionaries";
 
 test.beforeEach(async ({ baseURL, context }) => {
   await context.addCookies([
@@ -27,7 +28,8 @@ test("shows an explicit error and recovers when country geometry fails", async (
   await expect(
     page.getByRole("alert").filter({ hasText: "国家边界加载失败" }),
   ).toBeVisible();
-  await expect(page.getByText("有可查看数据")).toHaveCount(0);
+  const legend = getDictionary("zh-CN").map.legendData;
+  await expect(page.getByText(legend, { exact: true })).toHaveCount(0);
 
   await page.unroute(worldCountriesRequest);
   await page.getByRole("button", { name: "重试加载地图" }).click();
@@ -36,7 +38,7 @@ test("shows an explicit error and recovers when country geometry fails", async (
     "data-map-ready",
     "true",
   );
-  await expect(page.getByText("有可查看数据")).toBeVisible();
+  await expect(page.getByText(legend, { exact: true })).toBeVisible();
 });
 
 test("opens a shareable country URL by clicking the map polygon", async ({

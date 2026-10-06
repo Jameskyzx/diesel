@@ -10,7 +10,7 @@ import {
 import { appendFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, normalize, resolve, sep } from "node:path";
 
-import { portfolioReleaseCountryIso3s } from "../../src/domain/portfolio-evidence";
+import { portfolioPublicationSummary, portfolioReleaseCountryIso3s } from "../../src/domain/portfolio-evidence";
 import { formatErrorTree } from "../format-error";
 import {
   getApprovedRealCertificationIds,
@@ -628,6 +628,7 @@ async function verify(): Promise<void> {
     sources: selection.sourceIds.size,
   };
   assertEvidenceSummaryConsistency(evidenceSummary, snapshot.evidenceSummary);
+  assertEvidenceSummaryConsistency(evidenceSummary, portfolioPublicationSummary);
 
   assertLiveEvalReadmeCurrentReport({
     readmeText: liveEvalReadmeText,

@@ -1,0 +1,52 @@
+{
+  "version": "diesel-preserved-locale-cold-compilation-ci-failure-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "releaseCandidate": "1aadd57a5da930b9ad7d6344ff231d63b0f70bbe",
+  "ci": {
+    "runId": 37499192807,
+    "event": "push",
+    "runConclusion": "failure",
+    "requiredCiGateConclusion": "failure",
+    "browserJobId": 112396128167,
+    "browserJobConclusion": "failure",
+    "browserJobCompletedAt": "2026-10-06T17:34:40Z",
+    "test": "desktop-chromium: localizes visible country names and dates while preserving the ISO query",
+    "initialAttemptFailed": true,
+    "automaticRetryPassed": true,
+    "flakyCases": 1,
+    "stablePassedCases": 386,
+    "skippedCases": 66,
+    "flakyRejectedByReleaseGate": true,
+    "originalFailurePreserved": true
+  },
+  "retainedTraceObservations": {
+    "lazyProductPanelChunkHttpStatus": 200,
+    "lazyProductPanelChunkDurationMs": 2729.4,
+    "catalogHttpStatus": 200,
+    "catalogDurationMs": 6740.179,
+    "fitPostStartedAt": "2026-10-06T17:11:56.493Z",
+    "fitResponseCapturedBeforeAssertionTimeout": false,
+    "uiAssertionTimeoutMs": 10000,
+    "screenshotStillShowsDevelopmentCompilation": true,
+    "businessApiErrorResponseObserved": false
+  },
+  "retainedDiagnosticDigests": {
+    "jobLogSha256": "09595d946e15a3f829c6fed6793e3878a14297a330795fee61c8951be5b96874",
+    "failedTraceSha256": "65076e2be189b1ba0a8a7dd42876ecfd4c266dc97cd5d72850bd2110e32b0a18",
+    "failedScreenshotSha256": "cf6a05471268a01ea7d3e488211d39622e29a6de21e743866b692aead85de0a7"
+  },
+  "correctionScope": {
+    "explicitColdRoutePreparationMaximumMs": 30000,
+    "usesRealApiAndZodValidation": true,
+    "originalUiAssertionsUnchanged": true,
+    "perCaseTimeoutUnchanged": true,
+    "flakyRejectionUnchanged": true,
+    "productionBehaviorOrTimeoutChanged": false,
+    "newCiApprovedCommitRequired": true
+  },
+  "production": {
+    "failedCandidateNotStagedOrDeployed": true,
+    "lastIndependentlyObservedRelease": "30daa51d34bab95e6d729982a19194a4af5352ba",
+    "newDeploymentAcceptanceRequired": true
+  }
+}

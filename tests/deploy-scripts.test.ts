@@ -6930,7 +6930,7 @@ printf '%s\\n' "$value"
     }
   });
 
-  it("restores Next's tracked environment file and confines TypeScript build state to .next", async () => {
+  it("bounds registry downloads, restores Next's tracked environment file and confines TypeScript build state to .next", async () => {
     const fixture = await realpath(
       await mkdtemp(join(tmpdir(), "diesel-next-generated-inputs-")),
     );
@@ -7042,6 +7042,9 @@ fi
             ...buildEnvironment,
             BUILD_HOME: buildHome,
             BUILD_RELEASE_ID: TEST_RELEASE_SHA,
+            npm_config_network_concurrency: "128",
+            npm_config_fetch_timeout: "1",
+            npm_config_fetch_retries: "99",
             PATH: `${fakeBin}:/usr/bin:/bin`,
           },
         },
@@ -7053,6 +7056,9 @@ fi
           "pnpm",
           "--config.registry=https://registry.npmjs.org",
           "install",
+          "--network-concurrency=4",
+          "--fetch-timeout=600000",
+          "--fetch-retries=2",
           "--frozen-lockfile",
           "--trust-lockfile",
           "--package-import-method=copy",
@@ -7079,6 +7085,79 @@ fi
       await expect(
         stat(join(workspace, "tsconfig.tsbuildinfo")),
       ).rejects.toMatchObject({ code: "ENOENT" });
+
+      // A fake corepack can only assert argument spelling. Exercise pnpm's real
+      // typed option parser and package requester without any registry traffic.
+      const installFixture = join(fixture, "real-pnpm");
+      const localPackage = join(installFixture, "local-package");
+      await mkdir(localPackage, { recursive: true });
+      await Promise.all([
+        writeFile(
+          join(installFixture, "package.json"),
+          JSON.stringify({
+            name: "diesel-transport-options-fixture",
+            private: true,
+            packageManager: "pnpm@11.9.0",
+            dependencies: { "local-package": "file:./local-package" },
+          }),
+        ),
+        writeFile(
+          join(localPackage, "package.json"),
+          JSON.stringify({ name: "local-package", version: "1.0.0" }),
+        ),
+      ]);
+      const realPnpmOptions = {
+        cwd: installFixture,
+        env: {
+          PATH: process.env.PATH,
+          HOME: buildHome,
+          CI: "1",
+          NODE_ENV: process.env.NODE_ENV,
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: "0",
+          npm_config_network_concurrency: "128",
+          npm_config_fetch_timeout: "1",
+          npm_config_fetch_retries: "99",
+        },
+        timeout: 30_000,
+      };
+      const isolatedInstallArguments = [
+        "--offline",
+        "--ignore-workspace",
+        `--store-dir=${join(fixture, "store")}`,
+      ];
+      await execFileAsync(
+        "pnpm",
+        [
+          "install",
+          "--lockfile-only",
+          "--ignore-scripts",
+          "--ignore-pnpmfile",
+          ...isolatedInstallArguments,
+        ],
+        realPnpmOptions,
+      );
+      const frozenLockfile = await readFile(
+        join(installFixture, "pnpm-lock.yaml"),
+        "utf8",
+      );
+      const realInstallArguments = (await readFile(installInvocationPath, "utf8"))
+        .trimEnd()
+        .split("\n")
+        .slice(1);
+      await execFileAsync(
+        "pnpm",
+        [...realInstallArguments, ...isolatedInstallArguments],
+        realPnpmOptions,
+      );
+      await expect(
+        readFile(join(installFixture, "pnpm-lock.yaml"), "utf8"),
+      ).resolves.toBe(frozenLockfile);
+      await expect(
+        readFile(
+          join(installFixture, "node_modules", "local-package", "package.json"),
+          "utf8",
+        ),
+      ).resolves.toContain('"version":"1.0.0"');
     } finally {
       await rm(fixture, { force: true, recursive: true });
     }

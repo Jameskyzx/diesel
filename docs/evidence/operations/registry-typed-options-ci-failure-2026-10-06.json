@@ -1,0 +1,38 @@
+{
+  "version": "diesel-preserved-registry-option-ci-failure-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "releaseCandidateHead": "7b1136cfc2399d7273bc50ee44e1397af77502b8",
+  "pullRequest": "https://github.com/Jameskyzx/diesel/pull/73",
+  "ci": {
+    "runId": 37488583673,
+    "jobId": 112359923347,
+    "jobName": "Linux release handoff (systemd cgroup + real build)",
+    "jobConclusion": "failure",
+    "failureAt": "2026-10-06T15:45:07.9377478Z",
+    "exitCode": 1,
+    "provenCause": "pnpm 11.9.0 received network concurrency 4 as a string through --config.network-concurrency=4. Its real package requester rejected the nonnumeric concurrency before installing dependencies.",
+    "initialMockMissedNumericType": true,
+    "failedRunNotReclassified": true
+  },
+  "regression": {
+    "usesRealPnpm": true,
+    "registryNetworkRequests": 0,
+    "dependency": "isolated local file package, not an application dependency",
+    "originalArgumentSpellingExitCode": 1,
+    "typedInstallArgumentSpellingExitCode": 0,
+    "frozenLockfileUnchanged": true,
+    "conflictingEnvironmentConfigInjected": true,
+    "testCountUnchanged": true,
+    "doesNotReplaceCompleteLinuxHandoff": true
+  },
+  "production": {
+    "candidateNotStagedOrDeployed": true,
+    "lastIndependentlyObservedRelease": "30daa51d34bab95e6d729982a19194a4af5352ba",
+    "lastIndependentHealthAt": "2026-10-06T15:04:41.132Z",
+    "newDeploymentAcceptanceRequired": true
+  },
+  "limitations": [
+    "The isolated offline install proves the real typed parser and local package installation, not registry reliability or full release success.",
+    "The failed CI job remains a failure. The corrected commit requires a fresh complete CI run before merge and production staging."
+  ]
+}

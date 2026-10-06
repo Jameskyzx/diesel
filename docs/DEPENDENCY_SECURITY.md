@@ -129,6 +129,25 @@ must not be described as package provenance or signature verification. pnpm's
 offline flag also does not prove that arbitrary test subprocesses cannot use
 the network.
 
+## 2026-10-06 source-map-js advisory remediation
+
+The PR #71 release attempt at `473b31b6a4006d526878fd9d279d46584dd042ef`
+failed dependency policy for [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q),
+reviewed on 2026-10-05. The official advisory marks `>=1.0.0 <1.2.2` as affected
+and identifies `1.2.2` as fixed. The lockfile updates only the existing
+`source-map-js` resolution and its Tailwind, magic-string and PostCSS consumers;
+direct dependencies, other transitive versions and the install boundary are
+unchanged. No high-severity exception is added.
+
+`tests/source-map-security.test.ts` resolves the installed package through the
+actual PostCSS dependency. It checks the patched version, oversized and nested
+section offsets, invalid line/column values and a normal mapped-position lookup.
+The safe constructor-only rejection checks reproduced failures before the
+upgrade; they deliberately never copy or serialize an unbounded malicious map.
+These regressions verify the installed boundary, not general exploitability or
+an assertion that all source-map risks have been eliminated. The initial
+dependency-policy failure remains in CI run `37450548900` and is not relabeled.
+
 ## Historical dependency-license evidence (collected 2026-09-05)
 
 The history audit's v3 `retainedDependencyLicenseScan` binds the

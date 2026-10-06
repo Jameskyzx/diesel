@@ -1,0 +1,37 @@
+{
+  "version": "diesel-production-database-tls-verification-v1",
+  "release": "30daa51d34bab95e6d729982a19194a4af5352ba",
+  "startedAt": "2026-10-05T19:06:31.842Z",
+  "completedAt": "2026-10-05T19:06:34.513Z",
+  "readOnly": true,
+  "providerCalls": 0,
+  "credentialsExposed": false,
+  "temporaryForwardUsed": false,
+  "samples": [
+    {
+      "kind": "actual-factory",
+      "durationMs": 1989,
+      "querySucceeded": true,
+      "errorCode": null,
+      "passed": true
+    },
+    {
+      "kind": "wrong-hostname",
+      "durationMs": 315,
+      "querySucceeded": false,
+      "errorCode": "ERR_TLS_CERT_ALTNAME_INVALID",
+      "passed": true
+    },
+    {
+      "kind": "wrong-ca",
+      "durationMs": 363,
+      "querySucceeded": false,
+      "errorCode": "SELF_SIGNED_CERT_IN_CHAIN",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "evidenceKind": "historical-operator-record-only",
+  "environment": "production-vps-direct-to-database",
+  "productionAcceptancePassed": true
+}

@@ -221,7 +221,9 @@ const clientCountryProfileResultSchema = clientToolResultBase
                       periodEnd: z.iso.date(),
                       periodStart: z.iso.date(),
                       source: clientEvidenceSourceIdentitySchema,
+                      unitCode: z.string(),
                       valueNumeric: marketMetricDecimalSchema,
+                      verifiedAt: isoTimestampSchema,
                     })
                     .passthrough()
                     .superRefine((metric, context) => {

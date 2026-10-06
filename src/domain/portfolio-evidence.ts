@@ -1,3 +1,13 @@
+/** Versioned publication snapshot, checked against the signed fixture closure. */
+export const portfolioPublicationSummary = {
+  approvedRealCertifications: 0,
+  approvedRealProducts: 0,
+  jurisdictions: 97,
+  limits: 651,
+  regulations: 28,
+  sources: 203,
+} as const;
+
 /**
  * Country selection whose signed publication closure produced the portfolio
  * evidence summary. Keep this list versioned so documentation metrics can be

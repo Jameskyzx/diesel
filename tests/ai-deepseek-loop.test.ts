@@ -75,3 +75,48 @@ it("uses the real production loop to gather both required tools sequentially bef
   expect(bodies[2]).not.toHaveProperty("tools");
   expect(bodies[2]).not.toHaveProperty("tool_choice");
 });
+
+it.each(["en", "zh-CN"] as const)("finishes a %s country-replacement follow-up after one fresh comparison, without a repeated tool loop", async (locale) => {
+  const bodies: unknown[] = [];
+  const query = { applicationScope: "non-road", asOf: "2026-08-13", countryIso3s: ["CHN", "BRA"], powerKw: 100 };
+  const texts = locale === "en" ? [
+    "Compare CHN and JPN non-road 100 kW regulations as of 2026-08-13.",
+    "Replace Japan with Brazil, keeping all other conditions unchanged.",
+  ] : [
+    "比较 CHN 和 JPN 在 2026-08-13 的非道路 100 kW 排放要求。",
+    "把日本换成巴西，其余条件不变。",
+  ];
+  const fetchStub: typeof fetch = async (_url, init) => {
+    const body: unknown = JSON.parse(String(init?.body));
+    bodies.push(body);
+    const selected = z.object({ tool_choice: z.union([
+      z.literal("none"), z.object({ type: z.literal("function"), function: z.object({ name: z.literal("compareRegulations") }) }),
+    ]).optional() }).parse(body);
+    const toolStep = typeof selected.tool_choice === "object";
+    const event = (delta: unknown, finishReason: string | null) => `data: ${JSON.stringify({
+      id: `replacement-${bodies.length}`, object: "chat.completion.chunk", created: 0, model: "deepseek-flash",
+      choices: [{ index: 0, delta, finish_reason: finishReason }],
+    })}`;
+    return new Response([
+      event(toolStep ? { role: "assistant", tool_calls: [{ index: 0, id: "replacement-call", type: "function",
+        function: { name: "compareRegulations", arguments: JSON.stringify(query) } }] }
+        : { role: "assistant", content: locale === "en"
+          ? "Regulatory requirements were checked for CHN and BRA, non-road 100 kW as of 2026-08-13. These are fictional Demo records. For information only; not a substitute for formal certification or legal advice."
+          : "已核对 CHN 与 BRA 在 2026-08-13 的非道路 100 kW 法规要求；这是虚构 Demo 记录。信息参考，不替代正式认证或法律意见。" }, null),
+      event({}, toolStep ? "tool_calls" : "stop"), "data: [DONE]", "",
+    ].join("\n\n"), { headers: { "content-type": "text/event-stream" } });
+  };
+  vi.stubGlobal("fetch", vi.fn(fetchStub));
+  const { model } = getConfiguredAiModel({ apiKey: "unit-test-key", baseUrl: "https://api.deepseek.com", model: "deepseek-flash", enableThinking: false });
+  const auditRepository = { recordToolCall: async () => undefined };
+  const sessionId = crypto.randomUUID();
+  const generated = streamSalesChat({ auditRepository, model, locale, maxRetries: 0,
+    selectedCountryIso3: null, sessionId,
+    tools: createSalesChatTools({ auditRepository, selectedCountryIso3: null, sessionId }),
+    messages: texts.map(content => ({ role: "user" as const, content })), trustedUserTexts: texts,
+  });
+  expect(await generated.text).toContain(locale === "en" ? "Regulatory requirements were checked" : "已核对");
+  expect(await generated.toolCalls).toMatchObject([{ toolName: "compareRegulations", input: query }]);
+  expect(await generated.steps).toHaveLength(2);
+  expect(bodies).toHaveLength(2);
+});

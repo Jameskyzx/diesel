@@ -1,0 +1,58 @@
+{
+  "version": "diesel-release-capacity-cleanup-observation-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedAt": "2026-10-06T10:59:33Z",
+  "target": "111.228.50.85",
+  "authorization": "User explicitly approved removal of the two confirmed rebuildable APT index caches and lossless verified archival of closed journals for this release.",
+  "aptCaches": {
+    "removed": ["/var/cache/apt/pkgcache.bin", "/var/cache/apt/srcpkgcache.bin"],
+    "originalLogicalBytes": 137296403,
+    "recovery": "APT regenerates these binary index caches; no installed package or package database was removed.",
+    "packageManagerServicesInactive": true,
+    "exactRegularRootOwnedSingleLinkPathsVerified": true,
+    "exitCode": 0
+  },
+  "closedJournalArchive": {
+    "archiveDirectory": "/opt/diesel/log-archives/closed-journal-20261006.cGUVzdJI",
+    "archiveDirectoryMode": "root:root:0700",
+    "archiveFileMode": "root:root:0600",
+    "manifestSha256": "ffb785e1ffde75071fa0f93ab7d2624200023be69ec5bc01a51e7c1af32c867a",
+    "closedFilesArchived": 10,
+    "originalLogicalBytes": 1342177280,
+    "compressedLogicalBytes": 232089793,
+    "archiveAllocatedBytesIncludingReceipts": 232218624,
+    "archiveExitCode": 0,
+    "independentAuditExitCode": 0,
+    "lifecycleAndBuildLocksHeldDuringArchival": true,
+    "verificationBeforeRemovingEachOriginal": [
+      "Canonical closed-journal path, ownership, mode, single-link metadata and unchanged inode/timestamps",
+      "journalctl --verify on original and fully restored copy",
+      "gzip integrity and restored SHA-256 equals original SHA-256",
+      "Archive, manifest and recovery metadata synced before removing exact original"
+    ],
+    "independentVerification": [
+      "All ten compressed hashes and decompressed stream hashes match the manifest",
+      "All ten original paths are absent; current system.journal remains present",
+      "Production current release unchanged; Nginx and PM2 system services remain active"
+    ],
+    "recovery": "Root-only RECOVERY.txt and manifest.tsv describe checksum verification, private decompression and journalctl inspection. Never overwrite an existing journal."
+  },
+  "capacity": {
+    "availableBytesBeforeArchivalAndCacheRemoval": 5286907904,
+    "availableBytesAfterIndependentAudit": 6399971328,
+    "usedPercentAfter": 90,
+    "releaseMinimumFreeBytes": 5368709120,
+    "minimumFreeBytesSatisfiedAtObservation": true,
+    "warningThresholdStillExceeded": true
+  },
+  "healthReadback": {
+    "status": "ok",
+    "timestamp": "2026-10-06T10:59:33.191Z",
+    "version": "30daa51d34bab95e6d729982a19194a4af5352ba"
+  },
+  "preserved": ["current logs", "all database backups", "all runtime releases", "rollback basis", "incident and deployment records", "credentials"],
+  "limitations": [
+    "Archives remain on the same disk, not independent disaster-recovery storage.",
+    "This is a point-in-time capacity observation, not a guarantee of unlimited retention or successful deployment."
+  ]
+}

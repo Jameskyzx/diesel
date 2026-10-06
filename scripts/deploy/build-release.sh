@@ -107,7 +107,14 @@ cp -p -- "${next_environment_path}" "${next_environment_snapshot}"
 # Keep installation aligned with the CI install boundary. In particular,
 # esbuild's optional postinstall optimization creates hardlinks even when pnpm
 # imports packages by copy; those cannot enter the immutable artifact closure.
+# Official-registry large tarballs exceeded pnpm's 60-second request default
+# on the VPS. Keep each request bounded and reduce contention; the parent
+# systemd service still enforces its independent 45-minute build deadline.
+# Registry/TLS, lockfile integrity and the no-lifecycle-script boundary remain
+# unchanged. Never inherit these transport bounds from a caller's npm config.
 corepack pnpm --config.registry="${registry}" \
+  --config.network-concurrency=4 --config.fetch-timeout=600000 \
+  --config.fetch-retries=2 \
   install --frozen-lockfile --trust-lockfile --package-import-method=copy \
   --ignore-scripts --ignore-pnpmfile
 

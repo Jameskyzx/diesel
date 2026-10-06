@@ -1,0 +1,574 @@
+{
+  "version": "diesel-production-ux-release-acceptance-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "release": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+  "previousPublicRelease": "30daa51d34bab95e6d729982a19194a4af5352ba",
+  "site": "https://diesel.jamesky.site",
+  "observedAt": "2026-10-06T21:45:02.683Z",
+  "changes": [
+    "Explicit country replacement preserves the other country, application, power and query date.",
+    "Completed tab-local conversations survive reload and locale changes; uploads and reasoning are not stored.",
+    "Market-only cards show relevant observations, units, periods and source freshness rather than unrelated regulation rows.",
+    "The homepage separates the 97/28/651/203/0 publication snapshot from the 178-country catalog.",
+    "Official registry download options use tested typed numeric flags; the isolated builder has official Corepack pnpm shims.",
+    "Existing source-map-js was patched to 1.2.2; no new direct dependency or schema was added."
+  ],
+  "exactMasterCi": {
+    "runId": 37516014603,
+    "headSha": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "event": "push",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "Dependency and workflow supply-chain audit",
+        "conclusion": "success"
+      },
+      {
+        "name": "PostgreSQL + pgvector migration smoke",
+        "conclusion": "success"
+      },
+      {
+        "name": "Lint, typecheck, app coverage, build",
+        "conclusion": "success"
+      },
+      {
+        "name": "Linux deployment script contracts",
+        "conclusion": "success"
+      },
+      {
+        "name": "Secret scanning (gitleaks)",
+        "conclusion": "success"
+      },
+      {
+        "name": "Portfolio demo via pnpm demo",
+        "conclusion": "success"
+      },
+      {
+        "name": "Failure-first FDE workflow via pnpm demo:fde",
+        "conclusion": "success"
+      },
+      {
+        "name": "Playwright key flows",
+        "conclusion": "success"
+      },
+      {
+        "name": "Linux release handoff (systemd cgroup + real build)",
+        "conclusion": "success"
+      },
+      {
+        "name": "Required CI gate",
+        "conclusion": "success"
+      }
+    ],
+    "url": "https://github.com/Jameskyzx/diesel/actions/runs/37516014603"
+  },
+  "stage": {
+    "authorization": {
+      "branch": "master",
+      "commit": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+      "format": "diesel-release-authorization-v1",
+      "origin": {
+        "fetchUrl": "git@github.com:Jameskyzx/diesel.git",
+        "pushUrl": "git@github.com:Jameskyzx/diesel.git",
+        "remoteMaster": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+        "remoteMasterReadback": "0f51a9dfd14f874d3dfa5713d172fb3462d48874"
+      },
+      "protection": {
+        "allowDeletions": false,
+        "allowForcePushes": false,
+        "enforceAdmins": true,
+        "requiredCheck": "Required CI gate",
+        "requiredCheckAppId": null,
+        "strict": true
+      },
+      "repository": "Jameskyzx/diesel",
+      "verifiedAt": "2026-10-06T19:49:31.107Z",
+      "workflow": {
+        "gateJobId": 112467629300,
+        "gateJobUrl": "https://github.com/Jameskyzx/diesel/actions/runs/37516014603/job/112467629300",
+        "id": 332591937,
+        "name": "CI",
+        "path": ".github/workflows/ci.yml",
+        "runAttempt": 1,
+        "runId": 37516014603,
+        "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/37516014603",
+        "state": "active"
+      }
+    },
+    "commit": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "format": "diesel-release-stage-v1",
+    "inputDigest": "2b2635263540af2417fb96b20d85cc64809b4cf3c844fdf4c9e34e6a890b9a11",
+    "releaseDir": "/opt/diesel/releases/0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "target": "root@111.228.50.85"
+  },
+  "durable": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+      "operationId": "1fc424ce-e73c-46db-94e2-e8d99e8e6a20",
+      "mode": "full",
+      "createdAt": "2026-10-06T19:51:36.572Z",
+      "inputDigest": "2b2635263540af2417fb96b20d85cc64809b4cf3c844fdf4c9e34e6a890b9a11",
+      "runnerSha256": "58972352671451a73d1cedc5efbd0feeaa841d00c1c12c86d8dc75e3c2522cf7"
+    },
+    "state": "completed",
+    "unit": {
+      "Id": "diesel-release-0f51a9dfd14f874d3dfa5713d172fb3462d48874.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "Result": "success",
+      "InvocationID": "adc340cf5a0f47748e4b214a41969a62",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 1207125
+    },
+    "completion": {
+      "operationId": "1fc424ce-e73c-46db-94e2-e8d99e8e6a20",
+      "invocationId": "adc340cf5a0f47748e4b214a41969a62",
+      "startedAt": "2026-10-06T19:51:37.272Z",
+      "workerPid": 1207125,
+      "completedAt": "2026-10-06T21:34:17.537Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 61235,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 54374,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "independentAcceptance": {
+    "strictHostLedgerValidationExitCode": 0,
+    "committedHostValidationExitCode": 0,
+    "terminalLedger": "COMMITTED:PUBLISH_FINALIZED",
+    "markers": {
+      "HOST_ACTIVATION_PENDING": false,
+      "HOST_ACTIVATION_COMMITTED": true,
+      "HOST_ACTIVATION_ROLLED_BACK": false,
+      "RECOVERY_REQUIRED": false,
+      "HOST_ROLLBACK_REQUIRED": false,
+      "HOST_ROLLBACK_COMPLETED": false,
+      "PUBLISH_COMMITTED": false,
+      "PUBLISH_FINALIZED": true
+    },
+    "versionedPagesAndSse": {
+      "version": "diesel-versioned-public-readback-v1",
+      "release": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+      "startedAt": "2026-10-06T21:37:37.903Z",
+      "completedAt": "2026-10-06T21:37:52.331Z",
+      "checks": [
+        {
+          "origin": "http://127.0.0.1:8788",
+          "exitCode": 0,
+          "signal": null,
+          "spawnFailed": false,
+          "durationMs": 5992,
+          "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "logBytes": 0,
+          "completedAt": "2026-10-06T21:37:43.896Z"
+        },
+        {
+          "origin": "https://diesel.jamesky.site",
+          "exitCode": 0,
+          "signal": null,
+          "spawnFailed": false,
+          "durationMs": 8434,
+          "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "logBytes": 0,
+          "completedAt": "2026-10-06T21:37:52.331Z"
+        }
+      ],
+      "passed": true,
+      "curlRetries": 2,
+      "substitutesForZeroRetryRealBrowser": false
+    },
+    "providerCanary": {
+      "checkedAt": "2026-10-06T21:37:21.600Z",
+      "expectedVersion": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+      "includeProviderAi": true,
+      "pass": true,
+      "results": [
+        {
+          "durationMs": 158,
+          "errorCode": null,
+          "id": "liveness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/live",
+          "requestId": "3bb013bf-81b7-4d84-95b4-cc395cf21af1",
+          "status": 200
+        },
+        {
+          "durationMs": 554,
+          "errorCode": null,
+          "id": "readiness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/ready",
+          "requestId": "ef9d727d-cb72-4063-a60a-083344a479f2",
+          "status": 200
+        },
+        {
+          "durationMs": 4174,
+          "errorCode": null,
+          "id": "country-decision-summary",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-06",
+          "requestId": "e1404f46-088a-408f-b130-728d622d33b9",
+          "status": 200
+        },
+        {
+          "durationMs": 2809,
+          "errorCode": null,
+          "id": "country-decision-no-data",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-06",
+          "requestId": "b27c217e-11b9-4f55-8837-b2999cf1115d",
+          "status": 200
+        },
+        {
+          "durationMs": 166,
+          "errorCode": null,
+          "id": "public-products",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/products",
+          "requestId": "be8be266-35de-493f-850a-5c8222ceff8b",
+          "status": 200
+        },
+        {
+          "durationMs": 2655,
+          "errorCode": null,
+          "id": "chat-direct-sse",
+          "method": "POST",
+          "pass": true,
+          "path": "/api/chat",
+          "requestId": "71d561fa-8390-4f85-981f-0a821b2dbacd",
+          "status": 200
+        },
+        {
+          "durationMs": 7373,
+          "errorCode": null,
+          "id": "chat-provider-sse",
+          "method": "POST",
+          "pass": true,
+          "path": "/api/chat",
+          "requestId": "f157a576-fab8-4fec-a5f2-c17ca4d1e377",
+          "status": 200
+        }
+      ],
+      "runError": null,
+      "targetOrigin": "https://diesel.jamesky.site",
+      "version": "synthetic-canary-v5"
+    },
+    "realBrowserStarters": {
+      "version": "diesel-real-production-browser-acceptance-v1",
+      "release": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+      "reportSha256": "9b9405c78a6d9e9e2e2f893aeffca2c652add0bb1211e0743045bdb78eb2550f",
+      "startedAt": "2026-10-06T21:37:42.992Z",
+      "durationMs": 48808.236000000004,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "flaky": 0,
+      "retries": 0,
+      "usesRealBrowser": true,
+      "interceptsChat": false,
+      "mocksProvider": false,
+      "cases": [
+        {
+          "status": 200,
+          "requestId": "36345375-944b-4e55-9247-0e930c5d4647",
+          "locale": "zh-CN",
+          "kind": "regulations",
+          "startedAt": "2026-10-06T21:37:43.283Z",
+          "durationMs": 7560,
+          "retries": 0,
+          "passed": true,
+          "sse": {
+            "bytes": 29513,
+            "sha256": "cba04ae4ce1036a1a504819857915cfd3109d8d8713c53428b0f13336cfb160a",
+            "reasoningParts": 0,
+            "errorParts": 0
+          },
+          "screenshotSha256": "c32c7492692ac7b338549ba567b81e273cb06cdbc8570d7457ce7754c0dc14d4"
+        },
+        {
+          "status": 200,
+          "requestId": "46e9088d-0589-4d44-a629-27531ede616a",
+          "locale": "zh-CN",
+          "kind": "comparison",
+          "startedAt": "2026-10-06T21:37:50.933Z",
+          "durationMs": 9188,
+          "retries": 0,
+          "passed": true,
+          "sse": {
+            "bytes": 54864,
+            "sha256": "8cf7ff67461e93cea090172d5f5fd1c24cba9fee0af8956bd6654bbb0c63fb78",
+            "reasoningParts": 0,
+            "errorParts": 0
+          },
+          "screenshotSha256": "313b43f6062ecf52f86374a7320c144fb7ed27d3596bb6aaddc59da849ab7d92"
+        },
+        {
+          "status": 200,
+          "requestId": "a8fd6e59-830b-4659-9215-04d4bee536f4",
+          "locale": "zh-CN",
+          "kind": "market",
+          "startedAt": "2026-10-06T21:38:00.126Z",
+          "durationMs": 9409,
+          "retries": 0,
+          "passed": true,
+          "sse": {
+            "bytes": 29276,
+            "sha256": "4cfbf31b96a6f91d2b9280dd2429edeb28c20836d25183a9f35d6197801ca5fd",
+            "reasoningParts": 0,
+            "errorParts": 0
+          },
+          "screenshotSha256": "f1ffcb0be9378e9749870aaab7f19e3060da5d2ac83d256ac2e51d691598c100"
+        },
+        {
+          "status": 200,
+          "requestId": "c8ad29ef-a66c-479a-909d-4a7f3c70f9c3",
+          "locale": "en",
+          "kind": "regulations",
+          "startedAt": "2026-10-06T21:38:09.539Z",
+          "durationMs": 7752,
+          "retries": 0,
+          "passed": true,
+          "sse": {
+            "bytes": 29677,
+            "sha256": "dd9eb4f3946ae64a8509b42fe1b629bc609a6afe45155ad0d1bf726c418bcd1d",
+            "reasoningParts": 0,
+            "errorParts": 0
+          },
+          "screenshotSha256": "913c94f086964f61928d8e90e0772b23175c051f484fa7c20935c770518e5a82"
+        },
+        {
+          "status": 200,
+          "requestId": "7e51834a-40b5-4bd8-87a5-ae1184a4a240",
+          "locale": "en",
+          "kind": "comparison",
+          "startedAt": "2026-10-06T21:38:17.294Z",
+          "durationMs": 6820,
+          "retries": 0,
+          "passed": true,
+          "sse": {
+            "bytes": 54205,
+            "sha256": "2792812d4f8d6f05ff98ba1fda460dffb6cd85a90aa24198d32f2e4757b4d79f",
+            "reasoningParts": 0,
+            "errorParts": 0
+          },
+          "screenshotSha256": "f7777643bb78cf8f44ca1765b5ef7285f9b5b8fc29da8bbe8a2258f7cb259e25"
+        },
+        {
+          "status": 200,
+          "requestId": "76991439-a973-4f2a-b1d1-ebd6fe24c099",
+          "locale": "en",
+          "kind": "market",
+          "startedAt": "2026-10-06T21:38:24.119Z",
+          "durationMs": 7639,
+          "retries": 0,
+          "passed": true,
+          "sse": {
+            "bytes": 28901,
+            "sha256": "365eeb1a3b93c04599511995f2876d7f981e7a6b37c37ccfc2f69425568a557f",
+            "reasoningParts": 0,
+            "errorParts": 0
+          },
+          "screenshotSha256": "6c60316c94a794cc983c1060315b149c89cda98ed08bec682f2951c9c35f4e90"
+        }
+      ]
+    }
+  },
+  "observerTransport": {
+    "originalExitCode": 255,
+    "originalMessage": "Connection to 111.228.50.85 closed by remote host.",
+    "originalLastObservedAt": "2026-10-06T20:08:21.180Z",
+    "originalLastState": "running",
+    "disconnectCauseProven": false,
+    "existingOperationRestarted": false,
+    "recoveryObserverExitCode": 0,
+    "recoveryBoundToSameOperationAndInputDigest": true,
+    "recoveredTerminalObservedAt": "2026-10-06T21:34:35.123Z",
+    "originalObservationsSha256": "3c41f770c758241b129e2e6313e36c7df680b8173a2115f5d8442c62a6a7403f",
+    "originalStderrSha256": "da1c8fcd5812c39cbb4c9da5c5ee878c178ddb22bf6184d669d6da4f1f0056f9",
+    "recoveryObservationsSha256": "8598ff1e8704d65a51a50bf1b4ff5102bc67595c013666ba6d1b69f251049d3a"
+  },
+  "backupAndRehearsal": {
+    "snapshots": [
+      {
+        "name": "governance-before.json",
+        "path": "/opt/diesel/backups/0f51a9dfd14f874d3dfa5713d172fb3462d48874/governance-before.json",
+        "bytes": 92119392,
+        "sha256": "1850f2127cd62a695bb67f18e92c62f5c65e3b8f0c37c1157419b01c766a7b4a",
+        "uid": 0,
+        "gid": 0,
+        "mode": "0600"
+      },
+      {
+        "name": "governance-after-rehearsal.json",
+        "path": "/opt/diesel/backups/0f51a9dfd14f874d3dfa5713d172fb3462d48874/governance-after-rehearsal.json",
+        "bytes": 92119392,
+        "sha256": "7386597a08baad51048503e8e10da82fc9de179a5538598ec976fabac7c853cb",
+        "uid": 0,
+        "gid": 0,
+        "mode": "0600"
+      }
+    ],
+    "restoreApplyReports": [
+      {
+        "kind": "restore-apply",
+        "mode": "apply",
+        "applied": true,
+        "sha256": "1850f2127cd62a695bb67f18e92c62f5c65e3b8f0c37c1157419b01c766a7b4a"
+      }
+    ],
+    "snapshotWorkerExits": [
+      {
+        "kind": "governance-snapshot-worker-exit-v1",
+        "durationMs": 725885,
+        "exitCode": 0,
+        "signal": null
+      },
+      {
+        "kind": "governance-snapshot-worker-exit-v1",
+        "durationMs": 1183552,
+        "exitCode": 0,
+        "signal": null
+      }
+    ],
+    "noNetChangeComparisonPassed": true,
+    "comparisonContract": "The immutable release compares tableCounts and tables using isDeepStrictEqual before publication; snapshot timestamps mean file digests need not match.",
+    "fullExisting97CountryClosurePublishedAndValidated": true
+  },
+  "manualRealBrowser": {
+    "observedAt": "2026-10-06T21:44:38.780Z",
+    "usesLivePublicSite": true,
+    "interceptsChat": false,
+    "mocksProvider": false,
+    "checks": {
+      "initialCountries": [
+        "CHN",
+        "JPN"
+      ],
+      "replacementCountries": [
+        "CHN",
+        "DEU"
+      ],
+      "retainedApplication": "construction",
+      "retainedPowerKw": 120,
+      "retainedAsOf": "2026-08-13",
+      "reloadRestoresCompletedConversation": true,
+      "restorationWarningVisible": true,
+      "localeSwitchPreservesConversation": true,
+      "englishLocalePersistsAfterReload": true,
+      "englishHtmlLang": "en",
+      "marketRows": 6,
+      "marketSourceReferences": 7,
+      "marketLatestVerification": "2026-08-03",
+      "marketUnitsAndInclusiveExclusivePeriodsVisible": true,
+      "historicalObservationWarningVisible": true,
+      "unrelatedRegulationCardShown": false,
+      "homepagePublishedEvidence": {
+        "jurisdictions": 97,
+        "regulations": 28,
+        "limits": 651,
+        "sources": 203,
+        "approvedRealProducts": 0
+      },
+      "countryCatalogSeparate": 178
+    },
+    "screenshotDigests": {
+      "post-deploy-country-replacement.png": "e8283206e8197fc169e27505e4a6fb3d8b09a2e518a53ab7271555213deda9f8",
+      "post-deploy-market-en.png": "72e66e6515086ae1fe1ccdfcaa749a7731cad2772bbbb05291c44945169d9762",
+      "post-deploy-home-en.png": "008f99438e62fd5d51acd22c6fa068c111b289f2e01872e0c949071067b4afde"
+    },
+    "temporaryTabClosed": true
+  },
+  "finalReadback": {
+    "version": "diesel-final-production-metadata-v1",
+    "observedAt": "2026-10-06T21:45:02.683Z",
+    "readOnly": true,
+    "release": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "current": "/opt/diesel/releases/0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "health": {
+      "status": "ok",
+      "version": "0f51a9dfd14f874d3dfa5713d172fb3462d48874"
+    },
+    "durable": {
+      "state": "completed",
+      "operationId": "1fc424ce-e73c-46db-94e2-e8d99e8e6a20",
+      "deploymentVerified": false
+    },
+    "snapshots": [
+      {
+        "name": "governance-before.json",
+        "path": "/opt/diesel/backups/0f51a9dfd14f874d3dfa5713d172fb3462d48874/governance-before.json",
+        "bytes": 92119392,
+        "sha256": "1850f2127cd62a695bb67f18e92c62f5c65e3b8f0c37c1157419b01c766a7b4a",
+        "uid": 0,
+        "gid": 0,
+        "mode": "0600"
+      },
+      {
+        "name": "governance-after-rehearsal.json",
+        "path": "/opt/diesel/backups/0f51a9dfd14f874d3dfa5713d172fb3462d48874/governance-after-rehearsal.json",
+        "bytes": 92119392,
+        "sha256": "7386597a08baad51048503e8e10da82fc9de179a5538598ec976fabac7c853cb",
+        "uid": 0,
+        "gid": 0,
+        "mode": "0600"
+      }
+    ],
+    "safeReports": [
+      {
+        "kind": "restore-apply",
+        "mode": "apply",
+        "applied": true,
+        "sha256": "1850f2127cd62a695bb67f18e92c62f5c65e3b8f0c37c1157419b01c766a7b4a"
+      }
+    ],
+    "services": [
+      {
+        "name": "jamesky-api",
+        "pid": 1554881,
+        "status": "online"
+      }
+    ],
+    "capacity": {
+      "availableBytes": 4668362752,
+      "futureReleaseMinimumBytes": 5368709120
+    },
+    "temporaryDatabaseForwardingUsed": false
+  },
+  "preservedFailures": [
+    "deployment-failure-and-pnpm-recovery-2026-10-06.json",
+    "deployment-network-failure-2026-10-06.json",
+    "registry-typed-options-ci-failure-2026-10-06.json",
+    "locale-cold-compilation-ci-failure-2026-10-06.json"
+  ],
+  "cleanupRecord": "capacity-cleanup-2026-10-06.json",
+  "limitations": [
+    "This operator record is not externally signed and does not establish continuous availability or a cold-start latency SLO.",
+    "The durable runner deliberately leaves deploymentVerified=false; independent host/public/browser acceptance above is separate.",
+    "Available capacity is below the 5 GiB gate for the next full release; current backups, failed releases and journal archives are retained.",
+    "In the extra CHN/DEU query, the model introduction said the remaining three numerical limits were the same, while its later paragraph correctly identified PM as different. The deterministic card was correct. This narrative consistency issue remains unresolved and is not counted as a fixed UX behavior.",
+    "No approved real products, external regulatory-expert sign-off or real sales-effectiveness claims were added."
+  ]
+}

@@ -308,6 +308,18 @@ Provider 前看门狗集成夹具给真实 Node/tsx 冷启动 3 秒预算，并�
 断言，再检查 SIGTERM 和零调用失败报告；另有独立 10 秒总安全界限。仅调整测试预算，
 不改生产初始化时限或终止策略。
 
+The locale/date browser case prepares its real catalog and read-only product-fit
+routes in an explicit, at-most-30-second step before UI navigation. On-demand
+Next development compilation previously consumed the unchanged ten-second
+result assertion: the catalog returned 200 after 6.74 seconds and the fit request
+started just before the assertion expired. Preparation checks 200 responses,
+Zod-valid Demo data and the exact query; it is not a mock or a business-data write.
+All original UI assertions, per-case limits and the zero-flaky release rule stay
+unchanged. This case tests localization, not a cold-development performance SLO.
+本地化/日期浏览器用例先以显式、最多 30 秒的步骤准备真实目录和只读 product-fit 路由，
+单独覆盖 Next 开发冷编译；不放宽原有 10 秒界面断言、单例时限或 flaky 失败门禁，
+不修改生产超时。准备阶段也严格核对 HTTP 200、Zod 数据和精确 Demo 查询。
+
 ## 3. GitHub 原生密钥扫描
 
 CI 的 gitleaks job 覆盖历史扫描。原生 Secret scanning 与 push protection

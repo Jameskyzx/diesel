@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import { localeFromBrowserCookie } from "../src/i18n/locale";
+import {
+  productFitEvaluationSchema,
+  productListResponseSchema,
+} from "../src/features/product-fit/schemas";
 
 function chatTextStream(text: string, id: string): string {
   return [
@@ -1068,6 +1072,36 @@ test("keeps the home page inside a 320px viewport in both locales", async ({
 test("localizes visible country names and dates while preserving the ISO query", async ({
   page,
 }) => {
+  // This case verifies localized UI, not Next development compilation speed.
+  // Compile the real read-only routes in a separately bounded preparation step
+  // so the original 10-second UI assertions do not include their cold builds.
+  await test.step("Prepare the real catalog and fit routes before locale assertions", async () => {
+    const products = await page.request.get("/api/products", { timeout: 30_000 });
+    expect(products.status()).toBe(200);
+    const catalog = productListResponseSchema.parse(await products.json());
+    expect(catalog.products.some(
+      (product) => product.modelCode === "DEMO-ENG-100",
+    )).toBe(true);
+    const fit = await page.request.post("/api/product-fit", {
+      data: {
+        applicationScope: "non-road",
+        asOf: "2026-08-12",
+        countryIso3: "CHN",
+        powerKw: 100,
+        productModelCode: "DEMO-ENG-100",
+      },
+      timeout: 30_000,
+    });
+    expect(fit.status()).toBe(200);
+    const evaluation = productFitEvaluationSchema.parse(await fit.json());
+    expect(evaluation.input).toMatchObject({
+      applicationScope: "non-road",
+      countryIso3: "CHN",
+      powerKw: 100,
+      productModelCode: "DEMO-ENG-100",
+    });
+    expect(evaluation.asOf).toBe("2026-08-12");
+  }, { timeout: 30_000 });
   await page.goto(
     "/countries/CHN?applicationScope=non-road&asOf=2026-08-12&powerKw=100&productModelCode=DEMO-ENG-100",
   );

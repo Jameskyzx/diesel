@@ -1254,6 +1254,11 @@ VPS 当前不预设 `pg_dump`；§4.3 会在同一个治理维护锁内完成 fr
 这只是传输时限调整，不是可靠性或耗时保证；独立 systemd 构建总上限仍为 45 分钟，
 到期、下载错误或完整性错误继续失败并回滚。官方 registry、TLS、版本控制锁文件、
 无安装脚本、copy 导入及工件单链接检查不变；不从外部 npm 配置继承这三项时限。
+这三项使用 pnpm 的数字类型 install 参数（`--network-concurrency=4`
+`--fetch-timeout=600000 --fetch-retries=2`），不能使用会保留字符串类型的
+`--config.*` 拼写。真实 Linux CI 曾拒绝字符串并发数；部署回归除参数 mock 外，
+还在隔离目录用真实 pnpm 与本地 file 依赖执行离线 frozen install，确认数字参数
+在相反的环境配置下仍可安装且不改变锁文件。完整 Linux handoff 仍是发布必需门禁。
 Next 的 SWC fallback 还会直接调用 `pnpm config get registry`；固定 Node 工具目录
 必须由现有官方 Corepack 提供 root-owned 的 pnpm/pnpx shim。已完成的主机修复与
 无生产配置的构建用户实测见[受控记录](evidence/operations/deployment-failure-and-pnpm-recovery-2026-10-06.json)。

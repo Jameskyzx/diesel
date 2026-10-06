@@ -34,6 +34,10 @@ This is the only current release/evidence index. Historical implementation notes
   原发布仍记录 exit 75；正式前滚验收成功后独立确认 `COMMITTED:PUBLISH_FINALIZED`。
   新进程首次真实聊天、随后六个中英示例、TLS 正负对照和 provider canary 均通过；临时转发已撤销。
   [本轮完整记录](evidence/operations/production-closeout-latest.json) 保留所有失败，不宣称长期稳定性或所有工程维护已完成。
+  2026-10-06 的新候选 `361dabc48216103fd7f37cd02be18499c3138935` 已通过 master CI，但在隔离构建中因 VPS 缺少 pnpm shim 失败，
+  原始 exit 70 与 `ROLLED_BACK:none` 保留；`2026-10-06T13:00:47.733Z` 独立健康读回仍为上述旧版 `30daa51`。
+  现有官方 Corepack 的 pnpm 入口已补齐，构建用户的固定版本 registry 查询通过；这不是新版本上线声明。
+  [失败及主机修复记录](evidence/operations/deployment-failure-and-pnpm-recovery-2026-10-06.json)。后续只能以新的 CI-approved SHA 走完整发布，不重用失败候选。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

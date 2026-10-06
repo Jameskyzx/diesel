@@ -278,7 +278,7 @@ test("answers a capability question without forcing a fact tool", async ({ page 
   await expect(markdown.getByRole("listitem")).toHaveCount(4);
   await expect(conversation).not.toContainText("没有足够证据");
   await expect(conversation).not.toContainText("正在执行确定性查询");
-  await expect(conversation).not.toContainText("国家与法规资料");
+  await expect(conversation.getByRole("region")).toHaveCount(0);
 });
 
 test("previews, removes, and validates chat attachments", async ({ page }) => {

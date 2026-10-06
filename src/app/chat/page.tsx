@@ -128,6 +128,8 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
           </div>
         </aside>
         <SalesChat
+          key={JSON.stringify({ demoMode, ...context })}
+          historyKey={JSON.stringify({ demoMode, ...context })}
           aiConfigured={isServerAiConfigured()}
           countryIso2ByIso3={countryIso2ByIso3}
           demoMode={demoMode}

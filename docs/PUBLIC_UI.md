@@ -13,9 +13,12 @@ Tabler is MIT licensed; the upstream notice is preserved below.
 
 ## Page composition
 
-- Home: API-derived catalog/review/freshness/gap counts, a searchable country
-  evidence table, a review-rate card and a compact workflow list. Review counts
-  are not numerical regulatory coverage, and demo counts are labeled fictional.
+- Home: the versioned published snapshot is the primary metric row: 97
+  jurisdictions, 28 regulations, 651 limit records, 203 sources and zero approved
+  real products. These values are checked against the signed publication closure
+  by unit tests and `portfolio:verify`; they are not live database counts. API-derived
+  catalog/review/freshness counts remain separate. Review counts are not numerical
+  regulatory coverage, and the offline Demo retains its fictional counts.
 - Map: country selector and shortcuts in the map card's toolbar. At 1440 px and
   above, country details occupy a reserved, non-overlapping right-hand panel;
   smaller screens retain the non-modal drawer and its independent locale control.
@@ -41,6 +44,36 @@ starter was removed because its advertised scope lacked comparable real data;
 real products remain unpublished, and missing evidence must still fail closed.
 Unscoped regulatory status uses structured country profiles. Explicit requests
 for original documents continue to use knowledge retrieval.
+
+### User journey corrections
+
+Country replacement is resolved before a pair of mentioned country names can
+replace the comparison set. For example, after CHN/JPN construction 120 kW,
+“replace Japan with Germany” retains CHN and produces CHN/DEU at the original
+scope, power and date. A missing original country or a collapsed one-country
+comparison remains an explicit parameter gap. The evidence gate is unchanged;
+this corrects its input rather than relaxing validation.
+
+Country-profile cards render only their requested topics. Market-only requests
+show observations, units, application, reporting periods and source verification,
+with a historical-data notice; unrelated regulation lists no longer precede them.
+Card source lists are filtered to the requested topics plus country identity,
+and their latest-verification date is recalculated from those displayed sources.
+The original validated tool output and evidence checks are not changed.
+The map legend explicitly describes published evidence boundaries, not numeric
+regulatory coverage.
+
+Completed conversations are restored from this browser tab's `sessionStorage`
+for at most 24 hours after completion. The cache is bounded to 1 MB and 12 user
+turns and validated with Zod, including tool-result/input consistency. It never
+stores uploaded bytes, reasoning or provider metadata. Changing validated URL
+context starts a separate conversation; “New chat” clears the cached conversation.
+Storage denial or an oversized conversation produces a visible warning while
+chat remains usable. Restored cards retain their original query/verification
+dates and are labeled as restored; subsequent requests transmit only user text
+history and re-query server evidence. This is tab-local recovery, not a new
+server-side history store or write API. Browser tests cover reload, follow-up,
+clear, context isolation and storage failure in both languages and viewport sizes.
 
 English and Chinese share this composition. Small screens use a top brand bar
 and three visible navigation links rather than hiding the primary routes. All

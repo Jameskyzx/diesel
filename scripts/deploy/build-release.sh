@@ -112,10 +112,10 @@ cp -p -- "${next_environment_path}" "${next_environment_snapshot}"
 # systemd service still enforces its independent 45-minute build deadline.
 # Registry/TLS, lockfile integrity and the no-lifecycle-script boundary remain
 # unchanged. Never inherit these transport bounds from a caller's npm config.
+# Numeric options must use pnpm's typed install flags, not --config.* strings.
 corepack pnpm --config.registry="${registry}" \
-  --config.network-concurrency=4 --config.fetch-timeout=600000 \
-  --config.fetch-retries=2 \
-  install --frozen-lockfile --trust-lockfile --package-import-method=copy \
+  install --network-concurrency=4 --fetch-timeout=600000 --fetch-retries=2 \
+  --frozen-lockfile --trust-lockfile --package-import-method=copy \
   --ignore-scripts --ignore-pnpmfile
 
 env -i \

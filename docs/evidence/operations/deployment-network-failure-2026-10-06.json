@@ -1,0 +1,56 @@
+{
+  "version": "diesel-preserved-registry-download-failure-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedAt": "2026-10-06T15:04:41.132Z",
+  "release": "5f1d6a73719dcc3179b9b24279bf4959f0a3a58f",
+  "pullRequest": "https://github.com/Jameskyzx/diesel/pull/72",
+  "exactMasterCi": { "runId": 37475401034, "event": "push", "headSha": "5f1d6a73719dcc3179b9b24279bf4959f0a3a58f", "conclusion": "success", "allTenJobsPassed": true },
+  "stage": { "inputDigest": "4c23a3811b456d9a6e40eb03e8ce200bb603054bcce0bfae9bddf2f34cbb95f2", "authorizationVerifiedAt": "2026-10-06T14:46:19.333Z", "exitCode": 0 },
+  "operation": {
+    "id": "f3fa5c9b-547e-417c-ac57-32f6f6eaa4ed",
+    "mode": "full",
+    "startedAt": "2026-10-06T14:54:07.276Z",
+    "completedAt": "2026-10-06T15:00:31.050Z",
+    "invocationId": "fff2b941343d497ebd12a4bba6f40e37",
+    "exitCode": 70,
+    "signal": null,
+    "state": "failed",
+    "deploymentVerified": false
+  },
+  "failure": {
+    "phase": "official-registry-frozen-dependency-installation",
+    "provenCause": "The required next-16.3.6.tgz download timed out after the configured retry sequence; pnpm exited 1. Slow-download and timeout warnings were also retained for other mandatory/optional packages.",
+    "pnpmShimMissingAgainProven": false,
+    "completedBuildArtifactGenerated": false,
+    "deployReadyArtifactGenerated": false,
+    "governanceSnapshotWorkersObserved": 0,
+    "governancePublicationReached": false,
+    "stdoutSha256": "44b7f10286d332060679a9ce3229b4dcba419a06e8737474f48e933194b552b7",
+    "stderrSha256": "15ab46e57ff1297648384997f30796b2a43a360f709f8c6e4b2c40be0558e7c3",
+    "rawCredentialsPublished": false
+  },
+  "rollback": {
+    "strictLedgerValidationExitCode": 0,
+    "terminalLedger": "ROLLED_BACK:none",
+    "currentRelease": "30daa51d34bab95e6d729982a19194a4af5352ba",
+    "health": { "status": "ok", "timestamp": "2026-10-06T15:04:41.132Z", "version": "30daa51d34bab95e6d729982a19194a4af5352ba" },
+    "jameskyApiPid": 1554881,
+    "jameskyApiPidUnchanged": true,
+    "failedCandidatePreserved": true,
+    "sameShaMustNotBeReused": true
+  },
+  "boundedRegistryProbe": {
+    "source": "https://registry.npmjs.org/next/-/next-16.3.6.tgz",
+    "rangeBytes": 1048576,
+    "maximumSeconds": 30,
+    "httpStatus": 206,
+    "downloadedBytes": 1048576,
+    "durationSeconds": 6.946421,
+    "speedBytesPerSecond": 150951,
+    "tlsVerificationEnabled": true,
+    "credentialUsed": false,
+    "doesNotProveWholeTarballOrBuildSuccess": true
+  },
+  "proposedVersionedTransportChange": { "registryUnchanged": true, "networkConcurrency": 4, "fetchTimeoutMs": 600000, "fetchRetries": 2, "maximumBuildMinutesUnchanged": 45, "requiresFreshCiApprovedSha": true, "notYetDeployed": true },
+  "limitations": ["One small range transfer is not a network reliability or whole-build performance guarantee.", "Both failed releases and every backup remain preserved; neither failure is reclassified as success."]
+}

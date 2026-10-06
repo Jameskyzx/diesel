@@ -6930,7 +6930,7 @@ printf '%s\\n' "$value"
     }
   });
 
-  it("restores Next's tracked environment file and confines TypeScript build state to .next", async () => {
+  it("bounds registry downloads, restores Next's tracked environment file and confines TypeScript build state to .next", async () => {
     const fixture = await realpath(
       await mkdtemp(join(tmpdir(), "diesel-next-generated-inputs-")),
     );
@@ -7042,6 +7042,9 @@ fi
             ...buildEnvironment,
             BUILD_HOME: buildHome,
             BUILD_RELEASE_ID: TEST_RELEASE_SHA,
+            npm_config_network_concurrency: "128",
+            npm_config_fetch_timeout: "1",
+            npm_config_fetch_retries: "99",
             PATH: `${fakeBin}:/usr/bin:/bin`,
           },
         },
@@ -7052,6 +7055,9 @@ fi
         [
           "pnpm",
           "--config.registry=https://registry.npmjs.org",
+          "--config.network-concurrency=4",
+          "--config.fetch-timeout=600000",
+          "--config.fetch-retries=2",
           "install",
           "--frozen-lockfile",
           "--trust-lockfile",

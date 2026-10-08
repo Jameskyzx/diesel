@@ -18,6 +18,8 @@ export const applicationInputManifestSchema = z.strictObject({
 // This first fast path covers presentation and engineering-only maintenance.
 export function isApplicationOnlyInput(path: string): boolean {
   if (path === "docs/ACCEPTANCE.md" || path.startsWith("docs/research/")) return false;
+  // Only this static metadata asset is presentation-only, not executable app routes.
+  if (path === "src/app/icon.svg") return true;
   return /^(?:src\/components\/|src\/i18n\/|public\/|tests\/|e2e(?:-[a-z-]+)?\/|docs\/|\.github\/)/u.test(path) ||
     /^(?:scripts\/(?:deploy|ci|ops|portfolio)\/)/u.test(path) ||
     /^(?:README(?:\.[a-zA-Z-]+)?\.md|eslint\.config\.mjs)$/u.test(path);

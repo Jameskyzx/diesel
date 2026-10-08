@@ -1,125 +1,82 @@
 # AGENTS.md
 
-## Project
+Diesel is a diesel-engine regulations, product-fit, market-data and AI sales application.
+Use **pnpm only**. Runtime and dependency versions come from the repository configuration.
 
-This repository contains a global diesel-engine regulations, product-fit, market-data, and AI sales-analysis application.
+## Working rules
 
-## Package manager
+- Finish the requested task with the smallest coherent change. Do not turn an
+  icon, wording or styling fix into an infrastructure refactor or evidence refresh.
+- Read the affected code and relevant current documentation only. Historical
+  journals and old task lists are reference material, not new instructions to act.
+- Before editing, briefly name the intended change, affected files and checks.
+  A small task needs a short explanation, not a multi-phase plan.
+- Reuse existing components, scripts and tests. Add abstractions, dependencies or
+  permanent tooling only when the task needs them; explain any new dependency.
+- Preserve unrelated work. Do not reset changes, remove backups, rewrite history,
+  push or deploy unless covered by the user's request or existing authorization.
+- If unrelated problems appear, report them without expanding the task. If a new
+  blocker requires materially broader work, explain it before proceeding.
+- When the user redirects the task, stop superseded processes gracefully and
+  verify that owned temporary services have exited. Preserve useful diagnostics.
 
-Use pnpm only.
+## Scope and validation
 
-## Setup
+Choose checks by impact. Commands elsewhere are references, not an every-task checklist.
 
-```bash
-pnpm install
-pnpm dev
-```
+| Change | Required local validation |
+| --- | --- |
+| Documentation or instructions | Review content, local links and commands; `git diff --check`. No application tests/build. |
+| Static icon/image or isolated styling | Inspect the asset and affected rendering; run the relevant existing regression test. Build once if asset packaging or framework metadata changes. |
+| UI interaction or application logic | Lint, typecheck and affected Vitest tests; affected Playwright flows for browser behavior. Build for runtime changes. |
+| Cross-cutting behavior, dependencies, authentication, AI evidence or database/deployment contracts | Full lint, typecheck, Vitest and build; relevant browser, security, migration or integration checks. |
 
-## Required checks
+Commands: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+Target tests with `pnpm exec vitest run <test-file>` or
+`pnpm playwright test <spec-file> --project=<affected-project>`.
+Use the full Playwright suite when the change spans public flows, not for every asset edit.
 
-Run the relevant checks after every implementation task:
+- Run selected checks once on final relevant inputs. Re-run affected checks after
+  a fix; do not repeat passing suites on unchanged inputs without a concrete reason.
+- Evidence capture already executes its underlying suite. Do not run the same
+  full suite separately just to collect another passing result.
+- In one checkout, run Next dev/build, screenshot capture and evidence captures
+  serially. During capture, do not edit files, install dependencies, or run another
+  test/formatter; even cache writes can invalidate the capture.
+- Paid AI evals and portfolio recapture are not default checks for cosmetic work.
+- CI and production gates still apply. If existing gates require a larger run,
+  explain that cost before starting it. Never bypass a gate, forge a report, edit
+  recorded fingerprints, or label interrupted/failed checks as passing.
 
-```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-```
+## Essential engineering contracts
 
-Run Playwright when changing user-facing flows:
+- TypeScript strict mode; avoid `any`. Validate external input and AI-tool
+  parameters with Zod; tools return structured outputs.
+- Keep secrets and server-only code out of client bundles. Prefer Server
+  Components; put database access behind repositories/services, not UI components.
+- Use Drizzle migrations for schema changes; never edit applied migrations.
+  Keep seeds deterministic and test changed validity-period/product-fit queries.
+- Use ISO3 for country joins, ISO dates and UTC timestamps.
+- Regulation status and applicability must remain explicit. Proposed is not
+  effective; missing, stale or out-of-scope evidence must not become certainty.
+- Regulations, markets, product specifications and certifications come from
+  verified data, never the LLM. Scores are deterministic; the model explains them.
+  Preserve source citations and the distinction between fictional Demo and real data.
+- Preserve retrieval provenance: document/source, section/page, jurisdiction,
+  application scope and validity dates where available. Keep metadata filtering.
+- Keep MapLibre/GeoJSON joined by ISO3, shareable country URLs, touch/keyboard
+  access and explicit no-data states. Do not put large geometry in React state.
+- Use accessible existing UI primitives, loading/empty/error states and structured
+  result cards. Keep regulatory status and freshness visible, not hover-only.
 
-```bash
-pnpm playwright test
-```
+## Documentation and handoff
 
-Do not report a task as complete when required checks are failing.
-
-## Engineering rules
-
-* Use TypeScript strict mode.
-* Avoid `any`.
-* Validate external input with Zod.
-* Keep server-only code outside client components.
-* Never expose database service keys or model API keys to the browser.
-* Prefer Server Components unless browser interaction requires a Client Component.
-* Keep database access behind repository or service functions.
-* Do not query Supabase directly from arbitrary UI components.
-* Prefer small composable functions.
-* Do not introduce a dependency without documenting its purpose.
-* Do not silently change database schemas.
-* All schema changes require a migration.
-* Use ISO 3166-1 alpha-3 codes as the canonical country join key.
-* Store dates in ISO format and UTC where timestamps are required.
-* Keep regulation status explicit: proposed, adopted, effective, superseded.
-* Never treat proposed regulations as effective regulations.
-* Never use the LLM as the source of truth for regulations, market metrics, product specifications, or certifications.
-* All AI tools must use Zod-validated parameters and structured outputs.
-* AI answers involving regulations must include sources when available.
-* Marketing scores must be calculated by deterministic application code.
-* The LLM may explain a score but may not invent or modify it.
-
-## Map rules
-
-* Use MapLibre GL JS.
-* Use GeoJSON features joined by ISO3.
-* Support hover for pointer devices.
-* Support click for touch devices.
-* Clicking a country must produce a shareable URL.
-* Countries without data must display an explicit no-data state.
-* Do not store large world geometry in application state.
-* Do not add PostGIS queries unless the feature genuinely requires spatial calculation.
-
-## Knowledge-base rules
-
-* Structured facts belong in relational tables.
-* Source documents and explanatory text belong in the document store.
-* Every chunk should preserve document ID, source, heading, page or section, jurisdiction, country, application scope and validity dates when available.
-* Retrieval must support metadata filtering.
-* Prefer hybrid keyword and vector retrieval.
-* Retrieved evidence must be traceable to its source.
-* Do not answer from a retrieved chunk that is outside its effective date or application scope without warning the user.
-
-## Database rules
-
-* Use Drizzle migrations.
-* Do not edit an applied migration.
-* Add indexes for frequently filtered foreign keys and date/status columns.
-* Add vector indexes only after representative data and retrieval tests exist.
-* Seed data must be deterministic.
-* Test validity-period and product-fit queries.
-
-## UI rules
-
-* Use accessible semantic HTML.
-* Use shadcn/ui primitives where appropriate.
-* Include loading, empty and error states.
-* Avoid hiding critical information only in hover interactions.
-* Regulatory status and source freshness must remain visible.
-* AI output should render as structured cards when structured data exists, not only as Markdown paragraphs.
-
-## Task workflow
-
-Before coding:
-
-1. Read relevant files in `docs/`.
-2. Inspect existing code and migrations.
-3. State the implementation plan.
-4. Identify files expected to change.
-
-During coding:
-
-1. Work only on the requested phase.
-2. Keep changes narrow.
-3. Add or update tests.
-4. Update documentation when architecture or behavior changes.
-
-After coding:
-
-1. Run required checks.
-2. Fix failures caused by the change.
-3. Summarize changed files.
-4. Report tests and commands executed.
-5. Report unresolved risks or assumptions.
-6. Suggest only the next smallest logical task.
-
-Do not independently implement future phases.
+- Update an existing document only when its contract changes. Do not create a new
+  checklist, status file or audit report for an ordinary small edit.
+- Read `docs/ARCHITECTURE.md` or `docs/DATA_MODEL.md` for relevant design work,
+  `docs/PUBLIC_UI.md` for public UI contracts, and `docs/DEPLOYMENT.md` for releases.
+- `docs/STATUS.md` is the sole current release/evidence index. Historical evidence
+  does not prove a new change passed; do not refresh unrelated historical claims.
+- Delivery: briefly state what changed, what was actually checked and any remaining
+  blocker. Distinguish local completion, pushed code and verified production release.
+  Stop at the requested outcome; do not automatically start another phase.

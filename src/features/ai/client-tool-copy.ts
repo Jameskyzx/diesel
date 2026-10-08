@@ -393,6 +393,43 @@ function requiredFieldsForReasonCode(
   return copy[requiredFieldsCopyKeyByReasonCode[code]];
 }
 
+const passingReasons = new Set<ProductFitReasonCode>([
+  "APPLICATION_SCOPE_MATCH", "CERTIFICATION_MATCH", "PRODUCT_AVAILABLE", "PRODUCT_POWER_MATCH",
+]);
+
+export function productFitNextSteps(
+  reasons: readonly { code: ProductFitReasonCode }[],
+  dictionary: Dictionary,
+): string[] {
+  const copy = dictionary.queryEditor;
+  const steps = reasons.filter(({ code }) => !passingReasons.has(code)).map(({ code }) => {
+    const category = requiredFieldsCopyKeyByReasonCode[code];
+    if (category === "requiredCertificationFields") return copy.certificationEvidence;
+    if (category === "requiredRegulationFields") return copy.regulationEvidence;
+    return copy.productEvidence;
+  });
+  return [...new Set(steps)];
+}
+
+export function toolEvidenceNextSteps(result: ClientAiToolResult, dictionary: Dictionary): string[] {
+  if (result.status !== "no_data") return [];
+  const copy = dictionary.queryEditor;
+  if (result.tool === "findCompatibleProducts") {
+    const steps = productFitNextSteps(result.evaluations.flatMap(({ reasons }) => reasons), dictionary);
+    return [copy.checkQuery, ...(steps.length ? steps : [copy.productEvidence])];
+  }
+  if (result.tool === "searchKnowledgeBase") return [copy.knowledgeEvidence];
+  if (result.tool === "compareMarkets") return [copy.marketEvidence];
+  if (result.tool === "getCountryProfile") return [
+    copy.checkQuery,
+    ...(result.requestedTopics.includes("regulations") ? [copy.regulationEvidence] : []),
+    ...(result.requestedTopics.includes("market") ? [copy.marketEvidence] : []),
+    ...(result.requestedTopics.length === 1 && result.requestedTopics[0] === "country" ? [copy.reviewEvidence] : []),
+  ];
+  if (result.tool === "compareRegulations") return [copy.checkQuery, copy.regulationEvidence];
+  return [copy.checkQuery, copy.reviewEvidence];
+}
+
 export function buildProductFitDataGapSummary({
   dictionary,
   evaluation,
@@ -407,7 +444,7 @@ export function buildProductFitDataGapSummary({
   const copy = dictionary.productFit;
   const requiredFields = Array.from(
     new Set(
-      evaluation.reasons.map(({ code }) =>
+      evaluation.reasons.filter(({ code }) => !passingReasons.has(code)).map(({ code }) =>
         requiredFieldsForReasonCode(code, copy),
       ),
     ),
@@ -433,6 +470,7 @@ export function buildProductFitDataGapSummary({
       .map((reason) => productFitReasonMessage(reason, locale))
       .join(itemSeparator)}`,
     `${copy.dataGapSummaryRequiredFields}${separator}${requiredFields.join(itemSeparator)}`,
+    `${dictionary.queryEditor.nextSteps}${separator}${productFitNextSteps(evaluation.reasons, dictionary).join(itemSeparator)}`,
   ].join("\n");
 }
 

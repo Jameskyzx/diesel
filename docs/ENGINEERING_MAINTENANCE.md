@@ -4,6 +4,24 @@ This describes the new implementation contracts, not production acceptance.
 The current deployed SHA and verification evidence remain in [STATUS.md](STATUS.md).
 此文不是“全部完成”声明；线上安装、Linux 演练、合并与部署必须有实际回执。
 
+## Routine work boundary / 日常工作边界
+
+[AGENTS.md](../AGENTS.md#scope-and-validation) is the single policy for choosing
+day-to-day checks. This document is a reference for maintenance/release work,
+not a checklist to execute for every code, copy or icon edit. Historical incident
+notes do not authorize a new migration, cleanup or evidence-refresh task.
+
+Current limitation: CI still runs `portfolio:verify --release-evidence`, which
+binds browser and Vitest artifacts to their source inputs; the screenshot inputs
+currently include `src/app/icon.svg`. Local scoped checks do not remove that
+coupling. Changing it requires a separate reviewed implementation, not rewriting
+old report hashes, omitting a failing job or claiming this documentation changed
+the release gate. Existing protection, backups and rollback guarantees remain.
+
+日常检查只按 `AGENTS.md` 分级选择；本文件按维护任务查阅，不作为每次修改的必跑清单。
+当前 CI 仍将发布与源码绑定的作品证据关联，截图输入也包含 favicon。本次规则整理没有
+解除这种程序级关联，也不允许伪造报告、跳过失败检查或删除恢复依据。
+
 ## 1. Durable release execution / 持久化发布
 
 After the normal exact-master/Required CI gate authorization and immutable
@@ -53,6 +71,8 @@ presentation/engineering-only release may select `start-application`.
   patches and any new unclassified source root must be identical. Only the
   enumerated presentation, public asset, test, documentation and maintenance
   paths can differ. This is intentionally narrower than “all code changes.”
+  The exact static metadata asset `src/app/icon.svg` is also presentation-only;
+  executable icon handlers, layouts and other app routes remain protected.
 - The lifecycle lock remains held. After building, the governance maintenance
   lock spans before-read, activation and verification. Database identity and
   complete migration lineage must match. Read-only repeatable-read transactions

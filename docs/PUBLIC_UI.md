@@ -25,9 +25,25 @@ Tabler is MIT licensed; the upstream notice is preserved below.
 - Country: section shortcuts scroll to regulations, product fit, market and
   sources without hiding facts or unmounting the product-fit form. Existing
   cancellation, URL identity and history logic remain unchanged.
-- Chat: applicability parameters are shown beside a bounded conversation pane.
+- Country regulation research has its own application/power/date form, without
+  selecting a product or calling AI. It uses the existing validated country
+  query and applicability summary. Submitting removes any product from the
+  shared URL, preserves unrelated parameters and cancels pending product work.
+  Product fit remains a separate workflow, explicitly labeled when its entire
+  catalogue is fictional Demo data.
+- Chat: applicability parameters are editable beside a bounded conversation pane.
   Empty, configured, error and completed responses retain their real states.
-  The displayed context comes from the existing validated URL, not model memory.
+  The starting context comes from the validated URL, not model memory. Applying
+  changed conditions navigates to a separate conversation and prepares a draft;
+  it never sends a model request automatically. A blank product means regulatory
+  research only. Draft edits can override starting conditions, so every tool card
+  separately displays its actual query (including country-profile cards).
+- Evidence gaps include localized next steps based on structured result/reason
+  codes: verify input, obtain applicable official regulations, manufacturer
+  specifications or certificates, or comparable market observations. Successful
+  checks do not create missing-field requests. Product gap copies include these
+  next steps; they still only copy locally and never submit tickets. No evidence
+  boundary or readiness decision is relaxed by this presentation change.
 
 ### Chat starter contract
 
@@ -78,6 +94,13 @@ clear, context isolation and storage failure in both languages and viewport size
 English and Chinese share this composition. Small screens use a top brand bar
 and three visible navigation links rather than hiding the primary routes. All
 controls remain keyboard accessible; the decorative engine icon is retained.
+
+The browser tab and Apple touch icons reuse that same approved diesel-engine
+artwork. Regenerate them with `pnpm exec tsx scripts/portfolio/generate-brand-icons.ts`.
+`src/app/icon.svg` embeds its small PNG directly so it needs no external image
+fetch; Next's file-based metadata supplies a content-versioned favicon URL.
+The browser regression checks the icon actually selected by the page, not just
+whether an arbitrary image endpoint returns HTTP 200.
 
 The user approved publishing this reconstruction on 2026-10-03. Approval does
 not establish that it has been deployed: production status remains solely in

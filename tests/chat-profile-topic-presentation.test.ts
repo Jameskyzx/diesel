@@ -77,6 +77,7 @@ it.each(["en", "zh-CN"] as const)("uses only displayed-topic sources and freshne
     { dictionary, locale } as Parameters<typeof LocaleProvider>[0],
     createElement(ToolResultCard, { countryIso2ByIso3: { CHN: "CN" }, result })));
   const header = html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+  expect(html).toContain(dictionary.chat.queryConditions);
   expect(header).toContain(formatUtcDate("2026-08-03", locale));
   expect(header).not.toContain(formatUtcDate("2026-08-11", locale));
   expect(html).not.toContain("DEMO-CHN-AUTHORITY");
@@ -110,4 +111,9 @@ it("handles no-data and execution-error country profiles without inventing displ
     expect(() => renderToStaticMarkup(createElement(ToolResultCard,
       { countryIso2ByIso3: {}, result }))).not.toThrow();
   }
+  const noDataHtml = renderToStaticMarkup(createElement(ToolResultCard, { countryIso2ByIso3: {}, result: noData }));
+  expect(noDataHtml).toContain(getDictionary("en").queryEditor.marketEvidence);
+  expect(noDataHtml).not.toContain(getDictionary("en").queryEditor.certificationEvidence);
+  const errorHtml = renderToStaticMarkup(createElement(ToolResultCard, { countryIso2ByIso3: {}, result: error }));
+  expect(errorHtml).not.toContain("evidence-next-steps");
 });

@@ -531,7 +531,7 @@ test("preserves the complete decision context when switching countries", async (
   await page.goto(`/countries/CHN?${query}`);
 
   await expect(page.getByLabel("应用场景")).toHaveValue("marine");
-  await expect(page.getByLabel("功率（kW）")).toHaveValue("321.5");
+  await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue("321.5");
   await expect(page.getByLabel("评估日期")).toHaveValue("2024-02-03");
   await expect(page.getByTestId("product-fit-result")).toBeVisible();
 
@@ -541,7 +541,7 @@ test("preserves the complete decision context when switching countries", async (
 
   await expect(page).toHaveURL(`/countries/BRA?${query}`);
   await expect(page.getByLabel("应用场景")).toHaveValue("marine");
-  await expect(page.getByLabel("功率（kW）")).toHaveValue("321.5");
+  await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue("321.5");
   await expect(page.getByLabel("评估日期")).toHaveValue("2024-02-03");
 });
 
@@ -719,7 +719,7 @@ test("uses a newly committed fit query in chat before the URL refresh completes"
     .getByRole("radio", { name: /^DEMO-ENG-200/ })
     .check();
   await page.getByLabel("应用场景").selectOption("agriculture");
-  await page.getByLabel("功率（kW）").fill("150");
+  await page.getByLabel("功率（kW）", { exact: true }).fill("150");
   await page.getByLabel("评估日期").fill("2026-01-20");
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   await expect(page.getByTestId("product-fit-result")).toBeVisible();
@@ -947,7 +947,7 @@ test("keeps every product-fit control interactive inside the country drawer", as
     name: /^DEMO-ENG-200/,
   });
   const applicationScope = page.getByLabel("应用场景");
-  const powerKw = page.getByLabel("功率（kW）");
+  const powerKw = page.getByLabel("功率（kW）", { exact: true });
   const evaluationDate = page.getByLabel("评估日期");
 
   await productModel.click();
@@ -1190,7 +1190,7 @@ test("lets touch users choose and re-evaluate product models without a native po
   ).toHaveCount(0);
 
   const applicationScope = page.getByLabel("应用场景");
-  const powerKw = page.getByLabel("功率（kW）");
+  const powerKw = page.getByLabel("功率（kW）", { exact: true });
   await applicationScope.selectOption("construction");
   await page.getByRole("button", { name: "功率 150 kW" }).tap();
   await expect(powerKw).toHaveValue("150");
@@ -1293,7 +1293,7 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   ).toBeVisible();
 
   await page.getByRole("radio", { name: /^DEMO-ENG-100/ }).check();
-  await page.getByLabel("功率（kW）").fill("150");
+  await page.getByLabel("功率（kW）", { exact: true }).fill("150");
   await expect(page.getByTestId("product-fit-result")).toBeHidden();
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   const notFitResult = page.getByTestId("product-fit-status-not_fit");
@@ -1304,5 +1304,5 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await expect(page.getByTestId("product-record-trace")).toContainText(
     "[50, 150) kW",
   );
-  await expect(page.getByLabel("功率（kW）")).toHaveValue("150");
+  await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue("150");
 });

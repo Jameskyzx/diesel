@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
 import {
   buildProductFitDataGapSummary,
+  productFitNextSteps,
   productFitReasonMessage,
 } from "@/features/ai/client-tool-copy";
 import {
@@ -473,6 +474,9 @@ export function ProductFitPanel({
       <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
         {copy.formDescription}
       </p>
+      {productList.status === "ready" && productList.products.length > 0 && productList.products.every((product) => product.isDemo) ? (
+        <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">{dictionary.queryEditor.demoOnly}</p>
+      ) : null}
 
       <form
         aria-busy={
@@ -1169,6 +1173,10 @@ function DataGapCopyAction({
       <p className="mt-1 leading-5">
         {copy.dataGapBody}
       </p>
+      <p className="mt-3 font-semibold">{dictionary.queryEditor.nextSteps}</p>
+      <ul className="mt-2 list-disc space-y-2 pl-4">
+        {productFitNextSteps(evaluation.reasons, dictionary).map((step) => <li key={step}>{step}</li>)}
+      </ul>
       <Button
         className="mt-3"
         onClick={() => void copySummary()}

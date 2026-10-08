@@ -168,28 +168,26 @@ flowchart LR
 
 ## 验证命令
 
-```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm test:coverage
-pnpm ai:eval
-pnpm ai:eval:live
-pnpm portfolio:capture-screenshots
-pnpm portfolio:capture-playwright-evidence
-pnpm portfolio:capture-vitest-evidence
-pnpm portfolio:verify
-pnpm db:check
-pnpm build
-pnpm playwright test
-pnpm test:e2e:demo
-pnpm test:e2e:fde
-pnpm audit:security
-```
+日常修改按 [AGENTS.md](AGENTS.md#scope-and-validation) 选择检查范围。
+换图标或改文案，不自动升级成全量测试和作品证据发布任务。`package.json` 的命令表是参考，
+不是每次修改都要执行的清单。AI 评估说明集中在 [docs/evals](docs/evals/README.md)。
 
-证据采集必须按上述顺序：截图及其 manifest 是浏览器验收输入，浏览器 artifact 与 STATUS
-又是完整 Vitest 指纹的输入。更新浏览器快照后，先完成全部源码/文档编辑，再采集 Vitest。
-任何上游输入变化都必须重新采集下游证据，不得改写报告记录的指纹来绕过检查。
+### 发布作品证据
+
+这是独立的完整流程。当前 CI 发布检查仍要求证据与源码匹配；局部检查不能满足或绕过这一
+门槛。开始发布前先看[维护边界](docs/ENGINEERING_MAINTENANCE.md#routine-work-boundary--日常工作边界)。
+
+确实需要更新证据时，先完成实现，再依次执行：
+
+1. 截图输入有变化时，运行 `pnpm portfolio:capture-screenshots`。
+2. 浏览器验收输入有变化时，运行 `pnpm portfolio:capture-playwright-evidence`，再用真实报告
+   更新 `docs/STATUS.md` 的浏览器快照。
+3. 完成并提交源码与文档修改；Vitest 输入有变化时，运行 `pnpm portfolio:capture-vitest-evidence`。
+4. 提交报告，运行 `pnpm portfolio:verify -- --release-evidence`。
+
+以上操作在同一 checkout 中串行运行，期间不并行执行其他测试、构建或安装。采集命令已经
+运行对应套件，不要对相同输入再跑一遍。截图是浏览器证据的输入，浏览器工件与 STATUS 又是
+Vitest 证据的输入；输入改变必须真实重采集，不能改写报告指纹让旧结果显得有效。
 
 `pnpm portfolio:capture-vitest-evidence` 会运行完整 canonical Vitest suite；只有退出码为零且
 运行前后源码状态完全一致时，才替换 `docs/evidence/vitest-execution-latest.json`。公开 artifact

@@ -485,14 +485,14 @@ describe("Playwright portfolio evidence", () => {
       expect(guarded.error).toBeUndefined();
       expect(guarded.status).toBe(0);
       expect(guarded.stderr).toBe("");
-      expect(guarded.stdout).toBe("16.3.6|absent");
+      expect(guarded.stdout).toBe("16.3.8|absent");
 
       const unguardedEnvironment = { ...execution.environment };
       delete unguardedEnvironment.__NEXT_PROCESSED_ENV;
       const control = runFixture(unguardedEnvironment);
       expect(control.error).toBeUndefined();
       expect(control.status).toBe(0);
-      expect(control.stdout).toBe(`16.3.6|${marker}`);
+      expect(control.stdout).toBe(`16.3.8|${marker}`);
     } finally {
       execution.dispose();
     }

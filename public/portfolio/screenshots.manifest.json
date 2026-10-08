@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-08T09:26:34.678Z",
+      "capturedAt": "2026-10-08T11:07:20.113Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -39,7 +39,7 @@
         "drizzle/meta/_journal.json",
         "next.config.ts",
         "package.json",
-        "patches/next@16.3.6.patch",
+        "patches/next@16.3.8.patch",
         "patches/vaul@1.1.2.patch",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",
@@ -105,6 +105,7 @@
         "src/components/countries/country-detail-drawer.tsx",
         "src/components/countries/country-explorer.tsx",
         "src/components/countries/country-initial-panel.tsx",
+        "src/components/countries/query-context-form.tsx",
         "src/components/home/home-dashboard.tsx",
         "src/components/i18n/locale-controller.tsx",
         "src/components/i18n/locale-provider.tsx",
@@ -161,6 +162,7 @@
         "src/features/admin/schemas.ts",
         "src/features/ai/attachment-errors.ts",
         "src/features/ai/attachments.ts",
+        "src/features/ai/chat-context-prompt.ts",
         "src/features/ai/chat-history.ts",
         "src/features/ai/chat-url-context.ts",
         "src/features/ai/citation-locator-copy.ts",
@@ -177,6 +179,7 @@
         "src/features/ai/model-tool-output-product-fit.ts",
         "src/features/ai/model-tool-output-retrieval.ts",
         "src/features/ai/model-tool-output.ts",
+        "src/features/ai/query-context-form.ts",
         "src/features/ai/released-attachment.ts",
         "src/features/ai/schemas.ts",
         "src/features/ai/tool-display-evidence.ts",
@@ -284,7 +287,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "7bfef0af3f943c77429f3bb1c496cb49df70175ea047bca6d79f40229ba2a6cd",
+      "sourceFingerprint": "b6903e21f06683853896ae6e2fbcf086e14279bc7f6987a14b9dd9a04fc71bcf",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -292,12 +295,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-08T09:26:36.320Z",
+      "capturedAt": "2026-10-08T11:07:23.441Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "2062e1ad7d1db4c7c0ad2d1291d916d4ae384b62fdd046eb43da054a87f445b5",
+      "sha256": "a2ac388901f3ce9a0d4eb01bca40d7b45bf7424ba017385b18803162025eba45",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -330,7 +333,7 @@
         "drizzle/meta/_journal.json",
         "next.config.ts",
         "package.json",
-        "patches/next@16.3.6.patch",
+        "patches/next@16.3.8.patch",
         "patches/vaul@1.1.2.patch",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",
@@ -397,6 +400,7 @@
         "src/components/countries/country-detail-drawer.tsx",
         "src/components/countries/country-explorer.tsx",
         "src/components/countries/country-initial-panel.tsx",
+        "src/components/countries/query-context-form.tsx",
         "src/components/home/home-dashboard.tsx",
         "src/components/i18n/locale-controller.tsx",
         "src/components/i18n/locale-provider.tsx",
@@ -453,6 +457,7 @@
         "src/features/admin/schemas.ts",
         "src/features/ai/attachment-errors.ts",
         "src/features/ai/attachments.ts",
+        "src/features/ai/chat-context-prompt.ts",
         "src/features/ai/chat-history.ts",
         "src/features/ai/chat-url-context.ts",
         "src/features/ai/citation-locator-copy.ts",
@@ -469,6 +474,7 @@
         "src/features/ai/model-tool-output-product-fit.ts",
         "src/features/ai/model-tool-output-retrieval.ts",
         "src/features/ai/model-tool-output.ts",
+        "src/features/ai/query-context-form.ts",
         "src/features/ai/released-attachment.ts",
         "src/features/ai/schemas.ts",
         "src/features/ai/tool-display-evidence.ts",
@@ -576,7 +582,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "165e2d3584524e8136b7c95ff25e972ed50d0e48f73eb3eb44bf9ed365d08020",
+      "sourceFingerprint": "c0d8e144a29534309b05f4a1929b522670a0513f6abd0d38b667c66f06e98f3f",
       "viewport": {
         "height": 1000,
         "width": 1600

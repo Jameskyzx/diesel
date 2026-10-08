@@ -931,7 +931,7 @@ test("relocalizes an untouched deep-link prompt without overwriting an edit", as
   );
   const input = page.locator("#sales-chat-input");
   await expect(input).toHaveValue(
-    /Analyze Non-road regulations and product fit for CHN at 100 kW, as of Aug 12, 2026/u,
+    /Analyze Non-road regulations for CHN at 100 kW, as of Aug 12, 2026/u,
   );
 
   await page
@@ -939,7 +939,7 @@ test("relocalizes an untouched deep-link prompt without overwriting an edit", as
     .getByRole("button", { name: "中文", exact: true })
     .click();
   await expect(input).toHaveValue(
-    /请分析 CHN 的非道路 100 kW 法规与产品适配，判断日期 2026年8月12日/u,
+    /请分析 CHN 的非道路 100 kW 法规，判断日期 2026年8月12日/u,
   );
 
   await input.fill("保留这条用户编辑的内容");

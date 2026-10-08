@@ -31,6 +31,7 @@ import {
 import { AssistantMarkdown } from "@/components/ai/assistant-markdown";
 import { MarketComparisonFacts } from "@/components/ai/market-comparison-facts";
 import { useLocale } from "@/components/i18n/locale-provider";
+import { toolEvidenceNextSteps } from "@/features/ai/client-tool-copy";
 import { unwrapUntrustedKnowledgeExcerpt } from "@/domain/knowledge/retrieval-policy";
 import { Button } from "@/components/ui/button";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
@@ -1087,6 +1088,7 @@ export function ToolResultCard({
   const hasDemoEvidence = resultContainsDemoEvidence(result);
   const warnings = localizedToolWarnings(result, locale, copy);
   const displayEvidence = toolDisplayEvidence(result);
+  const nextSteps = toolEvidenceNextSteps(result, dictionary);
 
   return (
     <section
@@ -1122,15 +1124,7 @@ export function ToolResultCard({
         </span>
       </header>
 
-      {result.status === "error" ||
-      result.tool === "searchKnowledgeBase" ||
-      result.tool === "findCompatibleProducts" ||
-      result.tool === "compareRegulations" ||
-      result.tool === "compareMarkets" ||
-      result.tool === "calculateOpportunityScore" ||
-      result.tool === "generateSalesBrief" ? (
-        <ToolQuerySummary result={result} />
-      ) : null}
+      <ToolQuerySummary result={result} />
 
       {hasDemoEvidence ? (
         <div
@@ -1163,6 +1157,10 @@ export function ToolResultCard({
         </div>
       ) : null}
 
+      {nextSteps.length ? <div className="rounded-md border border-amber-300 p-3 text-xs leading-5" data-testid="evidence-next-steps">
+        <p className="font-semibold">{dictionary.queryEditor.nextSteps}</p>
+        <ul className="mt-2 list-disc space-y-2 pl-4">{nextSteps.map((step) => <li key={step}>{step}</li>)}</ul>
+      </div> : null}
       {mayRenderFacts ? (
         <CitationList citations={displayEvidence.citations} />
       ) : null}

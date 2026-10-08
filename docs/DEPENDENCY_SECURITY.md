@@ -61,7 +61,7 @@ when their locked versions or the workspace hash changes.
 
 ### Pinned Next static-file cancellation correction
 
-`patches/next@16.3.6.patch` changes only the installed CJS and ESM
+`patches/next@16.3.8.patch` changes only the installed CJS and ESM
 `serve-static.js` handlers. The original implementation settled on `finish`
 but could wait indefinitely when the client disconnected before delivery.
 The correction registers finish/close/error listeners before file I/O and
@@ -128,6 +128,25 @@ This closure does not hash package bytes or recursively attest the store, so it
 must not be described as package provenance or signature verification. pnpm's
 offline flag also does not prove that arbitrary test subprocesses cannot use
 the network.
+
+## 2026-10-08 Next.js image-optimization advisory remediation
+
+The master CI run [37755440704](https://github.com/Jameskyzx/diesel/actions/runs/37755440704)
+failed the dependency gate on newly published
+[GHSA-cjq9-62q9-8jv4](https://github.com/vercel/next.js/security/advisories/GHSA-cjq9-62q9-8jv4).
+The advisory affects Next.js `>=16.0.0 <16.3.8` and identifies `16.3.8` as fixed.
+The current Next configuration does not allow remote image hosts, which is the
+upstream-described exposure condition; this is not a reason to bypass the gate.
+Only Next and its required runtime packages are upgraded. The existing static-file
+cancellation patch is retained byte-for-byte and retargeted to `16.3.8`; the
+unaffected ESLint configuration and its reviewed glob patch remain at `16.3.6`.
+The install-boundary hashes and runtime-version regressions follow the new pin.
+The exception register remains empty. This source change alone is not evidence
+of a passing release or successful production deployment.
+
+2026-10-08：主分支因新公布的 Next 图片优化 SSRF 高危漏洞失败。仅升级 Next 及其
+必要运行包至官方修复版 16.3.8，保留原静态文件补丁与所有安全门禁，不登记豁免。
+当前未配置远程图片主机；这项可达性检查不替代升级，也不代表发布已经验收。
 
 ## 2026-10-06 source-map-js advisory remediation
 

@@ -1507,14 +1507,14 @@ describe("public portfolio fact mirrors", () => {
       `保护最后于 ${protectionObservation} 在线读回`,
     );
 
-    const englishCommands = readme.match(
-      /## Verification\s+```bash\s+([\s\S]*?)\s+```/u,
-    )?.[1];
-    const chineseCommands = chineseReadme.match(
-      /## 验证命令\s+```bash\s+([\s\S]*?)\s+```/u,
-    )?.[1];
-    expect(englishCommands).toBeDefined();
-    expect(chineseCommands).toBe(englishCommands);
+    const publicationCommands = (source: string) =>
+      [...source.matchAll(/^\d+\.\s[^\n]*(?:\n[ \t]+[^\n]*)*/gmu)]
+        .flatMap((step) => [...step[0].matchAll(/`(pnpm [^`]+)`/gu)].map((match) => match[1]));
+    const englishCommands = publicationCommands(readme);
+    expect(englishCommands).toHaveLength(4);
+    expect(publicationCommands(chineseReadme)).toEqual(englishCommands);
+    expect(readme).toContain("AGENTS.md#scope-and-validation");
+    expect(chineseReadme).toContain("AGENTS.md#scope-and-validation");
 
     const [englishCaseStudy, chineseCaseStudy] = caseStudy.split("## 中文");
     const normalizedEnglishCaseStudy = englishCaseStudy.replace(/\s+/gu, " ");

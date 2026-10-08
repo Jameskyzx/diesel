@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { LocaleToggle } from "@/components/i18n/locale-toggle";
+import { QueryContextForm } from "@/components/countries/query-context-form";
 import { localizedCitationLocator } from "@/features/ai/citation-locator-copy";
 import {
   Drawer,
@@ -474,6 +475,8 @@ export function CountryDetailDrawer({
                   ? copy.geometryNoData
                   : copy.missingGeometryNoData}
               </p>
+              <p className="mt-4 text-sm font-semibold">{dictionary.queryEditor.nextSteps}</p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">{dictionary.queryEditor.regulationEvidence}</p>
             </div>
           ) : null}
 
@@ -693,6 +696,15 @@ function CountryDetailContent({
           </p>
         </div>
       ) : null}
+
+      <div className="rounded-md border bg-card p-4">
+        <QueryContextForm
+          beforeNavigate={cancelPendingProductEvaluation}
+          context={{ ...initialFilters, asOf: initialFilters?.asOf ?? response.asOf, countryIso3: country.iso3 }}
+          key={contextKey}
+          mode="regulations"
+        />
+      </div>
 
       <ApplicabilitySummarySection
         errorCode={summaryErrorCode}
@@ -1118,6 +1130,15 @@ function ApplicabilitySummarySection({
           {missingDataMessages.map((message) => (
             <p key={message}>{message}</p>
           ))}
+          <p className="mt-3 font-semibold">{dictionary.queryEditor.nextSteps}</p>
+          <ol className="mt-1 list-decimal space-y-2 pl-4">
+            <li>{dictionary.queryEditor.checkQuery}</li>
+            <li>{dictionary.queryEditor.regulationEvidence}</li>
+          </ol>
+          <div className="mt-2 flex flex-wrap gap-3">
+            <a className="underline underline-offset-2" href="#regulation-query-form">{dictionary.queryEditor.editConditions}</a>
+            <a className="underline underline-offset-2" href="#country-source">{dictionary.queryEditor.reviewSources}</a>
+          </div>
         </div>
       ) : null}
 

@@ -19,10 +19,19 @@ describe("versioned application-only release contract", () => {
     expect(result.inputDigest).toBe(candidate.inputDigest);
     expect(result.protectedFileCount).toBe(3);
   });
+  it("allows the static browser icon without admitting executable app metadata or routes", () => {
+    const icon = { path: "src/app/icon.svg", mode: "100644" as const, size: 10, sha256: "c".repeat(64) };
+    expect(isApplicationOnlyInput(icon.path)).toBe(true);
+    expect(compareApplicationInputs(
+      { ...previous, files: [...files, icon] },
+      { ...candidate, files: [...files, { ...icon, sha256: "1".repeat(64) }] },
+    ).protectedFileCount).toBe(3);
+  });
   it.each([
     "drizzle/0010_new.sql", "src/server/db/seed/acceptance-fixtures.ts", "src/server/config/public-product-publication.ts",
     "scripts/db/ingest-accepted-fixtures.ts", "src/domain/regulations.ts", "docs/ACCEPTANCE.md", "docs/research/signoff.md",
     "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "patches/something.patch", "unknown/data.json",
+    "src/app/icon.tsx", "src/app/icon.svg/route.ts", "src/app/layout.tsx", "src/app/api/chat/route.ts",
   ])("refuses changed or newly introduced data inputs: %s", (path) => {
     expect(isApplicationOnlyInput(path)).toBe(false);
     const nextFiles = files.filter((file) => file.path !== path);

@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import { expect, test, type Page, type Request as BrowserRequest, type Route } from "@playwright/test";
 
 import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
@@ -740,15 +742,19 @@ test("returns a structured health response", async ({ request }) => {
   );
 });
 
-test("serves browser and Apple touch icons without 404s", async ({ request }) => {
-  for (const path of [
-    "/icon.svg",
-    "/apple-touch-icon.png",
+test("serves the engine favicon selected by the page and the matching touch icon", async ({ page, request }) => {
+  await page.goto("/map");
+  const faviconHref = await page.locator('link[rel="icon"][type="image/svg+xml"]').getAttribute("href");
+  // Next's content-versioned URL must select the new artwork, not a stale W asset.
+  expect(faviconHref).toMatch(/^\/icon\.svg\?[^\s]+$/u);
+  for (const [path, localPath] of [
+    [faviconHref!, "src/app/icon.svg"],
+    ["/apple-touch-icon.png", "public/apple-touch-icon.png"],
   ]) {
     const response = await request.get(path);
 
     expect(response.ok(), `${path} should resolve`).toBe(true);
     expect(response.headers()["content-type"]).toContain("image/");
-    expect((await response.body()).byteLength).toBeGreaterThan(0);
+    expect(await response.body()).toEqual(await readFile(localPath));
   }
 });

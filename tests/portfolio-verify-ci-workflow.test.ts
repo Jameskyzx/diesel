@@ -57,7 +57,7 @@ const installBoundaryInputPaths = [
   "pnpm-workspace.yaml",
   "pnpm-lock.yaml",
   ".nvmrc",
-  "patches/next@16.3.6.patch",
+  "patches/next@16.3.8.patch",
   "patches/@next__eslint-plugin-next@16.3.6.patch",
   "patches/@vitest__runner@4.1.11.patch",
   "patches/vaul@1.1.2.patch",
@@ -1416,7 +1416,7 @@ describe("dependency-free CI install-boundary guard", () => {
     });
   });
 
-  it.each(["patches/next@16.3.6.patch", "patches/@next__eslint-plugin-next@16.3.6.patch", "patches/@vitest__runner@4.1.11.patch", "patches/vaul@1.1.2.patch"]
+  it.each(["patches/next@16.3.8.patch", "patches/@next__eslint-plugin-next@16.3.6.patch", "patches/@vitest__runner@4.1.11.patch", "patches/vaul@1.1.2.patch"]
     .flatMap((path) => ["missing", "changed", "symlink"].map((state) => ({ path, state }))))(
     "rejects a $state $path before installing dependencies",
     async ({ path, state }) => {

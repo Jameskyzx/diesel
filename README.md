@@ -204,30 +204,32 @@ product and described as a real commercial-availability conclusion.
 
 ## Verification
 
-```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm test:coverage
-pnpm ai:eval
-pnpm ai:eval:live
-pnpm portfolio:capture-screenshots
-pnpm portfolio:capture-playwright-evidence
-pnpm portfolio:capture-vitest-evidence
-pnpm portfolio:verify
-pnpm db:check
-pnpm build
-pnpm playwright test
-pnpm test:e2e:demo
-pnpm test:e2e:fde
-pnpm audit:security
-```
+For daily edits, select the checks in [AGENTS.md](AGENTS.md#scope-and-validation).
+An icon or wording change is not automatically a full-suite/evidence-publication
+task. The command list in `package.json` is a reference, not a checklist to run
+after every edit. AI evaluation guidance lives in [docs/evals](docs/evals/README.md).
 
-Capture evidence in the order above: screenshots and their manifest are browser
-inputs; the browser artifact and STATUS are inputs to the full Vitest fingerprint.
-After updating the browser snapshot, finish all source/document edits before
-capturing Vitest. Changing an upstream input requires recapturing downstream
-evidence, not rewriting a report's recorded fingerprint.
+### Publishing portfolio evidence
+
+This is a separate, comprehensive workflow. Current CI release verification
+still requires matching source-bound evidence; scoped local checks do not
+satisfy or bypass that gate. See the [maintenance boundary](docs/ENGINEERING_MAINTENANCE.md#routine-work-boundary--日常工作边界)
+before starting a release.
+
+When refreshing that evidence is in scope, finish implementation first, then:
+
+1. Run `pnpm portfolio:capture-screenshots` if its inputs changed.
+2. Run `pnpm portfolio:capture-playwright-evidence` if its inputs changed, then
+   update the browser snapshot in `docs/STATUS.md` from the real report.
+3. Finish and commit source/document changes, then run
+   `pnpm portfolio:capture-vitest-evidence` if its inputs changed.
+4. Commit the reports and run `pnpm portfolio:verify -- --release-evidence`.
+
+Run these operations serially and without another test/build/install in the same
+checkout. The captures already run their underlying suites; do not run them twice
+on unchanged inputs. Screenshots feed browser evidence, and the browser artifact
+and STATUS feed Vitest evidence. Changed inputs require genuine recapture, never
+editing a report's fingerprint to make it appear current.
 
 `pnpm portfolio:capture-vitest-evidence` runs the complete canonical Vitest
 suite and replaces `docs/evidence/vitest-execution-latest.json` only after a

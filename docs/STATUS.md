@@ -23,24 +23,32 @@ This is the only current release/evidence index. Historical implementation notes
 以下为带时间的历史生产观测，不声明仓库当前 HEAD 等于线上版本：
 
 - 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
-  observedAt=`2026-10-05T19:36+00:00`；`/api/health` readbackAt=`2026-10-05T19:36+00:00` returned `status=ok`,
-  `version=30daa51d34bab95e6d729982a19194a4af5352ba`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/30daa51d34bab95e6d729982a19194a4af5352ba`。因此当前公开 release ID
+  observedAt=`2026-10-06T21:45+00:00`；`/api/health` readbackAt=`2026-10-06T21:45+00:00` returned `status=ok`,
+  `version=0f51a9dfd14f874d3dfa5713d172fb3462d48874`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/0f51a9dfd14f874d3dfa5713d172fb3462d48874`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为
   `historical-operator-record-only`；它不是外部签名的生产读回，也不能由本地校验器证明来源真实性。
-  本轮仅验收用户选择的三项：发布/恢复终态、新版本真实中英对话、严格数据库 TLS。
-  原发布仍记录 exit 75；正式前滚验收成功后独立确认 `COMMITTED:PUBLISH_FINALIZED`。
-  新进程首次真实聊天、随后六个中英示例、TLS 正负对照和 provider canary 均通过；临时转发已撤销。
-  [本轮完整记录](evidence/operations/production-closeout-latest.json) 保留所有失败，不宣称长期稳定性或所有工程维护已完成。
+  2026-10-05 的上一轮仅验收用户选择的三项：发布/恢复终态、新版本真实中英对话、严格数据库 TLS。
+  该轮原发布仍记录 exit 75；正式前滚验收成功后独立确认 `COMMITTED:PUBLISH_FINALIZED`。
+  该轮新进程首次真实聊天、随后六个中英示例、TLS 正负对照和 provider canary 均通过；临时转发已撤销。
+  [上一轮完整记录](evidence/operations/production-closeout-latest.json) 保留所有失败，不宣称长期稳定性或所有工程维护已完成。
   2026-10-06 的新候选 `361dabc48216103fd7f37cd02be18499c3138935` 已通过 master CI，但在隔离构建中因 VPS 缺少 pnpm shim 失败，
   原始 exit 70 与 `ROLLED_BACK:none` 保留；`2026-10-06T13:00:47.733Z` 独立健康读回仍为上述旧版 `30daa51`。
   现有官方 Corepack 的 pnpm 入口已补齐，构建用户的固定版本 registry 查询通过；这不是新版本上线声明。
   [失败及主机修复记录](evidence/operations/deployment-failure-and-pnpm-recovery-2026-10-06.json)。后续只能以新的 CI-approved SHA 走完整发布，不重用失败候选。
   同日后续候选 `5f1d6a73719dcc3179b9b24279bf4959f0a3a58f` 的 master CI 也全部通过，但必需 Next 包的官方 registry 下载超时，
   原始 exit 70 与第二个 `ROLLED_BACK:none` 保留；`2026-10-06T15:04:41.132Z` 独立健康读回仍为旧版 `30daa51`。
-  [第二次失败与有界传输探针](evidence/operations/deployment-network-failure-2026-10-06.json)。下载并发/时限的修复尚须通过新 CI 与真实完整发布，不能用小文件探针宣称已上线。
+  [第二次失败与有界传输探针](evidence/operations/deployment-network-failure-2026-10-06.json)。该失败时的小文件探针不证明完整构建成功。
+  后续 `0f51a9dfd14f874d3dfa5713d172fb3462d48874` 的精确 master CI 10/10 通过，完整发布于 `2026-10-06T21:34:17.537Z` 以 exit 0 完成；
+  独立严格账本与 committed-host 校验确认 `COMMITTED:PUBLISH_FINALIZED`。本次包含既有 97 国闭包的受控重新发布，未增加国家、schema 或真实产品。
+  新备份与真实恢复演练、loopback/public 中英页面及 SSE、7/7 provider-inclusive canary、零重试的中英桌面/移动端 6/6 真实示例均通过。
+  实际浏览器另确认国家替换保留原日期/场景/功率、刷新恢复、语言持久化、市场单位/观测期/相关来源，以及首页 `97/28/651/203/0` 与 `178` 目录分离。
+  原 SSH observer 的 exit 255 原样保留；已有 durable worker 未重启，独立终态读回与验收才证明发布成功，不宣称首次冷请求或长期稳定性。
+  实测余量约 4.35 GiB，低于下一次完整发布的 5 GiB 起始门槛；所有备份、失败版本与归档均保留，未使用临时数据库转发，`jamesky-api` 原 PID 未变。
+  一次额外模型解释出现摘要与后文不一致，结构化事实卡片正确；该解释质量问题未在本次部署中修复，不宣称模型文本永不出错。
+  [本次上线与独立验收完整记录](evidence/operations/production-ux-release-2026-10-06.json) 保留上述通过、失败与残余边界。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的
@@ -125,11 +133,11 @@ This is the only current release/evidence index. Historical implementation notes
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "30daa51d34bab95e6d729982a19194a4af5352ba",
+    "commit": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
     "evidenceKind": "historical-operator-record-only",
-    "id": "30daa51d34bab95e6d729982a19194a4af5352ba",
-    "observedAt": "2026-10-05T19:36+00:00",
-    "releasePath": "/opt/diesel/releases/30daa51d34bab95e6d729982a19194a4af5352ba"
+    "id": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "observedAt": "2026-10-06T21:45+00:00",
+    "releasePath": "/opt/diesel/releases/0f51a9dfd14f874d3dfa5713d172fb3462d48874"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -178,18 +186,18 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-05T19:36+00:00",
+    "readbackAt": "2026-10-06T21:45+00:00",
     "status": "ok",
-    "version": "30daa51d34bab95e6d729982a19194a4af5352ba"
+    "version": "0f51a9dfd14f874d3dfa5713d172fb3462d48874"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v2"
   },
   "repositoryHead": {
-    "local": "30daa51d34bab95e6d729982a19194a4af5352ba",
-    "observedAt": "2026-10-05T19:36+00:00",
-    "remote": "30daa51d34bab95e6d729982a19194a4af5352ba"
+    "local": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "observedAt": "2026-10-06T21:45+00:00",
+    "remote": "0f51a9dfd14f874d3dfa5713d172fb3462d48874"
   }
 }
 ```

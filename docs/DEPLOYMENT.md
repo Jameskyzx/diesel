@@ -322,6 +322,12 @@ unchanged. This case tests localization, not a cold-development performance SLO.
 
 ## 3. GitHub 原生密钥扫描
 
+2026-10-08 的本地新标签页导航准备曾出现 `page.reload` / `ERR_ABORTED`；
+另一次完整运行在收到原生 modified click 后没有观察到新标签页，原因尚未独立证明。
+预热现在等待新标签页完整 load 和语言按钮 hydration，再关闭并确认原页面获焦后刷新。
+中英文三种导航方式连续三轮共 18 项通过；不改 30 秒用例时限、请求计数、取消行为或
+零 flaky 发布规则，聚焦通过仍不能替代完整发布验收。
+
 CI 的 gitleaks job 覆盖历史扫描。原生 Secret scanning 与 push protection
 已于 2026-07-30 随仓库公开启用（Settings → Code security and analysis，
 公开仓库免费）；如需重建：

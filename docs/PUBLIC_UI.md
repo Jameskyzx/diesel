@@ -79,6 +79,13 @@ English and Chinese share this composition. Small screens use a top brand bar
 and three visible navigation links rather than hiding the primary routes. All
 controls remain keyboard accessible; the decorative engine icon is retained.
 
+The browser tab and Apple touch icons reuse that same approved diesel-engine
+artwork. Regenerate them with `pnpm exec tsx scripts/portfolio/generate-brand-icons.ts`.
+`src/app/icon.svg` embeds its small PNG directly so it needs no external image
+fetch; Next's file-based metadata supplies a content-versioned favicon URL.
+The browser regression checks the icon actually selected by the page, not just
+whether an arbitrary image endpoint returns HTTP 200.
+
 The user approved publishing this reconstruction on 2026-10-03. Approval does
 not establish that it has been deployed: production status remains solely in
 `STATUS.md`, and the normal release checks and public readback are required

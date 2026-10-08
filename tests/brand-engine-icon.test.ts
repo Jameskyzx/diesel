@@ -23,4 +23,15 @@ describe("generated diesel-engine brand icon", () => {
       "be8a11494dbb6281f011d3387bd8da65c1f6e4682d82f74af866287c34e0cb57",
     );
   });
+
+  it("uses the same engine artwork for the self-contained favicon and touch icon", async () => {
+    const source = readFileSync(resolve("public/brand/diesel-chibi.png"));
+    const favicon = await sharp(source).resize(64, 64).png().toBuffer();
+    const expectedSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><image width="64" height="64" href="data:image/png;base64,${favicon.toString("base64")}"/></svg>\n`;
+
+    expect(readFileSync(resolve("src/app/icon.svg"), "utf8")).toBe(expectedSvg);
+    expect(readFileSync(resolve("public/apple-touch-icon.png"))).toEqual(
+      await sharp(source).resize(180, 180).png().toBuffer(),
+    );
+  });
 });

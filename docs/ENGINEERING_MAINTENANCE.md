@@ -53,6 +53,8 @@ presentation/engineering-only release may select `start-application`.
   patches and any new unclassified source root must be identical. Only the
   enumerated presentation, public asset, test, documentation and maintenance
   paths can differ. This is intentionally narrower than “all code changes.”
+  The exact static metadata asset `src/app/icon.svg` is also presentation-only;
+  executable icon handlers, layouts and other app routes remain protected.
 - The lifecycle lock remains held. After building, the governance maintenance
   lock spans before-read, activation and verification. Database identity and
   complete migration lineage must match. Read-only repeatable-read transactions

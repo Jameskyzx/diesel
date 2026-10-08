@@ -210,8 +210,8 @@ describe("remediated braces tooling exception", () => {
   const id = "GHSA-vfj7-8cjw-p6xm";
 
   it("removes the exception after removing the vulnerable dependency graph", () => {
-    // Re-reviewed for GHSA-68fv-2mgg-jv7q; the old braces exception stays removed.
-    expect(policy.reviewedAt).toBe("2026-10-06");
+    // Re-reviewed for GHSA-cjq9-62q9-8jv4; no high-severity exception is added.
+    expect(policy.reviewedAt).toBe("2026-10-08");
     expect(policy.advisories).toEqual([]);
   });
 

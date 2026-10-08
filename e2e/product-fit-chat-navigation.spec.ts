@@ -287,7 +287,14 @@ async function withPendingFit(
         ]);
         await expect(warmChat.locator("html")).toHaveAttribute("lang", locale);
         await expect(warmChat).toHaveURL((url) => `${url.pathname}${url.search}` === committedChatHref);
+        // A server-rendered lang/URL does not prove that this new tab finished
+        // loading or hydrated. Closing it earlier races Chromium's active-tab
+        // transition with the source-page reload in cold runs.
+        await warmChat.waitForLoadState("load");
+        await expect(warmChat.getByRole("button", { name: "EN", exact: true })).toBeEnabled();
         await warmChat.close();
+        await page.bringToFront();
+        await page.waitForFunction(() => document.hasFocus() && document.visibilityState === "visible");
         await page.reload({ waitUntil: "networkidle" });
         await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === initialUrl);
         record("cold-chat-tab-closed-before-fit");

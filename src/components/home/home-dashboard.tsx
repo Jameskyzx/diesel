@@ -346,11 +346,12 @@ function MetricCard({ icon: Icon, label, loading, value }: {
   loading: boolean;
   value: number | null;
 }) {
+  const { dictionary } = useLocale();
   return (
     <article className="surface-panel flex flex-col items-start gap-3 rounded-md p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5">
       <span className="grid size-8 shrink-0 place-items-center rounded-md bg-accent text-primary sm:size-12"><Icon aria-hidden="true" className="size-5 sm:size-6" /></span>
       <div className="min-w-0">
-        {loading ? <span aria-label={label} className="block h-7 w-12 animate-pulse rounded bg-muted" /> : <p className="text-2xl font-semibold tabular-nums">{value ?? "—"}</p>}
+        {loading ? <span role="status" aria-label={label} className="block h-7 w-12 animate-pulse rounded bg-muted"><span className="sr-only">{dictionary.common.loading}</span></span> : <p className="text-2xl font-semibold tabular-nums">{value ?? "—"}</p>}
         <p className="mt-1 text-xs leading-5 text-muted-foreground" data-screenshot-label>{label}</p>
       </div>
     </article>

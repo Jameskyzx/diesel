@@ -49,6 +49,14 @@ This is the only current release/evidence index. Historical implementation notes
   实测余量约 4.35 GiB，低于下一次完整发布的 5 GiB 起始门槛；所有备份、失败版本与归档均保留，未使用临时数据库转发，`jamesky-api` 原 PID 未变。
   一次额外模型解释出现摘要与后文不一致，结构化事实卡片正确；该解释质量问题未在本次部署中修复，不宣称模型文本永不出错。
   [本次上线与独立验收完整记录](evidence/operations/production-ux-release-2026-10-06.json) 保留上述通过、失败与残余边界。
+  2026-10-09 的 PR #77 已合并，候选 `bf9af3de97e2e3be827dc55ec34f0416924d5c0a` 的精确 master CI 为 10/10 通过，
+  但完整发布在治理备份/恢复验证阶段中断，durable worker 以 exit 70 结束；不能声明保存分析、独立比较页及证据审阅改进已上线。
+  数据与主机已自动回滚，独立严格账本和回滚校验均通过，终态为 `ROLLED_BACK:HOST_ROLLBACK_COMPLETED`。
+  `2026-10-09T18:45:40.586Z` 公网 readiness 及服务器 current 仍为 `0f51a9dfd14f874d3dfa5713d172fb3462d48874`；
+  回滚后内网/公网中英页面、Demo 产品边界及确定性 SSE 验收均通过，不代表本次重新验证了模型生成路径。
+  当前只读连接对照正常，现有日志未记录具体中断分支；没有证据将此次失败确定归因于网络或内存。
+  失败候选、日志与备份保留；只能在阻塞处理后用新的 CI-approved SHA 发布。
+  [本次部署失败及回滚验收记录](evidence/operations/deployment-maintenance-failure-2026-10-09.json)。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

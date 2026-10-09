@@ -1,20 +1,20 @@
 {
   "command": "pnpm test",
   "complete": true,
-  "completedAt": "2026-10-09T14:23:54.267Z",
+  "completedAt": "2026-10-09T15:38:57.239Z",
   "configPath": "vitest.config.ts",
   "provenance": {
-    "baseHeadCommit": "4772f3c18ce33483b39cc50ce67a2df6b1ec4484",
-    "evaluatedCommit": "4772f3c18ce33483b39cc50ce67a2df6b1ec4484",
+    "baseHeadCommit": "513d2ab25e26ecda005844e169afc30450ffed9c",
+    "evaluatedCommit": "513d2ab25e26ecda005844e169afc30450ffed9c",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "edbb81ed70c46a5201b6f9807eec1a41c6fab0936eed7a6e227b7b5c9b9dc8c8",
+      "digest": "ad86f43622bd6ebbce35fcb626db31bc4ce3125183bb1f5caaaf45a38e69d66c",
       "fileCount": 975
     },
     "worktreeState": "clean"
   },
-  "runId": "18c8a7f5-6f8b-4463-ae1e-8f6924ecf14f",
-  "startedAt": "2026-10-09T14:10:01.105Z",
+  "runId": "f392ed1a-2094-4ceb-a7cf-1203a43f4cbb",
+  "startedAt": "2026-10-09T15:25:13.445Z",
   "tests": [
     {
       "id": "0005420a555cc43ee81536366b23ecca4cd57c5195d3eb883e1043fd9a7f6dda",
@@ -29413,6 +29413,10 @@
       "status": "passed"
     },
     {
+      "id": "dc632b3c7a12d1eb9cfd81e31e6607b1c5adbec26725f8a60b9486889cd31c82",
+      "status": "passed"
+    },
+    {
       "id": "dc65ba938b515876b445ccb0a6c75e2080d024ec28e703b701f08031dacbad28",
       "status": "passed"
     },
@@ -34112,9 +34116,9 @@
   "totals": {
     "collectedFiles": 297,
     "collectedSuites": 726,
-    "collectedTests": 8523,
+    "collectedTests": 8524,
     "failedTests": 0,
-    "passedTests": 8517,
+    "passedTests": 8518,
     "pendingTests": 0,
     "skippedTests": 6,
     "todoTests": 0

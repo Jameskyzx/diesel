@@ -30,6 +30,9 @@ import {
 } from "react";
 import { AssistantMarkdown } from "@/components/ai/assistant-markdown";
 import { MarketComparisonFacts } from "@/components/ai/market-comparison-facts";
+import { SaveAnalysis } from "@/components/analyses/save-analysis";
+import { SourceExcerpt } from "@/components/analyses/source-review";
+import type { AnalysisPayload } from "@/features/analyses/schemas";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { toolEvidenceNextSteps } from "@/features/ai/client-tool-copy";
 import { unwrapUntrustedKnowledgeExcerpt } from "@/domain/knowledge/retrieval-policy";
@@ -79,7 +82,7 @@ import {
 import { toolPartPresentation } from "@/features/ai/tool-part-presentation";
 import { toolDisplayEvidence } from "@/features/ai/tool-display-evidence";
 import { MAX_CHAT_USER_MESSAGE_CHARACTERS } from "@/features/ai/constants";
-import { CHAT_HISTORY_STORAGE_KEY, parseChatHistory, serializeChatHistory } from "@/features/ai/chat-history";
+import { CHAT_HISTORY_STORAGE_KEY, chatHistorySnapshotSchema, parseChatHistory, serializeChatHistory } from "@/features/ai/chat-history";
 import {
   parseSerializedApiErrorCode,
   type SafeApiErrorCode,
@@ -332,8 +335,10 @@ function resultContainsDemoEvidence(result: ClientAiToolResult): boolean {
 
 function CitationList({
   citations,
+  result,
 }: {
   citations: ClientAiCitation[];
+  result: ClientAiToolResult;
 }) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.chat;
@@ -353,7 +358,9 @@ function CitationList({
         {interpolate(copy.viewSources, { count: citations.length })}
       </summary>
       <div className="mt-2 space-y-2">
-      {citations.map((citation, index) => (
+      {citations.map((citation, index) => {
+        const hit = result.tool === "searchKnowledgeBase" ? result.search.results.find(item => item.chunkId === citation.chunkId && item.document.id === citation.documentId && item.document.source.id === citation.sourceId) : undefined;
+        return (
         <article
           className="rounded-lg border bg-background/70 p-2.5 text-xs"
           key={[
@@ -423,8 +430,13 @@ function CitationList({
               </span>
             ) : null}
           </div>
+          <SourceExcerpt
+            pageFrom={citation.pageFrom} pageTo={citation.pageTo} section={citation.sectionLocator} url={citation.sourceUrl}
+            excerpt={hit ? unwrapUntrustedKnowledgeExcerpt(hit.content) : undefined}
+            countryIso3={hit?.countryIso3} scope={hit?.applicationScope} validFrom={hit?.validFrom} validTo={hit?.validTo}
+          />
         </article>
-      ))}
+      ); })}
       </div>
     </details>
   );
@@ -1162,7 +1174,7 @@ export function ToolResultCard({
         <ul className="mt-2 list-disc space-y-2 pl-4">{nextSteps.map((step) => <li key={step}>{step}</li>)}</ul>
       </div> : null}
       {mayRenderFacts ? (
-        <CitationList citations={displayEvidence.citations} />
+        <CitationList citations={displayEvidence.citations} result={result} />
       ) : null}
     </section>
   );
@@ -1294,6 +1306,7 @@ export function SalesChat({
   const [historyLoaded, setHistoryLoaded] = useState(historyKey === undefined);
   const [historyRestored, setHistoryRestored] = useState(false);
   const [historyUnavailable, setHistoryUnavailable] = useState(false);
+  const [completedSnapshot, setCompletedSnapshot] = useState<Extract<AnalysisPayload, { kind: "chat" }>["history"] | null>(null);
   const historyRestoreAttemptedRef = useRef(false);
   const [input, setInput] = useState(initialPrompt);
   const initialPromptPristineRef = useRef(true);
@@ -1383,9 +1396,11 @@ export function SalesChat({
           const serialized = serializeChatHistory({ contextKey: historyKey,
             sessionId, messages: finishedMessages });
           if (serialized === null) {
+            setCompletedSnapshot(null);
             window.sessionStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
             setHistoryUnavailable(true);
           } else {
+            setCompletedSnapshot(chatHistorySnapshotSchema.parse(JSON.parse(serialized)));
             window.sessionStorage.setItem(CHAT_HISTORY_STORAGE_KEY, serialized);
             setHistoryUnavailable(false);
           }
@@ -1421,6 +1436,7 @@ export function SalesChat({
         const serialized = window.sessionStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
         const snapshot = parseChatHistory(serialized, historyKey);
         if (snapshot) {
+          setCompletedSnapshot(chatHistorySnapshotSchema.parse(JSON.parse(serialized!)));
           setSessionId(snapshot.sessionId);
           setSettledChatMessages(snapshot.messages);
           setMessages(snapshot.messages);
@@ -1712,6 +1728,7 @@ export function SalesChat({
     activeSubmissionRef.current = null;
     clearError();
     setMessages([]);
+    setCompletedSnapshot(null);
     setSettledChatMessages([]);
     setSessionId(crypto.randomUUID());
     setFailedSubmission(null);
@@ -1755,6 +1772,13 @@ export function SalesChat({
         </div>
         {historyKey ? <Button className="ml-3 shrink-0 text-xs" disabled={!historyLoaded || waiting || submissionPending || validatingAttachments} onClick={startNewConversation} size="sm" type="button" variant="outline">{copy.newConversation}</Button> : null}
       </header>
+
+      {completedSnapshot ? <SaveAnalysis
+        key={completedSnapshot.messages.at(-1)?.id}
+        defaultTitle={completedSnapshot.messages[0]?.parts.flatMap(part => part.type === "text" ? [part.text] : []).join(" ") || dictionary.analysis.savedReport}
+        disabled={waiting || submissionPending || error !== undefined || messages.at(-1)?.id !== completedSnapshot.messages.at(-1)?.id}
+        createPayload={() => ({ kind: "chat", history: completedSnapshot })}
+      /> : null}
 
       {historyKey ? <p className="border-b px-5 py-2 text-[11px] leading-5 text-muted-foreground" role={historyRestored || historyUnavailable ? "status" : undefined}>
         {historyUnavailable ? copy.historyUnavailable : historyRestored ? copy.historyRestored : copy.historyNotice}

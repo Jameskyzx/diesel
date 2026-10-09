@@ -37,7 +37,7 @@ const historyMessageSchema = z.object({
   id: z.string().min(1).max(200), role: z.enum(["user", "assistant"]),
   parts: z.array(z.union([textPartSchema, attachmentPartSchema, toolPartSchema, toolErrorSchema])).min(1).max(16),
 }).strict();
-const historySchema = z.object({
+export const chatHistorySnapshotSchema = z.object({
   version: z.literal(1), contextKey: z.string().min(1).max(1_000),
   sessionId: z.uuid(), savedAt: z.iso.datetime(),
   messages: z.array(historyMessageSchema).min(2).max(MAX_CHAT_HISTORY_USER_MESSAGES * 2),
@@ -72,7 +72,7 @@ export function serializeChatHistory(input: Omit<ChatHistorySnapshot, "savedAt">
     }),
   }));
   // Do not silently discard the oldest parameters in a conversation.
-  const parsed = historySchema.safeParse({ ...input, messages, savedAt: now.toISOString(), version: 1 });
+  const parsed = chatHistorySnapshotSchema.safeParse({ ...input, messages, savedAt: now.toISOString(), version: 1 });
   if (!parsed.success) return null;
   const serialized = JSON.stringify(parsed.data);
   return new TextEncoder().encode(serialized).byteLength <= CHAT_HISTORY_MAX_BYTES ? serialized : null;
@@ -84,7 +84,7 @@ export function parseChatHistory(serialized: string | null, contextKey: string,
   if (!serialized || serialized.length > CHAT_HISTORY_MAX_BYTES ||
     new TextEncoder().encode(serialized).byteLength > CHAT_HISTORY_MAX_BYTES) return null;
   try {
-    const parsed = historySchema.safeParse(JSON.parse(serialized));
+    const parsed = chatHistorySnapshotSchema.safeParse(JSON.parse(serialized));
     if (!parsed.success || parsed.data.contextKey !== contextKey) return null;
     const age = now.getTime() - new Date(parsed.data.savedAt).getTime();
     if (!Number.isFinite(age) || age < 0 || age >= CHAT_HISTORY_MAX_AGE_MS) return null;

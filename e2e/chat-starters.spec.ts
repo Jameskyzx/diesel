@@ -46,7 +46,7 @@ for (const locale of ["en", "zh-CN"] as const) {
       const chat = page.locator("[data-sales-chat-root]");
       await expect(chat.getByText(answer, { exact: true })).toBeVisible();
       await expect(chat.getByText(prompt, { exact: true })).toBeVisible();
-      await expect(chat.getByRole("textbox")).toHaveValue("");
+      await expect(chat.getByRole("textbox", { name: getDictionary(locale).chat.questionInput, exact: true })).toHaveValue("");
       expect(requestCount).toBe(1);
     });
   }

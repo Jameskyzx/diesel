@@ -22,6 +22,26 @@ function firstWebServer(
 }
 
 describe("Playwright server contracts", () => {
+  it("bounds the long-lived public test server heap without changing production limits", () => {
+    const server = firstWebServer(e2eConfig);
+    expect(server?.command).toBe(
+      "pnpm exec node --max-old-space-size=6144 --import tsx scripts/e2e/server.ts",
+    );
+    expect(server?.env).not.toHaveProperty("NODE_OPTIONS");
+    const heapFlag = server?.command.split(" ").find(argument => argument.startsWith("--max-old-space-size="));
+    if (!heapFlag) throw new Error("Missing bounded test-server heap argument.");
+    const result = spawnSync(process.execPath, [heapFlag, "--input-type=module", "--eval",
+      "import { getHeapStatistics } from 'node:v8'; process.stdout.write(String(getHeapStatistics().heap_size_limit));",
+    ], { encoding: "utf8", timeout: 10_000, env: { ...process.env, NODE_OPTIONS: "" } });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(Number(result.stdout)).toBeGreaterThanOrEqual(6144 * 1024 * 1024);
+    expect(Number(result.stdout)).toBeLessThan(6400 * 1024 * 1024);
+    expect(firstWebServer(productionConfig)?.command).toBe("pnpm start --hostname 127.0.0.1 --port 3400");
+    expect(firstWebServer(productionConfig)?.env).not.toHaveProperty("NODE_OPTIONS");
+  });
+
   it.each([
     ["", "a".repeat(40)],
     ["false", "a".repeat(40)],

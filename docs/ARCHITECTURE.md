@@ -182,6 +182,8 @@ flowchart TD
 - `/`：业务工作台首页，提供覆盖概览和工作流快捷入口。
 - `/map`：世界地图与国家摘要入口。
 - `/chat`：AI 销售分析对话工作区。
+- `/compare`：统一条件的国家法规并排比较，复用只读国家接口，不调用模型。
+- `/analyses`：用户主动保存的本机浏览器历史分析与离线报告导出，不新增数据库或服务器写入能力。
 - `/countries/[iso3]`：可分享国家详情，`iso3` 在服务端标准化为大写并验证存在性。
 - 筛选状态进入 query string：`applicationScope`、`powerKw`、`asOf` 和 `productModelCode`，以便复现；允许的值需 Zod 验证。
 - AI 可以作为同一 app shell 的侧栏/抽屉，不需要独立页面。

@@ -1,6 +1,30 @@
 import type { Locale } from "@/i18n/locale";
 
 const englishDictionary = {
+  analysis: {
+    library: "Saved analyses", comparisonTitle: "Compare countries", titleLabel: "Analysis title",
+    save: "Save analysis", exportJson: "Export data (JSON)", exportHtml: "Export readable report",
+    localNotice: "Saved only in this browser, not an account or cloud backup. Up to 10 analyses / 4 MB. Clearing site data removes them. Export important work; attachments are not retained.",
+    saved: "Analysis saved. Open Saved analyses to review or export the readable report.",
+    storageError: "Could not read or save this archive. Browser storage may be blocked, full or invalid. Existing data was not overwritten. Export JSON directly from the result if needed.",
+    empty: "No saved analyses yet. Save a completed chat or country comparison.",
+    savedReport: "Saved analysis report", savedAt: "Saved at", historicalNotice: "Historical, locally saved snapshot — not a fresh query or certified report. Dates and sources refer to the original results. Local records can be edited; re-query and verify sources before making decisions.",
+    exportHelp: "The readable HTML report opens without this website. Use your browser’s Print / Save as PDF to share it. JSON preserves the structured evidence. Review the content for sensitive information before sharing.",
+    delete: "Delete", deleteConfirm: "Delete this saved analysis from this browser? Export a copy first if you need it.",
+    confirmDelete: "Confirm deletion", cancel: "Cancel", rerun: "Re-query these conditions",
+    comparisonHelp: "Compare two or three countries using the same application, power and date. Uses recorded regulatory evidence, without AI or product selection.",
+    countrySlot: "Country {number}", optional: "Optional", chooseCountry: "Select a country", runComparison: "Compare regulations",
+    invalidComparison: "Choose two or three different known countries and a valid application, power and date.",
+    comparisonError: "The complete comparison could not be loaded or verified. No partial result is presented as complete. Check your connection and retry.",
+    comparisonEmpty: "Select countries and submit the form to compare their recorded requirements.",
+    comparisonNotice: "Recorded evidence only, not a certification or market-entry decision. Missing records do not mean no requirements. Different units, test cycles or legal scopes must not be ranked as equivalent.",
+    dimension: "Comparison item", evidenceState: "Evidence and gaps", gaps: "Evidence gaps remain", recordedEvidence: "Recorded evidence for these conditions",
+    noCountryData: "No published country evidence for this query.", stale: "Recorded country evidence is marked stale; check the original sources.",
+    currentLimits: "Effective regulations and limits", noLimits: "No applicable limits recorded. This does not establish an exemption.", noneRecorded: "None recorded — not proof that none exist.",
+    originalEvidence: "Check original evidence", noExcerpt: "No original-text excerpt is included in this result. Use the recorded source to verify it; structured dates and IDs are not original page or section locators.",
+    excerptNotice: "Retrieved source excerpt, not AI explanation. It may be incomplete; check the full original and its applicability. Source text keeps its original language.",
+    openPage: "Open recorded PDF page", sourceValidity: "Recorded source validity", scrollHint: "Swipe the table horizontally to see the other countries. Keyboard users can focus the table and use the arrow keys.",
+  },
   common: {
     allScopes: "All applications",
     current: "Current",
@@ -27,6 +51,8 @@ const englishDictionary = {
     siteTitle: "Global Regulations & Market Intelligence",
   },
   header: {
+    compare: "Compare",
+    analyses: "Saved",
     analyze: "Start analysis",
     brandHome: "GD · Global Diesel — Home",
     chat: "Chat",
@@ -743,6 +769,30 @@ type DeepString<T> = {
 export type Dictionary = DeepString<typeof englishDictionary>;
 
 const chineseDictionary: Dictionary = {
+  analysis: {
+    library: "已保存的分析", comparisonTitle: "国家比较", titleLabel: "分析名称",
+    save: "保存分析", exportJson: "导出数据（JSON）", exportHtml: "导出阅读报告",
+    localNotice: "仅保存在本机浏览器，不是账号云备份。最多 10 份、共 4 MB；清除网站数据会丢失，请导出重要资料。不会保存附件内容。",
+    saved: "分析已保存。可在“已保存的分析”中查看或导出阅读报告。",
+    storageError: "无法读取或保存分析：浏览器存储可能被禁用、已满或数据无效。原有数据未被覆盖；需要时可从结果直接导出 JSON。",
+    empty: "尚未保存分析。请在完成的对话或国家比较结果中保存。",
+    savedReport: "已保存的分析报告", savedAt: "保存时间", historicalNotice: "这是本地保存的历史快照，不是最新查询或认证报告。日期和来源对应原始结果；本地记录可被修改，作决策前请重新查询并核对来源。",
+    exportHelp: "HTML 阅读报告无需本网站即可打开，可使用浏览器“打印／另存为 PDF”分享。JSON 保留结构化证据；分享前请检查敏感内容。",
+    delete: "删除", deleteConfirm: "确定从本机浏览器删除这份分析？如需保留，请先导出。",
+    confirmDelete: "确认删除", cancel: "取消", rerun: "按原条件重新查询",
+    comparisonHelp: "用统一的用途、功率和日期比较两到三个国家。直接查询已收录法规证据，无需 AI 或选择产品。",
+    countrySlot: "国家 {number}", optional: "可选", chooseCountry: "请选择国家", runComparison: "比较法规",
+    invalidComparison: "请选择两到三个不同的有效国家，并填写有效用途、功率和日期。",
+    comparisonError: "未能完整加载或核验比较结果，不会把部分结果当成完整结论。请检查网络后重试。",
+    comparisonEmpty: "选择国家并提交表单，即可比较已收录的要求。",
+    comparisonNotice: "仅展示已收录证据，不代表认证或市场准入结论。缺少记录不等于没有要求；单位、测试循环或法律适用范围不同的数值不能直接排名。",
+    dimension: "比较项目", evidenceState: "证据状态与缺口", gaps: "仍有证据缺口", recordedEvidence: "已收录这些条件下的证据",
+    noCountryData: "本次查询没有已发布的国家证据。", stale: "国家证据已标记为过期，请核对原始来源。",
+    currentLimits: "现行法规与限值", noLimits: "未收录适用限值，不代表豁免。", noneRecorded: "未收录，不代表不存在。",
+    originalEvidence: "核对原始证据", noExcerpt: "本结果未包含原文片段，请打开所列来源核实。结构化日期和编号不等于原文页码或章节定位。",
+    excerptNotice: "这是检索到的来源片段，不是 AI 解释；内容可能不完整，请核对完整原文及适用范围。来源文字保留原始语言。",
+    openPage: "打开已记录的 PDF 页码", sourceValidity: "来源记录的有效期", scrollHint: "横向滑动表格可查看其他国家；键盘用户可聚焦表格后使用方向键。",
+  },
   common: {
     allScopes: "全场景",
     current: "当前",
@@ -767,6 +817,8 @@ const chineseDictionary: Dictionary = {
     siteTitle: "全球法规与市场分析平台",
   },
   header: {
+    compare: "比较",
+    analyses: "已保存",
     analyze: "开始分析",
     brandHome: "GD · Global Diesel — 首页",
     chat: "对话",

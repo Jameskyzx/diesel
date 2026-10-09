@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, ChevronRight, Database, House, Map, MessageSquareText, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Database, House, Map, MessageSquareText, ShieldCheck, Columns3, FolderOpen } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,8 @@ const navigationItems = [
   { href: "/", icon: House, label: "home", matches: (path: string) => path === "/" },
   { href: "/chat", icon: MessageSquareText, label: "chat", matches: (path: string) => path.startsWith("/chat") },
   { href: "/map", icon: Map, label: "map", matches: (path: string) => path === "/map" || path.startsWith("/countries/") },
+  { href: "/compare", icon: Columns3, label: "compare", matches: (path: string) => path === "/compare" },
+  { href: "/analyses", icon: FolderOpen, label: "analyses", matches: (path: string) => path === "/analyses" },
 ] as const;
 
 export function AppHeader() {

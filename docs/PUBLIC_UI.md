@@ -92,8 +92,44 @@ server-side history store or write API. Browser tests cover reload, follow-up,
 clear, context isolation and storage failure in both languages and viewport sizes.
 
 English and Chinese share this composition. Small screens use a top brand bar
-and three visible navigation links rather than hiding the primary routes. All
+and five visible navigation links rather than hiding the primary routes. All
 controls remain keyboard accessible; the decorative engine icon is retained.
+
+### Saved analyses, independent comparison and evidence review
+
+- `/compare` compares two or three distinct directory countries at one validated
+  application, power and date, preserved in the URL. It reuses the existing public
+  country API and its deterministic applicability summary; no model, product
+  selection, database schema or public write API is involved. Every response must
+  match all requested conditions before the complete table is displayed. Missing
+  evidence stays distinct from request failures. Dates, units, future-adopted
+  regulations, Demo labels, stale flags and sources remain visible; the table
+  does not rank different test cycles or legal scopes as equivalent.
+- Completed chats and comparison results can be explicitly saved to `/analyses`.
+  This is a browser-local archive, not account storage or a cloud backup: at most
+  ten analyses / four MB, Zod-validated on read and write, with no silent eviction.
+  Clearing site data removes the archive. Storage denial, corrupt data and quota
+  failures are visible and do not overwrite prior work. Individual deletion needs
+  confirmation. The separate automatic 24-hour tab recovery contract is unchanged.
+- Snapshots retain the original structured facts, warnings, query conditions,
+  citations and verification dates, plus the saved time. They are labeled as
+  historical, locally editable records, not fresh or certified evidence. They
+  never feed facts back to the model/server. Attachments, reasoning and provider
+  metadata are excluded. Failed or interrupted new chat turns cannot be saved as
+  completed analyses.
+- JSON export preserves the validated structured snapshot and works directly from
+  results even if local storage is unavailable. Readable HTML reports export from
+  the saved view, include all expanded sources and the historical notice, work
+  offline, and can be printed or saved as PDF using the browser. The report has no
+  scripts or remote assets; users should check sensitive content before sharing.
+- Source review preserves original-language retrieved excerpts only when the
+  citation matches the chunk, document and source IDs. Recorded page and section
+  locators are displayed together; a PDF page link is added only for an actual
+  recorded page on an unfragmented PDF URL. Structured results without excerpts
+  explicitly say so: dates and record IDs are not invented original-text locators.
+
+These are repository capabilities, not a production-release claim; deployment
+status remains in `STATUS.md`.
 
 The browser tab and Apple touch icons reuse that same approved diesel-engine
 artwork. Regenerate them with `pnpm exec tsx scripts/portfolio/generate-brand-icons.ts`.

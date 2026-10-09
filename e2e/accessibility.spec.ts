@@ -135,6 +135,37 @@ for (const locale of ["en", "zh-CN"] as const) {
   });
 }
 
+for (const locale of ["en", "zh-CN"] as const) {
+  test(`home loading metrics expose valid accessible status in ${locale}`, async ({ context, page }) => {
+    await context.clearCookies();
+    expect((await page.request.post("/api/preferences/locale", { data: { locale } })).ok()).toBe(true);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    await page.route("**/api/countries", async (route) => { await held; await route.abort(); });
+    try {
+      await page.goto("/");
+      const loadingMetrics = page.getByTestId("home-workspace").locator('article [role="status"]');
+      // The public home has one live catalog metric; its published evidence
+      // totals are static. The four-metric layout belongs to the offline Demo.
+      await expect(loadingMetrics).toHaveCount(1);
+      for (const metric of await loadingMetrics.all()) {
+        await expect(metric).toHaveAccessibleName(/\S/u);
+        await expect(metric).toHaveText(locale === "en" ? "Loading" : "加载中");
+      }
+      // Hold the response through the scan: do not hide loading-state defects
+      // by waiting until the data replaces the skeleton.
+      const results = await new AxeBuilder({ page })
+        .include('[data-testid="home-workspace"]')
+        .options({ runOnly: ["wcag2a", "wcag2aa", "wcag21aa"] }).analyze();
+      expect(results.violations.filter(({ impact }) => impact === "critical" || impact === "serious")).toEqual([]);
+      await expect(loadingMetrics).toHaveCount(1);
+    } finally {
+      release();
+      await page.unrouteAll({ behavior: "wait" });
+    }
+  });
+}
+
 for (const route of [
   "/",
   "/chat",

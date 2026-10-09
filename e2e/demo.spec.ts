@@ -346,7 +346,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect(cards).toHaveCount(1);
     await expect(answer).not.toContainText(gap);
     await cards.first().locator("summary").click();
-    const sourceText = await cards.first().getByText(/Searchable fictional source fixture/u).textContent();
+    const sourceText = await cards.first().getByTestId("source-review").locator("blockquote").filter({ hasText: /Searchable fictional source fixture/u }).textContent();
     if (!sourceText) throw new Error("Expected the displayed source excerpt");
     // Ordinary locator queries can miss every candidate and hide this bug.
     // Use only the unchanged displayed excerpt for a high-similarity control.
@@ -745,9 +745,8 @@ test("portfolio demo preserves mixed-language knowledge evidence across locales"
   await expect(
     chineseCard.getByText(originalTitle, { exact: true }),
   ).toBeVisible();
-  const chineseExcerpt = chineseCard.getByText(
-    new RegExp(excerptMarker, "u"),
-  );
+  const chineseExcerpt = chineseCard.getByTestId("source-review").locator("blockquote")
+    .filter({ hasText: new RegExp(excerptMarker, "u") });
   await expect(chineseExcerpt).toContainText("中国: 非道路排放法规");
   const originalExcerpt = await chineseExcerpt.textContent();
   expect(originalExcerpt).not.toBeNull();
@@ -768,7 +767,7 @@ test("portfolio demo preserves mixed-language knowledge evidence across locales"
     englishCard.getByText(originalTitle, { exact: true }),
   ).toBeVisible();
   await expect(
-    englishCard.getByText(new RegExp(excerptMarker, "u")),
+    englishCard.getByTestId("source-review").locator("blockquote").filter({ hasText: new RegExp(excerptMarker, "u") }),
   ).toHaveText(originalExcerpt!);
 });
 
@@ -796,8 +795,8 @@ test(`portfolio demo retrieves English ${scopeSpelling} source terms and still r
   await expect(card.getByText("DEMO ONLY — Fictional regulation document", { exact: true })).toBeVisible();
   await expect(card).toContainText("Searchable fictional source fixture");
   await expect(card).toContainText("中国: 非道路排放法规");
-  // Public citation copy uses the page locator when both page and section
-  // metadata exist; the service regression separately binds the raw section.
+  // The citation summary keeps its page locator; the expanded source review
+  // also retains the delivered section and complete original-language excerpt.
   await expect(card).toContainText("Page 1");
   await expect(assistant).toContainText("Traceable document evidence was searched.");
   await expect(assistant).not.toContainText("This request lacks enough evidence");
@@ -805,7 +804,7 @@ test(`portfolio demo retrieves English ${scopeSpelling} source terms and still r
 
   // Use the displayed, existing fixture text to form a high-similarity query.
   // Its excluded term must disqualify that same document before vector ranking.
-  const sourceText = await card.getByText(/Searchable fictional source fixture/u).textContent();
+  const sourceText = await card.getByTestId("source-review").locator("blockquote").filter({ hasText: /Searchable fictional source fixture/u }).textContent();
   if (!sourceText) throw new Error("Expected the displayed source excerpt");
   const retainedTerms = tokenizeKnowledgeText(sourceText)
     .filter((token) => token !== "fictional" && token !== "or").join(" ");

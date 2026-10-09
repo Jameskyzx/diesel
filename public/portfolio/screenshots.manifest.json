@@ -1,12 +1,12 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-08T11:07:20.113Z",
+      "capturedAt": "2026-10-09T12:13:25.972Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
       "route": "/",
-      "sha256": "b5f0fdccdaf391d962402f69fa1c60f5d80b7ce8973786e731ea22a7bfa6056d",
+      "sha256": "4d6583a755899ed0b8414d975ed21e4fcdfd0374c016b7364d433fd5b51ffc4f",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -61,6 +61,7 @@
         "scripts/portfolio/screenshot-demo-session.ts",
         "scripts/portfolio/screenshot-manifest.ts",
         "src/app/admin/page.tsx",
+        "src/app/analyses/page.tsx",
         "src/app/api/admin/dashboard/route.ts",
         "src/app/api/admin/documents/[documentId]/reprocess/route.ts",
         "src/app/api/admin/documents/route.ts",
@@ -85,6 +86,7 @@
         "src/app/api/product-fit/route.ts",
         "src/app/api/products/route.ts",
         "src/app/chat/page.tsx",
+        "src/app/compare/page.tsx",
         "src/app/countries/[iso3]/loading.tsx",
         "src/app/countries/[iso3]/page.tsx",
         "src/app/dev/knowledge/loading.tsx",
@@ -102,6 +104,11 @@
         "src/components/ai/assistant-markdown.tsx",
         "src/components/ai/market-comparison-facts.tsx",
         "src/components/ai/sales-chat.tsx",
+        "src/components/analyses/analysis-library.tsx",
+        "src/components/analyses/comparison-results.tsx",
+        "src/components/analyses/comparison-workspace.tsx",
+        "src/components/analyses/save-analysis.tsx",
+        "src/components/analyses/source-review.tsx",
         "src/components/countries/country-detail-drawer.tsx",
         "src/components/countries/country-explorer.tsx",
         "src/components/countries/country-initial-panel.tsx",
@@ -185,6 +192,8 @@
         "src/features/ai/tool-display-evidence.ts",
         "src/features/ai/tool-part-presentation.ts",
         "src/features/ai/tool-result-envelope.ts",
+        "src/features/analyses/schemas.ts",
+        "src/features/analyses/storage.ts",
         "src/features/countries/client-errors.ts",
         "src/features/countries/country-shortcuts.ts",
         "src/features/countries/detail-state.ts",
@@ -287,7 +296,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "b6903e21f06683853896ae6e2fbcf086e14279bc7f6987a14b9dd9a04fc71bcf",
+      "sourceFingerprint": "900e7de28a62597cecb1ddf68ef63202083833a5be51390ff68a28e101d741e6",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -295,12 +304,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-08T11:07:23.441Z",
+      "capturedAt": "2026-10-09T12:13:29.287Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "a2ac388901f3ce9a0d4eb01bca40d7b45bf7424ba017385b18803162025eba45",
+      "sha256": "7d16ee4c93dff60a50c56e25ec1ee99c6802a573aad74b2193f6d03380ad7e73",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -356,6 +365,7 @@
         "scripts/portfolio/screenshot-demo-session.ts",
         "scripts/portfolio/screenshot-manifest.ts",
         "src/app/admin/page.tsx",
+        "src/app/analyses/page.tsx",
         "src/app/api/admin/dashboard/route.ts",
         "src/app/api/admin/documents/[documentId]/reprocess/route.ts",
         "src/app/api/admin/documents/route.ts",
@@ -380,6 +390,7 @@
         "src/app/api/product-fit/route.ts",
         "src/app/api/products/route.ts",
         "src/app/chat/page.tsx",
+        "src/app/compare/page.tsx",
         "src/app/countries/[iso3]/loading.tsx",
         "src/app/countries/[iso3]/page.tsx",
         "src/app/dev/knowledge/loading.tsx",
@@ -397,6 +408,11 @@
         "src/components/ai/assistant-markdown.tsx",
         "src/components/ai/market-comparison-facts.tsx",
         "src/components/ai/sales-chat.tsx",
+        "src/components/analyses/analysis-library.tsx",
+        "src/components/analyses/comparison-results.tsx",
+        "src/components/analyses/comparison-workspace.tsx",
+        "src/components/analyses/save-analysis.tsx",
+        "src/components/analyses/source-review.tsx",
         "src/components/countries/country-detail-drawer.tsx",
         "src/components/countries/country-explorer.tsx",
         "src/components/countries/country-initial-panel.tsx",
@@ -480,6 +496,8 @@
         "src/features/ai/tool-display-evidence.ts",
         "src/features/ai/tool-part-presentation.ts",
         "src/features/ai/tool-result-envelope.ts",
+        "src/features/analyses/schemas.ts",
+        "src/features/analyses/storage.ts",
         "src/features/countries/client-errors.ts",
         "src/features/countries/country-shortcuts.ts",
         "src/features/countries/detail-state.ts",
@@ -582,7 +600,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "c0d8e144a29534309b05f4a1929b522670a0513f6abd0d38b667c66f06e98f3f",
+      "sourceFingerprint": "4dda9ecc81a11e3ba35763b50b076e55ba3c8859a5ba816ee208682654dd93f1",
       "viewport": {
         "height": 1000,
         "width": 1600

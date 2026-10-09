@@ -278,13 +278,12 @@ async function withPendingFit(
         await page.goto(initialUrl);
         await expect(page.locator("html")).toHaveAttribute("lang", locale);
         await expect(page.getByTestId("country-detail")).toBeVisible();
-        // Exercise the cold cross-document chat path before starting the
-        // controlled request. Keep any dev reload outside the measured race.
-        const [warmChat] = await Promise.all([
-          context.waitForEvent("page"),
-          page.getByRole("link", { name: zh ? "在对话中分析" : "Analyze in chat", exact: true })
-            .click({ modifiers: ["ControlOrMeta"] }),
-        ]);
+        // Warm a second document without duplicating the native input under
+        // test. A modified click here can be accepted without creating a tab
+        // in headless Chromium, before any fit or measured action has started.
+        // The actual race below still requires the unchanged native click.
+        const warmChat = await context.newPage();
+        await warmChat.goto(committedChatHref);
         await expect(warmChat.locator("html")).toHaveAttribute("lang", locale);
         await expect(warmChat).toHaveURL((url) => `${url.pathname}${url.search}` === committedChatHref);
         // A server-rendered lang/URL does not prove that this new tab finished

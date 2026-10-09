@@ -973,7 +973,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     expect(response.ok()).toBe(true);
     await page.goto("/chat");
     const navigation = page.getByRole("navigation", { name: locale === "en" ? "Primary navigation" : "主导航" });
-    const labels = locale === "en" ? ["Home", "Chat", "Map"] : ["首页", "对话", "地图"];
+    const labels = locale === "en" ? ["Home", "Chat", "Map", "Compare", "Saved"] : ["首页", "对话", "地图", "比较", "已保存"];
     await expect(navigation.getByRole("link")).toHaveText(labels);
 
     const expectHeaderFits = async (width: number) => {
@@ -1023,7 +1023,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     }
 
     await page.setViewportSize({ height: 720, width: 320 });
-    for (const [index, pathname] of ["/", "/chat", "/map"].entries()) {
+    for (const [index, pathname] of ["/", "/chat", "/map", "/compare", "/analyses"].entries()) {
       await expectHeaderFits(320);
       await navigation.getByRole("link", { exact: true, name: labels[index]! }).click();
       await expect.poll(() => new URL(page.url()).pathname).toBe(pathname);

@@ -52,7 +52,11 @@ export default defineConfig({
     ...(process.env.PLAYWRIGHT_BASE_URL
       ? []
       : [{
-        command: "pnpm exec tsx scripts/e2e/server.ts",
+        // The single long-lived webpack dev server exceeded Node's default
+        // ~4 GiB heap while compiling the final knowledge route in CI. Bound
+        // only this test process at 6 GiB; production and other servers retain
+        // their own limits. Public Linux runners provide 16 GB total RAM.
+        command: "pnpm exec node --max-old-space-size=6144 --import tsx scripts/e2e/server.ts",
         env: {
           // E2E only checks configuration-aware UI and deterministic chat
           // responses. No test sends a request to this placeholder endpoint.

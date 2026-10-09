@@ -96,7 +96,7 @@ for (const locale of ["zh-CN", "en"] as const) {
         await expect(chat.locator('[role="status"][aria-busy="false"]').filter({ hasText: copy.chat.statusComplete })).toBeAttached();
         await expect(chat.getByTestId("assistant-markdown").first()).toBeVisible();
         await expect(chat.getByTestId("assistant-markdown").first()).not.toBeEmpty();
-        await expect(chat.getByRole("textbox")).toHaveValue("");
+        await expect(chat.getByRole("textbox", { name: copy.chat.questionInput, exact: true })).toHaveValue("");
         expect(requestCount).toBe(1);
         await testInfo.attach("rendered-answer", { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
       });

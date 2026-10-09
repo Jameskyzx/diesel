@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { PUBLIC_API_REQUEST_TIMEOUT_MS } from "../src/lib/public-api-request";
 
 test.beforeEach(async ({ context }) => {
   await context.clearCookies();
@@ -30,6 +31,14 @@ test("switches locale from an open country drawer and preserves its shared URL",
     exact: true,
     name: "中文",
   });
+  // Persistence and RSC refresh have separate application deadlines. Cold CI
+  // compilation can consume most of the POST budget before refresh starts;
+  // a single default assertion timeout must not combine those two phases.
+  const localeResponse = page.waitForResponse(
+    response => new URL(response.url()).pathname === "/api/preferences/locale" &&
+      response.request().method() === "POST",
+    { timeout: PUBLIC_API_REQUEST_TIMEOUT_MS },
+  );
   if (testInfo.project.name === "mobile-chromium") {
     await chineseButton.tap();
   } else {
@@ -38,7 +47,12 @@ test("switches locale from an open country drawer and preserves its shared URL",
     await page.keyboard.press("Enter");
   }
 
-  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
+  const persisted = await localeResponse;
+  expect(persisted.status()).toBe(200);
+  expect(persisted.request().postDataJSON()).toEqual({ locale: "zh-CN" });
+  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN", {
+    timeout: PUBLIC_API_REQUEST_TIMEOUT_MS,
+  });
   await expectSharedRoute();
   await expect(
     drawer.getByRole("heading", {

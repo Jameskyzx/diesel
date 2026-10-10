@@ -96,6 +96,8 @@ const SYSTEMD_BUILD_UNIT_PROPERTIES = [
   "UMask",
   "NoNewPrivileges",
   "ProtectControlGroups",
+  "MemoryMax",
+  "MemorySwapMax",
 ] as const;
 const PM2_SYSTEMD_IDENTITY_PROPERTIES = [
   "Id",
@@ -1726,6 +1728,8 @@ function createLoadedSystemdUnitMetadata(
     LoadState: "loaded",
     NoNewPrivileges: "yes",
     ProtectControlGroups: "yes",
+    MemoryMax: "2147483648",
+    MemorySwapMax: "1073741824",
     RemainAfterExit: "yes",
     Restart: "no",
     Result: "success",
@@ -1775,10 +1779,10 @@ async function executeSystemdUnitMetadataFixture(
         [
           "#!/bin/bash",
           "set -euo pipefail",
-          '[[ "${1:-}" == --foreground ]]',
-          '[[ "${2:-}" == --signal=TERM ]]',
-          '[[ "${3:-}" == --kill-after=2s ]]',
-          '[[ "${4:-}" == 10s ]]',
+          '[[ "${1:-}" == --foreground ]] || exit 64',
+          '[[ "${2:-}" == --signal=TERM ]] || exit 64',
+          '[[ "${3:-}" == --kill-after=2s ]] || exit 64',
+          '[[ "${4:-}" == 10s ]] || exit 64',
           "shift 4",
           'exec "$@"',
           "",
@@ -1790,11 +1794,11 @@ async function executeSystemdUnitMetadataFixture(
           "#!/bin/bash",
           "set -euo pipefail",
           'printf \'%s\\n\' "$@" >"${PREPARE_TEST_SYSTEMCTL_ARGS:?}"',
-          '[[ "$#" -eq 30 ]]',
-          '[[ "${1:-}" == show ]]',
-          '[[ "${2:-}" == --all ]]',
-          '[[ "${3:-}" == --no-pager ]]',
-          '[[ "${4:-}" == "${PREPARE_TEST_UNIT:?}" ]]',
+          `[[ "$#" -eq ${SYSTEMD_BUILD_UNIT_PROPERTIES.length + 4} ]] || exit 64`,
+          '[[ "${1:-}" == show ]] || exit 64',
+          '[[ "${2:-}" == --all ]] || exit 64',
+          '[[ "${3:-}" == --no-pager ]] || exit 64',
+          '[[ "${4:-}" == "${PREPARE_TEST_UNIT:?}" ]] || exit 64',
           '/bin/cat -- "${PREPARE_TEST_SYSTEMCTL_OUTPUT:?}"',
           'exit "${PREPARE_TEST_SYSTEMCTL_STATUS:-0}"',
           "",
@@ -7023,6 +7027,7 @@ if [[ " $* " == *" install "* ]]; then
   printf '%s\\n' "$@" >${quoteShell(installInvocationPath)}
 fi
 if [[ " $* " == *" pnpm build "* ]]; then
+  [[ "${"$"}{NODE_OPTIONS:-}" == --max-old-space-size=1536 ]] || exit 92
   printf '%s\n' '// rewritten by Next during the fixture build' >next-env.d.ts
   mkdir -p .next/server .next/cache
   printf '%s\n' '${TEST_RELEASE_SHA}' >.next/BUILD_ID
@@ -7045,6 +7050,7 @@ fi
             npm_config_network_concurrency: "128",
             npm_config_fetch_timeout: "1",
             npm_config_fetch_retries: "99",
+            NODE_OPTIONS: "--max-old-space-size=8192",
             PATH: `${fakeBin}:/usr/bin:/bin`,
           },
         },
@@ -7173,6 +7179,38 @@ fi
     );
   });
 
+  it.each(["arity", "verb"] as const)(
+    "rejects wrong systemctl %s even when shell errexit is suppressed",
+    async (mutation) => {
+      const unit = `diesel-build-${TEST_RELEASE_SHA}.service`;
+      const workspace = "/fixture/build-workspace";
+      const controlGroup = `/system.slice/${unit}`;
+      const args = mutation === "arity" ? ["show"] : [
+        "status", "--all", "--no-pager", unit,
+        ...SYSTEMD_BUILD_UNIT_PROPERTIES.map((property) => `--property=${property}`),
+      ];
+      const result = await executeSystemdUnitMetadataFixture(
+        renderSystemdUnitMetadata(createLoadedSystemdUnitMetadata(unit, workspace, controlGroup)),
+        [
+          "set -Eeuo pipefail",
+          "status=0",
+          // Bash 3.2 suppresses errexit in children of a checked substitution.
+          // The fixture must reject explicitly, independently of that behavior.
+          `output="$(systemctl ${args.map(quoteShell).join(" ")})" || status="$?"`,
+          '[[ -z "${output}" ]] || exit 99',
+          'exit "${status}"',
+        ].join("\n"),
+        unit,
+        workspace,
+        controlGroup,
+      );
+      expect(result).toEqual({
+        args,
+        command: { exitCode: 64, stderr: "", stdout: "" },
+      });
+    },
+  );
+
   it("parses and validates the complete systemd v255 build-unit contract", async () => {
     const unit = `diesel-build-${TEST_RELEASE_SHA}.service`;
     const workspace = "/fixture/build-workspace";
@@ -7199,7 +7237,7 @@ fi
     expect(result.command).toEqual({
       exitCode: 0,
       stderr: "",
-      stdout: "26|loaded|45min|yes\n",
+      stdout: "28|loaded|45min|yes\n",
     });
     expect(result.args).toEqual([
       "show",
@@ -7244,7 +7282,7 @@ fi
     expect(result.command).toEqual({
       exitCode: 0,
       stderr: "",
-      stdout: "26|not-found||\n",
+      stdout: "28|not-found||\n",
     });
   });
 
@@ -7284,6 +7322,14 @@ fi
     },
     {
       expectedError: "systemd unit metadata was incomplete",
+      mutation: "missing-memory-max",
+    },
+    {
+      expectedError: "systemd unit metadata was incomplete",
+      mutation: "missing-memory-swap-max",
+    },
+    {
+      expectedError: "systemd unit metadata was incomplete",
       mutation: "empty-load-state",
     },
     {
@@ -7316,6 +7362,12 @@ fi
             metadata,
             "ProtectControlGroups",
           );
+          break;
+        case "missing-memory-max":
+          output = renderSystemdUnitMetadata(metadata, "MemoryMax");
+          break;
+        case "missing-memory-swap-max":
+          output = renderSystemdUnitMetadata(metadata, "MemorySwapMax");
           break;
         case "empty-load-state":
           output = renderSystemdUnitMetadata({ ...metadata, LoadState: "" });
@@ -7481,6 +7533,12 @@ fi
     ["UMask", "0022"],
     ["NoNewPrivileges", "no"],
     ["ProtectControlGroups", "no"],
+    ["MemoryMax", "infinity"],
+    ["MemoryMax", "2147483649"],
+    ["MemoryMax", ""],
+    ["MemorySwapMax", "infinity"],
+    ["MemorySwapMax", "1073741825"],
+    ["MemorySwapMax", ""],
   ] satisfies ReadonlyArray<readonly [SystemdBuildUnitProperty, string]>)(
     "rejects systemd build-unit drift in %s",
     async (property, driftedValue) => {

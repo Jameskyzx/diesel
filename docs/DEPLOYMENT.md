@@ -1215,7 +1215,13 @@ identity proof；candidate 先经 `O_NOFOLLOW` source FD 与前后 `fstat`/SHA-2
 root-only 的全局 build lock，再以确定性的 `diesel-build-<release-id>.service` transient
 systemd service 调用 `scripts/deploy/build-release.sh`。service 使用 `Type=exec`、`env -i`、
 `KillMode=control-group`、45 分钟 runtime 上限和 30 秒 stop 上限，且不把 root shell 的 stdin
-传给 builder。每个 commit 使用独立的 `/opt/diesel/build/<release-id>` HOME，不复用上一轮
+传给 builder。构建 cgroup 固定最多 2 GiB 物理内存与 1 GiB swap（`MemoryMax=2147483648`、
+`MemorySwapMax=1073741824`），controller 严格读回两项；构建入口固定设置 V8 old-space
+为 1536 MiB，不继承调用者 Node 参数。Next 的编译及类型检查 worker 继承该值，静态页面
+worker 会重置此选项，但仍受整个构建 cgroup 的总量限制。此限制为共用的 4 GB VPS 保留资源；不是耗时或
+构建成功保证，触及限制仍按失败回滚，不跳过 TypeScript 检查。2026-10-10 的中断最后停在
+TypeScript 阶段，未取得 OOM 证据，不能把此防护描述成已确认的根因修复。
+每个 commit 使用独立的 `/opt/diesel/build/<release-id>` HOME，不复用上一轮
 Corepack/pnpm 用户态缓存；脚本在复制 release 前确认 `corepack` 可用并设置
 `COREPACK_ENABLE_DOWNLOAD_PROMPT=0`，不能在无人值守发布中临时询问是否下载。安装强制使用
 pnpm `--package-import-method=copy`，避免构建 workspace 中的文件通过 hardlink 影响共享 store；
@@ -1246,7 +1252,7 @@ metadata、cgroup 或目录 cleanup 任一无法证明时则把发布提升为 7
 HOME，不能替换顶层路径。若 root controller 被 SIGKILL 或主机掉电，磁盘目录可能保留；下一轮
 会因同名 unit、builder 进程或本轮目录已存在而失败关闭，必须先人工核查，不能把 stale 状态
 自动当作安全重试。构建日志保留在该 unit 的 journal 中。
-若首个 bounded `systemctl stop` 本身超时或失败，controller 只会在 unit 的 26 项身份/隔离属性
+若首个 bounded `systemctl stop` 本身超时或失败，controller 只会在 unit 的 28 项身份/隔离/资源属性
 已完整验证后，对该精确 unit 执行 `systemctl kill --kill-who=all --signal=SIGKILL` 并重试 stop；
 命令返回码仍不构成清理证明，最终必须通过 unload、cgroup path 消失与两轮 residual proof。
 从 rollback basis 建立到 §4.3 公开验收收敛，只由目标 release 的版本化

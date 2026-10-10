@@ -98,11 +98,59 @@ export type GovernanceMaintenanceUnlockResult = {
   tokenReleased: boolean;
 };
 
+const maintenanceFailureReasons = [
+  "session-proof-failed", "probe-timeout", "probe-query-failed",
+  "backend-changed", "global-lock-lost", "token-lock-lost",
+  "global-lock-reentry-failed", "token-lock-reentry-failed",
+  "global-lock-balance-failed", "token-lock-balance-failed",
+  "unlock-timeout", "unlock-query-failed", "unlock-proof-failed",
+  "session-close-failed", "process-group-not-terminated", "command-failed",
+] as const;
+type MaintenanceFailureReason = (typeof maintenanceFailureReasons)[number];
+
+// Diagnostics are an allowlist, never an Error message, query or connection URL.
+const maintenanceDatabaseCodes = new Set([
+  "08000", "08001", "08003", "08004", "08006", "08007", "08P01",
+  "25P03", "53300", "53400", "57014", "57P01", "57P02", "57P03",
+  "CONNECT_TIMEOUT", "CONNECTION_CLOSED", "CONNECTION_DESTROYED",
+  "CONNECTION_ENDED", "EAI_AGAIN", "ECONNREFUSED", "ECONNRESET",
+  "EHOSTUNREACH", "ENETDOWN", "ENETUNREACH", "EPIPE", "ETIMEDOUT",
+]);
+function maintenanceDatabaseCode(error: unknown): string | null {
+  try {
+    if (typeof error === "object" && error !== null && "code" in error &&
+        typeof error.code === "string" && maintenanceDatabaseCodes.has(error.code)) {
+      return error.code;
+    }
+  } catch { /* Even a throwing error property must not mask termination. */ }
+  return null;
+}
+
 export class GovernanceMaintenanceSessionError extends Error {
-  constructor() {
+  constructor(
+    readonly reason: MaintenanceFailureReason = "session-proof-failed",
+    readonly databaseCode: string | null = null,
+  ) {
     super("Governance maintenance database session was lost.");
     this.name = "GovernanceMaintenanceSessionError";
   }
+}
+
+export function formatGovernanceMaintenanceDiagnostic(
+  error: unknown,
+  phase: "heartbeat" | "command",
+): string {
+  const reason = error instanceof GovernanceMaintenanceSessionError &&
+      maintenanceFailureReasons.includes(error.reason)
+    ? error.reason
+    : error instanceof GovernanceMaintenanceProcessGroupError
+      ? "process-group-not-terminated" : "command-failed";
+  const code = error instanceof GovernanceMaintenanceSessionError &&
+      typeof error.databaseCode === "string" && maintenanceDatabaseCodes.has(error.databaseCode)
+    ? error.databaseCode : maintenanceDatabaseCode(error);
+  return `${JSON.stringify({
+    kind: "governance-maintenance-failure-v1", phase, reason, databaseCode: code,
+  })}\n`;
 }
 
 export const governanceMaintenanceProcessGroupFailureMessage =
@@ -130,6 +178,7 @@ export function governanceMaintenanceUnlockSucceeded(input: {
 async function waitForGovernanceMaintenanceOperation<T>(
   operation: PromiseLike<T>,
   timeoutMs: number,
+  reason: MaintenanceFailureReason,
 ): Promise<T> {
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -137,7 +186,7 @@ async function waitForGovernanceMaintenanceOperation<T>(
       operation,
       new Promise<never>((_resolve, reject) => {
         timeout = setTimeout(
-          () => reject(new GovernanceMaintenanceSessionError()),
+          () => reject(new GovernanceMaintenanceSessionError(reason)),
           timeoutMs,
         );
       }),
@@ -162,6 +211,7 @@ export async function cleanupGovernanceMaintenanceSession(input: {
       const result = await waitForGovernanceMaintenanceOperation(
         input.unlock(),
         governanceMaintenanceCleanupTimeoutMs,
+        "unlock-timeout",
       );
       if (
         !governanceMaintenanceUnlockSucceeded({
@@ -170,17 +220,18 @@ export async function cleanupGovernanceMaintenanceSession(input: {
           tokenLockHeld: input.tokenLockHeld,
         })
       ) {
-        throw new GovernanceMaintenanceSessionError();
+        throw new GovernanceMaintenanceSessionError("unlock-proof-failed");
       }
     }
   } catch (error) {
-    cleanupFailure = error;
+    cleanupFailure = error instanceof GovernanceMaintenanceSessionError ? error :
+      new GovernanceMaintenanceSessionError("unlock-query-failed", maintenanceDatabaseCode(error));
   }
 
   try {
     await input.close(governanceMaintenanceCleanupTimeoutSeconds);
   } catch (error) {
-    cleanupFailure ??= error;
+    cleanupFailure ??= new GovernanceMaintenanceSessionError("session-close-failed", maintenanceDatabaseCode(error));
   }
 
   if (cleanupFailure !== undefined) {
@@ -695,6 +746,7 @@ export function startGovernanceMaintenanceHeartbeat(input: {
   child: HeartbeatChild;
   expectedBackendPid: number;
   intervalMs?: number;
+  onFailure?: (failure: GovernanceMaintenanceSessionError) => void;
   probe: () => PromiseLike<GovernanceMaintenanceSessionProbe | undefined>;
   terminate?: () => PromiseLike<void>;
   timeoutMs?: number;
@@ -718,8 +770,12 @@ export function startGovernanceMaintenanceHeartbeat(input: {
       clearInterval(timerState.current);
     }
   };
-  const fail = () => {
-    failure ??= new GovernanceMaintenanceSessionError();
+  const fail = (error: GovernanceMaintenanceSessionError) => {
+    const firstFailure = failure === null;
+    failure ??= error;
+    if (firstFailure) {
+      try { input.onFailure?.(failure); } catch { /* Diagnostics never prevent termination. */ }
+    }
     if (!monitoring) {
       return;
     }
@@ -735,23 +791,24 @@ export function startGovernanceMaintenanceHeartbeat(input: {
     }
   };
   const probeBeforeDeadline = () =>
-    waitForGovernanceMaintenanceOperation(input.probe(), timeoutMs);
+    waitForGovernanceMaintenanceOperation(input.probe(), timeoutMs, "probe-timeout");
   const check = async () => {
     try {
       const probe = await probeBeforeDeadline();
-      if (
-        probe?.backendPid !== input.expectedBackendPid ||
-        probe.globalHeld !== true ||
-        probe.globalReentered !== true ||
-        probe.globalBalanced !== true ||
-        probe.tokenHeld !== true ||
-        probe.tokenReentered !== true ||
-        probe.tokenBalanced !== true
-      ) {
-        fail();
+      const failedProof: MaintenanceFailureReason | null =
+        probe?.backendPid !== input.expectedBackendPid ? "backend-changed" :
+        probe.globalHeld !== true ? "global-lock-lost" :
+        probe.tokenHeld !== true ? "token-lock-lost" :
+        probe.globalReentered !== true ? "global-lock-reentry-failed" :
+        probe.tokenReentered !== true ? "token-lock-reentry-failed" :
+        probe.globalBalanced !== true ? "global-lock-balance-failed" :
+        probe.tokenBalanced !== true ? "token-lock-balance-failed" : null;
+      if (failedProof !== null) {
+        fail(new GovernanceMaintenanceSessionError(failedProof));
       }
-    } catch {
-      fail();
+    } catch (error: unknown) {
+      fail(error instanceof GovernanceMaintenanceSessionError ? error :
+        new GovernanceMaintenanceSessionError("probe-query-failed", maintenanceDatabaseCode(error)));
     }
   };
   const timer = setInterval(() => {
@@ -950,6 +1007,9 @@ async function main(): Promise<void> {
     const heartbeat = startGovernanceMaintenanceHeartbeat({
       child,
       expectedBackendPid: backendPid,
+      onFailure: (failure) => {
+        process.stderr.write(formatGovernanceMaintenanceDiagnostic(failure, "heartbeat"));
+      },
       probe: () =>
         client<GovernanceMaintenanceSessionProbe[]>`
           with held as materialized (
@@ -1065,7 +1125,8 @@ if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  main().catch(() => {
+  main().catch((error: unknown) => {
+    process.stderr.write(formatGovernanceMaintenanceDiagnostic(error, "command"));
     process.stderr.write(governanceMaintenanceFailureMessage);
     process.exitCode = 1;
   });

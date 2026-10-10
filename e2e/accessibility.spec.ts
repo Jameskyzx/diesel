@@ -1,6 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import {
+  productFitEvaluationSchema,
+  productListResponseSchema,
+} from "../src/features/product-fit/schemas";
+
 const brandHomeNames = {
   en: "GD · Global Diesel — Home",
   "zh-CN": "GD · Global Diesel — 首页",
@@ -175,6 +180,37 @@ for (const route of [
   test(`${route} has no serious or critical accessibility violations`, async (
     { page },
   ) => {
+    if (route.startsWith("/countries/")) {
+      // Keep cold development compilation outside the unchanged UI/axe checks.
+      // These are real read-only requests; a failed preparation fails the test.
+      await test.step("Prepare the real product routes before the accessibility scan", async () => {
+        const products = await page.request.get("/api/products", { timeout: 30_000 });
+        expect(products.status()).toBe(200);
+        const catalog = productListResponseSchema.parse(await products.json());
+        expect(catalog.products.some(
+          (product) => product.modelCode === "DEMO-ENG-100",
+        )).toBe(true);
+        const fit = await page.request.post("/api/product-fit", {
+          data: {
+            applicationScope: "non-road",
+            asOf: "2026-01-20",
+            countryIso3: "CHN",
+            powerKw: 100,
+            productModelCode: "DEMO-ENG-100",
+          },
+          timeout: 30_000,
+        });
+        expect(fit.status()).toBe(200);
+        const evaluation = productFitEvaluationSchema.parse(await fit.json());
+        expect(evaluation.asOf).toBe("2026-01-20");
+        expect(evaluation.input).toMatchObject({
+          applicationScope: "non-road",
+          countryIso3: "CHN",
+          powerKw: 100,
+          productModelCode: "DEMO-ENG-100",
+        });
+      }, { timeout: 30_000 });
+    }
     await page.goto(route);
     await expect(page.locator("main")).toBeVisible();
     if (route.startsWith("/countries/")) {

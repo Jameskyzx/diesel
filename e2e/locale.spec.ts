@@ -971,6 +971,16 @@ for (const locale of ["en", "zh-CN"] as const) {
   test(`fully exposes labeled header navigation at responsive boundaries in ${locale}`, async ({ page }) => {
     const response = await page.request.post("/api/preferences/locale", { data: { locale } });
     expect(response.ok()).toBe(true);
+    // This checks header layout and navigation, not on-demand compilation.
+    // Load the real destinations without clicking or warming the browser router;
+    // every original click, URL, active-link and layout assertion still runs.
+    await test.step("Prepare real navigation destinations before header assertions", async () => {
+      for (const pathname of ["/", "/chat", "/map", "/compare", "/analyses"]) {
+        const destination = await page.request.get(pathname, { timeout: 30_000 });
+        expect(destination.status()).toBe(200);
+        expect(new URL(destination.url()).pathname).toBe(pathname);
+      }
+    }, { timeout: 30_000 });
     await page.goto("/chat");
     const navigation = page.getByRole("navigation", { name: locale === "en" ? "Primary navigation" : "主导航" });
     const labels = locale === "en" ? ["Home", "Chat", "Map", "Compare", "Saved"] : ["首页", "对话", "地图", "比较", "已保存"];

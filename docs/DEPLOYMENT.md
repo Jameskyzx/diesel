@@ -1783,6 +1783,11 @@ PostgreSQL 协议，并要求 pre-switch、live env 与 maintenance child 实际
 5 秒证明整组为空；wrapper 的 HUP/INT/TERM、child `error` 与正常 `close` 复用同一流程，且必须
 同时等到 direct child `close`。无法证明整组为空时禁止显式 advisory unlock，只关闭数据库
 session 并失败；数据库写入 grandchild 不能在锁会话丢失后继续存活。
+维护 wrapper 的失败日志使用 `governance-maintenance-failure-v1` 固定字段：`phase`、
+`reason` 和白名单 `databaseCode`。心跳超时、查询失败、backend 变化、两把锁的持有/
+重入/平衡失败，以及清理解锁失败分别记录；心跳失败在终止子进程前记录一次，最终入口
+另记录 command 失败。日志不包含原始异常正文、堆栈、SQL、参数、连接地址或令牌，
+诊断输出失败不能阻止终止和回滚。10 秒检查间隔、30 秒截止与 5 秒清理边界保持不变。
 不要把 `DATABASE_URL` 或其他秘密拼入命令行。root 治理入口必须由 `env -i` 清除父 Shell 的同名或
 陈旧变量，只显式注入 `HOME`、system-only root `PATH`、`NODE_ENV=production`、
 `DATABASE_MODE=postgres`、非秘密 `release_id` 与固定值

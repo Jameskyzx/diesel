@@ -1,0 +1,166 @@
+{
+  "version": "diesel-deployment-observation-interruption-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedAt": "2026-10-10T05:03:42Z",
+  "release": "1a74dd5be5564a58ef4e59fb5856ecb84c66eebd",
+  "previousVerifiedRelease": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+  "site": "https://diesel.jamesky.site",
+  "deploymentVerified": false,
+  "currentWorkerState": "unknown",
+  "productionAcceptance": "not-performed",
+  "databaseRoute": "original VPS route; no temporary relay",
+  "pullRequest": {
+    "number": 78,
+    "url": "https://github.com/Jameskyzx/diesel/pull/78",
+    "mergedAt": "2026-10-10T04:02:41Z",
+    "headSha": "edfb0979969277dbded1b6569bdc6d7957d15c49",
+    "finalCiRunId": 38020170426,
+    "finalCiJobsPassed": 10,
+    "earlierFailedCiRunId": 38014940886,
+    "earlierFailure": "Two cold-development-compilation browser flakes; preserved as a failed run. Bounded real-route preparation was added without weakening UI assertions or the zero-flaky gate."
+  },
+  "exactMasterCi": {
+    "runId": 38022676913,
+    "headSha": "1a74dd5be5564a58ef4e59fb5856ecb84c66eebd",
+    "event": "push",
+    "conclusion": "success",
+    "jobsPassed": 10,
+    "requiredGate": "Required CI gate",
+    "url": "https://github.com/Jameskyzx/diesel/actions/runs/38022676913"
+  },
+  "localEvidence": {
+    "lint": "passed",
+    "typecheck": "passed",
+    "build": "passed",
+    "portfolioReleaseEvidence": "passed",
+    "vitestRunId": "a2c2aafc-2f36-4ee7-a95a-516e85a02817",
+    "vitestPassed": 8530,
+    "vitestSkipped": 6,
+    "vitestFailed": 0,
+    "browserRunId": "ee412e89-7cb4-48dc-9ffc-6267c23b8019",
+    "browserPassed": 489,
+    "browserSkipped": 68,
+    "browserFailed": 0,
+    "browserFlaky": 0,
+    "focusedBrowserRepeatsPassed": 18,
+    "focusedBrowserRetries": 0
+  },
+  "preflight": {
+    "observedAt": "2026-10-10T04:48:43.003Z",
+    "currentRelease": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "availableBytes": 22266875904,
+    "candidatePathsAbsent": true,
+    "nginx": "active",
+    "pm2Root": "active",
+    "diesel": { "status": "online", "pid": 2607838 },
+    "jameskyApi": { "status": "online", "pid": 1554881 }
+  },
+  "stage": {
+    "exitCode": 0,
+    "verifiedAt": "2026-10-10T04:49:31.346Z",
+    "inputDigest": "2398a19fa28fe40912d73862be1d10392f11d999b55515728de8e92a0f09349a",
+    "releaseDir": "/opt/diesel/releases/1a74dd5be5564a58ef4e59fb5856ecb84c66eebd",
+    "originalLocalGitOriginRestored": true
+  },
+  "operation": {
+    "operationId": "9bec2bc7-e2d3-430a-86d7-b9cdcb8393bb",
+    "mode": "full",
+    "createdAt": "2026-10-10T04:50:10.966Z",
+    "invocationId": "e6ba0840550a440d9fb3e160aea9a15d",
+    "workerPid": 2786881,
+    "submittedOnce": true,
+    "lastObserverFileWriteAt": "2026-10-10T04:56:59.195Z",
+    "lastObservedState": "running",
+    "lastObservedRestarts": 0,
+    "completionReceiptObserved": false,
+    "exitCode": null,
+    "terminalLedger": null
+  },
+  "connectivityDiagnostics": {
+    "publicHttps": "TLS connection timeout; curl exit 28",
+    "httpsWithPinnedKnownVpsIp": "TLS connection timeout; curl exit 28; certificate validation retained",
+    "tcpPorts22And443": "TCP connections established; this alone does not prove application or host health",
+    "unauthenticatedSshBanner": "No SSH banner received within 10 seconds; no login or PAM session created",
+    "githubNetworkControl": "HTTP 200",
+    "independentWebTool": "URL inaccessible to the tool; not independent proof of an outage",
+    "rootCause": "unconfirmed: host responsiveness or route failure cannot yet be distinguished"
+  },
+  "followUp": {
+    "observedAt": "2026-10-10T05:25:23.213Z",
+    "providerCorrection": "The user-owned JD Cloud console, not Tencent Cloud, lists the exact 111.228.50.85 host as lavm-63edb1wtqp.",
+    "consoleBeforeReboot": {
+      "instanceState": "running",
+      "ipState": "normal",
+      "lastVisibleMonitorTimeAsiaShanghai": "2026-10-10 12:58",
+      "lastReportedMemoryUsedPct": 88,
+      "lastReportedDiskUsedPct": 66.09,
+      "vnc": "Connected; displayed kernel Docker network events, with no login response to one Return key. This is not proof of OOM."
+    },
+    "localRoute": "Default route used utun6. A separate HTTPS request bound to active physical interface en1 with the known VPS address also timed out before reboot; network settings and the production database route were not changed.",
+    "reboot": {
+      "authorization": "User explicitly requested reboot after being told it would interrupt the release and both hosted services.",
+      "action": "One JD Cloud instance Reboot action, confirmed for the resolved instance; no reinstall, forced shutdown or duplicate deployment.",
+      "cloudReadback": "restarting, then running",
+      "sshObservedAt": "2026-10-10T05:24:20.711Z",
+      "bootId": "6b988cb5-657b-4107-8adc-6fc37bd25894",
+      "uptimeSeconds": 23.78,
+      "availableBytes": 20451270656,
+      "services": { "nginx": "active", "pm2Root": "active" },
+      "apps": [
+        { "name": "jamesky-api", "status": "online", "pid": 1033, "restarts": 0, "listener": "127.0.0.1:8787" },
+        { "name": "diesel-demo", "status": "online", "pid": 1034, "restarts": 0 }
+      ]
+    },
+    "runtimeReadback": {
+      "currentRelease": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+      "publicHealthStatus": 200,
+      "publicReadyStatus": 200,
+      "readyObservedAt": "2026-10-10T05:25:23.213Z",
+      "checks": { "database": "ok", "aiChatAdmission": "ok", "aiChatRateLimit": "ok" },
+      "method": "HTTPS with certificate validation retained, hostname pinned to the known VPS IP and connection bound to en1.",
+      "scope": "Existing-release recovery only; not a new-release acceptance, browser or provider canary. jamesky-api process/listener were checked, not its application flows."
+    },
+    "interruptedOperation": {
+      "observedAt": "2026-10-10T05:25:10.787Z",
+      "status": "unknown",
+      "unit": "not-found/inactive/dead",
+      "completionReceipt": null,
+      "strictLedgerValidationExit": 0,
+      "strictLedger": "active:PENDING:none",
+      "markers": ["HOST_ACTIVATION_PENDING", "HOST_ACTIVATION_V1"],
+      "originalObserverExitCode": 255,
+      "originalObserverExitDoesNotProveWorkerOutcome": true,
+      "nextAction": "Preserve the interrupted operation and close the pending activation through the versioned recovery protocol before considering another candidate. Never resubmit this SHA or invent a terminal marker."
+    },
+    "previousBootKernelReview": {
+      "commandExit": 0,
+      "matchingOomOrKernelStallEvents": 0,
+      "rootCause": "Still unconfirmed; absence of matching retained journal events is not proof that OOM or a kernel stall did not occur."
+    }
+  },
+  "recoveryCompleted": {
+    "observedAt": "2026-10-10T05:41:37.637Z",
+    "versionedRollbackPreflightExit": 0,
+    "versionedAbortIfUncommittedExit": 0,
+    "strictLedgerValidationExit": 0,
+    "strictLedger": "terminal:ROLLED_BACK:none",
+    "markers": ["HOST_ACTIVATION_ROLLED_BACK", "HOST_ACTIVATION_V1"],
+    "currentRelease": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "rollbackPublicVerification": "passed by versioned rollback script",
+    "dieselPid": 9244,
+    "jameskyApiPid": 1033,
+    "databasePublicationEntered": false,
+    "buildJournal": "Dependencies installed in 2m41s, Next compiled successfully in 61s; last retained message was Running TypeScript. No subsequent fatal error or OOM event was recovered.",
+    "rootCause": "unconfirmed; build memory was not bounded and the shared 4 GB host had other active services. Resource pressure is a risk, not a proven cause.",
+    "preserved": "Interrupted candidate, operation logs, build workspace and backups; no resubmission of the failed SHA."
+  },
+  "recoveryBoundary": {
+    "newSshLoginDuringWorker": false,
+    "rebootAttempted": false,
+    "duplicateDeploymentAttempted": false,
+    "backupsOrFailedReleasesDeleted": false,
+    "observationConnection": "Still open without new output at the observation time; do not treat this as proof that the worker is still running",
+    "neededUserActionAtOriginalObservation": "Unlock the Mac and open the host console. The original suggestion of Tencent Cloud was incorrect; subsequent read-only inspection confirmed JD Cloud. See followUp for the later explicitly authorized reboot.",
+    "nextVerification": "Recover the existing operation status and strict ledger first. Confirm a committed or rolled-back terminal state and independently verify production before declaring any deployment outcome."
+  }
+}

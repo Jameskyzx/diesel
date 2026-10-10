@@ -908,6 +908,8 @@ prepare_release_load_unit_state() {
   PREPARE_RELEASE_UNIT_UMASK=''
   PREPARE_RELEASE_UNIT_NO_NEW_PRIVILEGES=''
   PREPARE_RELEASE_UNIT_PROTECT_CONTROL_GROUPS=''
+  PREPARE_RELEASE_UNIT_MEMORY_MAX=''
+  PREPARE_RELEASE_UNIT_MEMORY_SWAP_MAX=''
   PREPARE_RELEASE_UNIT_PROPERTY_COUNT=0
 
   show_output="$(
@@ -938,7 +940,9 @@ prepare_release_load_unit_state() {
       --property=TimeoutStopUSec \
       --property=UMask \
       --property=NoNewPrivileges \
-      --property=ProtectControlGroups
+      --property=ProtectControlGroups \
+      --property=MemoryMax \
+      --property=MemorySwapMax
   )" || show_status="$?"
   if [[ "${show_status}" -ne 0 ]]; then
     prepare_release_fail 70 "systemd unit state query failed for ${unit}"
@@ -983,6 +987,8 @@ prepare_release_load_unit_state() {
       UMask) PREPARE_RELEASE_UNIT_UMASK="${property_value}" ;;
       NoNewPrivileges) PREPARE_RELEASE_UNIT_NO_NEW_PRIVILEGES="${property_value}" ;;
       ProtectControlGroups) PREPARE_RELEASE_UNIT_PROTECT_CONTROL_GROUPS="${property_value}" ;;
+      MemoryMax) PREPARE_RELEASE_UNIT_MEMORY_MAX="${property_value}" ;;
+      MemorySwapMax) PREPARE_RELEASE_UNIT_MEMORY_SWAP_MAX="${property_value}" ;;
       *)
         prepare_release_fail 70 "systemd returned an unexpected unit property"
         return
@@ -990,7 +996,7 @@ prepare_release_load_unit_state() {
     esac
     PREPARE_RELEASE_UNIT_PROPERTY_COUNT=$((PREPARE_RELEASE_UNIT_PROPERTY_COUNT + 1))
   done <<<"${show_output}"
-  if [[ "${PREPARE_RELEASE_UNIT_PROPERTY_COUNT}" -ne 26 ||
+  if [[ "${PREPARE_RELEASE_UNIT_PROPERTY_COUNT}" -ne 28 ||
     -z "${PREPARE_RELEASE_UNIT_LOAD_STATE}" ]]; then
     prepare_release_fail 70 "systemd unit metadata was incomplete"
     return
@@ -1036,7 +1042,9 @@ prepare_release_validate_loaded_build_unit() {
     ! "${PREPARE_RELEASE_UNIT_TIMEOUT_STOP_USEC}" =~ ^(30s|30000ms|30000000us)$ ||
     "${PREPARE_RELEASE_UNIT_UMASK}" != 0077 ||
     "${PREPARE_RELEASE_UNIT_NO_NEW_PRIVILEGES}" != yes ||
-    "${PREPARE_RELEASE_UNIT_PROTECT_CONTROL_GROUPS}" != yes ]]; then
+    "${PREPARE_RELEASE_UNIT_PROTECT_CONTROL_GROUPS}" != yes ||
+    "${PREPARE_RELEASE_UNIT_MEMORY_MAX}" != 2147483648 ||
+    "${PREPARE_RELEASE_UNIT_MEMORY_SWAP_MAX}" != 1073741824 ]]; then
     prepare_release_fail 70 "build unit metadata drifted: ${unit}"
     return
   fi
@@ -1305,6 +1313,8 @@ prepare_release_run_build_unit() {
     --property=UMask=0077 \
     --property=NoNewPrivileges=yes \
     --property=ProtectControlGroups=yes \
+    --property=MemoryMax=2147483648 \
+    --property=MemorySwapMax=1073741824 \
     /usr/bin/env -i \
     HOME="${build_home}" \
     PATH="${fixed_vps_path}" \

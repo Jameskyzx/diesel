@@ -23,7 +23,7 @@ This is the only current release/evidence index. Historical implementation notes
 以下为带时间的历史生产观测，不声明仓库当前 HEAD 等于线上版本：
 
 - 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
-  observedAt=`2026-10-10T16:11+00:00`；`/api/health` readbackAt=`2026-10-10T16:18+00:00` returned `status=ok`,
+  observedAt=`2026-10-10T16:20+00:00`；`/api/health` readbackAt=`2026-10-10T16:20+00:00` returned `status=ok`,
   `version=7766eefaed3447d5dc01584b2c72d83a8d6d7bd7`；服务器当前 release 链接解析为
   `/opt/diesel/releases/7766eefaed3447d5dc01584b2c72d83a8d6d7bd7`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
@@ -171,7 +171,7 @@ This is the only current release/evidence index. Historical implementation notes
     "commit": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
     "evidenceKind": "historical-operator-record-only",
     "id": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
-    "observedAt": "2026-10-10T16:11+00:00",
+    "observedAt": "2026-10-10T16:20+00:00",
     "releasePath": "/opt/diesel/releases/7766eefaed3447d5dc01584b2c72d83a8d6d7bd7"
   },
   "evidenceSummary": {
@@ -221,7 +221,7 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-10T16:18+00:00",
+    "readbackAt": "2026-10-10T16:20+00:00",
     "status": "ok",
     "version": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7"
   },
@@ -231,7 +231,7 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "repositoryHead": {
     "local": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
-    "observedAt": "2026-10-10T16:18+00:00",
+    "observedAt": "2026-10-10T16:20+00:00",
     "remote": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7"
   }
 }

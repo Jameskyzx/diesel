@@ -4,7 +4,17 @@
   "release": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
   "previousPublicRelease": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
   "site": "https://diesel.jamesky.site",
-  "observedAt": "2026-10-10T16:18:58.855Z",
+  "observedAt": "2026-10-10T16:20:44.804Z",
+  "sameWindowIndexObservation": {
+    "hostObservedAt": "2026-10-10T16:20:41.365Z",
+    "current": "/opt/diesel/releases/7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "repositoryAndPublicObservedAt": "2026-10-10T16:20:44.804Z",
+    "localMaster": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "remoteMaster": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "publicHealthStatus": 200,
+    "publicHealthVersion": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "indexMinutePrecision": "2026-10-10T16:20+00:00"
+  },
   "finalPublicLiveness": {
     "observedAt": "2026-10-10T16:18:58.855Z",
     "httpStatus": 200,

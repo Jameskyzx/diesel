@@ -49,11 +49,14 @@ export const governanceSnapshotPostgresOptions = {
 
 export const governanceSnapshotMaximumWorkers = 2;
 export const governanceSnapshotWorkerRetryDelayMs = 1_000;
-export const governanceSnapshotWorkerTimeoutMs = 45 * 60 * 1_000;
+// The former two 45-minute slots had the same aggregate allowance, but killed
+// a healthy slow export halfway through. A retry receives only time left over.
+export const governanceSnapshotExportTimeoutMs = 90 * 60 * 1_000;
+export const governanceSnapshotWorkerTimeoutMs = governanceSnapshotExportTimeoutMs;
 export const governanceSnapshotWorkerTerminationGraceMs = 2_000;
 export const governanceSnapshotDatabaseBatchSize = 500;
 // Raw JSON can be tens of KiB per row. Keep these batches smaller on the
-// production database link without weakening the SQL or worker deadlines.
+// production database link without weakening the SQL or aggregate worker budget.
 export const governanceSnapshotRawJsonBatchSize = 100;
 export const governanceSnapshotReaderMaximumAttempts = 3;
 export const governanceSnapshotAnchorHeartbeatIntervalMs = 10_000;
@@ -72,6 +75,47 @@ const governanceSnapshotProgressSchema = z.object({
   durationMs: z.number().int().min(0).max(governanceSnapshotWorkerTimeoutMs),
 }).strict();
 type GovernanceSnapshotProgress = z.infer<typeof governanceSnapshotProgressSchema>;
+
+const governanceSnapshotFailureSchema = z.object({
+  kind: z.literal("governance-snapshot-failure-v1"),
+  phase: z.enum(["reader", "anchor", "acquisition", "worker", "uncaught"]),
+  errorType: z.enum(["Error", "TypeError", "PostgresError", "AggregateError", "ZodError", "unknown"]),
+  code: z.enum([
+    "08000", "08001", "08003", "08004", "08006", "08007", "08P01",
+    "22023", "25P02", "25P03", "40001", "40P01", "53300", "54000",
+    "57014", "57P01", "57P02", "57P03", "CONNECT_TIMEOUT",
+    "CONNECTION_CLOSED", "CONNECTION_DESTROYED", "CONNECTION_ENDED",
+    "EAI_AGAIN", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETDOWN",
+    "ENETUNREACH", "EPIPE", "ETIMEDOUT",
+  ]).nullable(),
+}).strict();
+type GovernanceSnapshotFailure = z.infer<typeof governanceSnapshotFailureSchema>;
+
+export function parseGovernanceSnapshotFailure(value: unknown): GovernanceSnapshotFailure | null {
+  const parsed = governanceSnapshotFailureSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+export function describeGovernanceSnapshotFailure(
+  phase: GovernanceSnapshotFailure["phase"],
+  error: unknown,
+): GovernanceSnapshotFailure {
+  const name = error instanceof Error ? error.name : null;
+  const errorType = governanceSnapshotFailureSchema.shape.errorType.safeParse(name);
+  const code = governanceSnapshotFailureSchema.shape.code.safeParse(readErrorCode(error));
+  return {
+    kind: "governance-snapshot-failure-v1",
+    phase,
+    errorType: errorType.success ? errorType.data : "unknown",
+    code: code.success ? code.data : null,
+  };
+}
+
+function reportGovernanceSnapshotFailure(phase: GovernanceSnapshotFailure["phase"], error: unknown) {
+  if (process.argv[2] === governanceSnapshotWorkerFlag && process.connected) {
+    process.send?.(describeGovernanceSnapshotFailure(phase, error));
+  }
+}
 
 /** Only structured, bounded metadata can cross the worker diagnostics boundary. */
 export function parseGovernanceSnapshotProgress(
@@ -257,15 +301,15 @@ const retryableGovernanceSnapshotReaderCodes = new Set([
 ]);
 
 function readErrorCode(error: unknown): string | null {
-  if (
-    typeof error !== "object" ||
-    error === null ||
-    !("code" in error) ||
-    typeof error.code !== "string"
-  ) {
-    return null;
+  // Drizzle wraps query failures in Error.cause. Bound traversal, including
+  // cycles, and never use the wrapper's message/query as diagnostic output.
+  let current = error;
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (typeof current !== "object" || current === null) return null;
+    if ("code" in current && typeof current.code === "string") return current.code;
+    current = "cause" in current ? current.cause : null;
   }
-  return error.code;
+  return null;
 }
 
 export function isRetryableGovernanceSnapshotReaderError(
@@ -318,6 +362,7 @@ export async function runGovernanceSnapshotReaderBatchWithRetry<
       input.assertAnchorHealthy();
       return result;
     } catch (error: unknown) {
+      reportGovernanceSnapshotFailure("reader", error);
       input.assertAnchorHealthy();
       if (readErrorCode(error) === "22023") {
         throw new GovernanceSnapshotRetryableAcquisitionFailure();
@@ -398,7 +443,8 @@ export function startGovernanceSnapshotAnchorHeartbeat(
     }
     const probeAttempt = probe()
       .then(() => undefined)
-      .catch(() => {
+      .catch((error: unknown) => {
+        reportGovernanceSnapshotFailure("anchor", error);
         failure = true;
       })
       .finally(() => {
@@ -544,10 +590,12 @@ export type GovernanceSnapshotWorkerExecution = {
 
 type GovernanceSnapshotSupervisorInput = {
   createAttemptPath?: (attempt: number) => string;
+  now?: () => number;
   onRetry?: (attempt: number) => void;
   runWorker: (
     attemptPath: string,
     attempt: number,
+    timeoutMs: number,
   ) => Promise<GovernanceSnapshotWorkerExecution>;
   targetPath: string;
   waitBeforeRetry?: () => Promise<void>;
@@ -638,6 +686,8 @@ export async function superviseGovernanceSnapshotExport(
   if (await pathExists(input.targetPath)) {
     throw new Error("Governance snapshot target already exists");
   }
+  const now = input.now ?? (() => performance.now());
+  const deadline = now() + governanceSnapshotExportTimeoutMs;
 
   for (
     let attempt = 1;
@@ -653,15 +703,17 @@ export async function superviseGovernanceSnapshotExport(
     if (await pathExists(attemptPath)) {
       throw new Error("Governance snapshot attempt path already exists");
     }
+    const remainingMs = Math.floor(deadline - now());
+    if (remainingMs <= 0) break;
 
     let worker: GovernanceSnapshotWorkerExecution;
     try {
-      worker = await input.runWorker(attemptPath, attempt);
+      worker = await input.runWorker(attemptPath, attempt, remainingMs);
     } catch {
       worker = { exitCode: null, signal: null, stdout: "" };
     }
 
-    if (worker.exitCode === 0 && worker.signal === null) {
+    if (worker.exitCode === 0 && worker.signal === null && now() <= deadline) {
       let workerSummary: GovernanceSnapshotWorkerSummary;
       try {
         workerSummary = await validateGovernanceSnapshotWorkerOutput(
@@ -687,7 +739,7 @@ export async function superviseGovernanceSnapshotExport(
     if (worker.exitCode === governanceSnapshotPermanentWorkerExitCode) {
       throw new Error("Governance snapshot worker rejected non-retryable output");
     }
-    if (attempt < governanceSnapshotMaximumWorkers) {
+    if (attempt < governanceSnapshotMaximumWorkers && now() < deadline) {
       input.onRetry?.(attempt);
       await (input.waitBeforeRetry?.() ??
         new Promise<void>((resolve) => {
@@ -1221,6 +1273,7 @@ async function executeGovernanceSnapshotWorker(outputPath: string) {
   try {
     acquired = await acquireGovernanceSnapshotRows(databaseUrl);
   } catch (error: unknown) {
+    reportGovernanceSnapshotFailure("acquisition", error);
     throw new GovernanceSnapshotWorkerFailure(
       error instanceof GovernanceSnapshotRetryableAcquisitionFailure ||
         isRetryableGovernanceSnapshotReaderError(error)
@@ -1242,7 +1295,8 @@ async function executeGovernanceSnapshotWorker(outputPath: string) {
         });
       },
     });
-  } catch {
+  } catch (error: unknown) {
+    reportGovernanceSnapshotFailure("worker", error);
     throw new GovernanceSnapshotWorkerFailure(
       governanceSnapshotPermanentWorkerExitCode,
     );
@@ -1251,6 +1305,8 @@ async function executeGovernanceSnapshotWorker(outputPath: string) {
 
 async function runGovernanceSnapshotWorkerProcess(
   attemptPath: string,
+  _attempt: number,
+  timeoutMs: number,
 ): Promise<GovernanceSnapshotWorkerExecution> {
   const scriptPath = process.argv[1];
   if (!scriptPath) {
@@ -1275,6 +1331,10 @@ async function runGovernanceSnapshotWorkerProcess(
   );
 
   const execution = await waitForGovernanceSnapshotWorkerProcess(child, {
+    timeoutMs,
+    onFailure: (failure) => {
+      process.stderr.write(`${JSON.stringify(failure)}\n`);
+    },
     onProgress: (progress) => {
       process.stderr.write(`${JSON.stringify(progress)}\n`);
     },
@@ -1289,6 +1349,7 @@ async function runGovernanceSnapshotWorkerProcess(
 }
 
 type GovernanceSnapshotWorkerWaitOptions = {
+  onFailure?: (failure: GovernanceSnapshotFailure) => void;
   onProgress?: (progress: GovernanceSnapshotProgress) => void;
   terminationGraceMs?: number;
   timeoutMs?: number;
@@ -1321,6 +1382,7 @@ export function waitForGovernanceSnapshotWorkerProcess(
     let killTimer: ReturnType<typeof setTimeout> | undefined;
     let settled = false;
     let progressCount = 0;
+    let failureCount = 0;
 
     const childHasExited = () =>
       child.exitCode !== null || child.signalCode !== null;
@@ -1352,6 +1414,18 @@ export function waitForGovernanceSnapshotWorkerProcess(
     const workerTimer = setTimeout(requestTermination, timeoutMs);
 
     const onProgressMessage = (message: unknown) => {
+      const failure = parseGovernanceSnapshotFailure(message);
+      if (failure !== null) {
+        failureCount += 1;
+        if (failureCount > 64) {
+          requestTermination();
+          return;
+        }
+        if (!forcedTermination) {
+          try { options.onFailure?.(failure); } catch { requestTermination(); }
+        }
+        return;
+      }
       progressCount += 1;
       const progress = parseGovernanceSnapshotProgress(message);
       if (progressCount > 10_000 || progress === null) {
@@ -1470,6 +1544,10 @@ if (
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   if (process.argv[2] === governanceSnapshotWorkerFlag) {
+    // Observe without swallowing fatal exceptions or logging raw driver errors.
+    process.on("uncaughtExceptionMonitor", (error) => {
+      reportGovernanceSnapshotFailure("uncaught", error);
+    });
     workerMain().catch(reportWorkerFailure);
   } else {
     supervisorMain().catch(reportSupervisorFailure);

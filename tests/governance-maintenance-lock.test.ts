@@ -16,6 +16,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   cleanupGovernanceMaintenanceSession,
+  formatGovernanceMaintenanceDiagnostic,
   createGovernanceMaintenanceChildTerminationController,
   GovernanceMaintenanceProcessGroupError,
   GovernanceMaintenanceSessionError,
@@ -220,6 +221,89 @@ describe("governance maintenance advisory-lock protocol", () => {
 });
 
 describe("governance maintenance command CLI", () => {
+  it("emits only allowlisted failure codes, never raw credentials or error details", () => {
+    const secret = "postgresql://user:must-not-log@host/database";
+    for (const error of [new Error(secret), { code: secret, message: secret },
+      new GovernanceMaintenanceSessionError("probe-query-failed", secret)]) {
+      const serialized = formatGovernanceMaintenanceDiagnostic(error, "command");
+      expect(serialized).not.toContain(secret);
+      expect(JSON.parse(serialized)).toMatchObject({ databaseCode: null });
+    }
+    expect(JSON.parse(formatGovernanceMaintenanceDiagnostic(
+      new GovernanceMaintenanceSessionError("probe-query-failed", "ECONNRESET"), "heartbeat",
+    ))).toEqual({ kind: "governance-maintenance-failure-v1", phase: "heartbeat",
+      reason: "probe-query-failed", databaseCode: "ECONNRESET" });
+    expect(JSON.parse(formatGovernanceMaintenanceDiagnostic(
+      new GovernanceMaintenanceProcessGroupError(), "command",
+    )).reason).toBe("process-group-not-terminated");
+  });
+
+  it.each([
+    ["backendPid", 202, "backend-changed"],
+    ["globalHeld", false, "global-lock-lost"],
+    ["tokenHeld", false, "token-lock-lost"],
+    ["globalReentered", false, "global-lock-reentry-failed"],
+    ["tokenReentered", false, "token-lock-reentry-failed"],
+    ["globalBalanced", false, "global-lock-balance-failed"],
+    ["tokenBalanced", false, "token-lock-balance-failed"],
+  ])("records the exact failed %s proof once before termination", async (field, value, reason) => {
+    vi.useFakeTimers();
+    try {
+      const events: string[] = [];
+      const onFailure = vi.fn((failure: GovernanceMaintenanceSessionError) => {
+        events.push(failure.reason);
+        throw new Error("diagnostic sink failed");
+      });
+      const kill = vi.fn(() => { events.push("terminated"); return true; });
+      const heartbeat = startGovernanceMaintenanceHeartbeat({
+        child: { kill }, expectedBackendPid: 101, intervalMs: 10, timeoutMs: 50,
+        onFailure,
+        probe: async () => ({ backendPid: 101, globalHeld: true, tokenHeld: true,
+          globalReentered: true, tokenReentered: true, globalBalanced: true,
+          tokenBalanced: true, [field]: value }),
+      });
+      await vi.advanceTimersByTimeAsync(10);
+      expect((await heartbeat.stop())?.reason).toBe(reason);
+      await heartbeat.stop();
+      expect(onFailure).toHaveBeenCalledOnce();
+      expect(kill).toHaveBeenCalledOnce();
+      expect(events).toEqual([reason, "terminated"]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("distinguishes a probe deadline from a rejected query", async () => {
+    vi.useFakeTimers();
+    try {
+      for (const [reason, probe] of [
+        ["probe-timeout", () => new Promise<GovernanceMaintenanceSessionProbe>(() => undefined)],
+        ["probe-query-failed", () => Promise.reject(Object.assign(new Error("private"), { code: "57P01" }))],
+      ] as const) {
+        const onFailure = vi.fn();
+        const heartbeat = startGovernanceMaintenanceHeartbeat({
+          child: { kill: vi.fn() }, expectedBackendPid: 101, intervalMs: 10,
+          timeoutMs: 50, onFailure, probe,
+        });
+        await vi.advanceTimersByTimeAsync(60);
+        const failure = await heartbeat.stop();
+        expect(failure?.reason).toBe(reason);
+        expect(failure?.databaseCode).toBe(reason === "probe-query-failed" ? "57P01" : null);
+        expect(onFailure).toHaveBeenCalledOnce();
+      }
+    } finally { vi.useRealTimers(); }
+  });
+
+  it.each([
+    ["unlock-query-failed", async () => { throw Object.assign(new Error("private database URL"), { code: "ECONNRESET" }); }, async () => undefined],
+    ["unlock-proof-failed", async () => ({ globalReleased: false, tokenReleased: true }), async () => undefined],
+    ["session-close-failed", async () => ({ globalReleased: true, tokenReleased: true }), async () => { throw new Error("private path"); }],
+  ])("classifies %s without losing the mandatory session close", async (reason, unlock, close) => {
+    const closeSpy = vi.fn(close);
+    await expect(cleanupGovernanceMaintenanceSession({
+      globalLockHeld: true, tokenLockHeld: true, unlock, close: closeSpy,
+    })).rejects.toMatchObject({ reason });
+    expect(closeSpy).toHaveBeenCalledExactlyOnceWith(governanceMaintenanceCleanupTimeoutSeconds);
+  });
+
   it("parses a single inert database env file option only before the command separator", () => {
     expect(
       parseGovernanceMaintenanceCommand([

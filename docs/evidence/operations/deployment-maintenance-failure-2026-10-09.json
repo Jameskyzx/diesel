@@ -1,0 +1,95 @@
+{
+  "version": "diesel-preserved-maintenance-failure-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedAt": "2026-10-09T18:45:40.586Z",
+  "release": "bf9af3de97e2e3be827dc55ec34f0416924d5c0a",
+  "pullRequest": "https://github.com/Jameskyzx/diesel/pull/77",
+  "exactMasterCi": {
+    "runId": 37958726502,
+    "event": "push",
+    "headSha": "bf9af3de97e2e3be827dc55ec34f0416924d5c0a",
+    "conclusion": "success",
+    "allTenJobsPassed": true
+  },
+  "stage": {
+    "inputDigest": "607304ba034f4996cc3e7c4a937740a6687ec9cd9a5d4d6554a8ed1441db2a73",
+    "authorizationVerifiedAt": "2026-10-09T17:08:22.207Z",
+    "exitCode": 0,
+    "canonicalHttpsGitTransportUsed": true,
+    "originalLocalSshOriginRestored": true
+  },
+  "operation": {
+    "id": "cde08b48-555d-4c1c-b811-57ab1eaea13d",
+    "mode": "full",
+    "startedAt": "2026-10-09T17:09:23.630Z",
+    "completedAt": "2026-10-09T18:36:40.492Z",
+    "invocationId": "d6fe88992a44494baac54faeaf3166a8",
+    "exitCode": 70,
+    "signal": null,
+    "spawnFailed": false,
+    "state": "failed",
+    "deploymentVerified": false
+  },
+  "failure": {
+    "phase": "governance-backup-and-restoration-validation",
+    "observedFacts": [
+      "Runtime build and host activation completed before governance validation.",
+      "The initial governance snapshot worker exited 0 after 1896665 milliseconds.",
+      "A subsequent snapshot stopped after 15 progress batches; stderr recorded Terminated and a generic governance maintenance failure.",
+      "Automatic recovery restored the database snapshot and previous host release. Independent terminal ledger checks then passed."
+    ],
+    "specificCause": "unresolved: existing logs do not distinguish maintenance probe timeout, session/lock loss, or another termination/cleanup branch",
+    "stdoutBytes": 10756,
+    "stderrBytes": 88820,
+    "logsTruncated": false,
+    "stdoutSha256": "f1aad90ed8a2213721fa965b3b295d04bdd7e82d2de98acda4e1139bb034d31e",
+    "stderrSha256": "92e07809bbf7325a4338067777cd005a6ad8ec94757c579dc4e9a97eed2a4de2",
+    "rawCredentialsPublished": false
+  },
+  "rollback": {
+    "strictLedgerValidationExitCode": 0,
+    "rollbackReadOnlyValidationExitCode": 0,
+    "terminalLedger": "ROLLED_BACK:HOST_ROLLBACK_COMPLETED",
+    "currentRelease": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "currentPath": "/opt/diesel/releases/0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "readiness": {
+      "status": "ok",
+      "timestamp": "2026-10-09T18:45:40.586Z",
+      "version": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+      "checks": { "aiChatAdmission": "ok", "aiChatRateLimit": "ok", "database": "ok" }
+    },
+    "independentVersionedVerifier": {
+      "loopbackExitCode": 0,
+      "publicExitCode": 0,
+      "checks": ["fresh version-bound health and readiness", "exact two Demo products", "English and Chinese public pages", "locale cookie", "deterministic SSE without reasoning"],
+      "providerPathRetested": false
+    },
+    "failedCandidateAndBackupsPreserved": true,
+    "sameShaMustNotBeReused": true
+  },
+  "readOnlyDiagnostics": {
+    "endpointDigestMatched": true,
+    "strictDatabaseTlsPreserved": true,
+    "local": {
+      "observedAt": "2026-10-09T18:44:23.429Z",
+      "selectOneDurationsMs": [1528, 61, 59],
+      "exitCode": 0
+    },
+    "vps": {
+      "observedAt": "2026-10-09T18:44:27.720Z",
+      "selectOneDurationsMs": [1137, 100, 105],
+      "exitCode": 0
+    },
+    "kernelJournal": {
+      "from": "2026-10-09T17:09:00Z",
+      "until": "2026-10-09T18:38:30Z",
+      "recordsRead": 147,
+      "oomRecordsMatched": 0
+    },
+    "limitations": [
+      "Post-failure SELECT 1 timings do not reproduce the long-running export or maintenance heartbeat workload.",
+      "No matching kernel OOM record does not prove every possible process termination cause was absent.",
+      "No retry, new database relay, timeout relaxation, or release-gate bypass was performed."
+    ]
+  }
+}

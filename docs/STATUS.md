@@ -49,6 +49,14 @@ This is the only current release/evidence index. Historical implementation notes
   实测余量约 4.35 GiB，低于下一次完整发布的 5 GiB 起始门槛；所有备份、失败版本与归档均保留，未使用临时数据库转发，`jamesky-api` 原 PID 未变。
   一次额外模型解释出现摘要与后文不一致，结构化事实卡片正确；该解释质量问题未在本次部署中修复，不宣称模型文本永不出错。
   [本次上线与独立验收完整记录](evidence/operations/production-ux-release-2026-10-06.json) 保留上述通过、失败与残余边界。
+  2026-10-09 的 PR #77 已合并，候选 `bf9af3de97e2e3be827dc55ec34f0416924d5c0a` 的精确 master CI 为 10/10 通过，
+  但完整发布在治理备份/恢复验证阶段中断，durable worker 以 exit 70 结束；不能声明保存分析、独立比较页及证据审阅改进已上线。
+  数据与主机已自动回滚，独立严格账本和回滚校验均通过，终态为 `ROLLED_BACK:HOST_ROLLBACK_COMPLETED`。
+  `2026-10-09T18:45:40.586Z` 公网 readiness 及服务器 current 仍为 `0f51a9dfd14f874d3dfa5713d172fb3462d48874`；
+  回滚后内网/公网中英页面、Demo 产品边界及确定性 SSE 验收均通过，不代表本次重新验证了模型生成路径。
+  当前只读连接对照正常，现有日志未记录具体中断分支；没有证据将此次失败确定归因于网络或内存。
+  失败候选、日志与备份保留；只能在阻塞处理后用新的 CI-approved SHA 发布。
+  [本次部署失败及回滚验收记录](evidence/operations/deployment-maintenance-failure-2026-10-09.json)。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的
@@ -85,11 +93,11 @@ This is the only current release/evidence index. Historical implementation notes
   "browserSnapshot": {
     "artifactByteLength": 201436,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "79e99627b14d1e0fed9abdb25cb2ae9de79087fa32e2f197089e83b21934998c",
-    "baseHeadCommit": "2de4b518f2e96e3c3b3c96fa269446f2546a053c",
-    "evaluatedCommit": "2de4b518f2e96e3c3b3c96fa269446f2546a053c",
-    "observedAt": "2026-10-09T15:23:47.179Z",
-    "runId": "b107642e-37fa-4e43-80de-e77a767dc3e6",
+    "artifactSha256": "a1c837d108deefa7702f959d8d5e8f5ff954fdd472246d9458f704ec6cca3c4d",
+    "baseHeadCommit": "5e416568ac05306858b1f73f78b150eafcef2d33",
+    "evaluatedCommit": "5e416568ac05306858b1f73f78b150eafcef2d33",
+    "observedAt": "2026-10-10T03:03:20.452Z",
+    "runId": "ee412e89-7cb4-48dc-9ffc-6267c23b8019",
     "runs": [
       {
         "collected": 483,
@@ -126,7 +134,7 @@ This is the only current release/evidence index. Historical implementation notes
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "70346b6f6376352a036eda384744b0936e0412d32282842ad3cca10ce489a4b3",
+      "digest": "5e9b2616a49527b8dd5aaaedd135210bc7c7d809d02bec51fb1b9a9c5087167a",
       "fileCount": 375
     },
     "version": "diesel-playwright-evidence-v1",
@@ -210,15 +218,15 @@ This is the only current release/evidence index. Historical implementation notes
   `101478 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
   archive `docs/evals/archive/ai-live-eval-20261009T121459350Z-18826f99-dc29-4a85-bb84-305da2e2efb7.json`；source fingerprint `a9f87155dec759e2e70ab284f5285a25f1a5bf83b1c22735f4d0566c03123c4b` across `320` files。
 
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `b107642e-37fa-4e43-80de-e77a767dc3e6`，artifact SHA-256 `79e99627b14d1e0fed9abdb25cb2ae9de79087fa32e2f197089e83b21934998c`；
-  observedAt `2026-10-09T15:23:47.179Z`，clean worktree / base HEAD `2de4b518f2e96e3c3b3c96fa269446f2546a053c`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `ee412e89-7cb4-48dc-9ffc-6267c23b8019`，artifact SHA-256 `a1c837d108deefa7702f959d8d5e8f5ff954fdd472246d9458f704ec6cca3c4d`；
+  observedAt `2026-10-10T03:03:20.452Z`，clean worktree / base HEAD `5e416568ac05306858b1f73f78b150eafcef2d33`；
   `public` = `417 passed / 66 skipped / 0 failed / 0 flaky / 483 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 489 passed / 68 skipped / 0 failed / 0 flaky / 557 collected。artifact 为 201436 bytes；
-  browser source fingerprint 为 375 files / `70346b6f6376352a036eda384744b0936e0412d32282842ad3cca10ce489a4b3`。
-  因运行发生在 clean worktree，`evaluatedCommit=2de4b518f2e96e3c3b3c96fa269446f2546a053c`；它证明该本地候选上的浏览器验收，
+  browser source fingerprint 为 375 files / `5e9b2616a49527b8dd5aaaedd135210bc7c7d809d02bec51fb1b9a9c5087167a`。
+  因运行发生在 clean worktree，`evaluatedCommit=5e416568ac05306858b1f73f78b150eafcef2d33`；它证明该本地候选上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 
 ## Acceptance and operations / 验收与运维

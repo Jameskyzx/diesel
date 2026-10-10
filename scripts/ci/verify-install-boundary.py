@@ -133,7 +133,7 @@ if present:
     fail("root install lifecycle scripts are forbidden: " + ", ".join(present))
 
 expected_workspace_sha256 = (
-    "9b4b0615716850f396fba7904c63507ef1ad0a4855a9a599ff3bb9219a588241"
+    "8855d4dc6b15486d5ab0b15400b7cde6ed2669a6646e56e8426b15b11514061e"
 )
 if hashlib.sha256(workspace_bytes).hexdigest() != expected_workspace_sha256:
     fail("pnpm-workspace.yaml does not match the reviewed execution config")
@@ -157,6 +157,11 @@ if hashlib.sha256(vaul_patch_bytes).hexdigest() != (
     "6d0a37b5ddc97a7c29c65f2a0b76771551f87b693e3f1e4c7d634c6e0841da33"
 ):
     fail("Vaul non-modal patch does not match its reviewed source")
+postgres_patch_bytes = read_regular("patches/postgres@3.4.9.patch", 256 * 1024)
+if hashlib.sha256(postgres_patch_bytes).hexdigest() != (
+    "cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb"
+):
+    fail("Postgres transaction patch does not match its reviewed source")
 if nvmrc_bytes != b"22.22.3\n":
     fail(".nvmrc must be exactly 22.22.3")
 

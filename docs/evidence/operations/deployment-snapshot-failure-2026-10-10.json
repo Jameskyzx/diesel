@@ -1,0 +1,92 @@
+{
+  "version": "diesel-deployment-snapshot-failure-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "observedAt": "2026-10-10T09:32:20.039Z",
+  "release": "6e8368abaacc998ea775bc71d43bf4efb8ca2d8c",
+  "previousVerifiedRelease": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+  "site": "https://diesel.jamesky.site",
+  "deploymentVerified": false,
+  "databaseRoute": "original VPS route; no temporary relay",
+  "pullRequest": { "number": 79, "url": "https://github.com/Jameskyzx/diesel/pull/79" },
+  "exactMasterCi": {
+    "runId": 38034591369,
+    "headSha": "6e8368abaacc998ea775bc71d43bf4efb8ca2d8c",
+    "event": "push",
+    "conclusion": "success",
+    "jobsPassed": 10,
+    "url": "https://github.com/Jameskyzx/diesel/actions/runs/38034591369"
+  },
+  "operation": {
+    "operationId": "62d5f1e3-6206-4c0e-bb01-8e142f0ea6b3",
+    "invocationId": "699500c43d3d47188392892b7dfb19ef",
+    "createdAt": "2026-10-10T08:21:30.753Z",
+    "completedAt": "2026-10-10T09:30:37.523Z",
+    "submittedOnce": true,
+    "exitCode": 70,
+    "signal": null,
+    "spawnFailed": false,
+    "buildCompleted": true,
+    "buildArtifactDigest": "6715aaa8141bb2fa55c40354f1116e962a5d584e92c903c634cb9a3ba201a770",
+    "databasePublicationEntered": false,
+    "backupWorkers": [
+      { "durationMs": 2700043, "exitCode": null, "signal": "SIGTERM", "lastTable": "data_change_logs", "lastBatch": 146 },
+      { "durationMs": 670567, "exitCode": 1, "signal": null, "lastTable": "data_governance_drafts", "lastBatch": 79 }
+    ],
+    "rootCause": "The first backup worker exhausted its fixed 45-minute slot while making progress. The second worker's raw error was not retained by the existing exporter; its exact failure is unconfirmed."
+  },
+  "independentRollbackVerification": {
+    "observedAt": "2026-10-10T09:32:13.476Z",
+    "strictLedgerValidationExit": 0,
+    "strictLedger": "terminal:ROLLED_BACK:none",
+    "versionedRollbackCheckExit": 0,
+    "loopbackAndPublicOldReleaseVerificationExit": 0,
+    "currentRelease": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+    "nginx": "active",
+    "pm2Root": "active",
+    "jameskyApiPid": 1033,
+    "availableBytes": 19495116800,
+    "publicReadyStatus": 200,
+    "publicReadyObservedAt": "2026-10-10T09:32:20.039Z",
+    "publicReadyChecks": { "database": "ok", "aiChatAdmission": "ok", "aiChatRateLimit": "ok" },
+    "publicReadbackMethod": "HTTPS with certificate validation retained, domain pinned to the known VPS IP and physical en1 interface. Not a DNS propagation test."
+  },
+  "readOnlyDiagnosticFollowUp": {
+    "databaseRoute": "original VPS route; no temporary relay",
+    "candidateFilesModified": false,
+    "databaseWrites": false,
+    "attempts": [
+      {
+        "startedAt": "2026-10-10T09:36:13.267Z",
+        "completedAt": "2026-10-10T09:48:33.259Z",
+        "durationMs": 739993,
+        "exitCode": 75,
+        "lastTable": "data_governance_drafts",
+        "lastBatch": 35,
+        "snapshotFileExists": false
+      },
+      {
+        "startedAt": "2026-10-10T09:52:08.307Z",
+        "completedAt": "2026-10-10T10:24:14.996Z",
+        "durationMs": 1926690,
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "lastTable": "data_change_logs",
+        "lastBatch": 285,
+        "snapshotFileExists": true,
+        "snapshotBytes": 98617171,
+        "snapshotOwnerGroupMode": "root:root:600",
+        "observer": "Temporary process-only error-factory observation returned each original error unchanged; no installed driver or candidate file was modified."
+      }
+    ],
+    "temporaryServicesExited": true,
+    "successfulSnapshotRetained": true,
+    "conclusion": "The original VPS route completed a full read-only export in about 32 minutes. The earlier fatal worker exit was not reproduced, so its exact cause remains unconfirmed. This diagnostic snapshot does not replace a fresh release backup or restore acceptance."
+  },
+  "boundaries": [
+    "Failed candidate, operation logs and backups retained. This SHA must not be redeployed.",
+    "Existing-release rollback verification is not acceptance of the new comparison and saved-analysis features.",
+    "A separate offline protocol test reproduced an uncaught closed-socket TypeError in postgres 3.4.9. This is not proof of the second production worker's exact cause.",
+    "No host reboot, database-route change, backup deletion or fabricated completion marker occurred in this attempt."
+  ]
+}

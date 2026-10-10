@@ -47,7 +47,7 @@ jobs:
           set -euo pipefail
           /usr/bin/test -f scripts/ci/verify-install-boundary.py
           /usr/bin/test ! -L scripts/ci/verify-install-boundary.py
-          /usr/bin/printf '%s  %s\n' 'afa387ae2a8d78f32bff0b6fdea1c73c7abb4f0740444565a19ac86ce0b1a9ac' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
+          /usr/bin/printf '%s  %s\n' '93ffa856562ec1fb3c0cd4e87285c59672d8fef319224833fd23bc4985838c95' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
           /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -S scripts/ci/verify-install-boundary.py
 
       # pnpm/action-setup 从 package.json 的 packageManager 字段读取固定
@@ -133,7 +133,7 @@ jobs:
           set -euo pipefail
           /usr/bin/test -f scripts/ci/verify-install-boundary.py
           /usr/bin/test ! -L scripts/ci/verify-install-boundary.py
-          /usr/bin/printf '%s  %s\n' 'afa387ae2a8d78f32bff0b6fdea1c73c7abb4f0740444565a19ac86ce0b1a9ac' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
+          /usr/bin/printf '%s  %s\n' '93ffa856562ec1fb3c0cd4e87285c59672d8fef319224833fd23bc4985838c95' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
           /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -S scripts/ci/verify-install-boundary.py
 
       - name: Install pnpm
@@ -194,7 +194,7 @@ jobs:
           set -euo pipefail
           /usr/bin/test -f scripts/ci/verify-install-boundary.py
           /usr/bin/test ! -L scripts/ci/verify-install-boundary.py
-          /usr/bin/printf '%s  %s\n' 'afa387ae2a8d78f32bff0b6fdea1c73c7abb4f0740444565a19ac86ce0b1a9ac' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
+          /usr/bin/printf '%s  %s\n' '93ffa856562ec1fb3c0cd4e87285c59672d8fef319224833fd23bc4985838c95' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
           /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -S scripts/ci/verify-install-boundary.py
 
       - name: Install pnpm
@@ -264,7 +264,7 @@ jobs:
           set -euo pipefail
           /usr/bin/test -f scripts/ci/verify-install-boundary.py
           /usr/bin/test ! -L scripts/ci/verify-install-boundary.py
-          /usr/bin/printf '%s  %s\n' 'afa387ae2a8d78f32bff0b6fdea1c73c7abb4f0740444565a19ac86ce0b1a9ac' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
+          /usr/bin/printf '%s  %s\n' '93ffa856562ec1fb3c0cd4e87285c59672d8fef319224833fd23bc4985838c95' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
           /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -S scripts/ci/verify-install-boundary.py
 
       # pnpm/action-setup 从 package.json 的 packageManager 字段读取固定
@@ -372,7 +372,7 @@ jobs:
           set -euo pipefail
           /usr/bin/test -f scripts/ci/verify-install-boundary.py
           /usr/bin/test ! -L scripts/ci/verify-install-boundary.py
-          /usr/bin/printf '%s  %s\n' 'afa387ae2a8d78f32bff0b6fdea1c73c7abb4f0740444565a19ac86ce0b1a9ac' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
+          /usr/bin/printf '%s  %s\n' '93ffa856562ec1fb3c0cd4e87285c59672d8fef319224833fd23bc4985838c95' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
           /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -S scripts/ci/verify-install-boundary.py
 
       - name: Install pnpm
@@ -460,7 +460,7 @@ jobs:
           set -euo pipefail
           /usr/bin/test -f scripts/ci/verify-install-boundary.py
           /usr/bin/test ! -L scripts/ci/verify-install-boundary.py
-          /usr/bin/printf '%s  %s\n' 'afa387ae2a8d78f32bff0b6fdea1c73c7abb4f0740444565a19ac86ce0b1a9ac' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
+          /usr/bin/printf '%s  %s\n' '93ffa856562ec1fb3c0cd4e87285c59672d8fef319224833fd23bc4985838c95' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
           /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -S scripts/ci/verify-install-boundary.py
 
       - name: Install pnpm
@@ -564,7 +564,7 @@ jobs:
           set -euo pipefail
           /usr/bin/test -f scripts/ci/verify-install-boundary.py
           /usr/bin/test ! -L scripts/ci/verify-install-boundary.py
-          /usr/bin/printf '%s  %s\n' 'afa387ae2a8d78f32bff0b6fdea1c73c7abb4f0740444565a19ac86ce0b1a9ac' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
+          /usr/bin/printf '%s  %s\n' '93ffa856562ec1fb3c0cd4e87285c59672d8fef319224833fd23bc4985838c95' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
           /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -S scripts/ci/verify-install-boundary.py
 
       # pnpm/action-setup 从 package.json 的 packageManager 字段读取固定
@@ -618,7 +618,7 @@ jobs:
           set -euo pipefail
           /usr/bin/test -f scripts/ci/verify-install-boundary.py
           /usr/bin/test ! -L scripts/ci/verify-install-boundary.py
-          /usr/bin/printf '%s  %s\n' 'afa387ae2a8d78f32bff0b6fdea1c73c7abb4f0740444565a19ac86ce0b1a9ac' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
+          /usr/bin/printf '%s  %s\n' '93ffa856562ec1fb3c0cd4e87285c59672d8fef319224833fd23bc4985838c95' 'scripts/ci/verify-install-boundary.py' | /usr/bin/sha256sum -c -
           /usr/bin/env -i PATH=/usr/bin:/bin /usr/bin/python3 -I -S scripts/ci/verify-install-boundary.py
 
       # Do not install pnpm through an action here. The release handoff must use

@@ -119,7 +119,9 @@ corepack pnpm --config.registry="${registry}" \
   --ignore-scripts --ignore-pnpmfile
 
 # Keep V8 collection below the build cgroup's aggregate memory ceiling. This
-# applies to Next and its workers, not the runtime app or trusted root verifiers.
+# applies to Next's compilation/type-check workers, not the runtime app or root
+# verifiers. Next may reset this option for static-page workers; the cgroup
+# ceiling still bounds the entire build, including those workers.
 # Do not inherit caller-supplied Node options or skip the Next TypeScript check.
 env -i \
   HOME="${build_home}" \

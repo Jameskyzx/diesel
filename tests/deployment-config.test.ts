@@ -856,6 +856,8 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(runtimePreparer).toContain("--property=Delegate=no");
     expect(runtimePreparer).toContain("--property=NoNewPrivileges=yes");
     expect(runtimePreparer).toContain("--property=ProtectControlGroups=yes");
+    expect(runtimePreparer).toContain("--property=MemoryMax=2147483648");
+    expect(runtimePreparer).toContain("--property=MemorySwapMax=1073741824");
     for (const verifiedProperty of [
       "Type",
       "KillSignal",
@@ -866,6 +868,8 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "UMask",
       "NoNewPrivileges",
       "ProtectControlGroups",
+      "MemoryMax",
+      "MemorySwapMax",
     ]) {
       expect(runtimePreparer).toContain(`--property=${verifiedProperty}`);
     }

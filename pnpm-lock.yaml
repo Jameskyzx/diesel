@@ -27,6 +27,7 @@ patchedDependencies:
   '@next/eslint-plugin-next@16.3.6': c5871d65306a6b3f1d9a9f35eb5fd37d01f70b4f6107cd065476257d9ce51b67
   '@vitest/runner@4.1.11': 43a34fe00371ed7d2a7a972ad80269cbfe7cda5beb045640d3a2ad8ff06d54ee
   next@16.3.8: c4bab236a65a0e52fa62f88e892e007d2ca2936a2df20d02579e759ea973d2a3
+  postgres@3.4.9: cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb
   vaul@1.1.2: 6d0a37b5ddc97a7c29c65f2a0b76771551f87b693e3f1e4c7d634c6e0841da33
 
 importers:
@@ -50,7 +51,7 @@ importers:
         version: 2.1.1
       drizzle-orm:
         specifier: 0.45.3
-        version: 0.45.3(@electric-sql/pglite@0.5.8)(postgres@3.4.9)
+        version: 0.45.3(@electric-sql/pglite@0.5.8)(postgres@3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb))
       lucide-react:
         specifier: 1.49.0
         version: 1.49.0(@types/react@19.3.0)(react@19.3.0)
@@ -62,7 +63,7 @@ importers:
         version: 16.3.8(patch_hash=c4bab236a65a0e52fa62f88e892e007d2ca2936a2df20d02579e759ea973d2a3)(@babel/core@7.29.7)(@playwright/test@1.63.0)(@types/node@22.20.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       postgres:
         specifier: 3.4.9
-        version: 3.4.9
+        version: 3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb)
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -5024,10 +5025,10 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.1
 
-  drizzle-orm@0.45.3(@electric-sql/pglite@0.5.8)(postgres@3.4.9):
+  drizzle-orm@0.45.3(@electric-sql/pglite@0.5.8)(postgres@3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb)):
     optionalDependencies:
       '@electric-sql/pglite': 0.5.8
-      postgres: 3.4.9
+      postgres: 3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb)
 
   dunder-proto@1.0.1:
     dependencies:
@@ -6449,7 +6450,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.2
 
-  postgres@3.4.9: {}
+  postgres@3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb): {}
 
   potpack@2.1.0: {}
 

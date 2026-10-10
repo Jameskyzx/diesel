@@ -69,6 +69,11 @@ This is the only current release/evidence index. Historical implementation notes
   随后版本化回滚预检及 `--abort-if-uncommitted` 均 exit 0；`2026-10-10T05:41:37.637Z` 独立严格账本确认 `terminal:ROLLED_BACK:none`。
   旧版恢复验收通过，`jamesky-api` PID 仍为 1033；中断构建未进入数据库发布，候选、日志与备份保留，不重用该 SHA。
   [本次发布观察中断记录](evidence/operations/deployment-observation-interruption-2026-10-10.json) 保留候选、任务 ID、CI 与连接诊断。
+  随后 PR #79 / `6e8368abaacc998ea775bc71d43bf4efb8ca2d8c` 的精确 master CI 10/10 通过，限额构建成功，
+  但数据库备份首个 worker 在有进度时触及 45 分钟上限，第二个 worker 以 exit 1 退出且旧诊断未保留具体错误。
+  完整发布于 `2026-10-10T09:30:37.523Z` 以 exit 70 结束，没有进入数据库发布；独立严格账本为 `terminal:ROLLED_BACK:none`。
+  `09:32:20.039Z` 旧版公网 readiness、回滚检查及内外网验收通过，`jamesky-api` PID 1033 未变。
+  [备份失败与回滚记录](evidence/operations/deployment-snapshot-failure-2026-10-10.json) 保留真实失败；不能声明新版功能已上线，也不重用失败 SHA。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

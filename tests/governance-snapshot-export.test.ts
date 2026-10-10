@@ -10,11 +10,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   collectGovernanceSnapshotRowsInBatches,
+  describeGovernanceSnapshotFailure,
   executeGovernanceSnapshotAnchorTransaction,
   executeGovernanceSnapshotExport,
   executeGovernanceSnapshotImportedTransaction,
   governanceSnapshotAnchorHeartbeatIntervalMs,
   governanceSnapshotDatabaseBatchSize,
+  governanceSnapshotExportTimeoutMs,
   governanceSnapshotMaximumWorkers,
   governanceSnapshotPostgresOptions,
   governanceSnapshotRawJsonBatchSize,
@@ -23,6 +25,7 @@ import {
   governanceSnapshotWorkerTimeoutMs,
   isRetryableGovernanceSnapshotReaderError,
   parseGovernanceSnapshotId,
+  parseGovernanceSnapshotFailure,
   parseGovernanceSnapshotProgress,
   runGovernanceSnapshotReaderBatchWithRetry,
   runSnapshotAcquisitionAttempt,
@@ -119,6 +122,108 @@ afterEach(async () => {
 });
 
 describe("governance snapshot export reliability", () => {
+  it("retains only allowlisted failure metadata, never connection details or raw errors", () => {
+    const error = Object.assign(new TypeError("secret URL, query and row data"), {
+      code: "CONNECTION_CLOSED", query: "select private", detail: "secret",
+    });
+    const failure = describeGovernanceSnapshotFailure("reader", error);
+    expect(failure).toEqual({ kind: "governance-snapshot-failure-v1", phase: "reader", errorType: "TypeError", code: "CONNECTION_CLOSED" });
+    expect(parseGovernanceSnapshotFailure(failure)).toEqual(failure);
+    expect(describeGovernanceSnapshotFailure("reader", Object.assign(new Error("private"), { name: "secret", code: "secret" })))
+      .toMatchObject({ errorType: "unknown", code: null });
+    for (const invalid of [
+      { ...failure, message: "secret" }, { ...failure, code: "secret" },
+      { ...failure, phase: "secret" }, { ...failure, errorType: "secret" }, null,
+    ]) expect(parseGovernanceSnapshotFailure(invalid)).toBeNull();
+  });
+
+  it("forwards sanitized failures separately and preserves the failed worker exit", async () => {
+    const { child } = createTermIgnoringFakeChild();
+    const onFailure = vi.fn();
+    const onProgress = vi.fn();
+    const pending = waitForGovernanceSnapshotWorkerProcess(child, { onFailure, onProgress });
+    const failure = describeGovernanceSnapshotFailure("uncaught", new TypeError("private"));
+    child.emit("message", failure);
+    child.emit("close", 1, null);
+    expect(await pending).toEqual({ exitCode: 1, signal: null, stdout: "" });
+    expect(onFailure).toHaveBeenCalledExactlyOnceWith(failure);
+    expect(onProgress).not.toHaveBeenCalled();
+  });
+
+  it("reads bounded Drizzle cause codes without publishing wrapped SQL or looping on cycles", () => {
+    const wrapped = new Error("private query", { cause: Object.assign(new Error("private URL"), { code: "ECONNRESET" }) });
+    expect(isRetryableGovernanceSnapshotReaderError(wrapped)).toBe(true);
+    expect(describeGovernanceSnapshotFailure("reader", wrapped)).toEqual({
+      kind: "governance-snapshot-failure-v1", phase: "reader", errorType: "Error", code: "ECONNRESET",
+    });
+    const cycle = new Error("private");
+    cycle.cause = cycle;
+    expect(isRetryableGovernanceSnapshotReaderError(cycle)).toBe(false);
+    expect(describeGovernanceSnapshotFailure("reader", cycle).code).toBeNull();
+    const permanent = new Error("private query", { cause: Object.assign(new Error("private"), { code: "23505" }) });
+    expect(isRetryableGovernanceSnapshotReaderError(permanent)).toBe(false);
+  });
+
+  it("bounds the failure channel and reaps a flooding worker", async () => {
+    vi.useFakeTimers();
+    const { child, signals } = createTermIgnoringFakeChild();
+    const onFailure = vi.fn();
+    const pending = waitForGovernanceSnapshotWorkerProcess(child, { onFailure, terminationGraceMs: 10 });
+    for (let count = 0; count < 65; count += 1) child.emit("message", describeGovernanceSnapshotFailure("reader", new Error("private")));
+    await vi.advanceTimersByTimeAsync(10);
+    expect(await pending).toEqual({ exitCode: null, signal: "SIGKILL", stdout: "" });
+    expect(onFailure).toHaveBeenCalledTimes(64);
+    expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
+  });
+
+  it("lets one healthy export use the shared budget beyond the former 45-minute slot", async () => {
+    const directory = await createTemporaryDirectory();
+    let now = 0;
+    const runWorker = vi.fn(async (path: string, _attempt: number, timeoutMs: number) => {
+      expect(timeoutMs).toBe(90 * 60 * 1_000);
+      now = 60 * 60 * 1_000;
+      return writeSuccessfulWorkerOutput(path);
+    });
+    await superviseGovernanceSnapshotExport({ targetPath: join(directory, "snapshot.json"), now: () => now, runWorker });
+    expect(runWorker).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives a fresh worker only the unused shared budget including retry delay", async () => {
+    const directory = await createTemporaryDirectory();
+    let now = 100;
+    const budgets: number[] = [];
+    await superviseGovernanceSnapshotExport({
+      targetPath: join(directory, "snapshot.json"), now: () => now,
+      waitBeforeRetry: async () => { now += 1_000; },
+      runWorker: async (path, attempt, timeoutMs) => {
+        budgets.push(timeoutMs);
+        if (attempt === 1) { now += 10 * 60 * 1_000; return { exitCode: 75, signal: null, stdout: "" }; }
+        return writeSuccessfulWorkerOutput(path);
+      },
+    });
+    expect(budgets).toEqual([governanceSnapshotExportTimeoutMs, governanceSnapshotExportTimeoutMs - 601_000]);
+  });
+
+  it.each([0, 75])("does not publish or start another worker after shared deadline, exit %s", async exitCode => {
+    const directory = await createTemporaryDirectory();
+    let now = 0;
+    const targetPath = join(directory, "snapshot.json");
+    const attemptPath = join(directory, "attempt.json");
+    const onRetry = vi.fn();
+    const runWorker = vi.fn(async (path: string) => {
+      const result = await writeSuccessfulWorkerOutput(path);
+      now = governanceSnapshotExportTimeoutMs + 1;
+      return { ...result, exitCode };
+    });
+    await expect(superviseGovernanceSnapshotExport({
+      targetPath, createAttemptPath: () => attemptPath, now: () => now, onRetry, runWorker,
+    })).rejects.toThrow("Governance snapshot workers failed");
+    expect(runWorker).toHaveBeenCalledTimes(1);
+    expect(onRetry).not.toHaveBeenCalled();
+    await expect(access(targetPath)).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(access(attemptPath)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("allows only bounded table progress, never errors, SQL or row values", () => {
     const progress = {
       kind: "governance-snapshot-progress-v1",
@@ -639,7 +744,7 @@ describe("governance snapshot export reliability", () => {
       expect(selection).toContain("limit ${limit}");
     }
     expect(governanceSnapshotDatabaseBatchSize).toBe(500);
-    expect(governanceSnapshotWorkerTimeoutMs).toBe(45 * 60 * 1_000);
+    expect(governanceSnapshotWorkerTimeoutMs).toBe(governanceSnapshotExportTimeoutMs);
   });
 
   it("rejects oversized or non-advancing governance batches", async () => {
@@ -949,7 +1054,7 @@ describe("governance snapshot export reliability", () => {
       max_lifetime: null,
       prepare: false,
     });
-    expect(governanceSnapshotWorkerTimeoutMs).toBe(45 * 60 * 1_000);
+    expect(governanceSnapshotWorkerTimeoutMs).toBe(90 * 60 * 1_000);
     expect(governanceSnapshotWorkerTerminationGraceMs).toBe(2_000);
     expect(governanceSnapshotAnchorHeartbeatIntervalMs).toBe(10_000);
   });

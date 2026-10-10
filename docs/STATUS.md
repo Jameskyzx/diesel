@@ -57,6 +57,18 @@ This is the only current release/evidence index. Historical implementation notes
   当前只读连接对照正常，现有日志未记录具体中断分支；没有证据将此次失败确定归因于网络或内存。
   失败候选、日志与备份保留；只能在阻塞处理后用新的 CI-approved SHA 发布。
   [本次部署失败及回滚验收记录](evidence/operations/deployment-maintenance-failure-2026-10-09.json)。
+  2026-10-10 的修复 PR #78 已合并；新候选 `1a74dd5be5564a58ef4e59fb5856ecb84c66eebd` 的精确 master CI 为 10/10 通过，
+  不可变 staging 成功，完整发布已于 `2026-10-10T04:50:10.966Z` 单次启动，继续使用 VPS 原数据库链路，没有建立转发。
+  截至 `2026-10-10T05:03:42Z`，观察连接自 `04:56:59Z` 后未更新，公网 HTTPS 握手与未登录 SSH 欢迎信息均超时；
+  原因及 worker 当前状态均未确认，尚未取得完成回执或独立终态验收，不得声明上线成功或已经回滚。
+  该观察时点未重启主机、未重复部署、未删除备份。
+  随后在京东云控制台核对同一 IP；用户明确授权后执行一次重启，`2026-10-10T05:24:20.711Z` SSH 读回确认新 boot，
+  Nginx/PM2 active，`diesel-demo` 与 `jamesky-api` 均 online、重启计数为 0，服务器 current 仍为旧稳定版 `0f51a9d`。
+  `05:25:23.213Z` 公网 readiness 返回 HTTP 200，数据库及两项 AI 准入探针均为 ok；这是旧版恢复检查，不是新版发布验收。
+  新候选的严格账本为 `active:PENDING:none`，worker unit 已不存在且缺少完成回执；发布中断、尚待按协议收敛，未重复启动或伪造终态。
+  随后版本化回滚预检及 `--abort-if-uncommitted` 均 exit 0；`2026-10-10T05:41:37.637Z` 独立严格账本确认 `terminal:ROLLED_BACK:none`。
+  旧版恢复验收通过，`jamesky-api` PID 仍为 1033；中断构建未进入数据库发布，候选、日志与备份保留，不重用该 SHA。
+  [本次发布观察中断记录](evidence/operations/deployment-observation-interruption-2026-10-10.json) 保留候选、任务 ID、CI 与连接诊断。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

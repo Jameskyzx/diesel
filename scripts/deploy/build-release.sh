@@ -118,6 +118,9 @@ corepack pnpm --config.registry="${registry}" \
   --frozen-lockfile --trust-lockfile --package-import-method=copy \
   --ignore-scripts --ignore-pnpmfile
 
+# Keep V8 collection below the build cgroup's aggregate memory ceiling. This
+# applies to Next and its workers, not the runtime app or trusted root verifiers.
+# Do not inherit caller-supplied Node options or skip the Next TypeScript check.
 env -i \
   HOME="${build_home}" \
   PATH="${PATH}" \
@@ -125,6 +128,7 @@ env -i \
   CI=1 \
   COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
   NODE_ENV=production \
+  NODE_OPTIONS=--max-old-space-size=1536 \
   corepack pnpm build
 
 [[ -f "${next_environment_path}" && ! -L "${next_environment_path}" &&

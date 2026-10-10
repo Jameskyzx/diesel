@@ -96,6 +96,8 @@ const SYSTEMD_BUILD_UNIT_PROPERTIES = [
   "UMask",
   "NoNewPrivileges",
   "ProtectControlGroups",
+  "MemoryMax",
+  "MemorySwapMax",
 ] as const;
 const PM2_SYSTEMD_IDENTITY_PROPERTIES = [
   "Id",
@@ -1726,6 +1728,8 @@ function createLoadedSystemdUnitMetadata(
     LoadState: "loaded",
     NoNewPrivileges: "yes",
     ProtectControlGroups: "yes",
+    MemoryMax: "2147483648",
+    MemorySwapMax: "1073741824",
     RemainAfterExit: "yes",
     Restart: "no",
     Result: "success",
@@ -7023,6 +7027,7 @@ if [[ " $* " == *" install "* ]]; then
   printf '%s\\n' "$@" >${quoteShell(installInvocationPath)}
 fi
 if [[ " $* " == *" pnpm build "* ]]; then
+  [[ "${"$"}{NODE_OPTIONS:-}" == --max-old-space-size=1536 ]] || exit 92
   printf '%s\n' '// rewritten by Next during the fixture build' >next-env.d.ts
   mkdir -p .next/server .next/cache
   printf '%s\n' '${TEST_RELEASE_SHA}' >.next/BUILD_ID
@@ -7045,6 +7050,7 @@ fi
             npm_config_network_concurrency: "128",
             npm_config_fetch_timeout: "1",
             npm_config_fetch_retries: "99",
+            NODE_OPTIONS: "--max-old-space-size=8192",
             PATH: `${fakeBin}:/usr/bin:/bin`,
           },
         },
@@ -7199,7 +7205,7 @@ fi
     expect(result.command).toEqual({
       exitCode: 0,
       stderr: "",
-      stdout: "26|loaded|45min|yes\n",
+      stdout: "28|loaded|45min|yes\n",
     });
     expect(result.args).toEqual([
       "show",
@@ -7244,7 +7250,7 @@ fi
     expect(result.command).toEqual({
       exitCode: 0,
       stderr: "",
-      stdout: "26|not-found||\n",
+      stdout: "28|not-found||\n",
     });
   });
 
@@ -7284,6 +7290,14 @@ fi
     },
     {
       expectedError: "systemd unit metadata was incomplete",
+      mutation: "missing-memory-max",
+    },
+    {
+      expectedError: "systemd unit metadata was incomplete",
+      mutation: "missing-memory-swap-max",
+    },
+    {
+      expectedError: "systemd unit metadata was incomplete",
       mutation: "empty-load-state",
     },
     {
@@ -7316,6 +7330,12 @@ fi
             metadata,
             "ProtectControlGroups",
           );
+          break;
+        case "missing-memory-max":
+          output = renderSystemdUnitMetadata(metadata, "MemoryMax");
+          break;
+        case "missing-memory-swap-max":
+          output = renderSystemdUnitMetadata(metadata, "MemorySwapMax");
           break;
         case "empty-load-state":
           output = renderSystemdUnitMetadata({ ...metadata, LoadState: "" });
@@ -7481,6 +7501,12 @@ fi
     ["UMask", "0022"],
     ["NoNewPrivileges", "no"],
     ["ProtectControlGroups", "no"],
+    ["MemoryMax", "infinity"],
+    ["MemoryMax", "2147483649"],
+    ["MemoryMax", ""],
+    ["MemorySwapMax", "infinity"],
+    ["MemorySwapMax", "1073741825"],
+    ["MemorySwapMax", ""],
   ] satisfies ReadonlyArray<readonly [SystemdBuildUnitProperty, string]>)(
     "rejects systemd build-unit drift in %s",
     async (property, driftedValue) => {

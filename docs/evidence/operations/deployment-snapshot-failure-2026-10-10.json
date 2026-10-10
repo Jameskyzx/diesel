@@ -50,6 +50,39 @@
     "publicReadyChecks": { "database": "ok", "aiChatAdmission": "ok", "aiChatRateLimit": "ok" },
     "publicReadbackMethod": "HTTPS with certificate validation retained, domain pinned to the known VPS IP and physical en1 interface. Not a DNS propagation test."
   },
+  "readOnlyDiagnosticFollowUp": {
+    "databaseRoute": "original VPS route; no temporary relay",
+    "candidateFilesModified": false,
+    "databaseWrites": false,
+    "attempts": [
+      {
+        "startedAt": "2026-10-10T09:36:13.267Z",
+        "completedAt": "2026-10-10T09:48:33.259Z",
+        "durationMs": 739993,
+        "exitCode": 75,
+        "lastTable": "data_governance_drafts",
+        "lastBatch": 35,
+        "snapshotFileExists": false
+      },
+      {
+        "startedAt": "2026-10-10T09:52:08.307Z",
+        "completedAt": "2026-10-10T10:24:14.996Z",
+        "durationMs": 1926690,
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "lastTable": "data_change_logs",
+        "lastBatch": 285,
+        "snapshotFileExists": true,
+        "snapshotBytes": 98617171,
+        "snapshotOwnerGroupMode": "root:root:600",
+        "observer": "Temporary process-only error-factory observation returned each original error unchanged; no installed driver or candidate file was modified."
+      }
+    ],
+    "temporaryServicesExited": true,
+    "successfulSnapshotRetained": true,
+    "conclusion": "The original VPS route completed a full read-only export in about 32 minutes. The earlier fatal worker exit was not reproduced, so its exact cause remains unconfirmed. This diagnostic snapshot does not replace a fresh release backup or restore acceptance."
+  },
   "boundaries": [
     "Failed candidate, operation logs and backups retained. This SHA must not be redeployed.",
     "Existing-release rollback verification is not acceptance of the new comparison and saved-analysis features.",

@@ -18,6 +18,9 @@ export const applicationInputManifestSchema = z.strictObject({
 // changing a prompt or route must not republish unchanged governance fixtures.
 // Unclassified roots and persistence/dependency changes remain fail-closed.
 export function isApplicationOnlyInput(path: string): boolean {
+  // This read-only deployment verifier is maintenance code, not an ingestion
+  // or schema input. Its fingerprint SQL, DB runtime and migrations stay denied.
+  if (path === "scripts/db/verify-application-release.ts") return true;
   if (path === "docs/ACCEPTANCE.md" || path.startsWith("docs/research/") ||
     path === "src/server/config/public-product-publication.ts") return false;
   return /^(?:src\/(?:app|components|domain|features|i18n|lib)\/|src\/server\/(?:ai|config|repositories|services)\/|public\/|tests\/|e2e(?:-[a-z-]+)?\/|docs\/|\.github\/)/u.test(path) ||

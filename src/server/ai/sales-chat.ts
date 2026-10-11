@@ -1619,6 +1619,7 @@ function createPublicEvidenceBoundaryTransform({
         return;
       }
 
+      let completedDeterministicAnswer = false;
       if (chunk.type === "finish") {
         if (modelToolOutputBudgetExceeded?.() === true) {
           bufferedText.length = 0;
@@ -1675,6 +1676,7 @@ function createPublicEvidenceBoundaryTransform({
           if (factualSummary !== null) {
             bufferedText.length = 0;
             bufferedText.push({ id: nextPublicTextPartId(), text: factualSummary });
+            completedDeterministicAnswer = true;
           }
           if (requiresAttachmentBoundary) {
             const id = "unverified-attachment-boundary";
@@ -1786,7 +1788,12 @@ function createPublicEvidenceBoundaryTransform({
 
       if (chunk.type === "finish") {
         controller.enqueue({
-          finishReason: chunk.finishReason,
+          // The provider step ended with a tool call, but the evidence-bound
+          // server summary above completed the public answer. Keep the original
+          // step reason and never relabel truncation, filtering or errors.
+          finishReason: completedDeterministicAnswer && chunk.finishReason === "tool-calls"
+            ? "stop"
+            : chunk.finishReason,
           rawFinishReason: undefined,
           totalUsage: projectPublicModelUsage(chunk.totalUsage),
           type: "finish",

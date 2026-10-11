@@ -63,6 +63,13 @@ for original documents continue to use knowledge retrieval.
 
 ### User journey corrections
 
+Natural sales-entry questions retain the stated country and power and ask for
+the actual application before querying regulations. Explicitly declined product
+tasks do not enable product tools. A one-country comparative follow-up extends
+the retained country set rather than replacing it; evidence is still re-queried
+and checked. Explanation follow-ups answer the latest question concisely rather
+than repeating the complete comparison already visible in the fact cards.
+
 Country replacement is resolved before a pair of mentioned country names can
 replace the comparison set. For example, after CHN/JPN construction 120 kW,
 “replace Japan with Germany” retains CHN and produces CHN/DEU at the original
@@ -105,6 +112,12 @@ controls remain keyboard accessible; the decorative engine icon is retained.
   evidence stays distinct from request failures. Dates, units, future-adopted
   regulations, Demo labels, stale flags and sources remain visible; the table
   does not rank different test cycles or legal scopes as equivalent.
+  Pollutants and units have separate, aligned rows; HC, NOx and HC+NOx are never
+  combined, converted or ranked. A compact summary distinguishes shared records
+  from missing ones, not legal strictness. Power bands and validity dates remain
+  visible, while repeated regulation/source titles can be expanded. Live non-road
+  evidence gaps offer explicit application-refinement links preserving countries,
+  power and date, without assuming the correct application or promising coverage.
 - Completed chats and comparison results can be explicitly saved to `/analyses`.
   This is a browser-local archive, not account storage or a cloud backup: at most
   ten analyses / four MB, Zod-validated on read and write, with no silent eviction.
@@ -130,6 +143,26 @@ controls remain keyboard accessible; the decorative engine icon is retained.
 
 These are repository capabilities, not a production-release claim; deployment
 status remains in `STATUS.md`.
+
+Chat parameter resolution shares the directory's English/Chinese country names
+and accepts quantity-adjacent application labels and natural English compounds.
+Follow-ups retain unchanged filters; nonpositive or ambiguous power prompts for
+correction rather than silently reusing a previous value. Each provider step
+receives the remaining exact evidence queries; a mismatched result stops further
+tool calls instead of repeating an unsatisfiable loop. Source-only request controls
+are separated from search data without removing quoted/native query constraints.
+Single-country market-only answers render validated observations directly: the
+period start is inclusive and its end exclusive, with a calendar-year label only
+for a complete year. Publication, verification and query dates never relabel the
+observation year.
+Cross-country regulation explanations likewise derive
+numeric differences, missing pollutant/unit rows and power-band bounds directly
+from validated effective records. They do not assert test-cycle equivalence,
+combine different pollutant definitions or rank legal strictness. These fact-only
+summaries stop provider calls once the full evidence contract passes.
+No approved real products means no real recommendation; Demo records cannot
+substitute for an explicitly requested real product. Query errors
+remain distinct from missing data, and legal-sales guarantees are not offered.
 
 The browser tab and Apple touch icons reuse that same approved diesel-engine
 artwork. Regenerate them with `pnpm exec tsx scripts/portfolio/generate-brand-icons.ts`.

@@ -1695,6 +1695,19 @@ prepare_release_runtime() (
   install -m 0600 -o diesel-build -g diesel-build /dev/null \
     "${build_workspace}/.build-complete"
 
+  # Packages are staged independently over the authorized root SSH channel,
+  # outside the committed input tree and outside any runtime-writable path.
+  local ci_runtime_dir="${deploy_root}/release-inputs/${release_id}/ci-runtime"
+  if [[ -e "${ci_runtime_dir}" || -L "${ci_runtime_dir}" ]]; then
+    env -i HOME=/root PATH="${root_child_path}" \
+      "${node_binary}" "${release_dir}/scripts/deploy/ci-runtime-artifact.mjs" \
+      verify-staged "${release_id}" "${ci_runtime_dir}"
+    install -m 0640 -o root -g diesel-build \
+      "${ci_runtime_dir}/runtime.tar.gz" "${build_home}/runtime.tar.gz"
+    install -m 0640 -o root -g diesel-build \
+      "${ci_runtime_dir}/runtime.json" "${build_home}/runtime.json"
+  fi
+
   prepare_release_run_build_unit \
     "${release_id}" "${build_workspace}" "${build_home}" \
     "${fixed_vps_path}" "${registry}" "${proc_root}" "${builder_uid}"
@@ -1745,6 +1758,17 @@ prepare_release_runtime() (
   if [[ ! "${artifact_digest}" =~ ^[0-9a-f]{64}$ ]]; then
     prepare_release_fail 70 "artifact verifier did not return a SHA-256 digest"
     return
+  fi
+
+  if [[ -e "${ci_runtime_dir}" || -L "${ci_runtime_dir}" ]]; then
+    local ci_expected_digest
+    ci_expected_digest="$(env -i HOME=/root PATH="${root_child_path}" \
+      "${node_binary}" "${release_dir}/scripts/deploy/ci-runtime-artifact.mjs" \
+      verify-staged "${release_id}" "${ci_runtime_dir}")"
+    if [[ "${artifact_digest}" != "${ci_expected_digest}" ]]; then
+      prepare_release_fail 70 "frozen runtime differs from the authorized CI package"
+      return
+    fi
   fi
 
   if [[ -e "${build_workspace}/.next/cache" || -L "${build_workspace}/.next/cache" ]]; then

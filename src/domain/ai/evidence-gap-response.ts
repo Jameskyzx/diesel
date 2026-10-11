@@ -153,8 +153,8 @@ export function buildEvidenceGapResponse(
   if (queryExecutionFailed) {
     details.add(
       locale === "en"
-        ? "At least one query or parameter validation failed. Check the input and retry."
-        : "至少一项查询执行或参数校验失败，请检查输入后重试。",
+        ? "The service could not complete this query or validate its tool parameters. This does not mean the requested data is absent. Retry the same question; no need to change valid inputs."
+        : "系统未能完成本次查询或校验工具参数，这不代表没有相关数据。可以原样重试，无需修改已经正确提供的条件。",
     );
   }
   if (hasOutputLimitExceeded) {

@@ -660,6 +660,24 @@ describe("canonical merge-blocking job execution", () => {
       name: "Linux release manifest no-op",
     },
     {
+      after: "    runs-on: ubuntu-24.04",
+      before: "    runs-on: ubuntu-22.04",
+      jobId: "linux-release-handoff",
+      name: "runtime ABI differs from production",
+    },
+    {
+      after: "          name: diesel-runtime-latest",
+      before: "          name: diesel-runtime-${{ github.sha }}-${{ github.run_attempt }}",
+      jobId: "linux-release-handoff",
+      name: "runtime artifact loses exact commit and attempt",
+    },
+    {
+      after: "          if-no-files-found: warn",
+      before: "          if-no-files-found: error",
+      jobId: "linux-release-handoff",
+      name: "missing runtime artifact accepted",
+    },
+    {
       after:
         "    timeout-minutes: 60\n    continue-on-error: true\n    steps:",
       before: "    timeout-minutes: 60\n    steps:",

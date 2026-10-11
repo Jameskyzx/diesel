@@ -358,10 +358,9 @@ for (const locale of ["en", "zh-CN"] as const) {
       : ["第 2 页 第 2 节", "第 1 页 第 1 节"]).entries()) {
       await textbox.fill(request(`${topic} ${locator}`));
       await send.click();
-      // Missing locators keep the production loop in required-tool mode.
-      // The Demo model must honor all five bounded steps before failing closed;
-      // the positive page/section control needs only one evidence call.
-      completedCardCount += index === 0 ? 5 : 1;
+      // Both outcomes need one retrieval. A returned missing locator is already
+      // conclusive evidence of a gap; do not repeat the same lookup five times.
+      completedCardCount += 1;
       await expect(cards).toHaveCount(completedCardCount);
       await expect(send).toBeVisible();
       await expect(assistant.getByRole("alert").filter({

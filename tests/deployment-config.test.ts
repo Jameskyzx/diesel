@@ -2397,8 +2397,11 @@ describe("merge-blocking Linux release handoff", () => {
 
     expect(jobStart).toBeGreaterThanOrEqual(0);
     expect(jobEnd).toBeGreaterThan(jobStart);
-    expect(job).toContain("needs: quality");
-    expect(job).toContain("runs-on: ubuntu-24.04");
+    expect(job).not.toContain("needs: quality");
+    expect(job).toContain("runs-on: ubuntu-22.04");
+    expect(job).toContain("name: diesel-runtime-${{ github.sha }}-${{ github.run_attempt }}");
+    expect(job).toContain("if-no-files-found: error");
+    expect(smokeScript).toContain("scripts/deploy/ci-runtime-artifact.mjs pack");
     expect(job).toContain("timeout-minutes: 60");
     expect(job).toContain("fetch-depth: 0");
     expect(job).toContain("persist-credentials: false");

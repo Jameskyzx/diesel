@@ -563,6 +563,18 @@ export function knowledgeQuerySatisfies(
   );
 }
 
+/** Plain English request wrappers are not literal full-text search operands.
+ * Keep quoted, signed, Boolean, numeric and identifier queries byte-for-byte;
+ * for ordinary prose use its already-validated business terms, not delivery cues. */
+export function knowledgeSearchSuggestion(query: string, terms: readonly string[], optionalTerms: readonly string[] = []): string {
+  if (!/^[A-Za-z\s,.!?-]+$/u.test(query) || knowledgeQueryLiteralSpans(query).length > 0 ||
+    knowledgeSignedOperandSpans(query).length > 0 || /\bor\b/iu.test(query) || terms.some(term => term.includes(":"))) return query;
+  const optional = new Set(optionalTerms);
+  const selected = terms.filter(term => !optional.has(term)).map(term => term === "regulations" ? "regulation" : term);
+  const suggestion = selected.join(" ");
+  return suggestion && knowledgeQuerySatisfies(terms, knowledgeTermsIn(suggestion), optionalTerms) ? suggestion : query;
+}
+
 type TextReplacement = { start: number; end: number; value: string };
 
 /** Remove only request wrappers; metadata dates are enforced by asOf, not FTS. */

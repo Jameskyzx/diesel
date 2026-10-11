@@ -3,13 +3,24 @@ import { buildDirectChatResponse } from "@/server/ai/chat-turn-guidance";
 import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
 import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
 import { buildEvidenceQueryGuidance, resolveSalesChatLoopPolicy } from "@/server/ai/sales-chat-loop";
-import { knowledgeQuerySatisfies, knowledgeTermsIn } from "@/server/ai/knowledge-request-context";
+import { knowledgeQuerySatisfies, knowledgeTermsIn, knowledgeSearchSuggestion } from "@/server/ai/knowledge-request-context";
 
 const opening = "我有一台120kW柴油机，想卖到巴西，怎么判断能不能卖？";
 const clarification = "用于工程机械，先查排放法规，不做产品认证结论。";
 const contractFor = (userTexts: string[]) => buildSalesChatEvidenceContract({ selectedCountryIso3: null, userTexts });
 
 describe("the real sales conversation, not only complete starter questions", () => {
+  it("separates natural retrieval wording and the tool's default date from explicit filters", () => {
+    const text = "Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations.";
+    const guidance = buildEvidenceQueryGuidance(contractFor([text]), [], [text]);
+    expect(guidance).toContain('"query":"non road emissions regulation"');
+    expect(guidance).not.toContain('"asOf":');
+    const dated = `${text} As of 2026-08-13.`;
+    expect(buildEvidenceQueryGuidance(contractFor([dated]), [], [dated])).toContain('"asOf":"2026-08-13"');
+  });
+  it.each(['"original text" regulations', 'regulations -gas', 'regulations OR emissions', 'DOC-CHN-100 section 2'])("never flattens constrained search syntax: %s", query => {
+    expect(knowledgeSearchSuggestion(query, knowledgeTermsIn(query))).toBe(query);
+  });
   it.each([
     ["比较中国和巴西工程机械120kW的排放法规，日期2026-10-11。", ["CHN", "BRA"]],
     ["中国和巴西哪个排放要求更严？我的发动机是120kW，用于工程机械。日期2026-10-11。", ["CHN", "BRA"]],

@@ -1,0 +1,476 @@
+{
+  "version": "diesel-production-application-release-acceptance-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "release": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+  "previousPublicRelease": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+  "site": "https://diesel.jamesky.site",
+  "observedAt": "2026-10-11T12:56:56.634Z",
+  "outcome": "deployed_and_independently_accepted",
+  "pullRequest": {
+    "number": 83,
+    "url": "https://github.com/Jameskyzx/diesel/pull/83",
+    "mergedAt": "2026-10-11T11:47:05Z"
+  },
+  "exactMasterCi": {
+    "runId": 38136830867,
+    "headSha": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "createdAt": "2026-10-11T11:47:07Z",
+    "updatedAt": "2026-10-11T12:25:31Z",
+    "jobs": [
+      {
+        "id": 114462309114,
+        "name": "Lint, typecheck, app coverage, build",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T11:47:10Z",
+        "completedAt": "2026-10-11T11:57:01Z"
+      },
+      {
+        "id": 114462309230,
+        "name": "Dependency and workflow supply-chain audit",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T11:47:10Z",
+        "completedAt": "2026-10-11T11:47:36Z"
+      },
+      {
+        "id": 114462309316,
+        "name": "Linux release handoff (systemd cgroup + real build)",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T11:47:10Z",
+        "completedAt": "2026-10-11T11:53:58Z"
+      },
+      {
+        "id": 114462309328,
+        "name": "PostgreSQL + pgvector migration smoke",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T11:47:10Z",
+        "completedAt": "2026-10-11T11:47:58Z"
+      },
+      {
+        "id": 114462309329,
+        "name": "Secret scanning (gitleaks)",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T11:47:10Z",
+        "completedAt": "2026-10-11T11:47:26Z"
+      },
+      {
+        "id": 114462309447,
+        "name": "Linux deployment script contracts",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T11:47:10Z",
+        "completedAt": "2026-10-11T11:50:25Z"
+      },
+      {
+        "id": 114464069908,
+        "name": "Failure-first FDE workflow via pnpm demo:fde",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T11:57:02Z",
+        "completedAt": "2026-10-11T11:58:24Z"
+      },
+      {
+        "id": 114464069912,
+        "name": "Playwright key flows",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T11:57:03Z",
+        "completedAt": "2026-10-11T12:25:26Z"
+      },
+      {
+        "id": 114464069933,
+        "name": "Portfolio demo via pnpm demo",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T11:57:03Z",
+        "completedAt": "2026-10-11T12:00:12Z"
+      },
+      {
+        "id": 114469343231,
+        "name": "Required CI gate",
+        "conclusion": "success",
+        "startedAt": "2026-10-11T12:25:28Z",
+        "completedAt": "2026-10-11T12:25:31Z"
+      }
+    ]
+  },
+  "stage": {
+    "authorization": {
+      "branch": "master",
+      "commit": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+      "format": "diesel-release-authorization-v1",
+      "origin": {
+        "fetchUrl": "https://github.com/Jameskyzx/diesel.git",
+        "pushUrl": "https://github.com/Jameskyzx/diesel.git",
+        "remoteMaster": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+        "remoteMasterReadback": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6"
+      },
+      "protection": {
+        "allowDeletions": false,
+        "allowForcePushes": false,
+        "enforceAdmins": true,
+        "requiredCheck": "Required CI gate",
+        "requiredCheckAppId": null,
+        "strict": true
+      },
+      "repository": "Jameskyzx/diesel",
+      "verifiedAt": "2026-10-11T12:26:41.775Z",
+      "workflow": {
+        "gateJobId": 114469343231,
+        "gateJobUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38136830867/job/114469343231",
+        "id": 332591937,
+        "name": "CI",
+        "path": ".github/workflows/ci.yml",
+        "runAttempt": 1,
+        "runId": 38136830867,
+        "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38136830867",
+        "state": "active"
+      }
+    },
+    "commit": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "format": "diesel-release-stage-v1",
+    "inputDigest": "02204a1d35bee7a1c8bfefebee9d35dde108c0cf987924fd6c386feb1bcb335f",
+    "releaseDir": "/opt/diesel/releases/41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "target": "root@111.228.50.85"
+  },
+  "runtimeStage": {
+    "release": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "runId": 38136830867,
+    "runAttempt": 1,
+    "artifactId": 11701296457,
+    "archiveSha256": "0bc81b7167547b62014b3ba6ae3507edc8cfadb17366a49f27998e48fe5a24a0",
+    "destination": "/opt/diesel/release-inputs/41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6/ci-runtime",
+    "temporary": "/private/tmp/diesel-ci-runtime-A3L1SV",
+    "staged": true,
+    "deployed": false
+  },
+  "durable": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+      "operationId": "432a0cee-6a6e-4ce9-bdcc-6d7fb8c5b641",
+      "mode": "application",
+      "createdAt": "2026-10-11T12:30:42.176Z",
+      "inputDigest": "02204a1d35bee7a1c8bfefebee9d35dde108c0cf987924fd6c386feb1bcb335f",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "completed",
+    "unit": {
+      "Id": "diesel-release-41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "Result": "success",
+      "InvocationID": "9fa50c397e624e6f8039fdb1923e3c7a",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 656470
+    },
+    "completion": {
+      "operationId": "432a0cee-6a6e-4ce9-bdcc-6d7fb8c5b641",
+      "invocationId": "9fa50c397e624e6f8039fdb1923e3c7a",
+      "startedAt": "2026-10-11T12:30:43.158Z",
+      "workerPid": 656470,
+      "completedAt": "2026-10-11T12:51:36.496Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 4427,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 468,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "serverReleaseDurationMs": 1253338,
+  "runtimeDigest": "40ce0c6946083fe661982312f7e37e1a5d3d0d3750026732e5f886aa43f1917e",
+  "independentHostAcceptance": {
+    "kind": "independent-production-acceptance-v1",
+    "release": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "observedAt": "2026-10-11T12:52:51.345Z",
+    "pass": true,
+    "checks": [
+      {
+        "id": "ledger",
+        "startedAt": "2026-10-11T12:52:18.792Z",
+        "completedAt": "2026-10-11T12:52:19.513Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "logBytes": 0,
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "committed-host",
+        "startedAt": "2026-10-11T12:52:19.515Z",
+        "completedAt": "2026-10-11T12:52:22.031Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "logBytes": 105,
+        "logSha256": "d0c335d203fa8e8958b9f72ef15b191675257153cf9088dbe8bb24e685075d15"
+      },
+      {
+        "id": "loopback",
+        "startedAt": "2026-10-11T12:52:22.032Z",
+        "completedAt": "2026-10-11T12:52:39.695Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "logBytes": 0,
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "public",
+        "startedAt": "2026-10-11T12:52:39.695Z",
+        "completedAt": "2026-10-11T12:52:51.345Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "logBytes": 0,
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ]
+  },
+  "validatedTerminal": "COMMITTED:APPLICATION_VERIFIED_V2",
+  "dataVerification": {
+    "beforeAt": "2026-10-11T12:37:39.064Z",
+    "afterAt": "2026-10-11T12:50:50.837Z",
+    "previousRelease": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "protectedFileCount": 144,
+    "dataContractSha256": "d823b25f2996c0f90fdf0cf2707d960fd980246d969139e98abb9c6e76fc1fd0",
+    "tableCount": 15,
+    "allTablesUnchanged": true,
+    "beforeReceipt": {
+      "sha256": "d20a309d0dd9cfa4be0b533dad7d753e9f9265481829b62b3ad476e935cbc515",
+      "bytes": 2241
+    },
+    "afterReceipt": {
+      "sha256": "b4ee3727cc596acb967ce121f1d6ce204f7a1591ee94d57176dfa2a79f9ccf2b",
+      "bytes": 2241
+    }
+  },
+  "providerInclusiveCanary": {
+    "checkedAt": "2026-10-11T12:55:31.024Z",
+    "expectedVersion": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "includeProviderAi": true,
+    "pass": true,
+    "results": [
+      {
+        "durationMs": 167,
+        "errorCode": null,
+        "id": "liveness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/live",
+        "requestId": "1d3c25e0-364a-420a-8bcc-ba9f3006d6a3",
+        "status": 200
+      },
+      {
+        "durationMs": 699,
+        "errorCode": null,
+        "id": "readiness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/ready",
+        "requestId": "4f617f4c-e055-4771-9bcd-1087b14becbc",
+        "status": 200
+      },
+      {
+        "durationMs": 8242,
+        "errorCode": null,
+        "id": "country-decision-summary",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-11",
+        "requestId": "808353ae-0f95-4fa9-bde5-248d81cd0a66",
+        "status": 200
+      },
+      {
+        "durationMs": 4461,
+        "errorCode": null,
+        "id": "country-decision-no-data",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-11",
+        "requestId": "fa175772-9735-4fd7-a37c-5e2d298abfe3",
+        "status": 200
+      },
+      {
+        "durationMs": 305,
+        "errorCode": null,
+        "id": "public-products",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/products",
+        "requestId": "08272359-9603-4a47-b8e9-c2a5e4c1ef19",
+        "status": 200
+      },
+      {
+        "durationMs": 1446,
+        "errorCode": null,
+        "id": "chat-direct-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "851a9e91-ee5b-4b2e-92cc-0888126806da",
+        "status": 200
+      },
+      {
+        "durationMs": 13702,
+        "errorCode": null,
+        "id": "chat-provider-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "f959cdcb-c793-4323-a757-ea475e943ed8",
+        "status": 200
+      }
+    ],
+    "runError": null,
+    "targetOrigin": "https://diesel.jamesky.site",
+    "version": "synthetic-canary-v5"
+  },
+  "realBrowserStarters": {
+    "stats": {
+      "startTime": "2026-10-11T12:53:13.808Z",
+      "duration": 75390.326,
+      "expected": 6,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "report": {
+      "sha256": "c38d29abc5ce47fc502cc8310a36b2ecf5ca388656d53058ad438a1d9ad2ef84",
+      "bytes": 2332608
+    },
+    "reportPath": "test-results/live-1791723193807/report.json",
+    "exitCode": 0,
+    "retries": 0,
+    "workers": 1,
+    "locales": [
+      "zh-CN",
+      "en"
+    ],
+    "cases": [
+      "regulations",
+      "comparison",
+      "market"
+    ],
+    "usedMocks": false
+  },
+  "realAnalysesAcceptance": {
+    "exitCode": 0,
+    "observations": [
+      {
+        "locale": "en",
+        "release": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+        "genericNonRoadPreservesEvidenceGap": true
+      },
+      {
+        "locale": "en",
+        "release": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+        "passed": true,
+        "comparison": true,
+        "persistence": true,
+        "jsonExport": true,
+        "htmlExport": true,
+        "evidenceGapVisible": true,
+        "confirmedDeletion": true,
+        "modelRequests": 0
+      },
+      {
+        "locale": "en",
+        "release": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+        "realChatSavedAndExported": true,
+        "modelRequests": 1,
+        "noReplayOnExport": true,
+        "confirmedDeletion": true
+      },
+      {
+        "locale": "zh-CN",
+        "release": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+        "genericNonRoadPreservesEvidenceGap": true
+      },
+      {
+        "locale": "zh-CN",
+        "release": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+        "passed": true,
+        "comparison": true,
+        "persistence": true,
+        "jsonExport": true,
+        "htmlExport": true,
+        "evidenceGapVisible": true,
+        "confirmedDeletion": true,
+        "modelRequests": 0
+      }
+    ],
+    "viewports": {
+      "en": "1440x1000 desktop",
+      "zh-CN": "393x851 mobile"
+    },
+    "screenshotsReviewed": [
+      "saved-real-chat.png"
+    ],
+    "comparisonUsesModel": false
+  },
+  "finalReadback": {
+    "health": {
+      "service": "global-diesel-regulations",
+      "status": "ok",
+      "timestamp": "2026-10-11T12:56:56.634Z",
+      "version": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6"
+    },
+    "currentReleasePath": "/opt/diesel/releases/41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "localMaster": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "remoteMaster": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "remoteReadbackTransport": "Command-scoped HTTPS mapping to the same canonical GitHub repository; saved origin restored to git@github.com:Jameskyzx/diesel.git.",
+    "freeDiskBytes": 15235153920,
+    "nginx": "active",
+    "pm2": "active",
+    "applications": [
+      {
+        "name": "jamesky-api",
+        "pid": 1033,
+        "status": "online",
+        "restarts": 0
+      },
+      {
+        "name": "diesel-demo",
+        "pid": 682541,
+        "status": "online",
+        "restarts": 0
+      }
+    ]
+  },
+  "localEvidence": {
+    "vitest": "docs/evidence/vitest-execution-latest.json",
+    "playwright": "docs/evidence/playwright-e2e-latest.json",
+    "liveEval": "docs/evals/archive/ai-live-eval-20261011T101444517Z-8200ef62-3fbb-455e-984e-8c7d40a98638.json"
+  },
+  "preservedPredecessorFailure": {
+    "record": "docs/evidence/operations/production-application-release-2026-10-11.json",
+    "originalRelease": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "originalBrowserOutcome": "1 passed, 1 failed, 4 not run; comparison ended with tool-calls despite an evidence-approved deterministic answer.",
+    "repair": "Normalize only the public final reason to stop after an evidence-approved deterministic summary actually completes; preserve provider step reasons and errors.",
+    "validationExpectationsChanged": false
+  },
+  "boundaries": [
+    "CI, artifact transport and independent acceptance time are not included in serverReleaseDurationMs.",
+    "Application-only mode used the exact current-attempt Linux CI runtime; no VPS dependency installation or application rebuild.",
+    "No database export, restore, governance republication, schema changes, new countries or approved real products.",
+    "No temporary database forwarding, backup deletion or restart of jamesky-api.",
+    "The durable worker's deploymentVerified=false and runtimeStage.deployed=false are preserved point-in-time outputs; success is established by separate acceptance.",
+    "This is an operator-recorded observation, not signed external attestation, proof of long-term stability, or a guarantee that model explanations are always correct.",
+    "Documentation follow-up commits are not new production versions."
+  ]
+}

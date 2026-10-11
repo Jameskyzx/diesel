@@ -1059,6 +1059,16 @@ linux_release_handoff_main() {
     "${node_binary}" scripts/deploy/release-artifact-manifest.mjs \
       check-ready "${release_id}" .build-complete .deploy-ready \
       0 "${runtime_gid}" "${runtime_uid}" "${runtime_gid}" >/dev/null
+    # Exercise the actual predecessor/DB-verifier entry with real runtime links.
+    # The build-only boundary must still reject this prepared directory.
+    if "${node_binary}" scripts/deploy/release-input-manifest.mjs \
+      verify "${release_id}" .release-input-manifest.json >/dev/null 2>&1; then
+      linux_release_handoff_fail 70 "build-only verifier accepted a prepared runtime"
+    fi
+    "${node_binary}" --input-type=module -e '
+      import { verifyPreparedReleaseInputs } from "./scripts/deploy/durable-release.bundle.mjs";
+      verifyPreparedReleaseInputs(process.cwd(), process.argv[1]);
+    ' "${release_id}"
   )
   chown diesel:diesel "${release_root}"
   if (

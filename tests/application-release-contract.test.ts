@@ -29,7 +29,8 @@ describe("versioned application-only release contract", () => {
   });
   it.each([
     "drizzle/0010_new.sql", "src/server/db/seed/acceptance-fixtures.ts", "src/server/config/public-product-publication.ts",
-    "scripts/db/ingest-accepted-fixtures.ts", "docs/ACCEPTANCE.md", "docs/research/signoff.md",
+    "scripts/db/ingest-accepted-fixtures.ts", "scripts/db/application-fingerprint-query.ts",
+    "scripts/db/production-readback.ts", "docs/ACCEPTANCE.md", "docs/research/signoff.md",
     "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "patches/something.patch", "unknown/data.json",
   ])("refuses changed or newly introduced data inputs: %s", (path) => {
     expect(isApplicationOnlyInput(path)).toBe(false);
@@ -42,6 +43,7 @@ describe("versioned application-only release contract", () => {
     "src/app/api/chat/route.ts", "src/app/layout.tsx", "src/domain/regulations.ts",
     "src/server/ai/sales-chat.ts", "src/server/repositories/regulations.ts",
     "src/server/services/product-fit.ts", "src/features/analyses/comparison-rows.ts",
+    "scripts/db/verify-application-release.ts",
   ])("uses the verified code-only path for runtime changes: %s", (path) => {
     expect(isApplicationOnlyInput(path)).toBe(true);
     expect(classifyReleaseInputs(previous, { ...candidate, files: [...files, { ...files[0], path }] }).mode).toBe("application");

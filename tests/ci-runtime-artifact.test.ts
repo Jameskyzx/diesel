@@ -56,6 +56,21 @@ with tarfile.open(archive, "w:gz") as bundle:
   return { root, workspace, archive, extract: () => spawnSync("/usr/bin/python3", ["-I", "-S", resolve("scripts/deploy/extract-ci-runtime.py"), archive, workspace], { encoding: "utf8" }) };
 }
 describe("bounded runtime extraction", () => {
+  it.each(["valid", "extra", "duplicate", "oversized"])("checks ZIP member boundaries before extraction: %s", async scenario => {
+    const value = await fixture();
+    const zip = join(value.root, "artifact.zip");
+    const create = spawnSync("/usr/bin/python3", ["-I", "-S", "-c", `
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "w") as archive:
+    archive.writestr("runtime.json", "x" * (8193 if sys.argv[2] == "oversized" else 4))
+    archive.writestr("runtime.tar.gz", "test")
+    if sys.argv[2] == "extra": archive.writestr("../escape", "bad")
+    if sys.argv[2] == "duplicate": archive.writestr("runtime.json", "duplicate")
+`, zip, scenario], { encoding: "utf8" });
+    expect(create.status).toBe(0);
+    const result = spawnSync("/usr/bin/python3", ["-I", "-S", resolve("scripts/deploy/extract-ci-runtime.py"), "--zip", zip, value.workspace], { encoding: "utf8" });
+    expect(result.status === 0).toBe(scenario === "valid");
+  });
   it("imports runtime files without overwriting source inputs", async () => {
     const value = await fixture();
     await writeFile(join(value.workspace, "package.json"), "original");

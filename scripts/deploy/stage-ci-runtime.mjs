@@ -3,7 +3,6 @@
 import { spawnSync } from "node:child_process";
 import { closeSync, openSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { mkdtemp, lstat } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hashFile, parseRuntimeMetadata } from "./ci-runtime-artifact.mjs";
@@ -38,6 +37,7 @@ function toFile(file, args, path, options = {}) {
   finally { closeSync(descriptor); }
 }
 async function main() {
+  process.umask(0o077);
   const [release, ...rest] = process.argv.slice(2);
   check(/^[0-9a-f]{40}$/u.test(release ?? "") && rest.length === 0 && process.version === "v22.22.3", "expected release SHA and pinned Node");
   const root = realpathSync(process.cwd());
@@ -45,7 +45,7 @@ async function main() {
   const authorization = verifyReleaseAuthorization(release, root);
   const response = JSON.parse(command("gh", ["api", `repos/${repository}/actions/runs/${authorization.workflow.runId}/artifacts?per_page=100`]));
   const artifact = selectRuntimeArtifact(response, authorization);
-  const temporary = await mkdtemp(resolve(tmpdir(), "diesel-ci-runtime-"));
+  const temporary = await mkdtemp(resolve(realpathSync("/tmp"), "diesel-ci-runtime-"));
   // Keep a named diagnostic directory on failure; no broad cleanup or overwrite.
   process.stderr.write(`CI runtime staging: ${temporary}\n`);
   const zip = resolve(temporary, "artifact.zip");

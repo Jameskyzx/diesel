@@ -1,9 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, mkdir, writeFile, rm, symlink, realpath } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, mkdir, writeFile, rm, symlink, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { parseRuntimeMetadata } from "../scripts/deploy/ci-runtime-artifact.mjs";
+import { parseRuntimeMetadata, runtimeReadyArguments } from "../scripts/deploy/ci-runtime-artifact.mjs";
 import { selectRuntimeArtifact } from "../scripts/deploy/stage-ci-runtime.mjs";
 
 const release = "a".repeat(40);
@@ -14,6 +14,15 @@ const temporary: string[] = [];
 afterEach(async () => { await Promise.all(temporary.splice(0).map(path => rm(path, { recursive: true, force: true }))); });
 
 describe("CI runtime provenance", () => {
+  it("packages only a ready root-owned release with the explicit runtime identity", () => {
+    expect(runtimeReadyArguments(release, "998", "997").slice(1)).toEqual([
+      "check-ready", release, ".build-complete", ".deploy-ready", "0", "997", "998", "997",
+    ]);
+    for (const id of ["0", "", "-1", "1.5", "01", "root", "2147483648"]) {
+      expect(() => runtimeReadyArguments(release, id, "997")).toThrow();
+      expect(() => runtimeReadyArguments(release, "998", id)).toThrow();
+    }
+  });
   it("binds metadata to the exact commit and production ABI", () => {
     expect(parseRuntimeMetadata(metadata, release)).toEqual(metadata);
     for (const change of [{ release: "f".repeat(40) }, { ubuntu: "24.04" }, { arch: "arm64" }, { node: "v22.22.2" }, { archiveBytes: 0 }, { archiveBytes: 2 ** 40 }, { archiveSha256: "no" }, { extra: true }]) {
@@ -78,6 +87,7 @@ with zipfile.ZipFile(sys.argv[1], "w") as archive:
     expect(value.extract().status).toBe(0);
     expect(await readFile(join(value.workspace, "node_modules/package/file.js"), "utf8")).toBe("test");
     expect(await readFile(join(value.workspace, "package.json"), "utf8")).toBe("original");
+    expect(await readdir(join(value.workspace, ".next/cache"))).toEqual([]);
     expect(value.extract().status).not.toBe(0);
   });
   it.each(["../escape", "/tmp/escape", "node_modules/../escape", ".next/cache/value", "package.json", "node_modules//bad", ".build-complete"])("rejects unsafe or duplicate entry %s", async name => {

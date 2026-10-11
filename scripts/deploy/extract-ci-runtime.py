@@ -103,6 +103,9 @@ def unpack(archive, destination):
         for name, member in members:
             if member.issym():
                 os.symlink(member.linkname, os.path.join(destination, name))
+        # Cache contents are never transported, but the artifact verifier
+        # requires this real directory as the excluded mutable-cache boundary.
+        os.mkdir(os.path.join(destination, ".next", "cache"), 0o700)
 
 
 if __name__ == "__main__":

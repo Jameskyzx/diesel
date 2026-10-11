@@ -1170,7 +1170,7 @@ linux_release_handoff_main() {
   (
     cd "${release_dir}"
     "${node_binary}" scripts/deploy/ci-runtime-artifact.mjs pack \
-      "${release_id}" "${runner_temp}/runtime-artifact"
+      "${release_id}" "${runner_temp}/runtime-artifact" "${runtime_uid}" "${runtime_gid}"
   )
   # Exercise the same unprivileged importer against the exact packaged bytes.
   # Only synthetic runner-owned paths are involved; the host remains untouched.

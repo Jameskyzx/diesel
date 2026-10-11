@@ -33,7 +33,10 @@ def allowed(name):
 def unpack(archive, destination):
     if os.path.realpath(destination) != destination or not os.path.isdir(destination):
         raise ValueError("destination must be a real directory")
-    with tarfile.open(archive, "r:gz") as bundle:
+    # Inspect all headers before writing, then stream payloads in archive order.
+    # Random access into gzip repeatedly decompresses earlier bytes and becomes
+    # quadratic for large dependency trees. Keep the same source descriptor.
+    with open(archive, "rb") as compressed, tarfile.open(fileobj=compressed, mode="r|gz") as bundle:
         members = []
         names = set()
         total = 0
@@ -95,10 +98,28 @@ def unpack(archive, destination):
                 os.makedirs(path, mode=0o700, exist_ok=True)
                 if os.path.islink(path) or not os.path.isdir(path):
                     raise ValueError("destination directory changed")
-            elif member.isfile():
-                with bundle.extractfile(member) as source, open(path, "xb") as output:
-                    shutil.copyfileobj(source, output, 1024 * 1024)
-                os.chmod(path, 0o700 if member.mode & 0o111 else 0o600)
+        bundle.close()
+        compressed.seek(0)
+        with tarfile.open(fileobj=compressed, mode="r|gz") as contents:
+            count = 0
+            for member in contents:
+                if count >= len(members):
+                    raise ValueError("archive gained entries between passes")
+                name, inspected = members[count]
+                if any(getattr(member, key) != getattr(inspected, key)
+                       for key in ("name", "type", "size", "mode", "linkname")):
+                    raise ValueError("archive header changed between passes")
+                count += 1
+                if member.isfile():
+                    path = os.path.join(destination, name)
+                    parent = os.path.dirname(path)
+                    if os.path.realpath(parent) != parent:
+                        raise ValueError("destination ancestor is a link")
+                    with contents.extractfile(member) as source, open(path, "xb") as output:
+                        shutil.copyfileobj(source, output, 1024 * 1024)
+                    os.chmod(path, 0o700 if member.mode & 0o111 else 0o600)
+            if count != len(members):
+                raise ValueError("archive lost entries between passes")
         # Create links last: no file write ever traverses an archive-provided link.
         for name, member in members:
             if member.issym():

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applicationDataTables, applicationFingerprintSchema, assertApplicationDataUnchanged, compareApplicationInputs, isApplicationOnlyInput } from "../scripts/deploy/application-release-contract";
+import { applicationDataTables, applicationFingerprintSchema, assertApplicationDataUnchanged, classifyReleaseInputs, compareApplicationInputs, isApplicationOnlyInput } from "../scripts/deploy/application-release-contract";
 
 const files = ["drizzle/meta/_journal.json", "src/server/db/schema/index.ts", "src/server/config/public-product-publication.ts", "src/components/header.tsx"]
   .map((path) => ({ path, mode: "100644" as const, size: 10, sha256: "c".repeat(64) }));
@@ -19,7 +19,7 @@ describe("versioned application-only release contract", () => {
     expect(result.inputDigest).toBe(candidate.inputDigest);
     expect(result.protectedFileCount).toBe(3);
   });
-  it("allows the static browser icon without admitting executable app metadata or routes", () => {
+  it("allows the static browser icon", () => {
     const icon = { path: "src/app/icon.svg", mode: "100644" as const, size: 10, sha256: "c".repeat(64) };
     expect(isApplicationOnlyInput(icon.path)).toBe(true);
     expect(compareApplicationInputs(
@@ -29,14 +29,22 @@ describe("versioned application-only release contract", () => {
   });
   it.each([
     "drizzle/0010_new.sql", "src/server/db/seed/acceptance-fixtures.ts", "src/server/config/public-product-publication.ts",
-    "scripts/db/ingest-accepted-fixtures.ts", "src/domain/regulations.ts", "docs/ACCEPTANCE.md", "docs/research/signoff.md",
+    "scripts/db/ingest-accepted-fixtures.ts", "docs/ACCEPTANCE.md", "docs/research/signoff.md",
     "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "patches/something.patch", "unknown/data.json",
-    "src/app/icon.tsx", "src/app/icon.svg/route.ts", "src/app/layout.tsx", "src/app/api/chat/route.ts",
   ])("refuses changed or newly introduced data inputs: %s", (path) => {
     expect(isApplicationOnlyInput(path)).toBe(false);
     const nextFiles = files.filter((file) => file.path !== path);
     nextFiles.push({ path, mode: "100644", size: 11, sha256: "1".repeat(64) });
     expect(() => compareApplicationInputs(previous, { ...candidate, files: nextFiles })).toThrow(/full release required/u);
+    expect(classifyReleaseInputs(previous, { ...candidate, files: nextFiles }).mode).toBe("full");
+  });
+  it.each([
+    "src/app/api/chat/route.ts", "src/app/layout.tsx", "src/domain/regulations.ts",
+    "src/server/ai/sales-chat.ts", "src/server/repositories/regulations.ts",
+    "src/server/services/product-fit.ts", "src/features/analyses/comparison-rows.ts",
+  ])("uses the verified code-only path for runtime changes: %s", (path) => {
+    expect(isApplicationOnlyInput(path)).toBe(true);
+    expect(classifyReleaseInputs(previous, { ...candidate, files: [...files, { ...files[0], path }] }).mode).toBe("application");
   });
   it("rejects deletion, duplicate path, same release and absent baseline schema", () => {
     expect(() => compareApplicationInputs(previous, { ...candidate, files: files.slice(1) })).toThrow();

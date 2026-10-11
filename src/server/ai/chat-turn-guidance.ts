@@ -1,11 +1,15 @@
 import "server-only";
+import { requestsSalesGuarantee } from "@/domain/ai/sales-guarantee-intent";
 
 import {
   buildConversationBusinessContext,
   hasConversationComparisonIntent,
 } from "@/server/ai/conversation-context";
 import type { Locale } from "@/i18n/locale";
+import { getDictionary } from "@/i18n/dictionaries";
+import { applicationScopeLabel } from "@/i18n/structured-labels";
 import { buildKnowledgeRequestContext } from "@/server/ai/knowledge-request-context";
+import { getApprovedRealProductIds } from "@/server/config/public-product-publication";
 
 type DirectChatResponseInput = {
   locale?: Locale;
@@ -227,6 +231,43 @@ export function buildDirectChatResponse({
   const context = buildConversationBusinessContext(contextTexts, {
     selectedCountryIso3,
   });
+  selectedCountryIso3 = context.focusedCountryIso3 ?? selectedCountryIso3;
+
+  if (requestsSalesGuarantee(text)) {
+    return locale === "en"
+      ? "I cannot guarantee legal sale or skip source and certification checks. A regulations comparison is not product approval. I can compare the recorded requirements using your countries, application and power; a sales decision also needs verified product specifications and certification. For information only; not a substitute for formal certification or legal advice."
+      : "我不能保证产品可合法销售，也不能跳过来源和认证核验。法规比较不等于产品准入批准。我可以按你给出的国家、用途和功率比较已记录的排放要求；销售判断还需要核验真实产品规格与认证。信息参考，不替代正式认证或法律意见";
+  }
+
+  if (context.hasPowerConflict) {
+    return locale === "en"
+      ? "Please give one positive rated power in kW. The supplied power is invalid or ambiguous; I have not queried using an old value or removed its minus sign. Your country, application and date are retained."
+      : "请提供一个大于 0 的额定功率（kW）。当前功率无效或有多个值，我没有沿用旧功率，也不会去掉负号后查询。已给出的国家、用途和日期保持不变。";
+  }
+
+  if (context.activeTask === "product_fit" && getApprovedRealProductIds().length === 0 &&
+    /(?:真实.{0,20}(?:产品|柴油机|发动机)|(?:不要|不用|排除)\s*demo|\b(?:real|non-demo)\b.{0,30}\b(?:products?|engines?)\b|\b(?:no|without|exclude)\s+demo\b)/iu.test(text)) {
+    return locale === "en"
+      ? "There are currently no approved real products in the public catalogue, so I cannot recommend a verified real engine. I will not substitute fictional Demo products. You can check the target market's regulations first, then provide verified specifications and certification for review. For information only; not a substitute for formal certification or legal advice."
+      : "公开产品目录目前没有经过审批的真实产品，因此无法推荐有证据支持的真实柴油机。我不会用虚构 Demo 产品替代。可以先核对目标市场的法规，再准备真实产品规格与认证交由核验。信息参考，不替代正式认证或法律意见";
+  }
+
+  // Ask only for the missing field, acknowledging the details already given.
+  const missingRegulationParameters = singleCountryRegulationMissingParameters(context);
+  if (missingRegulationParameters.length > 0 && !context.hasScopeConflict) {
+    const known = [context.focusedCountryIso3, context.powerKw === null ? null : `${context.powerKw} kW`, context.asOf].filter(Boolean).join(" · ");
+    if (missingRegulationParameters[0] === "applicationScope") {
+      return locale === "en"
+        ? `I have ${known}. What will the engine power: construction equipment, agricultural machinery, a generator set, a vessel, or a road vehicle? Reply with the actual application; you do not need to repeat the country or power. I will first check the applicable regulations, not certify the product or approve a sale.`
+        : `已记住：${known}。这台发动机用于工程机械、农业机械、发电机组、船舶，还是道路车辆？直接回复实际用途即可，不用重复国家和功率。我会先查适用法规；这不能代替产品认证或销售准入判断。`;
+    }
+    if (missingRegulationParameters[0] === "powerKw" && context.applicationScope !== null) {
+      const scope = applicationScopeLabel(context.applicationScope, getDictionary(locale));
+      return locale === "en"
+        ? `I have ${known} · ${scope}. What is the rated power in kW? Reply with a positive value, such as 120 kW; I will retain your country, application and date and check the matching power band. For information only; not a substitute for formal certification or legal advice.`
+        : `已记住：${known} · ${scope}。额定功率是多少 kW？直接回复一个大于 0 的数值（例如 120 kW）即可，我会保留国家、用途和日期，再核对对应功率段的法规。信息参考，不替代正式认证或法律意见`;
+    }
+  }
 
   if (context.activeTask === "knowledge" && !greetingPattern.test(normalized) &&
     !thanksPattern.test(normalized) && !capabilityPattern.test(normalized) &&

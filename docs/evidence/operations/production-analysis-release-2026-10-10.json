@@ -1,0 +1,511 @@
+{
+  "version": "diesel-production-analysis-release-acceptance-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "release": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+  "previousPublicRelease": "0f51a9dfd14f874d3dfa5713d172fb3462d48874",
+  "site": "https://diesel.jamesky.site",
+  "observedAt": "2026-10-10T16:20:44.804Z",
+  "sameWindowIndexObservation": {
+    "hostObservedAt": "2026-10-10T16:20:41.365Z",
+    "current": "/opt/diesel/releases/7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "repositoryAndPublicObservedAt": "2026-10-10T16:20:44.804Z",
+    "localMaster": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "remoteMaster": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "publicHealthStatus": 200,
+    "publicHealthVersion": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "indexMinutePrecision": "2026-10-10T16:20+00:00"
+  },
+  "finalPublicLiveness": {
+    "observedAt": "2026-10-10T16:18:58.855Z",
+    "httpStatus": 200,
+    "path": "/api/health",
+    "status": "ok",
+    "version": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7"
+  },
+  "changes": [
+    "Dedicated shareable country comparison with exact application, power and date.",
+    "Browser-local saved comparisons and completed chats, explicit deletion, JSON and standalone HTML exports.",
+    "Source-review cards distinguish recorded provenance from missing original-text excerpts.",
+    "Bounded build memory and fixed aggregate snapshot budget; installed PostgreSQL transaction disconnect handling is patched and regression-tested."
+  ],
+  "exactMasterCi": {
+    "headSha": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "event": "push",
+    "runId": 38048158202,
+    "gateJobId": 114207211940,
+    "conclusion": "success",
+    "successfulJobs": 10,
+    "url": "https://github.com/Jameskyzx/diesel/actions/runs/38048158202"
+  },
+  "stage": {
+    "authorization": {
+      "branch": "master",
+      "commit": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+      "format": "diesel-release-authorization-v1",
+      "origin": {
+        "fetchUrl": "https://github.com/Jameskyzx/diesel.git",
+        "pushUrl": "https://github.com/Jameskyzx/diesel.git",
+        "remoteMaster": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+        "remoteMasterReadback": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7"
+      },
+      "protection": {
+        "allowDeletions": false,
+        "allowForcePushes": false,
+        "enforceAdmins": true,
+        "requiredCheck": "Required CI gate",
+        "requiredCheckAppId": null,
+        "strict": true
+      },
+      "repository": "Jameskyzx/diesel",
+      "verifiedAt": "2026-10-10T11:55:32.104Z",
+      "workflow": {
+        "gateJobId": 114207211940,
+        "gateJobUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38048158202/job/114207211940",
+        "id": 332591937,
+        "name": "CI",
+        "path": ".github/workflows/ci.yml",
+        "runAttempt": 1,
+        "runId": 38048158202,
+        "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38048158202",
+        "state": "active"
+      }
+    },
+    "commit": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "format": "diesel-release-stage-v1",
+    "inputDigest": "3a765992e2bbd6d841beb6b10ba2bfb3e44265410aaef837ed10d90755dc828e",
+    "releaseDir": "/opt/diesel/releases/7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+    "target": "root@111.228.50.85"
+  },
+  "durable": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+      "operationId": "f6c50c73-0ed9-4a0d-8b1b-a8b59dc6729a",
+      "mode": "full",
+      "createdAt": "2026-10-10T11:56:09.846Z",
+      "inputDigest": "3a765992e2bbd6d841beb6b10ba2bfb3e44265410aaef837ed10d90755dc828e",
+      "runnerSha256": "58972352671451a73d1cedc5efbd0feeaa841d00c1c12c86d8dc75e3c2522cf7"
+    },
+    "state": "completed",
+    "unit": {
+      "Id": "diesel-release-7766eefaed3447d5dc01584b2c72d83a8d6d7bd7.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "Result": "success",
+      "InvocationID": "c6aa0e16747b4c3e99e70931c4ead4a8",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 153184
+    },
+    "completion": {
+      "operationId": "f6c50c73-0ed9-4a0d-8b1b-a8b59dc6729a",
+      "invocationId": "c6aa0e16747b4c3e99e70931c4ead4a8",
+      "startedAt": "2026-10-10T11:56:10.559Z",
+      "workerPid": 153184,
+      "completedAt": "2026-10-10T16:10:49.803Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 61542,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 58667,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "independentAcceptance": {
+    "strictLedger": {
+      "observedAt": "2026-10-10T16:11:14.626Z",
+      "exitCode": 0,
+      "state": "terminal:COMMITTED:PUBLISH_FINALIZED",
+      "markers": [
+        "HOST_ACTIVATION_COMMITTED",
+        "HOST_ACTIVATION_V1",
+        "PUBLISH_FINALIZED"
+      ],
+      "current": "/opt/diesel/releases/7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+      "services": {
+        "nginx": {
+          "exitCode": 0,
+          "state": "active"
+        },
+        "pm2-root": {
+          "exitCode": 0,
+          "state": "active"
+        }
+      },
+      "availableBytes": "18101645312"
+    },
+    "hostAndVersionedReadback": {
+      "kind": "independent-production-acceptance-v1",
+      "observedAt": "2026-10-10T16:12:19.114Z",
+      "release": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+      "checks": [
+        {
+          "id": "committed-host",
+          "startedAt": "2026-10-10T16:11:57.190Z",
+          "completedAt": "2026-10-10T16:12:01.648Z",
+          "exitCode": 0,
+          "signal": null,
+          "spawnFailed": false,
+          "logBytes": 105,
+          "logSha256": "0022041a6d86654afabc106b3ad8a1410dd1e794230e286ec8ab518004d6c66d"
+        },
+        {
+          "id": "http://127.0.0.1:8788",
+          "startedAt": "2026-10-10T16:12:01.651Z",
+          "completedAt": "2026-10-10T16:12:11.270Z",
+          "exitCode": 0,
+          "signal": null,
+          "spawnFailed": false,
+          "logBytes": 0,
+          "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "id": "https://diesel.jamesky.site",
+          "startedAt": "2026-10-10T16:12:11.270Z",
+          "completedAt": "2026-10-10T16:12:18.857Z",
+          "exitCode": 0,
+          "signal": null,
+          "spawnFailed": false,
+          "logBytes": 0,
+          "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "id": "pm2-list-read",
+          "startedAt": "2026-10-10T16:12:18.857Z",
+          "completedAt": "2026-10-10T16:12:19.086Z",
+          "exitCode": 0,
+          "signal": null,
+          "spawnFailed": false,
+          "logBytes": 6415,
+          "logSha256": "05e73337fed236f938a2b545cd30eead6363d7741fca393c01f2c88c627abab9"
+        }
+      ],
+      "applications": [
+        {
+          "name": "jamesky-api",
+          "pid": 1033,
+          "status": "online",
+          "restarts": 0
+        },
+        {
+          "name": "diesel-demo",
+          "pid": 175925,
+          "status": "online",
+          "restarts": 0
+        }
+      ],
+      "listeners": [
+        {
+          "address": "127.0.0.1:8787",
+          "listening": true
+        },
+        {
+          "address": "127.0.0.1:8788",
+          "listening": true
+        }
+      ],
+      "snapshotFacts": [
+        {
+          "mode": "dry-run",
+          "valid": true,
+          "formatVersion": 4,
+          "sha256": "0a0787b298d90d5a440c65f699126024142596021db71cdc1ad43aecd12936cd",
+          "tableCounts": {
+            "countries": 178,
+            "country_jurisdictions": 185,
+            "data_change_logs": 18996,
+            "data_governance_drafts": 6324,
+            "data_sources": 347,
+            "jurisdictions": 155,
+            "market_import_batches": 0,
+            "market_metrics": 50,
+            "regulation_limits": 11752,
+            "regulations": 94
+          }
+        },
+        {
+          "mode": "apply",
+          "applied": true,
+          "sha256": "0a0787b298d90d5a440c65f699126024142596021db71cdc1ad43aecd12936cd",
+          "tableCounts": {
+            "countries": 178,
+            "country_jurisdictions": 185,
+            "data_change_logs": 18996,
+            "data_governance_drafts": 6324,
+            "data_sources": 347,
+            "jurisdictions": 155,
+            "market_import_batches": 0,
+            "market_metrics": 50,
+            "regulation_limits": 11752,
+            "regulations": 94
+          }
+        }
+      ],
+      "countryCompletionCount": 97,
+      "lastCountry": "GOVERNANCE_COUNTRY_COMPLETE 97/97 MLT",
+      "passed": true
+    },
+    "providerCanary": {
+      "checkedAt": "2026-10-10T16:12:20.544Z",
+      "expectedVersion": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+      "includeProviderAi": true,
+      "pass": true,
+      "results": [
+        {
+          "durationMs": 160,
+          "errorCode": null,
+          "id": "liveness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/live",
+          "requestId": "c5f33572-d7a9-49b4-8c62-ab5b3bd25874",
+          "status": 200
+        },
+        {
+          "durationMs": 1046,
+          "errorCode": null,
+          "id": "readiness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/ready",
+          "requestId": "b914f948-3090-408e-8cb5-9f6aeb09d74a",
+          "status": 200
+        },
+        {
+          "durationMs": 4813,
+          "errorCode": null,
+          "id": "country-decision-summary",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-10",
+          "requestId": "96b86d3d-c797-4bb8-972d-ef18b2df5269",
+          "status": 200
+        },
+        {
+          "durationMs": 1905,
+          "errorCode": null,
+          "id": "country-decision-no-data",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-10",
+          "requestId": "213bf1fe-d1a3-4d74-ac4d-30d57e366438",
+          "status": 200
+        },
+        {
+          "durationMs": 146,
+          "errorCode": null,
+          "id": "public-products",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/products",
+          "requestId": "08f87cc7-1f3c-4412-ac78-eead0a251cec",
+          "status": 200
+        },
+        {
+          "durationMs": 3082,
+          "errorCode": null,
+          "id": "chat-direct-sse",
+          "method": "POST",
+          "pass": true,
+          "path": "/api/chat",
+          "requestId": "4381b0b4-ee01-4bbd-942f-f41ba80c51e7",
+          "status": 200
+        },
+        {
+          "durationMs": 11066,
+          "errorCode": null,
+          "id": "chat-provider-sse",
+          "method": "POST",
+          "pass": true,
+          "path": "/api/chat",
+          "requestId": "4b56b44e-e532-4c74-8335-f4939f59b5ae",
+          "status": 200
+        }
+      ],
+      "runError": null,
+      "targetOrigin": "https://diesel.jamesky.site",
+      "version": "synthetic-canary-v5"
+    },
+    "realBrowser": {
+      "localArtifact": "test-results/live-1791648752791/report.json",
+      "artifactSha256": "f79ff1422b087af6123048ecf5ab983230e0221dac247edabd2865d2f8bc76ac",
+      "stats": {
+        "startTime": "2026-10-10T16:12:32.792Z",
+        "duration": 77779.152,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "errors": [],
+      "cases": [
+        {
+          "title": "regulations crosses real admission, database and model boundaries",
+          "status": 200,
+          "retry": 0,
+          "durationMs": 15039,
+          "requestId": "08c7446b-5a03-4bc7-8ea2-96838ee15365",
+          "locale": "zh-CN",
+          "kind": "regulations"
+        },
+        {
+          "title": "comparison crosses real admission, database and model boundaries",
+          "status": 200,
+          "retry": 0,
+          "durationMs": 12734,
+          "requestId": "fdea992b-c774-4e9f-9a3d-8c7561dd70a7",
+          "locale": "zh-CN",
+          "kind": "comparison"
+        },
+        {
+          "title": "market crosses real admission, database and model boundaries",
+          "status": 200,
+          "retry": 0,
+          "durationMs": 11471,
+          "requestId": "1c0e3c9e-ad64-461b-aecc-ca391700b3f8",
+          "locale": "zh-CN",
+          "kind": "market"
+        },
+        {
+          "title": "regulations crosses real admission, database and model boundaries",
+          "status": 200,
+          "retry": 0,
+          "durationMs": 12502,
+          "requestId": "43fd92a1-f70e-42b3-9c7b-cc3df680b963",
+          "locale": "en",
+          "kind": "regulations"
+        },
+        {
+          "title": "comparison crosses real admission, database and model boundaries",
+          "status": 200,
+          "retry": 0,
+          "durationMs": 11144,
+          "requestId": "b46031e5-a417-4b54-8e79-655e4850c6e6",
+          "locale": "en",
+          "kind": "comparison"
+        },
+        {
+          "title": "market crosses real admission, database and model boundaries",
+          "status": 200,
+          "retry": 0,
+          "durationMs": 14232,
+          "requestId": "05085467-1f49-4040-b3f3-330a77c1d417",
+          "locale": "en",
+          "kind": "market"
+        }
+      ]
+    },
+    "analysisFlows": {
+      "localHelper": "/private/tmp/diesel-pr77-production-acceptance.hzxKwM/analyses-construction.ts",
+      "exitCode": 0,
+      "locales": [
+        "en",
+        "zh-CN"
+      ],
+      "viewports": [
+        {
+          "locale": "en",
+          "width": 1440,
+          "height": 1000
+        },
+        {
+          "locale": "zh-CN",
+          "width": 393,
+          "height": 851
+        }
+      ],
+      "countries": [
+        "CHN",
+        "BRA"
+      ],
+      "applicationScope": "construction",
+      "powerKw": 120,
+      "asOf": "2026-08-13",
+      "checks": [
+        "Generic non-road preserves missing-limit evidence instead of broadening to construction.",
+        "Construction returns recorded g/kWh limits and retains conditions across reload and locale switching.",
+        "Source-review cards explicitly disclose missing original-text excerpts.",
+        "Page has no horizontal overflow; the mobile comparison table remains horizontally scrollable.",
+        "Saved comparisons persist across tabs and reload, JSON validates against the schema, standalone HTML includes historical notice and has no scripts.",
+        "Confirmed deletion persists after reload.",
+        "One real English chat is saved and exported without reasoning or a replayed model request; its local test record is deleted."
+      ],
+      "passed": true,
+      "realChatRequests": 1
+    },
+    "publicReadiness": {
+      "requestedAt": "2026-10-10T16:16:16.297Z",
+      "observedAt": "2026-10-10T16:16:16.613Z",
+      "httpStatus": 200,
+      "version": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+      "status": "ok",
+      "checks": {
+        "database": "ok",
+        "aiChatAdmission": "ok",
+        "aiChatRateLimit": "ok"
+      }
+    }
+  },
+  "preservedNonfatalEvents": [
+    {
+      "stage": "release snapshot",
+      "kind": "governance-snapshot-failure-v1",
+      "phase": "reader",
+      "errorType": "Error",
+      "code": "CONNECTION_CLOSED",
+      "outcome": "Existing bounded reader recovery completed; both snapshot workers ultimately exited 0. No snapshot worker was restarted after success.",
+      "successfulWorkerDurationsMs": [
+        2331572,
+        4784804
+      ]
+    },
+    {
+      "stage": "versioned release readback",
+      "event": "One curl HTTP 503 was present in the original operation log; its existing bounded verifier retries ultimately passed. The later independent loopback and public verifiers returned 0 with empty logs."
+    },
+    {
+      "stage": "temporary analysis acceptance helper",
+      "exitCode": 1,
+      "expected": "g/kWh for generic non-road CHN/BRA",
+      "actual": "Explicit missing applicable limits and zero sources",
+      "reason": "Helper mistakenly copied a fictional Demo fixture expectation into production; PUBLIC_UI.md explicitly forbids broadening generic non-road to construction.",
+      "resolution": "Original helper and failure retained. Read-only production CHN/BRA construction queries confirmed recorded limits; a separate helper verifies the original non-road negative case and the construction positive case. No application data, eval expectation, or evidence gate changed."
+    }
+  ],
+  "boundaries": {
+    "databaseRoute": "original VPS route; no laptop relay or DATABASE_URL change",
+    "newSchema": false,
+    "newCountries": false,
+    "newRealProducts": false,
+    "publicEvidenceCounts": {
+      "jurisdictions": 97,
+      "regulations": 28,
+      "limits": 651,
+      "sources": 203,
+      "approvedRealProducts": 0
+    },
+    "backupsPreserved": true,
+    "unrelatedService": "jamesky-api online at PID 1033, restart count 0, loopback listener verified; business endpoints not independently exercised",
+    "paidResourceAdded": false,
+    "claims": [
+      "This is point-in-time acceptance, not a long-term availability or model-correctness guarantee.",
+      "Generic non-road may correctly return missing evidence; original-text excerpts remain absent where not recorded.",
+      "Production release remains 7766eefaed3447d5dc01584b2c72d83a8d6d7bd7 when the documentation-only follow-up is merged.",
+      "Local screenshots and the full browser JSON are retained locally; this record is operator evidence, not an external signed attestation."
+    ]
+  }
+}

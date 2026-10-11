@@ -13,19 +13,19 @@ export const applicationInputManifestSchema = z.strictObject({
   inputDigest: hash, files: z.array(fileSchema).min(1).max(100_000),
 }).refine((manifest) => new Set(manifest.files.map((file) => file.path)).size === manifest.files.length);
 
-// Deliberately deny by default. New source roots, server/domain code, migration,
-// ingestion, seed/signoff and dependency changes require the full data protocol.
-// This first fast path covers presentation and engineering-only maintenance.
+// Classify persistence inputs, not whether application code runs on the server.
+// Runtime behaviour still needs CI and before/after database fingerprints, but
+// changing a prompt or route must not republish unchanged governance fixtures.
+// Unclassified roots and persistence/dependency changes remain fail-closed.
 export function isApplicationOnlyInput(path: string): boolean {
-  if (path === "docs/ACCEPTANCE.md" || path.startsWith("docs/research/")) return false;
-  // Only this static metadata asset is presentation-only, not executable app routes.
-  if (path === "src/app/icon.svg") return true;
-  return /^(?:src\/components\/|src\/i18n\/|public\/|tests\/|e2e(?:-[a-z-]+)?\/|docs\/|\.github\/)/u.test(path) ||
-    /^(?:scripts\/(?:deploy|ci|ops|portfolio)\/)/u.test(path) ||
+  if (path === "docs/ACCEPTANCE.md" || path.startsWith("docs/research/") ||
+    path === "src/server/config/public-product-publication.ts") return false;
+  return /^(?:src\/(?:app|components|domain|features|i18n|lib)\/|src\/server\/(?:ai|config|repositories|services)\/|public\/|tests\/|e2e(?:-[a-z-]+)?\/|docs\/|\.github\/)/u.test(path) ||
+    /^(?:scripts\/(?:ai|deploy|ci|ops|portfolio)\/)/u.test(path) ||
     /^(?:README(?:\.[a-zA-Z-]+)?\.md|eslint\.config\.mjs)$/u.test(path);
 }
 
-export function compareApplicationInputs(previousValue: unknown, candidateValue: unknown) {
+export function classifyReleaseInputs(previousValue: unknown, candidateValue: unknown) {
   const previous = applicationInputManifestSchema.parse(previousValue);
   const candidate = applicationInputManifestSchema.parse(candidateValue);
   if (previous.commit === candidate.commit) throw new Error("application release must be distinct");
@@ -35,14 +35,22 @@ export function compareApplicationInputs(previousValue: unknown, candidateValue:
   const after = contractFiles(candidate);
   if (!before.some((file) => file.path === "drizzle/meta/_journal.json") ||
     !before.some((file) => file.path === "src/server/db/schema/index.ts") ||
-    !before.some((file) => file.path === "src/server/config/public-product-publication.ts") ||
-    JSON.stringify(before) !== JSON.stringify(after)) throw new Error("data contract changed; full release required");
+    !before.some((file) => file.path === "src/server/config/public-product-publication.ts")) {
+    throw new Error("missing baseline data contract");
+  }
   return {
+    mode: JSON.stringify(before) === JSON.stringify(after) ? "application" as const : "full" as const,
     previousRelease: previous.commit, release: candidate.commit,
     previousInputDigest: previous.inputDigest, inputDigest: candidate.inputDigest,
     dataContractSha256: createHash("sha256").update(JSON.stringify(before)).digest("hex"),
     protectedFileCount: before.length,
   };
+}
+
+export function compareApplicationInputs(previousValue: unknown, candidateValue: unknown) {
+  const { mode, ...contract } = classifyReleaseInputs(previousValue, candidateValue);
+  if (mode !== "application") throw new Error("data contract changed; full release required");
+  return contract;
 }
 
 export const applicationDataTables = [

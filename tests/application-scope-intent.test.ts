@@ -20,6 +20,10 @@ describe("trusted application-scope intent", () => {
   );
 
   it.each([
+    ["工程机械120kW", "construction"], ["120kW工程机械", "construction"],
+    ["非道路100千瓦", "non-road"], ["80千瓦发电机组", "generator-set"],
+    ["construction-engine", "construction"], ["marine-engines", "marine"],
+    ["agriculture-machinery", "agriculture"],
     ["nonroad", "non-road"], ["non road", "non-road"], ["non-road", "non-road"],
     ["非道路", "non-road"], ["on-road", "on-road"], ["道路", "on-road"],
     ["on-road-truck", "on-road-truck"], ["卡车", "on-road-truck"],

@@ -1167,7 +1167,56 @@ linux_release_handoff_main() {
     fi
   done
 
-  printf 'Linux release handoff verified: %s\n' "${release_id}"
+  (
+    cd "${release_dir}"
+    "${node_binary}" scripts/deploy/ci-runtime-artifact.mjs pack \
+      "${release_id}" "${runner_temp}/runtime-artifact" "${runtime_uid}" "${runtime_gid}"
+  )
+  # Exercise the same unprivileged importer against the exact packaged bytes.
+  # Only synthetic runner-owned paths are involved; the host remains untouched.
+  install -d -m 0700 -o diesel-build -g diesel-build "${build_workspace_root}/${release_id}"
+  cp -a "${release_export}/." "${build_workspace_root}/${release_id}/"
+  chown -hR diesel-build:diesel-build "${build_workspace_root}/${release_id}"
+  chmod -R u=rwX,g=,o= "${build_workspace_root}/${release_id}"
+  chown -R root:diesel-build "${runner_temp}/runtime-artifact"
+  chmod 750 "${runner_temp}/runtime-artifact"
+  chmod 640 "${runner_temp}/runtime-artifact/"*
+  install -d -m 0700 -o diesel-build -g diesel-build \
+    "${build_workspace_root}/${release_id}/.next" "${build_workspace_root}/${release_id}/node_modules"
+  install -m 0600 -o diesel-build -g diesel-build /dev/null \
+    "${build_workspace_root}/${release_id}/.build-complete"
+  (
+    cd "${build_workspace_root}/${release_id}"
+    runuser -u diesel-build -- /usr/bin/env -i \
+      HOME="${runner_temp}/runtime-artifact" PATH="${fixed_path}" \
+      BUILD_HOME="${runner_temp}/runtime-artifact" BUILD_RELEASE_ID="${release_id}" \
+      /bin/bash scripts/deploy/build-release.sh
+  )
+  (
+    # Boot the transported build at a different absolute path; this detects
+    # accidental build-workspace dependencies before publishing the package.
+    runtime_smoke_unit="diesel-runtime-smoke-${release_id}.service"
+    trap 'systemctl stop "${runtime_smoke_unit}" >/dev/null 2>&1 || true' EXIT
+    systemd-run --quiet --collect --unit="${runtime_smoke_unit}" \
+      --property=User=diesel-build --property=Group=diesel-build \
+      --property=RuntimeMaxSec=60 --property=KillMode=control-group \
+      --working-directory="${build_workspace_root}/${release_id}" \
+      /usr/bin/env -i HOME="${runner_temp}/runtime-artifact" PATH="${fixed_path}" \
+      NODE_ENV=production APP_VERSION="${release_id}" \
+      "${node_binary}" node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 8329
+    for ((attempt=0; attempt<30; attempt++)); do
+      if curl --silent --fail --max-time 2 http://127.0.0.1:8329/api/health \
+        >"${runner_temp}/runtime-health.json"; then break; fi
+      sleep 1
+    done
+    "${node_binary}" -e '
+      const health = JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"));
+      if (health.status !== "ok" || health.version !== process.argv[2]) process.exit(1);
+    ' "${runner_temp}/runtime-health.json" "${release_id}"
+    systemctl stop "${runtime_smoke_unit}"
+    trap - EXIT
+  )
+  printf 'Linux release handoff and CI import verified: %s\n' "${release_id}"
 }
 
 linux_release_handoff_main "$@"

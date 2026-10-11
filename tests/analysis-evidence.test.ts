@@ -7,6 +7,7 @@ import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { comparisonSnapshotSchema, type ComparisonSnapshot } from "@/features/analyses/schemas";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getCountryDetails } from "@/server/services/country-service";
+import { buildComparisonRows, formatRecordedLimit } from "@/features/analyses/comparison-rows";
 
 const previousMode = process.env.DATABASE_MODE;
 let snapshot: ComparisonSnapshot;
@@ -53,6 +54,32 @@ it("preserves original excerpts as escaped text and keeps real page and section 
   expect(html).toContain("CHN");
   expect(html).toContain("Jan 1, 2026");
   expect(html).toContain("Jan 1, 2027");
+});
+
+it("aligns pollutants AND units, retains multiple records and never merges HC with HC+NOx", () => {
+  const candidate = structuredClone(snapshot);
+  for (const [index, response] of candidate.responses.entries()) {
+    if (response.status !== "available" || !response.applicabilitySummary) throw new Error("Missing fixture");
+    const regulations = response.applicabilitySummary.country.currentEffectiveRegulations;
+    const regulation = regulations[0]!;
+    const limit = regulation.limits[0]!;
+    response.applicabilitySummary.country.currentEffectiveRegulations = [regulation];
+    regulation.limits = [
+      { ...limit, id: "first", pollutantCode: index === 0 ? "HC" : "HC+NOx", unitCode: "g/kWh" },
+      { ...limit, id: "pm", pollutantCode: "PM", unitCode: "g/kWh" },
+      { ...limit, id: "different-unit", pollutantCode: "PM", unitCode: index === 0 ? "mg/kWh" : "g/kWh" },
+    ];
+  }
+  const rows = buildComparisonRows(candidate);
+  expect(rows.map(({ pollutant, unit }) => [pollutant, unit])).toEqual([["HC", "g/kWh"], ["HC+NOx", "g/kWh"], ["PM", "g/kWh"], ["PM", "mg/kWh"]]);
+  expect(rows.map(row => row.cells.map(cell => cell.length))).toEqual([[1, 0], [0, 1], [1, 2], [1, 0]]);
+});
+
+it("trims display padding without recalculation or loss of decimal precision", () => {
+  expect(formatRecordedLimit("5.000000")).toBe("5");
+  expect(formatRecordedLimit("0.025000")).toBe("0.025");
+  expect(formatRecordedLimit("5000")).toBe("5000");
+  expect(formatRecordedLimit("9007199254740993.0000000000000010")).toBe("9007199254740993.000000000000001");
 });
 
 it("does not invent excerpts or PDF page links for missing, non-PDF or unsafe sources", () => {

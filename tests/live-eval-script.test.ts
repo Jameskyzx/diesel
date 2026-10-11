@@ -571,7 +571,7 @@ describe("live eval initialization reporting", () => {
             },
           },
           provenance: {
-            promptVersion: "sales-chat-system-v9",
+            promptVersion: "sales-chat-system-v11",
             providerProfile: null,
             repository: {
               baseHeadCommit: null,

@@ -9,7 +9,7 @@ import {
 
 describe("AI locale contract", () => {
   it.each([
-    ["en", "without ranking countries as stricter/weaker", 'never "no legal limit"'],
+    ["en", "without repeating the complete lists, ranking countries as stricter/weaker", 'never "no legal limit"'],
     ["zh-CN", "不排名哪个国家更严格或更宽松", "不得写成“不设限值”"],
   ] as const)("keeps regulation comparisons scoped to returned facts in %s", (locale, ranking, absence) => {
     const prompt = buildSalesChatInstructions(null, locale);
@@ -78,18 +78,18 @@ describe("AI locale contract", () => {
   it.each([
     { locale: "en" as const, clauses: [
       "plain, complete sentence", "market metrics or market comparison",
-      "regulatory requirements", "opportunity score", "at most four short evidence bullets",
+      "regulatory requirements", "opportunity score", "at most three key differences/evidence points",
       "Do not dump tool names, JSON property names, internal UUIDs, reason-code lists",
       "Put each source title in quotation marks", "Do not insert bold/code formatting",
     ] },
     { locale: "zh-CN" as const, clauses: [
       "完整中文句子", "市场指标或市场比较", "法规要求", "机会评分",
-      "最多四条简短证据", "不要堆砌英文工具名、JSON 字段名、内部 UUID 或原因代码",
+      "至多三条关键差异/证据", "不要堆砌英文工具名、JSON 字段名、内部 UUID 或原因代码",
       "用引号逐字引用一次", "不加粗、不嵌入代码",
     ] },
   ])("requires concise reader-facing $locale explanations without schema dumps", ({ locale, clauses }) => {
     const prompt = buildSalesChatInstructions(null, locale);
-    expect(prompt).toContain('version="sales-chat-system-v9"');
+    expect(prompt).toContain('version="sales-chat-system-v11"');
     for (const clause of clauses) expect(prompt).toContain(clause);
     // Production instructions must be domain-wide, never benchmark fixtures.
     expect(prompt).not.toMatch(/DEMO-ENG-100|DEMO_ADDRESSABLE_UNITS|2026-08-13|country-overview-china/u);
@@ -125,12 +125,12 @@ describe("AI locale contract", () => {
 
   it.each([
     {
-      expected: ["rated power in kW", "supplied together"],
+      expected: ["rated power in kW", "positive value", "CHN", "Non-road", "retain your country, application and date"],
       locale: "en" as const,
       text: "Check current CHN non-road regulations.",
     },
     {
-      expected: ["应用场景", "成对提供"],
+      expected: ["CHN", "100 kW", "实际用途", "不用重复国家和功率"],
       locale: "zh-CN" as const,
       text: "核对 CHN 100 kW 当前法规。",
     },

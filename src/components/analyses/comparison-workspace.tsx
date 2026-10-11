@@ -63,8 +63,8 @@ export function ComparisonWorkspace({ countries, query, invalid, today }: {
     {query ? state.status === "loading" ? <p role="status">{dictionary.common.loading}</p> : state.status === "error" ? <div role="alert" className="space-y-3 rounded-md border p-4">
       <p>{copy.comparisonError}</p><Button variant="outline" onClick={() => { setState({ status: "loading" }); setAttempt(value => value + 1); }}>{dictionary.common.retry}</Button>
     </div> : <>
+      <ComparisonResults snapshot={state.snapshot} allowRefine />
       <SaveAnalysis defaultTitle={`${query.countryIso3s.join(" / ")} · ${query.powerKw} kW · ${query.asOf}`} createPayload={() => ({ kind: "comparison", comparison: state.snapshot })} />
-      <ComparisonResults snapshot={state.snapshot} />
     </> : <p className="rounded-md border border-dashed p-5 text-sm">{copy.comparisonEmpty}</p>}
   </div>;
 }

@@ -128,11 +128,11 @@ This is the only current release/evidence index. Historical implementation notes
   "browserSnapshot": {
     "artifactByteLength": 202814,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "a4c24ad3b6c05f7edd64141030f0fa58fc9e2f65afc8bebd9630c55571e4dc9b",
-    "baseHeadCommit": "4a1c68fabcbc7e9efc72e739da245c0d99711e27",
-    "evaluatedCommit": "4a1c68fabcbc7e9efc72e739da245c0d99711e27",
-    "observedAt": "2026-10-11T05:46:32.595Z",
-    "runId": "1b997133-1565-40d4-830a-f378fe4d8c76",
+    "artifactSha256": "23734f2851de1ba09ce77165d65b147328c26fd53fdda7c226ee7f113cde3294",
+    "baseHeadCommit": "c4f66b4e957da547438ac58a99869461c67d3d62",
+    "evaluatedCommit": "c4f66b4e957da547438ac58a99869461c67d3d62",
+    "observedAt": "2026-10-11T10:36:49.620Z",
+    "runId": "b3b13ba5-985f-4b70-a529-3a6d42f50d07",
     "runs": [
       {
         "collected": 487,
@@ -169,7 +169,7 @@ This is the only current release/evidence index. Historical implementation notes
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "145b8ce1b2a9001a8cdc499dda3dfb17bddb279f95c0c9c86395b2e0590f32e2",
+      "digest": "7071d8afee2ee85e549326e14f63552bd3e1a49f6d4b796f35ba8ac4d3e22bf2",
       "fileCount": 381
     },
     "version": "diesel-playwright-evidence-v1",
@@ -253,15 +253,15 @@ This is the only current release/evidence index. Historical implementation notes
   `94594 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
   archive `docs/evals/archive/ai-live-eval-20261011T101444517Z-8200ef62-3fbb-455e-984e-8c7d40a98638.json`；source fingerprint `ed41e3a81551ace936b6bbb765e826ae6187d4db674e65f4dff505ec1f68da20` across `325` files。
 
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `1b997133-1565-40d4-830a-f378fe4d8c76`，artifact SHA-256 `a4c24ad3b6c05f7edd64141030f0fa58fc9e2f65afc8bebd9630c55571e4dc9b`；
-  observedAt `2026-10-11T05:46:32.595Z`，clean worktree / base HEAD `4a1c68fabcbc7e9efc72e739da245c0d99711e27`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `b3b13ba5-985f-4b70-a529-3a6d42f50d07`，artifact SHA-256 `23734f2851de1ba09ce77165d65b147328c26fd53fdda7c226ee7f113cde3294`；
+  observedAt `2026-10-11T10:36:49.620Z`，clean worktree / base HEAD `c4f66b4e957da547438ac58a99869461c67d3d62`；
   `public` = `421 passed / 66 skipped / 0 failed / 0 flaky / 487 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 493 passed / 68 skipped / 0 failed / 0 flaky / 561 collected。artifact 为 202814 bytes；
-  browser source fingerprint 为 381 files / `145b8ce1b2a9001a8cdc499dda3dfb17bddb279f95c0c9c86395b2e0590f32e2`。
-  因运行发生在 clean worktree，`evaluatedCommit=4a1c68fabcbc7e9efc72e739da245c0d99711e27`；它证明该本地候选上的浏览器验收，
+  browser source fingerprint 为 381 files / `7071d8afee2ee85e549326e14f63552bd3e1a49f6d4b796f35ba8ac4d3e22bf2`。
+  因运行发生在 clean worktree，`evaluatedCommit=c4f66b4e957da547438ac58a99869461c67d3d62`；它证明该本地候选上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 
 ## Acceptance and operations / 验收与运维

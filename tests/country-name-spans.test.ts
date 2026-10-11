@@ -4,12 +4,17 @@ import { countryIso3sIn, countryMentionsIn } from "@/server/ai/conversation-cont
 import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
 import { selectPortfolioDemoTool } from "@/server/ai/portfolio-demo-model";
 import { countryCatalog } from "@/server/db/seed/country-catalog";
+import { formatCountryDisplayName } from "@/i18n/country-name";
 
 function contractFor(text: string) {
   return buildSalesChatEvidenceContract({ selectedCountryIso3: null, userTexts: [text] });
 }
 
 describe("existing country names are indivisible identity spans", () => {
+  it.each(countryCatalog)("recognizes the same Chinese name used in the UI for $iso3", country => {
+    const name = formatCountryDisplayName({ ...country, isDemo: false }, "zh-CN");
+    expect(countryIso3sIn(name)).toEqual([country.iso3]);
+  });
   it.each(countryCatalog)("resolves $nameEn without injecting a nested country", ({ iso3, nameEn }) => {
     for (const name of [nameEn, nameEn.toLowerCase(), nameEn.toUpperCase()]) {
       expect(countryMentionsIn(name)).toEqual([{ countryIso3: iso3, index: 0, length: name.length }]);

@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-10T10:06:50.524Z",
+      "capturedAt": "2026-10-11T03:22:01.202Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -135,10 +135,14 @@
         "src/domain/ai/live-eval-response-locale.ts",
         "src/domain/ai/live-eval-response-text.ts",
         "src/domain/ai/live-eval.ts",
+        "src/domain/ai/market-profile-response.ts",
         "src/domain/ai/model-cost.ts",
         "src/domain/ai/model-observability.ts",
         "src/domain/ai/model-originated-input.ts",
+        "src/domain/ai/power-intent.ts",
         "src/domain/ai/reasoning-markup.ts",
+        "src/domain/ai/regulation-comparison-response.ts",
+        "src/domain/ai/sales-guarantee-intent.ts",
         "src/domain/ai/token-usage.ts",
         "src/domain/canonical-order.ts",
         "src/domain/countries/detail-consistency.ts",
@@ -192,6 +196,7 @@
         "src/features/ai/tool-display-evidence.ts",
         "src/features/ai/tool-part-presentation.ts",
         "src/features/ai/tool-result-envelope.ts",
+        "src/features/analyses/comparison-rows.ts",
         "src/features/analyses/schemas.ts",
         "src/features/analyses/storage.ts",
         "src/features/countries/client-errors.ts",
@@ -296,7 +301,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "896e6e583306c87fe1cb657919046f930c3b231acc31646487b074359453324e",
+      "sourceFingerprint": "935160c3a4b2caf7759a1c3718ce47cafd38acb7d9f6440ef6bd1ff3b044fe15",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -304,7 +309,7 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-10T10:06:53.824Z",
+      "capturedAt": "2026-10-11T03:22:04.609Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
@@ -439,10 +444,14 @@
         "src/domain/ai/live-eval-response-locale.ts",
         "src/domain/ai/live-eval-response-text.ts",
         "src/domain/ai/live-eval.ts",
+        "src/domain/ai/market-profile-response.ts",
         "src/domain/ai/model-cost.ts",
         "src/domain/ai/model-observability.ts",
         "src/domain/ai/model-originated-input.ts",
+        "src/domain/ai/power-intent.ts",
         "src/domain/ai/reasoning-markup.ts",
+        "src/domain/ai/regulation-comparison-response.ts",
+        "src/domain/ai/sales-guarantee-intent.ts",
         "src/domain/ai/token-usage.ts",
         "src/domain/canonical-order.ts",
         "src/domain/countries/detail-consistency.ts",
@@ -496,6 +505,7 @@
         "src/features/ai/tool-display-evidence.ts",
         "src/features/ai/tool-part-presentation.ts",
         "src/features/ai/tool-result-envelope.ts",
+        "src/features/analyses/comparison-rows.ts",
         "src/features/analyses/schemas.ts",
         "src/features/analyses/storage.ts",
         "src/features/countries/client-errors.ts",
@@ -600,7 +610,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "804cab925879a2a7bbbfa516ae75a269f3168524835fb31439b2d4cc8a29c564",
+      "sourceFingerprint": "af726ad78bedb5d2295605b346f5df45eebab0fa4ceffc37d5a8a5172e92fcbf",
       "viewport": {
         "height": 1000,
         "width": 1600

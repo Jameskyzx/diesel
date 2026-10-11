@@ -98,6 +98,16 @@ input_digest="$(
   exit 65
 }
 
+# A verified CI package replaces installation/compilation, never the root-side
+# freeze, new-inode copy or readiness checks. An incomplete package fails closed.
+if [[ -e "${build_home}/runtime.tar.gz" || -e "${build_home}/runtime.json" ||
+  -L "${build_home}/runtime.tar.gz" || -L "${build_home}/runtime.json" ]]; then
+  node scripts/deploy/ci-runtime-artifact.mjs unpack "${release_id}" \
+    "${build_home}/runtime.tar.gz" "${build_home}/runtime.json"
+  printf 'CI runtime imported and verified: %s\n' "${release_id}"
+  exit 0
+fi
+
 # Next.js rewrites next-env.d.ts during production builds. Preserve the exact
 # tracked input in the per-release HOME and restore it before the strict input
 # re-verification; any snapshot tampering is still caught by the trusted root

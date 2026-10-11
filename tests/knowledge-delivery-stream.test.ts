@@ -42,7 +42,9 @@ describe("knowledge delivery denial through the production stream", () => {
     expect(errors).toEqual([]);
     expect(parts.map((part) => part.type)).not.toContain("error");
     expect(parts.at(-1)?.type).toBe("finish");
-    expect(parts.filter((part) => part.type === "tool-result")).toHaveLength(5);
+    // A mismatched locator is already an evidence gap; do not spend the
+    // remaining loop budget repeating an unsatisfiable retrieval request.
+    expect(parts.filter((part) => part.type === "tool-result")).toHaveLength(1);
     const answer = parts.flatMap((part) => part.type === "text-delta" ? [part.text] : []).join("");
     expect(answer).toContain(locale === "en" ? "This request lacks enough evidence" : "这次请求没有足够证据");
     expect(sse).toContain(JSON.stringify(answer));

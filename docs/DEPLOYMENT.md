@@ -2370,8 +2370,38 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
 
 在保留上述 master/CI 授权、不可变 staging、锁与独立读回的前提下，新增
 [持久化任务和 application-only v2 合同](ENGINEERING_MAINTENANCE.md)。
-`durable-release.bundle.mjs start <sha>` 将完整发布交给 systemd；
-`start-application <sha>` 只接受未改变受保护数据输入的候选。
+优先使用 `durable-release.bundle.mjs start-auto <sha>`：先验证前后两份输入树，
+数据库代码、迁移、fixture、发布批准和依赖不变时自动选代码发布；聊天、比较和路由
+修改不再触发全库导出、恢复及数据重发布。无法读取或畸形的输入直接失败，不降级猜测。
+`start <sha>` 显式执行完整发布；`start-application <sha>` 强制要求代码发布资格。
+
+### CI 构建产物交付
+
+Linux handoff 在与 VPS 一致的 Ubuntu 22.04 / x64 / Node 22.22.3 上完成真实构建、
+root 接管和非特权解包验证，上传 `diesel-runtime-<sha>-<attempt>`（保留七天）。
+不包含环境变量、数据或 `.next/cache`；归档只包含 `.next`、`node_modules` 和真实
+`.build-complete`。常规质量、浏览器、数据库与 Required CI gate 均保持不变。
+
+源代码 staging 成功后，在同一 clean master 工作站运行：
+
+```bash
+for runtime_input in \
+  scripts/deploy/stage-ci-runtime.mjs \
+  scripts/deploy/ci-runtime-artifact.mjs \
+  scripts/deploy/extract-ci-runtime.py \
+  scripts/deploy/verify-release-authorization.bundle.mjs; do
+  "${bootstrap_git[@]}" show "$release_id:$runtime_input" | cmp - "$runtime_input"
+done
+env -u NODE_OPTIONS -u NODE_PATH node scripts/deploy/stage-ci-runtime.mjs "$release_id"
+```
+
+该步骤重新授权 exact master/current CI attempt，核对 GitHub ZIP digest、内层归档
+digest、版本和平台，再经固定 SSH 通道写入 root-only `release-inputs/<sha>/ci-runtime`。
+下载、传输或验证失败即停止，不启动发布，不回退到另一版本。工作站临时路径会打印，
+用于失败诊断；验收后可按该明确路径清理，不自动清理其他下载或历史版本。
+生产 preparer 独立验证可信路径和摘要，再由无密钥的构建用户解包；仍执行停用 builder、
+新 root inode 接管和最终产物闭包验证。存在但不完整的包不能触发隐式重新构建。
+未 staging CI 包时，原有隔离主机构建入口仅作为显式选择的兼容路径继续存在。
 `status <sha>` 只报告进程及回执，不代表生产验收通过；禁止收到 SSH 错误后重复启动。
 此扩展首次发布仍走完整数据协议。永久 V1 manifest 不变，代码发布使用独立
 `APPLICATION_VERIFIED_V2`，绝不伪造 `PUBLISH_FINALIZED`。

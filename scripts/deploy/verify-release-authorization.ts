@@ -55,6 +55,27 @@ const positiveIntegerSchema = z
   .positive()
   .max(Number.MAX_SAFE_INTEGER);
 
+// Reuse the dependency-free, versioned bootstrap bundle for CI runtime input
+// validation on hosts where node_modules has deliberately not been installed.
+export const ciRuntimeMetadataSchema = z.strictObject({
+  format: z.literal("diesel-ci-runtime-v1"), release: commitSchema,
+  platform: z.literal("linux"), arch: z.literal("x64"),
+  node: z.literal("v22.22.3"), ubuntu: z.literal("22.04"),
+  inputDigest: z.string().regex(/^[0-9a-f]{64}$/u),
+  artifactDigest: z.string().regex(/^[0-9a-f]{64}$/u),
+  archiveSha256: z.string().regex(/^[0-9a-f]{64}$/u),
+  archiveBytes: positiveIntegerSchema.max(2 * 1024 ** 3),
+});
+export const ciRuntimeArtifactListSchema = z.object({
+  total_count: z.number().int().nonnegative().max(100),
+  artifacts: z.array(z.object({
+    id: positiveIntegerSchema, name: z.string(), expired: z.boolean(),
+    size_in_bytes: positiveIntegerSchema.max(2 * 1024 ** 3),
+    digest: z.string().regex(/^sha256:[0-9a-f]{64}$/u),
+    workflow_run: z.object({ id: positiveIntegerSchema, head_sha: commitSchema, head_branch: z.string() }).passthrough(),
+  }).passthrough()).max(100),
+}).passthrough();
+
 const githubRefSchema = z
   .object({
     object: z

@@ -65,6 +65,42 @@ with tarfile.open(archive, "w:gz") as bundle:
   return { root, workspace, archive, extract: () => spawnSync("/usr/bin/python3", ["-I", "-S", resolve("scripts/deploy/extract-ci-runtime.py"), archive, workspace], { encoding: "utf8" }) };
 }
 describe("bounded runtime extraction", () => {
+  it("extracts without seeking backwards through compressed runtime bytes", async () => {
+    const value = await fixture();
+    const result = spawnSync("/usr/bin/python3", ["-I", "-S", "-c", `
+import gzip, runpy, sys
+script, archive, workspace = sys.argv[1:]
+original = gzip.GzipFile.seek
+def forward_only(self, offset, whence=0):
+    if whence == 0 and offset < self.tell():
+        raise AssertionError("compressed stream rewound")
+    return original(self, offset, whence)
+gzip.GzipFile.seek = forward_only
+sys.argv = [script, archive, workspace]
+runpy.run_path(script, run_name="__main__")
+`, resolve("scripts/deploy/extract-ci-runtime.py"), value.archive, value.workspace], { encoding: "utf8" });
+    expect(result.status, result.stderr).toBe(0);
+    expect(await readFile(join(value.workspace, "node_modules/package/file.js"), "utf8")).toBe("test");
+  });
+  it("revalidates every header if archive contents change between passes", async () => {
+    const value = await fixture();
+    const changed = await fixture("../escaped");
+    const result = spawnSync("/usr/bin/python3", ["-I", "-S", "-c", `
+import runpy, sys, tarfile
+script, archive, workspace, changed = sys.argv[1:]
+original = tarfile.open
+opens = 0
+def replaced_second_pass(*args, **kwargs):
+    global opens
+    opens += 1
+    return original(changed, "r|gz") if opens == 2 else original(*args, **kwargs)
+tarfile.open = replaced_second_pass
+sys.argv = [script, archive, workspace]
+runpy.run_path(script, run_name="__main__")
+`, resolve("scripts/deploy/extract-ci-runtime.py"), value.archive, value.workspace, changed.archive], { encoding: "utf8" });
+    expect(result.status).not.toBe(0);
+    await expect(readFile(join(value.root, "escaped"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
   it.each(["valid", "extra", "duplicate", "oversized"])("checks ZIP member boundaries before extraction: %s", async scenario => {
     const value = await fixture();
     const zip = join(value.root, "artifact.zip");

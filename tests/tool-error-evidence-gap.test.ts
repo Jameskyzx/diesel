@@ -6,6 +6,7 @@ import { z } from "zod";
 import { buildEvidenceGapResponse, regulatoryDisclaimer } from "@/domain/ai/evidence-gap-response";
 import { buildMarketProfileResponse } from "@/domain/ai/market-profile-response";
 import { buildRegulationComparisonResponse } from "@/domain/ai/regulation-comparison-response";
+import { validateUiMessageSse } from "@/domain/operations/synthetic-canary";
 import { aiToolResultSchema, type AiToolName } from "@/features/ai/schemas";
 import type { Locale } from "@/i18n/locale";
 import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
@@ -75,7 +76,8 @@ afterAll(async () => {
   await database?.$client.close();
 });
 
-function mockModel(tool: AiToolName, input: Record<string, unknown>, marker: string) {
+function mockModel(tool: AiToolName, input: Record<string, unknown>, marker: string,
+  firstFinishReason: "tool-calls" | "length" | "content-filter" | "error" | "other" = "tool-calls") {
   const usage = {
     inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
     outputTokens: { reasoning: 0, text: 1, total: 1 },
@@ -84,7 +86,7 @@ function mockModel(tool: AiToolName, input: Record<string, unknown>, marker: str
     { stream: simulateReadableStream({ chunks: [
       { type: "stream-start", warnings: [] },
       { type: "tool-call", toolName: tool, toolCallId: "gap-query", input: JSON.stringify(input) },
-      { type: "finish", finishReason: { unified: "tool-calls", raw: undefined }, usage },
+      { type: "finish", finishReason: { unified: firstFinishReason, raw: undefined }, usage },
     ] }) },
     { stream: simulateReadableStream({ chunks: [
       { type: "stream-start", warnings: [] },
@@ -122,7 +124,13 @@ describe("execution errors are not evidence of absent data", () => {
       messages: [{ role: "user", content: text }], trustedUserTexts: [text], model,
       tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
     });
-    const { outputs, finalText } = readPublicSse(await stream.toUIMessageStreamResponse({ sendReasoning: false }).text());
+    const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
+    const { outputs, finalText } = readPublicSse(body);
+    expect(await validateUiMessageSse(body, { name: "compareRegulations", evidenceSufficient: true })).toBe(true);
+    const parts = [];
+    for await (const part of stream.fullStream) parts.push(part);
+    expect(parts.filter(part => part.type === "finish")).toMatchObject([{ finishReason: "stop" }]);
+    expect(parts.filter(part => part.type === "finish-step")).toMatchObject([{ finishReason: "tool-calls" }]);
     expect(outputs).toHaveLength(1);
     expect(finalText).toContain(buildRegulationComparisonResponse(outputs, locale));
     expect(finalText).not.toContain("FALSE_STRICTNESS_AND_POWER_BANDS");
@@ -156,7 +164,9 @@ describe("execution errors are not evidence of absent data", () => {
       model: mockModel("getCountryProfile", input, marker),
       tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
     });
-    const { outputs, finalText } = readPublicSse(await stream.toUIMessageStreamResponse({ sendReasoning: false }).text());
+    const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
+    const { outputs, finalText } = readPublicSse(body);
+    expect(await validateUiMessageSse(body, { name: "getCountryProfile", evidenceSufficient: true })).toBe(true);
     expect(outputs).toHaveLength(1);
     const summary = buildMarketProfileResponse(outputs, locale);
     expect(summary).not.toBeNull();
@@ -167,6 +177,34 @@ describe("execution errors are not evidence of absent data", () => {
     expect(finalText).toContain(locale === "en" ? "Evidence as-of date" : "证据评估日期");
     expect(await stream.steps).toHaveLength(1);
     expect(buildMarketProfileResponse([buildToolErrorResult("getCountryProfile", asOf, input)], locale)).toBeNull();
+  });
+  it.each(["length", "content-filter", "error", "other"] as const)(
+    "does not relabel provider termination %s as a successful deterministic completion", async reason => {
+      const text = `Compare CHN and BRA non-road 100 kW regulations as of ${asOf}.`;
+      const auditRepository = { recordToolCall: async () => undefined };
+      const sessionId = crypto.randomUUID();
+      const stream = streamSalesChat({ auditRepository, locale: "en", selectedCountryIso3: null, sessionId,
+        messages: [{ role: "user", content: text }], trustedUserTexts: [text],
+        model: mockModel("compareRegulations", countries, "UNUSED", reason),
+        tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
+      });
+      const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
+      expect(body).toContain(`"finishReason":"${reason}"`);
+      expect(await validateUiMessageSse(body)).toBe(false);
+    },
+  );
+  it("does not relabel an unfinished tool-only country overview as a completed answer", async () => {
+    const text = `Give a CHN country overview as of ${asOf}.`;
+    const auditRepository = { recordToolCall: async () => undefined };
+    const sessionId = crypto.randomUUID();
+    const stream = streamSalesChat({ auditRepository, locale: "en", selectedCountryIso3: null, sessionId,
+      messages: [{ role: "user", content: text }], trustedUserTexts: [text], shouldStopAfterStep: () => true,
+      model: mockModel("getCountryProfile", { asOf, countryIso3: "CHN", topics: ["country"] }, "UNUSED"),
+      tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
+    });
+    const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
+    expect(body).toContain('"finishReason":"tool-calls"');
+    expect(await validateUiMessageSse(body)).toBe(false);
   });
   it.each(cases.filter(({ tool }) => tool === "compareRegulations" || tool === "compareMarkets"))(
     "releases an English $tool explanation only after actual two-country evidence",

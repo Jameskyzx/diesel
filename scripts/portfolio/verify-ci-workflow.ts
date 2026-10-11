@@ -552,7 +552,7 @@ const canonicalMergeBlockingJobDigests = [
   },
   {
     jobId: "linux-release-handoff",
-    sha256: "2fd531b17a6b43c256e001d855cce7136edc0c577fa7e3bb162d50dbd2780ef3",
+    sha256: "845cf7f0aab0dce340b35a3d8ada3b41535ce8903c46224c6511f7355091c786",
   },
 ] as const;
 

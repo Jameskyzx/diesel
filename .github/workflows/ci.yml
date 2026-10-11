@@ -593,7 +593,6 @@ jobs:
   linux-release-handoff:
     name: Linux release handoff (systemd cgroup + real build)
     if: github.event_name != 'schedule'
-    needs: quality
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:

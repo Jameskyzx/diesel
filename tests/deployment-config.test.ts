@@ -2397,7 +2397,7 @@ describe("merge-blocking Linux release handoff", () => {
 
     expect(jobStart).toBeGreaterThanOrEqual(0);
     expect(jobEnd).toBeGreaterThan(jobStart);
-    expect(job).toContain("needs: quality");
+    expect(job).not.toContain("needs: quality");
     expect(job).toContain("runs-on: ubuntu-22.04");
     expect(job).toContain("name: diesel-runtime-${{ github.sha }}-${{ github.run_attempt }}");
     expect(job).toContain("if-no-files-found: error");

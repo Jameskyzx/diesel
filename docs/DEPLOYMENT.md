@@ -2403,7 +2403,8 @@ digest、版本和平台，再经固定 SSH 通道写入 root-only `release-inpu
 新 root inode 接管和最终产物闭包验证。存在但不完整的包不能触发隐式重新构建。
 未 staging CI 包时，原有隔离主机构建入口仅作为显式选择的兼容路径继续存在。
 `status <sha>` 只报告进程及回执，不代表生产验收通过；禁止收到 SSH 错误后重复启动。
-此扩展首次发布仍走完整数据协议。永久 V1 manifest 不变，代码发布使用独立
+构建与质量检查并行运行，但同一 Required CI gate 仍要求两者成功。
+永久 V1 manifest 不变，代码发布使用独立
 `APPLICATION_VERIFIED_V2`，绝不伪造 `PUBLISH_FINALIZED`。
 容量检查失败时保留现场与全部备份，不绕过空间门槛。
 

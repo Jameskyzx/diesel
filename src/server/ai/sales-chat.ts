@@ -2792,7 +2792,7 @@ export function streamSalesChat(input: {
       return {
         activeTools: policy.activeTools,
         instructions: instructions + (policy.phase === "gather_evidence"
-          ? buildEvidenceQueryGuidance(evidenceContract, stepEvidence.results) : "") + (policy.phase === "final_answer"
+          ? buildEvidenceQueryGuidance(evidenceContract, stepEvidence.results, input.trustedUserTexts) : "") + (policy.phase === "final_answer"
           ? buildFinalAnswerGuidance(stepEvidence.results.map(result => result.tool), input.locale, input.trustedUserTexts.at(-1))
           : ""),
         toolChoice: policy.toolChoice,

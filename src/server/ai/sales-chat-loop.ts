@@ -1,4 +1,6 @@
 import "server-only";
+import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
+import { knowledgeSearchSuggestion } from "@/server/ai/knowledge-request-context";
 
 import {
   aiToolNames,
@@ -124,20 +126,21 @@ export function resolveSalesChatLoopPolicy(input: {
 
 /** The server resolves filters; the model selects only the missing direct calls.
  * JSON is escaped as data so source literals cannot become prompt markup. */
-export function buildEvidenceQueryGuidance(contract: SalesChatEvidenceContract, results: readonly AiToolResult[]): string {
+export function buildEvidenceQueryGuidance(contract: SalesChatEvidenceContract, results: readonly AiToolResult[], userTexts?: readonly string[]): string {
   if (contract.blocksModelText || contract.missingRequiredParameters.length > 0) return "";
+  const requestedAsOf = userTexts === undefined ? undefined : buildConversationBusinessContext(userTexts).asOf;
   const calls = remainingEvidenceRequirements(contract, results).flatMap(requirement => requirement.acceptedTools.map(tool => {
     const q = requirement.query;
     return { tool, input: {
       ...(tool === "getCountryProfile" || tool === "findCompatibleProducts" || tool === "searchKnowledgeBase"
         ? { countryIso3: q.countryIso3s?.[0] ?? null } : { countryIso3s: q.countryIso3s }),
-      ...(q.asOf === null ? {} : { asOf: q.asOf }),
+      ...(q.asOf === null || (tool === "searchKnowledgeBase" && requestedAsOf === null) ? {} : { asOf: q.asOf }),
       ...(q.applicationScope === null ? {} : { applicationScope: q.applicationScope }),
       ...(q.powerKw === undefined ? {} : { powerKw: q.powerKw }),
       ...(q.productModelCode == null ? {} : { productModelCode: q.productModelCode }),
       ...(q.metricCodes === undefined ? {} : { metricCodes: q.metricCodes }),
       ...(q.targetCountryIso3 === undefined ? {} : { targetCountryIso3: q.targetCountryIso3 }),
-      ...(q.knowledgeQuery === undefined ? {} : { query: q.knowledgeQuery }),
+      ...(q.knowledgeQuery === undefined ? {} : { query: knowledgeSearchSuggestion(q.knowledgeQuery, q.knowledgeTerms ?? [], q.knowledgeOptionalTerms) }),
       ...(requirement.requiredProfileTopics === undefined ? {} : { topics: requirement.requiredProfileTopics }),
     } };
   }));

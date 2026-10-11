@@ -74,6 +74,13 @@ unknown roots and any persistence/dependency changes.
   enumerated application/domain/AI/repository/service, presentation, public asset,
   test, documentation and maintenance paths can differ. Database fingerprints
   remain mandatory even when the changed code can access the database.
+  The single read-only `scripts/db/verify-application-release.ts` entry is also
+  maintenance code; its fingerprint SQL, DB runtime, migration and ingestion
+  inputs remain protected. Prepared predecessors and before/after candidates
+  use the existing full root-owned `check-ready` contract, not the build-only
+  verifier that intentionally rejects runtime environment/data links. Each
+  full readiness scan has a ten-minute bound; failures cannot consume a new
+  submission claim during automatic selection.
 - The lifecycle lock remains held. After building, the governance maintenance
   lock spans before-read, activation and verification. Database identity and
   complete migration lineage must match. Read-only repeatable-read transactions

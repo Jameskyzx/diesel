@@ -10,6 +10,12 @@ const clarification = "用于工程机械，先查排放法规，不做产品认
 const contractFor = (userTexts: string[]) => buildSalesChatEvidenceContract({ selectedCountryIso3: null, userTexts });
 
 describe("the real sales conversation, not only complete starter questions", () => {
+  it.each(["en", "zh-CN"] as const)("prioritizes incompatible scope clarification over an ordinary missing field in %s", locale => {
+    const text = locale === "en" ? "Check CHN marine and non-road regulations at 100 kW as of 2026-08-20." : "查询 CHN 船用和非道路 100 kW 法规，日期 2026-08-20。";
+    expect(buildDirectChatResponse({ text, selectedCountryIso3: null, locale })).toContain(locale === "en" ? "one application scope" : "一个应用场景");
+    const correction = locale === "en" ? "Actually use non-road, not marine." : "改为非道路，不是船用。";
+    expect(contractFor([text, correction]).requirements[0]?.query).toMatchObject({ applicationScope: "non-road", countryIso3s: ["CHN"], powerKw: 100, asOf: "2026-08-20" });
+  });
   it("separates natural retrieval wording and the tool's default date from explicit filters", () => {
     const text = "Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations.";
     const guidance = buildEvidenceQueryGuidance(contractFor([text]), [], [text]);

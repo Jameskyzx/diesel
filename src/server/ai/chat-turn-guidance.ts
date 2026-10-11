@@ -254,7 +254,7 @@ export function buildDirectChatResponse({
 
   // Ask only for the missing field, acknowledging the details already given.
   const missingRegulationParameters = singleCountryRegulationMissingParameters(context);
-  if (missingRegulationParameters.length > 0) {
+  if (missingRegulationParameters.length > 0 && !context.hasScopeConflict) {
     const known = [context.focusedCountryIso3, context.powerKw === null ? null : `${context.powerKw} kW`, context.asOf].filter(Boolean).join(" · ");
     if (missingRegulationParameters[0] === "applicationScope") {
       return locale === "en"

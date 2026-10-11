@@ -1,0 +1,272 @@
+{
+  "version": "diesel-production-application-release-acceptance-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "release": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+  "previousPublicRelease": "7766eefaed3447d5dc01584b2c72d83a8d6d7bd7",
+  "site": "https://diesel.jamesky.site",
+  "observedAt": "2026-10-11T10:17:30.071Z",
+  "outcome": "runtime_deployed_acceptance_incomplete",
+  "exactMasterCi": {
+    "runId": 38126316045,
+    "gateJobId": 114439976253,
+    "headSha": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "event": "push",
+    "conclusion": "success",
+    "successfulJobs": 10,
+    "url": "https://github.com/Jameskyzx/diesel/actions/runs/38126316045"
+  },
+  "stage": {
+    "authorization": {
+      "branch": "master",
+      "commit": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+      "format": "diesel-release-authorization-v1",
+      "origin": {
+        "fetchUrl": "https://github.com/Jameskyzx/diesel.git",
+        "pushUrl": "https://github.com/Jameskyzx/diesel.git",
+        "remoteMaster": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+        "remoteMasterReadback": "bbc1e7334e951a3cd8db6da63077f4c36918d18a"
+      },
+      "protection": {
+        "allowDeletions": false,
+        "allowForcePushes": false,
+        "enforceAdmins": true,
+        "requiredCheck": "Required CI gate",
+        "requiredCheckAppId": null,
+        "strict": true
+      },
+      "repository": "Jameskyzx/diesel",
+      "verifiedAt": "2026-10-11T09:44:33.827Z",
+      "workflow": {
+        "gateJobId": 114439976253,
+        "gateJobUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38126316045/job/114439976253",
+        "id": 332591937,
+        "name": "CI",
+        "path": ".github/workflows/ci.yml",
+        "runAttempt": 1,
+        "runId": 38126316045,
+        "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38126316045",
+        "state": "active"
+      }
+    },
+    "commit": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "format": "diesel-release-stage-v1",
+    "inputDigest": "5e0dba785aaee487a40566bf47f8ab9421b0a32ca26e0523a7c18cebca71f1ab",
+    "releaseDir": "/opt/diesel/releases/bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "target": "root@111.228.50.85"
+  },
+  "runtimePackage": {
+    "release": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "runId": 38126316045,
+    "runAttempt": 1,
+    "artifactId": 11696908103,
+    "archiveSha256": "adf408f32ea717822ed6c0852ffb2574eb76a67103475da79a1916f4130c19a5",
+    "destination": "/opt/diesel/release-inputs/bbc1e7334e951a3cd8db6da63077f4c36918d18a/ci-runtime",
+    "temporary": "/private/tmp/diesel-ci-runtime-WK4FIu",
+    "staged": true,
+    "deployed": false
+  },
+  "durable": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+      "operationId": "66013adc-8679-4c1a-89f6-cdb62f894308",
+      "mode": "application",
+      "createdAt": "2026-10-11T09:48:59.846Z",
+      "inputDigest": "5e0dba785aaee487a40566bf47f8ab9421b0a32ca26e0523a7c18cebca71f1ab",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "completed",
+    "unit": {
+      "Id": "diesel-release-bbc1e7334e951a3cd8db6da63077f4c36918d18a.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "Result": "success",
+      "InvocationID": "0965266f8e7f4f05a6f6bbbd2f090171",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 579326
+    },
+    "completion": {
+      "operationId": "66013adc-8679-4c1a-89f6-cdb62f894308",
+      "invocationId": "0965266f8e7f4f05a6f6bbbd2f090171",
+      "startedAt": "2026-10-11T09:49:00.926Z",
+      "workerPid": 579326,
+      "completedAt": "2026-10-11T10:08:10.334Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 4427,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 468,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "hostAcceptance": {
+    "kind": "independent-production-acceptance-v1",
+    "release": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "observedAt": "2026-10-11T10:09:36.965Z",
+    "pass": true,
+    "checks": [
+      {
+        "id": "ledger",
+        "startedAt": "2026-10-11T10:09:13.598Z",
+        "completedAt": "2026-10-11T10:09:14.335Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "logBytes": 0,
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "committed-host",
+        "startedAt": "2026-10-11T10:09:14.336Z",
+        "completedAt": "2026-10-11T10:09:16.959Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "logBytes": 105,
+        "logSha256": "578cd514e3674ad4621666a2c11c260079e9be4a06b4ed5687066cf3bed1a867"
+      },
+      {
+        "id": "loopback",
+        "startedAt": "2026-10-11T10:09:16.959Z",
+        "completedAt": "2026-10-11T10:09:27.233Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "logBytes": 0,
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "public",
+        "startedAt": "2026-10-11T10:09:27.233Z",
+        "completedAt": "2026-10-11T10:09:36.964Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "logBytes": 0,
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ]
+  },
+  "dataComparison": {
+    "beforeAt": "2026-10-11T09:56:00.653Z",
+    "afterAt": "2026-10-11T10:07:24.474Z",
+    "tableCount": 15,
+    "allMatch": true,
+    "dataContractSha256": "d823b25f2996c0f90fdf0cf2707d960fd980246d969139e98abb9c6e76fc1fd0",
+    "protectedFileCount": 144
+  },
+  "browser": {
+    "path": "test-results/live-1791713175209/report.json",
+    "sha256": "bf6ed593f68fdc6d9939cf428cb8b6bd5a980dfcf54c0ffd7edeccde4691732c",
+    "stats": {
+      "startTime": "2026-10-11T10:06:15.210Z",
+      "duration": 25623.234,
+      "expected": 1,
+      "skipped": 4,
+      "unexpected": 1,
+      "flaky": 0
+    }
+  },
+  "sameWindowReadback": {
+    "localMaster": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "remoteMaster": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "hostObservedAt": "2026-10-11T10:17:29Z",
+    "current": "/opt/diesel/releases/bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "healthObservedAt": "2026-10-11T10:17:30.071Z",
+    "httpStatus": 200,
+    "healthStatus": "ok",
+    "version": "bbc1e7334e951a3cd8db6da63077f4c36918d18a",
+    "gitTransport": "Read-only origin/master observation used command-scope SSH-to-HTTPS mapping to the same canonical repository; saved origin remains SSH."
+  },
+  "host": {
+    "observedAt": "2026-10-11T10:14:29Z",
+    "availableBytes": 16357322752,
+    "nginx": "active",
+    "pm2Root": "active",
+    "applications": [
+      {
+        "name": "jamesky-api",
+        "pid": 1033,
+        "status": "online",
+        "restarts": 0
+      },
+      {
+        "name": "diesel-demo",
+        "pid": 603938,
+        "status": "online",
+        "restarts": 0
+      }
+    ]
+  },
+  "acceptanceFailure": {
+    "case": "zh-CN comparison starter",
+    "httpStatus": 200,
+    "tool": "compareRegulations",
+    "evidenceSufficient": true,
+    "citationCount": 17,
+    "visibleAnswer": "Complete grounded comparison with citations and disclaimer",
+    "actualFinishReason": "tool-calls",
+    "requiredFinishReason": "stop",
+    "passed": 1,
+    "failed": 1,
+    "notRun": 4,
+    "retries": 0,
+    "resolution": "A separate source fix and fresh CI-approved repair release are required. The validator and original failed report are unchanged."
+  },
+  "preservedEvents": [
+    {
+      "stage": "PR #81 CI",
+      "runId": 38116787177,
+      "outcome": "failed",
+      "reason": "Build-only verifier rejected prepared runtime links during artifact packing; fixed before successful PR CI."
+    },
+    {
+      "stage": "PR #81 CI",
+      "runId": 38118059181,
+      "outcome": "cancelled",
+      "reason": "Cancelled while investigating slow compressed-archive extraction; changed to two forward-only passes."
+    },
+    {
+      "stage": "Master CI for 82d390d00575365b911ce28f99df7d74e8886a58",
+      "runId": 38121565785,
+      "outcome": "cancelled",
+      "reason": "Read-only predecessor verification exposed build-only versus prepared-runtime contract mismatch; no VPS candidate or operation had been created."
+    },
+    {
+      "stage": "Local source-staging authorization",
+      "exitCode": 1,
+      "outcome": "stopped_before_vps_mutation",
+      "reason": "Isolated GitHub SSH connection closed on port 22; same canonical repository HTTPS read succeeded. VPS candidate and operation absence verified before retry through explicitly supported HTTPS transport."
+    }
+  ],
+  "boundaries": {
+    "schemaChanged": false,
+    "dependencyChanged": false,
+    "newCountries": false,
+    "newRealProducts": false,
+    "dataPublicationPerformed": false,
+    "databaseSnapshotOrRestorePerformed": false,
+    "backupsDeleted": false,
+    "databaseRoute": "original VPS route; no laptop relay",
+    "notes": [
+      "Host execution completed in approximately 19 minutes; this does not include CI, artifact transfer or independent acceptance.",
+      "15 read-only table fingerprints matched. The existing 97-jurisdiction public readback remains mandatory.",
+      "Host and basic page/SSE checks passed, but six-case real-browser acceptance did not pass. This record is not a fully accepted release or long-term availability claim."
+    ]
+  }
+}

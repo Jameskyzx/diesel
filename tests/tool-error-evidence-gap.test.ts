@@ -4,6 +4,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import { buildEvidenceGapResponse, regulatoryDisclaimer } from "@/domain/ai/evidence-gap-response";
+import { buildMarketProfileResponse } from "@/domain/ai/market-profile-response";
+import { buildRegulationComparisonResponse } from "@/domain/ai/regulation-comparison-response";
 import { aiToolResultSchema, type AiToolName } from "@/features/ai/schemas";
 import type { Locale } from "@/i18n/locale";
 import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
@@ -54,8 +56,8 @@ const cases = [
 ] satisfies { tool: AiToolName; input: Record<string, unknown>; request: Record<Locale, string> }[];
 
 const failureDetail = (locale: Locale) => locale === "en"
-  ? "At least one query or parameter validation failed. Check the input and retry."
-  : "至少一项查询执行或参数校验失败，请检查输入后重试。";
+  ? "The service could not complete this query or validate its tool parameters. This does not mean the requested data is absent. Retry the same question; no need to change valid inputs."
+  : "系统未能完成本次查询或校验工具参数，这不代表没有相关数据。可以原样重试，无需修改已经正确提供的条件。";
 const absentDataAssertions = /no matching source text|lacks the .* evidence|lacks sufficient evidence for a conclusive product-fit|no sufficient visible|No directly comparable market metric|Opportunity ranking needs|The sales brief lacks|知识库没有检索到|缺少本次请求所需|没有确定的适配结论|没有足够的可见|市场比较没有找到|机会排名至少需要|销售简报缺少/u;
 const outputPartSchema = z.object({ type: z.literal("tool-output-available"), output: aiToolResultSchema });
 const textPartSchema = z.object({ type: z.literal("text-delta"), delta: z.string() });
@@ -111,6 +113,61 @@ function readPublicSse(body: string) {
 }
 
 describe("execution errors are not evidence of absent data", () => {
+  it.each(["en", "zh-CN"] as const)("derives short comparison explanations in %s after one provider step", async locale => {
+    const text = `Compare CHN and BRA non-road 100 kW regulations as of ${asOf}. Explain the differences briefly in two sentences.`;
+    const auditRepository = { recordToolCall: async () => undefined };
+    const sessionId = crypto.randomUUID();
+    const model = mockModel("compareRegulations", countries, "FALSE_STRICTNESS_AND_POWER_BANDS");
+    const stream = streamSalesChat({ auditRepository, locale, selectedCountryIso3: null, sessionId,
+      messages: [{ role: "user", content: text }], trustedUserTexts: [text], model,
+      tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
+    });
+    const { outputs, finalText } = readPublicSse(await stream.toUIMessageStreamResponse({ sendReasoning: false }).text());
+    expect(outputs).toHaveLength(1);
+    expect(finalText).toContain(buildRegulationComparisonResponse(outputs, locale));
+    expect(finalText).not.toContain("FALSE_STRICTNESS_AND_POWER_BANDS");
+    expect(finalText).toContain(locale === "en" ? "Fictional Demo" : "虚构 Demo");
+    expect(finalText).toContain(locale === "en" ? "no stricter/weaker ranking" : "不能据此排名哪国更严");
+    expect(finalText).toContain(regulatoryDisclaimer(locale));
+    expect(await stream.steps).toHaveLength(1);
+    expect(model.doStreamCalls).toHaveLength(1);
+    // The pure summarizer compares exact recorded boundaries, never the
+    // shared queried power; final-stream validation still owns provenance.
+    const variants = structuredClone(outputs);
+    for (const result of variants) if (result.tool === "compareRegulations") {
+      result.comparison.countries.forEach((country, index) => country.currentEffectiveRegulations.forEach(regulation =>
+        regulation.limits.forEach(limit => { limit.powerMinKw = 56; limit.powerMaxKw = index === 0 ? 130 : 150; })));
+      expect(buildRegulationComparisonResponse(variants, locale)).toContain(locale === "en" ? "bounds differ" : "边界不同");
+      result.comparison.countries.forEach(country => country.currentEffectiveRegulations.forEach(regulation =>
+        regulation.limits.forEach(limit => { limit.powerMaxKw = 130; })));
+      expect(buildRegulationComparisonResponse(variants, locale)).toContain(locale === "en" ? "bounds match" : "边界相同");
+      result.comparison.countries[0]!.currentEffectiveRegulations[0]!.limits[0]!.powerMaxKw = null;
+      expect(buildRegulationComparisonResponse(variants, locale)).toContain(locale === "en" ? "not recorded" : "未记录");
+    }
+  });
+  it.each(["en", "zh-CN"] as const)("uses code-owned market periods in %s SSE, never a model's invented year", async locale => {
+    const input = { asOf, countryIso3: "CHN", topics: ["market"] };
+    const text = `CHN market metrics as of ${asOf}. Which observation years are these?`;
+    const auditRepository = { recordToolCall: async () => undefined };
+    const sessionId = crypto.randomUUID();
+    const marker = "FABRICATED_MARKET_YEAR_2099";
+    const stream = streamSalesChat({ auditRepository, locale, selectedCountryIso3: null, sessionId,
+      messages: [{ role: "user", content: text }], trustedUserTexts: [text],
+      model: mockModel("getCountryProfile", input, marker),
+      tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
+    });
+    const { outputs, finalText } = readPublicSse(await stream.toUIMessageStreamResponse({ sendReasoning: false }).text());
+    expect(outputs).toHaveLength(1);
+    const summary = buildMarketProfileResponse(outputs, locale);
+    expect(summary).not.toBeNull();
+    expect(finalText).toContain(summary);
+    expect(finalText).not.toContain(marker);
+    expect(finalText).toContain(locale === "en" ? "exclusive" : "不含");
+    expect(finalText).toContain(locale === "en" ? "fictional Demo" : "虚构 Demo");
+    expect(finalText).toContain(locale === "en" ? "Evidence as-of date" : "证据评估日期");
+    expect(await stream.steps).toHaveLength(1);
+    expect(buildMarketProfileResponse([buildToolErrorResult("getCountryProfile", asOf, input)], locale)).toBeNull();
+  });
   it.each(cases.filter(({ tool }) => tool === "compareRegulations" || tool === "compareMarkets"))(
     "releases an English $tool explanation only after actual two-country evidence",
     async ({ tool, input, request }) => {
@@ -127,7 +184,11 @@ describe("execution errors are not evidence of absent data", () => {
       expect(outputs).toHaveLength(1);
       expect(outputs[0]).toMatchObject({ tool, status: "ok", evidenceSufficient: true,
         comparison: { query: { countryIso3s: ["CHN", "BRA"] } } });
-      expect(finalText).toContain(marker);
+      if (tool === "compareRegulations") {
+        expect(finalText).not.toContain(marker);
+        expect(finalText).toContain("effective records");
+        expect(finalText).toContain("no stricter/weaker ranking");
+      } else expect(finalText).toContain(marker);
       expect(finalText).not.toContain(failureDetail("en"));
     },
   );

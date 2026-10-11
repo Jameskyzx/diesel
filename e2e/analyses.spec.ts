@@ -22,6 +22,13 @@ for (const locale of ["en", "zh-CN"] as const) {
       await page.getByLabel(dictionary.queryEditor.date, { exact: true }).fill("2026-08-13");
       await page.getByRole("button", { name: copy.runComparison, exact: true }).click();
       await expect(page.getByTestId("comparison-results")).toContainText("g/kWh");
+      await expect(page.getByTestId("comparison-summary")).toContainText(copy.metricAlignmentNotice);
+      const pollutantRows = page.getByTestId("comparison-pollutant-row");
+      expect(await pollutantRows.count()).toBeGreaterThan(0);
+      for (const row of await pollutantRows.all()) {
+        await expect(row.getByRole("rowheader")).toHaveCount(1);
+        await expect(row.getByRole("cell")).toHaveCount(2);
+      }
       await expect(page.getByTestId("comparison-results")).toContainText(dictionary.chat.demoEvidenceWarning);
       expect(new URL(page.url()).searchParams.getAll("countryIso3s").filter(Boolean)).toEqual(["CHN", "BRA"]);
       await page.reload();
@@ -86,6 +93,21 @@ for (const locale of ["en", "zh-CN"] as const) {
       await page.goto(comparisonUrl.replace("countryIso3s=BRA", "countryIso3s=BRA&countryIso3s=USA"));
       await expect(page.getByTestId("comparison-results")).toContainText(copy.noCountryData);
       await expect(page.getByTestId("comparison-results").getByRole("columnheader")).toHaveCount(4);
+    });
+    test("a broad-scope evidence gap offers explicit refinements without silently changing conditions", async ({ page }) => {
+      await page.goto(comparisonUrl.replace("powerKw=120", "powerKw=99999"));
+      await expect(page.getByTestId("comparison-results")).toContainText(copy.noLimits);
+      const refinement = page.getByRole("region", { name: copy.refineScope });
+      await expect(refinement).toContainText(copy.scopeHelp);
+      expect(new URL(page.url()).searchParams.get("applicationScope")).toBe("non-road");
+      const construction = refinement.getByRole("link", { name: dictionary.productFit.scopeConstruction, exact: true });
+      const href = new URL((await construction.getAttribute("href"))!, page.url());
+      expect(href.searchParams.getAll("countryIso3s")).toEqual(["CHN", "BRA"]);
+      expect(href.searchParams.get("powerKw")).toBe("99999");
+      expect(href.searchParams.get("asOf")).toBe("2026-08-13");
+      await construction.click();
+      await expect(page).toHaveURL(href.toString());
+      await expect(page.getByTestId("comparison-results")).toContainText("99999 kW");
     });
     test("completed chat can be saved and exported without replaying a model request", async ({ page }) => {
       let requests = 0;

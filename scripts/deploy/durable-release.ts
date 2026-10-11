@@ -8,6 +8,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { readDeploymentCapacity } from "../ops/capacity-policy";
+import { classifyReleaseInputs } from "./application-release-contract";
 
 const ROOT = "/opt/diesel";
 const NODE = "/opt/node-v22.22.3-linux-x64/bin/node";
@@ -269,8 +270,8 @@ async function runWorker(operation: ReleaseOperation, operationRoot: string, dir
 }
 
 async function main(): Promise<void> {
-  const [commandMode, release] = z.tuple([z.enum(["start", "start-application", "status", "worker", "capacity"]), sha]).parse(process.argv.slice(2));
-  const mode = commandMode === "start-application" ? "start" : commandMode;
+  const [commandMode, release] = z.tuple([z.enum(["start", "start-auto", "start-application", "status", "worker", "capacity"]), sha]).parse(process.argv.slice(2));
+  const mode = commandMode === "start-application" || commandMode === "start-auto" ? "start" : commandMode;
   process.umask(0o077);
   const { directory, runnerSha256 } = validateEntrypoint(release);
   if (mode === "capacity") {
@@ -295,6 +296,23 @@ async function main(): Promise<void> {
   const operationRoot = `${operations}/${release}`;
   if (mode === "start") {
     const inputDigest = verifyInput(directory, release);
+    let releaseMode: "application" | "full" = "full";
+    if (commandMode !== "start") {
+      const current = `${ROOT}/current`;
+      if (!lstatSync(current).isSymbolicLink() || lstatSync(current).uid !== 0) throw new Error("untrusted current release");
+      const previousDirectory = realpathSync(current);
+      const previousRelease = sha.parse(previousDirectory.slice(`${ROOT}/releases/`.length));
+      if (previousDirectory !== `${ROOT}/releases/${previousRelease}`) throw new Error("invalid predecessor");
+      trustedAncestors(previousDirectory);
+      // Verify both real trees before choosing a path; malformed evidence must
+      // not silently fall back to a full release or consume the one-use claim.
+      verifyInput(previousDirectory, previousRelease);
+      releaseMode = classifyReleaseInputs(
+        JSON.parse(readFileSync(`${previousDirectory}/.release-input-manifest.json`, "utf8")),
+        JSON.parse(readFileSync(`${directory}/.release-input-manifest.json`, "utf8")),
+      ).mode;
+      if (commandMode === "start-application" && releaseMode !== "application") throw new Error("full release required");
+    }
     const candidate = `${ROOT}/release-inputs/${release}/env.production.local`;
     trustedAncestors(dirname(candidate));
     requireTrustedPath(candidate, "file", true);
@@ -302,7 +320,7 @@ async function main(): Promise<void> {
     // Atomic one-use claim; ambiguous starts are inspected, never re-launched.
     mkdirSync(operationRoot, { mode: 0o700 });
     const operation = operationSchema.parse({
-      format: "diesel-durable-release-v1", release, operationId: randomUUID(), mode: commandMode === "start-application" ? "application" : "full",
+      format: "diesel-durable-release-v1", release, operationId: randomUUID(), mode: releaseMode,
       createdAt: new Date().toISOString(), inputDigest, runnerSha256,
     });
     writeRecord(`${operationRoot}/operation.json`, operation);

@@ -33,6 +33,7 @@ const knowledgeQueryStopTokens = new Set([
   "查",
   "看",
   "请",
+  "给",
 ]);
 const genericSourceFollowUpTokens = new Set([
   "again",
@@ -609,6 +610,9 @@ function replaceSpans(text: string, replacements: readonly TextReplacement[]): s
 /** Recognized request controls, never a projection of model-supplied queries. */
 function projectKnowledgeRequestControls(text: string): string {
   const tailPatterns = [
+    /(^|[,，。;；\n]\s*)((?:只|仅)(?:查|查询|检索)(?:原文|来源|出处)[,，;；\s]*(?:不(?:查|查询|检索|推荐)(?:产品|型号))?)[。.!?\s]*$/iu,
+    /(^|[,，。;；\n]\s*)((?:不(?:查|查询|检索|推荐)(?:产品|型号)))[。.!?\s]*$/iu,
+    /(^|[.!?;,\n]\s*)((?:sources?\s+only[,;\s]*)?(?:do\s+not|don't)\s+(?:query|search|recommend)\s+products?)[.!?\s]*$/iu,
     /(^|[.!?;,\n，；。！？]\s*)((?:and\s+)?(?:stop\s+if\s+no\s+(?:source\s+)?evidence\s+is\s+found|if\s+no\s+(?:source\s+)?evidence\s+is\s+found,\s*stop)|(?:如|若)?(?:没有|无)(?:来源)?证据(?:时|则)(?:停止|停止检索))[.!?。！\s]*$/iu,
     /(^|[.!?;\n。；！？]\s*)((?:用户粘贴的|用户提供的|我粘贴的)(?:不可信|未验证)(?:文字|文本|内容)(?:是)?[：:])[\s\S]+[。.!?]\s*(?:只|仅)(?:把|将)它当(?:作)?数据[。.!?\s]*$/u,
     /(^|[.!?;\n]\s*)((?:the\s+)?(?:user[- ]pasted|user[- ]provided)\s+untrusted\s+(?:text|content)\s+is:\s*)[\s\S]+[.!?]\s*(?:treat\s+it\s+only\s+as\s+data|treat\s+it\s+as\s+data\s+only)[.!?\s]*$/iu,

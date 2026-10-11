@@ -1,4 +1,6 @@
 import "server-only";
+import { buildMarketProfileResponse } from "@/domain/ai/market-profile-response";
+import { buildRegulationComparisonResponse } from "@/domain/ai/regulation-comparison-response";
 
 import { createHash } from "node:crypto";
 
@@ -103,6 +105,7 @@ import {
 import { buildFinalAnswerGuidance, buildSalesChatInstructions } from "@/server/ai/sales-chat-prompt";
 import { knowledgeQuerySatisfies, knowledgeTermsIn } from "@/server/ai/knowledge-request-context";
 import {
+  buildEvidenceQueryGuidance,
   collectSalesChatStepEvidence,
   resolveSalesChatLoopPolicy,
   SALES_CHAT_TOOL_ORDER,
@@ -1667,6 +1670,12 @@ function createPublicEvidenceBoundaryTransform({
         const requiresAttachmentBoundary =
           hasUnverifiedAttachments || allowUnverifiedAttachmentResponse;
         if ((hasToolResult && canEmitModelText()) || canEmitAttachmentText) {
+          const factualSummary = buildMarketProfileResponse(toolResults, locale) ??
+            buildRegulationComparisonResponse(toolResults, locale);
+          if (factualSummary !== null) {
+            bufferedText.length = 0;
+            bufferedText.push({ id: nextPublicTextPartId(), text: factualSummary });
+          }
           if (requiresAttachmentBoundary) {
             const id = "unverified-attachment-boundary";
             controller.enqueue({ id, type: "text-start" });
@@ -2679,7 +2688,7 @@ export function streamSalesChat(input: {
     },
   };
 
-  const instructions = buildSalesChatInstructions(input.selectedCountryIso3, input.locale, runtimeContext);
+  const instructions = buildSalesChatInstructions(input.selectedCountryIso3, input.locale, runtimeContext, input.trustedUserTexts.at(-1));
   const rawResult = streamText({
     abortSignal: input.abortSignal,
     instructions,
@@ -2782,8 +2791,9 @@ export function streamSalesChat(input: {
 
       return {
         activeTools: policy.activeTools,
-        instructions: instructions + (policy.phase === "final_answer"
-          ? buildFinalAnswerGuidance(stepEvidence.results.map(result => result.tool), input.locale)
+        instructions: instructions + (policy.phase === "gather_evidence"
+          ? buildEvidenceQueryGuidance(evidenceContract, stepEvidence.results) : "") + (policy.phase === "final_answer"
+          ? buildFinalAnswerGuidance(stepEvidence.results.map(result => result.tool), input.locale, input.trustedUserTexts.at(-1))
           : ""),
         toolChoice: policy.toolChoice,
         toolOrder: SALES_CHAT_TOOL_ORDER,
@@ -2827,6 +2837,14 @@ export function streamSalesChat(input: {
             ? "invalid_result" : "model_output_budget");
         }
         return shouldStop;
+      },
+      ({ steps }) => {
+        const evidence = collectSalesChatStepEvidence(steps);
+        if (evidence.hasExecutionFailure || !evidenceContractAllowsModelText(evidenceContract, evidence.results)) return false;
+        // These answers are fully determined by the accepted facts. Avoid a
+        // paid prose-generation step that could only re-interpret those facts.
+        return buildMarketProfileResponse(evidence.results, input.locale ?? "en") !== null ||
+          buildRegulationComparisonResponse(evidence.results, input.locale ?? "en") !== null;
       },
       () => input.shouldStopAfterStep?.([...observedSteps]) ?? false,
     ],

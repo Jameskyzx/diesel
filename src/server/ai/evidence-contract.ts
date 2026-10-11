@@ -1,4 +1,6 @@
 import "server-only";
+import { powerKwsIn } from "@/domain/ai/power-intent";
+import { requestsSalesGuarantee } from "@/domain/ai/sales-guarantee-intent";
 import { maskKnowledgeQueryLiterals } from "@/domain/knowledge/query-literal-spans";
 
 import { countryDetailResponseMatchesDeterministicRules } from "@/domain/countries/detail-consistency";
@@ -35,6 +37,7 @@ import { metricCodeSchema } from "@/features/marketing/schemas";
 import type { CountryDetailResponse } from "@/features/countries/schemas";
 import {
   activeConversationTaskIn,
+  affirmativeTaskText,
   buildConversationBusinessContext,
   countryIso3sIn,
   countryMentionsIn,
@@ -228,16 +231,6 @@ function countriesInExplicitSourceSpans(text: string): string[] {
   );
 }
 
-function powerKwsIn(text: string): number[] {
-  return Array.from(
-    new Set(
-      Array.from(text.matchAll(/(\d+(?:\.\d+)?)\s*(?:kw|千瓦)/giu)).map(
-        (match) => Number(match[1]),
-      ),
-    ),
-  );
-}
-
 function powerKwsInIntentClauses(text: string, intentPattern: RegExp): number[] {
   return Array.from(
     new Set(
@@ -323,7 +316,7 @@ export function buildSalesChatEvidenceContract(input: {
   const userTexts = input.userTexts
     .map((text) => text.trim())
     .filter((text) => text.length > 0);
-  const latestUserText = userTexts.at(-1) ?? "";
+  const latestUserText = affirmativeTaskText(userTexts.at(-1) ?? "");
   const context = buildConversationBusinessContext(userTexts, {
     selectedCountryIso3: input.selectedCountryIso3,
   });
@@ -337,6 +330,8 @@ export function buildSalesChatEvidenceContract(input: {
     (!asksForProductFit && regulationIntentPattern.test(latestUserText));
   const asksForMarket = marketIntentPattern.test(latestUserText);
   const asksForComparison = hasConversationComparisonIntent(latestUserText);
+  const isSingleCountryComparisonFollowUp = asksForComparison && userTexts.length > 1 &&
+    countryIso3sIn(latestUserText).length === 1;
   const asksForSource = hasExplicitSourceIntent(latestUserText);
   const asksForOpportunityScore = opportunityScoreIntentPattern.test(
     latestUserText,
@@ -358,6 +353,7 @@ export function buildSalesChatEvidenceContract(input: {
   // A conflicting/excluded scope is not the same as an absent optional filter,
   // including on source-only requests where unscoped retrieval is otherwise valid.
   addMissing(context.hasScopeConflict, "applicationScope");
+  addMissing(context.hasInvalidPower, "powerKw");
   const productCountriesFromLatest = countriesInIntentClauses(
     latestUserText,
     productFitIntentPattern,
@@ -494,7 +490,8 @@ export function buildSalesChatEvidenceContract(input: {
       const isRegulationComparison =
         asksForComparison || activeTask === "regulation_compare";
       const regulationCountries =
-        regulationCountriesFromLatest.length > 0
+        regulationCountriesFromLatest.length > 0 &&
+        !(isRegulationComparison && regulationCountriesFromLatest.length === 1 && isSingleCountryComparisonFollowUp)
           ? regulationCountriesFromLatest
           : context.countryIso3s;
       if (isRegulationComparison) {
@@ -580,7 +577,8 @@ export function buildSalesChatEvidenceContract(input: {
       const isMarketComparison =
         asksForComparison || activeTask === "market_compare";
       const marketCountries =
-        marketCountriesFromLatest.length > 0
+        marketCountriesFromLatest.length > 0 &&
+        !(isMarketComparison && marketCountriesFromLatest.length === 1 && isSingleCountryComparisonFollowUp)
           ? marketCountriesFromLatest
           : context.countryIso3s;
       if (isMarketComparison) {
@@ -632,7 +630,7 @@ export function buildSalesChatEvidenceContract(input: {
     // is only "continue", and its trigger can be split across adjacent turns.
     // Check both the individual messages and the same retained history joined
     // with a neutral boundary; attachment text is intentionally absent here.
-    blocksModelText: containsUntrustedInstruction(userTexts),
+    blocksModelText: containsUntrustedInstruction(userTexts) || requestsSalesGuarantee(userTexts.at(-1) ?? ""),
     countryIso3s: context.countryIso3s,
     missingRequiredParameters: Array.from(missingRequiredParameters),
     powerKw: context.powerKw,
@@ -921,6 +919,15 @@ function resultMatchesDeterministicRules(result: AiToolResult): boolean {
 }
 
 /** Returns only tools that can satisfy requirements not yet covered. */
+export function remainingEvidenceRequirements(contract: SalesChatEvidenceContract, results: readonly AiToolResult[]): EvidenceRequirement[] {
+  return contract.requirements.filter(requirement => !results.some(result =>
+    result.status === "ok" && result.evidenceSufficient && resultSatisfiesRequirement(requirement, result)));
+}
+
+export function evidenceResultMatchesRequest(contract: SalesChatEvidenceContract, result: AiToolResult): boolean {
+  return contract.requirements.some(requirement => resultSatisfiesRequirement(requirement, result));
+}
+
 export function remainingEvidenceTools(
   contract: SalesChatEvidenceContract,
   results: readonly AiToolResult[],
@@ -933,13 +940,7 @@ export function remainingEvidenceTools(
     (result) => result.status === "ok" && result.evidenceSufficient,
   );
   const remainingToolNames = new Set(
-    contract.requirements
-      .filter(
-        (requirement) =>
-          !sufficientResults.some((result) =>
-            resultSatisfiesRequirement(requirement, result),
-          ),
-      )
+    remainingEvidenceRequirements(contract, sufficientResults)
       .flatMap((requirement) => requirement.acceptedTools),
   );
 

@@ -40,12 +40,18 @@ function overlaps(left: ApplicationScope, right: ApplicationScope): boolean {
 }
 
 function standalone(text: string, offset: number, value: string): boolean {
-  const before = Array.from(text.slice(Math.max(0, offset - 2), offset)).at(-1) ?? "";
-  const tail = text.slice(offset + value.length, offset + value.length + 3);
+  const prefix = text.slice(0, offset);
+  const before = Array.from(prefix).at(-1) ?? "";
+  const tail = text.slice(offset + value.length);
   const after = Array.from(tail)[0] ?? "";
   const neighbor = /\p{Script=Han}/u.test(value) ? chineseIdentifierNeighbor : englishIdentifierNeighbor;
-  return !neighbor.test(before) &&
-    (/^[.?:](?:\s|$|["')\]])/u.test(tail) || !neighbor.test(after));
+  // Natural quantity adjacency and hyphenated application nouns are prose,
+  // unlike model codes, URL paths, arbitrary identifiers or year suffixes.
+  const quantityBefore = /(?:^|[^\d.])[+\-−]?\d+(?:\.\d+)?\s*(?:kw|千瓦)$/iu.test(prefix);
+  const quantityAfter = /^[+\-−]?\d+(?:\.\d+)?\s*(?:kw|千瓦)(?![\p{Script=Latin}\d_])/iu.test(tail);
+  const applicationNounAfter = /^-(?:engine|engines|equipment|machinery|vehicle|vehicles)(?![\p{L}\p{N}_\-])/iu.test(tail);
+  return (!neighbor.test(before) || quantityBefore) &&
+    (/^[.?:](?:\s|$|["')\]])/u.test(tail) || !neighbor.test(after) || quantityAfter || applicationNounAfter);
 }
 
 type ScopeMention = { start: number; end: number; scope: ApplicationScope; value: string };

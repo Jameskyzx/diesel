@@ -1,6 +1,8 @@
 import "server-only";
 
 import { resolveApplicationScopeIntent } from "@/domain/ai/application-scope-intent";
+import { powerKwsIn } from "@/domain/ai/power-intent";
+import { formatCountryDisplayName } from "@/i18n/country-name";
 import { maskKnowledgeQueryLiterals, maskKnowledgeSignedOperands } from "@/domain/knowledge/query-literal-spans";
 import type { ApplicationScope } from "@/features/database/schemas";
 import { countryCatalog } from "@/server/db/seed/country-catalog";
@@ -11,6 +13,7 @@ export type ConversationBusinessContext = {
   asOf: string | null;
   countryIso3s: string[];
   focusedCountryIso3: string | null;
+  hasInvalidPower: boolean;
   hasPowerConflict: boolean;
   hasScopeConflict: boolean;
   powerKw: number | null;
@@ -77,7 +80,7 @@ const countryAliases: Readonly<Record<string, string>> = {
 
 const countryIso3Codes = new Set(countryCatalog.map(({ iso3 }) => iso3));
 const comparisonIntentPattern =
-  /(?:比较|对比|排名|排行|哪个国家|哪个市场|compare|comparison|versus|\bvs\.?\b)/iu;
+  /(?:比较|对比|排名|排行|哪个国家|哪个市场|哪个.{0,20}更(?:严|宽松|高|低)|(?:和|与|跟).{1,30}比(?:呢|怎么样|如何|[？?])|compare|comparison|versus|\bvs\.?\b|\bwhich\b.{0,60}\b(?:stricter|tighter|higher|lower|more stringent)\b)/iu;
 const negatedComparisonIntentPattern =
   /(?:不(?:做|进行|需要)?(?:任何)?(?:跨国|跨市场|国家间|市场间)?(?:比较|对比)|(?:无需|无须|不要|不必|别)(?:进行|做)?(?:任何)?(?:跨国|跨市场|国家间|市场间)?(?:比较|对比)|(?:without|no)\s+(?:cross[- ]country\s+|market\s+)?(?:comparison|compare)|(?:do(?:es)?|did)\s+not\s+(?:compare|make\s+(?:a\s+)?comparison)|don['’]t\s+(?:compare|make\s+(?:a\s+)?comparison))/giu;
 const targetCountryIntentPattern =
@@ -89,6 +92,20 @@ const opportunityScoreIntentPattern =
 const productSubjectPattern = /(?:产品|发动机|型号|product|engine|model)/iu;
 const productFitActionPattern =
   /(?:适配|匹配|兼容|能用|合规|认证|推荐|fit|compatible|compliant|certif|recommend)/iu;
+const salesEntryPattern =
+  /(?:能不能(?:卖|销售|出口)|能否(?:卖|销售|出口)|想(?:卖|出口)到|(?:can|want to|would like to)\s+(?:sell|export))/iu;
+
+/** Ignore explicitly declined product tasks, not negative product findings.
+ * Keep the original text for injection checks and model input. */
+export function affirmativeTaskText(text: string): string {
+  if (hasExplicitSourceIntent(text)) return text;
+  return text.split(/([,，。;；\n]+|但是|但|而是|并且?|然后|\b(?:but|and|then)\b)/giu)
+    .map(clause => {
+      const declined = /(?:不(?:做|进行|需要|要|用)|无需|无须|不要|不必|别|\b(?:do not|don['’]t|without|no|skip)\b)/iu.test(clause);
+      return declined && productSubjectPattern.test(clause) && productFitActionPattern.test(clause)
+        ? "" : clause;
+    }).join("");
+}
 const nonModelHyphenatedCodes = new Set([
   "GENERATOR-SET",
   "NON-ROAD",
@@ -112,6 +129,9 @@ const countryProfileIntentPattern =
   /(?:国家(?:基础)?概览|国家资料|国家信息|目前有哪些|当前有哪些|当前有效法规|市场数据|市场规模|country\s*profile|country\s*overview)/iu;
 const countryProfileBaseTopicPattern =
   /(?:国家(?:基础)?概览|国家资料|国家信息|country\s*profile|country\s*overview)/iu;
+const catalogCountryNames = countryCatalog.flatMap(country =>
+  [...new Set([country.nameEn, formatCountryDisplayName({ ...country, isDemo: false }, "zh-CN")])]
+    .map(name => ({ name, iso3: country.iso3 })));
 
 function literalMatches(
   text: string,
@@ -142,8 +162,8 @@ export function countryMentionsIn(text: string): LocatedCountry[] {
     }
   }
 
-  for (const country of countryCatalog) {
-    for (const match of literalMatches(text, country.nameEn)) {
+  for (const country of catalogCountryNames) {
+    for (const match of literalMatches(text, country.name)) {
       locatedCountries.push({
         countryIso3: country.iso3,
         index: match.index,
@@ -197,6 +217,7 @@ export function activeConversationTaskIn(
   if (hasExplicitSourceIntent(text)) {
     return "knowledge";
   }
+  text = affirmativeTaskText(text);
   if (salesBriefIntentPattern.test(text)) {
     return "sales_brief";
   }
@@ -225,7 +246,8 @@ export function activeConversationTaskIn(
   if (
     countryProfileIntentPattern.test(text) ||
     regulationTopicPattern.test(text) ||
-    marketTopicPattern.test(text)
+    marketTopicPattern.test(text) ||
+    salesEntryPattern.test(text)
   ) {
     return "country_profile";
   }
@@ -250,7 +272,7 @@ function countryProfileTopicsIn(text: string): CountryProfileTopic[] {
   if (countryProfileBaseTopicPattern.test(text)) {
     topics.push("country");
   }
-  if (regulationTopicPattern.test(text)) {
+  if (regulationTopicPattern.test(text) || salesEntryPattern.test(text)) {
     topics.push("regulations");
   }
   if (marketTopicPattern.test(text)) {
@@ -287,17 +309,6 @@ function explicitTargetCountryIso3In(text: string): string | null {
     ? countryIso3sIn(targetBeforeMarker)
     : [];
   return targetBeforeMarkerCountries.at(-1) ?? null;
-}
-
-function powerKwsIn(text: string): number[] {
-  return Array.from(
-    new Set(
-      Array.from(
-        text.matchAll(/(?:^|\D)(\d+(?:\.\d+)?)\s*(?:kw|千瓦)(?=\D|$)/giu),
-        (match) => Number(match[1]),
-      ),
-    ),
-  );
 }
 
 const englishMonthNumbers = {
@@ -402,6 +413,7 @@ export function buildConversationBusinessContext(
     asOf: null,
     countryIso3s: selectedCountryIso3 ? [selectedCountryIso3] : [],
     focusedCountryIso3: selectedCountryIso3,
+    hasInvalidPower: false,
     hasPowerConflict: false,
     hasScopeConflict: false,
     powerKw: null,
@@ -419,7 +431,7 @@ export function buildConversationBusinessContext(
     const countries = countryIso3sIn(metadataText).slice(0, 5);
     const powerKws = powerKwsIn(metadataText);
     const explicitTargetCountryIso3 = explicitTargetCountryIso3In(metadataText);
-    const isComparisonTurn = hasConversationComparisonIntent(metadataText);
+    const isComparisonTurn = hasConversationComparisonIntent(affirmativeTaskText(metadataText));
     const isTargetCountryTurn =
       explicitTargetCountryIso3 !== null ||
       targetCountryIntentPattern.test(metadataText) ||
@@ -427,8 +439,20 @@ export function buildConversationBusinessContext(
     const replacement = isTargetCountryTurn ? null : countryReplacementIn(metadataText);
 
     context.activeTask = explicitTask ?? context.activeTask;
+    if (explicitTask === null && affirmativeTaskText(text) !== text && context.activeTask === "product_fit") {
+      context.activeTask = null;
+    }
+    // A natural "and compared with China?" refines the retained regulatory
+    // task even when the user does not repeat the word regulations.
+    if (isComparisonTurn && explicitTask === null) {
+      if (context.activeTask === "country_profile" && context.profileTopics.includes("regulations")) {
+        context.activeTask = "regulation_compare";
+      } else if (context.activeTask === "country_profile" && context.profileTopics.includes("market")) {
+        context.activeTask = "market_compare";
+      }
+    }
     if (explicitTask === "country_profile") {
-      context.profileTopics = countryProfileTopicsIn(text);
+      context.profileTopics = countryProfileTopicsIn(affirmativeTaskText(text));
     }
 
     if (replacement) {
@@ -471,7 +495,8 @@ export function buildConversationBusinessContext(
     const scopeIntent = resolveApplicationScopeIntent(metadataText, context);
     context.applicationScope = scopeIntent.applicationScope;
     context.hasScopeConflict = scopeIntent.hasScopeConflict;
-    if (powerKws.length > 1) {
+    if (powerKws.length > 0) context.hasInvalidPower = powerKws.some(power => !Number.isFinite(power) || power <= 0);
+    if (powerKws.length > 1 || powerKws.some(power => !Number.isFinite(power) || power <= 0)) {
       context.hasPowerConflict = true;
       context.powerKw = null;
     } else if (powerKws.length === 1) {

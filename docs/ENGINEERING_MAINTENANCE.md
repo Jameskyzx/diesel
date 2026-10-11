@@ -26,8 +26,10 @@ the release gate. Existing protection, backups and rollback guarantees remain.
 
 After the normal exact-master/Required CI gate authorization and immutable
 release staging, invoke the staged `scripts/deploy/durable-release.bundle.mjs`
-with the fixed Node 22.22.3 runtime. `start <sha>` submits the full protocol;
-`start-application <sha>` explicitly selects the application-only protocol.
+with the fixed Node 22.22.3 runtime. Prefer `start-auto <sha>`: it verifies both
+input trees and selects the application-only path when persistence inputs match.
+`start <sha>` explicitly submits the full protocol; `start-application <sha>`
+requires an eligible application-only candidate before claiming the operation.
 `status <sha>` independently reads the system service and private receipts.
 
 The root system service is `diesel-release-<sha>.service`: no attached SSH pipe,
@@ -60,19 +62,18 @@ not relaxed, and local permission tests do not replace the full Linux run.
 
 ## 2. Application-only protocol v2 / 代码与数据发布分离
 
-The first maintenance release still uses the full protocol: its dependencies
-and protected server/database source have changed. A subsequent eligible
-presentation/engineering-only release may select `start-application`.
+Application changes, including chat prompts, routes and comparison logic, do not
+need to republish unchanged data. Automatic selection remains conservative for
+unknown roots and any persistence/dependency changes.
 
 - Both complete input manifests are reverified against immutable on-disk bytes.
   The predecessor must have a terminal COMMITTED host ledger.
 - `application-release-contract.ts` denies by default: migrations, schema, seed,
-  server/domain logic, ingestion scripts, signoff records, dependency manifests,
+  database code, ingestion scripts, publication approvals, signoff records, dependency manifests,
   patches and any new unclassified source root must be identical. Only the
-  enumerated presentation, public asset, test, documentation and maintenance
-  paths can differ. This is intentionally narrower than “all code changes.”
-  The exact static metadata asset `src/app/icon.svg` is also presentation-only;
-  executable icon handlers, layouts and other app routes remain protected.
+  enumerated application/domain/AI/repository/service, presentation, public asset,
+  test, documentation and maintenance paths can differ. Database fingerprints
+  remain mandatory even when the changed code can access the database.
 - The lifecycle lock remains held. After building, the governance maintenance
   lock spans before-read, activation and verification. Database identity and
   complete migration lineage must match. Read-only repeatable-read transactions

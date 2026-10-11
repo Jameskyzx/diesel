@@ -74,6 +74,13 @@ it("uses the real production loop to gather both required tools sequentially bef
   // With no active tools the SDK omits both fields (API default: no tools).
   expect(bodies[2]).not.toHaveProperty("tools");
   expect(bodies[2]).not.toHaveProperty("tool_choice");
+  const instructions = bodies.map(body => z.object({ messages: z.array(z.object({ role: z.string(), content: z.unknown() })) })
+    .parse(body).messages.filter(message => message.role === "system").map(message => String(message.content)).join("\n"));
+  expect(instructions[0]).toContain('"tool":"findCompatibleProducts"');
+  expect(instructions[0]).toContain('"tool":"compareRegulations"');
+  expect(instructions[1]).not.toContain('"tool":"findCompatibleProducts"');
+  expect(instructions[1]).toContain('"tool":"compareRegulations"');
+  expect(instructions[2]).not.toContain("<resolved_queries>");
 });
 
 it.each(["en", "zh-CN"] as const)("finishes a %s country-replacement follow-up after one fresh comparison, without a repeated tool loop", async (locale) => {
@@ -115,8 +122,8 @@ it.each(["en", "zh-CN"] as const)("finishes a %s country-replacement follow-up a
     tools: createSalesChatTools({ auditRepository, selectedCountryIso3: null, sessionId }),
     messages: texts.map(content => ({ role: "user" as const, content })), trustedUserTexts: texts,
   });
-  expect(await generated.text).toContain(locale === "en" ? "Regulatory requirements were checked" : "已核对");
+  expect(await generated.text).toContain(locale === "en" ? "effective records" : "已生效记录");
   expect(await generated.toolCalls).toMatchObject([{ toolName: "compareRegulations", input: query }]);
-  expect(await generated.steps).toHaveLength(2);
-  expect(bodies).toHaveLength(2);
+  expect(await generated.steps).toHaveLength(1);
+  expect(bodies).toHaveLength(1);
 });

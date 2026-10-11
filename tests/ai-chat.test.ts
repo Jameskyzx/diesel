@@ -4855,7 +4855,7 @@ describe("single-agent sales chat", () => {
     expect(model.doStreamCalls).toHaveLength(2);
     for (const call of model.doStreamCalls) {
       const instructions = call.prompt.filter(({ role }) => role === "system").map(({ content }) => content).join("\n");
-      expect(instructions).toContain(`version="sales-chat-system-v9" locale="${locale}"`);
+      expect(instructions).toContain(`version="sales-chat-system-v11" locale="${locale}"`);
       expect(instructions).toContain(locale === "en"
         ? "conditional vocabulary rules, not findings"
         : "只是条件化术语说明，不是个案事实");
@@ -5671,7 +5671,7 @@ describe("single-agent sales chat", () => {
 
     expect(serialized).not.toContain("ordinary provider metadata");
     expect(serialized).not.toContain(providerOnlyFinalMarker);
-    expect(emittedText).toContain("至少一项查询执行或参数校验失败");
+    expect(emittedText).toContain("系统未能完成本次查询或校验工具参数");
     expect(emittedText).not.toContain("包含私有推理标记");
     expect(auditRepository.recordToolCall).not.toHaveBeenCalled();
   });
@@ -6756,9 +6756,14 @@ describe("single-agent sales chat", () => {
       });
       const text = await result.text;
       expect(JSON.stringify(model.doStreamCalls[0]?.prompt)).not.toContain("<final_answer_task>");
-      expect(JSON.stringify(model.doStreamCalls[1]?.prompt).includes("<final_answer_task>")).toBe(!invalid);
-      if (invalid) expect(text).toContain("没有足够证据");
-      else expect(text).toContain("法规要求的核对结果");
+      if (invalid) {
+        expect(JSON.stringify(model.doStreamCalls[1]?.prompt)).not.toContain("<final_answer_task>");
+        expect(text).toContain("没有足够证据");
+      } else {
+        expect(model.doStreamCalls).toHaveLength(1);
+        expect(text).toContain("已生效记录");
+        expect(text).toContain("不能据此排名哪国更严");
+      }
     } finally { log.mockRestore(); }
   });
 

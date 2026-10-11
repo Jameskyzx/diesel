@@ -3,6 +3,7 @@ import { MockLanguageModelV4 } from "ai/test";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { wrapUntrustedKnowledgeExcerpt } from "@/domain/knowledge/retrieval-policy";
+import { validateUiMessageSse } from "@/domain/operations/synthetic-canary";
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
 import type { CountryDetailResponse } from "@/features/countries/schemas";
 import type { HybridSearchResponse } from "@/features/knowledge/schemas";
@@ -868,6 +869,39 @@ describe("POST /api/chat SSE evidence boundary", () => {
       model: insufficientEvidenceReasoningModel(),
       modelId: "mock/route-sse-boundary",
     });
+  });
+
+  it.each(["en", "zh-CN"] as const)("completes a one-step evidence-bound comparison in %s API SSE", async locale => {
+    const previousDatabaseMode = process.env.DATABASE_MODE;
+    process.env.DATABASE_MODE = "pglite-demo";
+    try {
+      const model = new MockLanguageModelV4({ doStream: {
+        stream: simulateReadableStream({ chunks: [
+          { type: "stream-start", warnings: [] },
+          { type: "tool-call", toolName: "compareRegulations", toolCallId: "completed-comparison",
+            input: JSON.stringify({ countryIso3s: ["CHN", "BRA"], applicationScope: "non-road", powerKw: 100, asOf: "2026-08-20" }) },
+          { type: "finish", finishReason: { raw: undefined, unified: "tool-calls" }, usage: emptyUsage },
+        ] }),
+      } });
+      mocks.getConfiguredAiModel.mockReturnValueOnce({ model, modelId: "mock/completed-comparison" });
+      const response = await POST(new Request("http://localhost/api/chat", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ locale, sessionId: crypto.randomUUID(), messages: [{
+          id: "completed-comparison", role: "user", parts: [{ type: "text", text: locale === "en"
+            ? "Compare CHN and BRA non-road 100 kW regulations as of 2026-08-20."
+            : "比较 CHN 和 BRA 非道路 100 kW 法规，截至 2026-08-20。" }],
+        }] }),
+      }));
+      expect(response.status).toBe(200);
+      const body = await response.text();
+      expect(await validateUiMessageSse(body, { name: "compareRegulations", evidenceSufficient: true })).toBe(true);
+      expect(body).toContain(locale === "en" ? "no stricter/weaker ranking" : "不能据此排名哪国更严");
+      expect(model.doStreamCalls).toHaveLength(1);
+      expect(mocks.recordToolCall).toHaveBeenCalledTimes(1);
+    } finally {
+      if (previousDatabaseMode === undefined) Reflect.deleteProperty(process.env, "DATABASE_MODE");
+      else process.env.DATABASE_MODE = previousDatabaseMode;
+    }
   });
 
   it("rejects provider removal of a native exclusion before knowledge retrieval", async () => {

@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { readDeploymentCapacity } from "../ops/capacity-policy";
 import { classifyReleaseInputs } from "./application-release-contract";
+import { verifyPreparedReleaseInputs } from "./prepared-release-verification";
+export { verifyPreparedReleaseInputs } from "./prepared-release-verification";
 
 const ROOT = "/opt/diesel";
 const NODE = "/opt/node-v22.22.3-linux-x64/bin/node";
@@ -306,7 +308,7 @@ async function main(): Promise<void> {
       trustedAncestors(previousDirectory);
       // Verify both real trees before choosing a path; malformed evidence must
       // not silently fall back to a full release or consume the one-use claim.
-      verifyInput(previousDirectory, previousRelease);
+      verifyPreparedReleaseInputs(previousDirectory, previousRelease);
       releaseMode = classifyReleaseInputs(
         JSON.parse(readFileSync(`${previousDirectory}/.release-input-manifest.json`, "utf8")),
         JSON.parse(readFileSync(`${directory}/.release-input-manifest.json`, "utf8")),

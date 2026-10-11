@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { constants, closeSync, fsyncSync, lstatSync, openSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -9,6 +8,7 @@ import { getDatabaseUrl } from "../../src/server/db/environment";
 import { applicationDataTables, applicationFingerprintSchema, assertApplicationDataUnchanged, compareApplicationInputs } from "../deploy/application-release-contract";
 import { assertProductionMigrationLineage, type MigrationIdentity } from "./production-readback";
 import { applicationFingerprintQuery } from "./application-fingerprint-query";
+import { verifyPreparedReleaseInputs } from "../deploy/prepared-release-verification";
 
 const fixedNode = "/opt/node-v22.22.3-linux-x64/bin/node";
 function readTrusted(path: string, maximumBytes: number, privateFile = false): string {
@@ -30,13 +30,7 @@ async function main(): Promise<void> {
   const previousRelease = z.string().regex(/^[0-9a-f]{40}$/u).parse(previousDirectory.split("/").at(-1));
   if (previousDirectory !== `/opt/diesel/releases/${previousRelease}`) throw new Error("invalid previous release");
   const readManifest = (root: string, commit: string) => {
-    const helper = `${directory}/scripts/deploy/release-input-manifest.mjs`;
-    readTrusted(helper, 64 * 1024);
-    const result = spawnSync(fixedNode, [helper, "verify", commit, `${root}/.release-input-manifest.json`], {
-      cwd: root, env: { HOME: "/root", PATH: "/usr/sbin:/usr/bin:/sbin:/bin", LANG: "C", LC_ALL: "C", NODE_ENV: "production" },
-      timeout: 60_000, maxBuffer: 8192, encoding: "utf8",
-    });
-    if (result.status !== 0 || result.signal || result.error) throw new Error("release input verification failed");
+    verifyPreparedReleaseInputs(root, commit);
     return JSON.parse(readTrusted(`${root}/.release-input-manifest.json`, 64 * 1024 * 1024)) as unknown;
   };
   const contract = compareApplicationInputs(readManifest(previousDirectory, previousRelease), readManifest(directory, release));

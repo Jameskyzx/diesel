@@ -111,7 +111,7 @@ This is the only current release/evidence index. Historical implementation notes
   失败候选、日志与备份保留，未建立临时转发、未放宽门槛或重复提交该 SHA；新协议的生产多轮实测尚未执行，后续只能使用新的 CI-approved SHA。
   [本次真实失败与回滚记录](evidence/operations/deployment-conversation-failure-2026-10-12.json) 保留任务/CI 身份、日志摘要、失败与恢复边界。
   重试记录 PR #89 的首次 CI 另有两条 PGlite 冷启动用例达到 5 秒时限；原失败保留。仅将这两处 WASM/迁移/fixture 初始化移入单独的 beforeAll 准备阶段，
-  用例断言与原执行时限、生产代码及维护锁门槛均不变；22/22 聚焦测试通过，完整执行证据和新的 CI 仍须实际完成后才能放行。
+  用例断言与原执行时限、生产代码及维护锁门槛均不变；22/22 聚焦测试通过，完整执行证据已按实际运行更新，新的 CI 仍须通过后才能放行。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

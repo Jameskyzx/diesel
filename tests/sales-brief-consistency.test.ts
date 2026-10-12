@@ -11,6 +11,7 @@ import {
   type OpportunityScoreGap,
   type SalesBrief,
 } from "@/features/marketing/schemas";
+import { getDemoDatabase } from "@/server/db/demo-client";
 import { generateSalesBrief } from "@/server/services/marketing-analysis-service";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
@@ -23,9 +24,12 @@ const input = {
   targetCountryIso3: "CHN",
 };
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env.DATABASE_MODE = "pglite-demo";
-});
+  // Initialize WASM, migrations and fixtures once before measuring the actual
+  // deterministic-provenance assertions against their unchanged test budget.
+  await getDemoDatabase();
+}, 30_000);
 
 afterAll(() => {
   if (originalDatabaseMode === undefined) {

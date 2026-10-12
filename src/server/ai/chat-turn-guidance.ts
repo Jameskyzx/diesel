@@ -46,6 +46,15 @@ export function buildSocialChatResponse(text: string, locale: Locale): string | 
   return null;
 }
 
+/** App help is available without a provider. Mixed factual requests continue
+ * through planning and the evidence tools instead of receiving only help. */
+export function buildCapabilityChatResponse(input: DirectChatResponseInput): string | null {
+  const text = normalize(input.text);
+  if (!capabilityPattern.test(text) || buildConversationBusinessContext([text]).activeTask !== null ||
+    hasConversationComparisonIntent(text)) return null;
+  return buildDirectChatResponse({ ...input, userTexts: [input.text] });
+}
+
 function contextLine(selectedCountryIso3: string | null): string {
   return selectedCountryIso3
     ? `当前国家上下文是 ${selectedCountryIso3}；你明确写出的国家会覆盖它。`

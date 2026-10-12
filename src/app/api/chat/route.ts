@@ -64,6 +64,7 @@ import {
   allowsToolFreeAttachmentResponse,
   buildDirectChatResponse,
   buildSocialChatResponse,
+  buildCapabilityChatResponse,
 } from "@/server/ai/chat-turn-guidance";
 import { planConversationTurn, conversationClarification, type PreparedConversationTurn } from "@/server/ai/conversation-plan";
 import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
@@ -355,7 +356,9 @@ async function processChatRequest(
     });
     const directResponse = hasAttachments
       ? null
-      : body.conversation && !requestsSalesGuarantee(latestUserText) ? buildSocialChatResponse(latestUserText, locale) : buildDirectChatResponse({
+      : body.conversation && !requestsSalesGuarantee(latestUserText)
+        ? buildSocialChatResponse(latestUserText, locale) ?? buildCapabilityChatResponse({ locale, selectedCountryIso3: body.selectedCountryIso3, text: latestUserText })
+        : buildDirectChatResponse({
           locale,
           selectedCountryIso3: body.selectedCountryIso3,
           text: latestUserText,
@@ -363,10 +366,11 @@ async function processChatRequest(
         });
     if (directResponse) {
       throwIfChatRequestAborted(abortSignal);
-      return directChatResponse(directResponse, previous ? { conversation: {
-        state: previous.state, mode: "general", receipt: signConversationReceipt({
+      const state = previous?.state ?? { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
+      return directChatResponse(directResponse, body.conversation ? { conversation: {
+        state, mode: "general", receipt: signConversationReceipt({
           sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
-          userText: latestUserText, answer: directResponse, state: previous.state, previous,
+          userText: latestUserText, answer: directResponse, state, previous,
         }),
       } } : undefined);
     }

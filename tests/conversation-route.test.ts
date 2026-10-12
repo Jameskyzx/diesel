@@ -75,4 +75,19 @@ describe("multi-turn API conversation protocol", () => {
     expect(result.body).not.toContain("tool-output");
     expect(mocks.model).not.toHaveBeenCalled();
   });
+  it("answers capability help without a provider and retains it for a referenced follow-up", async () => {
+    const sessionId = crypto.randomUUID();
+    const messages = [user("What can you do?")];
+    const first = await request(sessionId, messages);
+    expect(first.body).toContain("structured facts and traceable sources");
+    expect(first.body).not.toContain("tool-output");
+    expect(mocks.model).not.toHaveBeenCalled();
+    expect(first.metadata?.conversation.state.tasks).toEqual([]);
+    const model = modelFor([{ mode: "explain", state: empty }], ["The third capability means checking an engine against verified specifications and certification when you supply its conditions."]);
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    messages.push(user("Explain your third capability briefly."));
+    const second = await request(sessionId, messages, first.metadata!.conversation.receipt);
+    expect(second.body).toContain("third capability");
+    expect(JSON.stringify(model.doGenerateCalls[0]?.prompt)).toContain("evaluate product fit");
+  });
 });

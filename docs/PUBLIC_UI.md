@@ -72,7 +72,8 @@ summary; additional quantity/ranking checks do not claim arbitrary semantic
 verification. Independent no-data results do not erase successful fact cards;
 any partial summary is server-derived and explicitly incomplete.
 
-Greetings are short. Save/export controls appear only after a completed turn
+Greetings are short; greetings and app-capability help return without a provider
+call. Their signed context supports later references to that reply. Save/export controls appear only after a completed turn
 has a validated structured result (including an honest no-data result, not an
 execution error), and its default title comes from an actual
 research turn rather than a greeting. The fixed three-step sidebar is removed;

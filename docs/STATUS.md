@@ -111,7 +111,14 @@ This is the only current release/evidence index. Historical implementation notes
   失败候选、日志与备份保留，未建立临时转发、未放宽门槛或重复提交该 SHA；新协议的生产多轮实测尚未执行，后续只能使用新的 CI-approved SHA。
   [本次真实失败与回滚记录](evidence/operations/deployment-conversation-failure-2026-10-12.json) 保留任务/CI 身份、日志摘要、失败与恢复边界。
   重试记录 PR #89 的首次 CI 另有两条 PGlite 冷启动用例达到 5 秒时限；原失败保留。仅将这两处 WASM/迁移/fixture 初始化移入单独的 beforeAll 准备阶段，
-  用例断言与原执行时限、生产代码及维护锁门槛均不变；22/22 聚焦测试通过，完整执行证据已按实际运行更新，新的 CI 仍须通过后才能放行。
+  用例断言与原执行时限、生产代码及维护锁门槛均不变；22/22 聚焦测试通过，完整执行证据已按实际运行更新。
+  PR #89 最终 CI 与合并提交 `02db43a27d6f71ecfa4e46ea358f28a9fc336143` 的精确 master CI 均为 10/10 通过；源码与该次 CI 运行包独立暂存通过。
+  第二次单次 application-only worker 于 `2026-10-12T15:26:42.942Z` 开始、`15:33:10.966Z` 以 exit 70 结束；运行包准备成功，失败发生在维护锁所有权校验。
+  该校验器未记录底层错误码，不能将此次失败归因于事务连接池、网络或主机资源；也不能声称发布前后 15 表验证完成。
+  自动回滚完成，独立严格账本为 `terminal:ROLLED_BACK:none`；`2026-10-12T15:34:06.348Z` 公网健康 HTTP 200，current 与版本仍为 `41e1fdd`，`jamesky-api` PID 1033 / 重启 0 未变。
+  原链路的五次新子连接所有权校验全部通过（原 5 秒连接时限、30 秒心跳门槛）；只读预演两次完整 15 表指纹一致，前后授权校验通过，23,407 ms / exit 0。
+  两份辅助诊断脚本的模块加载与 SET 参数写法错误均保留；修正后的短时预演不是部署完成或长期稳定性证据。未修改连接地址、数据、门槛或应用代码。
+  第二次失败 SHA 不会重新激活；后续重试仍须使用新的 CI-approved SHA。新版生产多轮验收尚未执行，失败候选、日志与全部备份保留。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的
@@ -199,7 +206,7 @@ This is the only current release/evidence index. Historical implementation notes
     "commit": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
     "evidenceKind": "historical-operator-record-only",
     "id": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
-    "observedAt": "2026-10-11T12:56+00:00",
+    "observedAt": "2026-10-12T15:34:06.348Z",
     "releasePath": "/opt/diesel/releases/41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6"
   },
   "evidenceSummary": {
@@ -249,7 +256,7 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-11T12:56+00:00",
+    "readbackAt": "2026-10-12T15:34:06.348Z",
     "status": "ok",
     "version": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6"
   },
@@ -258,9 +265,9 @@ This is the only current release/evidence index. Historical implementation notes
     "version": "diesel-vitest-execution-evidence-v2"
   },
   "repositoryHead": {
-    "local": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
-    "observedAt": "2026-10-11T12:56+00:00",
-    "remote": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6"
+    "local": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+    "observedAt": "2026-10-12T15:52:57Z",
+    "remote": "02db43a27d6f71ecfa4e46ea358f28a9fc336143"
   }
 }
 ```

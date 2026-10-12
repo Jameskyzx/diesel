@@ -101,6 +101,15 @@ This is the only current release/evidence index. Historical implementation notes
   本地保存、JSON/HTML 导出、真实聊天保存导出及仅删除本次浏览器测试记录均通过。原版本的 1 通过/1 失败/4 未运行记录没有改写。
   `jamesky-api` PID 1033 / 重启计数 0 未变；磁盘可用 15,235,153,920 bytes（约 14.2 GiB），没有删除备份或建立数据库转发。
   [修补发布与独立验收记录](evidence/operations/production-chat-completion-release-2026-10-11.json) 记录真实结果与边界；后续文档提交不是新生产版本。
+  2026-10-12 的对话分层重构 PR #84 已合并，候选 `50784f96bb49506edc551963f6ef39fd15bfb436` 的精确 master CI 为 10/10 通过。
+  源码与同次 CI Linux 成品包均通过暂存验证，自动选择 application-only；没有重做全库导出、恢复或数据发布。
+  单次 durable worker 于 `2026-10-12T12:32:10.178Z` 开始，`12:41:47.780Z` 以 exit 70 结束；维护锁心跳达到原有 30 秒探测超时，出现 readiness 503。
+  未完成 application-after 验证，不能声称 15 表前后对照通过或新对话已上线；具体网络/主机资源根因尚未证明。
+  自动主机回滚的 readiness 校验未完成，最初保留 `PENDING:none`；随后受控 `--abort-if-uncommitted` exit 0，独立严格账本确认 `terminal:ROLLED_BACK:none`。
+  修复回滚期间保留两次 HTTP 503 重试；`2026-10-12T13:00:31.787Z` 公网 readiness 为 HTTP 200，数据库与两项 AI 准入均 ok，版本及 current 仍为旧稳定版 `41e1fdd`。
+  `jamesky-api` PID 1033、重启计数 0 未变。原数据库链路的同一维护锁两分钟只读复验 exit 0；这是短时观察，不是完整发布或长期稳定性证明。
+  失败候选、日志与备份保留，未建立临时转发、未放宽门槛或重复提交该 SHA；新协议的生产多轮实测尚未执行，后续只能使用新的 CI-approved SHA。
+  [本次真实失败与回滚记录](evidence/operations/deployment-conversation-failure-2026-10-12.json) 保留任务/CI 身份、日志摘要、失败与恢复边界。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

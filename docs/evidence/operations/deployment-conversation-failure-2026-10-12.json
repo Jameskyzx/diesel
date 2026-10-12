@@ -273,5 +273,265 @@
       "skippedTests": 6,
       "failedTests": 0
     }
+  },
+  "secondDeploymentAttempt": {
+    "recordedAt": "2026-10-12T15:52:57Z",
+    "release": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+    "previousRelease": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+    "pullRequest": "https://github.com/Jameskyzx/diesel/pull/89",
+    "pullRequestCi": {
+      "runId": 38256450533,
+      "attempt": 1,
+      "headSha": "2285466365496705be69cada6c5364d8f65a5a23",
+      "checksPassed": 10,
+      "gateJobId": 114858200052,
+      "conclusion": "success"
+    },
+    "masterCi": {
+      "runId": 38263173100,
+      "attempt": 1,
+      "headSha": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+      "checksPassed": 10,
+      "gateJobId": 114879705337,
+      "conclusion": "success",
+      "startedAt": "2026-10-12T14:28:30Z",
+      "completedReadbackAt": "2026-10-12T15:19:51Z"
+    },
+    "sourceStage": {
+      "authorization": {
+        "branch": "master",
+        "commit": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+        "format": "diesel-release-authorization-v1",
+        "origin": {
+          "fetchUrl": "https://github.com/Jameskyzx/diesel.git",
+          "pushUrl": "https://github.com/Jameskyzx/diesel.git",
+          "remoteMaster": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+          "remoteMasterReadback": "02db43a27d6f71ecfa4e46ea358f28a9fc336143"
+        },
+        "protection": {
+          "allowDeletions": false,
+          "allowForcePushes": false,
+          "enforceAdmins": true,
+          "requiredCheck": "Required CI gate",
+          "requiredCheckAppId": null,
+          "strict": true
+        },
+        "repository": "Jameskyzx/diesel",
+        "verifiedAt": "2026-10-12T15:21:21.506Z",
+        "workflow": {
+          "gateJobId": 114879705337,
+          "gateJobUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38263173100/job/114879705337",
+          "id": 332591937,
+          "name": "CI",
+          "path": ".github/workflows/ci.yml",
+          "runAttempt": 1,
+          "runId": 38263173100,
+          "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38263173100",
+          "state": "active"
+        }
+      },
+      "commit": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+      "format": "diesel-release-stage-v1",
+      "inputDigest": "8cb4e6d1985f9c48d3068f81644e751c2f34edb051efc9a2e77cf4efea0dc41e",
+      "releaseDir": "/opt/diesel/releases/02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+      "target": "root@111.228.50.85"
+    },
+    "runtimeStage": {
+      "release": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+      "runId": 38263173100,
+      "runAttempt": 1,
+      "artifactId": 11753672763,
+      "archiveSha256": "a2c5f0ddd89a78002420a4126354a98fc4fc06150011f439658fc8a0c7db56e6",
+      "destination": "/opt/diesel/release-inputs/02db43a27d6f71ecfa4e46ea358f28a9fc336143/ci-runtime",
+      "temporary": "/private/tmp/diesel-ci-runtime-EieRPh",
+      "staged": true,
+      "deployed": false
+    },
+    "environmentStage": {
+      "release": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+      "staged": true,
+      "privateFileMode": "0600",
+      "contentsPrinted": false,
+      "liveEnvironmentChanged": false
+    },
+    "submission": {
+      "operation": {
+        "format": "diesel-durable-release-v1",
+        "release": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+        "operationId": "1fedc2bd-d9c0-4894-aed5-c6eb0c03653c",
+        "mode": "application",
+        "createdAt": "2026-10-12T15:26:42.127Z",
+        "inputDigest": "8cb4e6d1985f9c48d3068f81644e751c2f34edb051efc9a2e77cf4efea0dc41e",
+        "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+      },
+      "submitted": true,
+      "deploymentVerified": false
+    },
+    "finalWorkerStatus": {
+      "operation": {
+        "format": "diesel-durable-release-v1",
+        "release": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+        "operationId": "1fedc2bd-d9c0-4894-aed5-c6eb0c03653c",
+        "mode": "application",
+        "createdAt": "2026-10-12T15:26:42.127Z",
+        "inputDigest": "8cb4e6d1985f9c48d3068f81644e751c2f34edb051efc9a2e77cf4efea0dc41e",
+        "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+      },
+      "state": "failed",
+      "unit": {
+        "Id": "diesel-release-02db43a27d6f71ecfa4e46ea358f28a9fc336143.service",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "Result": "exit-code",
+        "InvocationID": "0ae6f4a32ad64d9b9d7854029f3b792c",
+        "ExecMainCode": 1,
+        "ExecMainStatus": 70,
+        "NRestarts": 0,
+        "MainPID": 0,
+        "ExecMainPID": 1183855
+      },
+      "completion": {
+        "operationId": "1fedc2bd-d9c0-4894-aed5-c6eb0c03653c",
+        "invocationId": "0ae6f4a32ad64d9b9d7854029f3b792c",
+        "startedAt": "2026-10-12T15:26:42.942Z",
+        "workerPid": 1183855,
+        "completedAt": "2026-10-12T15:33:10.966Z",
+        "exitCode": 70,
+        "signal": null,
+        "spawnFailed": false,
+        "logs": {
+          "stdout": {
+            "bytes": 4222,
+            "truncated": false,
+            "failed": false
+          },
+          "stderr": {
+            "bytes": 529,
+            "truncated": false,
+            "failed": false
+          }
+        }
+      },
+      "deploymentVerified": false,
+      "requiresIndependentAcceptance": true
+    },
+    "runtimePreparation": {
+      "release": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
+      "runtimePrepared": true,
+      "runtimeDigest": "6b315c160f71e231805bbfc8982e6bbe7a92c7db3bfeb5ef6f0cadfc62782bd4"
+    },
+    "observedFailure": {
+      "phase": "governance-maintenance-authorization",
+      "message": "Governance maintenance lock ownership could not be verified.",
+      "underlyingErrorCode": "not recorded by the current verifier",
+      "rootCause": "Not established; do not attribute the failure to pool mode, networking or host resources without evidence.",
+      "heartbeatTimeoutObservedInThisAttempt": false
+    },
+    "privateLogs": {
+      "stdout": {
+        "bytes": 4222,
+        "sha256": "639545a7d0398f2f53d7fc1ecb4081b061d33940095987a2ed2a22fdd17230ec"
+      },
+      "stderr": {
+        "bytes": 529,
+        "sha256": "dc5fbb325deecf7e077d3985271ada9cfd981d342f73bdf7c383055780cffd45"
+      },
+      "contentsPublished": false
+    },
+    "recovery": {
+      "automaticRollbackCompleted": true,
+      "independentTerminal": {
+        "classification": "terminal",
+        "hostState": "ROLLED_BACK",
+        "governanceState": "none",
+        "current": "/opt/diesel/releases/41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6"
+      },
+      "publicReady": {
+        "httpStatus": 200,
+        "status": "ok",
+        "version": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+        "timestamp": "2026-10-12T15:34:06.348Z"
+      },
+      "jameskyApi": {
+        "pid": 1033,
+        "status": "online",
+        "restarts": 0
+      }
+    },
+    "originalRouteDiagnostics": {
+      "initialDiagnosticHarness": {
+        "exitCode": 1,
+        "reason": "ESM/CJS default import mismatch in the temporary operator script; not a production verifier result"
+      },
+      "correctedChildAuthorization": {
+        "exitCode": 0,
+        "tokenHeld": true,
+        "childAlreadyOwnsToken": false,
+        "ownershipPassed": true,
+        "elapsedMs": 2960
+      },
+      "connectionModeHints": {
+        "sessionPortHint": true,
+        "transactionPortHint": false,
+        "pooledHostnameHint": true,
+        "providerClass": "Supabase pooler",
+        "modeMisconfigurationClaim": false
+      },
+      "childAuthorizationSeries": {
+        "exitCode": 0,
+        "attempts": 5,
+        "failed": 0,
+        "elapsedMs": 129269,
+        "ownershipDurationsMs": [
+          1566,
+          2664,
+          1356,
+          1042,
+          2174
+        ],
+        "connectTimeoutSeconds": 5,
+        "heartbeatTimeoutMs": 30000,
+        "changesTimeouts": false,
+        "changesBusinessData": false
+      },
+      "readonlyPreflightInitialHarness": {
+        "exitCode": 70,
+        "errorName": "PostgresError",
+        "databaseCode": null,
+        "correction": "Use fixed literal SET values instead of invalid bound placeholders in the temporary diagnostic"
+      },
+      "readonlyFingerprintPreflight": {
+        "exitCode": 0,
+        "tablesVerified": 15,
+        "pairMatches": true,
+        "elapsedMs": 23407,
+        "maintenanceAuthorizations": 3,
+        "statementTimeoutMs": 15000,
+        "connectTimeoutSeconds": 10,
+        "changesBusinessData": false,
+        "changesTimeouts": false,
+        "deploymentProof": false
+      },
+      "claimsLongTermReliability": false
+    },
+    "dataVerification": {
+      "applicationOnly": true,
+      "databasePublication": false,
+      "fullDatabaseExport": false,
+      "databaseRestore": false,
+      "beforeDeploymentVerificationCompleted": false,
+      "afterDeploymentVerificationCompleted": false,
+      "allTablesUnchangedDeploymentClaim": false
+    },
+    "boundaries": {
+      "workerResubmitted": false,
+      "failedShaReused": false,
+      "temporaryDatabaseForwarding": false,
+      "backupsDeleted": false,
+      "failedCandidateAndLogsRetained": true,
+      "originSshRestored": true,
+      "newProtocolProductionMultiTurnAcceptance": "not run; the new production release was not independently verified"
+    }
   }
 }

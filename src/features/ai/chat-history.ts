@@ -10,6 +10,7 @@ import {
   type SalesChatUiMessage,
 } from "@/features/ai/released-attachment";
 import { toolPartPresentation } from "@/features/ai/tool-part-presentation";
+import { conversationMetadataSchema, readConversationMetadata } from "@/features/ai/conversation-state";
 
 export const CHAT_HISTORY_STORAGE_KEY = "diesel_chat_history_v1";
 export const CHAT_HISTORY_MAX_AGE_MS = 24 * 60 * 60 * 1_000;
@@ -35,6 +36,7 @@ const toolErrorSchema = z.object({
 }).strict();
 const historyMessageSchema = z.object({
   id: z.string().min(1).max(200), role: z.enum(["user", "assistant"]),
+  metadata: conversationMetadataSchema.optional(),
   parts: z.array(z.union([textPartSchema, attachmentPartSchema, toolPartSchema, toolErrorSchema])).min(1).max(16),
 }).strict();
 export const chatHistorySnapshotSchema = z.object({
@@ -58,6 +60,8 @@ export function serializeChatHistory(input: Omit<ChatHistorySnapshot, "savedAt">
   now = new Date()): string | null {
   const messages = releaseSalesChatMessageAttachments(input.messages).map(message => ({
     id: message.id, role: message.role,
+    ...(message.role === "assistant" && readConversationMetadata(message.metadata)
+      ? { metadata: readConversationMetadata(message.metadata)! } : {}),
     parts: message.parts.flatMap((part): unknown[] => {
       if (part.type === "text") return [{ type: "text", text: part.text }];
       const attachment = parseReleasedAttachmentPart(part);

@@ -928,6 +928,17 @@ export function evidenceResultMatchesRequest(contract: SalesChatEvidenceContract
   return contract.requirements.some(requirement => resultSatisfiesRequirement(requirement, result));
 }
 
+/** Scheduling only: a valid search can finish without finding the requested
+ * passage. Keep all query/provenance checks, but not delivery success. This
+ * NEVER authorizes prose; publication still uses the full evidence contract. */
+export function evidenceQueryWasAnswered(contract: SalesChatEvidenceContract, result: AiToolResult): boolean {
+  return contract.requirements.some(requirement => {
+    const query = { ...requirement.query };
+    delete query.knowledgeDelivery;
+    return resultSatisfiesRequirement({ ...requirement, query }, result);
+  });
+}
+
 export function remainingEvidenceTools(
   contract: SalesChatEvidenceContract,
   results: readonly AiToolResult[],

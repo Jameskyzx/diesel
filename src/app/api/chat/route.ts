@@ -13,6 +13,7 @@ import {
 import { z, ZodError } from "zod";
 
 import { captureChatRuntimeContext } from "@/domain/ai/chat-runtime-context";
+import { requestsSalesGuarantee } from "@/domain/ai/sales-guarantee-intent";
 import {
   chatApiErrorSchema,
   chatRequestSchema,
@@ -62,7 +63,11 @@ import {
 import {
   allowsToolFreeAttachmentResponse,
   buildDirectChatResponse,
+  buildSocialChatResponse,
 } from "@/server/ai/chat-turn-guidance";
+import { planConversationTurn, conversationClarification, type PreparedConversationTurn } from "@/server/ai/conversation-plan";
+import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
+import type { conversationMetadataSchema } from "@/features/ai/conversation-state";
 import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
 import { createPublicApiRequestObserver } from "@/server/http/public-api-response";
 import { localeFromRequest, type Locale } from "@/i18n/locale";
@@ -110,7 +115,7 @@ function errorResponse(
   );
 }
 
-function directChatResponse(text: string): Response {
+function directChatResponse(text: string, metadata?: z.infer<typeof conversationMetadataSchema>): Response {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
       const id = crypto.randomUUID();
@@ -118,7 +123,7 @@ function directChatResponse(text: string): Response {
       writer.write({ id, type: "text-start" });
       writer.write({ delta: text, id, type: "text-delta" });
       writer.write({ id, type: "text-end" });
-      writer.write({ finishReason: "stop", type: "finish" });
+      writer.write({ finishReason: "stop", type: "finish", ...(metadata ? { messageMetadata: metadata } : {}) });
     },
   });
 
@@ -344,9 +349,13 @@ async function processChatRequest(
     const latestUserText = userTexts.at(-1)!;
     const allowUnverifiedAttachmentResponse =
       hasAttachments && allowsToolFreeAttachmentResponse(latestUserText);
+    const previous = verifyConversationReceipt(body.conversation?.receipt, {
+      sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
+      previousUserText: userTexts.at(-2),
+    });
     const directResponse = hasAttachments
       ? null
-      : buildDirectChatResponse({
+      : body.conversation && !requestsSalesGuarantee(latestUserText) ? buildSocialChatResponse(latestUserText, locale) : buildDirectChatResponse({
           locale,
           selectedCountryIso3: body.selectedCountryIso3,
           text: latestUserText,
@@ -354,7 +363,12 @@ async function processChatRequest(
         });
     if (directResponse) {
       throwIfChatRequestAborted(abortSignal);
-      return directChatResponse(directResponse);
+      return directChatResponse(directResponse, previous ? { conversation: {
+        state: previous.state, mode: "general", receipt: signConversationReceipt({
+          sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
+          userText: latestUserText, answer: directResponse, state: previous.state, previous,
+        }),
+      } } : undefined);
     }
 
     try {
@@ -454,7 +468,38 @@ async function processChatRequest(
     });
     throwIfChatRequestAborted(abortSignal);
     const runtimeContext = captureChatRuntimeContext();
-    const evidenceContract = buildSalesChatEvidenceContract({
+    await runOwnedChatSetupOperation({
+      deadlineAtMs: setupDeadlineAtMs, deferredCleanup, signal: abortSignal, stage: "audit_session",
+      operation: () => auditRepository.ensureSession({ modelId, selectedCountryIso3: body.selectedCountryIso3, sessionId: body.sessionId }, { signal: abortSignal }),
+    });
+    throwIfChatRequestAborted(abortSignal);
+    let conversationTurn: PreparedConversationTurn | undefined;
+    if (body.conversation && !allowUnverifiedAttachmentResponse) {
+      try {
+        conversationTurn = await planConversationTurn({ model, userTexts, previous,
+          selectedCountryIso3: body.selectedCountryIso3, runtimeContext, signal: abortSignal,
+          onUsage: usage => console.info("AI conversation planning completed", {
+            requestId, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, totalTokens: usage.totalTokens,
+          }),
+        });
+      } catch {
+        throwIfChatRequestAborted(abortSignal);
+        return directChatResponse(locale === "en"
+          ? "I couldn't reliably resolve this request. Please restate the goal and any changed conditions; I haven't queried using guessed filters."
+          : "这次没能可靠地理解你的任务。请换个说法告诉我目标，以及哪些条件有变化；我没有用猜测的条件进行查询。");
+      }
+    }
+    const conversationMetadata = (answer: string) => conversationTurn ? { conversation: {
+      state: conversationTurn.state, mode: conversationTurn.mode,
+      receipt: signConversationReceipt({ sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
+        userText: latestUserText, answer, state: conversationTurn.state, previous }),
+    } } : undefined;
+    if (conversationTurn && !conversationTurn.contract.blocksModelText &&
+      (conversationTurn.mode === "clarify" || conversationTurn.contract.missingRequiredParameters.length > 0)) {
+      const answer = conversationClarification(conversationTurn, locale);
+      return directChatResponse(answer, conversationMetadata(answer));
+    }
+    const evidenceContract = conversationTurn?.contract ?? buildSalesChatEvidenceContract({
       runtimeContext,
       selectedCountryIso3: body.selectedCountryIso3,
       userTexts,
@@ -468,34 +513,34 @@ async function processChatRequest(
       sessionId: body.sessionId,
       turnId: requestId,
     });
-    await runOwnedChatSetupOperation({
-      deadlineAtMs: setupDeadlineAtMs,
-      deferredCleanup,
-      operation: () =>
-        auditRepository.ensureSession(
-          {
-            modelId,
-            selectedCountryIso3: body.selectedCountryIso3,
-            sessionId: body.sessionId,
-          },
-          { signal: abortSignal },
-        ),
-      signal: abortSignal,
-      stage: "audit_session",
-    });
-    throwIfChatRequestAborted(abortSignal);
     const modelMessages = await convertToModelMessages(modelUiMessages, {
       tools,
     });
+    // Do not send a stack of historical user questions as if they were all
+    // unanswered. Only server-authenticated exchanges restore assistant roles;
+    // raw browser assistant messages remain excluded, and facts are re-queried.
+    const conversationMessages = conversationTurn ? [
+      ...(previous ? [...previous.history, { user: previous.userText, answer: previous.answer }].flatMap(exchange => [
+        { role: "user" as const, content: exchange.user },
+        { role: "assistant" as const, content: exchange.answer },
+      ]) : []),
+      ...modelMessages.slice(-1),
+    ] : modelMessages;
     throwIfChatRequestAborted(abortSignal);
+    let completedMetadata: z.infer<typeof conversationMetadataSchema> | undefined;
     const result = streamSalesChat({
+      conversationTurn,
+      // One planning call plus at most four executor calls stays within the
+      // existing five-call admission reservation; retries remain disabled.
+      ...(conversationTurn ? { maxSteps: 4 } : {}),
+      onPublicAnswer: (answer) => { completedMetadata = conversationMetadata(answer); },
       abortSignal,
       allowUnverifiedAttachmentResponse,
       auditRepository,
       beginDeferredWork: deferredCleanup.begin,
       costProfile,
       hasUnverifiedAttachments: hasAttachments,
-      messages: modelMessages,
+      messages: conversationMessages,
       maxRetries: 0,
       model,
       modelId,
@@ -511,6 +556,7 @@ async function processChatRequest(
     });
 
     return result.toUIMessageStreamResponse({
+      messageMetadata: ({ part }) => part.type === "finish" ? completedMetadata : undefined,
       originalMessages: uiMessages,
       onError: () =>
         locale === "en"

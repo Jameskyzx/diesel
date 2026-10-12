@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { ANALYSES_STORAGE_KEY } from "../src/features/analyses/storage";
 import { savedAnalysisSchema } from "../src/features/analyses/schemas";
 import { getDictionary } from "../src/i18n/dictionaries";
+import { noDataChatEvents } from "./helpers/chat-evidence";
 
 const comparisonUrl = "/compare?countryIso3s=CHN&countryIso3s=BRA&applicationScope=non-road&powerKw=120&asOf=2026-08-13";
 for (const locale of ["en", "zh-CN"] as const) {
@@ -114,7 +115,7 @@ for (const locale of ["en", "zh-CN"] as const) {
       await page.route("**/api/chat", async route => {
         requests += 1;
         await route.fulfill({ headers: { "content-type": "text/event-stream", "x-vercel-ai-ui-message-stream": "v1" }, body: [
-          { type: "start", messageId: "saved-answer" }, { type: "text-start", id: "answer" },
+          { type: "start", messageId: "saved-answer" }, ...noDataChatEvents(), { type: "text-start", id: "answer" },
           { type: "text-delta", id: "answer", delta: "Historical evidence explanation. <script>UNTRUSTED</script>" },
           { type: "text-end", id: "answer" }, { type: "finish", finishReason: "stop" },
         ].map(event => `data: ${JSON.stringify(event)}\n\n`).join("") + "data: [DONE]\n\n" });

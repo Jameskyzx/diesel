@@ -31,6 +31,7 @@ import {
 import { AssistantMarkdown } from "@/components/ai/assistant-markdown";
 import { MarketComparisonFacts } from "@/components/ai/market-comparison-facts";
 import { SaveAnalysis } from "@/components/analyses/save-analysis";
+import { readConversationMetadata } from "@/features/ai/conversation-state";
 import { SourceExcerpt } from "@/components/analyses/source-review";
 import type { AnalysisPayload } from "@/features/analyses/schemas";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -1290,6 +1291,14 @@ function ToolPart({
   );
 }
 
+function hasCompletedAnalysis(message: Pick<SalesChatUiMessage, "role" | "parts">): boolean {
+  return message.role === "assistant" && message.parts.some(part => {
+    if (!isToolUIPart(part)) return false;
+    const presentation = toolPartPresentation(part);
+    return presentation.kind === "result" && presentation.result.status !== "error";
+  });
+}
+
 export function SalesChat({
   aiConfigured,
   countryIso2ByIso3,
@@ -1347,11 +1356,15 @@ export function SalesChat({
           trigger,
         }) => {
           const requestMessages = prepareSalesChatRequestMessages(messages);
+          const previousConversation = readConversationMetadata(messages.findLast(message => message.role === "assistant")?.metadata);
           attachmentMessageRelease.run();
 
           return {
             body: {
               ...body,
+              ...(!demoMode ? { conversation: { version: 1,
+                ...(previousConversation ? { receipt: previousConversation.conversation.receipt } : {}),
+              } } : {}),
               id,
               messageId,
               messages: requestMessages,
@@ -1360,7 +1373,7 @@ export function SalesChat({
           };
         },
       }),
-    [attachmentMessageRelease],
+    [attachmentMessageRelease, demoMode],
   );
   const chatId =
     activeChatRequest !== null && activeChatRequest.locale !== locale
@@ -1773,11 +1786,23 @@ export function SalesChat({
         {historyKey ? <Button className="ml-3 shrink-0 text-xs" disabled={!historyLoaded || waiting || submissionPending || validatingAttachments} onClick={startNewConversation} size="sm" type="button" variant="outline">{copy.newConversation}</Button> : null}
       </header>
 
-      {completedSnapshot ? <SaveAnalysis
+      {messages.at(-1)?.role === "assistant" && readConversationMetadata(messages.at(-1)?.metadata)?.conversation.state.tasks.length ? <div className="flex flex-wrap gap-2 border-b px-5 py-2 text-xs" data-testid="chat-active-tasks">
+        {(readConversationMetadata(messages.at(-1)?.metadata)?.conversation.state.tasks ?? []).map(task => {
+          const labels = { country_profile: copy.toolGetCountryProfile, regulations: copy.toolCompareRegulations,
+            market: copy.toolCompareMarkets, product_fit: copy.toolFindCompatibleProducts,
+            opportunity_score: copy.toolCalculateOpportunityScore, sales_brief: copy.toolGenerateSalesBrief,
+            knowledge: copy.toolSearchKnowledgeBase };
+          return <span className="rounded bg-muted px-2 py-1" key={task}>{labels[task]}</span>;
+        })}
+      </div> : null}
+
+      {completedSnapshot?.messages.some(hasCompletedAnalysis) ? <SaveAnalysis
         key={completedSnapshot.messages.at(-1)?.id}
-        defaultTitle={completedSnapshot.messages[0]?.parts.flatMap(part => part.type === "text" ? [part.text] : []).join(" ") || dictionary.analysis.savedReport}
+        defaultTitle={completedSnapshot.messages.find((message, index, all) => message.role === "user" && all[index + 1] && hasCompletedAnalysis(all[index + 1]!))?.parts.flatMap(part => part.type === "text" ? [part.text] : []).join(" ") || dictionary.analysis.savedReport}
         disabled={waiting || submissionPending || error !== undefined || messages.at(-1)?.id !== completedSnapshot.messages.at(-1)?.id}
-        createPayload={() => ({ kind: "chat", history: completedSnapshot })}
+        createPayload={() => ({ kind: "chat", history: { ...completedSnapshot,
+          messages: completedSnapshot.messages.map(message => { const saved = { ...message }; delete saved.metadata; return saved; }),
+        } })}
       /> : null}
 
       {historyKey ? <p className="border-b px-5 py-2 text-[11px] leading-5 text-muted-foreground" role={historyRestored || historyUnavailable ? "status" : undefined}>

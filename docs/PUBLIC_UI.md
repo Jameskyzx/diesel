@@ -45,6 +45,42 @@ Tabler is MIT licensed; the upstream notice is preserved below.
   next steps; they still only copy locally and never submit tickets. No evidence
   boundary or readiness decision is relaxed by this presentation change.
 
+### Conversational workspace
+
+The live browser sends `conversation.version=1`. A bounded semantic planner
+separates research, explanation, composition and general discussion from the
+evidence tasks. Comparison plus original sources is a composed request, not a
+source-only override. Country/application/power/date/model filters must be
+grounded in user input or authenticated previous state; conflicting input still
+requires clarification. One planning call plus at most four executor calls fits
+the existing five-call admission reservation, with no provider retries.
+
+The server returns a signed, session/context-bound, 24-hour conversation receipt
+in assistant metadata. It carries bounded two-sided dialogue and query state,
+not reusable tool facts. The browser restores it alongside tab history and sends
+the opaque receipt on the next turn. Modified, expired or differently bound
+receipts are ignored; raw browser assistant text never becomes trusted history.
+Changing URL context or starting a new chat isolates the state. Receipts are
+excluded from saved/exported analysis payloads. No server history database,
+public write API or new dependency is introduced.
+
+General concepts and their follow-up explanations need no country/power query.
+They are not a channel for jurisdiction/product-specific conclusions. Factual
+explanations and customer-message rewrites still re-query and pass the existing
+evidence contract. Their prose is no longer replaced by the standard research
+summary; additional quantity/ranking checks do not claim arbitrary semantic
+verification. Independent no-data results do not erase successful fact cards;
+any partial summary is server-derived and explicitly incomplete.
+
+Greetings are short. Save/export controls appear only after a completed turn
+has a validated structured result (including an honest no-data result, not an
+execution error), and its default title comes from an actual
+research turn rather than a greeting. The fixed three-step sidebar is removed;
+the conversation displays the resolved tasks instead. The offline fictional
+Demo model retains its deterministic protocol and is not evidence of semantic
+planning quality. Existing transport/browser fixtures remain distinct from
+real-model multi-turn testing.
+
 ### Chat starter contract
 
 Starters send immediately through the same guarded submission path as the
@@ -93,8 +129,9 @@ stores uploaded bytes, reasoning or provider metadata. Changing validated URL
 context starts a separate conversation; “New chat” clears the cached conversation.
 Storage denial or an oversized conversation produces a visible warning while
 chat remains usable. Restored cards retain their original query/verification
-dates and are labeled as restored; subsequent requests transmit only user text
-history and re-query server evidence. This is tab-local recovery, not a new
+dates and are labeled as restored; subsequent requests transmit user text
+history plus the signed conversation receipt, never raw assistant prose, and
+re-query server evidence. This is tab-local recovery, not a new
 server-side history store or write API. Browser tests cover reload, follow-up,
 clear, context isolation and storage failure in both languages and viewport sizes.
 
@@ -158,8 +195,10 @@ observation year.
 Cross-country regulation explanations likewise derive
 numeric differences, missing pollutant/unit rows and power-band bounds directly
 from validated effective records. They do not assert test-cycle equivalence,
-combine different pollutant definitions or rank legal strictness. These fact-only
-summaries stop provider calls once the full evidence contract passes.
+combine different pollutant definitions or rank legal strictness. For research
+turns these fact-only summaries stop provider calls once the full evidence
+contract passes. Explanation and composition turns use the requested form
+against freshly validated evidence instead of repeating that summary.
 No approved real products means no real recommendation; Demo records cannot
 substitute for an explicitly requested real product. Query errors
 remain distinct from missing data, and legal-sales guarantees are not offered.

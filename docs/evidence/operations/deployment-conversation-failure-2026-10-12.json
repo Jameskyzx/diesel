@@ -1,0 +1,277 @@
+{
+  "format": "operator-deployment-failure-record-v1",
+  "recordedAt": "2026-10-12T13:01:55.230Z",
+  "release": "50784f96bb49506edc551963f6ef39fd15bfb436",
+  "previousRelease": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+  "pullRequest": "https://github.com/Jameskyzx/diesel/pull/84",
+  "ci": {
+    "runId": 38243080831,
+    "attempt": 1,
+    "headSha": "50784f96bb49506edc551963f6ef39fd15bfb436",
+    "conclusion": "success",
+    "checksPassed": 10,
+    "publicPassed": 425,
+    "publicSkipped": 66,
+    "productionCspPassed": 2,
+    "publicDuration": "40.5m"
+  },
+  "sourceStage": {
+    "authorization": {
+      "branch": "master",
+      "commit": "50784f96bb49506edc551963f6ef39fd15bfb436",
+      "format": "diesel-release-authorization-v1",
+      "origin": {
+        "fetchUrl": "https://github.com/Jameskyzx/diesel.git",
+        "pushUrl": "https://github.com/Jameskyzx/diesel.git",
+        "remoteMaster": "50784f96bb49506edc551963f6ef39fd15bfb436",
+        "remoteMasterReadback": "50784f96bb49506edc551963f6ef39fd15bfb436"
+      },
+      "protection": {
+        "allowDeletions": false,
+        "allowForcePushes": false,
+        "enforceAdmins": true,
+        "requiredCheck": "Required CI gate",
+        "requiredCheckAppId": null,
+        "strict": true
+      },
+      "repository": "Jameskyzx/diesel",
+      "verifiedAt": "2026-10-12T12:25:22.898Z",
+      "workflow": {
+        "gateJobId": 114809352521,
+        "gateJobUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38243080831/job/114809352521",
+        "id": 332591937,
+        "name": "CI",
+        "path": ".github/workflows/ci.yml",
+        "runAttempt": 1,
+        "runId": 38243080831,
+        "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38243080831",
+        "state": "active"
+      }
+    },
+    "commit": "50784f96bb49506edc551963f6ef39fd15bfb436",
+    "format": "diesel-release-stage-v1",
+    "inputDigest": "0165f2544c302b622ad0a1ee193279d9799cd9f9d00f3e480a99937af7de099d",
+    "releaseDir": "/opt/diesel/releases/50784f96bb49506edc551963f6ef39fd15bfb436",
+    "target": "root@111.228.50.85"
+  },
+  "runtimeStage": {
+    "release": "50784f96bb49506edc551963f6ef39fd15bfb436",
+    "runId": 38243080831,
+    "runAttempt": 1,
+    "artifactId": 11744422396,
+    "archiveSha256": "26a74aea93b502f3b0572f51a29a4b8655316aaf1131e14aec6b6db665d57b29",
+    "destination": "/opt/diesel/release-inputs/50784f96bb49506edc551963f6ef39fd15bfb436/ci-runtime",
+    "temporary": "/private/tmp/diesel-ci-runtime-CU963L",
+    "staged": true,
+    "deployed": false
+  },
+  "environmentStage": {
+    "release": "50784f96bb49506edc551963f6ef39fd15bfb436",
+    "candidateEnvironmentStaged": true,
+    "liveEnvironmentUnchanged": true,
+    "secretsPrinted": false
+  },
+  "submission": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "50784f96bb49506edc551963f6ef39fd15bfb436",
+      "operationId": "bd6f4c5d-65f1-48e3-9ea9-fc5c6db17def",
+      "mode": "application",
+      "createdAt": "2026-10-12T12:32:09.129Z",
+      "inputDigest": "0165f2544c302b622ad0a1ee193279d9799cd9f9d00f3e480a99937af7de099d",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "submitted": true,
+    "deploymentVerified": false
+  },
+  "finalWorkerStatus": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "50784f96bb49506edc551963f6ef39fd15bfb436",
+      "operationId": "bd6f4c5d-65f1-48e3-9ea9-fc5c6db17def",
+      "mode": "application",
+      "createdAt": "2026-10-12T12:32:09.129Z",
+      "inputDigest": "0165f2544c302b622ad0a1ee193279d9799cd9f9d00f3e480a99937af7de099d",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "failed",
+    "unit": {
+      "Id": "diesel-release-50784f96bb49506edc551963f6ef39fd15bfb436.service",
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "Result": "exit-code",
+      "InvocationID": "63d9a675b98d4dc4b1d012d918f1f285",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 70,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 1102448
+    },
+    "completion": {
+      "operationId": "bd6f4c5d-65f1-48e3-9ea9-fc5c6db17def",
+      "invocationId": "63d9a675b98d4dc4b1d012d918f1f285",
+      "startedAt": "2026-10-12T12:32:10.178Z",
+      "workerPid": 1102448,
+      "completedAt": "2026-10-12T12:41:47.780Z",
+      "exitCode": 70,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 4070,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 1714,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "observedFailure": {
+    "phase": "governance-maintenance-heartbeat",
+    "reason": "probe-timeout",
+    "databaseCode": null,
+    "timeoutMs": 30000,
+    "rootCause": "Not established; neither network nor server resource exhaustion is proven.",
+    "readiness503Observed": true
+  },
+  "privateLogs": {
+    "stdout": {
+      "bytes": 4070,
+      "sha256": "590f15a4c12c7d4887d7d7980d3547c06e5ed325f8d61e099c7783b739c1309a"
+    },
+    "stderr": {
+      "bytes": 1714,
+      "sha256": "b6ddf07ff5cef2619d9a4e07be81eed9cb9a4cd3e7c945b0f4b2d8cde82c78f0"
+    },
+    "contentsPublished": false
+  },
+  "recovery": {
+    "automaticRollbackVerificationInitiallyIncomplete": true,
+    "initialLedger": "PENDING:none",
+    "repairCommand": "rollback-host-release.sh --abort-if-uncommitted",
+    "repairExitCode": 0,
+    "readiness503RetriesDuringRepair": 2,
+    "independentTerminal": {
+      "classification": "terminal",
+      "hostState": "ROLLED_BACK",
+      "governanceState": "none",
+      "current": "/opt/diesel/releases/41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6"
+    },
+    "publicReady": {
+      "service": "global-diesel-regulations",
+      "status": "ok",
+      "timestamp": "2026-10-12T13:00:31.787Z",
+      "version": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
+      "checks": {
+        "aiChatAdmission": "ok",
+        "aiChatRateLimit": "ok",
+        "database": "ok"
+      }
+    },
+    "jameskyApi": {
+      "pid": 1033,
+      "status": "online",
+      "restarts": 0
+    }
+  },
+  "originalDatabaseLinkProbe": {
+    "usesExistingMaintenanceWrapper": true,
+    "configuredHoldMs": 120000,
+    "heartbeatTimeoutMs": 30000,
+    "exitCode": 0,
+    "observedStartedAt": "2026-10-12T12:56:50.287Z",
+    "observedCompletedAt": "2026-10-12T12:59:17.941Z",
+    "changesBusinessData": false,
+    "changesTimeout": false,
+    "claimsLongTermReliability": false
+  },
+  "dataVerification": {
+    "applicationOnly": true,
+    "databasePublication": false,
+    "fullDatabaseExport": false,
+    "databaseRestore": false,
+    "afterVerificationCompleted": false,
+    "allTablesUnchangedClaim": false
+  },
+  "diagnostics": [
+    {
+      "stage": "git-fetch",
+      "exitCode": 128,
+      "error": "GitHub HTTPS TLS handshake interrupted; no host mutation"
+    }
+  ],
+  "boundaries": {
+    "failedShaReused": false,
+    "workerResubmitted": false,
+    "temporaryDatabaseForwarding": false,
+    "backupsDeleted": false,
+    "failedCandidateAndLogsRetained": true,
+    "originSshRestored": true,
+    "newProtocolProductionMultiTurnAcceptance": "not run; expected new production version was never independently verified"
+  },
+  "retryCiFailure": {
+    "pullRequest": "https://github.com/Jameskyzx/diesel/pull/89",
+    "runId": 38253178540,
+    "attempt": 1,
+    "headSha": "901d73a4bec71c7160850e8b472cb6fe5db1af72",
+    "qualityJobId": 114824399237,
+    "conclusion": "failure",
+    "step": "Application tests with coverage gate (PGlite)",
+    "results": {
+      "testFiles": 301,
+      "passedFiles": 299,
+      "failedFiles": 2,
+      "collectedTests": 8054,
+      "passedTests": 8051,
+      "failedTests": 2,
+      "skippedTests": 1
+    },
+    "failures": [
+      {
+        "file": "tests/country-detail-read-transaction-pglite.test.ts",
+        "test": "applies repeatable-read and read-only settings in the demo runtime",
+        "error": "Test timed out in 5000ms"
+      },
+      {
+        "file": "tests/sales-brief-consistency.test.ts",
+        "test": "accepts the exact deterministic recommendation and ordered rule projection",
+        "error": "Test timed out in 5000ms"
+      }
+    ],
+    "originalFailurePreserved": true
+  },
+  "testStartupCorrection": {
+    "files": [
+      "tests/country-detail-read-transaction-pglite.test.ts",
+      "tests/sales-brief-consistency.test.ts"
+    ],
+    "change": "Warm the existing PGlite singleton once in beforeAll with the established 30-second bootstrap hook budget.",
+    "assertionsUnchanged": true,
+    "testExecutionTimeoutUnchanged": true,
+    "productionCodeUnchanged": true,
+    "productionTimeoutUnchanged": true,
+    "focusedResult": {
+      "files": 2,
+      "passed": 22,
+      "failed": 0
+    },
+    "fullExecutionEvidence": {
+      "artifactPath": "docs/evidence/vitest-execution-latest.json",
+      "version": "diesel-vitest-execution-evidence-v2",
+      "runId": "cd82ad2d-20ef-4d91-8243-b11d42c09ddc",
+      "completedAt": "2026-10-12T13:30:59.624Z",
+      "collectedFiles": 305,
+      "collectedTests": 8903,
+      "passedTests": 8897,
+      "skippedTests": 6,
+      "failedTests": 0
+    }
+  }
+}

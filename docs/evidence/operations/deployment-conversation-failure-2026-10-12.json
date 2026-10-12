@@ -262,6 +262,16 @@
       "passed": 22,
       "failed": 0
     },
-    "fullExecutionEvidence": "pending capture before push"
+    "fullExecutionEvidence": {
+      "artifactPath": "docs/evidence/vitest-execution-latest.json",
+      "version": "diesel-vitest-execution-evidence-v2",
+      "runId": "cd82ad2d-20ef-4d91-8243-b11d42c09ddc",
+      "completedAt": "2026-10-12T13:30:59.624Z",
+      "collectedFiles": 305,
+      "collectedTests": 8903,
+      "passedTests": 8897,
+      "skippedTests": 6,
+      "failedTests": 0
+    }
   }
 }

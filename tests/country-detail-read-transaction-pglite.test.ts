@@ -9,9 +9,12 @@ import {
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
 
-beforeAll(() => {
+beforeAll(async () => {
   process.env.DATABASE_MODE = "pglite-demo";
-});
+  // WASM startup, migrations and fixtures belong to setup, not the first
+  // transaction assertion's unchanged 5-second execution budget.
+  await getDemoDatabase();
+}, 30_000);
 
 afterAll(() => {
   if (originalDatabaseMode === undefined) {

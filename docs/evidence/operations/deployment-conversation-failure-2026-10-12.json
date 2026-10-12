@@ -215,5 +215,53 @@
     "failedCandidateAndLogsRetained": true,
     "originSshRestored": true,
     "newProtocolProductionMultiTurnAcceptance": "not run; expected new production version was never independently verified"
+  },
+  "retryCiFailure": {
+    "pullRequest": "https://github.com/Jameskyzx/diesel/pull/89",
+    "runId": 38253178540,
+    "attempt": 1,
+    "headSha": "901d73a4bec71c7160850e8b472cb6fe5db1af72",
+    "qualityJobId": 114824399237,
+    "conclusion": "failure",
+    "step": "Application tests with coverage gate (PGlite)",
+    "results": {
+      "testFiles": 301,
+      "passedFiles": 299,
+      "failedFiles": 2,
+      "collectedTests": 8054,
+      "passedTests": 8051,
+      "failedTests": 2,
+      "skippedTests": 1
+    },
+    "failures": [
+      {
+        "file": "tests/country-detail-read-transaction-pglite.test.ts",
+        "test": "applies repeatable-read and read-only settings in the demo runtime",
+        "error": "Test timed out in 5000ms"
+      },
+      {
+        "file": "tests/sales-brief-consistency.test.ts",
+        "test": "accepts the exact deterministic recommendation and ordered rule projection",
+        "error": "Test timed out in 5000ms"
+      }
+    ],
+    "originalFailurePreserved": true
+  },
+  "testStartupCorrection": {
+    "files": [
+      "tests/country-detail-read-transaction-pglite.test.ts",
+      "tests/sales-brief-consistency.test.ts"
+    ],
+    "change": "Warm the existing PGlite singleton once in beforeAll with the established 30-second bootstrap hook budget.",
+    "assertionsUnchanged": true,
+    "testExecutionTimeoutUnchanged": true,
+    "productionCodeUnchanged": true,
+    "productionTimeoutUnchanged": true,
+    "focusedResult": {
+      "files": 2,
+      "passed": 22,
+      "failed": 0
+    },
+    "fullExecutionEvidence": "pending capture before push"
   }
 }

@@ -74,11 +74,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
             </details>
           </div>
           <div className="border-t bg-muted/30 p-5">
-            <h3 className="text-xs font-semibold">{dictionary.workspace.evidenceWorkflow}</h3>
-            <ol className="mt-3 space-y-3 text-xs text-muted-foreground">
-              {[dictionary.workspace.regulations, dictionary.workspace.productFit, dictionary.workspace.sources].map((step, index) => <li className="flex items-center gap-3" key={step}><span className="grid size-5 shrink-0 place-items-center rounded-full border bg-card text-[10px] font-semibold text-primary">{index + 1}</span>{step}</li>)}
-            </ol>
-            <p className="mt-5 border-t pt-4 text-xs leading-5 text-muted-foreground">{copy.sidebarFoot}</p>
+            <p className="text-xs leading-5 text-muted-foreground">{copy.sidebarFoot}</p>
           </div>
         </aside>
         <SalesChat

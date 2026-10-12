@@ -1,6 +1,8 @@
 import "server-only";
 import { buildMarketProfileResponse } from "@/domain/ai/market-profile-response";
 import { buildRegulationComparisonResponse } from "@/domain/ai/regulation-comparison-response";
+import { conversationInstructions, generalAnswerMayPublish, type PreparedConversationTurn } from "@/server/ai/conversation-plan";
+import { conversationAnswerMatchesFacts } from "@/server/ai/conversation-answer";
 
 import { createHash } from "node:crypto";
 
@@ -100,6 +102,7 @@ import {
   buildSalesChatEvidenceContract,
   evidenceContractAllowsModelText,
   evidenceNeedsRegulatoryDisclaimer,
+  evidenceResultMatchesRequest,
   type SalesChatEvidenceContract,
 } from "@/server/ai/evidence-contract";
 import { buildFinalAnswerGuidance, buildSalesChatInstructions } from "@/server/ai/sales-chat-prompt";
@@ -107,6 +110,7 @@ import { knowledgeQuerySatisfies, knowledgeTermsIn } from "@/server/ai/knowledge
 import {
   buildEvidenceQueryGuidance,
   collectSalesChatStepEvidence,
+  pendingConversationEvidence,
   resolveSalesChatLoopPolicy,
   SALES_CHAT_TOOL_ORDER,
 } from "@/server/ai/sales-chat-loop";
@@ -1201,6 +1205,8 @@ function projectPublicStepPerformance(
 export { buildSalesChatInstructions } from "@/server/ai/sales-chat-prompt";
 
 function createPublicEvidenceBoundaryTransform({
+  conversationTurn,
+  onPublicAnswer,
   allowUnverifiedAttachmentResponse = false,
   evidenceContract,
   hasUnverifiedAttachments = false,
@@ -1208,6 +1214,8 @@ function createPublicEvidenceBoundaryTransform({
   modelToolOutputBudgetExceeded,
   onBoundaryRejection,
 }: {
+  conversationTurn?: PreparedConversationTurn;
+  onPublicAnswer?: (answer: string) => void;
   allowUnverifiedAttachmentResponse?: boolean;
   evidenceContract: SalesChatEvidenceContract;
   hasUnverifiedAttachments?: boolean;
@@ -1621,6 +1629,7 @@ function createPublicEvidenceBoundaryTransform({
 
       let completedDeterministicAnswer = false;
       if (chunk.type === "finish") {
+        let publishedAnswer = "";
         if (modelToolOutputBudgetExceeded?.() === true) {
           bufferedText.length = 0;
           bufferedTextCharacters = 0;
@@ -1662,20 +1671,37 @@ function createPublicEvidenceBoundaryTransform({
           onBoundaryRejection?.("embedded_reasoning_markup");
         }
         const hasBufferedText = bufferedText.some(({ text }) => text.length > 0);
+        const rejectedConversationalProse = conversationTurn !== undefined && hasToolResult && canEmitModelText() &&
+          !conversationAnswerMatchesFacts(bufferedText.map(part => part.text).join(""), toolResults);
+        if (rejectedConversationalProse) {
+          bufferedText.length = 0;
+          bufferedText.push({ id: nextPublicTextPartId(), text: locale === "en"
+            ? "The verified facts are shown in the cards. I could not safely phrase this explanation without adding an unsupported claim, so I have withheld it. Please choose one recorded difference to discuss."
+            : "已核验的事实保留在卡片中。这次解释包含无法由证据支持的表述，已撤下；可以选一个已记录的差异继续讨论。" });
+        }
         const canEmitAttachmentText =
           allowUnverifiedAttachmentResponse &&
           !evidenceContract.blocksModelText &&
           !hasInsufficientEvidence &&
           !hasToolResult &&
           hasBufferedText;
+        const canEmitGeneralText = conversationTurn?.generalConversation === true &&
+          !evidenceContract.blocksModelText && !hasInsufficientEvidence && !hasExecutionFailure &&
+          !hasToolResult && hasBufferedText && generalAnswerMayPublish(bufferedText.map(part => part.text).join(""));
         const requiresAttachmentBoundary =
           hasUnverifiedAttachments || allowUnverifiedAttachmentResponse;
-        if ((hasToolResult && canEmitModelText()) || canEmitAttachmentText) {
-          const factualSummary = buildMarketProfileResponse(toolResults, locale) ??
-            buildRegulationComparisonResponse(toolResults, locale);
+        if ((hasToolResult && canEmitModelText()) || canEmitAttachmentText || canEmitGeneralText) {
+          const factualSummary = conversationTurn && conversationTurn.mode !== "research" ? null :
+            buildMarketProfileResponse(toolResults, locale) ?? buildRegulationComparisonResponse(toolResults, locale);
           if (factualSummary !== null) {
             bufferedText.length = 0;
             bufferedText.push({ id: nextPublicTextPartId(), text: factualSummary });
+            completedDeterministicAnswer = true;
+          }
+          if (conversationTurn && hasToolResult && !bufferedText.some(part => part.text.length > 0)) {
+            bufferedText.push({ id: nextPublicTextPartId(), text: locale === "en"
+              ? "The requested evidence checks completed. The cards show the verified results and their limits; no additional model interpretation was generated within this turn's step budget."
+              : "本次证据查询已完成，已核验结果及其限制见下方卡片；本轮步骤预算内没有生成额外的模型解释。" });
             completedDeterministicAnswer = true;
           }
           if (requiresAttachmentBoundary) {
@@ -1713,6 +1739,7 @@ function createPublicEvidenceBoundaryTransform({
             if (!textPart.text) {
               continue;
             }
+            publishedAnswer += textPart.text;
             controller.enqueue({ id: textPart.id, type: "text-start" });
             controller.enqueue({
               id: textPart.id,
@@ -1758,7 +1785,7 @@ function createPublicEvidenceBoundaryTransform({
           }
           const id = "evidence-boundary";
           controller.enqueue({ id, type: "text-start" });
-          const evidenceGapResponse = buildEvidenceGapResponse(
+          let evidenceGapResponse = buildEvidenceGapResponse(
             toolResults,
             hasExecutionFailure ||
               (hasToolResult &&
@@ -1771,6 +1798,19 @@ function createPublicEvidenceBoundaryTransform({
             locale,
             hasEmbeddedReasoningMarkup,
           );
+          if (conversationTurn && !hasExecutionFailure && !hasEmbeddedReasoningMarkup && !evidenceContract.blocksModelText) {
+            const verified = toolResults.filter(result => result.status === "ok" && result.evidenceSufficient && evidenceResultMatchesRequest(evidenceContract, result));
+            const partialContract = { ...evidenceContract, requirements: evidenceContract.requirements.filter(requirement =>
+              verified.some(result => evidenceResultMatchesRequest({ ...evidenceContract, requirements: [requirement] }, result))) };
+            if (verified.length > 0 && evidenceContractAllowsModelText(partialContract, verified)) {
+              const summary = conversationTurn.mode === "research"
+                ? buildRegulationComparisonResponse(verified, locale) ?? buildMarketProfileResponse(verified, locale)
+                : null;
+              const notice = locale === "en" ? "Some requested evidence is still missing; the verified results below do not establish the missing conclusions." : "部分任务仍有证据缺口；以下已核验结果不能代替缺失部分的结论。";
+              evidenceGapResponse = [notice, summary, evidenceGapResponse].filter(Boolean).join("\n\n");
+            }
+          }
+          publishedAnswer = evidenceGapResponse;
           controller.enqueue({
             id,
             text: evidenceGapResponse,
@@ -1783,6 +1823,9 @@ function createPublicEvidenceBoundaryTransform({
           ) {
             regulatoryDisclaimerEmitted = true;
           }
+        }
+        if (chunk.finishReason === "stop" || chunk.finishReason === "tool-calls") {
+          onPublicAnswer?.(publishedAnswer);
         }
       }
 
@@ -2375,6 +2418,9 @@ function toSalesChatStepObservation(step: {
 }
 
 export function streamSalesChat(input: {
+  conversationTurn?: PreparedConversationTurn;
+  maxSteps?: number;
+  onPublicAnswer?: (answer: string) => void;
   abortSignal?: AbortSignal;
   allowUnverifiedAttachmentResponse?: boolean;
   auditRepository: Pick<AiAuditRepository, "recordToolCall">;
@@ -2414,6 +2460,8 @@ export function streamSalesChat(input: {
     input.runtimeContext ?? captureChatRuntimeContext(),
   );
   const maxOutputTokens = input.maxOutputTokens ?? MAX_AI_OUTPUT_TOKENS;
+  const maxSteps = input.maxSteps ?? MAX_AI_TOOL_STEPS;
+  if (!Number.isInteger(maxSteps) || maxSteps < 1 || maxSteps > MAX_AI_TOOL_STEPS) throw new RangeError("Invalid chat step budget");
   if (
     !Number.isSafeInteger(maxOutputTokens) ||
     maxOutputTokens < 1 ||
@@ -2589,7 +2637,7 @@ export function streamSalesChat(input: {
       // public stream or provider execution.
     }
   };
-  const evidenceContract = buildSalesChatEvidenceContract({
+  const evidenceContract = input.conversationTurn?.contract ?? buildSalesChatEvidenceContract({
     runtimeContext,
     selectedCountryIso3: input.selectedCountryIso3,
     userTexts: input.trustedUserTexts,
@@ -2695,7 +2743,7 @@ export function streamSalesChat(input: {
     },
   };
 
-  const instructions = buildSalesChatInstructions(input.selectedCountryIso3, input.locale, runtimeContext, input.trustedUserTexts.at(-1));
+  const instructions = buildSalesChatInstructions(input.selectedCountryIso3, input.locale, runtimeContext, input.trustedUserTexts.at(-1), input.conversationTurn?.mode);
   const rawResult = streamText({
     abortSignal: input.abortSignal,
     instructions,
@@ -2790,6 +2838,8 @@ export function streamSalesChat(input: {
     prepareStep: ({ steps }) => {
       const stepEvidence = collectSalesChatStepEvidence(steps);
       const policy = resolveSalesChatLoopPolicy({
+        allowGeneralConversation: input.conversationTurn?.generalConversation,
+        independentTasks: input.conversationTurn !== undefined,
         allowToolFreeAttachmentResponse:
           input.allowUnverifiedAttachmentResponse === true,
         contract: evidenceContract,
@@ -2799,9 +2849,9 @@ export function streamSalesChat(input: {
       return {
         activeTools: policy.activeTools,
         instructions: instructions + (policy.phase === "gather_evidence"
-          ? buildEvidenceQueryGuidance(evidenceContract, stepEvidence.results, input.trustedUserTexts) : "") + (policy.phase === "final_answer"
+          ? buildEvidenceQueryGuidance(input.conversationTurn ? pendingConversationEvidence(evidenceContract, stepEvidence.results) : evidenceContract, stepEvidence.results, input.trustedUserTexts) : "") + (policy.phase === "final_answer" && (!input.conversationTurn || input.conversationTurn.mode === "research")
           ? buildFinalAnswerGuidance(stepEvidence.results.map(result => result.tool), input.locale, input.trustedUserTexts.at(-1))
-          : ""),
+          : "") + (input.conversationTurn ? conversationInstructions(input.conversationTurn) : ""),
         toolChoice: policy.toolChoice,
         toolOrder: SALES_CHAT_TOOL_ORDER,
       };
@@ -2833,7 +2883,7 @@ export function streamSalesChat(input: {
       return null;
     },
     stopWhen: [
-      stepCountIs(MAX_AI_TOOL_STEPS),
+      stepCountIs(maxSteps),
       ({ steps }) => {
         const shouldStop = modelToolOutputBudgetGate.stopWhen({ steps });
         if (shouldStop) {
@@ -2846,6 +2896,7 @@ export function streamSalesChat(input: {
         return shouldStop;
       },
       ({ steps }) => {
+        if (input.conversationTurn && input.conversationTurn.mode !== "research") return false;
         const evidence = collectSalesChatStepEvidence(steps);
         if (evidence.hasExecutionFailure || !evidenceContractAllowsModelText(evidenceContract, evidence.results)) return false;
         // These answers are fully determined by the accepted facts. Avoid a
@@ -2868,6 +2919,8 @@ export function streamSalesChat(input: {
     // source's bounded SDK timeout, then settle here only if onEnd did not.
     onSourceTerminal: finalizeIncompleteStream,
     publicBoundary: createPublicEvidenceBoundaryTransform({
+      conversationTurn: input.conversationTurn,
+      onPublicAnswer: input.onPublicAnswer,
       allowUnverifiedAttachmentResponse:
         input.allowUnverifiedAttachmentResponse === true,
       evidenceContract,

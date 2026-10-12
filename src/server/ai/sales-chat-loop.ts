@@ -11,6 +11,7 @@ import {
 import {
   evidenceContractAllowsModelText,
   evidenceResultMatchesRequest,
+  evidenceQueryWasAnswered,
   remainingEvidenceRequirements,
   remainingEvidenceTools,
   type SalesChatEvidenceContract,
@@ -19,6 +20,7 @@ import {
 export const SALES_CHAT_TOOL_ORDER: readonly AiToolName[] = aiToolNames;
 
 export type SalesChatLoopPhase =
+  | "general"
   | "attachment_only"
   | "evidence_gap"
   | "final_answer"
@@ -70,11 +72,16 @@ export function collectSalesChatStepEvidence(
 }
 
 export function resolveSalesChatLoopPolicy(input: {
+  allowGeneralConversation?: boolean;
+  independentTasks?: boolean;
   allowToolFreeAttachmentResponse: boolean;
   contract: SalesChatEvidenceContract;
   hasExecutionFailure: boolean;
   results: readonly AiToolResult[];
 }): SalesChatLoopPolicy {
+  if (input.allowGeneralConversation && !input.contract.blocksModelText && !input.hasExecutionFailure && input.results.length === 0) {
+    return { activeTools: [], phase: "general", toolChoice: "none" };
+  }
   if (
     input.allowToolFreeAttachmentResponse &&
     !input.hasExecutionFailure &&
@@ -90,7 +97,8 @@ export function resolveSalesChatLoopPolicy(input: {
   if (
     input.hasExecutionFailure ||
     input.results.some(
-      (result) => result.status !== "ok" || !result.evidenceSufficient || !evidenceResultMatchesRequest(input.contract, result),
+      (result) => result.status === "error" || (!input.independentTasks && (result.status !== "ok" || !result.evidenceSufficient)) ||
+        !(input.independentTasks ? evidenceQueryWasAnswered(input.contract, result) : evidenceResultMatchesRequest(input.contract, result)),
     )
   ) {
     return {
@@ -108,7 +116,7 @@ export function resolveSalesChatLoopPolicy(input: {
     };
   }
 
-  const activeTools = remainingEvidenceTools(input.contract, input.results);
+  const activeTools = remainingEvidenceTools(input.independentTasks ? pendingConversationEvidence(input.contract, input.results) : input.contract, input.results);
   if (activeTools.length === 0) {
     return {
       activeTools: [],
@@ -122,6 +130,12 @@ export function resolveSalesChatLoopPolicy(input: {
     phase: "gather_evidence",
     toolChoice: "required",
   };
+}
+
+/** An honest no-data result completes that query, not other independent tasks. */
+export function pendingConversationEvidence(contract: SalesChatEvidenceContract, results: readonly AiToolResult[]): SalesChatEvidenceContract {
+  return { ...contract, requirements: contract.requirements.filter(requirement =>
+    !results.some(result => evidenceQueryWasAnswered({ ...contract, requirements: [requirement] }, result))) };
 }
 
 /** The server resolves filters; the model selects only the missing direct calls.

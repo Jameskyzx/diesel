@@ -206,7 +206,7 @@ This is the only current release/evidence index. Historical implementation notes
     "commit": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
     "evidenceKind": "historical-operator-record-only",
     "id": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6",
-    "observedAt": "2026-10-12T15:34:06.348Z",
+    "observedAt": "2026-10-12T15:34+00:00",
     "releasePath": "/opt/diesel/releases/41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6"
   },
   "evidenceSummary": {
@@ -256,7 +256,7 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-12T15:34:06.348Z",
+    "readbackAt": "2026-10-12T15:34+00:00",
     "status": "ok",
     "version": "41e1fddbfe2e1dd339c0d9420061ac3b6dd5e1b6"
   },
@@ -266,7 +266,7 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "repositoryHead": {
     "local": "02db43a27d6f71ecfa4e46ea358f28a9fc336143",
-    "observedAt": "2026-10-12T15:52:57Z",
+    "observedAt": "2026-10-12T15:52+00:00",
     "remote": "02db43a27d6f71ecfa4e46ea358f28a9fc336143"
   }
 }

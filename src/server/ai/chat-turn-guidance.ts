@@ -37,6 +37,24 @@ function normalize(text: string): string {
   return text.trim().replace(/\s+/g, " ");
 }
 
+export function buildSocialChatResponse(text: string, locale: Locale): string | null {
+  const normalized = normalize(text);
+  if (greetingPattern.test(normalized)) return locale === "en"
+    ? "Hi! What are you working on—a market, an engine application, or a question about regulations? Tell me in your own words; we can fill in the details together."
+    : "你好！你现在想了解哪个市场、哪类发动机用途，或者有什么法规问题？直接说你的目标就好，条件可以边聊边补。";
+  if (thanksPattern.test(normalized)) return locale === "en" ? "You're welcome. We can pick up from here whenever you're ready." : "不客气。需要时我们可以接着刚才的内容聊。";
+  return null;
+}
+
+/** App help is available without a provider. Mixed factual requests continue
+ * through planning and the evidence tools instead of receiving only help. */
+export function buildCapabilityChatResponse(input: DirectChatResponseInput): string | null {
+  const text = normalize(input.text);
+  if (!capabilityPattern.test(text) || buildConversationBusinessContext([text]).activeTask !== null ||
+    hasConversationComparisonIntent(text)) return null;
+  return buildDirectChatResponse({ ...input, userTexts: [input.text] });
+}
+
 function contextLine(selectedCountryIso3: string | null): string {
   return selectedCountryIso3
     ? `当前国家上下文是 ${selectedCountryIso3}；你明确写出的国家会覆盖它。`

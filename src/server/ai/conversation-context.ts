@@ -101,7 +101,7 @@ export function affirmativeTaskText(text: string): string {
   if (hasExplicitSourceIntent(text)) return text;
   return text.split(/([,，。;；\n]+|但是|但|而是|并且?|然后|\b(?:but|and|then)\b)/giu)
     .map(clause => {
-      const declined = /(?:不(?:做|进行|需要|要|用)|无需|无须|不要|不必|别|\b(?:do not|don['’]t|without|no|skip)\b)/iu.test(clause);
+      const declined = /(?:不(?:做|进行|需要|要|用|推荐)|无需|无须|不要|不必|别|\b(?:do not|don['’]t|without|no|skip)\b)/iu.test(clause);
       return declined && productSubjectPattern.test(clause) && productFitActionPattern.test(clause)
         ? "" : clause;
     }).join("");
@@ -173,7 +173,7 @@ export function countryMentionsIn(text: string): LocatedCountry[] {
   }
 
   for (const match of text.matchAll(
-    /(?<![\p{L}\p{N}_])([A-Z]{3})(?![\p{L}\p{N}_])/gu,
+    /(?:(?<![\p{L}\p{N}_])|(?<=\p{Script=Han}))([A-Z]{3})(?:(?![\p{L}\p{N}_])|(?=\p{Script=Han}))/gu,
   )) {
     const iso3 = match[1];
     if (countryIso3Codes.has(iso3)) {

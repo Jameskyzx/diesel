@@ -42,6 +42,7 @@ const historyMessageSchema = z.object({
 export const chatHistorySnapshotSchema = z.object({
   version: z.literal(1), contextKey: z.string().min(1).max(1_000),
   sessionId: z.uuid(), savedAt: z.iso.datetime(),
+  omittedUserTurns: z.number().int().nonnegative().default(0),
   messages: z.array(historyMessageSchema).min(2).max(MAX_CHAT_HISTORY_USER_MESSAGES * 2),
 }).strict().refine(({ messages }) =>
   messages[0]?.role === "user" && messages.at(-1)?.role === "assistant" &&
@@ -52,11 +53,12 @@ export type ChatHistorySnapshot = {
   contextKey: string;
   sessionId: string;
   savedAt: string;
+  omittedUserTurns: number;
   messages: SalesChatUiMessage[];
 };
 
 /** Store completed public parts only; never retain upload bytes or provider metadata. */
-export function serializeChatHistory(input: Omit<ChatHistorySnapshot, "savedAt">,
+export function serializeChatHistory(input: Omit<ChatHistorySnapshot, "savedAt" | "omittedUserTurns"> & { omittedUserTurns?: number },
   now = new Date()): string | null {
   const messages = releaseSalesChatMessageAttachments(input.messages).map(message => ({
     id: message.id, role: message.role,
@@ -75,11 +77,26 @@ export function serializeChatHistory(input: Omit<ChatHistorySnapshot, "savedAt">
       return [];
     }),
   }));
-  // Do not silently discard the oldest parameters in a conversation.
-  const parsed = chatHistorySnapshotSchema.safeParse({ ...input, messages, savedAt: now.toISOString(), version: 1 });
-  if (!parsed.success) return null;
-  const serialized = JSON.stringify(parsed.data);
-  return new TextEncoder().encode(serialized).byteLength <= CHAT_HISTORY_MAX_BYTES ? serialized : null;
+  // Retain complete recent exchanges, not an all-or-nothing twelve-turn cache.
+  // Only the newest signed receipt is needed for the next request. It carries
+  // authenticated query state even when older visible exchanges leave the window.
+  const latestReceipt = messages.findLastIndex(message => "metadata" in message);
+  messages.forEach((message, index) => { if (index !== latestReceipt) delete message.metadata; });
+  let omittedUserTurns = input.omittedUserTurns ?? 0;
+  while (messages.filter(message => message.role === "user").length > MAX_CHAT_HISTORY_USER_MESSAGES) {
+    const nextUser = messages.findIndex((message, index) => index > 0 && message.role === "user");
+    if (nextUser < 0) return null;
+    omittedUserTurns += messages.splice(0, nextUser).filter(message => message.role === "user").length;
+  }
+  for (;;) {
+    const parsed = chatHistorySnapshotSchema.safeParse({ ...input, messages, omittedUserTurns, savedAt: now.toISOString(), version: 1 });
+    if (!parsed.success) return null;
+    const serialized = JSON.stringify(parsed.data);
+    if (new TextEncoder().encode(serialized).byteLength <= CHAT_HISTORY_MAX_BYTES) return serialized;
+    const nextUser = messages.findIndex((message, index) => index > 0 && message.role === "user");
+    if (nextUser < 0) return null; // Never discard the newest completed exchange.
+    omittedUserTurns += messages.splice(0, nextUser).filter(message => message.role === "user").length;
+  }
 }
 
 /** Browser storage is untrusted input and cannot establish new server evidence. */
@@ -95,6 +112,7 @@ export function parseChatHistory(serialized: string | null, contextKey: string,
     return {
       contextKey: parsed.data.contextKey, sessionId: parsed.data.sessionId,
       savedAt: parsed.data.savedAt,
+      omittedUserTurns: parsed.data.omittedUserTurns,
       messages: parsed.data.messages.map(message => ({ ...message,
         parts: message.parts.map(part => part.type === "dynamic-tool" ? { ...part, input: part.input } : part),
       })),

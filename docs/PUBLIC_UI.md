@@ -54,12 +54,22 @@ source-only override. Country/application/power/date/model filters must be
 grounded in user input or authenticated previous state; conflicting input still
 requires clarification. One planning call plus at most four executor calls fits
 the existing five-call admission reservation, with no provider retries.
+Research executes the compiled queries through the existing audited read-only
+tools directly (at most four), without asking the model to rewrite their
+arguments. Query execution is not recorded as fake provider activity or usage.
+Fact explanations/rewrites retain the guarded model flow; the admission budget
+is unchanged. Explicit filter-reset controls remove the old scope/power instead
+of treating their names as new affirmative filters.
 
 The server returns a signed, session/context-bound, 24-hour conversation receipt
 in assistant metadata. It carries bounded two-sided dialogue and query state,
 not reusable tool facts. The browser restores it alongside tab history and sends
 the opaque receipt on the next turn. Modified, expired or differently bound
 receipts are ignored; raw browser assistant text never becomes trusted history.
+With a valid receipt, planning sees the latest question and bounded signed
+dialogue/state, not a stack of old unanswered user queries. A rejected plan keeps
+the confirmed state in a new receipt and states that unresolved changes were
+not applied; it neither invents filters nor resets the whole conversation.
 Changing URL context or starting a new chat isolates the state. Receipts are
 excluded from saved/exported analysis payloads. No server history database,
 public write API or new dependency is introduced.
@@ -71,6 +81,15 @@ evidence contract. Their prose is no longer replaced by the standard research
 summary; additional quantity/ranking checks do not claim arbitrary semantic
 verification. Independent no-data results do not erase successful fact cards;
 any partial summary is server-derived and explicitly incomplete.
+
+Neutral specification/certification preparation is not a product-fit verdict.
+A checklist or document-request email uses server-authored non-conclusive copy,
+preserves the query context for later, and does not assert that documents are
+verified or legally mandatory. Missing product evidence does not prevent asking
+its owner for those materials; model factual prose still needs the full evidence
+contract. Source requests use the resolved state's filters and grounded source
+terms rather than reparsing old country mentions. Required page/section delivery
+and native quoted/Boolean/exclusion search syntax remain binding.
 
 Greetings are short; greetings and app-capability help return without a provider
 call. Their signed context supports later references to that reply. Save/export controls appear only after a completed turn
@@ -125,7 +144,12 @@ regulatory coverage.
 
 Completed conversations are restored from this browser tab's `sessionStorage`
 for at most 24 hours after completion. The cache is bounded to 1 MB and 12 user
-turns and validated with Zod, including tool-result/input consistency. It never
+turns and validated with Zod, including tool-result/input consistency. Longer
+conversations retain the newest complete exchanges that fit these bounds,
+including the latest signed receipt; a visible notice identifies omitted older
+messages. Refresh restores that recent window, not an unlimited transcript.
+The server still re-queries facts, and neither unsigned browser history nor a
+tampered receipt establishes query authority. It never
 stores uploaded bytes, reasoning or provider metadata. Changing validated URL
 context starts a separate conversation; “New chat” clears the cached conversation.
 Storage denial or an oversized conversation produces a visible warning while

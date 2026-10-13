@@ -13,11 +13,20 @@ export function buildEvidenceRequestResponse(turn: PreparedConversationTurn, loc
   const context = contextText(turn.state);
   if (turn.outputKind === "request_email") {
     const brief = /(?:缩短|精简|简短|\b(?:shorten|short|brief|concise)\b)/iu.test(latestUserText);
-    if (brief) return english
-      ? `Dear Customer, please share the specification sheet, test reports and available certificates${context ? ` for (${context})` : ""}. Please include document versions and traceable originals. We will verify applicability and remaining gaps; this request does not confirm compliance or permission to sell.`
+    const briefText = english
+      ? `Hello, please share the specification sheet, test reports and available certificates${context ? ` for (${context})` : ""}. Please include document versions and traceable originals. We will verify applicability and remaining gaps; this request does not confirm compliance or permission to sell.`
       : `您好，请提供规格表、检测报告及已有证书${context ? `，用于核对（${context}）` : ""}。请附上文件版本与可追溯原件。我们会核验适用性和剩余缺口，本次索取材料不代表已合规或获准销售。`;
+    if (brief) {
+      // Previous prose may determine presentation length, never current facts.
+      // A second shortening request must not repeat the same short template.
+      const alreadyBrief = turn.previousAnswer?.includes(JSON.stringify(briefText).slice(1, -1));
+      if (alreadyBrief) return english
+        ? `Hello, please send versioned, traceable specifications, test reports and available certificates${context ? ` for (${context})` : ""}. This request does not confirm compliance or permission to sell.`
+        : `您好，请提供带版本、可追溯的规格表、检测报告及已有证书${context ? `（${context}）` : ""}。本次索取不代表已合规或获准销售。`;
+      return briefText;
+    }
     return english
-      ? `Dear Customer, please share the specification sheet, emission test reports and any available certification documents${context ? ` for the assessment context (${context})` : ""}. Please include document versions, the tested application and power, test cycles, issuer, validity dates and traceable originals where available. We will review their applicability and outstanding gaps before drawing any conclusion; this request does not confirm compliance or permission to sell.`
+      ? `Hello, please share the specification sheet, emission test reports and any available certification documents${context ? ` for the assessment context (${context})` : ""}. Please include document versions, the tested application and power, test cycles, issuer, validity dates and traceable originals where available. We will review their applicability and outstanding gaps before drawing any conclusion; this request does not confirm compliance or permission to sell.`
       : `您好，请提供规格表、排放检测报告及已有认证文件${context ? `，用于核对这些查询条件（${context}）` : ""}。请尽可能附上文件版本、测试用途与功率、测试循环、签发机构、有效期及可追溯原件。我们会先核对适用性与未解决缺口，再讨论结论，本次索取材料不代表已合规或获准销售。`;
   }
   return english

@@ -23,9 +23,9 @@ This is the only current release/evidence index. Historical implementation notes
 以下为带时间的历史生产观测，不声明仓库当前 HEAD 等于线上版本：
 
 - 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
-  observedAt=`2026-10-13T10:49+00:00`；`/api/health` readbackAt=`2026-10-13T10:49+00:00` returned `status=ok`,
-  `version=0421d347a64832d85d54b25b34e5d1a35303d3dc`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/0421d347a64832d85d54b25b34e5d1a35303d3dc`。因此当前公开 release ID
+  observedAt=`2026-10-13T22:27:21.109Z`；`/api/health` readbackAt=`2026-10-13T22:27:21.109Z` returned `status=ok`,
+  `version=3af85d6abe520226ed54aea6d0c5985d1d23c6ed`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/3af85d6abe520226ed54aea6d0c5985d1d23c6ed`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为
@@ -148,6 +148,13 @@ This is the only current release/evidence index. Historical implementation notes
   2026-10-14（北京时间）在旧运行版本上以非特权用户单独执行原有完整公开读回，97 国及重点来源/日期关系检查 exit 0；NAM / CHN / NAM 独立请求也均为 200。
   这些结果支持链路短时恢复，不证明底层原因已修复或长期稳定；未改数据库路由、超时、发布门槛或失败候选，只允许新 CI-approved SHA 后续发布。
   [本次公开读回失败、回滚及恢复检查记录](evidence/operations/deployment-conversation-readback-failure-2026-10-14.json)。
+  后续 PR #95 / `3af85d6abe520226ed54aea6d0c5985d1d23c6ed` 的精确 master CI 10/10 通过；单次 application-only 发布于
+  `2026-10-13T22:24:27.816Z` 以 exit 0 完成，独立账本及 committed-host 校验确认 `COMMITTED:APPLICATION_VERIFIED_V2`。
+  15 表前后摘要一致，97 国公开读回、内外网中英页面/SSE、7/7 canary 和零重试的 6/6 真实中英示例通过；原 VPS 数据库路由和博客进程不变。
+  但随后 20 轮自适应追问只有 14 轮完全满足请求：检索词投影误拒绝、首轮失败后的旧任务残留、通用沟通被主题词否决，
+  以及邮件称呼和进一步精简的问题仍被复现。因此该 SHA 已部署，但多轮对话验收失败；后续本地修补不能冒充已上线。
+  本次同 SHA 观测替代机器区此前的 10:49 快照，所有历史失败记录保留。
+  [本次上线与真实多轮验收记录](evidence/operations/production-conversation-acceptance-2026-10-14.json)。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的
@@ -232,11 +239,11 @@ This is the only current release/evidence index. Historical implementation notes
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+    "commit": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed",
     "evidenceKind": "historical-operator-record-only",
-    "id": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
-    "observedAt": "2026-10-13T10:49+00:00",
-    "releasePath": "/opt/diesel/releases/0421d347a64832d85d54b25b34e5d1a35303d3dc"
+    "id": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed",
+    "observedAt": "2026-10-13T22:27:21.109Z",
+    "releasePath": "/opt/diesel/releases/3af85d6abe520226ed54aea6d0c5985d1d23c6ed"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -285,18 +292,18 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-13T10:49+00:00",
+    "readbackAt": "2026-10-13T22:27:21.109Z",
     "status": "ok",
-    "version": "0421d347a64832d85d54b25b34e5d1a35303d3dc"
+    "version": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v2"
   },
   "repositoryHead": {
-    "local": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
-    "observedAt": "2026-10-13T10:49+00:00",
-    "remote": "0421d347a64832d85d54b25b34e5d1a35303d3dc"
+    "local": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed",
+    "observedAt": "2026-10-13T22:27:21.109Z",
+    "remote": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed"
   }
 }
 ```

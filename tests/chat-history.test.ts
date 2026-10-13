@@ -73,10 +73,39 @@ describe("bounded tab-local conversation snapshots", () => {
     }
   });
 
-  it("refuses incomplete or overlong conversations instead of dropping their original context", () => {
+  it("refuses incomplete conversations but retains the newest twelve complete exchanges", () => {
     expect(serializeChatHistory({ contextKey, sessionId, messages: [messages[0]!] }, now)).toBeNull();
-    expect(serializeChatHistory({ contextKey, sessionId, messages: Array.from({ length: 26 }, (_, index) => ({
+    const value = serializeChatHistory({ contextKey, sessionId, messages: Array.from({ length: 40 }, (_, index) => ({
       ...messages[index % 2]!, id: `message-${index}`,
-    })) }, now)).toBeNull();
+    })) }, now)!;
+    const restored = parseChatHistory(value, contextKey, now)!;
+    expect(restored.omittedUserTurns).toBe(8);
+    expect(restored.messages).toHaveLength(24);
+    expect(restored.messages[0]?.id).toBe("message-16");
+    expect(restored.messages.at(-1)?.id).toBe("message-39");
+    const afterReload = serializeChatHistory({ ...restored, messages: [...restored.messages,
+      { ...messages[0]!, id: "next-user" }, { ...messages[1]!, id: "next-answer" }] }, now)!;
+    expect(parseChatHistory(afterReload, contextKey, now)?.omittedUserTurns).toBe(9);
+  });
+
+  it("keeps only the latest opaque receipt, including when the first query leaves the visible window", () => {
+    const state = { tasks: ["regulations"], countryIso3s: ["DEU"], applicationScope: "construction", powerKw: 200,
+      asOf: "2026-08-13", productModelCode: null };
+    const turns = Array.from({ length: 28 }, (_, index): SalesChatUiMessage => ({ ...messages[index % 2]!, id: `turn-${index}`,
+      ...(index % 2 ? { metadata: { conversation: { receipt: `receipt-${index}`, state, mode: "research" } } } : {}) }));
+    const restored = parseChatHistory(serializeChatHistory({ contextKey, sessionId, messages: turns }, now), contextKey, now)!;
+    expect(restored.messages.filter(message => message.metadata)).toHaveLength(1);
+    expect(restored.messages.at(-1)?.metadata).toMatchObject({ conversation: { receipt: "receipt-27", state } });
+    expect(prepareSalesChatRequestMessages(restored.messages).every(message => message.role === "user")).toBe(true);
+  });
+
+  it("shrinks at complete exchange boundaries to the byte limit without losing the newest answer", () => {
+    const turns = Array.from({ length: 6 }, (_, index): SalesChatUiMessage => ({ ...messages[index % 2]!, id: `bytes-${index}`,
+      parts: index % 2 ? Array.from({ length: 16 }, () => ({ type: "text", text: "中".repeat(16_000) })) : messages[0]!.parts }));
+    const value = serializeChatHistory({ contextKey, sessionId, messages: turns }, now)!;
+    expect(new TextEncoder().encode(value).byteLength).toBeLessThanOrEqual(CHAT_HISTORY_MAX_BYTES);
+    const restored = parseChatHistory(value, contextKey, now)!;
+    expect(restored.omittedUserTurns).toBe(2);
+    expect(restored.messages.map(message => message.id)).toEqual(["bytes-4", "bytes-5"]);
   });
 });

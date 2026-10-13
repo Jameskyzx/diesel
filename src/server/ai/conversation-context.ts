@@ -1,6 +1,6 @@
 import "server-only";
 
-import { resolveApplicationScopeIntent } from "@/domain/ai/application-scope-intent";
+import { resolveApplicationScopeIntent, applicationScopeMentionsIn } from "@/domain/ai/application-scope-intent";
 import { powerKwsIn } from "@/domain/ai/power-intent";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 import { maskKnowledgeQueryLiterals, maskKnowledgeSignedOperands } from "@/domain/knowledge/query-literal-spans";
@@ -382,6 +382,25 @@ function appendCountry(countries: readonly string[], countryIso3: string) {
     : [...countries, countryIso3].slice(0, 5);
 }
 
+/** A filter reset is not a positive scope/power mention. Remove only complete
+ * imperative reset clauses; quoted source operands are already masked upstream. */
+export function filterResetControls(text: string): { text: string; scope: boolean; power: boolean } {
+  let scope = false, power = false;
+  const projected = text.replace(/(^|[，,。;；!?！？\n]|\.\s+)(\s*(?:(?:请|现在|同时|也)|please\s+)?\s*(?:清除|清空|取消|去掉|不保留|不要保留|clear\b|remove\b|reset\b)\s*(?:\.(?!\s)|[^，,。;；!?！？\n.]){1,160})/giu,
+    (clause, boundary: string, control: string) => {
+      // Mixed reset/set controls need the ordinary parser/clarification, not an
+      // invented ordering within one ambiguous clause.
+      if (/(?:改为|改成|设为|\bset\b|\bswitch\b)/iu.test(control)) return clause;
+      const resetsScope = /(?:用途|场景|应用范围|application\s+(?:scope|filter)|scope\s+filter)/iu.test(control) ||
+        applicationScopeMentionsIn(control).length > 0;
+      const resetsPower = /(?:功率|power\s*(?:filter|limit)?|\bkW\b)/iu.test(control);
+      if (!resetsScope && !resetsPower) return clause;
+      scope ||= resetsScope; power ||= resetsPower;
+      return `${boundary} `;
+    });
+  return { text: projected, scope, power };
+}
+
 /** A replacement mentions the old and new country, not two new peers. */
 function countryReplacementIn(text: string): { from: string; to: string } | null {
   const mentions = countryMentionsIn(text);
@@ -426,8 +445,12 @@ export function buildConversationBusinessContext(
     const explicitTask = activeConversationTaskIn(text);
     // Quoted/signed query operands are not country/scope/power/date overrides.
     // Control-only source follow-ups still accept positive quoted filter values.
-    const metadataText = explicitTask === "knowledge" ? maskKnowledgeQueryLiterals(text)
+    const unprojectedMetadata = explicitTask === "knowledge" ? maskKnowledgeQueryLiterals(text)
       : explicitTask === null && context.activeTask === "knowledge" ? maskKnowledgeSignedOperands(text) : text;
+    const reset = filterResetControls(unprojectedMetadata);
+    const metadataText = reset.text;
+    if (reset.scope) { context.applicationScope = null; context.hasScopeConflict = false; }
+    if (reset.power) { context.powerKw = null; context.hasPowerConflict = false; context.hasInvalidPower = false; }
     const countries = countryIso3sIn(metadataText).slice(0, 5);
     const powerKws = powerKwsIn(metadataText);
     const explicitTargetCountryIso3 = explicitTargetCountryIso3In(metadataText);

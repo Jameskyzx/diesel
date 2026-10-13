@@ -1,0 +1,245 @@
+{
+  "evidenceKind": "historical-operator-record-only",
+  "release": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed",
+  "observedAt": "2026-10-13T22:42:04Z",
+  "outcome": "deployed_conversation_acceptance_failed",
+  "ci": {
+    "runId": 38468062022,
+    "attempt": 1,
+    "conclusion": "success",
+    "requiredGateJobId": 115562553728
+  },
+  "deployment": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed",
+      "operationId": "260e43d9-e97f-413f-860a-0d3291e9697a",
+      "mode": "application",
+      "createdAt": "2026-10-13T22:06:52.057Z",
+      "inputDigest": "12159c056761649d135bb1ca4b7e0279abb719f46f084a6fd651bd254c1a02bb",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "completed",
+    "unit": {
+      "Id": "diesel-release-3af85d6abe520226ed54aea6d0c5985d1d23c6ed.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "Result": "success",
+      "InvocationID": "0d64a815f2fa4e888dc9e91e6c76a5ca",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 1889799
+    },
+    "completion": {
+      "operationId": "260e43d9-e97f-413f-860a-0d3291e9697a",
+      "invocationId": "0d64a815f2fa4e888dc9e91e6c76a5ca",
+      "startedAt": "2026-10-13T22:06:53.137Z",
+      "workerPid": 1889799,
+      "completedAt": "2026-10-13T22:24:27.816Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 4327,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 468,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "independentLedger": {
+    "classification": "terminal",
+    "hostState": "COMMITTED",
+    "governanceState": "APPLICATION_VERIFIED_V2",
+    "current": "/opt/diesel/releases/3af85d6abe520226ed54aea6d0c5985d1d23c6ed"
+  },
+  "independentDataProof": {
+    "checkedAt": "2026-10-13T22:26:08.245Z",
+    "release": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed",
+    "previousRelease": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+    "tablesVerified": 15,
+    "tablesMatch": true,
+    "beforeCheckedAt": "2026-10-13T22:14:05.713Z",
+    "afterCheckedAt": "2026-10-13T22:23:43.916Z",
+    "beforeProofSha256": "1fb7040771e1b311276c6d40cf1c3d69456357d9d2791e94686ba30da834d82e",
+    "afterProofSha256": "74b41ae7c3975c2d900ac0277a1264273c443e0464479f7ffeb4279986699dfa",
+    "dataContractSha256": "d823b25f2996c0f90fdf0cf2707d960fd980246d969139e98abb9c6e76fc1fd0",
+    "protectedFileCount": 144
+  },
+  "canary": {
+    "checkedAt": "2026-10-13T22:27:21.109Z",
+    "expectedVersion": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed",
+    "includeProviderAi": true,
+    "pass": true,
+    "results": [
+      {
+        "durationMs": 166,
+        "errorCode": null,
+        "id": "liveness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/live",
+        "requestId": "dbe3a0ae-c127-405c-a257-0363bf0543f6",
+        "status": 200
+      },
+      {
+        "durationMs": 242,
+        "errorCode": null,
+        "id": "readiness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/ready",
+        "requestId": "40bd13e2-de88-4a3c-b336-98b0d45e66c5",
+        "status": 200
+      },
+      {
+        "durationMs": 1299,
+        "errorCode": null,
+        "id": "country-decision-summary",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-13",
+        "requestId": "4ff7d9db-722a-479f-a672-bb1d267b6ebf",
+        "status": 200
+      },
+      {
+        "durationMs": 2318,
+        "errorCode": null,
+        "id": "country-decision-no-data",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-13",
+        "requestId": "07b0ceb8-b43f-4b90-8f1f-c9da15a9da68",
+        "status": 200
+      },
+      {
+        "durationMs": 124,
+        "errorCode": null,
+        "id": "public-products",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/products",
+        "requestId": "95a44c2f-cc18-41a7-8b20-4139ef1288b8",
+        "status": 200
+      },
+      {
+        "durationMs": 2622,
+        "errorCode": null,
+        "id": "chat-direct-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "c8f69228-40ff-4bda-a0f1-50bac7bdd9c1",
+        "status": 200
+      },
+      {
+        "durationMs": 7314,
+        "errorCode": null,
+        "id": "chat-provider-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "9a986335-459a-49bd-af57-aa889d43621d",
+        "status": 200
+      }
+    ],
+    "runError": null,
+    "targetOrigin": "https://diesel.jamesky.site",
+    "version": "synthetic-canary-v5"
+  },
+  "publicStarters": {
+    "report": "test-results/live-1791930456774/report.json",
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "retries": 0
+  },
+  "adaptiveConversations": {
+    "apiTurns": 7,
+    "browserTurns": 13,
+    "passed": 14,
+    "failed": 6,
+    "transportErrors": 0,
+    "failures": [
+      {
+        "channel": "api",
+        "turn": 1,
+        "requestId": "69e6e00d-cfb4-4b3c-8206-3c86423e9d1f",
+        "reason": "Paraphrased source-term projection vetoed a complete Chinese regulation/source request."
+      },
+      {
+        "channel": "api",
+        "turn": 2,
+        "requestId": "8627f806-a48b-4551-b075-6021e0bd7d67",
+        "reason": "After the failed first request, a regulations-only refinement still inherited the unconfirmed source task."
+      },
+      {
+        "channel": "api",
+        "turn": 6,
+        "requestId": "548e752a-b8b4-41a8-8f92-0353953ce87f",
+        "reason": "An invalid retained source projection vetoed the new explicitly labeled CLIENT200 product task."
+      },
+      {
+        "channel": "browser",
+        "turn": 1,
+        "requestId": "6b6baa09-e79f-406e-be85-f5793e780bba",
+        "reason": "Legacy topic keywords vetoed an ordinary customer-conversation opening."
+      },
+      {
+        "channel": "browser",
+        "turn": 9,
+        "reason": "A materials email addressed to a manufacturer used Dear Customer."
+      },
+      {
+        "channel": "browser",
+        "turn": 10,
+        "reason": "A request to further shorten the email returned identical text."
+      }
+    ],
+    "passedScenarios": [
+      "general NOx explanation",
+      "two-sentence referenced rewrite",
+      "single-country scoped regulations",
+      "append Japan retaining scope, fractional power and date",
+      "replace Japan with China and update fractional power",
+      "switch comparison to Germany only",
+      "Germany source-only retrieval with original identifier and topic",
+      "unknown CLIENT200 remains an evidence gap, never a Demo substitute",
+      "neutral document checklist despite missing product evidence",
+      "email/checklist context retention",
+      "browser reload followed by pronoun-only request retains DEU/construction/200.5 kW/2026-08-13/CLIENT200",
+      "no unsupported sales approval",
+      "switch to BRA market data and clear obsolete filters"
+    ],
+    "diagnosticPath": ".data/release/production-conversation-4767e87a-aa44-4638-a1fc-49ca33fdc5a8.jsonl"
+  },
+  "services": {
+    "diesel": {
+      "pid": 1922984,
+      "status": "online",
+      "restarts": 0
+    },
+    "jameskyApi": {
+      "pid": 1033,
+      "status": "online",
+      "restarts": 0
+    }
+  },
+  "limitations": [
+    "A committed application deployment is not a passed adaptive conversation acceptance.",
+    "These are operator observations, not externally signed evidence or proof of long-term stability.",
+    "Local follow-up repairs are not part of this deployed SHA.",
+    "No database migration, data publication, temporary tunnel, quota change or cleanup was performed."
+  ]
+}

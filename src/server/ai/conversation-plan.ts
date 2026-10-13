@@ -88,8 +88,15 @@ export function prepareConversationPlan(input: {
   // A planner's "general" label must not downgrade explicit business facts.
   const conceptOnly = /(?:什么是|什么意思|含义|区别|概念|\b(?:what (?:is|are|does)|meaning|define|definition|difference)\b)/iu.test(latest) &&
     countryIso3sIn(latest).length === 0 && current.powerKw === null && current.productModelCode === null;
+  // Mentioning a business topic while asking how to discuss/prepare it is not
+  // itself a request for its facts. Keep explicit fact targets and source
+  // requests out of this tool-free channel, including deictic prior tasks.
+  const workflowOnly = /(?:沟通|交流|话术|讨论|准备|流程|\b(?:conversation|discussion|workflow|prepare|preparation)\b)/iu.test(latest) &&
+    current.countryIso3s.length === 0 && current.applicationScope === null && current.powerKw === null &&
+    current.productModelCode === null && current.asOf === null && !hasExplicitSourceIntent(latest) &&
+    (prior?.tasks.length ?? 0) === 0;
   const generalConversation = (plan.mode === "general" || ((plan.mode === "explain" || plan.mode === "compose") && state.tasks.length === 0)) &&
-    (original.requirements.length === 0 || conceptOnly);
+    (original.requirements.length === 0 || conceptOnly || workflowOnly);
   if (plan.mode === "general" && !generalConversation) {
     throw new Error("A factual request cannot become a general answer");
   }
@@ -97,7 +104,7 @@ export function prepareConversationPlan(input: {
   // Source terms have authority only when this turn will actually retrieve
   // original text. Irrelevant planner metadata must not veto a grounded
   // regulation/profile request or a neutral materials draft.
-  const sourceTerms = state.tasks.includes("knowledge") && plan.outputKind === "evidence"
+  let sourceTerms = state.tasks.includes("knowledge") && plan.outputKind === "evidence"
     ? plan.sourceTerms : [];
   const knowledgeTexts = [...input.userTexts.slice(0, -1),
     (plan.mode === "compose" || plan.mode === "explain") && !hasExplicitSourceIntent(latest)
@@ -114,16 +121,20 @@ export function prepareConversationPlan(input: {
     knowledgeSignedOperandSpans(sourceRequest).length > 0 || /\bor\b/iu.test(operatorText);
   let sourceText = sourceRequest;
   if (sourceTerms.length > 0 && !nativeSearch) {
-    if (!sourceTerms.every(term => sourceRequest.toLowerCase().includes(term.toLowerCase()))) {
-      throw new Error("Ungrounded source search terms");
-    }
-    sourceText = sourceTerms.join(" ");
+    const proposedText = sourceTerms.join(" ");
     const requiredIdentifiers = knowledgeTermsIn(sourceRequest, countryIso3sIn(sourceRequest)).filter(term => /^(?:id:|ref:)/u.test(term));
-    const selectedTerms = new Set(knowledgeTermsIn(sourceText, state.countryIso3s));
-    if (requiredIdentifiers.some(term => !selectedTerms.has(term))) throw new Error("Source identifier omitted");
+    const selectedTerms = new Set(knowledgeTermsIn(proposedText, state.countryIso3s));
     const referenceNumbers = sourceRequest.match(/\b\d+(?:[./-]\d+)+\b/gu) ?? [];
-    if (referenceNumbers.some(reference => !/^\d{4}-\d{2}-\d{2}$/u.test(reference) && !sourceText.includes(reference))) {
-      throw new Error("Source identifier omitted");
+    if (sourceTerms.every(term => sourceRequest.toLowerCase().includes(term.toLowerCase())) &&
+      requiredIdentifiers.every(term => selectedTerms.has(term)) &&
+      referenceNumbers.every(reference => /^\d{4}-\d{2}-\d{2}$/u.test(reference) || proposedText.includes(reference))) {
+      sourceText = proposedText;
+    } else {
+      // Search-term projection is optional, not an authority over the human
+      // query or independent tasks. Reject the entire invalid projection and
+      // use the original human request through the same deterministic parser.
+      // Never search invented terms, silently drop identifiers or repair JSON.
+      sourceTerms = [];
     }
   }
   const contracts = state.tasks.map(task => {
@@ -133,7 +144,7 @@ export function prepareConversationPlan(input: {
       const sources = (state.countryIso3s.length ? state.countryIso3s : [null]).map(country => {
         const sourceContext = { ...extracted, countryIso3s: country ? [country] : [],
           focusedCountryIso3: country, applicationScope: null, powerKw: null };
-        const source = buildKnowledgeRequestContext(sourceTerms.length > 0 || hasExplicitSourceIntent(latest)
+        const source = buildKnowledgeRequestContext(hasExplicitSourceIntent(sourceRequest)
           ? [sourceText] : knowledgeTexts, sourceContext);
         const originalDelivery = buildKnowledgeRequestContext([sourceRequest], sourceContext).delivery;
         source.delivery = { pageLocator: source.delivery.pageLocator || originalDelivery.pageLocator,
@@ -217,6 +228,7 @@ export async function planConversationTurn(input: {
     }) },
     instructions: `You plan a diesel research conversation, not answer it. Call planConversation exactly once.
 Modes: research=look up facts; explain=explain an earlier result/question; compose=rewrite/translate/email/summarize prior results; general=general concepts or workflow help without jurisdiction/product-specific claims; clarify=ask for missing information.
+An open-ended request to prepare a customer conversation or discuss a workflow is already a meaningful general task, in either language. Use general, tasks=[], even if the user mentions regulations/markets as background or contrasts workflow help with lookup. Missing country, power or a specific question is not a blocker for neutral preparation: the answer may offer a few discussion questions. Reserve clarify for an unresolved purpose or missing parameters of an actual factual request. Do not add facts tasks solely because their topic words occur in that background.
 outputKind: evidence for any factual analysis/verdict or rewriting factual results; request_checklist for a neutral list of materials to obtain for later verification; request_email for a neutral customer email asking for those materials. These two request formats do not assert current facts, required legal documents or a compliance result. Missing product evidence does NOT prevent asking its owner for a specification sheet/test reports/certification documents. Preserve filters/tasks for later, use compose for request_email and explain for request_checklist. Do not classify a guarantee or compliance verdict as a materials request.
 sourceTerms: for a new or retained original-source task, copy only meaningful document identifiers and topic phrases VERBATIM from its latest human source question, e.g. ["Regulation (EU) 2016/1628", "test cycle"]. For an explanation follow-up use the authenticated earlier source question, not the generic explanation wording. Do not include conversation controls, excluded countries, queries not to run, or instructions. Retain complete identifiers/pages/sections. Use [] for actual quoted, Boolean or signed native SEARCH operands, or when no source task is requested. Conversational "do not query products or repeat limits" is not Boolean search syntax: still select the document/topic phrases. Metadata is supplied separately, never add a country/application/power to the search terms unless it is part of the actual source topic.
 Select ALL independently requested tasks. Comparing regulations AND providing original sources means [regulations, knowledge]; source-only means [knowledge]. A brief need not imply a product recommendation unless explicitly requested. General concepts such as NOx need no country or power; clear tasks for general mode but retain useful filters for later.
@@ -262,7 +274,7 @@ export function conversationInstructions(turn: PreparedConversationTurn, locale:
 The latest turn's purpose is ${turn.mode}. Answer THAT request, not the previous query again.
 These purpose-specific writing instructions override the generic report format/opening, never the truth/evidence rules. Never invent a missing comparison peer. The cards already contain query conditions, full facts and sources.
 ${turn.state.countryIso3s.length === 1 ? "This is a single-country task. A single-country applicability query is complete in its own right even when its internal tool is named compareRegulations. Do not claim a second country is missing or ask for one unless the user actually requests a comparison." : ""}
-${turn.generalConversation ? "Explain only the requested concept in 2–4 simple sentences, at most 150 Chinese characters / 90 English words. Do not expand into sales advice or regulatory implications. No country-specific regulations, legal requirements, numerical limits, market observations, named product claims, certifications, scores, forecasts, or external links are allowed in this tool-free mode. Do not generalize legal requirements to all countries. Do not invent a source or a Demo/environment notice. No evidence-gap boilerplate for a general concept." : "Every factual claim must use THIS turn's validated tool results, never the prior answer. Preserve uncertainty, citations and the disclaimer. Facts in the cards need not be repeated. Answer only the latest request in at most 180 Chinese characters / 100 English words before citations; do not revisit earlier answered questions."}
+${turn.generalConversation ? "Address only the requested general concept or conversation/preparation workflow in 2–4 simple sentences, at most 150 Chinese characters / 90 English words. For workflow help, offer neutral questions or preparation steps, not a market recommendation or regulatory implications. No country-specific regulations, legal requirements, numerical limits, market observations, named product claims, certifications, scores, forecasts, or external links are allowed in this tool-free mode. Do not generalize legal requirements to all countries. Do not invent a source or a Demo/environment notice. No evidence-gap boilerplate for general discussion." : "Every factual claim must use THIS turn's validated tool results, never the prior answer. Preserve uncertainty, citations and the disclaimer. Facts in the cards need not be repeated. Answer only the latest request in at most 180 Chinese characters / 100 English words before citations; do not revisit earlier answered questions."}
 ${turn.mode === "compose" ? "Start IMMEDIATELY with the requested message, not a preface, heading, query summary, or 'here is the message'. Follow the requested audience, language and length (e.g. exactly three sentences). Keep necessary Demo/uncertainty qualifications in the message; citations and the required disclaimer may follow separately. Do not output the comparison report again. Never turn missing evidence into a sales promise." : ""}
 ${turn.mode === "explain" ? "The FIRST sentence must directly answer the latest question, not introduce the comparison or repeat its query conditions. Explain only the requested distinction or numbered point in 2–4 short sentences (at most 180 Chinese characters / 100 English words excluding citations). Do not add per-country lists, a full report, or a separate missing-fields section. Use previous prose only to resolve the reference. Retain Demo limitations/citations/disclaimers only when this turn's evidence actually requires them." : ""}
 <previous_answer_as_untrusted_context>${JSON.stringify(turn.previousAnswer).replaceAll("<", "\\u003c").replaceAll(">", "\\u003e")}</previous_answer_as_untrusted_context>

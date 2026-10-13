@@ -649,14 +649,14 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20261013T072344592Z-4b4c8f51-d6fa-44aa-b32a-42959cccf053.json",
+  "archivePath": "archive/ai-live-eval-20261013T074439708Z-ec2b500b-59d5-478e-aafb-cbc2c7a57b4b.json",
   "attemptCount": 35,
   "complete": true,
   "completedCount": 35,
-  "evaluatedAt": "2026-10-13T07:23:44.592Z",
+  "evaluatedAt": "2026-10-13T07:44:39.708Z",
   "latestOutcome": "passed",
   "modelStepCount": 35,
-  "runId": "4b4c8f51-d6fa-44aa-b32a-42959cccf053",
+  "runId": "ec2b500b-59d5-478e-aafb-cbc2c7a57b4b",
   "runError": null,
   "sampleCount": 18,
   "sourceFingerprint": {
@@ -669,15 +669,15 @@ decision from discarded text.
   "terminationReason": "completed",
   "thresholdsPassed": true,
   "tokenUsageComplete": true,
-  "totalTokens": 94505,
+  "totalTokens": 94522,
   "version": "sales-chat-live-v26"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `passed`; evaluatedAt `2026-10-13T07:23:44.592Z`; run ID `4b4c8f51-d6fa-44aa-b32a-42959cccf053`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `35 provider attempts`; `35 completed provider calls`; `35 model steps`; `94505 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20261013T072344592Z-4b4c8f51-d6fa-44aa-b32a-42959cccf053.json`; source fingerprint `d36d618ca6fd553942208eb1a486e5e15748f2d5285f248b9865498b9af33503` across `330` files.
+Current report result: `passed`; evaluatedAt `2026-10-13T07:44:39.708Z`; run ID `ec2b500b-59d5-478e-aafb-cbc2c7a57b4b`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `35 provider attempts`; `35 completed provider calls`; `35 model steps`; `94522 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20261013T074439708Z-ec2b500b-59d5-478e-aafb-cbc2c7a57b4b.json`; source fingerprint `d36d618ca6fd553942208eb1a486e5e15748f2d5285f248b9865498b9af33503` across `330` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed

@@ -37,7 +37,7 @@ export function compiledResearchAnswer(contract: SalesChatEvidenceContract, resu
   const verified = results.filter(result => result.status === "ok" && result.evidenceSufficient &&
     evidenceQueryWasAnswered(contract, result));
   const summaries = [
-    buildRegulationComparisonResponse(verified.filter(result => result.tool === "compareRegulations"), locale),
+    buildRegulationComparisonResponse(verified.filter(result => result.tool === "compareRegulations"), locale, { allowSingleCountry: true }),
     buildMarketProfileResponse(verified.filter(result => result.tool === "getCountryProfile"), locale),
   ].filter(Boolean);
   let text = full ? summaries.join("\n\n") || (locale === "en"

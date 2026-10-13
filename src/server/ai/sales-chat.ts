@@ -1692,7 +1692,7 @@ function createPublicEvidenceBoundaryTransform({
           hasUnverifiedAttachments || allowUnverifiedAttachmentResponse;
         if ((hasToolResult && canEmitModelText()) || canEmitAttachmentText || canEmitGeneralText) {
           const factualSummary = conversationTurn && conversationTurn.mode !== "research" ? null :
-            buildMarketProfileResponse(toolResults, locale) ?? buildRegulationComparisonResponse(toolResults, locale);
+            buildMarketProfileResponse(toolResults, locale) ?? buildRegulationComparisonResponse(toolResults, locale, { allowSingleCountry: conversationTurn?.mode === "research" });
           if (factualSummary !== null) {
             bufferedText.length = 0;
             bufferedText.push({ id: nextPublicTextPartId(), text: factualSummary });
@@ -1804,7 +1804,7 @@ function createPublicEvidenceBoundaryTransform({
               verified.some(result => evidenceResultMatchesRequest({ ...evidenceContract, requirements: [requirement] }, result))) };
             if (verified.length > 0 && evidenceContractAllowsModelText(partialContract, verified)) {
               const summary = conversationTurn.mode === "research"
-                ? buildRegulationComparisonResponse(verified, locale) ?? buildMarketProfileResponse(verified, locale)
+                ? buildRegulationComparisonResponse(verified, locale, { allowSingleCountry: true }) ?? buildMarketProfileResponse(verified, locale)
                 : null;
               const notice = locale === "en" ? "Some requested evidence is still missing; the verified results below do not establish the missing conclusions." : "部分任务仍有证据缺口；以下已核验结果不能代替缺失部分的结论。";
               evidenceGapResponse = [notice, summary, evidenceGapResponse].filter(Boolean).join("\n\n");
@@ -2902,7 +2902,7 @@ export function streamSalesChat(input: {
         // These answers are fully determined by the accepted facts. Avoid a
         // paid prose-generation step that could only re-interpret those facts.
         return buildMarketProfileResponse(evidence.results, input.locale ?? "en") !== null ||
-          buildRegulationComparisonResponse(evidence.results, input.locale ?? "en") !== null;
+          buildRegulationComparisonResponse(evidence.results, input.locale ?? "en", { allowSingleCountry: input.conversationTurn?.mode === "research" }) !== null;
       },
       () => input.shouldStopAfterStep?.([...observedSteps]) ?? false,
     ],

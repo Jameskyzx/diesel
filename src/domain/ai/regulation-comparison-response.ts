@@ -8,10 +8,10 @@ import { regulatoryDisclaimer } from "@/domain/ai/evidence-gap-response";
 /** Comparative explanations are facts too. Derive them only after the
  * evidence gate passes; never let generated rankings or band claims replace
  * the returned limits. Other conversational tasks keep the model explanation. */
-export function buildRegulationComparisonResponse(results: readonly AiToolResult[], locale: Locale): string | null {
+export function buildRegulationComparisonResponse(results: readonly AiToolResult[], locale: Locale, options: { allowSingleCountry?: boolean } = {}): string | null {
   if (results.length === 0) return null;
   if (results.some(result => result.tool !== "compareRegulations" || result.status !== "ok" || !result.evidenceSufficient ||
-    result.comparison.countries.length < 1 || result.comparison.countries.some(country => country.currentEffectiveRegulations.length === 0))) return null;
+    result.comparison.countries.length < (options.allowSingleCountry ? 1 : 2) || result.comparison.countries.some(country => country.currentEffectiveRegulations.length === 0))) return null;
   const dictionary = getDictionary(locale);
   return results.map(result => {
     if (result.tool !== "compareRegulations") return "";

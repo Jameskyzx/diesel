@@ -163,11 +163,11 @@ This is the only current release/evidence index. Historical implementation notes
   "browserSnapshot": {
     "artifactByteLength": 205614,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "695d99b1bde0d2d7dd1efc67ecc5e5382bbd2b75c5e484710be19a2d9e538495",
-    "baseHeadCommit": "882e0c1630931722f828a364db16606e51719869",
-    "evaluatedCommit": "882e0c1630931722f828a364db16606e51719869",
-    "observedAt": "2026-10-13T06:29:54.821Z",
-    "runId": "64be40ee-fdfd-4911-a79d-8981ae10fa63",
+    "artifactSha256": "652e33b4116e52f7c07f953825ed5d87f2ae54965ad9ff200e3fe1c9e8b13035",
+    "baseHeadCommit": "53a387cb06aa02f7f0ec1e1329f369378631f6e5",
+    "evaluatedCommit": "53a387cb06aa02f7f0ec1e1329f369378631f6e5",
+    "observedAt": "2026-10-13T07:15:59.595Z",
+    "runId": "65e3c889-903d-4260-bf54-063516ef28ab",
     "runs": [
       {
         "collected": 495,
@@ -204,7 +204,7 @@ This is the only current release/evidence index. Historical implementation notes
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "f0a80841ef07d0518c3521e956051678ba6f315c60b67fc5ee2a4665c5140b28",
+      "digest": "c1d456811cd7356acfc5dcad70935a3f5558a486f1a471bbbbe62ad46f8882e5",
       "fileCount": 388
     },
     "version": "diesel-playwright-evidence-v1",
@@ -226,11 +226,11 @@ This is the only current release/evidence index. Historical implementation notes
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20261013T063204808Z-bab1f5d7-ec4e-42b9-b09f-ee5c7b91f52f.json",
-    "attemptCount": 33,
+    "archivePath": "docs/evals/archive/ai-live-eval-20261013T072344592Z-4b4c8f51-d6fa-44aa-b32a-42959cccf053.json",
+    "attemptCount": 35,
     "complete": true,
-    "completedCount": 33,
-    "evaluatedAt": "2026-10-13T06:32:04.808Z",
+    "completedCount": 35,
+    "evaluatedAt": "2026-10-13T07:23:44.592Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -241,13 +241,13 @@ This is the only current release/evidence index. Historical implementation notes
     },
     "latestOutcome": "passed",
     "latestSampleCount": 18,
-    "modelStepCount": 33,
+    "modelStepCount": 35,
     "reportVersion": "sales-chat-live-v26",
     "runError": null,
-    "runId": "bab1f5d7-ec4e-42b9-b09f-ee5c7b91f52f",
+    "runId": "4b4c8f51-d6fa-44aa-b32a-42959cccf053",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "38dbc504ec3fcce10e95c8849c406373565e53e5d98ea26987e8da32602b5dd0",
+      "digest": "d36d618ca6fd553942208eb1a486e5e15748f2d5285f248b9865498b9af33503",
       "fileCount": 330,
       "status": "captured"
     },
@@ -256,7 +256,7 @@ This is the only current release/evidence index. Historical implementation notes
     "terminationReason": "completed",
     "thresholdsPassed": true,
     "tokenUsageComplete": true,
-    "totalTokens": 87106
+    "totalTokens": 94505
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -284,19 +284,19 @@ This is the only current release/evidence index. Historical implementation notes
 - 当前唯一 Vitest 执行证据指针：artifact `docs/evidence/vitest-execution-latest.json`；format `diesel-vitest-execution-evidence-v2`。
   动态测试计数、执行时间、HEAD 与 source fingerprint 仅从该 artifact 派生；`STATUS.md` 不复制这些值。
 
-- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-10-13T06:32:04.808Z`；run ID `bab1f5d7-ec4e-42b9-b09f-ee5c7b91f52f`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`33 provider attempts`；`33 completed provider calls`；`33 model steps`；
-  `87106 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
-  archive `docs/evals/archive/ai-live-eval-20261013T063204808Z-bab1f5d7-ec4e-42b9-b09f-ee5c7b91f52f.json`；source fingerprint `38dbc504ec3fcce10e95c8849c406373565e53e5d98ea26987e8da32602b5dd0` across `330` files。
+- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-10-13T07:23:44.592Z`；run ID `4b4c8f51-d6fa-44aa-b32a-42959cccf053`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`35 provider attempts`；`35 completed provider calls`；`35 model steps`；
+  `94505 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
+  archive `docs/evals/archive/ai-live-eval-20261013T072344592Z-4b4c8f51-d6fa-44aa-b32a-42959cccf053.json`；source fingerprint `d36d618ca6fd553942208eb1a486e5e15748f2d5285f248b9865498b9af33503` across `330` files。
 
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `64be40ee-fdfd-4911-a79d-8981ae10fa63`，artifact SHA-256 `695d99b1bde0d2d7dd1efc67ecc5e5382bbd2b75c5e484710be19a2d9e538495`；
-  observedAt `2026-10-13T06:29:54.821Z`，clean worktree / base HEAD `882e0c1630931722f828a364db16606e51719869`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `65e3c889-903d-4260-bf54-063516ef28ab`，artifact SHA-256 `652e33b4116e52f7c07f953825ed5d87f2ae54965ad9ff200e3fe1c9e8b13035`；
+  observedAt `2026-10-13T07:15:59.595Z`，clean worktree / base HEAD `53a387cb06aa02f7f0ec1e1329f369378631f6e5`；
   `public` = `429 passed / 66 skipped / 0 failed / 0 flaky / 495 collected`；
   `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
   `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
   聚合为 501 passed / 68 skipped / 0 failed / 0 flaky / 569 collected。artifact 为 205614 bytes；
-  browser source fingerprint 为 388 files / `f0a80841ef07d0518c3521e956051678ba6f315c60b67fc5ee2a4665c5140b28`。
-  因运行发生在 clean worktree，`evaluatedCommit=882e0c1630931722f828a364db16606e51719869`；它证明该本地候选上的浏览器验收，
+  browser source fingerprint 为 388 files / `c1d456811cd7356acfc5dcad70935a3f5558a486f1a471bbbbe62ad46f8882e5`。
+  因运行发生在 clean worktree，`evaluatedCommit=53a387cb06aa02f7f0ec1e1329f369378631f6e5`；它证明该本地候选上的浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 
 ## Acceptance and operations / 验收与运维

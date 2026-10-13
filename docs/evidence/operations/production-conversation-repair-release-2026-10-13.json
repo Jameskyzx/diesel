@@ -1,0 +1,353 @@
+{
+  "format": "diesel-production-conversation-release-operator-record-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "recordedAt": "2026-10-13T10:49:32.621Z",
+  "release": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+  "previousRelease": "6c62e9793501b18754089558275ee4a6f23cc0c2",
+  "targetOrigin": "https://diesel.jamesky.site",
+  "deploymentPassed": true,
+  "conversationAcceptancePassed": false,
+  "sourceStage": {
+    "commit": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+    "inputDigest": "a724e8bbedb835079590c7d82316eadfb8c075b439b12afb7f793e033c252128",
+    "runId": 38373923803,
+    "attempt": 1,
+    "gateJobId": 115237597267,
+    "verifiedAt": "2026-10-13T10:06:26.607Z"
+  },
+  "masterCI": {
+    "runId": 38373923803,
+    "attempt": 1,
+    "sha": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+    "conclusion": "success",
+    "gateJobId": 115237597267
+  },
+  "runtime": {
+    "release": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+    "runId": 38373923803,
+    "runAttempt": 1,
+    "artifactId": 11800790784,
+    "archiveSha256": "27dbce552ede171ed83ef40e8745375c617f65cae587dc28436fd11e0396bd2b",
+    "destination": "/opt/diesel/release-inputs/0421d347a64832d85d54b25b34e5d1a35303d3dc/ci-runtime",
+    "temporary": "/private/tmp/diesel-ci-runtime-W3upxJ",
+    "staged": true,
+    "deployed": false
+  },
+  "worker": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+      "operationId": "03874a0b-ad23-4231-a9c0-44ba8be80b62",
+      "mode": "application",
+      "createdAt": "2026-10-13T10:11:28.228Z",
+      "inputDigest": "a724e8bbedb835079590c7d82316eadfb8c075b439b12afb7f793e033c252128",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "completed",
+    "unit": {
+      "Id": "diesel-release-0421d347a64832d85d54b25b34e5d1a35303d3dc.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "Result": "success",
+      "InvocationID": "cd7c0a069db543eab8cbac76d71c0c82",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 1571929
+    },
+    "completion": {
+      "operationId": "03874a0b-ad23-4231-a9c0-44ba8be80b62",
+      "invocationId": "cd7c0a069db543eab8cbac76d71c0c82",
+      "startedAt": "2026-10-13T10:11:29.160Z",
+      "workerPid": 1571929,
+      "completedAt": "2026-10-13T10:32:28.703Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 4429,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 468,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "candidatePreflightFailure": {
+    "exitCode": 1,
+    "stage": "candidate-file-group",
+    "submitted": false,
+    "correctedBy": "chown root:root exact new candidate",
+    "contentsLogged": false
+  },
+  "independentAcceptance": {
+    "ledger": {
+      "release": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+      "classification": "terminal",
+      "hostState": "COMMITTED",
+      "governanceState": "APPLICATION_VERIFIED_V2",
+      "current": "/opt/diesel/releases/0421d347a64832d85d54b25b34e5d1a35303d3dc"
+    },
+    "dataProof": {
+      "checkedAt": "2026-10-13T10:33:24.514Z",
+      "release": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+      "previousRelease": "6c62e9793501b18754089558275ee4a6f23cc0c2",
+      "tablesVerified": 15,
+      "tablesMatch": true,
+      "beforeCheckedAt": "2026-10-13T10:18:44.284Z",
+      "afterCheckedAt": "2026-10-13T10:31:39.908Z",
+      "beforeProofSha256": "db67680172a12f4a83e6bff9906e169579bda932b90f2edc9ea67771222cee1d",
+      "afterProofSha256": "2e05caeb8867b7cf10a97839e0ae501e2ef0fed076f5782d8a35fe3ece4d626d",
+      "dataContractSha256": "d823b25f2996c0f90fdf0cf2707d960fd980246d969139e98abb9c6e76fc1fd0",
+      "protectedFileCount": 144,
+      "logs": [
+        {
+          "file": "stdout.log",
+          "bytes": 4429,
+          "sha256": "bb9c386c890e229b97305b62cc2dfd385c3bf0ef76f0ef26953db65e5f185aab"
+        },
+        {
+          "file": "stderr.log",
+          "bytes": 468,
+          "sha256": "8bf6b22e7f95238925e377eece394930a25b22d23d954e8d1b5d4f32b1e39a4c"
+        }
+      ]
+    },
+    "ledgerValidationExitCode": 0,
+    "committedHostValidationExitCode": 0,
+    "loopbackVerificationExitCode": 0,
+    "publicVerificationExitCode": 0,
+    "finalObservation": {
+      "observedAt": "2026-10-13T10:49:32.621Z",
+      "local": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+      "remote": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+      "publicHealthVersion": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+      "publicHealthTimestamp": "2026-10-13T10:49:31.622Z",
+      "followupWorktreeDirty": true
+    },
+    "processes": [
+      {
+        "name": "jamesky-api",
+        "pid": 1033,
+        "status": "online",
+        "restarts": 0
+      },
+      {
+        "name": "diesel-demo",
+        "pid": 1602405,
+        "status": "online",
+        "restarts": 0
+      }
+    ],
+    "disk": {
+      "availableBytes": 10104352768,
+      "usedPercent": 84,
+      "cleanupPerformed": false
+    },
+    "databaseRoute": "unchanged-original-VPS-route",
+    "databaseForwardingCreated": false,
+    "databaseExportRestoreOrPublicationRepeated": false,
+    "backupsAndFailedCandidatesPreserved": true
+  },
+  "canary": {
+    "checkedAt": "2026-10-13T10:33:34.827Z",
+    "expectedVersion": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+    "includeProviderAi": true,
+    "pass": true,
+    "results": [
+      {
+        "durationMs": 165,
+        "errorCode": null,
+        "id": "liveness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/live",
+        "requestId": "609fee5c-75ce-4a35-8dde-8b34ccfd843b",
+        "status": 200
+      },
+      {
+        "durationMs": 322,
+        "errorCode": null,
+        "id": "readiness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/ready",
+        "requestId": "3f297db5-ec87-4edc-845d-647e82ef6604",
+        "status": 200
+      },
+      {
+        "durationMs": 5359,
+        "errorCode": null,
+        "id": "country-decision-summary",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-13",
+        "requestId": "532f4810-7c79-40f3-8ca3-d63ad99fc504",
+        "status": 200
+      },
+      {
+        "durationMs": 3141,
+        "errorCode": null,
+        "id": "country-decision-no-data",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-13",
+        "requestId": "5724473f-008a-4ede-aa09-ee58e757b07b",
+        "status": 200
+      },
+      {
+        "durationMs": 490,
+        "errorCode": null,
+        "id": "public-products",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/products",
+        "requestId": "7df7c5af-41b7-4a09-b888-a0b0214168c8",
+        "status": 200
+      },
+      {
+        "durationMs": 4414,
+        "errorCode": null,
+        "id": "chat-direct-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "3991b513-7567-43bb-ae5e-1398dcec0920",
+        "status": 200
+      },
+      {
+        "durationMs": 12601,
+        "errorCode": null,
+        "id": "chat-provider-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "20b683d1-a29a-4be6-81cd-a628aa3d9630",
+        "status": 200
+      }
+    ],
+    "runError": null,
+    "targetOrigin": "https://diesel.jamesky.site",
+    "version": "synthetic-canary-v5"
+  },
+  "fixedStarters": {
+    "reportPath": "test-results/live-1791887719055/report.json",
+    "passed": 3,
+    "failed": 1,
+    "notRun": 2,
+    "retries": 0,
+    "failedRequestId": "830f6131-8d78-4cee-9deb-7c1b110ba013",
+    "failure": "English current CHN regulations starter was rejected by planning validation; no verified tool evidence.",
+    "launchFailure": {
+      "exitCode": 1,
+      "reportPath": "test-results/live-1791887650100/report.json",
+      "reason": "macOS sandbox Mach port launch denied",
+      "modelRequestsSent": 0,
+      "testsPassed": 0,
+      "testsFailedToLaunch": 1,
+      "notRun": 5
+    }
+  },
+  "exploratoryApi": {
+    "path": ".data/release/production-conversation-39121fd2-2768-4fce-bd44-b88501cd3bf1.jsonl",
+    "target": "https://diesel.jamesky.site",
+    "release": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+    "mocks": false,
+    "retries": 0,
+    "requests": 6,
+    "transportPassed": 6,
+    "semanticPassed": 4,
+    "semanticFailed": 2,
+    "failureTurns": [
+      2,
+      5
+    ],
+    "allComplete": true,
+    "reasoningPresent": false,
+    "acceptedSourceNoData": true
+  },
+  "exploratoryBrowser": {
+    "turns": 14,
+    "failedTurns": [
+      5,
+      7,
+      9,
+      10
+    ],
+    "passedTurns": [
+      1,
+      2,
+      3,
+      4,
+      6,
+      8,
+      11,
+      12,
+      13,
+      14
+    ],
+    "restoredAfterTurn": 13,
+    "restoredCompleteExchanges": 12,
+    "postReloadContextPreserved": true,
+    "context": {
+      "countryIso3s": [
+        "DEU"
+      ],
+      "applicationScope": "construction",
+      "powerKw": 200.5,
+      "asOf": "2026-08-13",
+      "productModelCode": "D200"
+    },
+    "mocks": false,
+    "retries": 0
+  },
+  "diagnoses": [
+    {
+      "source": "actual local provider plan for same English production starter",
+      "reason": "Ungrounded source search terms",
+      "tasks": [
+        "regulations"
+      ],
+      "sourceTerms": [
+        "regulations currently effective in CHN"
+      ]
+    },
+    {
+      "source": "actual local provider plan for same Add Japan follow-up with synthetic known DEU state",
+      "reason": "Ungrounded source search terms",
+      "tasks": [
+        "regulations"
+      ],
+      "countryIso3s": [
+        "DEU",
+        "JPN"
+      ],
+      "powerKw": 150.5,
+      "sourceTerms": [
+        "effective emissions rules",
+        "construction equipment",
+        "150.5 kW"
+      ]
+    },
+    {
+      "source": "read productModelCodeIn implementation",
+      "reason": "unlabeled heuristic limited letter prefix to 1-4; explicit model CLIENT200 not recognized"
+    }
+  ],
+  "limitations": [
+    "This operator record is not externally authenticated production evidence.",
+    "Passing SSE transport does not imply passing conversation semantics.",
+    "Source-only no_data was an honest absence of indexed text, not proof that regulations do not exist.",
+    "Old v26 live eval covers legacy compatibility, not the new conversational planner.",
+    "Local repairs identified after this production run are not yet deployed."
+  ]
+}

@@ -32,7 +32,7 @@ export function contextText(state: ConversationState): string {
 function taskText(task: ConversationState["tasks"][number], state: ConversationState) {
   const comparison = state.countryIso3s.length > 1 ? "compare " : "";
   const names = { country_profile: "country profile", regulations: `${comparison}regulations`,
-    market: `${comparison}market data`, product_fit: "product fit", opportunity_score: "opportunity score",
+    market: `${comparison}market data`, product_fit: state.productModelCode ? `product fit model ${state.productModelCode}` : "product fit", opportunity_score: "opportunity score",
     sales_brief: "sales brief", knowledge: "original sources" };
   return `${names[task]} ${contextText(state)}`;
 }
@@ -94,6 +94,11 @@ export function prepareConversationPlan(input: {
     throw new Error("A factual request cannot become a general answer");
   }
   if (plan.mode === "general") state.tasks = [];
+  // Source terms have authority only when this turn will actually retrieve
+  // original text. Irrelevant planner metadata must not veto a grounded
+  // regulation/profile request or a neutral materials draft.
+  const sourceTerms = state.tasks.includes("knowledge") && plan.outputKind === "evidence"
+    ? plan.sourceTerms : [];
   const knowledgeTexts = [...input.userTexts.slice(0, -1),
     (plan.mode === "compose" || plan.mode === "explain") && !hasExplicitSourceIntent(latest)
       ? "继续查来源" : latest];
@@ -108,11 +113,11 @@ export function prepareConversationPlan(input: {
   const nativeSearch = knowledgeQueryLiteralSpans(sourceRequest).length > 0 ||
     knowledgeSignedOperandSpans(sourceRequest).length > 0 || /\bor\b/iu.test(operatorText);
   let sourceText = sourceRequest;
-  if (plan.sourceTerms.length > 0 && !nativeSearch) {
-    if (!plan.sourceTerms.every(term => sourceRequest.toLowerCase().includes(term.toLowerCase()))) {
+  if (sourceTerms.length > 0 && !nativeSearch) {
+    if (!sourceTerms.every(term => sourceRequest.toLowerCase().includes(term.toLowerCase()))) {
       throw new Error("Ungrounded source search terms");
     }
-    sourceText = plan.sourceTerms.join(" ");
+    sourceText = sourceTerms.join(" ");
     const requiredIdentifiers = knowledgeTermsIn(sourceRequest, countryIso3sIn(sourceRequest)).filter(term => /^(?:id:|ref:)/u.test(term));
     const selectedTerms = new Set(knowledgeTermsIn(sourceText, state.countryIso3s));
     if (requiredIdentifiers.some(term => !selectedTerms.has(term))) throw new Error("Source identifier omitted");
@@ -128,7 +133,7 @@ export function prepareConversationPlan(input: {
       const sources = (state.countryIso3s.length ? state.countryIso3s : [null]).map(country => {
         const sourceContext = { ...extracted, countryIso3s: country ? [country] : [],
           focusedCountryIso3: country, applicationScope: null, powerKw: null };
-        const source = buildKnowledgeRequestContext(plan.sourceTerms.length > 0 || hasExplicitSourceIntent(latest)
+        const source = buildKnowledgeRequestContext(sourceTerms.length > 0 || hasExplicitSourceIntent(latest)
           ? [sourceText] : knowledgeTexts, sourceContext);
         const originalDelivery = buildKnowledgeRequestContext([sourceRequest], sourceContext).delivery;
         source.delivery = { pageLocator: source.delivery.pageLocator || originalDelivery.pageLocator,
@@ -174,7 +179,7 @@ export function prepareConversationPlan(input: {
   if (current.hasScopeConflict) contract.missingRequiredParameters.push("applicationScope");
   if (current.hasPowerConflict) contract.missingRequiredParameters.push("powerKw");
   if (!generalConversation && state.tasks.length === 0) contract.missingRequiredParameters.push("task");
-  return { mode: plan.mode, outputKind: plan.outputKind, sourceTerms: plan.sourceTerms, state, contract, generalConversation, previousAnswer: input.previous ? JSON.stringify([
+  return { mode: plan.mode, outputKind: plan.outputKind, sourceTerms, state, contract, generalConversation, previousAnswer: input.previous ? JSON.stringify([
     ...input.previous.history, { user: input.previous.userText, answer: input.previous.answer },
   ]) : null };
 }
@@ -228,7 +233,7 @@ Scope values use the supplied schema; do not silently broaden non-road into cons
   try {
     return prepareConversationPlan({ ...input, plan: calls[0]!.input });
   } catch (error) {
-    const reasons = ["Ungrounded conversation plan", "A factual request cannot become a general answer"];
+    const reasons = ["Ungrounded conversation plan", "A factual request cannot become a general answer", "Ungrounded source search terms", "Source identifier omitted"];
     console.info("AI conversation plan rejected", { reason: error instanceof Error && reasons.includes(error.message) ? error.message : "invalid_schema",
       fields: error instanceof z.ZodError ? error.issues.map(issue => issue.path.join(".")) : [],
     });

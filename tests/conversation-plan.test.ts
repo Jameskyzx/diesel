@@ -136,6 +136,51 @@ describe("purpose, conversation state and evidence are separate contracts", () =
       selectedCountryIso3: null, runtimeContext })).toThrow("Ungrounded source");
   });
 
+  it("does not let unused source terms reject a current regulation profile", () => {
+    const turn = prepareConversationPlan({ plan: { mode: "research", state: { ...empty, tasks: ["regulations"], countryIso3s: ["CHN"] },
+      sourceTerms: ["regulations currently effective in CHN"] }, userTexts: ["Which regulations are currently effective in CHN?"],
+      previous: null, selectedCountryIso3: null, runtimeContext });
+    expect(turn.sourceTerms).toEqual([]);
+    expect(turn.contract.missingRequiredParameters).toEqual([]);
+    expect(turn.contract.requirements[0]?.acceptedTools).toEqual(["getCountryProfile"]);
+  });
+
+  it("accepts a grounded comparison refinement despite irrelevant prior search terms", () => {
+    const confirmed = { ...scoped, countryIso3s: ["DEU"], powerKw: 150.5 };
+    const previous = prior(confirmed, "Look up DEU construction equipment emissions rules, 150.5 kW, as of 2026-08-13.");
+    const turn = prepareConversationPlan({ plan: { mode: "research", state: { ...confirmed, countryIso3s: ["DEU", "JPN"] },
+      sourceTerms: ["effective emissions rules", "construction equipment", "150.5 kW"] },
+      userTexts: [previous.userText, "Add Japan to that comparison, retaining the application, power and date."],
+      previous, selectedCountryIso3: null, runtimeContext });
+    expect(turn.sourceTerms).toEqual([]);
+    expect(turn.contract.requirements[0]?.query).toMatchObject({ countryIso3s: ["DEU", "JPN"], applicationScope: "construction", powerKw: 150.5, asOf: "2026-08-13" });
+  });
+
+  it.each(["model CLIENT200", "型号 CLIENT200", "型号：CLIENT200"])("grounds an explicitly labeled long model and keeps product evidence mandatory: %s", label => {
+    const state = { ...scoped, tasks: ["product_fit"], countryIso3s: ["DEU"], powerKw: 200.5, productModelCode: "CLIENT200" };
+    const turn = prepareConversationPlan({ plan: { mode: "research", state, sourceTerms: ["unrelated source terms"] },
+      userTexts: [`Check product fit for ${label}, DEU construction equipment at 200.5 kW on 2026-08-13. No Demo substitute.`],
+      previous: null, selectedCountryIso3: null, runtimeContext });
+    expect(turn.state.productModelCode).toBe("CLIENT200");
+    expect(turn.contract.missingRequiredParameters).toEqual([]);
+    expect(turn.contract.requirements[0]?.acceptedTools).toEqual(["findCompatibleProducts"]);
+    expect(turn.contract.requirements[0]?.query.productModelCode).toBe("CLIENT200");
+  });
+
+  it("does not promote an unlabeled long identifier to a verified model", () => {
+    expect(() => prepareConversationPlan({ plan: { mode: "research", state: { ...scoped, productModelCode: "CLIENT200" } },
+      userTexts: [first, "CLIENT200 appeared in the document"], previous: prior(), selectedCountryIso3: null, runtimeContext })).toThrow("Ungrounded");
+  });
+
+  it("ignores unused source terms in neutral material requests without creating a compliance verdict", () => {
+    const previous = prior({ ...scoped, tasks: ["knowledge"], countryIso3s: ["DEU"] }, "Find DEU test cycle original sources", "No matching indexed text.");
+    const turn = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_email", state: previous.state,
+      sourceTerms: ["unrelated source terms"] }, userTexts: [previous.userText, "Write a neutral email asking for materials, without an approval."],
+      previous, selectedCountryIso3: null, runtimeContext });
+    expect(turn.sourceTerms).toEqual([]);
+    expect(buildEvidenceRequestResponse(turn, "en", "Write a neutral materials email")).toContain("does not confirm compliance");
+  });
+
   it("source-term projection does not erase a requested page locator or a regulation identifier", () => {
     const state = { ...empty, tasks: ["knowledge"], countryIso3s: ["DEU"] };
     const input = { userTexts: ["Find Regulation (EU) 2016/1628 test cycle original text and page numbers for DEU."],

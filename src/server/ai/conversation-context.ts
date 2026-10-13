@@ -362,6 +362,11 @@ function explicitAsOfIn(text: string): string | null {
 }
 
 function productModelCodeIn(text: string): string | null {
+  // An explicit model label can identify a longer alphabetic prefix. Keep the
+  // conservative heuristic for unlabeled text so document names do not become
+  // product filters merely because they contain a number.
+  const labeled = text.toUpperCase().match(/(?:\bMODEL\s+|型号\s*[:：]?\s*)([A-Z][A-Z0-9-]{2,99})(?![A-Z0-9-])/u)?.[1];
+  if (labeled && /\d/u.test(labeled) && !nonModelHyphenatedCodes.has(labeled)) return labeled;
   const candidates = text.toUpperCase().match(/\b[A-Z][A-Z0-9-]{2,99}\b/gu) ?? [];
   return (
     candidates.find(

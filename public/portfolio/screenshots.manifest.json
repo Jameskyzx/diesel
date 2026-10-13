@@ -1,12 +1,12 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-12T10:08:52.227Z",
+      "capturedAt": "2026-10-13T06:07:58.738Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
       "route": "/",
-      "sha256": "160d379577688702b9c936b40aff3bf23a0509f3f3dfa82f9e63fc414d249709",
+      "sha256": "4d6583a755899ed0b8414d975ed21e4fcdfd0374c016b7364d433fd5b51ffc4f",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -240,6 +240,7 @@
         "src/server/ai/conversation-context.ts",
         "src/server/ai/conversation-plan.ts",
         "src/server/ai/conversation-receipt.ts",
+        "src/server/ai/conversation-research.ts",
         "src/server/ai/evidence-contract.ts",
         "src/server/ai/knowledge-request-context.ts",
         "src/server/ai/model.ts",
@@ -305,7 +306,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "69a2cdad03f11d9b42edec5b7f97a94b23368ba898706d9862175ed96c70f6d4",
+      "sourceFingerprint": "503792512e024b1a95f474b30774906aff7e3d1c67bc4d0ba6dc5f3f5f790dcd",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -313,12 +314,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-12T10:08:53.917Z",
+      "capturedAt": "2026-10-13T06:08:01.056Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "c001b8ffab0cddd33bae0e58885207963d35bec47624540f7328e841da36125f",
+      "sha256": "75c9477768e653465631502b42ae94bb5c1406538718f1bb35d219a6873e1235",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -553,6 +554,7 @@
         "src/server/ai/conversation-context.ts",
         "src/server/ai/conversation-plan.ts",
         "src/server/ai/conversation-receipt.ts",
+        "src/server/ai/conversation-research.ts",
         "src/server/ai/evidence-contract.ts",
         "src/server/ai/knowledge-request-context.ts",
         "src/server/ai/model.ts",
@@ -618,7 +620,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "bb819d48ab9e7720918edf3610f428bf5772af2cb618ade25a9ddd506804e4da",
+      "sourceFingerprint": "9db40f7a2d2c98f44f46f8b74f1fb8656b7903c069112d2d9087f88bc6663a0e",
       "viewport": {
         "height": 1000,
         "width": 1600

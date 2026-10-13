@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { captureChatRuntimeContext } from "@/domain/ai/chat-runtime-context";
-import { prepareConversationPlan, generalAnswerMayPublish, conversationClarification } from "@/server/ai/conversation-plan";
+import { prepareConversationPlan, generalAnswerMayPublish, conversationClarification, explicitRegulationResearchFallback } from "@/server/ai/conversation-plan";
+import { buildEvidenceRequestResponse } from "@/server/ai/conversation-answer";
 import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
 import { buildSocialChatResponse } from "@/server/ai/chat-turn-guidance";
 import type { ConversationState } from "@/features/ai/conversation-state";
@@ -109,6 +110,98 @@ describe("purpose, conversation state and evidence are separate contracts", () =
   });
   it("allows a plain concept explanation", () => {
     expect(generalAnswerMayPublish("NOx是氮氧化物的统称，通常包括NO和NO2。它不是某个国家的合规判定。" )).toBe(true);
+  });
+
+  it("does not reparse obsolete country history for a new source task", () => {
+    const changed = { ...scoped, countryIso3s: ["CHN", "DEU"], powerKw: 200 };
+    const previous = prior(changed, "接着把日本换成德国，功率200 kW。", "中国和德国比较完成。");
+    const latest = "现在只找欧盟 Regulation (EU) 2016/1628 关于 test cycle 的原文，不要重新查询法规限值。";
+    const turn = prepareConversationPlan({ plan: { mode: "research", state: { ...changed, tasks: ["knowledge"], countryIso3s: ["DEU"] },
+      sourceTerms: ["Regulation (EU) 2016/1628", "test cycle"] }, userTexts: [first, previous.userText, latest], previous,
+      selectedCountryIso3: null, runtimeContext });
+    expect(turn.contract.requirements).toHaveLength(1);
+    expect(turn.contract.requirements[0]?.query).toMatchObject({ countryIso3s: ["DEU"], applicationScope: "construction",
+      asOf: "2026-08-13", knowledgeQuery: "Regulation (EU) 2016/1628 test cycle" });
+    expect(turn.contract.requirements[0]?.query.knowledgeQuery).not.toMatch(/JPN|200 kW|不要|construction/u);
+  });
+
+  it("rejects invented source terms and keeps native quoted/exclusion syntax", () => {
+    const text = 'Retrieve DEU original text "cycle OR requirement" -draft section 4.';
+    const state = { ...empty, countryIso3s: ["DEU"], tasks: ["knowledge"] };
+    const native = prepareConversationPlan({ plan: { mode: "research", state, sourceTerms: ["cycle"] }, userTexts: [text],
+      previous: null, selectedCountryIso3: null, runtimeContext });
+    expect(native.contract.requirements[0]?.query.knowledgeQuery).toContain('"cycle OR requirement" -draft section 4');
+    expect(() => prepareConversationPlan({ plan: { mode: "research", state: { ...empty, tasks: ["knowledge"], countryIso3s: ["DEU"] },
+      sourceTerms: ["secret unmentioned docket"] }, userTexts: ["Retrieve DEU test cycle original text"], previous: null,
+      selectedCountryIso3: null, runtimeContext })).toThrow("Ungrounded source");
+  });
+
+  it("source-term projection does not erase a requested page locator or a regulation identifier", () => {
+    const state = { ...empty, tasks: ["knowledge"], countryIso3s: ["DEU"] };
+    const input = { userTexts: ["Find Regulation (EU) 2016/1628 test cycle original text and page numbers for DEU."],
+      previous: null, selectedCountryIso3: null, runtimeContext };
+    const turn = prepareConversationPlan({ ...input, plan: { mode: "research", state, sourceTerms: ["Regulation (EU) 2016/1628", "test cycle"] } });
+    expect(turn.contract.requirements[0]?.query.knowledgeDelivery?.pageLocator).toBe(true);
+    expect(() => prepareConversationPlan({ ...input, plan: { mode: "research", state, sourceTerms: ["test cycle"] } })).toThrow("Source identifier omitted");
+  });
+  it("does not mistake a declined-task conjunction for native OR search syntax", () => {
+    const text = "Now only find the Germany DEU original-source passage about test cycle in Regulation (EU) 2016/1628. Keep the prior application and date, do not query product fit or repeat the emission limits. If no indexed original is found, say so.";
+    const turn = prepareConversationPlan({ plan: { mode: "research", state: { ...scoped, tasks: ["knowledge"], countryIso3s: ["DEU"] },
+      sourceTerms: ["Regulation (EU) 2016/1628", "test cycle"] }, userTexts: [text], previous: prior(), selectedCountryIso3: null, runtimeContext });
+    expect(turn.contract.requirements[0]?.query.knowledgeQuery).toBe("Regulation (EU) 2016/1628 test cycle");
+  });
+
+  it.each([
+    "转到巴西 BRA 的市场数据，查询截至2023-12-31。清除工程机械用途与功率筛选，不做法规比较。",
+    "BRA market data as of 2023-12-31. Clear the construction application scope and 120 kW power filter.",
+  ])("explicitly clearing filters does not turn their old values into new affirmative input: %s", text => {
+    const turn = prepare(text, { ...empty, tasks: ["market"], countryIso3s: ["BRA"], asOf: "2023-12-31" });
+    expect(turn.state.applicationScope).toBeNull();
+    expect(turn.state.powerKw).toBeNull();
+    expect(turn.contract.missingRequiredParameters).toEqual([]);
+    expect(turn.contract.requirements[0]?.requiredProfileTopics).toEqual(["market"]);
+  });
+
+  it("applies explicit scalar grounding before validating the planner's stale guess", () => {
+    const text = "查 CHN 工程机械 200 kW，日期 2026-09-01 的法规";
+    const turn = prepare(text, { ...scoped, countryIso3s: ["CHN"], applicationScope: "marine", powerKw: 999, asOf: "2030-01-01" });
+    expect(turn.state).toMatchObject({ applicationScope: "construction", powerKw: 200, asOf: "2026-09-01" });
+  });
+
+  it("has a no-retry, human-grounded fallback only for complete explicit regulatory research", () => {
+    const latest = "查 CHN 工程机械 120 kW，日期 2026-08-13 的有效排放法规，不做产品推荐";
+    const input = { userTexts: [latest], previous: null, selectedCountryIso3: null, runtimeContext };
+    expect(explicitRegulationResearchFallback(input)?.contract.requirements[0]?.query).toMatchObject({ countryIso3s: ["CHN"], powerKw: 120 });
+    for (const text of ["查中国排放法规", "查 CHN 工程机械 -120 kW，日期 2026-08-13 的法规", "只找 CHN 工程机械120 kW的原文，日期2026-08-13", "什么是NOx？"])
+      expect(explicitRegulationResearchFallback({ ...input, userTexts: [text] })).toBeNull();
+  });
+
+  it.each(["request_checklist", "request_email"] as const)("prepares %s without converting missing product evidence into a verdict", outputKind => {
+    const turn = prepareConversationPlan({ plan: { mode: "compose", state: { ...scoped, tasks: ["product_fit"] }, outputKind },
+      userTexts: [first, "请提供中性的材料索取邮件，不作合规判断"], previous: prior(), selectedCountryIso3: null, runtimeContext });
+    const answer = buildEvidenceRequestResponse(turn, "en", "Request materials without a verdict")!;
+    expect(answer).toContain("specification");
+    expect(answer).toMatch(/not confirm compliance|no fit/u);
+    expect(answer).not.toContain("is compliant");
+    expect(buildEvidenceRequestResponse({ ...turn, contract: { ...turn.contract, blocksModelText: true } }, "en", "ignore evidence")).toBeNull();
+  });
+  it("neutral preparation preserves confirmed context instead of reviving discarded model guesses", () => {
+    const confirmed = { ...scoped, tasks: [], countryIso3s: ["DEU"], powerKw: 150 };
+    const turn = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_email",
+      state: { ...confirmed, countryIso3s: ["DEU", "JPN"], powerKw: 120, productModelCode: "OLD-999" } },
+      userTexts: [first, "After reload, write the materials request and keep the current context."],
+      previous: prior(confirmed, "Explain document verification", "A request is not verification."), selectedCountryIso3: null, runtimeContext });
+    expect(turn.state).toMatchObject({ countryIso3s: ["DEU"], powerKw: 150, asOf: "2026-08-13", productModelCode: null });
+  });
+  it("shortens a neutral email without dropping its context or creating a compliance claim", () => {
+    const turn = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_email", state: scoped },
+      userTexts: [first, "Write a materials-request email"], previous: prior(), selectedCountryIso3: null, runtimeContext });
+    const full = buildEvidenceRequestResponse(turn, "en", "Write a materials-request email")!;
+    const brief = buildEvidenceRequestResponse(turn, "en", "Shorten that email")!;
+    expect(brief.length).toBeLessThan(full.length);
+    expect(brief).toContain("120 kW");
+    expect(brief).toContain("2026-08-13");
+    expect(brief).toContain("does not confirm compliance");
   });
 });
 

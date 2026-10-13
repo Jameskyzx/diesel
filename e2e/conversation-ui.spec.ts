@@ -4,6 +4,41 @@ import { noDataChatEvents } from "./helpers/chat-evidence";
 import { ANALYSES_STORAGE_KEY } from "../src/features/analyses/storage";
 
 for (const locale of ["en", "zh-CN"] as const) {
+  test(`${locale} twenty-turn conversation restores its latest window and continues with the newest receipt`, async ({ page, context, baseURL }) => {
+    const copy = getDictionary(locale).chat;
+    await context.addCookies([{ name: "diesel_locale", value: locale, url: baseURL! }]);
+    let requests = 0;
+    await page.route("**/api/chat", async route => {
+      const body = route.request().postDataJSON() as { conversation: { receipt?: string }; messages: { role: string }[] };
+      requests += 1;
+      if (requests > 1) expect(body.conversation.receipt).toBe(`recent-receipt-${requests - 1}`);
+      expect(body.messages.length).toBeLessThanOrEqual(12);
+      expect(body.messages.every(message => message.role === "user")).toBe(true);
+      await route.fulfill({ headers: { "content-type": "text/event-stream", "x-vercel-ai-ui-message-stream": "v1" }, body: [
+        { type: "start", messageId: `recent-${requests}` },
+        { type: "text-start", id: "answer" }, { type: "text-delta", id: "answer", delta: `Recent complete answer ${requests}` },
+        { type: "text-end", id: "answer" },
+        { type: "finish", finishReason: "stop", messageMetadata: { conversation: { receipt: `recent-receipt-${requests}`,
+          state: { tasks: [], countryIso3s: ["DEU"], applicationScope: "construction", powerKw: 200, asOf: "2026-08-13", productModelCode: null }, mode: "general" } } },
+      ].map(event => `data: ${JSON.stringify(event)}\n\n`).join("") + "data: [DONE]\n\n" });
+    });
+    async function send(turn: number) {
+      await page.getByRole("textbox", { name: copy.questionInput, exact: true }).fill(`Question ${turn}`);
+      await page.getByRole("button", { name: copy.send, exact: true }).click();
+      await expect(page.getByTestId("assistant-markdown").last()).toHaveText(`Recent complete answer ${turn}`);
+      await expect(page.getByText(copy.statusComplete, { exact: true })).toBeAttached();
+    }
+    await page.goto("/chat");
+    for (let turn = 1; turn <= 20; turn += 1) await send(turn);
+    await expect(page.getByText(copy.historyWindowed, { exact: false })).toBeVisible();
+    await expect(page.getByText(copy.historyUnavailable, { exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByTestId("assistant-markdown")).toHaveCount(12);
+    await expect(page.getByTestId("assistant-markdown").last()).toHaveText("Recent complete answer 20");
+    await send(21);
+    await expect(page.getByText(copy.historyUnavailable, { exact: true })).toHaveCount(0);
+  });
+
   test(`${locale} conversation receipt survives reload; greetings aren't analyses`, async ({ page, context, baseURL }) => {
     const dictionary = getDictionary(locale);
     const copy = dictionary.chat;

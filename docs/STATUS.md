@@ -142,6 +142,12 @@ This is the only current release/evidence index. Historical implementation notes
   `jamesky-api` PID 1033 / 重启 0 未变，两项服务 online；可用 9,115,549,696 bytes，全部备份与失败候选保留，未改数据库地址或放宽门槛。
   辅助诊断的 CJS/ESM 加载失败未发送数据库请求；修正后的真实探针结果独立保存。该 SHA 不重用，下一次只能使用新 CI-approved SHA。
   [本次心跳中止、独立回退与只读对照记录](evidence/operations/deployment-conversation-heartbeat-failure-2026-10-13.json)。
+  后续 PR #94 / `e96b5802f70426c1ab9257cc32ce584b7447e223` 的精确 master CI 10/10 通过，但发布于 `2026-10-13T15:51:52.120Z` 以 exit 70 结束并回滚。
+  逐项核对 worker、PM2 与 Nginx 日志后，首个失败已定位到 `/api/countries/NAM?asOf=2026-08-11`：两次约 15 秒超时，随后一次立即 503；`unlock-timeout` 是后续清理错误，不是已证明的首因。
+  独立账本为 `terminal:ROLLED_BACK:none`，线上仍为 `0421d34`；仅有 before 指纹，没有 after 指纹，也未执行修补版生产多轮验收。
+  2026-10-14（北京时间）在旧运行版本上以非特权用户单独执行原有完整公开读回，97 国及重点来源/日期关系检查 exit 0；NAM / CHN / NAM 独立请求也均为 200。
+  这些结果支持链路短时恢复，不证明底层原因已修复或长期稳定；未改数据库路由、超时、发布门槛或失败候选，只允许新 CI-approved SHA 后续发布。
+  [本次公开读回失败、回滚及恢复检查记录](evidence/operations/deployment-conversation-readback-failure-2026-10-14.json)。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

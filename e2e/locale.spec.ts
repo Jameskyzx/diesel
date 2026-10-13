@@ -1211,10 +1211,21 @@ test("localizes visible country names and dates while preserving the ISO query",
     "NOX 2025-01-01–open",
   );
 
-  const response = await page.request.post("/api/preferences/locale", {
-    data: { locale: "zh-CN" },
-  });
+  // Exercise the browser's real locale flow, including the cookie and refresh,
+  // instead of reusing the preparation step's idle API request connection.
+  const [response] = await Promise.all([
+    page.waitForResponse((response) =>
+      new URL(response.url()).pathname === "/api/preferences/locale"
+      && response.request().method() === "POST",
+    ),
+    detail
+      .getByTestId("country-drawer-locale-toggle")
+      .getByRole("button", { exact: true, name: "中文" })
+      .click(),
+  ]);
   expect(response.ok()).toBe(true);
+  expect(response.request().postDataJSON()).toEqual({ locale: "zh-CN" });
+  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
   await page.reload();
   await expect(page).toHaveURL(
     /\/countries\/CHN\?applicationScope=non-road&asOf=2026-08-12&powerKw=100&productModelCode=DEMO-ENG-100$/u,

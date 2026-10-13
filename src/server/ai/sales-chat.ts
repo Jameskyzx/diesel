@@ -144,7 +144,7 @@ const publicSalesChatStreamError = Object.freeze({
   code: "AI_STREAM_FAILED",
 });
 
-function containsEmbeddedReasoningMarkupInValue(
+export function containsEmbeddedReasoningMarkupInValue(
   value: unknown,
   seen = new WeakSet<object>(),
 ): boolean {
@@ -2851,7 +2851,7 @@ export function streamSalesChat(input: {
         instructions: instructions + (policy.phase === "gather_evidence"
           ? buildEvidenceQueryGuidance(input.conversationTurn ? pendingConversationEvidence(evidenceContract, stepEvidence.results) : evidenceContract, stepEvidence.results, input.trustedUserTexts) : "") + (policy.phase === "final_answer" && (!input.conversationTurn || input.conversationTurn.mode === "research")
           ? buildFinalAnswerGuidance(stepEvidence.results.map(result => result.tool), input.locale, input.trustedUserTexts.at(-1))
-          : "") + (input.conversationTurn ? conversationInstructions(input.conversationTurn) : ""),
+          : "") + (input.conversationTurn ? conversationInstructions(input.conversationTurn, input.locale) : ""),
         toolChoice: policy.toolChoice,
         toolOrder: SALES_CHAT_TOOL_ORDER,
       };

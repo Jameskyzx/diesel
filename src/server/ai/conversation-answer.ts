@@ -1,5 +1,29 @@
 import "server-only";
 import type { AiToolResult } from "@/features/ai/schemas";
+import type { PreparedConversationTurn } from "@/server/ai/conversation-plan";
+import { contextText } from "@/server/ai/conversation-plan";
+import type { Locale } from "@/i18n/locale";
+
+/** Document requests describe a future verification workflow, not present facts
+ * or jurisdiction-specific legal requirements. Server-authored copy is the only
+ * text allowed in this channel; model prose never bypasses the evidence guard. */
+export function buildEvidenceRequestResponse(turn: PreparedConversationTurn, locale: Locale, latestUserText: string): string | null {
+  if (turn.outputKind === "evidence" || turn.contract.blocksModelText) return null;
+  const english = /(?:用英文|英文.{0,8}(?:邮件|清单)|\bin English\b)/iu.test(latestUserText) || locale === "en";
+  const context = contextText(turn.state);
+  if (turn.outputKind === "request_email") {
+    const brief = /(?:缩短|精简|简短|\b(?:shorten|short|brief|concise)\b)/iu.test(latestUserText);
+    if (brief) return english
+      ? `Dear Customer, please share the specification sheet, test reports and available certificates${context ? ` for (${context})` : ""}. Please include document versions and traceable originals. We will verify applicability and remaining gaps; this request does not confirm compliance or permission to sell.`
+      : `您好，请提供规格表、检测报告及已有证书${context ? `，用于核对（${context}）` : ""}。请附上文件版本与可追溯原件。我们会核验适用性和剩余缺口，本次索取材料不代表已合规或获准销售。`;
+    return english
+      ? `Dear Customer, please share the specification sheet, emission test reports and any available certification documents${context ? ` for the assessment context (${context})` : ""}. Please include document versions, the tested application and power, test cycles, issuer, validity dates and traceable originals where available. We will review their applicability and outstanding gaps before drawing any conclusion; this request does not confirm compliance or permission to sell.`
+      : `您好，请提供规格表、排放检测报告及已有认证文件${context ? `，用于核对这些查询条件（${context}）` : ""}。请尽可能附上文件版本、测试用途与功率、测试循环、签发机构、有效期及可追溯原件。我们会先核对适用性与未解决缺口，再讨论结论，本次索取材料不代表已合规或获准销售。`;
+  }
+  return english
+    ? `This turn has not re-verified facts; refer to the earlier evidence cards for what was actually checked. The following is a preparation checklist, not a statement of legally mandatory documents${context ? ` (assessment context: ${context})` : ""}.\n\n- Specification sheet: model identity, rated power, actual application, specification version and supply dates if available.\n- Emission test reports: tested configuration, pollutant definitions, units, test cycles, report version and issuing body.\n- Available certification documents: certificate identity, model/configuration covered, issuer and validity dates.\n- Traceable originals and unresolved gaps: source files/links, missing items and who can supply them.\n\nNone of these materials has been verified by this checklist; no fit, certification or sale approval is established.`
+    : `本轮没有重新核验事实；已查到的内容请以此前证据卡片为准。以下是材料准备清单，不是当地法定必备文件清单${context ? `（查询条件：${context}）` : ""}。\n\n- 规格表：型号身份、额定功率、实际用途、规格版本及已有供应日期。\n- 排放检测报告：受测配置、污染物定义、单位、测试循环、报告版本与出具机构。\n- 已有认证文件：证书身份、覆盖的型号/配置、签发机构与有效期。\n- 可追溯原件及未解决缺口：来源文件或链接、缺少项目以及可提供材料的负责人。\n\n这份清单没有核验任何材料，不构成产品适配、认证或销售许可结论。`;
+}
 
 /** Additional guard for purpose-specific prose. Cards remain the authoritative
  * facts. This checks unsupported quantities/rankings, not arbitrary entailment. */

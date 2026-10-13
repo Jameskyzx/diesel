@@ -48,6 +48,30 @@ function execute(answer: string, mode: "compose" | "explain" | "general", userTe
 }
 
 describe("conversational prose still crosses the production evidence boundary", () => {
+  it("answers complete single-country regulation research from validated records without a speculative prose step", async () => {
+    const singleState = { ...state, countryIso3s: ["CHN"] };
+    const question = "CHN non-road 100 kW emission regulations as of 2026-08-20";
+    const conversationTurn = prepareConversationPlan({ plan: { mode: "research", state: singleState },
+      userTexts: [question], previous: null, selectedCountryIso3: null, runtimeContext });
+    const model = new MockLanguageModelV4({ doStream: { stream: simulateReadableStream({ chunks: [
+      { type: "stream-start", warnings: [] },
+      { type: "tool-call", toolCallId: "single-country", toolName: "compareRegulations", input: JSON.stringify({
+        countryIso3s: ["CHN"], applicationScope: "non-road", powerKw: 100, asOf: "2026-08-20" }) },
+      { type: "finish", finishReason: { unified: "tool-calls", raw: undefined }, usage },
+    ] }) } });
+    const sessionId = crypto.randomUUID();
+    const auditRepository = { recordToolCall: async () => undefined };
+    const stream = streamSalesChat({ conversationTurn, model, runtimeContext, maxSteps: 4,
+      messages: [{ role: "user", content: question }], trustedUserTexts: [question], selectedCountryIso3: null, sessionId, auditRepository,
+      tools: createSalesChatTools({ auditRepository, sessionId, selectedCountryIso3: null, defaultAsOf: "2026-08-20" }),
+    });
+    const text = await stream.text;
+    expect(text).toContain("Effective regulation lookup: CHN");
+    expect(text).toContain("Fictional Demo");
+    expect(text).toContain("not proof of complete legal coverage");
+    expect(model.doStreamCalls).toHaveLength(1);
+    expect(await stream.toUIMessageStreamResponse().text()).toContain('"finishReason":"stop"');
+  });
   it.each(["research", "explain"] as const)("continues independent comparisons after source no-data; %s publishes only a qualified partial answer", async mode => {
     const question = `${query} Also find the original unindexed inspection dossier sources.`;
     const conversationTurn = prepareConversationPlan({ plan: { mode, state: { ...state, tasks: ["regulations", "knowledge"] } },

@@ -11,7 +11,7 @@ import { regulatoryDisclaimer } from "@/domain/ai/evidence-gap-response";
 export function buildRegulationComparisonResponse(results: readonly AiToolResult[], locale: Locale): string | null {
   if (results.length === 0) return null;
   if (results.some(result => result.tool !== "compareRegulations" || result.status !== "ok" || !result.evidenceSufficient ||
-    result.comparison.countries.length < 2 || result.comparison.countries.some(country => country.currentEffectiveRegulations.length === 0))) return null;
+    result.comparison.countries.length < 1 || result.comparison.countries.some(country => country.currentEffectiveRegulations.length === 0))) return null;
   const dictionary = getDictionary(locale);
   return results.map(result => {
     if (result.tool !== "compareRegulations") return "";
@@ -41,9 +41,13 @@ export function buildRegulationComparisonResponse(results: readonly AiToolResult
       limits.flat().some(limit => code.split("+").some(component => component.toUpperCase() === limit.pollutantCode.toUpperCase())));
     const definition = combined ? (en ? `${combined} is a combined pollutant measure, not interchangeable with an individual component`
       : `${combined} 是合并指标，不能与单项污染物直接等同或换算`) : (en ? "Matching numbers do not establish legal equivalence" : "相同数值也不等于法规或认证要求等同");
-    const summary = en
+    const comparisonSummary = en
       ? `Regulatory comparison: for ${query.countryIso3s.join(" / ")} ${applicationScopeLabel(query.applicationScope, dictionary)} at ${query.powerKw} kW as of ${query.asOf}, the effective records have equal numeric values for ${equal.join(", ") || none}, differing values for ${different.join(", ") || none}${missing.length ? `, and missing rows for ${missing.join("; ")}` : ""}; ${bandText}.\n\n${definition}; test cycles were not returned, so no stricter/weaker ranking or sales approval follows—next, obtain the original test-cycle and certification requirements.`
       : `法规比较：按 ${query.asOf}、${applicationScopeLabel(query.applicationScope, dictionary)} ${query.powerKw} kW 比较 ${query.countryIso3s.join(" / ")} 的已生效记录：数值相同的项目为${equal.join("、") || none}，数值不同的项目为${different.join("、") || none}${missing.length ? `；未返回的项目为 ${missing.join("；")}` : ""}；${bandText}。\n\n${definition}；本次未返回测试循环，不能据此排名哪国更严或批准销售，下一步请索取原始测试循环与认证要求。`;
+    const regulations = countries[0]!.currentEffectiveRegulations;
+    const summary = countries.length > 1 ? comparisonSummary : en
+      ? `Effective regulation lookup: ${query.countryIso3s[0]}, ${applicationScopeLabel(query.applicationScope, dictionary)}, ${query.powerKw} kW, as of ${query.asOf}. This query returned ${regulations.length} effective record(s): ${regulations.map(regulation => regulation.canonicalName).join("; ")}. The cards show the recorded pollutant limits and applicability; this is not proof of complete legal coverage, equivalent test cycles or approval of any engine model.`
+      : `有效法规查询：${query.countryIso3s[0]}，${applicationScopeLabel(query.applicationScope, dictionary)}，${query.powerKw} kW，基准日期 ${query.asOf}。本次返回 ${regulations.length} 条已生效记录：${regulations.map(regulation => regulation.canonicalName).join("；")}。已记录的污染物限值和适用条件见证据卡片；这不证明法规覆盖完整、测试循环等同或任何型号已获准销售。`;
     const sources = [...new Map(countries.flatMap(country => country.currentEffectiveRegulations.map(regulation => [regulation.source.sourceId, regulation.source] as const))).values()];
     const demo = result.citations.some(citation => citation.isDemo) ? (en ? "Fictional Demo evidence; not real regulatory approval.\n\n" : "以下含虚构 Demo 证据，不代表真实法规准入。\n\n") : "";
     const future = countries.some(country => country.futureAdoptedRegulations.length > 0) ? (en ? "\n\nAdopted but not yet effective records remain separate in the cards; they are not included in this effective-record comparison." : "\n\n已采纳但尚未生效的记录在卡片中单独列示，不纳入本段已生效记录比较。") : "";

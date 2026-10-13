@@ -1315,6 +1315,7 @@ export function SalesChat({
   const [historyLoaded, setHistoryLoaded] = useState(historyKey === undefined);
   const [historyRestored, setHistoryRestored] = useState(false);
   const [historyUnavailable, setHistoryUnavailable] = useState(false);
+  const restoredOmittedTurnsRef = useRef(0);
   const [completedSnapshot, setCompletedSnapshot] = useState<Extract<AnalysisPayload, { kind: "chat" }>["history"] | null>(null);
   const historyRestoreAttemptedRef = useRef(false);
   const [input, setInput] = useState(initialPrompt);
@@ -1407,7 +1408,7 @@ export function SalesChat({
       if (historyKey && !isAbort && !isError) {
         try {
           const serialized = serializeChatHistory({ contextKey: historyKey,
-            sessionId, messages: finishedMessages });
+            sessionId, messages: finishedMessages, omittedUserTurns: restoredOmittedTurnsRef.current });
           if (serialized === null) {
             setCompletedSnapshot(null);
             window.sessionStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
@@ -1449,6 +1450,7 @@ export function SalesChat({
         const serialized = window.sessionStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
         const snapshot = parseChatHistory(serialized, historyKey);
         if (snapshot) {
+          restoredOmittedTurnsRef.current = snapshot.omittedUserTurns;
           setCompletedSnapshot(chatHistorySnapshotSchema.parse(JSON.parse(serialized!)));
           setSessionId(snapshot.sessionId);
           setSettledChatMessages(snapshot.messages);
@@ -1750,6 +1752,7 @@ export function SalesChat({
     initialPromptPristineRef.current = true;
     setInput(initialPrompt);
     setHistoryRestored(false);
+    restoredOmittedTurnsRef.current = 0;
     try {
       window.sessionStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
       setHistoryUnavailable(false);
@@ -1807,6 +1810,7 @@ export function SalesChat({
 
       {historyKey ? <p className="border-b px-5 py-2 text-[11px] leading-5 text-muted-foreground" role={historyRestored || historyUnavailable ? "status" : undefined}>
         {historyUnavailable ? copy.historyUnavailable : historyRestored ? copy.historyRestored : copy.historyNotice}
+        {!historyUnavailable && (completedSnapshot?.omittedUserTurns ?? 0) > 0 ? ` ${copy.historyWindowed}` : null}
       </p> : null}
 
       <p

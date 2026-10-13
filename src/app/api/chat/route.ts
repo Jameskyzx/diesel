@@ -66,7 +66,9 @@ import {
   buildSocialChatResponse,
   buildCapabilityChatResponse,
 } from "@/server/ai/chat-turn-guidance";
-import { planConversationTurn, conversationClarification, type PreparedConversationTurn } from "@/server/ai/conversation-plan";
+import { planConversationTurn, conversationClarification, explicitRegulationResearchFallback, type PreparedConversationTurn } from "@/server/ai/conversation-plan";
+import { buildEvidenceRequestResponse } from "@/server/ai/conversation-answer";
+import { conversationResearchResponse } from "@/server/ai/conversation-research";
 import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
 import type { conversationMetadataSchema } from "@/features/ai/conversation-state";
 import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
@@ -484,13 +486,24 @@ async function processChatRequest(
           selectedCountryIso3: body.selectedCountryIso3, runtimeContext, signal: abortSignal,
           onUsage: usage => console.info("AI conversation planning completed", {
             requestId, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, totalTokens: usage.totalTokens,
+            authenticatedContext: previous !== null,
           }),
         });
-      } catch {
+      } catch (error) {
         throwIfChatRequestAborted(abortSignal);
-        return directChatResponse(locale === "en"
-          ? "I couldn't reliably resolve this request. Please restate the goal and any changed conditions; I haven't queried using guessed filters."
-          : "这次没能可靠地理解你的任务。请换个说法告诉我目标，以及哪些条件有变化；我没有用猜测的条件进行查询。");
+        conversationTurn = explicitRegulationResearchFallback({ userTexts, previous,
+          selectedCountryIso3: body.selectedCountryIso3, runtimeContext }) ?? undefined;
+        console.warn("AI conversation planner failed", { requestId, errorCode: getErrorCode(error),
+          explicitResearchFallback: conversationTurn !== undefined });
+        if (!conversationTurn) {
+          const answer = locale === "en"
+            ? "I couldn't reliably resolve this request. The previously confirmed context is retained, but these unresolved changes have not been applied. Please restate the goal or changed conditions; I haven't queried using guessed filters."
+            : "这次没能可靠地理解你的任务。此前已确认的条件仍保留，本次未理解的修改尚未应用；请换个说法说明目标或变化，我没有用猜测的条件进行查询。";
+          return directChatResponse(answer, previous ? { conversation: { state: previous.state, mode: "clarify",
+            receipt: signConversationReceipt({ sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
+              userText: latestUserText, answer, state: previous.state, previous }),
+          } } : undefined);
+        }
       }
     }
     const conversationMetadata = (answer: string) => conversationTurn ? { conversation: {
@@ -498,6 +511,10 @@ async function processChatRequest(
       receipt: signConversationReceipt({ sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
         userText: latestUserText, answer, state: conversationTurn.state, previous }),
     } } : undefined;
+    if (conversationTurn) {
+      const requestResponse = buildEvidenceRequestResponse(conversationTurn, locale, latestUserText);
+      if (requestResponse !== null) return directChatResponse(requestResponse, conversationMetadata(requestResponse));
+    }
     if (conversationTurn && !conversationTurn.contract.blocksModelText &&
       (conversationTurn.mode === "clarify" || conversationTurn.contract.missingRequiredParameters.length > 0)) {
       const answer = conversationClarification(conversationTurn, locale);
@@ -517,6 +534,10 @@ async function processChatRequest(
       sessionId: body.sessionId,
       turnId: requestId,
     });
+    if (conversationTurn?.mode === "research" && !hasAttachments) {
+      return conversationResearchResponse({ contract: evidenceContract, tools, signal: abortSignal, locale,
+        metadata: conversationMetadata });
+    }
     const modelMessages = await convertToModelMessages(modelUiMessages, {
       tools,
     });

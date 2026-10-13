@@ -1,0 +1,466 @@
+{
+  "format": "diesel-production-conversation-release-operator-record-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "recordedAt": "2026-10-13T13:41:15.016Z",
+  "release": "f51ee9a77daf14a504391227858a6d6706aceccc",
+  "previousRelease": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+  "targetOrigin": "https://diesel.jamesky.site",
+  "deploymentPassed": false,
+  "conversationAcceptancePassed": false,
+  "sourceStage": {
+    "authorization": {
+      "branch": "master",
+      "commit": "f51ee9a77daf14a504391227858a6d6706aceccc",
+      "format": "diesel-release-authorization-v1",
+      "origin": {
+        "fetchUrl": "https://github.com/Jameskyzx/diesel.git",
+        "pushUrl": "https://github.com/Jameskyzx/diesel.git",
+        "remoteMaster": "f51ee9a77daf14a504391227858a6d6706aceccc",
+        "remoteMasterReadback": "f51ee9a77daf14a504391227858a6d6706aceccc"
+      },
+      "protection": {
+        "allowDeletions": false,
+        "allowForcePushes": false,
+        "enforceAdmins": true,
+        "requiredCheck": "Required CI gate",
+        "requiredCheckAppId": null,
+        "strict": true
+      },
+      "repository": "Jameskyzx/diesel",
+      "verifiedAt": "2026-10-13T13:08:32.906Z",
+      "workflow": {
+        "gateJobId": 115313179251,
+        "gateJobUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38395544423/job/115313179251",
+        "id": 332591937,
+        "name": "CI",
+        "path": ".github/workflows/ci.yml",
+        "runAttempt": 1,
+        "runId": 38395544423,
+        "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38395544423",
+        "state": "active"
+      }
+    },
+    "commit": "f51ee9a77daf14a504391227858a6d6706aceccc",
+    "format": "diesel-release-stage-v1",
+    "inputDigest": "5ccb38dd6dbe09ddfa316b69989850c81a600e7b68058f8188b5f2bf19e8c0f4",
+    "releaseDir": "/opt/diesel/releases/f51ee9a77daf14a504391227858a6d6706aceccc",
+    "target": "root@111.228.50.85"
+  },
+  "masterCI": {
+    "attempt": 1,
+    "conclusion": "success",
+    "headSha": "f51ee9a77daf14a504391227858a6d6706aceccc",
+    "jobs": [
+      {
+        "completedAt": "2026-10-13T12:23:05Z",
+        "conclusion": "success",
+        "id": 115289700217,
+        "name": "Lint, typecheck, app coverage, build",
+        "startedAt": "2026-10-13T12:12:03Z",
+        "status": "completed"
+      },
+      {
+        "completedAt": "2026-10-13T12:12:30Z",
+        "conclusion": "success",
+        "id": 115289700421,
+        "name": "Dependency and workflow supply-chain audit",
+        "startedAt": "2026-10-13T12:12:03Z",
+        "status": "completed"
+      },
+      {
+        "completedAt": "2026-10-13T12:19:00Z",
+        "conclusion": "success",
+        "id": 115289700443,
+        "name": "Linux release handoff (systemd cgroup + real build)",
+        "startedAt": "2026-10-13T12:12:03Z",
+        "status": "completed"
+      },
+      {
+        "completedAt": "2026-10-13T12:12:27Z",
+        "conclusion": "success",
+        "id": 115289700508,
+        "name": "Secret scanning (gitleaks)",
+        "startedAt": "2026-10-13T12:12:03Z",
+        "status": "completed"
+      },
+      {
+        "completedAt": "2026-10-13T12:15:54Z",
+        "conclusion": "success",
+        "id": 115289700510,
+        "name": "Linux deployment script contracts",
+        "startedAt": "2026-10-13T12:12:03Z",
+        "status": "completed"
+      },
+      {
+        "completedAt": "2026-10-13T12:12:50Z",
+        "conclusion": "success",
+        "id": 115289700638,
+        "name": "PostgreSQL + pgvector migration smoke",
+        "startedAt": "2026-10-13T12:12:03Z",
+        "status": "completed"
+      },
+      {
+        "completedAt": "2026-10-13T12:25:19Z",
+        "conclusion": "success",
+        "id": 115294260274,
+        "name": "Portfolio demo via pnpm demo",
+        "startedAt": "2026-10-13T12:23:07Z",
+        "status": "completed"
+      },
+      {
+        "completedAt": "2026-10-13T13:07:06Z",
+        "conclusion": "success",
+        "id": 115294260313,
+        "name": "Playwright key flows",
+        "startedAt": "2026-10-13T12:23:07Z",
+        "status": "completed"
+      },
+      {
+        "completedAt": "2026-10-13T12:24:25Z",
+        "conclusion": "success",
+        "id": 115294260408,
+        "name": "Failure-first FDE workflow via pnpm demo:fde",
+        "startedAt": "2026-10-13T12:23:07Z",
+        "status": "completed"
+      },
+      {
+        "completedAt": "2026-10-13T13:07:11Z",
+        "conclusion": "success",
+        "id": 115313179251,
+        "name": "Required CI gate",
+        "startedAt": "2026-10-13T13:07:09Z",
+        "status": "completed"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/Jameskyzx/diesel/actions/runs/38395544423"
+  },
+  "runtime": {
+    "release": "f51ee9a77daf14a504391227858a6d6706aceccc",
+    "runId": 38395544423,
+    "runAttempt": 1,
+    "artifactId": 11811707536,
+    "archiveSha256": "a4a6112108b1f1522d5cd8b9c3754c307f707a0c645841fcecc3ee7aaecab640",
+    "destination": "/opt/diesel/release-inputs/f51ee9a77daf14a504391227858a6d6706aceccc/ci-runtime",
+    "temporary": "/private/tmp/diesel-ci-runtime-STBYAA",
+    "staged": true,
+    "deployed": false
+  },
+  "candidateEnvironment": {
+    "release": "f51ee9a77daf14a504391227858a6d6706aceccc",
+    "candidate": "/opt/diesel/release-inputs/f51ee9a77daf14a504391227858a6d6706aceccc/env.production.local",
+    "uid": 0,
+    "gid": 0,
+    "mode": "600",
+    "links": 1,
+    "bytes": 917,
+    "contentsIdentical": true,
+    "contentsPrinted": false,
+    "firstPreparationAttempt": {
+      "exitCode": 1,
+      "reason": "candidate parent not yet created during runtime staging",
+      "fileWritten": false,
+      "operationSubmitted": false
+    }
+  },
+  "worker": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "f51ee9a77daf14a504391227858a6d6706aceccc",
+      "operationId": "a3ffa996-e215-469f-a4ed-5a416d7b4e9c",
+      "mode": "application",
+      "createdAt": "2026-10-13T13:14:43.867Z",
+      "inputDigest": "5ccb38dd6dbe09ddfa316b69989850c81a600e7b68058f8188b5f2bf19e8c0f4",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "failed",
+    "unit": {
+      "Id": "diesel-release-f51ee9a77daf14a504391227858a6d6706aceccc.service",
+      "LoadState": "loaded",
+      "ActiveState": "failed",
+      "SubState": "failed",
+      "Result": "exit-code",
+      "InvocationID": "07261582718d441a873844ca7acec660",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 70,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 1662159
+    },
+    "completion": {
+      "operationId": "a3ffa996-e215-469f-a4ed-5a416d7b4e9c",
+      "invocationId": "07261582718d441a873844ca7acec660",
+      "startedAt": "2026-10-13T13:14:45.030Z",
+      "workerPid": 1662159,
+      "completedAt": "2026-10-13T13:25:02.571Z",
+      "exitCode": 70,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 4224,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 1031,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "independentAcceptance": {
+    "ledger": {
+      "release": "f51ee9a77daf14a504391227858a6d6706aceccc",
+      "classification": "terminal",
+      "hostState": "ROLLED_BACK",
+      "governanceState": "none",
+      "current": "/opt/diesel/releases/0421d347a64832d85d54b25b34e5d1a35303d3dc"
+    },
+    "ledgerValidationExitCode": 0,
+    "currentHealth": {
+      "checkedAt": "2026-10-13T13:41:15.016Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "version": "0421d347a64832d85d54b25b34e5d1a35303d3dc"
+    },
+    "processObservation": {
+      "checkedAt": "2026-10-13T13:33:24.776Z",
+      "processes": [
+        {
+          "name": "jamesky-api",
+          "pid": 1033,
+          "status": "online",
+          "restarts": 0
+        },
+        {
+          "name": "diesel-demo",
+          "pid": 1698839,
+          "status": "online",
+          "restarts": 0
+        }
+      ],
+      "availableBytes": 9115549696,
+      "usedPercent": 85,
+      "availableInodes": 2964429
+    },
+    "dataFingerprintVerificationPassed": false,
+    "databaseRoute": "unchanged-original-VPS-route",
+    "databaseForwardingCreated": false,
+    "databaseExportRestoreOrPublicationRepeated": false,
+    "backupsAndFailedCandidatesPreserved": true
+  },
+  "diagnosis": {
+    "checkedAt": "2026-10-13T13:28:48.175Z",
+    "diagnostics": [
+      {
+        "kind": "governance-maintenance-failure-v1",
+        "phase": "heartbeat",
+        "reason": "probe-timeout",
+        "databaseCode": null
+      },
+      {
+        "kind": "governance-maintenance-failure-v1",
+        "phase": "command",
+        "reason": "probe-timeout",
+        "databaseCode": null
+      }
+    ],
+    "httpErrorStatuses": [
+      503,
+      503,
+      500,
+      503
+    ],
+    "physicalCauseProven": false
+  },
+  "readonlyDiagnostics": {
+    "launchFailure": {
+      "exitCode": 1,
+      "reason": "CJS default export loaded with ESM default interop",
+      "databaseRequestsSent": 0
+    },
+    "originalRoute": {
+      "kind": "readonly-original-route-latency-probe",
+      "observations": [
+        {
+          "checkedAt": "2026-10-13T13:32:58.496Z",
+          "latencyMs": 30011,
+          "passed": false,
+          "diagnostic": {
+            "kind": "governance-maintenance-failure-v1",
+            "phase": "command",
+            "reason": "command-failed",
+            "databaseCode": null
+          }
+        }
+      ],
+      "schemaOrDataWrites": false,
+      "maintenanceLockAcquired": false,
+      "destinationChanged": false
+    },
+    "strictHandshake": {
+      "checkedAt": "2026-10-13T13:35:29.393Z",
+      "kind": "readonly-database-handshake-probe",
+      "observations": [
+        {
+          "phase": "dns",
+          "latencyMs": 8,
+          "passed": true,
+          "addressFamilies": [
+            4
+          ]
+        },
+        {
+          "phase": "tcp",
+          "latencyMs": 635,
+          "passed": true,
+          "family": "IPv4"
+        },
+        {
+          "phase": "postgres-ssl-negotiation",
+          "latencyMs": 125,
+          "passed": true
+        },
+        {
+          "phase": "strict-tls",
+          "latencyMs": 1732,
+          "passed": true,
+          "authorized": true
+        }
+      ],
+      "credentialsTransmitted": false,
+      "destinationChanged": false,
+      "tlsVerificationWeakened": false
+    },
+    "driverStages": {
+      "checkedAt": "2026-10-13T13:37:32.077Z",
+      "kind": "readonly-driver-connection-stage-probe",
+      "elapsedMs": 2183,
+      "result": {
+        "passed": true
+      },
+      "events": [
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "server-parameter",
+          "elapsedMs": 1569
+        },
+        {
+          "phase": "query-dispatch",
+          "elapsedMs": 1570
+        },
+        {
+          "phase": "query-dispatch",
+          "elapsedMs": 1937
+        },
+        {
+          "phase": "connection-close",
+          "elapsedMs": 2183
+        }
+      ],
+      "diagnosticConnectTimeoutSeconds": 10,
+      "productionConfigurationChanged": false,
+      "maintenanceLockAcquired": false,
+      "rawParametersOrCredentialsPrinted": false
+    },
+    "repeatProbe": {
+      "kind": "readonly-original-route-repeat-probe",
+      "observations": [
+        {
+          "checkedAt": "2026-10-13T13:39:48.112Z",
+          "latencyMs": 15342,
+          "passed": true,
+          "backendPid": 3563950
+        },
+        {
+          "checkedAt": "2026-10-13T13:39:58.257Z",
+          "latencyMs": 135,
+          "passed": true,
+          "backendPid": 3563950
+        },
+        {
+          "checkedAt": "2026-10-13T13:40:08.397Z",
+          "latencyMs": 135,
+          "passed": true,
+          "backendPid": 3563950
+        }
+      ],
+      "schemaOrDataWrites": false,
+      "maintenanceLockAcquired": false,
+      "productionConfigurationChanged": false
+    }
+  },
+  "repositoryHeadObservation": {
+    "observedAt": "2026-10-13T13:41+00:00",
+    "local": "f51ee9a77daf14a504391227858a6d6706aceccc",
+    "remote": "f51ee9a77daf14a504391227858a6d6706aceccc"
+  },
+  "newReleaseConversationAcceptance": {
+    "fixedStartersRan": false,
+    "exploratoryConversationsRan": false,
+    "requests": 0,
+    "reason": "Candidate release did not activate. Earlier production QA remains attached to its actual release, not this candidate."
+  },
+  "limitations": [
+    "The maintenance heartbeat exceeded the unchanged 30-second bound; the exact network, database or host-resource cause is not proven.",
+    "A separate fresh client did not resolve within 30 seconds, whereas later strict TLS, fresh-client and established-session reads succeeded. Short probes do not establish long-term stability.",
+    "The failed worker is not deployment success. The independent ledger is terminal ROLLED_BACK:none, and public runtime remains 0421d347a64832d85d54b25b34e5d1a35303d3dc.",
+    "Before/after application fingerprint receipts were not completed; no 15-table equality claim is made.",
+    "This candidate will not be resubmitted. A retry must use a new CI-approved SHA without changing application evidence expectations or security bounds."
+  ]
+}

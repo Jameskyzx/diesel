@@ -134,6 +134,14 @@ This is the only current release/evidence index. Historical implementation notes
   同样的真实模型规划输出复现了无关 sourceTerms 错误校验；`model/型号 CLIENT200` 还受短前缀启发式误挡，后续修补尚未上线。
   `jamesky-api` PID 1033 / 重启 0 未变；磁盘可用 10,104,352,768 bytes，未删备份、未建立转发。候选环境文件组权限预检和本机浏览器启动失败均保留，不计模型/应用通过。
   [本次发布、真实多轮失败与诊断记录](evidence/operations/production-conversation-repair-release-2026-10-13.json)。
+  后续修补 PR #93 / `f51ee9a77daf14a504391227858a6d6706aceccc` 已合并，精确 master CI 10/10 通过；同次 Linux 构建包暂存通过。
+  单次 application-only worker 于 `2026-10-13T13:14:45.030Z` 开始、`13:25:02.571Z` 以 exit 70 结束；维护心跳达到原有 30 秒探测超时，日志包含 HTTP 500/503。
+  独立严格账本确认 `terminal:ROLLED_BACK:none`，公开版本仍为 `0421d34`；未完成 15 表前后指纹，不能声明修补版上线或生产多轮验收通过。
+  `2026-10-13T13:41:15.016Z` 新健康读回仍为 `0421d34`，同期仓库 head 为 `f51ee9a`；上面的机器可校验区保留 `10:49` 最后一次同 SHA 的历史观测，不冒充此次上线成功。
+  新建只读连接也曾达到 30 秒观察上限；后续严格 TLS 和驱动新连接通过，同一连接三次读取为 15,342 / 135 / 135 ms。短时恢复不证明长期稳定或底层根因。
+  `jamesky-api` PID 1033 / 重启 0 未变，两项服务 online；可用 9,115,549,696 bytes，全部备份与失败候选保留，未改数据库地址或放宽门槛。
+  辅助诊断的 CJS/ESM 加载失败未发送数据库请求；修正后的真实探针结果独立保存。该 SHA 不重用，下一次只能使用新 CI-approved SHA。
+  [本次心跳中止、独立回退与只读对照记录](evidence/operations/deployment-conversation-heartbeat-failure-2026-10-13.json)。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

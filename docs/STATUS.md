@@ -23,9 +23,9 @@ This is the only current release/evidence index. Historical implementation notes
 以下为带时间的历史生产观测，不声明仓库当前 HEAD 等于线上版本：
 
 - 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
-  observedAt=`2026-10-12T18:31+00:00`；`/api/health` readbackAt=`2026-10-12T18:31+00:00` returned `status=ok`,
-  `version=6c62e9793501b18754089558275ee4a6f23cc0c2`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/6c62e9793501b18754089558275ee4a6f23cc0c2`。因此当前公开 release ID
+  observedAt=`2026-10-13T10:49+00:00`；`/api/health` readbackAt=`2026-10-13T10:49+00:00` returned `status=ok`,
+  `version=0421d347a64832d85d54b25b34e5d1a35303d3dc`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/0421d347a64832d85d54b25b34e5d1a35303d3dc`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为
@@ -127,6 +127,13 @@ This is the only current release/evidence index. Historical implementation notes
   以及缺少真实产品证据时误挡中性材料清单/邮件。英文 API 7/7 仅为传输及 DTO 合同通过，不能代替语义验收；旧 v26 live eval 仍是兼容路径证据，不覆盖新规划器。
   `jamesky-api` PID 1033 / 重启计数 0 未变，两项服务 online；磁盘可用 11,215,872,000 bytes（约 10.4 GiB），备份和失败版本保留，没有建立数据库转发。
   [本次上线与真实多轮验收记录](evidence/operations/production-conversation-release-2026-10-12.json) 保留真实失败与未解决项；后续记录提交不再次部署，不宣称长期稳定性。
+  2026-10-13 的 PR #92 / `0421d347a64832d85d54b25b34e5d1a35303d3dc` 精确 master CI 10/10 通过，单次 application-only 发布于
+  `2026-10-13T10:32:28.703Z` 以 exit 0 完成（服务器约 21 分钟）；独立终态为 `COMMITTED:APPLICATION_VERIFIED_V2`，15 表前后指纹一致，内外网验收及 provider-inclusive canary 7/7 通过。
+  六个真实中英示例为 3 通过 / 1 失败 / 2 未运行；英文当前法规示例被规划校验误拒绝。另做真实 HTTPS 中文 6 轮、浏览器英文 14 轮，语义分别为 4/6 和 10/14，通过 SSE 不冒充语义通过。
+  源码里的条件清空、来源词隔离、一般解释、中性邮件/清单及长会话刷新恢复已实测生效；新增比较国家与长型号仍有误拒绝，因此本版对话验收未完成。
+  同样的真实模型规划输出复现了无关 sourceTerms 错误校验；`model/型号 CLIENT200` 还受短前缀启发式误挡，后续修补尚未上线。
+  `jamesky-api` PID 1033 / 重启 0 未变；磁盘可用 10,104,352,768 bytes，未删备份、未建立转发。候选环境文件组权限预检和本机浏览器启动失败均保留，不计模型/应用通过。
+  [本次发布、真实多轮失败与诊断记录](evidence/operations/production-conversation-repair-release-2026-10-13.json)。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的
@@ -211,11 +218,11 @@ This is the only current release/evidence index. Historical implementation notes
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "6c62e9793501b18754089558275ee4a6f23cc0c2",
+    "commit": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
     "evidenceKind": "historical-operator-record-only",
-    "id": "6c62e9793501b18754089558275ee4a6f23cc0c2",
-    "observedAt": "2026-10-12T18:31+00:00",
-    "releasePath": "/opt/diesel/releases/6c62e9793501b18754089558275ee4a6f23cc0c2"
+    "id": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+    "observedAt": "2026-10-13T10:49+00:00",
+    "releasePath": "/opt/diesel/releases/0421d347a64832d85d54b25b34e5d1a35303d3dc"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -264,18 +271,18 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-12T18:31+00:00",
+    "readbackAt": "2026-10-13T10:49+00:00",
     "status": "ok",
-    "version": "6c62e9793501b18754089558275ee4a6f23cc0c2"
+    "version": "0421d347a64832d85d54b25b34e5d1a35303d3dc"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v2"
   },
   "repositoryHead": {
-    "local": "6c62e9793501b18754089558275ee4a6f23cc0c2",
-    "observedAt": "2026-10-12T18:31+00:00",
-    "remote": "6c62e9793501b18754089558275ee4a6f23cc0c2"
+    "local": "0421d347a64832d85d54b25b34e5d1a35303d3dc",
+    "observedAt": "2026-10-13T10:49+00:00",
+    "remote": "0421d347a64832d85d54b25b34e5d1a35303d3dc"
   }
 }
 ```

@@ -649,35 +649,39 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20261013T111554286Z-07f54523-0e0e-4251-89d6-05406a1424f9.json",
-  "attemptCount": 35,
-  "complete": true,
-  "completedCount": 35,
-  "evaluatedAt": "2026-10-13T11:15:54.286Z",
-  "latestOutcome": "passed",
-  "modelStepCount": 35,
-  "runId": "07f54523-0e0e-4251-89d6-05406a1424f9",
-  "runError": null,
-  "sampleCount": 18,
+  "archivePath": "archive/ai-live-eval-20261013T224737747Z-cd9a3c0d-c1b8-4493-b2bf-56f4f57d46ff.json",
+  "attemptCount": 0,
+  "complete": false,
+  "completedCount": 0,
+  "evaluatedAt": "2026-10-13T22:47:37.747Z",
+  "latestOutcome": "failed",
+  "modelStepCount": 0,
+  "runId": "cd9a3c0d-c1b8-4493-b2bf-56f4f57d46ff",
+  "runError": {
+    "code": "INITIALIZATION_ERROR",
+    "errorName": "AiConfigurationError",
+    "stage": "model_configuration"
+  },
+  "sampleCount": 0,
   "sourceFingerprint": {
     "algorithm": "sha256",
-    "digest": "f38aa94e22befbe1c4d64915ffc7e386312ffae734efa291285dfb18df1fe86d",
+    "digest": "b9127a5e88c2b2d2b4164ff9286e966c564ef4323d9f741dd0afb0cb5ac398e6",
     "fileCount": 330,
     "status": "captured"
   },
   "suiteCaseCount": 18,
-  "terminationReason": "completed",
-  "thresholdsPassed": true,
-  "tokenUsageComplete": true,
-  "totalTokens": 94692,
+  "terminationReason": "initialization_error",
+  "thresholdsPassed": false,
+  "tokenUsageComplete": false,
+  "totalTokens": 0,
   "version": "sales-chat-live-v26"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `passed`; evaluatedAt `2026-10-13T11:15:54.286Z`; run ID `07f54523-0e0e-4251-89d6-05406a1424f9`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `35 provider attempts`; `35 completed provider calls`; `35 model steps`; `94692 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20261013T111554286Z-07f54523-0e0e-4251-89d6-05406a1424f9.json`; source fingerprint `f38aa94e22befbe1c4d64915ffc7e386312ffae734efa291285dfb18df1fe86d` across `330` files.
+Current report result: `failed`; evaluatedAt `2026-10-13T22:47:37.747Z`; run ID `cd9a3c0d-c1b8-4493-b2bf-56f4f57d46ff`; `0/18 cases`; `complete=false`; `terminationReason=initialization_error`; `0 provider attempts`; `0 completed provider calls`; `0 model steps`; `0 known tokens`; `tokenUsageComplete=false`; `thresholdsPassed=false`; `runError=model_configuration/INITIALIZATION_ERROR/AiConfigurationError`.
+Current report provenance: archive `archive/ai-live-eval-20261013T224737747Z-cd9a3c0d-c1b8-4493-b2bf-56f4f57d46ff.json`; source fingerprint `b9127a5e88c2b2d2b4164ff9286e966c564ef4323d9f741dd0afb0cb5ac398e6` across `330` files.
 <!-- live-eval-current-prose:end -->
 
 Completed execution, passing acceptance thresholds, and identifying a committed

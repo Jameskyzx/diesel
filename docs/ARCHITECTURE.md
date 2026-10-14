@@ -1499,9 +1499,14 @@ decoded URL 组件中的 C0/DEL 控制字符，不能通过参数合并或 start
 缺省为兼容性上限 10,000；它和 `AI_CHAT_RATE_LIMIT_PER_HOUR` 都必须是 1–10,000 的整数，且
 client 不得大于 global。生产配置强制使用 PostgreSQL backend，部署示例显式设为 global/client
 300/30。所有应用实例复用共享数据库和现有 `api_rate_limit_buckets`；每次请求在同一事务中按
-固定 global → client 顺序执行带 `request_count < limit` 条件的 UPSERT。global 已满时事务在
-访问 client 桶前结束；client 已满时抛出内部哨兵并回滚此前暂增的 global。因条件更新不会返回
-桶行，拒绝不会提交 `limit + 1` 或仅刷新 `updated_at` 的写入；准入一旦提交，后续解析、配置、
+固定 global → client 顺序执行条件 UPSERT。小时和日预算都用同一条参数化 CTE 命令：client
+写入依赖 global 的 RETURNING 关系，两个计数写入之间不再等待网络往返。仍先用独立的配置
+语句在同一事务内建立原有超时，不把当前 SQL 内的 `set_config` 冒充该 SQL 的语句 deadline。
+global 已满时不访问 client 桶；client 已满时抛出内部哨兵并回滚此前暂增的 global。
+结果行经 schema 校验，畸形计数不放行；事务 commit/rollback、共享数据库限额与应用 deadline
+保持不变。服务端准入失败日志关联 request ID，并仅从最多五层 cause 提取固定 SQLSTATE/连接
+错误白名单，避免生产压缩后的类名丢失诊断；不记录 SQL、连接串、原始错误消息或客户标识。
+条件更新失败时不会返回桶行，拒绝不会提交 `limit + 1` 或仅刷新 `updated_at` 的写入；准入一旦提交，后续解析、配置、
 审计、工具或 provider 失败也不退款。client 原始 identity 不入库，只保存其 SHA-256 摘要；global
 使用固定、域分离的摘要和独立 scope。
 

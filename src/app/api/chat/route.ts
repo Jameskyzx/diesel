@@ -18,7 +18,7 @@ import {
   chatApiErrorSchema,
   chatRequestSchema,
 } from "@/features/ai/schemas";
-import { getErrorCode } from "@/lib/api-error";
+import { getAdmissionDatabaseErrorCode, getErrorCode } from "@/lib/api-error";
 import {
   createSalesChatTools,
   streamSalesChat,
@@ -451,6 +451,8 @@ async function processChatRequest(
         throw error;
       }
       console.error("AI chat admission budget unavailable", {
+        requestId,
+        databaseErrorCode: getAdmissionDatabaseErrorCode(error),
         errorCode: getErrorCode(error),
       });
       return errorResponse(
@@ -654,6 +656,7 @@ async function processChatRequest(
     }
     if (error instanceof ChatSetupTimeoutError) {
       console.error("AI chat setup timed out", {
+        requestId,
         errorCode: "ChatSetupTimeoutError",
       });
       return errorResponse(
@@ -896,6 +899,8 @@ export async function POST(request: Request): Promise<Response> {
     disposeAbortBridge();
     lease.release();
     console.error("AI chat rate limiter unavailable", {
+      requestId,
+      databaseErrorCode: getAdmissionDatabaseErrorCode(error),
       errorCode: getErrorCode(error),
     });
     return respond(errorResponse(
@@ -943,6 +948,8 @@ export async function POST(request: Request): Promise<Response> {
     disposeAbortBridge();
     lease.release();
     console.error("AI chat rate limiter unavailable", {
+      requestId,
+      databaseErrorCode: getAdmissionDatabaseErrorCode(rateLimitResult.error),
       errorCode: getErrorCode(rateLimitResult.error),
     });
     return respond(errorResponse(

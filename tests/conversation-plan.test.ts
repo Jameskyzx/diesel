@@ -297,6 +297,27 @@ describe("purpose, conversation state and evidence are separate contracts", () =
     expect(brief).toContain("2026-08-13");
     expect(brief).toContain("does not confirm compliance");
   });
+  describe.each(["request_email", "request_checklist"] as const)("explicit language for %s", outputKind => {
+    it.each([
+      ["en", "Please write it in Chinese.", "zh-CN"],
+      ["en", "Translate the English email into simplified Chinese.", "zh-CN"],
+      ["en", "请用简体中文写这份材料清单。", "zh-CN"],
+      ["en", "不要用英文，改成中文。", "zh-CN"],
+      ["zh-CN", "把中文邮件改为英文。", "en"],
+      ["zh-CN", "Use English, not Chinese.", "en"],
+      ["en", "Draft a materials request for a Chinese manufacturer.", "en"],
+      ["zh-CN", "准备一份材料索取说明。", "zh-CN"],
+    ] as const)("uses the requested language independently of UI locale %s: %s", (locale, text, expected) => {
+      const turn = prepareConversationPlan({ plan: { mode: "compose", outputKind, state: scoped },
+        userTexts: [text], previous: prior(), selectedCountryIso3: null, runtimeContext });
+      const answer = buildEvidenceRequestResponse(turn, locale, text)!;
+      expect(answer.startsWith(outputKind === "request_email"
+        ? expected === "en" ? "Hello, please" : "您好，请"
+        : expected === "en" ? "This turn has not" : "本轮没有重新核验事实")).toBe(true);
+      for (const token of ["120 kW", "2026-08-13"]) expect(answer).toContain(token);
+      expect(answer).toMatch(/does not confirm compliance|no fit|不代表已合规|不构成产品适配/u);
+    });
+  });
   it.each(["en", "zh-CN"] as const)("shortens a previously short materials email while retaining its boundary (%s)", locale => {
     const state = { ...scoped, countryIso3s: ["DEU"], powerKw: 200.5, productModelCode: "CLIENT200" };
     const text = locale === "en" ? "Write a short email to its manufacturer requesting materials." : "给制造商写一封简短的材料索取邮件。";
@@ -311,6 +332,9 @@ describe("purpose, conversation state and evidence are separate contracts", () =
     expect(shorter.length).toBeLessThan(short.length);
     for (const token of ["DEU", "200.5 kW", "construction", "2026-08-13", "CLIENT200"]) expect(shorter).toContain(token);
     expect(shorter).toMatch(/does not confirm compliance|不代表已合规/u);
+    const repeated = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_email", state },
+      userTexts: [next], previous: prior(state, next, shorter), selectedCountryIso3: null, runtimeContext });
+    expect(buildEvidenceRequestResponse(repeated, locale, next)).toBe(shorter);
   });
 });
 

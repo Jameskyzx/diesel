@@ -254,11 +254,11 @@ This is the only current release/evidence index. Historical implementation notes
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20261013T225007490Z-d31a8aa2-15f0-45b9-b257-1e20cbae96ca.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20261014T004512375Z-5689d6fb-c345-48e2-87c6-3b0621fe2cdc.json",
     "attemptCount": 35,
     "complete": true,
     "completedCount": 35,
-    "evaluatedAt": "2026-10-13T22:50:07.490Z",
+    "evaluatedAt": "2026-10-14T00:45:12.375Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -272,10 +272,10 @@ This is the only current release/evidence index. Historical implementation notes
     "modelStepCount": 35,
     "reportVersion": "sales-chat-live-v26",
     "runError": null,
-    "runId": "d31a8aa2-15f0-45b9-b257-1e20cbae96ca",
+    "runId": "5689d6fb-c345-48e2-87c6-3b0621fe2cdc",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "b9127a5e88c2b2d2b4164ff9286e966c564ef4323d9f741dd0afb0cb5ac398e6",
+      "digest": "94645cf290b05c239c03ed3a425e5f72ec87d44020775b3c98e6a0b5d8c1d790",
       "fileCount": 330,
       "status": "captured"
     },
@@ -284,7 +284,7 @@ This is the only current release/evidence index. Historical implementation notes
     "terminationReason": "completed",
     "thresholdsPassed": true,
     "tokenUsageComplete": true,
-    "totalTokens": 94444
+    "totalTokens": 94669
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -312,9 +312,9 @@ This is the only current release/evidence index. Historical implementation notes
 - 当前唯一 Vitest 执行证据指针：artifact `docs/evidence/vitest-execution-latest.json`；format `diesel-vitest-execution-evidence-v2`。
   动态测试计数、执行时间、HEAD 与 source fingerprint 仅从该 artifact 派生；`STATUS.md` 不复制这些值。
 
-- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-10-13T22:50:07.490Z`；run ID `d31a8aa2-15f0-45b9-b257-1e20cbae96ca`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`35 provider attempts`；`35 completed provider calls`；`35 model steps`；
-  `94444 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
-  archive `docs/evals/archive/ai-live-eval-20261013T225007490Z-d31a8aa2-15f0-45b9-b257-1e20cbae96ca.json`；source fingerprint `b9127a5e88c2b2d2b4164ff9286e966c564ef4323d9f741dd0afb0cb5ac398e6` across `330` files。
+- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-10-14T00:45:12.375Z`；run ID `5689d6fb-c345-48e2-87c6-3b0621fe2cdc`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`35 provider attempts`；`35 completed provider calls`；`35 model steps`；
+  `94669 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
+  archive `docs/evals/archive/ai-live-eval-20261014T004512375Z-5689d6fb-c345-48e2-87c6-3b0621fe2cdc.json`；source fingerprint `94645cf290b05c239c03ed3a425e5f72ec87d44020775b3c98e6a0b5d8c1d790` across `330` files。
 
 - 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `682f1e7d-7ca4-42a1-bca9-fe38f78c6eb8`，artifact SHA-256 `1f72a5eba903e595a9c2ae9259807b988d849e54147e56f5268781841fd43cbc`；
   observedAt `2026-10-13T23:40:53.373Z`，clean worktree / base HEAD `7e12735f917475ebda15a25832af523b404ad3b0`；

@@ -17,6 +17,36 @@ function next(previous: ReturnType<typeof prepareConversationPlan>, text: string
     userTexts: [text], selectedCountryIso3: null, runtimeContext, locale: "en" });
 }
 describe("task-aware neutral preparation across signed multi-turn edits", () => {
+  it.each(["en", "zh-CN"] as const)("retains regulatory methods and applicability through every draft length and format (%s)", locale => {
+    const regulatoryState: ConversationState = { ...state, tasks: ["regulations"], countryIso3s: ["JPN", "CHN"],
+      applicationScope: "construction", powerKw: 120, asOf: "2026-08-13" };
+    const topics = ["original_sources", "regulatory_test_methods", "regulatory_scope"];
+    let current = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_checklist", state: regulatoryState,
+      preparationTopics: topics }, userTexts: ["For JPN and CHN construction 120 kW as of 2026-08-13, request original regulations, test cycles and applicable power bands, not product certificates"],
+      previous: null, selectedCountryIso3: null, runtimeContext, locale });
+    for (const outputKind of ["request_checklist", "request_checklist", "request_email"] as const) {
+      const answer = buildEvidenceRequestResponse(current)!;
+      expect(answer).toMatch(/test cycles|测试循环/u);
+      expect(answer).toMatch(/power ranges|功率范围/u);
+      expect(answer).toMatch(/traceable originals|可追溯原件/u);
+      expect(answer).not.toMatch(/emission test reports|available certification documents|排放检测报告|已有认证文件/u);
+      current = next(current, "再精简成两点", { outputKind, presentation: { locale: null, length: "shorter", items: 2 } });
+      expect(current.memory.preparationTopics).toEqual(topics);
+      expect(current.memory.responseLocale).toBe(locale);
+    }
+    const email = buildEvidenceRequestResponse(current)!;
+    expect(email).toMatch(/test cycles|测试循环/u);
+    expect(email).toMatch(/power ranges|功率范围/u);
+    expect(email).toMatch(/does not confirm compliance|不代表已合规/u);
+  });
+  it("defaults regulation preparation to methods without borrowing product test reports", () => {
+    const current = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_checklist",
+      state: { ...state, tasks: ["regulations"] } }, userTexts: ["Prepare CHN regulatory materials"],
+      previous: null, selectedCountryIso3: null, runtimeContext, locale: "en" });
+    const answer = buildEvidenceRequestResponse(current)!;
+    expect(answer).toContain("regulatory test cycles and measurement methods");
+    expect(answer).not.toContain("emission test reports");
+  });
   it.each(["en", "zh-CN"] as const)("uses market materials rather than product documents (%s)", locale => {
     const first = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_checklist", state },
       userTexts: ["CHN market data; prepare materials for later verification"], previous: null, selectedCountryIso3: null, runtimeContext, locale });

@@ -6,6 +6,52 @@
   "model": "deepseek-flash",
   "mocks": false,
   "retries": 0,
+  "additionalLocalBrowserPreflight": {
+    "origin": "http://127.0.0.1:3101/chat",
+    "productionAcceptance": false,
+    "beforeCommit": "84c2d5ee4b1786a299552cfa9aa1c88e7f459c60",
+    "beforeChecks": { "turns": 8, "transportPassed": 8, "semanticPassed": 6, "semanticFailed": 2 },
+    "passedBeforeScenarios": [
+      "JPN construction 120 kW as of 2026-08-13: effective regulations only",
+      "Add CHN without losing application, power or date",
+      "Ask for original JPN NOX evidence: search only, honest missing excerpt, no invented page",
+      "Explain why differing NOX limits alone do not establish a strictness ranking",
+      "Leave preparation and really query both countries at 80 kW with date/application retained",
+      "Remove CHN and query only JPN with remaining filters retained"
+    ],
+    "failures": [
+      { "requestId": "95f6fff6-e438-46d5-a3f1-60990ae00e58", "turn": 5,
+        "prompt": "那先别下结论，列一个向法规资料负责人索取材料的清单：原文、测试循环、适用功率段。不需要产品证书。",
+        "actual": "Only originals and regulatory applicability categories appeared; explicitly requested test cycles were omitted.",
+        "semanticPassed": false },
+      { "requestId": "0e03fc3d-6cd4-4e13-a14b-8db0138947fc", "turn": 6,
+        "prompt": "改成英文，压缩为两条。测试循环也必须保留，不要遗漏。",
+        "actual": "traceable originals and unresolved gaps; regulatory applicability materials",
+        "semanticPassed": false }
+    ],
+    "repair": "Independent regulatory_test_methods category distinguishes prescribed cycles/methods from a product's test report. Applicability short labels retain power ranges/dates. Signed topic selection and category grouping apply to every language, length and output format.",
+    "afterChecks": { "turns": 4, "transportPassed": 4, "semanticPassed": 4, "semanticFailed": 0 },
+    "afterRecords": [
+      { "requestId": "b0efd783-1995-4f29-b9c3-7d4e3a937485", "turn": 9,
+        "prompt": "那先别下结论，列一个向法规资料负责人索取材料的清单：原文、测试循环、适用功率段。不需要产品证书。",
+        "actual": "可追溯原件及未解决缺口; 法规测试循环与测量方法; 法规用途、功率范围与适用日期. Explicit unverified/non-approval boundary; JPN construction 80 kW 2026-08-13 retained.",
+        "semanticPassed": true },
+      { "requestId": "bad35188-fb3e-4b9b-afff-75b2c5991f80", "turn": 10,
+        "prompt": "改成英文，压缩为两条。测试循环也必须保留，不要遗漏。",
+        "actual": "Two bullets: traceable originals and unresolved gaps; regulatory test cycles and measurement methods plus regulatory application, power ranges and validity dates. Explicit unverified boundary remains.",
+        "semanticPassed": true },
+      { "requestId": "4c58c094-4f33-46d7-bedc-47359a0952c0", "turn": 11,
+        "prompt": "把这两条改成一封很短的英文索取邮件，不要承诺拿到材料就能获准销售。",
+        "actual": "Hello, please share traceable originals and unresolved gaps; regulatory test cycles and measurement methods; regulatory application, power ranges and validity dates for (JPN · construction · 80 kW · 2026-08-13). This request does not confirm compliance or permission to sell.",
+        "semanticPassed": true },
+      { "requestId": "51cc8d4b-0f4d-469f-ab0b-f9064878ba54", "turn": 12,
+        "prompt": "现在真的重新查法规，只查中国150 kW，日期和工程机械用途不变。用中文，不写邮件。",
+        "actual": "Fresh compareRegulations card for CHN construction 150 kW 2026-08-13; Chinese explanation, effective record and source, no retained email. Server request completed in 3.3 seconds; one browser wait helper returned early, so the completed answer was read without resending.",
+        "semanticPassed": true }
+    ],
+    "applicationTimeouts": 0,
+    "notes": "Observed through actual browser controls with real provider/database; no request interception. Failure counts remain failures. Source retrieval's missing excerpt is a data-coverage gap, not proof of a retrieved original. Local server was stopped after verification. Superseded PR CI run 38578708831 was cancelled, not counted as passing."
+  },
   "method": "Operator selected and read each follow-up after the preceding real response. Original failing run is retained. No production deployment occurred and no quota or production environment was changed.",
   "failedCandidate": {
     "commit": "78f70657ae475c074eb0a2853a5e39dc31a326c8",

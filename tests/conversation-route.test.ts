@@ -13,9 +13,14 @@ const usage = { inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0
 const empty = { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
 function modelFor(plans: unknown[], answers: string[]) {
   let planned = 0, answered = 0;
+  function operationInput() {
+    const { mode, outputKind, ...fields } = z.object({ mode: z.string(), outputKind: z.string().optional() }).passthrough().parse(plans[planned++]);
+    return { ...fields, operation: outputKind === "request_checklist" ? "prepare_checklist"
+      : outputKind === "request_email" ? "prepare_email" : mode };
+  }
   return new MockLanguageModelV4({
     doGenerate: async () => ({ warnings: [], usage, finishReason: { unified: "tool-calls", raw: undefined },
-      content: [{ type: "tool-call", toolCallId: "private-plan", toolName: "planConversation", input: JSON.stringify(plans[planned++]) }],
+      content: [{ type: "tool-call", toolCallId: "private-plan", toolName: "planConversation", input: JSON.stringify(operationInput()) }],
     }),
     doStream: async () => ({ stream: simulateReadableStream({ chunks: [
       { type: "stream-start", warnings: [] },
@@ -36,6 +41,29 @@ async function request(sessionId: string, messages: unknown[], receipt?: string)
 beforeEach(() => { mocks.model.mockReset(); mocks.audit.ensureSession.mockClear(); });
 
 describe("multi-turn API conversation protocol", () => {
+  it("leaves the tool-free draft branch when the next operation resumes market research", async () => {
+    const state = { ...empty, tasks: ["market"], countryIso3s: ["BRA", "CHN"] };
+    const period = { start: "2022-01-01", end: "2023-01-01" };
+    const model = modelFor([
+      { mode: "compose", outputKind: "request_email", state },
+      { mode: "research", state, marketPeriod: period, marketPeriodUpdate: "replace" },
+    ], ["MUST_NOT_BYPASS_EVIDENCE"]);
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    const sessionId = crypto.randomUUID();
+    const messages = [user("Write a neutral materials-request email about BRA and CHN market data.")];
+    const first = await request(sessionId, messages);
+    expect(first.body).toContain("Hello, please share");
+    messages.push(user("Return to data verification for both countries for 2022. Stop drafting."));
+    const result = await request(sessionId, messages, first.metadata!.conversation.receipt);
+    expect(result.metadata?.conversation.mode).toBe("research");
+    expect(result.body).toContain('"marketPeriod":{"start":"2022-01-01","end":"2023-01-01"}');
+    expect(result.body).toContain('"toolName":"compareMarkets"');
+    expect(result.body).not.toContain("Hello, please share");
+    expect(result.body).not.toContain("preparation checklist");
+    expect(result.body).not.toContain("MUST_NOT_BYPASS_EVIDENCE");
+    expect(model.doGenerateCalls).toHaveLength(2);
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
   it("separates neutral document preparation from a prior fit verdict and preserves context for a later rewrite", async () => {
     const state = { tasks: ["product_fit"], countryIso3s: ["DEU"], applicationScope: "construction", powerKw: 200,
       asOf: "2026-08-13", productModelCode: "CUSTOMER-P200" };

@@ -52,7 +52,7 @@ describe("multi-turn API conversation protocol", () => {
     expect(first.body).not.toContain("tool-output");
     messages.push(user("Turn that into a three-sentence customer email asking for those materials, with no new compliance claims."));
     const second = await request(sessionId, messages, first.metadata!.conversation.receipt);
-    expect(second.body).toContain("Dear Customer");
+    expect(second.body).toContain("Hello, please share");
     expect(second.body).toContain("does not confirm compliance");
     expect(second.metadata?.conversation.state).toEqual(state);
     expect(model.doStreamCalls).toHaveLength(0);
@@ -71,6 +71,31 @@ describe("multi-turn API conversation protocol", () => {
     expect(result.metadata?.conversation.state).toMatchObject({ countryIso3s: ["CHN"],
       powerKw: 120, applicationScope: "construction", asOf: "2026-08-13" });
     expect(result.body).not.toContain("UNVERIFIED_FACT");
+  });
+  it("translates a neutral draft against the UI locale and retains its language through repeated shortening", async () => {
+    const state = { tasks: ["product_fit"], countryIso3s: ["DEU"], applicationScope: "construction", powerKw: 200.5,
+      asOf: "2026-08-13", productModelCode: "CLIENT200" };
+    const model = modelFor(Array.from({ length: 5 }, () => ({ mode: "compose", outputKind: "request_email", state })), ["MUST_NOT_BYPASS_EVIDENCE"]);
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    const sessionId = crypto.randomUUID();
+    const messages = [user("Write a neutral materials-request email for model CLIENT200 in DEU construction at 200.5 kW on 2026-08-13, without a compliance verdict.")];
+    let result = await request(sessionId, messages);
+    expect(result.body).toContain("Hello, please");
+    messages.push(user("请把这封材料索取邮件翻译成中文，保留全部查询条件。"));
+    result = await request(sessionId, messages, result.metadata!.conversation.receipt);
+    expect(result.body).toContain("您好，请");
+    expect(result.body).not.toContain("Hello, please");
+    for (let index = 0; index < 3; index += 1) {
+      messages.push(user("再精简一些，保留查询条件和不代表获准销售的说明。"));
+      result = await request(sessionId, messages, result.metadata!.conversation.receipt);
+      expect(result.body).toContain("您好，请");
+      expect(result.body).not.toContain("Hello, please");
+      expect(result.body).toContain("不代表已合规或获准销售");
+      expect(result.metadata?.conversation.state).toEqual(state);
+    }
+    expect(model.doGenerateCalls).toHaveLength(5);
+    expect(model.doStreamCalls).toHaveLength(0);
+    expect(result.body).not.toContain("MUST_NOT_BYPASS");
   });
   it("keeps two-sided context for an adaptive follow-up, without accepting history as facts", async () => {
     const firstAnswer = "First: NOx names nitrogen oxides. Second: the question is not a product approval.";
@@ -111,7 +136,7 @@ describe("multi-turn API conversation protocol", () => {
     expect(failure.metadata?.conversation.state).toEqual(empty);
     messages.push(user("Write a neutral email requesting specification and test-report originals."));
     const recovered = await request(sessionId, messages, failure.metadata!.conversation.receipt);
-    expect(recovered.body).toContain("Dear Customer");
+    expect(recovered.body).toContain("Hello, please share");
     expect(JSON.stringify(model.doGenerateCalls[2]?.prompt)).toContain("unresolved changes");
   });
   it("does not silently normalize invalid planner arrays or make an executor call", async () => {
@@ -121,6 +146,34 @@ describe("multi-turn API conversation protocol", () => {
     expect(result.body).toContain("couldn't reliably resolve");
     expect(result.body).not.toContain("MUST_NOT_APPEAR");
     expect(model.doStreamCalls).toHaveLength(0);
+    expect(result.metadata?.conversation.state).toEqual(empty);
+    expect(result.metadata?.conversation.mode).toBe("clarify");
+  });
+  it("keeps a rejected first request out of the next turn's active task stack", async () => {
+    const model = modelFor([{ mode: "research", state: { ...empty, countryIso3s: null } }, { mode: "general", state: empty }], ["NOx names nitrogen oxides."]);
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    const sessionId = crypto.randomUUID();
+    const messages = [user("Find original sources about an unconfirmed product.")];
+    const failure = await request(sessionId, messages);
+    expect(failure.metadata?.conversation.state).toEqual(empty);
+    messages.push(user("Instead, what is NOx?"));
+    const recovery = await request(sessionId, messages, failure.metadata!.conversation.receipt);
+    expect(recovery.body).toContain("NOx names nitrogen oxides");
+    const prompt = model.doGenerateCalls[1]?.prompt;
+    const last = prompt?.at(-1);
+    expect(last?.role).toBe("user");
+    const serialized = JSON.stringify(last);
+    expect(serialized).toContain('userMessages\\":[\\"Instead, what is NOx?\\"]');
+    expect(recovery.metadata?.conversation.state.tasks).toEqual([]);
+    expect(model.doGenerateCalls).toHaveLength(2);
+  });
+  it("permits general customer preparation but still withholds unsupported regulatory prose", async () => {
+    const model = modelFor([{ mode: "general", state: empty }], ["China permits all these engines without certification."]);
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    const result = await request(crypto.randomUUID(), [user("Help me prepare a customer conversation, not just look up regulations.")]);
+    expect(model.doStreamCalls).toHaveLength(1);
+    expect(result.body).not.toContain("China permits all");
+    expect(result.body).not.toContain("tool-output");
   });
   it("greets without a planning/model call or fake evidence", async () => {
     const result = await request(crypto.randomUUID(), [user("Hi!")]);

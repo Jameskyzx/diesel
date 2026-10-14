@@ -1841,6 +1841,7 @@ export function SalesChat({
         }}
         ref={messageLogRef}
         role="region"
+        tabIndex={0}
       >
         {messages.length === 0 ? (
           <div className="mx-auto max-w-xl py-8 text-sm sm:py-12">

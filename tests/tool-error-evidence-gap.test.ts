@@ -193,16 +193,21 @@ describe("execution errors are not evidence of absent data", () => {
       expect(await validateUiMessageSse(body)).toBe(false);
     },
   );
-  it("does not relabel an unfinished tool-only country overview as a completed answer", async () => {
-    const text = `Give a CHN country overview as of ${asOf}.`;
+  it("does not relabel an unfinished tool-only opportunity analysis as a completed answer", async () => {
+    // Profiles now have a complete server-authored summary. Keep this guard on
+    // an evidence task that still needs its model answer, not that fast path.
+    const text = `Calculate opportunity scores for CHN and BRA non-road 100 kW as of ${asOf}.`;
     const auditRepository = { recordToolCall: async () => undefined };
     const sessionId = crypto.randomUUID();
     const stream = streamSalesChat({ auditRepository, locale: "en", selectedCountryIso3: null, sessionId,
       messages: [{ role: "user", content: text }], trustedUserTexts: [text], shouldStopAfterStep: () => true,
-      model: mockModel("getCountryProfile", { asOf, countryIso3: "CHN", topics: ["country"] }, "UNUSED"),
+      model: mockModel("calculateOpportunityScore", countries, "UNUSED"),
       tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
     });
     const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
+    expect(readPublicSse(body).outputs).toEqual([expect.objectContaining({
+      tool: "calculateOpportunityScore", status: "ok", evidenceSufficient: true,
+    })]);
     expect(body).toContain('"finishReason":"tool-calls"');
     expect(await validateUiMessageSse(body)).toBe(false);
   });

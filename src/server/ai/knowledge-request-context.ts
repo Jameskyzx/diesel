@@ -762,11 +762,17 @@ function knowledgeDeliveryIn(query: string, terms: readonly string[], countries:
 export function buildKnowledgeRequestContext(
   userTexts: readonly string[],
   context: ConversationBusinessContext,
+  options: { retainFirstRequest?: boolean } = {},
 ): { query: string; terms: string[]; requiresRestatement: boolean; delivery: KnowledgeDeliveryRequirements; optionalTerms: string[] } {
   // Only this trusted-request projection removes controls. The complete caller
   // texts still own context/safety checks, and actual tool queries remain intact.
   const requestTexts = userTexts.map(projectKnowledgeRequestControls);
-  const request = latestSubstantiveKnowledgeRequestIn(requestTexts, context.countryIso3s) ??
+  // Semantic conversation state can own the base/refinement distinction. Do
+  // not run its signed base through a second keyword task selector; only parse
+  // the edits. Legacy callers still resolve their ordinary history as before.
+  const request = (options.retainFirstRequest && requestTexts.length > 0
+    ? { index: 0, text: requestTexts[0]! }
+    : latestSubstantiveKnowledgeRequestIn(requestTexts, context.countryIso3s)) ??
     { index: Math.max(0, requestTexts.length - 1), text: requestTexts.at(-1) ?? "" };
   const countries = uniqueCountries([...context.countryIso3s, ...countryIso3sIn(request.text)]);
   const scopedText = withCurrentScope(sourceSearchTextIn(unwrapKnowledgeTermRequest(request.text)), context);

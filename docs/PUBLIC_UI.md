@@ -93,8 +93,10 @@ and native quoted/Boolean/exclusion search syntax remain binding.
 
 The signed receipt also carries task/presentation working memory, not facts:
 the retained source request survives prose-history truncation, and adding a
-product task does not replace it. Source edits distinguish retain/replace/clear;
-new fragments must be human-authored or fall back to the complete human request.
+product task does not replace it. Source edits distinguish retain/replace/refine/clear;
+replacements preserve the complete human request, not a model-selected fragment.
+Refinements reuse the existing locator/version/native-query parser; ambiguous OR
+edits and bounded-context overflow require clarification, never silent truncation.
 Market scope is independent of an earlier engine task: a new market-only request
 does not inherit irrelevant engine filters, while explicit market restrictions
 still require a supported query or clarification. Response language and draft

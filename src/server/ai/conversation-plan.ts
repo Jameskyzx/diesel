@@ -1,7 +1,7 @@
 import "server-only";
 import { generateText, stepCountIs, tool, type LanguageModel, type LanguageModelUsage } from "ai";
 import { z } from "zod";
-import { conversationStateSchema, type ConversationMemory, type ConversationState } from "@/features/ai/conversation-state";
+import { conversationMemorySchema, conversationStateSchema, type ConversationMemory, type ConversationState } from "@/features/ai/conversation-state";
 import { buildConversationBusinessContext, countryIso3sIn, hasExplicitSourceIntent, hasConversationComparisonIntent, filterResetControls } from "@/server/ai/conversation-context";
 import { buildSalesChatEvidenceContract, type SalesChatEvidenceContract } from "@/server/ai/evidence-contract";
 import type { ConversationReceipt } from "@/server/ai/conversation-receipt";
@@ -15,8 +15,7 @@ export const conversationPlanSchema = z.object({
   state: conversationStateSchema,
   outputKind: z.enum(["evidence", "request_checklist", "request_email"]).default("evidence"),
   sourceTerms: z.array(z.string().min(1).max(500)).max(8).default([]),
-  sourceUpdate: z.object({ action: z.enum(["retain", "replace", "clear"]),
-    request: z.string().min(1).max(2_000).nullable() }).strict().optional(),
+  sourceUpdate: z.enum(["retain", "replace", "refine", "clear"]).optional(),
   filterInheritance: z.enum(["compatible", "retain"]).default("compatible"),
   presentation: z.object({ locale: z.enum(["en", "zh-CN"]).nullable(),
     length: z.enum(["keep", "shorter", "standard"]) }).strict().optional(),
@@ -132,12 +131,15 @@ export function prepareConversationPlan(input: {
     [input.previous?.userText, ...(input.previous?.history.map(exchange => exchange.user).toReversed() ?? []),
       ...input.userTexts.toReversed()].find(text => text && hasExplicitSourceIntent(text)) ?? latest;
   const update = plan.sourceUpdate;
-  if (update?.action === "clear" && state.tasks.includes("knowledge")) throw new Error("Conflicting source task");
-  // A proposed span is only a projection. If it is not a literal human span,
-  // use the complete human request through the existing query parser. Never
-  // search invented words or reject independent tasks for a bad projection.
-  const sourceRequest = update?.action === "replace" ? update.request && latest.includes(update.request) ? update.request : latest : update?.action === "retain"
+  if (update === "clear" && state.tasks.includes("knowledge")) throw new Error("Conflicting source task");
+  // The planner selects an edit operation, never the authoritative text span.
+  // Replacements retain the complete human request: locators, identifiers and
+  // native grammar cannot disappear because a model copied only a fragment.
+  const sourceRequest = update === "replace" ? latest : update === "retain"
     ? historicalSourceRequest : input.previous?.memory?.sourceRequest ?? (hasExplicitSourceIntent(latest) ? latest : historicalSourceRequest);
+  const sourceRefinements = update === "replace" || update === "clear" ? [] :
+    [...(input.previous?.memory?.sourceRefinements ?? []), ...(update === "refine" ? [latest] : [])];
+  if (update === "refine" && !input.previous?.memory?.sourceRequest) throw new Error("Missing source task to refine");
   // Plain-language source terms are copied from human text, never invented by
   // the planner. Native Boolean/quoted/signed searches retain their full grammar.
   // "do not query products OR repeat the limits" is a request control, not
@@ -147,17 +149,31 @@ export function prepareConversationPlan(input: {
     knowledgeSignedOperandSpans(sourceRequest).length > 0 || /\bor\b/iu.test(operatorText);
   let sourceText = sourceRequest;
   if (sourceTerms.length > 0 && !nativeSearch) {
+    // Each optional term must come from the authoritative base. A translated
+    // locator or a later edit is not a base search term; delivery/refinements
+    // are independently applied below. Never send model-invented words.
+    sourceTerms = sourceTerms.filter(term => sourceRequest.toLowerCase().includes(term.toLowerCase()));
     const proposedText = sourceTerms.join(" ");
-    const requiredIdentifiers = knowledgeTermsIn(sourceRequest, countryIso3sIn(sourceRequest)).filter(term => /^(?:id:|ref:)/u.test(term));
+    // Query metadata and delivery locators have their own enforced contracts;
+    // do not turn adjacent prose such as "柴油机200.5 kW在2026-08-13" into
+    // fictitious document IDs. Compound identifiers and native literals remain
+    // protected. Locator omission from search terms cannot remove delivery.
+    const constraintText = sourceRequest
+      .replace(/(?<![A-Za-z0-9_./@-])\d+(?:\.\d+)?\s*(?:kW\b|千瓦)/giu, " ")
+      .replace(/(?<![A-Za-z0-9_./@-])\d{4}-\d{2}-\d{2}(?![A-Za-z0-9_/-])/gu, " ");
+    const requiredIdentifiers = knowledgeTermsIn(constraintText, countryIso3sIn(sourceRequest))
+      .filter(term => /^(?:id:|ref:)/u.test(term) && !/^ref:(?:page|section|clause|part|annex|appendix):/u.test(term));
     const selectedTerms = new Set(knowledgeTermsIn(proposedText, state.countryIso3s));
-    const referenceNumbers = sourceRequest.match(/\b\d+(?:[./-]\d+)+\b/gu) ?? [];
-    if (sourceTerms.every(term => sourceRequest.toLowerCase().includes(term.toLowerCase())) &&
+    const referenceNumbers = [...sourceRequest.matchAll(/\b\d+(?:[./-]\d+)+\b/gu)]
+      .filter(match => !/^\s*(?:kW\b|千瓦)/iu.test(sourceRequest.slice(match.index + match[0].length)))
+      .map(match => match[0]);
+    if (sourceTerms.length > 0 &&
       requiredIdentifiers.every(term => selectedTerms.has(term)) &&
       referenceNumbers.every(reference => /^\d{4}-\d{2}-\d{2}$/u.test(reference) || proposedText.includes(reference))) {
       sourceText = proposedText;
     } else {
       // Search-term projection is optional, not an authority over the human
-      // query or independent tasks. Reject the entire invalid projection and
+      // query or independent tasks. Reject an incomplete projection and
       // use the original human request through the same deterministic parser.
       // Never search invented terms, silently drop identifiers or repair JSON.
       sourceTerms = [];
@@ -171,8 +187,9 @@ export function prepareConversationPlan(input: {
         const sourceContext = { ...extracted, countryIso3s: country ? [country] : [],
           focusedCountryIso3: country, applicationScope: null, powerKw: null };
         const source = buildKnowledgeRequestContext((update !== undefined || input.previous?.memory?.sourceRequest || hasExplicitSourceIntent(sourceRequest))
-          ? [sourceText] : knowledgeTexts, sourceContext);
-        const originalDelivery = buildKnowledgeRequestContext([sourceRequest], sourceContext).delivery;
+          ? [sourceText, ...sourceRefinements] : knowledgeTexts, sourceContext, { retainFirstRequest: sourceRefinements.length > 0 });
+        const originalDelivery = buildKnowledgeRequestContext([sourceRequest, ...sourceRefinements], sourceContext,
+          { retainFirstRequest: sourceRefinements.length > 0 }).delivery;
         source.delivery = { pageLocator: source.delivery.pageLocator || originalDelivery.pageLocator,
           sectionLocator: source.delivery.sectionLocator || originalDelivery.sectionLocator,
           pages: [...new Set([...source.delivery.pages, ...originalDelivery.pages])],
@@ -226,11 +243,12 @@ export function prepareConversationPlan(input: {
     : plan.presentation?.locale ?? input.previous?.memory?.responseLocale ?? input.locale ?? "en";
   const lengthChange = plan.presentation?.length ?? (/(?:缩短|精简|简短|再短|短一点|\b(?:shorten|shorter|short|brief|concise)\b)/iu.test(latest) ? "shorter" : "keep");
   const previousLength = input.previous?.memory?.draftLength ?? "standard";
-  const memory: ConversationMemory = { sourceRequest: state.tasks.includes("knowledge") ? sourceRequest : null,
+  const memory: ConversationMemory = conversationMemorySchema.parse({ sourceRequest: state.tasks.includes("knowledge") ? sourceRequest : null,
+    sourceRefinements: state.tasks.includes("knowledge") ? sourceRefinements : [],
     marketScope: state.tasks.includes("market") ? marketScope : null, responseLocale,
     outputKind: plan.outputKind,
     draftLength: lengthChange === "standard" ? "standard" : lengthChange === "shorter"
-      ? previousLength === "standard" ? "brief" : "minimal" : previousLength };
+      ? previousLength === "standard" ? "brief" : "minimal" : previousLength });
   return { ...plan, sourceTerms, state, memory, contract, generalConversation, previousAnswer: input.previous ? JSON.stringify([
     ...input.previous.history, { user: input.previous.userText, answer: input.previous.answer },
   ]) : null };
@@ -272,7 +290,7 @@ export async function planConversationTurn(input: {
 Modes: research=look up facts; explain=explain an earlier result/question; compose=rewrite/translate/email/summarize prior results; general=general concepts or workflow help without jurisdiction/product-specific claims; clarify=ask for missing information.
 An open-ended request to prepare a customer conversation or discuss a workflow is already a meaningful general task, in either language. Use general, tasks=[], even if the user mentions regulations/markets as background or contrasts workflow help with lookup. Missing country, power or a specific question is not a blocker for neutral preparation: the answer may offer a few discussion questions. Reserve clarify for an unresolved purpose or missing parameters of an actual factual request. Do not add facts tasks solely because their topic words occur in that background.
 outputKind: evidence for any factual analysis/verdict or rewriting factual results; request_checklist for a neutral list of materials to obtain for later verification; request_email for a neutral customer email asking for those materials. These two request formats do not assert current facts, required legal documents or a compliance result. Missing product evidence does NOT prevent asking its owner for a specification sheet/test reports/certification documents. Preserve filters/tasks for later, use compose for request_email and explain for request_checklist. Do not classify a guarantee or compliance verdict as a materials request.
-Always provide sourceUpdate, filterInheritance and presentation. sourceUpdate: retain with request=null for an unchanged source task, including "keep the earlier source lookup" alongside a different new task; replace only for a NEW or REFINED source request, copying its complete document/topic/delivery fragment VERBATIM from the latest human message into request; clear with request=null when the source task is retired or absent. Retain the signed sourceRequest even if it has aged out of earlierDialogue. Do not replace it with conversation controls or a new product task. Native quoted/Boolean/signed query syntax and locator requirements must remain complete. Without a previous source request, a source task must use replace.
+Always provide sourceUpdate, filterInheritance and presentation. sourceUpdate is an edit operation: retain for an unchanged source task, including "keep the earlier source lookup" alongside a different new task; replace for a NEW complete source topic/query; refine for a page/section/version/exclusion change to the existing source task without replacing its topic; clear when the source task is retired or absent. The server preserves the complete human source request and bounded refinements, not a model-selected fragment. Retain the signed sourceRequest even if it has aged out of earlierDialogue. Do not replace it with conversation controls or a new product task. Native quoted/Boolean/signed query syntax and locator requirements must remain complete. Without a previous source request, a source task must use replace, not refine.
 filterInheritance: compatible by default. Adding/replacing countries, power or dates within a task keeps its other filters. A newly selected market task does not inherit an earlier engine's application, power or model. Use retain ONLY when the user explicitly asks the NEW task to reuse those earlier constraints; that may legitimately require clarification, never silently broaden them. Explicit scope in this message always applies. A mixed regulation/market request does not implicitly filter the market using the regulation's old scope.
 presentation: locale=null means keep the signed responseLocale (or UI locale initially); set en/zh-CN ONLY for a new explicit output-language instruction, never merely because the latest user sentence or UI is in that language. A request to edit/shorten a draft keeps its format and language. length=shorter for any request to make it more concise (regardless of wording/language), standard for an explicit expansion/reset, otherwise keep. These fields change presentation only, not evidence.
 sourceTerms: for a new or retained original-source task, copy only meaningful document identifiers and topic phrases VERBATIM from its latest human source question, e.g. ["Regulation (EU) 2016/1628", "test cycle"]. For an explanation follow-up use the authenticated earlier source question, not the generic explanation wording. Do not include conversation controls, excluded countries, queries not to run, or instructions. Retain complete identifiers/pages/sections. Use [] for actual quoted, Boolean or signed native SEARCH operands, or when no source task is requested. Conversational "do not query products or repeat limits" is not Boolean search syntax: still select the document/topic phrases. Metadata is supplied separately, never add a country/application/power to the search terms unless it is part of the actual source topic.

@@ -10,7 +10,7 @@ const sessionId = "00000000-0000-4000-8000-000000000001";
 const base: ConversationState = { tasks: ["knowledge"], countryIso3s: ["DEU"], applicationScope: "construction",
   powerKw: 200.5, asOf: "2026-08-13", productModelCode: null };
 const memory: ConversationMemory = { sourceRequest: "Regulation (EU) 2016/1628 test cycle", marketScope: null,
-  responseLocale: "zh-CN", draftLength: "standard", outputKind: "evidence" };
+  sourceRefinements: [], responseLocale: "zh-CN", draftLength: "standard", outputKind: "evidence" };
 function receipt(state = base, remembered = memory, userText = "此前的条件已确认", answer = "Not a source query or a template prefix") {
   return verifyConversationReceipt(signConversationReceipt({ sessionId, selectedCountryIso3: null,
     userText, answer, state, memory: remembered }), { sessionId, selectedCountryIso3: null, previousUserText: userText })!;
@@ -26,7 +26,7 @@ describe("signed task and presentation memory, independent of prose history", ()
     "也查一下型号 CLIENT200，其他正在查的先不变。",
   ])("keeps the original source independently of a newly added task: %s", text => {
     const result = turn(text, { mode: "research", state: { ...base, tasks: ["product_fit", "knowledge"], productModelCode: "CLIENT200" },
-      sourceUpdate: { action: "retain", request: null }, sourceTerms: ["CLIENT200"] });
+      sourceUpdate: "retain", sourceTerms: ["CLIENT200"] });
     const source = result.contract.requirements.find(r => r.acceptedTools.includes("searchKnowledgeBase"))!;
     expect(source.query.knowledgeQuery).toBe(memory.sourceRequest);
     expect(source.query).toMatchObject({ countryIso3s: ["DEU"], applicationScope: "construction", asOf: "2026-08-13" });
@@ -37,7 +37,7 @@ describe("signed task and presentation memory, independent of prose history", ()
     let previous = receipt();
     for (let i = 0; i < 10; i++) {
       const text = `继续核对第 ${i + 1} 项`;
-      const result = turn(text, { mode: "research", state: base, sourceUpdate: { action: "retain", request: null } }, previous);
+      const result = turn(text, { mode: "research", state: base, sourceUpdate: "retain" }, previous);
       expect(result.contract.requirements[0]?.query.knowledgeQuery).toBe(memory.sourceRequest);
       previous = verifyConversationReceipt(signConversationReceipt({ sessionId, selectedCountryIso3: null, userText: text,
         answer: "No findings", state: result.state, memory: result.memory, previous }), { sessionId, selectedCountryIso3: null, previousUserText: text })!;
@@ -48,21 +48,55 @@ describe("signed task and presentation memory, independent of prose history", ()
   });
   it.each(["Regulation (EU) 2016/1628 Annex II page 12", '"test cycle" OR "inspection dossier" -marine'])("replaces source identity only with human-authored text: %s", request => {
     const result = turn(`Find this original source instead: ${request}`, { mode: "research", state: base,
-      sourceUpdate: { action: "replace", request }, sourceTerms: [] });
-    expect(result.memory.sourceRequest).toBe(request);
+      sourceUpdate: "replace", sourceTerms: [] });
+    expect(result.memory.sourceRequest).toBe(`Find this original source instead: ${request}`);
     if (request.includes("OR")) expect(result.contract.requirements[0]?.query.knowledgeQuery).toContain('"test cycle" OR "inspection dossier" -marine');
     else expect(result.contract.requirements[0]?.query.knowledgeDelivery?.pages).toContain("12");
   });
   it("discards invented source projections and rejects contradictory task clearing", () => {
     const result = turn("Find the original inspection dossier", { mode: "research", state: base,
-      sourceUpdate: { action: "replace", request: "Fabricated source" } });
+      sourceUpdate: "replace", sourceTerms: ["Fabricated source"] });
     expect(result.memory.sourceRequest).toBe("Find the original inspection dossier");
     expect(JSON.stringify(result.contract)).not.toContain("Fabricated");
-    expect(() => turn("继续", { mode: "research", state: base, sourceUpdate: { action: "clear", request: null } })).toThrow("Conflicting");
+    expect(() => turn("继续", { mode: "research", state: base, sourceUpdate: "clear" })).toThrow("Conflicting");
+  });
+  it.each([[], ["page 12"], ["第13页"], ["Fabricated source"]].map(extraTerms => ({ extraTerms })))("retains locators and grounded topics independently of invalid projected terms: $extraTerms", ({ extraTerms }) => {
+    const text = "查德国工程机械柴油机200.5 kW在2026-08-13的要求，同时查 Regulation (EU) 2016/1628 的 test cycle 原文，给出第12页和Annex II。";
+    const result = turn(text, { mode: "research", state: { ...base, tasks: ["regulations", "knowledge"] },
+      sourceUpdate: "replace", sourceTerms: ["Regulation (EU) 2016/1628", "test cycle", ...extraTerms] });
+    const source = result.contract.requirements.find(item => item.acceptedTools.includes("searchKnowledgeBase"))!;
+    expect(result.memory.sourceRequest).toBe(text);
+    expect(source.query.knowledgeDelivery?.pages).toContain("12");
+    expect(source.query.knowledgeDelivery?.sections.length).toBeGreaterThan(0);
+    expect(source.query.knowledgeQuery).toBe("Regulation (EU) 2016/1628 test cycle");
+  });
+  it("cannot use projected terms to remove a native alternative or exclusion", () => {
+    const text = 'Find original "test cycle" OR "inspection dossier" -marine, with page 12.';
+    const result = turn(text, { mode: "research", state: base, sourceUpdate: "replace", sourceTerms: ["test cycle"] });
+    expect(result.contract.requirements[0]?.query.knowledgeQuery).toContain('"test cycle" OR "inspection dossier" -marine');
+    expect(result.contract.requirements[0]?.query.knowledgeDelivery?.pages).toContain("12");
+  });
+  it("refines a retained source locator without losing its document, and replaces rather than accumulates old pages", () => {
+    const original = { ...memory, sourceRequest: "Find Regulation (EU) 2016/1628 test cycle page 12" };
+    const result = turn("改查第13页", { mode: "research", state: base, sourceUpdate: "refine" }, receipt(base, original));
+    expect(result.contract.requirements[0]?.query.knowledgeQuery).toContain("2016/1628");
+    expect(result.contract.requirements[0]?.query.knowledgeDelivery?.pages).toEqual(["13"]);
+    const next = turn("Still that document, page 14 instead", { mode: "research", state: base, sourceUpdate: "refine" }, receipt(base, result.memory));
+    expect(next.contract.requirements[0]?.query.knowledgeDelivery?.pages).toEqual(["14"]);
+    expect(next.memory.sourceRequest).toBe(original.sourceRequest);
+  });
+  it("keeps ambiguous native OR refinements fail closed", () => {
+    const result = turn("Exclude -marine", { mode: "research", state: base, sourceUpdate: "refine" },
+      receipt(base, { ...memory, sourceRequest: '"test cycle" OR "inspection dossier"' }));
+    expect(result.contract.missingRequiredParameters).toContain("knowledgeQuery");
+  });
+  it("rejects over-capacity refinement history instead of silently truncating query constraints", () => {
+    expect(() => turn("page 99", { mode: "research", state: base, sourceUpdate: "refine" },
+      receipt(base, { ...memory, sourceRefinements: Array.from({ length: 8 }, (_, i) => `page ${i + 1}`) }))).toThrow();
   });
   it.each(["切换任务，只看巴西市场指标，基准日期2023-12-31。", "Instead, show BRA market data as of 2023-12-31."])("discards incompatible engine filters on a new market task: %s", text => {
     const result = turn(text, { mode: "research", state: { ...base, tasks: ["market"], countryIso3s: ["BRA"], asOf: "2023-12-31" },
-      sourceUpdate: { action: "clear", request: null } });
+      sourceUpdate: "clear" });
     expect(result.state).toMatchObject({ applicationScope: null, powerKw: null, productModelCode: null, countryIso3s: ["BRA"], asOf: "2023-12-31" });
     expect(result.contract.missingRequiredParameters).toEqual([]);
     expect(result.contract.requirements[0]?.requiredProfileTopics).toEqual(["market"]);

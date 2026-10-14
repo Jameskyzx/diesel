@@ -90,6 +90,9 @@ its owner for those materials; model factual prose still needs the full evidence
 contract. Source requests use the resolved state's filters and grounded source
 terms rather than reparsing old country mentions. Required page/section delivery
 and native quoted/Boolean/exclusion search syntax remain binding.
+Regulatory test cycles/methods are separate from product test reports. Concise
+draft labels retain methods and applicability/power/date categories through
+translation, shortening and email conversion; grouping must not omit a category.
 
 The signed receipt also carries task/presentation working memory, not facts:
 the retained source request survives prose-history truncation, and adding a
@@ -251,6 +254,10 @@ combine different pollutant definitions or rank legal strictness. For research
 turns these fact-only summaries stop provider calls once the full evidence
 contract passes. Explanation and composition turns use the requested form
 against freshly validated evidence instead of repeating that summary.
+Returning from a materials email/checklist to research runs the evidence tools
+again. Previous draft format is not the current operation: only an explicit
+materials-draft revision can retain its tool-free path; factual explanations and
+rewrites still need fresh evidence.
 No approved real products means no real recommendation; Demo records cannot
 substitute for an explicitly requested real product. Query errors
 remain distinct from missing data, and legal-sales guarantees are not offered.

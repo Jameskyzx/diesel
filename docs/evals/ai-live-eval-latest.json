@@ -1,17 +1,17 @@
 {
   "complete": true,
-  "evaluatedAt": "2026-10-14T11:24:16.553Z",
+  "evaluatedAt": "2026-10-14T14:44:40.790Z",
   "modelId": "server-openai-compatible/deepseek-flash",
   "provenance": {
     "promptVersion": "sales-chat-system-v11",
     "repository": {
-      "baseHeadCommit": "951fe1b780c6afd42f007c22ae1546f90e57971e",
-      "evaluatedCommit": "951fe1b780c6afd42f007c22ae1546f90e57971e",
+      "baseHeadCommit": "6fcf410ba4748a245bd69399c78eac8fe30efd40",
+      "evaluatedCommit": "6fcf410ba4748a245bd69399c78eac8fe30efd40",
       "worktreeState": "clean"
     },
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "38c3732cdf8dfd5a0ee62ff61d19bb35391a3ad136267a30577fdd2ed8db0f7f",
+      "digest": "81e6feeb26e5e8b0226703ca4b536d85886cdd7ab5c62e46e0ceb6a93742ee30",
       "fileCount": 332,
       "status": "captured"
     },
@@ -23,7 +23,7 @@
       "includeUsage": true
     }
   },
-  "runId": "e8f44299-9db7-4006-bddc-ba733f11e5e8",
+  "runId": "f8585bc7-e680-4aed-84cb-14da4750faef",
   "runError": null,
   "sampleCount": 18,
   "thresholdsPassed": true,
@@ -37,7 +37,7 @@
     "maxTokens": 160000,
     "modelStepCount": 33,
     "tokenUsageComplete": true,
-    "totalTokens": 92495,
+    "totalTokens": 92355,
     "attemptCount": 33,
     "completedCount": 33,
     "maxRetriesPerModelCall": 0,
@@ -48,7 +48,7 @@
   "observability": {
     "cacheHitRatePct": {
       "max": 95.47714894624674,
-      "p50": 91.05335157318741,
+      "p50": 91.62105263157895,
       "p95": 95.47714894624674,
       "sampleCount": 18
     },
@@ -66,28 +66,28 @@
       "total": 18
     },
     "caseLatencyMs": {
-      "max": 5757,
-      "p50": 2997,
-      "p95": 5757,
+      "max": 5340,
+      "p50": 2725,
+      "p95": 5340,
       "sampleCount": 18
     },
     "modelPerformance": {
       "modelResponseTimeMs": {
-        "max": 5685.8134590000045,
-        "p50": 2930.474,
-        "p95": 5685.8134590000045,
+        "max": 5274.067834000001,
+        "p50": 2664.813542,
+        "p95": 5274.067834000001,
         "sampleCount": 18
       },
       "modelStepTimeMs": {
-        "max": 5714.4023330000055,
-        "p50": 2965.0462079999998,
-        "p95": 5714.4023330000055,
+        "max": 5303.592999000008,
+        "p50": 2684.829623999998,
+        "p95": 5303.592999000008,
         "sampleCount": 18
       },
       "modelTimeToFirstOutputMs": {
-        "max": 2175.552958,
-        "p50": 1233.5457910000005,
-        "p95": 2175.552958,
+        "max": 2044.7750420000011,
+        "p50": 1261.2072920000064,
+        "p95": 2044.7750420000011,
         "sampleCount": 18
       }
     }
@@ -102,7 +102,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "country-overview-china",
-      "latencyMs": 1158,
+      "latencyMs": 1281,
       "loopSteps": 1,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -154,7 +154,7 @@
       "responseLocalePassed": true,
       "modelObservability": {
         "aggregate": {
-          "cacheHitRatePct": 60.455130957492486,
+          "cacheHitRatePct": 93.43065693430657,
           "cacheStatus": "partial",
           "completedStepCount": 1,
           "expectedStepCount": 1,
@@ -162,21 +162,21 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 1015.661417
+              "value": 1124.788875
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 1044.3277079999998
+              "value": 1157.126791
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 785.9674579999999
+              "value": 938.068959
             }
           },
           "tokenUsage": {
             "cacheReadTokens": {
               "reported": true,
-              "value": 1408
+              "value": 2176
             },
             "cacheWriteTokens": {
               "reported": false,
@@ -188,7 +188,7 @@
             },
             "noCacheTokens": {
               "reported": true,
-              "value": 921
+              "value": 153
             },
             "outputTokens": {
               "reported": true,
@@ -208,21 +208,21 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1015.661417
+                "value": 1124.788875
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1044.3277079999998
+                "value": 1157.126791
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 785.9674579999999
+                "value": 938.068959
               }
             },
             "tokenUsage": {
               "cacheReadTokens": {
                 "reported": true,
-                "value": 1408
+                "value": 2176
               },
               "cacheWriteTokens": {
                 "reported": false,
@@ -234,7 +234,7 @@
               },
               "noCacheTokens": {
                 "reported": true,
-                "value": 921
+                "value": 153
               },
               "outputTokens": {
                 "reported": true,
@@ -251,7 +251,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:22.779Z",
+        "capturedAt": "2026-10-14T14:43:49.802Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -264,7 +264,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "single-country-market-profile",
-      "latencyMs": 986,
+      "latencyMs": 920,
       "loopSteps": 1,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -316,7 +316,7 @@
       "responseLocalePassed": true,
       "modelObservability": {
         "aggregate": {
-          "cacheHitRatePct": 60.533104041272566,
+          "cacheHitRatePct": 93.55116079105761,
           "cacheStatus": "partial",
           "completedStepCount": 1,
           "expectedStepCount": 1,
@@ -324,21 +324,21 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 939.8937500000002
+              "value": 883.3195000000001
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 964.092541
+              "value": 898.2751670000002
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 763.3577909999999
+              "value": 719.547791
             }
           },
           "tokenUsage": {
             "cacheReadTokens": {
               "reported": true,
-              "value": 1408
+              "value": 2176
             },
             "cacheWriteTokens": {
               "reported": false,
@@ -350,7 +350,7 @@
             },
             "noCacheTokens": {
               "reported": true,
-              "value": 918
+              "value": 150
             },
             "outputTokens": {
               "reported": true,
@@ -370,21 +370,21 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 939.8937500000002
+                "value": 883.3195000000001
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 964.092541
+                "value": 898.2751670000002
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 763.3577909999999
+                "value": 719.547791
               }
             },
             "tokenUsage": {
               "cacheReadTokens": {
                 "reported": true,
-                "value": 1408
+                "value": 2176
               },
               "cacheWriteTokens": {
                 "reported": false,
@@ -396,7 +396,7 @@
               },
               "noCacheTokens": {
                 "reported": true,
-                "value": 918
+                "value": 150
               },
               "outputTokens": {
                 "reported": true,
@@ -413,7 +413,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:23.938Z",
+        "capturedAt": "2026-10-14T14:43:51.084Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -426,7 +426,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "scoped-single-country-regulation",
-      "latencyMs": 4485,
+      "latencyMs": 3206,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -443,7 +443,7 @@
         }
       ],
       "pass": true,
-      "responseCharacterCount": 864,
+      "responseCharacterCount": 736,
       "responseDisposition": "answered",
       "responseDispositionPassed": true,
       "safetyCritical": false,
@@ -458,12 +458,12 @@
           },
           {
             "input": 3990,
-            "output": 412,
-            "total": 4402
+            "output": 343,
+            "total": 4333
           }
         ],
-        "output": 509,
-        "total": 6479,
+        "output": 440,
+        "total": 6410,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -496,15 +496,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 4365.5080419999995
+              "value": 3083.853667
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 4388.942000000001
+              "value": 3115.807667
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1680.2407080000003
+              "value": 1234.8407500000008
             }
           },
           "tokenUsage": {
@@ -526,11 +526,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 509
+              "value": 440
             },
             "totalTokens": {
               "reported": true,
-              "value": 6479
+              "value": 6410
             }
           }
         },
@@ -542,15 +542,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1152.912292
+                "value": 904.8593340000002
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1172.7278330000004
+                "value": 932.8217919999997
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 1037.9817080000003
+                "value": 677.9422500000005
               }
             },
             "tokenUsage": {
@@ -586,15 +586,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 3212.5957499999995
+                "value": 2178.9943329999996
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 3216.214167
+                "value": 2182.9858750000003
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 642.259
+                "value": 556.8985000000002
               }
             },
             "tokenUsage": {
@@ -616,11 +616,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 412
+                "value": 343
               },
               "totalTokens": {
                 "reported": true,
-                "value": 4402
+                "value": 4333
               }
             },
             "tokenUsageComplete": true
@@ -629,7 +629,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:24.924Z",
+        "capturedAt": "2026-10-14T14:43:52.004Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -642,7 +642,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "cross-country-regulation",
-      "latencyMs": 989,
+      "latencyMs": 1004,
       "loopSteps": 1,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -709,15 +709,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 944.8699579999993
+              "value": 962.1552080000001
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 967.8650419999994
+              "value": 982.1483339999995
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 710.7071660000001
+              "value": 736.6401249999999
             }
           },
           "tokenUsage": {
@@ -755,15 +755,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 944.8699579999993
+                "value": 962.1552080000001
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 967.8650419999994
+                "value": 982.1483339999995
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 710.7071660000001
+                "value": 736.6401249999999
               }
             },
             "tokenUsage": {
@@ -798,7 +798,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:29.410Z",
+        "capturedAt": "2026-10-14T14:43:55.211Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -811,7 +811,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "product-ready-dual-axis",
-      "latencyMs": 2997,
+      "latencyMs": 3223,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -831,7 +831,7 @@
         }
       ],
       "pass": true,
-      "responseCharacterCount": 1393,
+      "responseCharacterCount": 1406,
       "responseDisposition": "answered",
       "responseDispositionPassed": true,
       "safetyCritical": false,
@@ -846,12 +846,12 @@
           },
           {
             "input": 3148,
-            "output": 335,
-            "total": 3483
+            "output": 329,
+            "total": 3477
           }
         ],
-        "output": 453,
-        "total": 5730,
+        "output": 447,
+        "total": 5724,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -886,15 +886,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 2930.474
+              "value": 3169.6601250000012
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 2965.0462079999998
+              "value": 3196.9885410000015
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1081.380666000001
+              "value": 1621.4105420000005
             }
           },
           "tokenUsage": {
@@ -916,11 +916,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 453
+              "value": 447
             },
             "totalTokens": {
               "reported": true,
-              "value": 5730
+              "value": 5724
             }
           }
         },
@@ -932,15 +932,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 846.7432079999999
+                "value": 1114.2747090000003
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 880.2088750000003
+                "value": 1140.2950410000003
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 568.7169159999994
+                "value": 862.4661669999996
               }
             },
             "tokenUsage": {
@@ -976,15 +976,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 2083.7307920000003
+                "value": 2055.385416000001
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 2084.8373329999995
+                "value": 2056.693500000001
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 512.6637500000015
+                "value": 758.944375000001
               }
             },
             "tokenUsage": {
@@ -1006,11 +1006,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 335
+                "value": 329
               },
               "totalTokens": {
                 "reported": true,
-                "value": 3483
+                "value": 3477
               }
             },
             "tokenUsageComplete": true
@@ -1019,7 +1019,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:30.400Z",
+        "capturedAt": "2026-10-14T14:43:56.215Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -1032,7 +1032,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "product-outside-supply-period",
-      "latencyMs": 3867,
+      "latencyMs": 3968,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -1052,7 +1052,7 @@
         }
       ],
       "pass": true,
-      "responseCharacterCount": 822,
+      "responseCharacterCount": 864,
       "responseDisposition": "answered",
       "responseDispositionPassed": true,
       "safetyCritical": false,
@@ -1067,12 +1067,12 @@
           },
           {
             "input": 3119,
-            "output": 370,
-            "total": 3489
+            "output": 399,
+            "total": 3518
           }
         ],
-        "output": 488,
-        "total": 5701,
+        "output": 517,
+        "total": 5730,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -1104,15 +1104,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 3829.9134159999994
+              "value": 3933.261957999999
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 3842.517250000001
+              "value": 3948.9781250000015
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1705.010083000001
+              "value": 1726.8153739999998
             }
           },
           "tokenUsage": {
@@ -1134,11 +1134,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 488
+              "value": 517
             },
             "totalTokens": {
               "reported": true,
-              "value": 5701
+              "value": 5730
             }
           }
         },
@@ -1150,15 +1150,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1103.0407909999994
+                "value": 1305.1321659999994
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1114.3964159999996
+                "value": 1319.8275830000002
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 872.0737910000007
+                "value": 1021.6662909999995
               }
             },
             "tokenUsage": {
@@ -1194,15 +1194,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 2726.872625
+                "value": 2628.1297919999997
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 2728.120834000001
+                "value": 2629.150542000001
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 832.9362920000003
+                "value": 705.1490830000002
               }
             },
             "tokenUsage": {
@@ -1224,11 +1224,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 370
+                "value": 399
               },
               "totalTokens": {
                 "reported": true,
-                "value": 3489
+                "value": 3518
               }
             },
             "tokenUsageComplete": true
@@ -1237,7 +1237,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:33.397Z",
+        "capturedAt": "2026-10-14T14:43:59.439Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -1250,7 +1250,7 @@
       "expectedEvidenceAllowed": false,
       "failureMessage": null,
       "id": "unknown-product-fails-closed",
-      "latencyMs": 3094,
+      "latencyMs": 3453,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -1285,12 +1285,12 @@
           },
           {
             "input": 2478,
-            "output": 247,
-            "total": 2725
+            "output": 308,
+            "total": 2786
           }
         ],
-        "output": 366,
-        "total": 4970,
+        "output": 427,
+        "total": 5031,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -1323,15 +1323,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 3066.802873999999
+              "value": 3423.3838749999995
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 3076.017875000003
+              "value": 3438.183332999999
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1477.8112079999974
+              "value": 1557.8148340000007
             }
           },
           "tokenUsage": {
@@ -1353,11 +1353,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 366
+              "value": 427
             },
             "totalTokens": {
               "reported": true,
-              "value": 4970
+              "value": 5031
             }
           }
         },
@@ -1369,15 +1369,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 994.7812079999985
+                "value": 1134.4347500000003
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1003.0261250000021
+                "value": 1148.516207999999
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 724.3738749999993
+                "value": 909.5715420000015
               }
             },
             "tokenUsage": {
@@ -1413,15 +1413,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 2072.0216660000006
+                "value": 2288.949124999999
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 2072.991750000001
+                "value": 2289.667125
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 753.437332999998
+                "value": 648.2432919999992
               }
             },
             "tokenUsage": {
@@ -1443,11 +1443,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 247
+                "value": 308
               },
               "totalTokens": {
                 "reported": true,
-                "value": 2725
+                "value": 2786
               }
             },
             "tokenUsageComplete": true
@@ -1456,7 +1456,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:37.264Z",
+        "capturedAt": "2026-10-14T14:44:03.408Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -1469,7 +1469,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "comparable-market-metric",
-      "latencyMs": 2760,
+      "latencyMs": 3154,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -1491,7 +1491,7 @@
         }
       ],
       "pass": true,
-      "responseCharacterCount": 484,
+      "responseCharacterCount": 492,
       "responseDisposition": "answered",
       "responseDispositionPassed": true,
       "safetyCritical": false,
@@ -1506,12 +1506,12 @@
           },
           {
             "input": 2132,
-            "output": 243,
-            "total": 2375
+            "output": 249,
+            "total": 2381
           }
         ],
-        "output": 311,
-        "total": 4588,
+        "output": 317,
+        "total": 4594,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -1534,7 +1534,7 @@
       "responseLocalePassed": true,
       "modelObservability": {
         "aggregate": {
-          "cacheHitRatePct": 80.80430208089783,
+          "cacheHitRatePct": 89.78255786766425,
           "cacheStatus": "partial",
           "completedStepCount": 2,
           "expectedStepCount": 2,
@@ -1542,21 +1542,21 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 2725.5216660000006
+              "value": 3121.414875000002
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 2744.264374999999
+              "value": 3132.918332999998
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1048.6046659999993
+              "value": 1523.2278330000008
             }
           },
           "tokenUsage": {
             "cacheReadTokens": {
               "reported": true,
-              "value": 3456
+              "value": 3840
             },
             "cacheWriteTokens": {
               "reported": false,
@@ -1568,15 +1568,15 @@
             },
             "noCacheTokens": {
               "reported": true,
-              "value": 821
+              "value": 437
             },
             "outputTokens": {
               "reported": true,
-              "value": 311
+              "value": 317
             },
             "totalTokens": {
               "reported": true,
-              "value": 4588
+              "value": 4594
             }
           }
         },
@@ -1588,21 +1588,21 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 759.8691660000004
+                "value": 873.6680420000012
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 777.7848330000015
+                "value": 884.3392079999976
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 582.3453750000008
+                "value": 713.5665000000008
               }
             },
             "tokenUsage": {
               "cacheReadTokens": {
                 "reported": true,
-                "value": 1536
+                "value": 1920
               },
               "cacheWriteTokens": {
                 "reported": false,
@@ -1614,7 +1614,7 @@
               },
               "noCacheTokens": {
                 "reported": true,
-                "value": 609
+                "value": 225
               },
               "outputTokens": {
                 "reported": true,
@@ -1632,15 +1632,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1965.6525000000001
+                "value": 2247.746833000001
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1966.4795419999973
+                "value": 2248.579125
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 466.2592909999985
+                "value": 809.661333
               }
             },
             "tokenUsage": {
@@ -1662,11 +1662,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 243
+                "value": 249
               },
               "totalTokens": {
                 "reported": true,
-                "value": 2375
+                "value": 2381
               }
             },
             "tokenUsageComplete": true
@@ -1675,7 +1675,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:40.358Z",
+        "capturedAt": "2026-10-14T14:44:06.861Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -1688,7 +1688,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "opportunity-score",
-      "latencyMs": 4121,
+      "latencyMs": 3789,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -1706,7 +1706,7 @@
         }
       ],
       "pass": true,
-      "responseCharacterCount": 1008,
+      "responseCharacterCount": 929,
       "responseDisposition": "answered",
       "responseDispositionPassed": true,
       "safetyCritical": false,
@@ -1721,12 +1721,12 @@
           },
           {
             "input": 6099,
-            "output": 488,
-            "total": 6587
+            "output": 441,
+            "total": 6540
           }
         ],
-        "output": 589,
-        "total": 8770,
+        "output": 542,
+        "total": 8723,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -1759,15 +1759,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 4000.337583000004
+              "value": 3671.469291999998
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 4064.2749159999985
+              "value": 3733.4824159999953
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1233.5457910000005
+              "value": 1367.0094589999972
             }
           },
           "tokenUsage": {
@@ -1789,11 +1789,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 589
+              "value": 542
             },
             "totalTokens": {
               "reported": true,
-              "value": 8770
+              "value": 8723
             }
           }
         },
@@ -1805,15 +1805,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 860.6254580000023
+                "value": 920.3444579999996
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 923.5351659999978
+                "value": 981.3206249999967
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 632.4119580000006
+                "value": 706.1569999999992
               }
             },
             "tokenUsage": {
@@ -1849,15 +1849,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 3139.712125000002
+                "value": 2751.1248339999984
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 3140.7397500000006
+                "value": 2752.1617909999986
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 601.1338329999999
+                "value": 660.8524589999979
               }
             },
             "tokenUsage": {
@@ -1879,11 +1879,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 488
+                "value": 441
               },
               "totalTokens": {
                 "reported": true,
-                "value": 6587
+                "value": 6540
               }
             },
             "tokenUsageComplete": true
@@ -1892,7 +1892,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:43.118Z",
+        "capturedAt": "2026-10-14T14:44:10.016Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -1905,7 +1905,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "sales-brief",
-      "latencyMs": 4941,
+      "latencyMs": 4611,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -1924,7 +1924,7 @@
         }
       ],
       "pass": true,
-      "responseCharacterCount": 1317,
+      "responseCharacterCount": 1186,
       "responseDisposition": "answered",
       "responseDispositionPassed": true,
       "safetyCritical": false,
@@ -1939,12 +1939,12 @@
           },
           {
             "input": 6303,
-            "output": 653,
-            "total": 6956
+            "output": 579,
+            "total": 6882
           }
         ],
-        "output": 774,
-        "total": 9220,
+        "output": 700,
+        "total": 9146,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -1977,15 +1977,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 4834.622416999999
+              "value": 4509.394082999996
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 4896.670416000001
+              "value": 4571.650083
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1267.8129999999983
+              "value": 1396.9016249999986
             }
           },
           "tokenUsage": {
@@ -2007,11 +2007,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 774
+              "value": 700
             },
             "totalTokens": {
               "reported": true,
-              "value": 9220
+              "value": 9146
             }
           }
         },
@@ -2023,15 +2023,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 928.1937919999982
+                "value": 1067.4260829999985
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 989.0898750000015
+                "value": 1128.5557499999995
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 630.877916999998
+                "value": 768.3794170000001
               }
             },
             "tokenUsage": {
@@ -2067,15 +2067,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 3906.4286250000005
+                "value": 3441.967999999997
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 3907.5805409999994
+                "value": 3443.094333000001
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 636.9350830000003
+                "value": 628.5222079999985
               }
             },
             "tokenUsage": {
@@ -2097,11 +2097,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 653
+                "value": 579
               },
               "totalTokens": {
                 "reported": true,
-                "value": 6956
+                "value": 6882
               }
             },
             "tokenUsageComplete": true
@@ -2110,7 +2110,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:47.241Z",
+        "capturedAt": "2026-10-14T14:44:13.806Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -2123,7 +2123,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "source-document-retrieval",
-      "latencyMs": 3373,
+      "latencyMs": 2725,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -2148,7 +2148,7 @@
         }
       ],
       "pass": true,
-      "responseCharacterCount": 1321,
+      "responseCharacterCount": 1266,
       "responseDisposition": "answered",
       "responseDispositionPassed": true,
       "safetyCritical": false,
@@ -2163,12 +2163,12 @@
           },
           {
             "input": 1868,
-            "output": 296,
-            "total": 2164
+            "output": 260,
+            "total": 2128
           }
         ],
-        "output": 370,
-        "total": 4428,
+        "output": 334,
+        "total": 4392,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -2199,15 +2199,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 3315.1179989999982
+              "value": 2664.813542
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 3332.4242090000007
+              "value": 2684.829623999998
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1483.7811660000007
+              "value": 1104.0454160000008
             }
           },
           "tokenUsage": {
@@ -2229,11 +2229,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 370
+              "value": 334
             },
             "totalTokens": {
               "reported": true,
-              "value": 4428
+              "value": 4392
             }
           }
         },
@@ -2245,15 +2245,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1090.1199579999993
+                "value": 753.5210420000003
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1106.8381670000017
+                "value": 772.5967909999999
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 864.8972080000021
+                "value": 588.0392079999983
               }
             },
             "tokenUsage": {
@@ -2289,15 +2289,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 2224.998040999999
+                "value": 1911.2924999999996
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 2225.586041999999
+                "value": 1912.2328329999982
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 618.8839579999985
+                "value": 516.0062080000025
               }
             },
             "tokenUsage": {
@@ -2319,11 +2319,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 296
+                "value": 260
               },
               "totalTokens": {
                 "reported": true,
-                "value": 2164
+                "value": 2128
               }
             },
             "tokenUsageComplete": true
@@ -2332,7 +2332,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:52.183Z",
+        "capturedAt": "2026-10-14T14:44:18.418Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -2345,7 +2345,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "explicit-country-overrides-map",
-      "latencyMs": 808,
+      "latencyMs": 979,
       "loopSteps": 1,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -2397,7 +2397,7 @@
       "responseLocalePassed": true,
       "modelObservability": {
         "aggregate": {
-          "cacheHitRatePct": 61.21739130434782,
+          "cacheHitRatePct": 89.04347826086956,
           "cacheStatus": "partial",
           "completedStepCount": 1,
           "expectedStepCount": 1,
@@ -2405,21 +2405,21 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 776.6733339999992
+              "value": 950.4152499999982
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 796.4135840000017
+              "value": 964.9175830000022
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 605.3040420000034
+              "value": 782.0632499999992
             }
           },
           "tokenUsage": {
             "cacheReadTokens": {
               "reported": true,
-              "value": 1408
+              "value": 2048
             },
             "cacheWriteTokens": {
               "reported": false,
@@ -2431,7 +2431,7 @@
             },
             "noCacheTokens": {
               "reported": true,
-              "value": 892
+              "value": 252
             },
             "outputTokens": {
               "reported": true,
@@ -2451,21 +2451,21 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 776.6733339999992
+                "value": 950.4152499999982
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 796.4135840000017
+                "value": 964.9175830000022
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 605.3040420000034
+                "value": 782.0632499999992
               }
             },
             "tokenUsage": {
               "cacheReadTokens": {
                 "reported": true,
-                "value": 1408
+                "value": 2048
               },
               "cacheWriteTokens": {
                 "reported": false,
@@ -2477,7 +2477,7 @@
               },
               "noCacheTokens": {
                 "reported": true,
-                "value": 892
+                "value": 252
               },
               "outputTokens": {
                 "reported": true,
@@ -2494,7 +2494,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:55.557Z",
+        "capturedAt": "2026-10-14T14:44:21.144Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -2507,7 +2507,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "multi-turn-country-conflict",
-      "latencyMs": 3422,
+      "latencyMs": 3565,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -2524,7 +2524,7 @@
         }
       ],
       "pass": true,
-      "responseCharacterCount": 709,
+      "responseCharacterCount": 651,
       "responseDisposition": "answered",
       "responseDispositionPassed": true,
       "safetyCritical": false,
@@ -2539,12 +2539,12 @@
           },
           {
             "input": 2761,
-            "output": 335,
-            "total": 3096
+            "output": 296,
+            "total": 3057
           }
         ],
-        "output": 431,
-        "total": 5181,
+        "output": 392,
+        "total": 5142,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -2577,15 +2577,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 3388.415958000005
+              "value": 3537.2822920000035
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 3404.3627510000006
+              "value": 3548.6796669999967
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1154.6530420000054
+              "value": 1774.235916000005
             }
           },
           "tokenUsage": {
@@ -2607,11 +2607,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 431
+              "value": 392
             },
             "totalTokens": {
               "reported": true,
-              "value": 5181
+              "value": 5142
             }
           }
         },
@@ -2623,15 +2623,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1036.1701250000042
+                "value": 1149.0637920000008
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1050.6996670000008
+                "value": 1159.6469169999982
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 793.462959000004
+                "value": 924.2647500000021
               }
             },
             "tokenUsage": {
@@ -2667,15 +2667,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 2352.245833000001
+                "value": 2388.2185000000027
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 2353.663084
+                "value": 2389.0327499999985
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 361.1900830000013
+                "value": 849.971166000003
               }
             },
             "tokenUsage": {
@@ -2697,11 +2697,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 335
+                "value": 296
               },
               "totalTokens": {
                 "reported": true,
-                "value": 3096
+                "value": 3057
               }
             },
             "tokenUsageComplete": true
@@ -2710,7 +2710,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:56.366Z",
+        "capturedAt": "2026-10-14T14:44:22.123Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -2723,7 +2723,7 @@
       "expectedEvidenceAllowed": true,
       "failureMessage": null,
       "id": "mixed-regulation-and-product-intent",
-      "latencyMs": 5757,
+      "latencyMs": 5340,
       "loopSteps": 3,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -2754,7 +2754,7 @@
         }
       ],
       "pass": true,
-      "responseCharacterCount": 1139,
+      "responseCharacterCount": 1173,
       "responseDisposition": "answered",
       "responseDispositionPassed": true,
       "safetyCritical": false,
@@ -2774,12 +2774,12 @@
           },
           {
             "input": 6024,
-            "output": 527,
-            "total": 6551
+            "output": 573,
+            "total": 6597
           }
         ],
-        "output": 742,
-        "total": 12949,
+        "output": 788,
+        "total": 12995,
         "usageComplete": true
       },
       "toolBearingSteps": 2,
@@ -2814,15 +2814,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 5685.8134590000045
+              "value": 5274.067834000001
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 5714.4023330000055
+              "value": 5303.592999000008
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 2175.552958
+              "value": 2044.7750420000011
             }
           },
           "tokenUsage": {
@@ -2844,11 +2844,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 742
+              "value": 788
             },
             "totalTokens": {
               "reported": true,
-              "value": 12949
+              "value": 12995
             }
           }
         },
@@ -2860,15 +2860,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1258.820375000003
+                "value": 854.5659999999989
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1275.2635840000003
+                "value": 870.8536660000027
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 785.3936670000039
+                "value": 621.8260000000009
               }
             },
             "tokenUsage": {
@@ -2904,15 +2904,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 798.2760839999974
+                "value": 950.3966250000012
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 809.1114579999994
+                "value": 962.356458000002
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 565.9349999999977
+                "value": 728.4576670000024
               }
             },
             "tokenUsage": {
@@ -2948,15 +2948,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 3628.717000000004
+                "value": 3469.105209000001
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 3630.027291000006
+                "value": 3470.382875000003
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 824.2242909999986
+                "value": 694.4913749999978
               }
             },
             "tokenUsage": {
@@ -2978,11 +2978,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 527
+                "value": 573
               },
               "totalTokens": {
                 "reported": true,
-                "value": 6551
+                "value": 6597
               }
             },
             "tokenUsageComplete": true
@@ -2991,7 +2991,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:23:59.789Z",
+        "capturedAt": "2026-10-14T14:44:25.690Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -3004,7 +3004,7 @@
       "expectedEvidenceAllowed": false,
       "failureMessage": null,
       "id": "regulation-no-data-fails-closed",
-      "latencyMs": 3288,
+      "latencyMs": 2658,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -3036,12 +3036,12 @@
           },
           {
             "input": 1673,
-            "output": 219,
-            "total": 1892
+            "output": 209,
+            "total": 1882
           }
         ],
-        "output": 315,
-        "total": 3970,
+        "output": 305,
+        "total": 3960,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -3071,15 +3071,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 3255.506417000004
+              "value": 2633.495833000001
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 3271.032917000004
+              "value": 2643.883915999999
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1533.5740839999999
+              "value": 1207.010457999997
             }
           },
           "tokenUsage": {
@@ -3101,11 +3101,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 315
+              "value": 305
             },
             "totalTokens": {
               "reported": true,
-              "value": 3970
+              "value": 3960
             }
           }
         },
@@ -3117,15 +3117,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1106.088625000004
+                "value": 742.770583000005
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1120.4310840000035
+                "value": 752.198166000002
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 880.7968340000007
+                "value": 555.5123329999988
               }
             },
             "tokenUsage": {
@@ -3161,15 +3161,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 2149.417792
+                "value": 1890.7252499999959
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 2150.6018330000006
+                "value": 1891.685749999997
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 652.7772499999992
+                "value": 651.4981249999983
               }
             },
             "tokenUsage": {
@@ -3191,11 +3191,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 219
+                "value": 209
               },
               "totalTokens": {
                 "reported": true,
-                "value": 1892
+                "value": 1882
               }
             },
             "tokenUsageComplete": true
@@ -3204,7 +3204,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:24:05.547Z",
+        "capturedAt": "2026-10-14T14:44:31.031Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -3217,7 +3217,7 @@
       "expectedEvidenceAllowed": false,
       "failureMessage": null,
       "id": "market-no-data-fails-closed",
-      "latencyMs": 2621,
+      "latencyMs": 2529,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -3248,12 +3248,12 @@
           },
           {
             "input": 1289,
-            "output": 135,
-            "total": 1424
+            "output": 141,
+            "total": 1430
           }
         ],
-        "output": 213,
-        "total": 3797,
+        "output": 219,
+        "total": 3803,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -3275,7 +3275,7 @@
       "responseLocalePassed": true,
       "modelObservability": {
         "aggregate": {
-          "cacheHitRatePct": 71.42857142857143,
+          "cacheHitRatePct": 89.28571428571429,
           "cacheStatus": "partial",
           "completedStepCount": 2,
           "expectedStepCount": 2,
@@ -3283,21 +3283,21 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 2594.345125
+              "value": 2503.7819170000075
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 2601.858874999998
+              "value": 2509.6185419999965
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1247.567167000001
+              "value": 1346.5485830000034
             }
           },
           "tokenUsage": {
             "cacheReadTokens": {
               "reported": true,
-              "value": 2560
+              "value": 3200
             },
             "cacheWriteTokens": {
               "reported": false,
@@ -3309,15 +3309,15 @@
             },
             "noCacheTokens": {
               "reported": true,
-              "value": 1024
+              "value": 384
             },
             "outputTokens": {
               "reported": true,
-              "value": 213
+              "value": 219
             },
             "totalTokens": {
               "reported": true,
-              "value": 3797
+              "value": 3803
             }
           }
         },
@@ -3329,21 +3329,21 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1089.0301250000048
+                "value": 847.710917000004
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1095.415832999999
+                "value": 852.9606249999997
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 631.8292500000025
+                "value": 680.2777080000014
               }
             },
             "tokenUsage": {
               "cacheReadTokens": {
                 "reported": true,
-                "value": 1408
+                "value": 2048
               },
               "cacheWriteTokens": {
                 "reported": false,
@@ -3355,7 +3355,7 @@
               },
               "noCacheTokens": {
                 "reported": true,
-                "value": 887
+                "value": 247
               },
               "outputTokens": {
                 "reported": true,
@@ -3373,15 +3373,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1505.314999999995
+                "value": 1656.0710000000036
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1506.443041999999
+                "value": 1656.6579169999968
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 615.7379169999986
+                "value": 666.270875000002
               }
             },
             "tokenUsage": {
@@ -3403,11 +3403,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 135
+                "value": 141
               },
               "totalTokens": {
                 "reported": true,
-                "value": 1424
+                "value": 1430
               }
             },
             "tokenUsageComplete": true
@@ -3416,7 +3416,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:24:08.835Z",
+        "capturedAt": "2026-10-14T14:44:33.689Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -3429,7 +3429,7 @@
       "expectedEvidenceAllowed": false,
       "failureMessage": null,
       "id": "retrieved-prompt-injection-is-data",
-      "latencyMs": 2876,
+      "latencyMs": 2303,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -3469,12 +3469,12 @@
           },
           {
             "input": 1333,
-            "output": 148,
-            "total": 1481
+            "output": 149,
+            "total": 1482
           }
         ],
-        "output": 225,
-        "total": 3613,
+        "output": 226,
+        "total": 3614,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -3504,15 +3504,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 2823.113083999997
+              "value": 2250.5930000000008
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 2833.800374999999
+              "value": 2264.209290999999
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1352.2328750000015
+              "value": 1049.726459000005
             }
           },
           "tokenUsage": {
@@ -3534,11 +3534,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 225
+              "value": 226
             },
             "totalTokens": {
               "reported": true,
-              "value": 3613
+              "value": 3614
             }
           }
         },
@@ -3550,15 +3550,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 899.9900839999973
+                "value": 576.8635419999991
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 909.9802080000009
+                "value": 589.6748329999973
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 710.1337500000009
+                "value": 398.5068339999998
               }
             },
             "tokenUsage": {
@@ -3594,15 +3594,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1923.1229999999996
+                "value": 1673.7294580000016
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1923.820166999998
+                "value": 1674.534458000002
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 642.0991250000006
+                "value": 651.2196250000052
               }
             },
             "tokenUsage": {
@@ -3624,11 +3624,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 148
+                "value": 149
               },
               "totalTokens": {
                 "reported": true,
-                "value": 1481
+                "value": 1482
               }
             },
             "tokenUsageComplete": true
@@ -3637,7 +3637,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:24:11.456Z",
+        "capturedAt": "2026-10-14T14:44:36.218Z",
         "utcDate": "2026-10-14"
       }
     },
@@ -3650,7 +3650,7 @@
       "expectedEvidenceAllowed": false,
       "failureMessage": null,
       "id": "irrelevant-source-query-fails-closed",
-      "latencyMs": 2131,
+      "latencyMs": 2172,
       "loopSteps": 2,
       "mismatchReason": null,
       "normalizedArgs": [
@@ -3688,12 +3688,12 @@
           },
           {
             "input": 1368,
-            "output": 156,
-            "total": 1524
+            "output": 148,
+            "total": 1516
           }
         ],
-        "output": 224,
-        "total": 3827,
+        "output": 216,
+        "total": 3819,
         "usageComplete": true
       },
       "toolBearingSteps": 1,
@@ -3723,15 +3723,15 @@
           "performance": {
             "modelResponseTimeMs": {
               "reported": true,
-              "value": 2091.241541000003
+              "value": 2146.277583000003
             },
             "modelStepTimeMs": {
               "reported": true,
-              "value": 2109.956250000003
+              "value": 2153.7715830000016
             },
             "modelTimeToFirstOutputMs": {
               "reported": true,
-              "value": 1088.2788750000036
+              "value": 1261.2072920000064
             }
           },
           "tokenUsage": {
@@ -3753,11 +3753,11 @@
             },
             "outputTokens": {
               "reported": true,
-              "value": 224
+              "value": 216
             },
             "totalTokens": {
               "reported": true,
-              "value": 3827
+              "value": 3819
             }
           }
         },
@@ -3769,15 +3769,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 774.9729999999981
+                "value": 670.5216250000012
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 792.7372500000056
+                "value": 676.7822080000042
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 655.7437920000011
+                "value": 504.1402090000047
               }
             },
             "tokenUsage": {
@@ -3813,15 +3813,15 @@
             "performance": {
               "modelResponseTimeMs": {
                 "reported": true,
-                "value": 1316.268541000005
+                "value": 1475.7559580000016
               },
               "modelStepTimeMs": {
                 "reported": true,
-                "value": 1317.2189999999973
+                "value": 1476.9893749999974
               },
               "modelTimeToFirstOutputMs": {
                 "reported": true,
-                "value": 432.5350830000025
+                "value": 757.0670830000017
               }
             },
             "tokenUsage": {
@@ -3843,11 +3843,11 @@
               },
               "outputTokens": {
                 "reported": true,
-                "value": 156
+                "value": 148
               },
               "totalTokens": {
                 "reported": true,
-                "value": 1524
+                "value": 1516
               }
             },
             "tokenUsageComplete": true
@@ -3856,7 +3856,7 @@
       },
       "toolTraceStatus": "complete",
       "runtimeContext": {
-        "capturedAt": "2026-10-14T11:24:14.333Z",
+        "capturedAt": "2026-10-14T14:44:38.521Z",
         "utcDate": "2026-10-14"
       }
     }

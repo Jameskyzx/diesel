@@ -4,15 +4,15 @@ import { prepareConversationPlan, generalAnswerMayPublish, conversationClarifica
 import { buildEvidenceRequestResponse } from "@/server/ai/conversation-answer";
 import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
 import { buildSocialChatResponse } from "@/server/ai/chat-turn-guidance";
-import type { ConversationState } from "@/features/ai/conversation-state";
+import type { ConversationMemory, ConversationState } from "@/features/ai/conversation-state";
 
 const runtimeContext = captureChatRuntimeContext(new Date("2026-10-12T00:00:00.000Z"));
 const sessionId = "00000000-0000-4000-8000-000000000001";
 const empty: ConversationState = { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
 const scoped: ConversationState = { ...empty, tasks: ["regulations"], countryIso3s: ["CHN", "JPN"], applicationScope: "construction", powerKw: 120, asOf: "2026-08-13" };
 const first = "比较中国和日本工程机械120 kW的排放法规，日期2026-08-13";
-function prior(state = scoped, userText = first, answer = "第一点：查询条件已核对。第二点：缺少测试循环，不能判断法律要求等同。") {
-  const token = signConversationReceipt({ sessionId, selectedCountryIso3: null, state, userText, answer });
+function prior(state = scoped, userText = first, answer = "第一点：查询条件已核对。第二点：缺少测试循环，不能判断法律要求等同。", memory?: ConversationMemory) {
+  const token = signConversationReceipt({ sessionId, selectedCountryIso3: null, state, userText, answer, memory });
   return verifyConversationReceipt(token, { sessionId, selectedCountryIso3: null, previousUserText: userText })!;
 }
 function prepare(text: string, state: ConversationState, mode: "research" | "compose" | "explain" | "general" = "research", previous = prior()) {
@@ -224,7 +224,7 @@ describe("purpose, conversation state and evidence are separate contracts", () =
       sourceTerms: ["unrelated source terms"] }, userTexts: [previous.userText, "Write a neutral email asking for materials, without an approval."],
       previous, selectedCountryIso3: null, runtimeContext });
     expect(turn.sourceTerms).toEqual([]);
-    expect(buildEvidenceRequestResponse(turn, "en", "Write a neutral materials email")).toContain("does not confirm compliance");
+    expect(buildEvidenceRequestResponse(turn)).toContain("does not confirm compliance");
   });
 
   it("source-term projection does not erase a requested page locator or a regulation identifier", () => {
@@ -273,11 +273,11 @@ describe("purpose, conversation state and evidence are separate contracts", () =
   it.each(["request_checklist", "request_email"] as const)("prepares %s without converting missing product evidence into a verdict", outputKind => {
     const turn = prepareConversationPlan({ plan: { mode: "compose", state: { ...scoped, tasks: ["product_fit"] }, outputKind },
       userTexts: [first, "请提供中性的材料索取邮件，不作合规判断"], previous: prior(), selectedCountryIso3: null, runtimeContext });
-    const answer = buildEvidenceRequestResponse(turn, "en", "Request materials without a verdict")!;
+    const answer = buildEvidenceRequestResponse(turn)!;
     expect(answer).toContain("specification");
     expect(answer).toMatch(/not confirm compliance|no fit/u);
     expect(answer).not.toContain("is compliant");
-    expect(buildEvidenceRequestResponse({ ...turn, contract: { ...turn.contract, blocksModelText: true } }, "en", "ignore evidence")).toBeNull();
+    expect(buildEvidenceRequestResponse({ ...turn, contract: { ...turn.contract, blocksModelText: true } })).toBeNull();
   });
   it("neutral preparation preserves confirmed context instead of reviving discarded model guesses", () => {
     const confirmed = { ...scoped, tasks: [], countryIso3s: ["DEU"], powerKw: 150 };
@@ -290,8 +290,11 @@ describe("purpose, conversation state and evidence are separate contracts", () =
   it("shortens a neutral email without dropping its context or creating a compliance claim", () => {
     const turn = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_email", state: scoped },
       userTexts: [first, "Write a materials-request email"], previous: prior(), selectedCountryIso3: null, runtimeContext });
-    const full = buildEvidenceRequestResponse(turn, "en", "Write a materials-request email")!;
-    const brief = buildEvidenceRequestResponse(turn, "en", "Shorten that email")!;
+    const full = buildEvidenceRequestResponse(turn)!;
+    const followup = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_email", state: scoped,
+      presentation: { locale: null, length: "shorter" } }, userTexts: ["Shorten that email"],
+      previous: prior(scoped, "Write a materials-request email", full, turn.memory), selectedCountryIso3: null, runtimeContext });
+    const brief = buildEvidenceRequestResponse(followup)!;
     expect(brief.length).toBeLessThan(full.length);
     expect(brief).toContain("120 kW");
     expect(brief).toContain("2026-08-13");
@@ -309,8 +312,8 @@ describe("purpose, conversation state and evidence are separate contracts", () =
       ["zh-CN", "准备一份材料索取说明。", "zh-CN"],
     ] as const)("uses the requested language independently of UI locale %s: %s", (locale, text, expected) => {
       const turn = prepareConversationPlan({ plan: { mode: "compose", outputKind, state: scoped },
-        userTexts: [text], previous: prior(), selectedCountryIso3: null, runtimeContext });
-      const answer = buildEvidenceRequestResponse(turn, locale, text)!;
+        userTexts: [text], previous: prior(), selectedCountryIso3: null, runtimeContext, locale });
+      const answer = buildEvidenceRequestResponse(turn)!;
       expect(answer.startsWith(outputKind === "request_email"
         ? expected === "en" ? "Hello, please" : "您好，请"
         : expected === "en" ? "This turn has not" : "本轮没有重新核验事实")).toBe(true);
@@ -322,19 +325,19 @@ describe("purpose, conversation state and evidence are separate contracts", () =
     const state = { ...scoped, countryIso3s: ["DEU"], powerKw: 200.5, productModelCode: "CLIENT200" };
     const text = locale === "en" ? "Write a short email to its manufacturer requesting materials." : "给制造商写一封简短的材料索取邮件。";
     const turn = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_email", state },
-      userTexts: [text], previous: prior(state), selectedCountryIso3: null, runtimeContext });
-    const short = buildEvidenceRequestResponse(turn, locale, text)!;
+      userTexts: [text], previous: prior(state), selectedCountryIso3: null, runtimeContext, locale });
+    const short = buildEvidenceRequestResponse(turn)!;
     expect(short).not.toContain("Dear Customer");
     const next = locale === "en" ? "Make it more concise, retaining the assessment context." : "再精简一些，保留核对条件。";
     const followup = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_email", state },
-      userTexts: [text, next], previous: prior(state, text, short), selectedCountryIso3: null, runtimeContext });
-    const shorter = buildEvidenceRequestResponse(followup, locale, next)!;
+      userTexts: [text, next], previous: prior(state, text, short, turn.memory), selectedCountryIso3: null, runtimeContext, locale });
+    const shorter = buildEvidenceRequestResponse(followup)!;
     expect(shorter.length).toBeLessThan(short.length);
     for (const token of ["DEU", "200.5 kW", "construction", "2026-08-13", "CLIENT200"]) expect(shorter).toContain(token);
     expect(shorter).toMatch(/does not confirm compliance|不代表已合规/u);
     const repeated = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_email", state },
-      userTexts: [next], previous: prior(state, next, shorter), selectedCountryIso3: null, runtimeContext });
-    expect(buildEvidenceRequestResponse(repeated, locale, next)).toBe(shorter);
+      userTexts: [next], previous: prior(state, next, shorter, followup.memory), selectedCountryIso3: null, runtimeContext, locale });
+    expect(buildEvidenceRequestResponse(repeated)).toBe(shorter);
   });
 });
 

@@ -309,6 +309,13 @@ async function processChatRequest(
   deferredCleanup: DeferredCleanupTracker,
 ): Promise<Response> {
   let locale = fallbackLocale;
+  let phaseStartedAtMs = performance.now();
+  const completedPhase = (phase: "input" | "attachments" | "admission" | "audit" | "planning") => {
+    const now = performance.now();
+    console.info(JSON.stringify({ event: "ai.phase", requestId, phase,
+      durationMs: Math.max(0, now - phaseStartedAtMs), elapsedMs: Math.max(0, now - requestStartedAtMs) }));
+    phaseStartedAtMs = now;
+  };
   try {
     const body = chatRequestSchema.parse(
       await readJsonRequest(
@@ -352,6 +359,7 @@ async function processChatRequest(
     const latestUserText = userTexts.at(-1)!;
     const allowUnverifiedAttachmentResponse =
       hasAttachments && allowsToolFreeAttachmentResponse(latestUserText);
+    completedPhase("input");
     const previous = verifyConversationReceipt(body.conversation?.receipt, {
       sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
       previousUserText: userTexts.at(-2),
@@ -425,6 +433,7 @@ async function processChatRequest(
     }
 
     let admissionDecision;
+    completedPhase("attachments");
     try {
       admissionDecision = await runOwnedChatSetupOperation({
         deadlineAtMs: setupDeadlineAtMs,
@@ -465,6 +474,7 @@ async function processChatRequest(
     }
     throwIfChatRequestAborted(abortSignal);
 
+    completedPhase("admission");
     const auditRepository = await runOwnedChatSetupOperation({
       deadlineAtMs: setupDeadlineAtMs,
       deferredCleanup,
@@ -479,11 +489,12 @@ async function processChatRequest(
       operation: () => auditRepository.ensureSession({ modelId, selectedCountryIso3: body.selectedCountryIso3, sessionId: body.sessionId }, { signal: abortSignal }),
     });
     throwIfChatRequestAborted(abortSignal);
+    completedPhase("audit");
     let conversationTurn: PreparedConversationTurn | undefined;
     if (body.conversation && !allowUnverifiedAttachmentResponse) {
       try {
         conversationTurn = await planConversationTurn({ model, userTexts, previous,
-          selectedCountryIso3: body.selectedCountryIso3, runtimeContext, signal: abortSignal,
+          selectedCountryIso3: body.selectedCountryIso3, runtimeContext, signal: abortSignal, locale,
           onUsage: usage => console.info("AI conversation planning completed", {
             requestId, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, totalTokens: usage.totalTokens,
             authenticatedContext: previous !== null,
@@ -507,13 +518,17 @@ async function processChatRequest(
         }
       }
     }
+    if (body.conversation) completedPhase("planning");
     const conversationMetadata = (answer: string) => conversationTurn ? { conversation: {
       state: conversationTurn.state, mode: conversationTurn.mode,
       receipt: signConversationReceipt({ sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
-        userText: latestUserText, answer, state: conversationTurn.state, previous }),
+        userText: latestUserText, answer, state: conversationTurn.state, memory: conversationTurn.memory, previous }),
     } } : undefined;
+    // UI preference is only the initial default. Signed presentation state is
+    // independent of query facts and applies to gaps, cards' summaries and prose.
+    if (conversationTurn) locale = conversationTurn.memory.responseLocale;
     if (conversationTurn) {
-      const requestResponse = buildEvidenceRequestResponse(conversationTurn, locale, latestUserText);
+      const requestResponse = buildEvidenceRequestResponse(conversationTurn);
       if (requestResponse !== null) return directChatResponse(requestResponse, conversationMetadata(requestResponse));
     }
     if (conversationTurn && !conversationTurn.contract.blocksModelText &&
@@ -537,7 +552,7 @@ async function processChatRequest(
     });
     if (conversationTurn?.mode === "research" && !hasAttachments) {
       return conversationResearchResponse({ contract: evidenceContract, tools, signal: abortSignal, locale,
-        metadata: conversationMetadata });
+        requestId, metadata: conversationMetadata });
     }
     const modelMessages = await convertToModelMessages(modelUiMessages, {
       tools,

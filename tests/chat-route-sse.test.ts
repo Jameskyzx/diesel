@@ -173,7 +173,7 @@ function regulatoryCardThenSourceFailureModel(error: Error) {
 function countryExplanationPlan() {
   return { warnings: [], usage: emptyUsage, finishReason: { unified: "tool-calls" as const, raw: undefined },
     content: [{ type: "tool-call" as const, toolCallId: "profile-explanation-plan", toolName: "planConversation",
-      input: JSON.stringify({ mode: "explain", state: { tasks: ["country_profile"], countryIso3s: ["CHN"],
+      input: JSON.stringify({ operation: "explain", state: { tasks: ["country_profile"], countryIso3s: ["CHN"],
         applicationScope: null, powerKw: null, asOf: "2026-08-13", productModelCode: null } }) }] };
 }
 

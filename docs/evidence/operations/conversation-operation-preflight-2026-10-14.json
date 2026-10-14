@@ -1,0 +1,843 @@
+{
+  "version": "diesel-conversation-operation-preflight-v1",
+  "scope": "local-http-real-provider",
+  "origin": "http://127.0.0.1:3101",
+  "productionAcceptance": false,
+  "model": "deepseek-flash",
+  "mocks": false,
+  "retries": 0,
+  "method": "Operator selected and read each follow-up after the preceding real response. Original failing run is retained. No production deployment occurred and no quota or production environment was changed.",
+  "failedCandidate": {
+    "commit": "78f70657ae475c074eb0a2853a5e39dc31a326c8",
+    "checks": {
+      "turns": 7,
+      "transportPassed": 7,
+      "semanticPassed": 6,
+      "semanticFailed": 1
+    },
+    "records": [
+      {
+        "checkedAt": "2026-10-14T13:24:28.474Z",
+        "release": "78f70657ae475c074eb0a2853a5e39dc31a326c8",
+        "request": 1,
+        "turn": 1,
+        "input": "先只看巴西2023年的市场数据，不要法规和产品。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "bf45cc0e-7602-4714-b4e5-ed4574e43d59",
+        "elapsedMs": 5051,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "BRA 的市场指标按实际统计期列示，不能把查询年份当作数据年份。\n\n请求的统计期：2023 年；2023-01-01（含）至 2024-01-01（不含）\n\n- 卡车动力 · 年末注册车队: 3,980,714 vehicle — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 客车动力 · 年末注册车队: 1,152,852 vehicle — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 卡车动力 · 年末注册车队同比变化: 2.816008 percent — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 客车动力 · 年末注册车队同比变化: 2.604513 percent — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n\n这些是历史观测，不能当作 2026 年的数据。发布日期和核验日期不改变统计期，也不能据此推算今年销量或预测。请按卡片中的指标定义使用数据；今年的判断需要补充新一期观测。\n\n[Frota Nacional Dezembro 2023 — por UF e tipo de veículo](https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/frota-de-veiculos-2023)",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "getCountryProfile",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3": "BRA",
+              "asOf": "2026-10-14",
+              "marketPeriod": {
+                "start": "2023-01-01",
+                "end": "2024-01-01"
+              },
+              "topics": [
+                "market"
+              ]
+            },
+            "citationCount": 13
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Query only BRA market observations within calendar 2023; do not query regulations/products.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:24:46.577Z",
+        "release": "78f70657ae475c074eb0a2853a5e39dc31a326c8",
+        "request": 2,
+        "turn": 2,
+        "input": "把中国也加进来，沿用这个统计年份比较，不用查排放法规。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "397121f8-1751-4e2e-ae97-099ae86eadab",
+        "elapsedMs": 1829,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "这次请求没有足够证据，暂时不能给出肯定的法规、市场或产品结论。\n\n下一步：\n1. 请求的统计期：2023 年；2023-01-01（含）至 2024-01-01（不含）\n2. 市场比较没有找到可直接比较的指标；请指定指标，并确保期间、单位、币种、口径和应用场景一致。\n\n信息参考，不替代正式认证或法律意见",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareMarkets",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3s": [
+                "BRA",
+                "CHN"
+              ],
+              "marketPeriod": {
+                "start": "2023-01-01",
+                "end": "2024-01-01"
+              }
+            },
+            "citationCount": 8
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Add CHN while retaining 2023; no comparable evidence must remain no_data.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:25:01.893Z",
+        "release": "78f70657ae475c074eb0a2853a5e39dc31a326c8",
+        "request": 3,
+        "turn": 3,
+        "input": "那先列四点需要补齐的材料，只涉及市场指标定义、统计期、采集方法和原始来源，不要产品认证材料。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "290c2477-4d91-4601-8a47-f4d619fd5066",
+        "elapsedMs": 1766,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "explain",
+        "conversationReceiptPresent": true,
+        "text": "本轮没有重新核验事实。这是材料准备清单，不是法定必备文件清单（BRA / CHN · 统计期: 2023 年；2023-01-01（含）至 2024-01-01（不含））。已查到的内容请以此前证据卡片为准。\n\n- 市场统计定义: 指标含义、保有量与销量/流量的区别、单位、币种及国家/行业口径\n- 统计报告期: 观测起止日期、发布日期、比较基期及是否为历史数据\n- 统计方法: 采集方法、样本覆盖、计算口径、修订情况及跨国可比性\n- 可追溯原件及未解决缺口: 来源文件或链接、版本、缺少项目以及可提供材料的负责人\n\n以上材料均待核实，不构成产品适配、认证或销售许可结论。",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Produce four market-material categories, not product certifications.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:25:23.002Z",
+        "release": "78f70657ae475c074eb0a2853a5e39dc31a326c8",
+        "request": 4,
+        "turn": 4,
+        "input": "改用英文，只保留指标定义、统计期和来源，精简成两点。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "6beb4975-80d4-4fc9-91db-4ac47f264a02",
+        "elapsedMs": 2189,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "This turn has not re-verified facts. This is a preparation checklist, not a statement of legally mandatory documents (BRA / CHN · reporting period: 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive).\n\n- market statistical definitions\n- reporting periods; traceable originals and unresolved gaps\n\nNone of these materials has been verified; no fit, certification or sale approval is established.",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Use English, remove methodology, group remaining categories into two bullets.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:25:42.375Z",
+        "release": "78f70657ae475c074eb0a2853a5e39dc31a326c8",
+        "request": 5,
+        "turn": 5,
+        "input": "再短一点，还是发给客户看的。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "14d57ddd-085d-42bd-a866-294415ee6d32",
+        "elapsedMs": 1808,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "This turn has not re-verified facts. Preparation checklist (BRA / CHN · reporting period: 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive):\n\n- market statistical definitions\n- reporting periods; traceable originals and unresolved gaps\n\nNone of these materials has been verified; no fit, certification or sale approval is established.",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Shorten again while retaining English and two bullets.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:26:01.129Z",
+        "release": "78f70657ae475c074eb0a2853a5e39dc31a326c8",
+        "request": 6,
+        "turn": 6,
+        "input": "把这两点合成一封简短邮件，请对方补资料，不要承诺一定能销售。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "bae707d3-0405-459d-8585-5e7b7e185551",
+        "elapsedMs": 1786,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "Hello, please share market statistical definitions; reporting periods; traceable originals and unresolved gaps for (BRA / CHN · reporting period: 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive). This request does not confirm compliance or permission to sell.",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Convert to a short English materials email without a compliance or sale claim.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:26:28.181Z",
+        "release": "78f70657ae475c074eb0a2853a5e39dc31a326c8",
+        "request": 7,
+        "turn": 7,
+        "input": "回到数据核对。两国不变，统计年份换成2022，先不写邮件。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "8a0c07c2-f6fd-44fa-b075-b49201bf48c3",
+        "elapsedMs": 2187,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "This turn has not re-verified facts. Preparation checklist (BRA / CHN · reporting period: 2022 calendar year; 2022-01-01 inclusive to 2023-01-01 exclusive):\n\n- market statistical definitions\n- reporting periods; traceable originals and unresolved gaps\n\nNone of these materials has been verified; no fit, certification or sale approval is established.",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Resume real research for BRA and CHN in calendar 2022; do not continue drafting.",
+        "semanticPassed": false,
+        "mismatch": "Requested fresh research, but returned another tool-free preparation checklist. No compareMarkets call occurred."
+      }
+    ]
+  },
+  "repairedWorktree": {
+    "baseCommit": "78f70657ae475c074eb0a2853a5e39dc31a326c8",
+    "uncommitted": true,
+    "plannerSha256": "f0efe580f967fbc436429bbc1db078219e9e7a25059737709eddbce4bd425248",
+    "checks": {
+      "turns": 12,
+      "transportPassed": 12,
+      "semanticPassed": 12,
+      "semanticFailed": 0,
+      "maxLatencyMs": 4630
+    },
+    "records": [
+      {
+        "checkedAt": "2026-10-14T13:31:44.637Z",
+        "release": "local-operation-preflight",
+        "request": 1,
+        "turn": 1,
+        "input": "先只看巴西2023年的市场数据，不要法规和产品。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "fba63cd7-21e6-438e-bc1f-687d32ebc0bb",
+        "elapsedMs": 4630,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "BRA 的市场指标按实际统计期列示，不能把查询年份当作数据年份。\n\n请求的统计期：2023 年；2023-01-01（含）至 2024-01-01（不含）\n\n- 卡车动力 · 年末注册车队: 3,980,714 vehicle — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 客车动力 · 年末注册车队: 1,152,852 vehicle — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 卡车动力 · 年末注册车队同比变化: 2.816008 percent — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 客车动力 · 年末注册车队同比变化: 2.604513 percent — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n\n这些是历史观测，不能当作 2026 年的数据。发布日期和核验日期不改变统计期，也不能据此推算今年销量或预测。请按卡片中的指标定义使用数据；今年的判断需要补充新一期观测。\n\n[Frota Nacional Dezembro 2023 — por UF e tipo de veículo](https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/frota-de-veiculos-2023)",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "getCountryProfile",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3": "BRA",
+              "asOf": "2026-10-14",
+              "marketPeriod": {
+                "start": "2023-01-01",
+                "end": "2024-01-01"
+              },
+              "topics": [
+                "market"
+              ]
+            },
+            "citationCount": 13
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Query only BRA market observations within calendar 2023; do not query regulations/products.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:31:58.455Z",
+        "release": "local-operation-preflight",
+        "request": 2,
+        "turn": 2,
+        "input": "把中国也加进来，沿用这个统计年份比较，不用查排放法规。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "77f68680-65ec-462d-aae5-04f723dca7e2",
+        "elapsedMs": 1958,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "这次请求没有足够证据，暂时不能给出肯定的法规、市场或产品结论。\n\n下一步：\n1. 请求的统计期：2023 年；2023-01-01（含）至 2024-01-01（不含）\n2. 市场比较没有找到可直接比较的指标；请指定指标，并确保期间、单位、币种、口径和应用场景一致。\n\n信息参考，不替代正式认证或法律意见",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareMarkets",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3s": [
+                "BRA",
+                "CHN"
+              ],
+              "marketPeriod": {
+                "start": "2023-01-01",
+                "end": "2024-01-01"
+              }
+            },
+            "citationCount": 8
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Add CHN while retaining 2023; no comparable evidence must remain no_data.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:32:15.494Z",
+        "release": "local-operation-preflight",
+        "request": 3,
+        "turn": 3,
+        "input": "那先列四点需要补齐的材料，只涉及市场指标定义、统计期、采集方法和原始来源，不要产品认证材料。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "1a045023-f384-49bc-9dfc-9a62739ea570",
+        "elapsedMs": 1513,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "explain",
+        "conversationReceiptPresent": true,
+        "text": "本轮没有重新核验事实。这是材料准备清单，不是法定必备文件清单（BRA / CHN · 统计期: 2023 年；2023-01-01（含）至 2024-01-01（不含））。已查到的内容请以此前证据卡片为准。\n\n- 市场统计定义: 指标含义、保有量与销量/流量的区别、单位、币种及国家/行业口径\n- 统计报告期: 观测起止日期、发布日期、比较基期及是否为历史数据\n- 统计方法: 采集方法、样本覆盖、计算口径、修订情况及跨国可比性\n- 可追溯原件及未解决缺口: 来源文件或链接、版本、缺少项目以及可提供材料的负责人\n\n以上材料均待核实，不构成产品适配、认证或销售许可结论。",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Produce four market-material categories, not product certifications.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:32:32.266Z",
+        "release": "local-operation-preflight",
+        "request": 4,
+        "turn": 4,
+        "input": "改用英文，只保留指标定义、统计期和来源，精简成两点。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "c10f1ea6-fad7-4127-ad25-7bf47b61303b",
+        "elapsedMs": 1464,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "This turn has not re-verified facts. This is a preparation checklist, not a statement of legally mandatory documents (BRA / CHN · reporting period: 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive).\n\n- market statistical definitions\n- reporting periods; traceable originals and unresolved gaps\n\nNone of these materials has been verified; no fit, certification or sale approval is established.",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Use English, remove methodology, group remaining categories into two bullets.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:32:51.135Z",
+        "release": "local-operation-preflight",
+        "request": 5,
+        "turn": 5,
+        "input": "再短一点，还是发给客户看的。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "0ac4a100-7fa4-4970-a4bc-d943e0786c39",
+        "elapsedMs": 1928,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "This turn has not re-verified facts. Preparation checklist (BRA / CHN · reporting period: 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive):\n\n- market statistical definitions\n- reporting periods; traceable originals and unresolved gaps\n\nNone of these materials has been verified; no fit, certification or sale approval is established.",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Shorten again while retaining English and two bullets.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:33:05.688Z",
+        "release": "local-operation-preflight",
+        "request": 6,
+        "turn": 6,
+        "input": "把这两点合成一封简短邮件，请对方补资料，不要承诺一定能销售。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "c8daf227-6bcb-45f1-a86e-6b371c5ad9f2",
+        "elapsedMs": 1549,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "Hello, please share market statistical definitions; reporting periods; traceable originals and unresolved gaps for (BRA / CHN · reporting period: 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive). This request does not confirm compliance or permission to sell.",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Convert to a short English materials email without a compliance or sale claim.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:33:20.879Z",
+        "release": "local-operation-preflight",
+        "request": 7,
+        "turn": 7,
+        "input": "回到数据核对。两国不变，统计年份换成2022，先不写邮件。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "8da36d10-07bb-456e-96a0-8a140b7fac54",
+        "elapsedMs": 2060,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "This request lacks enough evidence for an affirmative regulatory, market, or product conclusion.\n\nNext steps:\n1. Requested reporting period: 2022 calendar year; 2022-01-01 inclusive to 2023-01-01 exclusive\n2. No directly comparable market metric was found. Specify a metric and align period, unit, currency, methodology, and application.\n\nFor information only; not a substitute for formal certification or legal advice.",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareMarkets",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3s": [
+                "BRA",
+                "CHN"
+              ],
+              "marketPeriod": {
+                "start": "2022-01-01",
+                "end": "2023-01-01"
+              }
+            },
+            "citationCount": 4
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Resume real research for BRA and CHN in calendar 2022; do not continue drafting.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:33:42.516Z",
+        "release": "local-operation-preflight",
+        "request": 8,
+        "turn": 8,
+        "input": "那只看巴西，统计期沿用。用中文告诉我实际查到了什么。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "8c91406a-2646-4f10-8c82-c81942fe936a",
+        "elapsedMs": 3034,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": null,
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "BRA 的市场指标按实际统计期列示，不能把查询年份当作数据年份。\n\n请求的统计期：2022 年；2022-01-01（含）至 2023-01-01（不含）\n\n- 客车动力 · 年末注册车队: 1,123,588 vehicle — 2022 年；2022-01-01（含）至 2023-01-01（不含）\n- 卡车动力 · 年末注册车队: 3,871,687 vehicle — 2022 年；2022-01-01（含）至 2023-01-01（不含）\n\n这些是历史观测，不能当作 2026 年的数据。发布日期和核验日期不改变统计期，也不能据此推算今年销量或预测。请按卡片中的指标定义使用数据；今年的判断需要补充新一期观测。\n\n[Frota Nacional Dezembro 2022 — por UF e tipo de veículo](https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/frota-de-veiculos-2022)",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "getCountryProfile",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3": "BRA",
+              "asOf": "2026-10-14",
+              "marketPeriod": {
+                "start": "2022-01-01",
+                "end": "2023-01-01"
+              },
+              "topics": [
+                "market"
+              ]
+            },
+            "citationCount": 11
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Return only BRA 2022 observations and switch explicitly to Chinese.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:34:01.076Z",
+        "release": "local-operation-preflight",
+        "request": 9,
+        "turn": 9,
+        "input": "不看市场了。型号 CLIENT200，200 kW，用于德国工程机械，按2026-08-13核对适配；没有材料就说缺什么。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "18458d0d-3fe4-46cd-86a0-737e6913f9d4",
+        "elapsedMs": 2823,
+        "state": {
+          "tasks": [
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT200"
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "这次请求没有足够证据，暂时不能给出肯定的法规、市场或产品结论。\n\n下一步：\n1. DEU 在工程机械、200 kW、2026年8月13日条件下没有确定的适配结论；请核对产品目录、认证或法规证据。\n\n信息参考，不替代正式认证或法律意见",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "findCompatibleProducts",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 200
+            },
+            "citationCount": 4
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Switch to unknown model CLIENT200, DEU construction 200 kW on 2026-08-13; no market task or fabricated fit.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:34:18.631Z",
+        "release": "local-operation-preflight",
+        "request": 10,
+        "turn": 10,
+        "input": "帮我拟一封索取材料的短邮件，只要规格表、排放检测报告和认证原件，别说已经合规。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "4cc88ccb-b480-4d8e-ae9f-2af0af16041f",
+        "elapsedMs": 1562,
+        "state": {
+          "tasks": [
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT200"
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "您好，请提供规格表；排放检测报告；已有认证文件（DEU · construction · 200 kW · 2026-08-13 · CLIENT200）。本次索取材料不代表已合规或获准销售。",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Request only specification/test/certification materials in a short unverified email.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:34:41.350Z",
+        "release": "local-operation-preflight",
+        "request": 11,
+        "turn": 11,
+        "input": "仅修改邮件，把德国改成法国，其他条件不动，暂时不用重新查询。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "a73baa98-c1da-4abe-ac57-2e0e26d7f036",
+        "elapsedMs": 1832,
+        "state": {
+          "tasks": [
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "FRA"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT200"
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "您好，请提供规格表；排放检测报告；已有认证文件（FRA · construction · 200 kW · 2026-08-13 · CLIENT200）。本次索取材料不代表已合规或获准销售。",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Edit the email's country to FRA without retrieving facts.",
+        "semanticPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T13:34:58.802Z",
+        "release": "local-operation-preflight",
+        "request": 12,
+        "turn": 12,
+        "input": "现在实际查一下法国的适配，把功率改为150 kW，型号、用途和日期沿用，不用再写邮件。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "a13da988-327c-4de3-ae6b-4dd8eb53cf7b",
+        "elapsedMs": 2237,
+        "state": {
+          "tasks": [
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "FRA"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 150,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT200"
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "这次请求没有足够证据，暂时不能给出肯定的法规、市场或产品结论。\n\n下一步：\n1. FRA 在工程机械、150 kW、2026年8月13日条件下没有确定的适配结论；请核对产品目录、认证或法规证据。\n\n信息参考，不替代正式认证或法律意见",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "findCompatibleProducts",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "FRA",
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 150
+            },
+            "citationCount": 4
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "expected": "Resume fit research for FRA at 150 kW; retain model/scope/date and do not continue drafting.",
+        "semanticPassed": true
+      }
+    ]
+  },
+  "releaseDecision": {
+    "candidateNotDeployed": true,
+    "supersededMasterCi": {
+      "runId": 38570629637,
+      "conclusion": "cancelled",
+      "reason": "Actual multi-turn preflight exposed a known task-transition defect; this cancellation is not a passing release gate."
+    },
+    "requiresNewCommitAndCi": true,
+    "productionMultiTurnAcceptanceStillRequired": true
+  }
+}

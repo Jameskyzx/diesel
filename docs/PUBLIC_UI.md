@@ -251,6 +251,10 @@ combine different pollutant definitions or rank legal strictness. For research
 turns these fact-only summaries stop provider calls once the full evidence
 contract passes. Explanation and composition turns use the requested form
 against freshly validated evidence instead of repeating that summary.
+Returning from a materials email/checklist to research runs the evidence tools
+again. Previous draft format is not the current operation: only an explicit
+materials-draft revision can retain its tool-free path; factual explanations and
+rewrites still need fresh evidence.
 No approved real products means no real recommendation; Demo records cannot
 substitute for an explicitly requested real product. Query errors
 remain distinct from missing data, and legal-sales guarantees are not offered.

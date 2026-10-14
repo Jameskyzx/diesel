@@ -72,6 +72,31 @@ describe("multi-turn API conversation protocol", () => {
       powerKw: 120, applicationScope: "construction", asOf: "2026-08-13" });
     expect(result.body).not.toContain("UNVERIFIED_FACT");
   });
+  it("translates a neutral draft against the UI locale and retains its language through repeated shortening", async () => {
+    const state = { tasks: ["product_fit"], countryIso3s: ["DEU"], applicationScope: "construction", powerKw: 200.5,
+      asOf: "2026-08-13", productModelCode: "CLIENT200" };
+    const model = modelFor(Array.from({ length: 5 }, () => ({ mode: "compose", outputKind: "request_email", state })), ["MUST_NOT_BYPASS_EVIDENCE"]);
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    const sessionId = crypto.randomUUID();
+    const messages = [user("Write a neutral materials-request email for model CLIENT200 in DEU construction at 200.5 kW on 2026-08-13, without a compliance verdict.")];
+    let result = await request(sessionId, messages);
+    expect(result.body).toContain("Hello, please");
+    messages.push(user("请把这封材料索取邮件翻译成中文，保留全部查询条件。"));
+    result = await request(sessionId, messages, result.metadata!.conversation.receipt);
+    expect(result.body).toContain("您好，请");
+    expect(result.body).not.toContain("Hello, please");
+    for (let index = 0; index < 3; index += 1) {
+      messages.push(user("再精简一些，保留查询条件和不代表获准销售的说明。"));
+      result = await request(sessionId, messages, result.metadata!.conversation.receipt);
+      expect(result.body).toContain("您好，请");
+      expect(result.body).not.toContain("Hello, please");
+      expect(result.body).toContain("不代表已合规或获准销售");
+      expect(result.metadata?.conversation.state).toEqual(state);
+    }
+    expect(model.doGenerateCalls).toHaveLength(5);
+    expect(model.doStreamCalls).toHaveLength(0);
+    expect(result.body).not.toContain("MUST_NOT_BYPASS");
+  });
   it("keeps two-sided context for an adaptive follow-up, without accepting history as facts", async () => {
     const firstAnswer = "First: NOx names nitrogen oxides. Second: the question is not a product approval.";
     const model = modelFor([{ mode: "general", state: empty }, { mode: "explain", state: empty }], [firstAnswer, "My second point means that explaining a pollutant does not approve an engine."]);

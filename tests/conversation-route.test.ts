@@ -13,9 +13,16 @@ const usage = { inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0
 const empty = { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
 function modelFor(plans: unknown[], answers: string[]) {
   let planned = 0, answered = 0;
+  let previousTasks: string[] = [];
   function operationInput() {
     const { mode, outputKind, ...fields } = z.object({ mode: z.string(), outputKind: z.string().optional() }).passthrough().parse(plans[planned++]);
-    return { ...fields, operation: outputKind === "request_checklist" ? "prepare_checklist"
+    const tasks = z.object({ tasks: z.array(z.string()) }).parse(fields.state).tasks;
+    const filters = Object.fromEntries(Object.entries(z.record(z.string(), z.unknown()).parse(fields.state)).filter(([key]) => key !== "tasks"));
+    const requests = tasks.map(task => task === "knowledge" ? { task, sourceUpdate: fields.sourceUpdate ?? (previousTasks.includes(task) ? "retain" : "replace"), sourceTerms: fields.sourceTerms ?? [] }
+      : task === "market" ? { task, marketPeriodUpdate: fields.marketPeriodUpdate ?? "retain", marketPeriodText: fields.marketPeriodText ?? null, marketPeriod: fields.marketPeriod ?? null } : { task });
+    const common = Object.fromEntries(Object.entries(fields).filter(([key]) => !["sourceUpdate", "sourceTerms", "marketPeriodUpdate", "marketPeriodText", "marketPeriod"].includes(key)));
+    previousTasks = tasks;
+    return { countryOperands: [], filterResets: [], ...common, requests, state: filters, operation: outputKind === "request_checklist" ? "prepare_checklist"
       : outputKind === "request_email" ? "prepare_email" : mode };
   }
   return new MockLanguageModelV4({
@@ -41,6 +48,51 @@ async function request(sessionId: string, messages: unknown[], receipt?: string)
 beforeEach(() => { mocks.model.mockReset(); mocks.audit.ensureSession.mockClear(); });
 
 describe("multi-turn API conversation protocol", () => {
+  it("applies a grounded power reset at the API boundary without querying the declined old value", async () => {
+    const state = { ...empty, tasks: ["regulations"], countryIso3s: ["DEU", "FRA"], applicationScope: "construction",
+      powerKw: 120, asOf: "2026-08-13" };
+    const model = modelFor([
+      { mode: "compose", outputKind: "request_email", state },
+      { mode: "research", state: { ...state, powerKw: null }, filterResets: [{ field: "power", expression: "先清除功率条件" }] },
+    ], ["UNVERIFIED"]);
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    const sessionId = crypto.randomUUID();
+    const messages = [user("Write a neutral materials email for DEU and FRA construction at 120 kW on 2026-08-13.")];
+    const first = await request(sessionId, messages);
+    messages.push(user("先清除功率条件，国家、用途和日期不动；不要默认继续用 120 kW。"));
+    const result = await request(sessionId, messages, first.metadata!.conversation.receipt);
+    expect(result.metadata?.conversation.state).toEqual({ ...state, powerKw: null });
+    expect(result.body).toContain("rated power");
+    expect(result.body).not.toContain("tool-input-available");
+    expect(result.body).not.toContain("UNVERIFIED");
+    expect(model.doGenerateCalls).toHaveLength(2);
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+  it("retains the independent output language even when a query edit fails planning", async () => {
+    const state = { ...empty, tasks: ["market"], countryIso3s: ["BRA"] };
+    const model = modelFor([
+      { mode: "compose", outputKind: "request_email", state },
+      { mode: "research", state: { ...state, countryIso3s: null } },
+      { mode: "research", state: { ...state, countryIso3s: null } },
+      { mode: "research", state: { ...state, countryIso3s: null } },
+    ], []);
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    const sessionId = crypto.randomUUID();
+    const messages = [user("为 BRA 市场资料写一封中文索取邮件，不作任何核验结论。")];
+    let result = await request(sessionId, messages);
+    messages.push(user("继续核对资料"));
+    result = await request(sessionId, messages, result.metadata!.conversation.receipt);
+    expect(result.body).toContain("这次没能可靠地理解");
+    expect(result.metadata?.conversation.state).toEqual(state);
+    messages.push(user("Use English and change the reporting period"));
+    result = await request(sessionId, messages, result.metadata!.conversation.receipt);
+    expect(result.body).toContain("I couldn't reliably resolve");
+    messages.push(user("继续"));
+    result = await request(sessionId, messages, result.metadata!.conversation.receipt);
+    expect(result.body).toContain("I couldn't reliably resolve");
+    expect(model.doGenerateCalls).toHaveLength(4);
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
   it("leaves the tool-free draft branch when the next operation resumes market research", async () => {
     const state = { ...empty, tasks: ["market"], countryIso3s: ["BRA", "CHN"] };
     const period = { start: "2022-01-01", end: "2023-01-01" };
@@ -190,8 +242,7 @@ describe("multi-turn API conversation protocol", () => {
     const prompt = model.doGenerateCalls[1]?.prompt;
     const last = prompt?.at(-1);
     expect(last?.role).toBe("user");
-    const serialized = JSON.stringify(last);
-    expect(serialized).toContain('userMessages\\":[\\"Instead, what is NOx?\\"]');
+    expect(last).toEqual({ role: "user", content: [{ type: "text", text: "Instead, what is NOx?" }] });
     expect(recovery.metadata?.conversation.state.tasks).toEqual([]);
     expect(model.doGenerateCalls).toHaveLength(2);
   });

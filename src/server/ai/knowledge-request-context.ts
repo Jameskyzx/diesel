@@ -797,7 +797,7 @@ export function buildKnowledgeRequestContext(
     }
     const identifiers = knowledgeIdentifierTermsIn(followUp).filter((term) => replaceableKnowledgeIdentifierPrefix(term) !== null);
     terms = mergeContextualKnowledgeIdentifiers(terms, identifiers);
-    if (activeConversationTaskIn(followUp) === "knowledge") {
+    if (!options.retainFirstRequest && activeConversationTaskIn(followUp) === "knowledge") {
       const requested = knowledgeTermsIn(followUp, uniqueCountries([...countries, ...countryIso3sIn(followUp)]))
         .filter((term) => sourceRequirementWords.has(term));
       // An equivalent localized spelling does not add a second requirement.
@@ -819,5 +819,10 @@ export function buildKnowledgeRequestContext(
   }
   // Never truncate a query to fit the tool cap: Zod and the evidence boundary
   // must reject an unrepresentable request instead of silently dropping terms.
-  return { query, terms, requiresRestatement, ...knowledgeDeliveryIn(query, terms, countries) };
+  const delivery = knowledgeDeliveryIn(query, terms, countries);
+  // A typed retained source task already separates its topic from follow-up
+  // controls. Locator delivery is structured metadata, not individual Chinese
+  // characters to append to the search topic. Keep native signed/ID edits above.
+  if (options.retainFirstRequest) delivery.delivery = knowledgeDeliveryIn(requestTexts.join("\n"), terms, countries).delivery;
+  return { query, terms, requiresRestatement, ...delivery };
 }

@@ -31,3 +31,30 @@ export function explicitMarketReportingPeriod(text: string): { period?: MarketRe
     return { ambiguous: true };
   return { ambiguous: false, period: { start: `${start}-01-01`, end: `${end + 1}-01-01` } };
 }
+
+/** Ground the planner's selected operand, not every number mentioned in a
+ * compound edit. Selection cannot turn an excluded/publication/identifier year
+ * into a requested observation period or slice a range into a different one. */
+export function selectedMarketReportingPeriod(text: string, expression: string) {
+  const parsed = explicitMarketReportingPeriod(expression);
+  if (!parsed.period) return parsed;
+  let offset = text.indexOf(expression);
+  while (offset >= 0) {
+    const before = text.slice(0, offset);
+    const after = text.slice(offset + expression.length);
+    const clauseBefore = before.split(/[,，。;；!?！？\n]/u).at(-1) ?? "";
+    const clauseAfter = after.split(/[,，。;；!?！？\n]/u)[0] ?? "";
+    const clause = clauseBefore + expression + clauseAfter;
+    const invalidRole = /(?:不要|不使用|别用|而非|不是|发布|出版|签发|文件版本|\b(?:not|instead of|rather than|published|publication|issued|released|document version)\b)/iu
+      .test(clauseBefore + expression) || /^\s*(?:年)?\s*(?:发布|出版|签发|\b(?:publication|release|edition)\b)/iu.test(clauseAfter);
+    const splitToken = /[A-Za-z0-9_./-]$/u.test(before) || /^[A-Za-z0-9_./-]/u.test(after);
+    const quoted = [...text.matchAll(/["“][^"”]*["”]/gu)]
+      .some(match => offset >= match.index && offset < match.index + match[0].length);
+    const positiveAlternative = /(?:或者|或是|\bor\b)/iu.test(clause) && explicitMarketReportingPeriod(clause).ambiguous;
+    const whole = explicitMarketReportingPeriod(clause);
+    const splitsRange = whole.period && (whole.period.start !== parsed.period.start || whole.period.end !== parsed.period.end);
+    if (!invalidRole && !splitToken && !quoted && !positiveAlternative && !splitsRange) return parsed;
+    offset = text.indexOf(expression, offset + 1);
+  }
+  return { ambiguous: true };
+}

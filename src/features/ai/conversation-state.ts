@@ -25,6 +25,9 @@ export const preparationTopicSchema = z.enum([
 // It survives the bounded prose history, and is authoritative only when signed.
 export const conversationMemorySchema = z.object({
   sourceRequest: z.string().min(1).max(2_000).nullable(),
+  // Approved search projection, not evidence. Keep it stable across retained
+  // tasks rather than asking the model to select a different subset each turn.
+  sourceText: z.string().min(1).max(2_000).optional(),
   sourceRefinements: z.array(z.string().min(1).max(2_000)).max(8).default([]),
   marketScope: applicationScopeSchema.nullable(),
   marketPeriod: marketReportingPeriodSchema.optional(),
@@ -33,9 +36,11 @@ export const conversationMemorySchema = z.object({
   outputKind: z.enum(["evidence", "request_checklist", "request_email"]),
   preparationTopics: z.array(preparationTopicSchema).min(1).max(9).optional(),
   draftItems: z.number().int().min(1).max(8).nullable().optional(),
-}).strict().refine(memory => (memory.sourceRequest?.length ?? 0) +
+}).strict().refine(memory => (memory.sourceRequest?.length ?? 0) + (memory.sourceText?.length ?? 0) +
   memory.sourceRefinements.reduce((size, text) => size + text.length, 0) <= 4_000,
-"Source task context exceeds its bounded capacity");
+"Source task context exceeds its bounded capacity")
+  .refine(memory => !memory.sourceText || memory.sourceRequest !== null,
+    "A search projection requires its original human source request");
 export type ConversationMemory = z.infer<typeof conversationMemorySchema>;
 
 // A receipt is opaque to the browser. Display state is never server evidence.

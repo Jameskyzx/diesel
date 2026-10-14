@@ -103,6 +103,15 @@ still require a supported query or clarification. Response language and draft
 length persist independently of UI locale, previous answer wording and changed
 query filters. Editing a Chinese draft from an English UI keeps it Chinese until
 the user asks for a language change.
+Market reporting periods are separate half-open observation intervals, never
+aliases for a regulatory `asOf` date. Explicit calendar years/ranges filter
+observations before latest-record selection; absent periods remain no-data.
+The period survives country changes and appears in the evidence card. Mentioning
+a historical year in an explanation does not replace the active reporting period.
+Neutral materials drafts use task-specific categories rather than always asking
+for product certificates. Explicit category choices and bullet limits survive
+translation, shortening and format changes; grouping preserves the requested
+topics and the unverified-materials disclaimer.
 
 Validated country/profile lookups can finish with a server-authored summary and
 evidence cards instead of an extra model prose call. This does not weaken source,

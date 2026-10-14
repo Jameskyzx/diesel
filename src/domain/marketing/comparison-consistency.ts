@@ -632,6 +632,7 @@ function marketMetricMatchesVisibleQuery(
           observation.applicationScope !== null &&
           observation.applicationScope !== scopedQuery) ||
         observation.periodEnd <= observation.periodStart ||
+        !observationInReportingPeriod(observation, comparison.query.marketPeriod) ||
         !observationIsLatestVisibleForCountry(observation, observations),
     )
   ) {
@@ -712,3 +713,4 @@ export function marketComparisonMatchesDeterministicRules(
     )
   );
 }
+import { observationInReportingPeriod } from "@/domain/marketing/reporting-period";

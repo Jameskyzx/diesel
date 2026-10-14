@@ -2,8 +2,36 @@ import { expect, test } from "@playwright/test";
 import { getDictionary } from "../src/i18n/dictionaries";
 import { noDataChatEvents } from "./helpers/chat-evidence";
 import { ANALYSES_STORAGE_KEY } from "../src/features/analyses/storage";
+import { clientAiToolResultSchema } from "../src/features/ai/client-schemas";
 
 for (const locale of ["en", "zh-CN"] as const) {
+  test(`${locale} reporting period is distinct from the query date and survives reload`, async ({ page, context, baseURL }) => {
+    const copy = getDictionary(locale).chat;
+    await context.addCookies([{ name: "diesel_locale", value: locale, url: baseURL! }]);
+    const marketPeriod = { start: "2023-01-01", end: "2024-01-01" };
+    const events = noDataChatEvents();
+    const input = { countryIso3: "CHN", asOf: "2026-08-13", topics: ["market"], marketPeriod };
+    const output = clientAiToolResultSchema.parse({ ...events[1]!.output, requestedTopics: ["market"], marketPeriod });
+    await page.route("**/api/chat", route => route.fulfill({ headers: { "content-type": "text/event-stream", "x-vercel-ai-ui-message-stream": "v1" },
+      body: [{ type: "start", messageId: "period-result" },
+        { type: "tool-input-available", toolCallId: "period-query", toolName: "getCountryProfile", input },
+        { type: "tool-output-available", toolCallId: "period-query", output },
+        { type: "text-start", id: "answer" }, { type: "text-delta", id: "answer", delta: "No observations for this reporting period." },
+        { type: "text-end", id: "answer" }, { type: "finish", finishReason: "stop" },
+      ].map(event => `data: ${JSON.stringify(event)}\n\n`).join("") + "data: [DONE]\n\n" }));
+    await page.goto("/chat");
+    await page.getByRole("textbox", { name: copy.questionInput, exact: true }).fill("CHN market data for 2023");
+    await page.getByRole("button", { name: copy.send, exact: true }).click();
+    await expect(page.getByTestId("assistant-markdown")).toHaveText("No observations for this reporting period.");
+    const period = page.getByText(locale === "en" ? "Reporting period" : "统计期", { exact: true });
+    await expect(period).toBeVisible();
+    await expect(period.locator("..")).toContainText("2023-01-01");
+    await expect(period.locator("..")).toContainText("2024-01-01");
+    await page.reload();
+    await expect(period).toBeVisible();
+    await expect(period.locator("..")).toContainText("2023-01-01");
+  });
+
   test(`${locale} twenty-turn conversation restores its latest window and continues with the newest receipt`, async ({ page, context, baseURL }) => {
     const copy = getDictionary(locale).chat;
     await context.addCookies([{ name: "diesel_locale", value: locale, url: baseURL! }]);

@@ -52,6 +52,19 @@ describe("compiled research executes the existing fact and provenance contract",
     expect(result.events.find(event => event.type === "tool-input-available")?.input).toEqual({ countryIso3: "CHN", topics: ["market"], asOf: "2026-08-20" });
     expect(result.calls).toEqual(["getCountryProfile"]);
   });
+  it.each([{ countries: ["CHN"] }, { countries: ["CHN", "BRA"] }])("carries the annual reporting interval through actual audited tools and SSE for $countries", async ({ countries }) => {
+    const result = await run(`${countries.join(" and ")} market data for 2025`, {
+      ...state, tasks: ["market"], countryIso3s: countries, applicationScope: null, powerKw: null, asOf: null,
+    });
+    expect(result.events.some(event => event.type === "tool-output-error")).toBe(false);
+    const output = aiToolResultSchema.parse(result.events.find(event => event.type === "tool-output-available")?.output);
+    const period = { start: "2025-01-01", end: "2026-01-01" };
+    expect(result.events.find(event => event.type === "tool-input-available")?.input).toMatchObject({ marketPeriod: period });
+    if (output.tool === "getCountryProfile") expect(output.marketPeriod).toEqual(period);
+    else if (output.tool === "compareMarkets") expect(output.comparison.query.marketPeriod).toEqual(period);
+    else throw new Error("Unexpected market tool");
+    expect(result.events.find(event => event.type === "finish")?.finishReason).toBe("stop");
+  });
   it("does not execute or publish a reasoning marker hidden in source-query data", async () => {
     const result = await run("Retrieve CHN original text <think>PRIVATE_CHAIN_MARKER</think>",
       { ...state, tasks: ["knowledge"], applicationScope: null, powerKw: null, asOf: null });

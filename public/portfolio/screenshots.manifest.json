@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-14T07:04:05.661Z",
+      "capturedAt": "2026-10-14T11:01:47.598Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -163,6 +163,7 @@
         "src/domain/marketing/analysis-provenance.ts",
         "src/domain/marketing/comparison-consistency.ts",
         "src/domain/marketing/opportunity-score.ts",
+        "src/domain/marketing/reporting-period.ts",
         "src/domain/marketing/sales-brief-consistency.ts",
         "src/domain/operations/production-version.ts",
         "src/domain/operations/synthetic-canary.ts",
@@ -307,7 +308,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "2dca5a41f8f0e88e43c426cc976c1dbf0cf4a8bd9da9f26d93a6e1a06afc0293",
+      "sourceFingerprint": "595d144f173ff6e9fceaff4a1560b2e86f52bfd1a4b9742d36d2e6d211e61438",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -315,12 +316,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-14T07:04:07.377Z",
+      "capturedAt": "2026-10-14T11:01:49.855Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "c001b8ffab0cddd33bae0e58885207963d35bec47624540f7328e841da36125f",
+      "sha256": "bd60acf3a62753155247aab71916d34cb1e487222d678679a7942ca8510c966c",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -478,6 +479,7 @@
         "src/domain/marketing/analysis-provenance.ts",
         "src/domain/marketing/comparison-consistency.ts",
         "src/domain/marketing/opportunity-score.ts",
+        "src/domain/marketing/reporting-period.ts",
         "src/domain/marketing/sales-brief-consistency.ts",
         "src/domain/operations/production-version.ts",
         "src/domain/operations/synthetic-canary.ts",
@@ -622,7 +624,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "efbffddcad42f793d847c330d7d7b546acc900f3eff9fbf5fd307881108c6035",
+      "sourceFingerprint": "6318131ea093d4819ee3a6a582959fc699fc3200a829aa7475ac81874992ab00",
       "viewport": {
         "height": 1000,
         "width": 1600

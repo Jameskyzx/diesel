@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { captureChatRuntimeContext } from "@/domain/ai/chat-runtime-context";
-import type { ConversationState, ConversationMemory } from "@/features/ai/conversation-state";
+import { conversationMemorySchema, type ConversationState, type ConversationMemory } from "@/features/ai/conversation-state";
 import { prepareConversationPlan } from "@/server/ai/conversation-plan";
 import { buildEvidenceRequestResponse } from "@/server/ai/conversation-answer";
 import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
@@ -20,6 +20,31 @@ function turn(text: string, plan: unknown, previous = receipt()) {
 }
 
 describe("signed task and presentation memory, independent of prose history", () => {
+  it.each([
+    ["Regulation (EU) 2016/1628", "test cycle", "original sections"],
+    ["Regulation (EU) 2016/1628", "original sections"],
+    ["CLIENT200"],
+    [],
+  ])("retains the actual approved projection across a new task, not a fresh model selection: %j", (...sourceTerms) => {
+    const request = "Find Regulation (EU) 2016/1628 test cycle and original sections for DEU construction 200.5 kW as of 2026-08-13.";
+    const first = turn(request, { mode: "research", state: base, sourceUpdate: "replace",
+      sourceTerms: ["Regulation (EU) 2016/1628", "test cycle"] });
+    const originalQuery = first.contract.requirements[0]!.query.knowledgeQuery;
+    expect(first.memory.sourceText).toBe("Regulation (EU) 2016/1628 test cycle");
+    const follow = turn("Keep the original query unchanged and also check model CLIENT200", {
+      mode: "research", state: { ...base, tasks: ["knowledge", "product_fit"], productModelCode: "CLIENT200" },
+      sourceUpdate: "retain", sourceTerms }, receipt(first.state, first.memory));
+    expect(follow.contract.requirements.find(r => r.acceptedTools.includes("searchKnowledgeBase"))?.query.knowledgeQuery).toBe(originalQuery);
+    expect(follow.memory.sourceText).toBe(first.memory.sourceText);
+    const refined = turn("Use page 13 instead", { mode: "research", state: base, sourceUpdate: "refine", sourceTerms }, receipt(follow.state, follow.memory));
+    expect(refined.memory.sourceText).toBe(first.memory.sourceText);
+    expect(refined.contract.requirements[0]?.query.knowledgeDelivery?.pages).toEqual(["13"]);
+  });
+  it("bounds projections within the existing memory budget and never stores one without its human request", () => {
+    expect(() => conversationMemorySchema.parse({ ...memory, sourceRequest: null, sourceText: "invented" })).toThrow();
+    expect(() => conversationMemorySchema.parse({ ...memory, sourceRequest: "x".repeat(2000),
+      sourceText: "y".repeat(2000), sourceRefinements: ["page 13"] })).toThrow();
+  });
   it.each([
     "另外核对一下客户型号 CLIENT200 在德国的产品适配，还是200.5 kW；保留刚才的原文查询。",
     "Check model CLIENT200 too; leave the earlier source lookup as it was.",

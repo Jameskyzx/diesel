@@ -1,6 +1,7 @@
 import "server-only";
 import { buildMarketProfileResponse } from "@/domain/ai/market-profile-response";
 import { buildRegulationComparisonResponse } from "@/domain/ai/regulation-comparison-response";
+import { buildCountryProfileResponse } from "@/domain/ai/country-profile-response";
 import { conversationInstructions, generalAnswerMayPublish, type PreparedConversationTurn } from "@/server/ai/conversation-plan";
 import { conversationAnswerMatchesFacts } from "@/server/ai/conversation-answer";
 
@@ -1692,7 +1693,7 @@ function createPublicEvidenceBoundaryTransform({
           hasUnverifiedAttachments || allowUnverifiedAttachmentResponse;
         if ((hasToolResult && canEmitModelText()) || canEmitAttachmentText || canEmitGeneralText) {
           const factualSummary = conversationTurn && conversationTurn.mode !== "research" ? null :
-            buildMarketProfileResponse(toolResults, locale) ?? buildRegulationComparisonResponse(toolResults, locale, { allowSingleCountry: conversationTurn?.mode === "research" });
+            buildMarketProfileResponse(toolResults, locale) ?? buildRegulationComparisonResponse(toolResults, locale, { allowSingleCountry: conversationTurn?.mode === "research" }) ?? buildCountryProfileResponse(toolResults, locale);
           if (factualSummary !== null) {
             bufferedText.length = 0;
             bufferedText.push({ id: nextPublicTextPartId(), text: factualSummary });
@@ -2902,7 +2903,8 @@ export function streamSalesChat(input: {
         // These answers are fully determined by the accepted facts. Avoid a
         // paid prose-generation step that could only re-interpret those facts.
         return buildMarketProfileResponse(evidence.results, input.locale ?? "en") !== null ||
-          buildRegulationComparisonResponse(evidence.results, input.locale ?? "en", { allowSingleCountry: input.conversationTurn?.mode === "research" }) !== null;
+          buildRegulationComparisonResponse(evidence.results, input.locale ?? "en", { allowSingleCountry: input.conversationTurn?.mode === "research" }) !== null ||
+          buildCountryProfileResponse(evidence.results, input.locale ?? "en") !== null;
       },
       () => input.shouldStopAfterStep?.([...observedSteps]) ?? false,
     ],

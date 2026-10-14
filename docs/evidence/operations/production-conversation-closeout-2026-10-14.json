@@ -1,0 +1,768 @@
+{
+  "evidenceKind": "historical-operator-record-only",
+  "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+  "observedAt": "2026-10-14T05:28:25.158Z",
+  "outcome": "deployed_conversation_acceptance_failed",
+  "pullRequest": 96,
+  "ci": {
+    "runId": 38507953187,
+    "attempt": 1,
+    "conclusion": "success",
+    "requiredGateJobId": 115684297681,
+    "jobsPassed": 10
+  },
+  "deployment": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+      "operationId": "2508b32e-88c8-4827-9d0c-afb968eee9a4",
+      "mode": "application",
+      "createdAt": "2026-10-14T04:46:22.945Z",
+      "inputDigest": "7c5cfb39f93c100a62bec5dfa8b4c9ce4612c2ea31e5c4938a486be3210134ea",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "completed",
+    "unit": {
+      "Id": "diesel-release-936a1af58c68418bf37cfbe52ea56732f57e851e.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "Result": "success",
+      "InvocationID": "dbac1ee90a654d5780746a2b01c54cf0",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 2043318
+    },
+    "completion": {
+      "operationId": "2508b32e-88c8-4827-9d0c-afb968eee9a4",
+      "invocationId": "dbac1ee90a654d5780746a2b01c54cf0",
+      "startedAt": "2026-10-14T04:46:23.908Z",
+      "workerPid": 2043318,
+      "completedAt": "2026-10-14T05:07:27.940Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 4429,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 468,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "independentLedger": {
+    "validationPassed": true,
+    "committedHostPassed": true,
+    "classification": "terminal",
+    "hostState": "COMMITTED",
+    "governanceState": "APPLICATION_VERIFIED_V2",
+    "current": "/opt/diesel/releases/936a1af58c68418bf37cfbe52ea56732f57e851e"
+  },
+  "independentDataProof": {
+    "checkedAt": "2026-10-14T05:08:45.636Z",
+    "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+    "previousRelease": "3af85d6abe520226ed54aea6d0c5985d1d23c6ed",
+    "tablesVerified": 15,
+    "tablesMatch": true,
+    "beforeCheckedAt": "2026-10-14T04:53:37.242Z",
+    "afterCheckedAt": "2026-10-14T05:06:32.874Z",
+    "beforeProofSha256": "6135a362bb9c7c1cc9ad067d8a05f7a605faf94375ec1b44d792334290839a91",
+    "afterProofSha256": "e05f927db1c7260e359fca34e4713facefebcadbcb0da73c71cd6172b5546427",
+    "dataContractSha256": "d823b25f2996c0f90fdf0cf2707d960fd980246d969139e98abb9c6e76fc1fd0",
+    "protectedFileCount": 144
+  },
+  "services": {
+    "checkedAt": "2026-10-14T05:08:45.636Z",
+    "processes": [
+      {
+        "name": "jamesky-api",
+        "pid": 1033,
+        "status": "online",
+        "restarts": 0
+      },
+      {
+        "name": "diesel-demo",
+        "pid": 2077885,
+        "status": "online",
+        "restarts": 0
+      }
+    ],
+    "unrelatedServiceUnchanged": true
+  },
+  "routeVerification": {
+    "exitCode": 0,
+    "origins": [
+      "http://127.0.0.1:8788",
+      "https://diesel.jamesky.site"
+    ],
+    "usingNonprivilegedRuntimeUser": true
+  },
+  "canary": {
+    "checkedAt": "2026-10-14T05:08:59.495Z",
+    "expectedVersion": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+    "includeProviderAi": true,
+    "pass": false,
+    "results": [
+      {
+        "durationMs": 166,
+        "errorCode": null,
+        "id": "liveness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/live",
+        "requestId": "8c9a52eb-4283-4d71-a0be-98fa8d01cd65",
+        "status": 200
+      },
+      {
+        "durationMs": 262,
+        "errorCode": null,
+        "id": "readiness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/ready",
+        "requestId": "dd5d1ec4-d8d1-4129-846c-6716f02e92c2",
+        "status": 200
+      },
+      {
+        "durationMs": 7692,
+        "errorCode": null,
+        "id": "country-decision-summary",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-14",
+        "requestId": "92f8c454-6141-4b0c-bd84-6e5541216723",
+        "status": 200
+      },
+      {
+        "durationMs": 4921,
+        "errorCode": null,
+        "id": "country-decision-no-data",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-14",
+        "requestId": "15b17941-5a3f-491d-ad03-4a3349f60211",
+        "status": 200
+      },
+      {
+        "durationMs": 262,
+        "errorCode": null,
+        "id": "public-products",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/products",
+        "requestId": "c35e16ea-3670-4464-befe-65348786941e",
+        "status": 200
+      },
+      {
+        "durationMs": 950,
+        "errorCode": null,
+        "id": "chat-direct-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "7120fd5c-71d8-41c2-924f-69024b8884ad",
+        "status": 200
+      },
+      {
+        "durationMs": 15003,
+        "errorCode": "TIMEOUT",
+        "id": "chat-provider-sse",
+        "method": "POST",
+        "pass": false,
+        "path": "/api/chat",
+        "requestId": null,
+        "status": null
+      }
+    ],
+    "runError": null,
+    "targetOrigin": "https://diesel.jamesky.site",
+    "version": "synthetic-canary-v5"
+  },
+  "realStarters": {
+    "reportPath": "test-results/live-1791954557637/report.json",
+    "startTime": "2026-10-14T05:09:17.638Z",
+    "duration": 68426.324,
+    "expected": 6,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0,
+    "retries": 0,
+    "mocks": false
+  },
+  "adaptiveConversation": {
+    "method": "Two real production conversations, 8 Chinese API turns and 12 English-UI browser turns; follow-ups selected from actual responses, including natural phrasing and a reload. Semantic judgements are operator observations, not automatic HTTP-success scores.",
+    "mocks": false,
+    "retries": 0,
+    "turns": 20,
+    "passed": 17,
+    "failed": 3,
+    "apiTransportPassed": 8,
+    "browserReloadPassed": true,
+    "apiTurns": [
+      {
+        "checkedAt": "2026-10-14T05:11:00.690Z",
+        "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+        "request": 1,
+        "turn": 1,
+        "input": "我想了解中国工程机械柴油机，120 kW，按2026-08-13这个日期查有效排放法规，同时给我可追溯的来源。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "e79c90a4-1b79-40ad-ba58-35e8e5ce5643",
+        "elapsedMs": 13937,
+        "state": {
+          "tasks": [
+            "regulations",
+            "knowledge"
+          ],
+          "countryIso3s": [
+            "CHN"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 120,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "部分任务仍有证据缺口；已核验记录不能代替缺失部分的结论。\n\n有效法规查询：CHN，工程机械，120 kW，基准日期 2026-08-13。本次返回 1 条已生效记录：GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单。已记录的污染物限值和适用条件见证据卡片；这不证明法规覆盖完整、测试循环等同或任何型号已获准销售。\n\n信息参考，不替代正式认证或法律意见\n\n[GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单](https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201405/t20140530_276305.shtml)\n\n这次请求没有足够证据支持完整的肯定结论。已成功的结构化卡片仍可单独查看。\n\n下一步：\n1. CHN 的知识库没有检索到匹配原文；请缩小法规名称、污染物、章节或日期范围。\n\n信息参考，不替代正式认证或法律意见",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareRegulations",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3s": [
+                "CHN"
+              ],
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 120
+            },
+            "citationCount": 9
+          },
+          {
+            "valid": true,
+            "tool": "searchKnowledgeBase",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "CHN",
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "query": "我想了解 CHN 工程机械柴油机，120 kW，按2026-08-13这个日期查有效排放法规，同时给我可追溯的来源。"
+            },
+            "citationCount": 0
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "semanticPassed": true,
+        "semanticReason": "Correct CHN/construction/120/2026-08-13; grounded effective regulation survives missing KB result; provenance and limits explicit, no whole-task rejection."
+      },
+      {
+        "checkedAt": "2026-10-14T05:11:25.283Z",
+        "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+        "request": 2,
+        "turn": 2,
+        "input": "先不找原文了，只保留法规查询，条件沿用刚才的。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "ebd7dc21-701c-4276-b04b-ffd6d6ff5f82",
+        "elapsedMs": 8165,
+        "state": {
+          "tasks": [
+            "regulations"
+          ],
+          "countryIso3s": [
+            "CHN"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 120,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "有效法规查询：CHN，工程机械，120 kW，基准日期 2026-08-13。本次返回 1 条已生效记录：GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单。已记录的污染物限值和适用条件见证据卡片；这不证明法规覆盖完整、测试循环等同或任何型号已获准销售。\n\n信息参考，不替代正式认证或法律意见\n\n[GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单](https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201405/t20140530_276305.shtml)",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareRegulations",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3s": [
+                "CHN"
+              ],
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 120
+            },
+            "citationCount": 9
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "semanticPassed": true,
+        "semanticReason": "Removed knowledge task; retained CHN, construction,120kW,date; only regulation tool."
+      },
+      {
+        "checkedAt": "2026-10-14T05:11:54.153Z",
+        "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+        "request": 3,
+        "turn": 3,
+        "input": "把日本也加进来对比，其余条件不变。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "f6dfcba6-4801-46e2-8e9d-0ed96dd3a328",
+        "elapsedMs": 9221,
+        "state": {
+          "tasks": [
+            "regulations"
+          ],
+          "countryIso3s": [
+            "CHN",
+            "JPN"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 120,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "法规比较：按 2026-08-13、工程机械 120 kW 比较 CHN / JPN 的已生效记录：数值相同的项目为CO (g/kWh)，数值不同的项目为NOX (g/kWh)、PM (g/kWh)；未返回的项目为 JPN: HC (g/kWh)；CHN: NMHC (g/kWh)；JPN: PN (e9/kWh)；记录中的功率段边界不同（CHN 56–130 kW; JPN 75–130 kW）。\n\n相同数值也不等于法规或认证要求等同；本次未返回测试循环，不能据此排名哪国更严或批准销售，下一步请索取原始测试循环与认证要求。\n\n信息参考，不替代正式认证或法律意见\n\n[GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单](https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201405/t20140530_276305.shtml)\n[特定特殊自動車排出ガスの規制等に関して必要な事項を定める告示（平成十八年三省告示第一号、最終改正令和六年三省告示第四号）](https://www.env.go.jp/content/000398439.pdf)",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareRegulations",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3s": [
+                "CHN",
+                "JPN"
+              ],
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 120
+            },
+            "citationCount": 17
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "semanticPassed": true,
+        "semanticReason": "Append JPN to CHN; preserve scope/power/date; comparison distinguishes units, boundaries and missing pollutants, no strictness ranking."
+      },
+      {
+        "checkedAt": "2026-10-14T05:12:32.430Z",
+        "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+        "request": 4,
+        "turn": 4,
+        "input": "不比较了，改成德国一个市场，功率改成200.5 kW，日期和用途保留。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "0f988541-c738-4146-a67d-0ff4b3b7eb43",
+        "elapsedMs": 11612,
+        "state": {
+          "tasks": [
+            "regulations"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200.5,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "有效法规查询：DEU，工程机械，200.5 kW，基准日期 2026-08-13。本次返回 1 条已生效记录：Regulation (EU) 2016/1628 on non-road mobile machinery emission limits (Stage V)。已记录的污染物限值和适用条件见证据卡片；这不证明法规覆盖完整、测试循环等同或任何型号已获准销售。\n\n信息参考，不替代正式认证或法律意见\n\n[Regulation (EU) 2016/1628 on requirements relating to gaseous and particulate pollutant emission limits and type-approval for internal combustion engines for non-road mobile machinery (Stage V)](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R1628)",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareRegulations",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3s": [
+                "DEU"
+              ],
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 200.5
+            },
+            "citationCount": 9
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "semanticPassed": true,
+        "semanticReason": "Replaced CHN/JPN with DEU, power200.5, retained construction/date; no unintended compare or market task."
+      },
+      {
+        "checkedAt": "2026-10-14T05:13:06.291Z",
+        "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+        "request": 5,
+        "turn": 5,
+        "input": "只查 Regulation (EU) 2016/1628 的 test cycle 原文和出处，不要再重复法规比较。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "d4f63478-68fb-443f-8009-068cc47ed265",
+        "elapsedMs": 6905,
+        "state": {
+          "tasks": [
+            "knowledge"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200.5,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "这次请求没有足够证据，暂时不能给出肯定的法规、市场或产品结论。\n\n下一步：\n1. DEU 的知识库没有检索到匹配原文；请缩小法规名称、污染物、章节或日期范围。\n\n信息参考，不替代正式认证或法律意见",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "searchKnowledgeBase",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "query": "Regulation (EU) 2016/1628 test cycle"
+            },
+            "citationCount": 0
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "semanticPassed": true,
+        "semanticReason": "Only KB tool; preserved Regulation (EU)2016/1628 test cycle terms and country/scope/date; honest no-match, not fabricated excerpt."
+      },
+      {
+        "checkedAt": "2026-10-14T05:13:41.308Z",
+        "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+        "request": 6,
+        "turn": 6,
+        "input": "另外核对一下客户型号 CLIENT200 在德国的产品适配，还是200.5 kW；保留刚才的原文查询。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "120550eb-f08b-4cda-8f1d-e0787d921013",
+        "elapsedMs": 7774,
+        "state": {
+          "tasks": [
+            "product_fit",
+            "knowledge"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200.5,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT200"
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "这次请求没有足够证据，暂时不能给出肯定的法规、市场或产品结论。\n\n下一步：\n1. DEU 在工程机械、200.5 kW、2026年8月13日条件下没有确定的适配结论；请核对产品目录、认证或法规证据。\n2. DEU 的知识库没有检索到匹配原文；请缩小法规名称、污染物、章节或日期范围。\n\n信息参考，不替代正式认证或法律意见",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "findCompatibleProducts",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 200.5
+            },
+            "citationCount": 4
+          },
+          {
+            "valid": true,
+            "tool": "searchKnowledgeBase",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "query": "另外核对一下客户型号 CLIENT200 在 DEU 的产品适配，还是200.5 kW；保留刚才的原文查询。"
+            },
+            "citationCount": 0
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "semanticPassed": false,
+        "semanticReason": "Requested retention of prior Regulation (EU)2016/1628 test cycle query, but KB query was replaced with current product-fit wording. Tasks/filters retained and unknown model fails closed, but source-query continuity incorrect."
+      },
+      {
+        "checkedAt": "2026-10-14T05:14:28.252Z",
+        "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+        "request": 7,
+        "turn": 7,
+        "input": "切换任务，不查法规、产品或原文了。只看巴西的市场指标，基准日期2023-12-31。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "87b3089a-ee90-4da6-825a-7cd543ea6635",
+        "elapsedMs": 4195,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200.5,
+          "asOf": "2023-12-31",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "已保留 BRA · construction · 200.5 kW · 2023-12-31。请补充是否先查看已有全口径市场数据，其他条件不用重复填写。",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "semanticPassed": false,
+        "semanticReason": "Explicit switch to only BRA market at2023-12-31 kept prior construction/power filters and returned clarification instead of market data; no wrong facts, but obsolete query conditions were not cleared."
+      },
+      {
+        "checkedAt": "2026-10-14T05:15:17.664Z",
+        "release": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+        "request": 8,
+        "turn": 8,
+        "input": "查看全口径市场数据，清掉用途、功率和型号这些旧条件，只保留巴西与2023-12-31。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "5a977d7a-1258-498b-bbb6-6d88a81d5551",
+        "elapsedMs": 8846,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": "2023-12-31",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "BRA 的市场指标按实际统计期列示，不能把查询年份当作数据年份。\n\n- 卡车动力 · 年末注册车队: 3,980,714 vehicle — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 客车动力 · 年末注册车队: 1,152,852 vehicle — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 卡车动力 · 年末注册车队同比变化: 2.816008 percent — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 客车动力 · 年末注册车队同比变化: 2.604513 percent — 2023 年；2023-01-01（含）至 2024-01-01（不含）\n- 客车动力 · 年末注册车队: 1,123,588 vehicle — 2022 年；2022-01-01（含）至 2023-01-01（不含）\n- 卡车动力 · 年末注册车队: 3,871,687 vehicle — 2022 年；2022-01-01（含）至 2023-01-01（不含）\n\n发布日期和核验日期不改变统计期，也不能据此推算今年销量或预测。请按卡片中的指标定义使用数据；今年的判断需要补充新一期观测。\n\n[Frota Nacional Dezembro 2023 — por UF e tipo de veículo](https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/frota-de-veiculos-2023)\n[Frota Nacional Dezembro 2022 — por UF e tipo de veículo](https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/frota-de-veiculos-2022)",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "getCountryProfile",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3": "BRA",
+              "asOf": "2023-12-31",
+              "topics": [
+                "market"
+              ]
+            },
+            "citationCount": 15
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true,
+        "semanticPassed": true,
+        "semanticReason": "After explicit reset clarification, only BRA market date remains; returns dated market metrics and source periods without forecast or sales inference."
+      }
+    ],
+    "browserExport": {
+      "savedAt": "2026-10-14T05:28:04.140Z",
+      "sha256": "d50f60219bda45ddb8baf6d7fce23c082706a58a0e7691c1f85d7474a51cdd9e",
+      "localPath": "/Users/jamesky/Downloads/diesel-analysis-025fbe65-3446-4db5-8888-714f9e5710c7.json"
+    },
+    "browserTurns": [
+      {
+        "turn": 1,
+        "input": "I am preparing a first customer conversation about diesel-engine emission requirements. What should I ask before making any compliance claim? Please keep it general; do not look up a country yet.",
+        "answer": "Before making any compliance claim, ask which markets and applications the customer targets, what engine power range and model they use, and which emission standard or certification they need to meet. Also clarify the intended use, timeline, and whether they need documentation or formal certification support.",
+        "passed": true,
+        "reason": "Useful general discovery workflow; no ungrounded regulatory claims or unnecessary refusal."
+      },
+      {
+        "turn": 2,
+        "input": "The customer mentioned NOx. Explain that term in plain English for a salesperson, without quoting a legal limit.",
+        "answer": "NOx is shorthand for nitrogen oxides, gases formed when high-temperature combustion in a diesel engine combines nitrogen and oxygen from the air. In sales conversations, treat it as one of the exhaust pollutants that emission standards regulate, alongside particulates. Ask which standard or certification the customer's market requires rather than quoting any number yourself.",
+        "passed": true,
+        "reason": "Explained NOx without numerical legal limits or jurisdiction claims."
+      },
+      {
+        "turn": 3,
+        "input": "Make that one short sentence I can say to the customer.",
+        "answer": "NOx is a group of gases formed during diesel combustion that emission standards regulate, so let's confirm which standard your market requires.",
+        "passed": true,
+        "reason": "One-sentence rewrite remained relevant and shorter."
+      },
+      {
+        "turn": 4,
+        "input": "Now check Germany: construction equipment, 150.5 kW, effective regulations as of 2026-08-13.",
+        "answer": "Effective regulation lookup: DEU, Construction equipment, 150.5 kW, as of 2026-08-13. This query returned 1 effective record(s): Regulation (EU) 2016/1628 on non-road mobile machinery emission limits (Stage V). The cards show the recorded pollutant limits and applicability; this is not proof of complete legal coverage, equivalent test cycles or approval of any engine model.\n\nFor information only; not a substitute for formal certification or legal advice.\n\n[Regulation (EU) 2016/1628 on requirements relating to gaseous and particulate pollutant emission limits and type-approval for internal combustion engines for non-road mobile machinery (Stage V)](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R1628)",
+        "passed": true,
+        "reason": "DEU construction150.5kW/2026-08-13 grounded effective record, source and limits visible."
+      },
+      {
+        "turn": 5,
+        "input": "Include Japan in that comparison, keeping all the other conditions.",
+        "answer": "Regulatory comparison: for DEU / JPN Construction equipment at 150.5 kW as of 2026-08-13, the effective records have equal numeric values for CO (g/kWh), NOX (g/kWh), differing values for PM (g/kWh), and missing rows for JPN: HC (g/kWh); DEU: NMHC (g/kWh); JPN: PN (e9/kWh); the recorded power-band bounds differ (DEU 130–560.001 kW; JPN 130–560 kW).\n\nMatching numbers do not establish legal equivalence; test cycles were not returned, so no stricter/weaker ranking or sales approval follows—next, obtain the original test-cycle and certification requirements.\n\nFor information only; not a substitute for formal certification or legal advice.\n\n[Regulation (EU) 2016/1628 on requirements relating to gaseous and particulate pollutant emission limits and type-approval for internal combustion engines for non-road mobile machinery (Stage V)](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R1628)\n[特定特殊自動車排出ガスの規制等に関して必要な事項を定める告示（平成十八年三省告示第一号、最終改正令和六年三省告示第四号）](https://www.env.go.jp/content/000398439.pdf)",
+        "passed": true,
+        "reason": "Added JPN while retaining DEU, scope/power/date; differences and missing data explicit."
+      },
+      {
+        "turn": 6,
+        "input": "Replace Japan with China, and change the power to 200.5 kW. Keep Germany and the same date and application.",
+        "answer": "Regulatory comparison: for DEU / CHN Construction equipment at 200.5 kW as of 2026-08-13, the effective records have equal numeric values for CO (g/kWh), HC (g/kWh), differing values for NOX (g/kWh), PM (g/kWh), PN (e9/kWh); the recorded power-band bounds match (130–560.001 kW).\n\nMatching numbers do not establish legal equivalence; test cycles were not returned, so no stricter/weaker ranking or sales approval follows—next, obtain the original test-cycle and certification requirements.\n\nFor information only; not a substitute for formal certification or legal advice.\n\n[Regulation (EU) 2016/1628 on requirements relating to gaseous and particulate pollutant emission limits and type-approval for internal combustion engines for non-road mobile machinery (Stage V)](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R1628)\n[GB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单](https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/201405/t20140530_276305.shtml)",
+        "passed": true,
+        "reason": "Replaced JPN with CHN, changed power200.5; retained DEU/scope/date."
+      },
+      {
+        "turn": 7,
+        "input": "Stop comparing. Check whether our model CLIENT200 can be sold in Germany for those same operating conditions. Do not substitute a demo engine.",
+        "answer": "This request lacks enough evidence for an affirmative regulatory, market, or product conclusion.\n\nNext steps:\n1. DEU lacks sufficient evidence for a conclusive product-fit decision for Construction equipment, 200.5 kW, as of Aug 13, 2026. Check product, certification, and regulatory evidence.\n\nFor information only; not a substitute for formal certification or legal advice.",
+        "passed": true,
+        "reason": "CLIENT200 remained unknown; no Demo substitution or sales approval."
+      },
+      {
+        "turn": 8,
+        "input": "Give me a concise checklist of documents to request from the manufacturer for this model.",
+        "answer": "This turn has not re-verified facts; refer to the earlier evidence cards for what was actually checked. The following is a preparation checklist, not a statement of legally mandatory documents (assessment context: DEU · construction · 200.5 kW · 2026-08-13 · CLIENT200).\n\n- Specification sheet: model identity, rated power, actual application, specification version and supply dates if available.\n- Emission test reports: tested configuration, pollutant definitions, units, test cycles, report version and issuing body.\n- Available certification documents: certificate identity, model/configuration covered, issuer and validity dates.\n- Traceable originals and unresolved gaps: source files/links, missing items and who can supply them.\n\nNone of these materials has been verified by this checklist; no fit, certification or sale approval is established.",
+        "passed": true,
+        "reason": "Neutral manufacturer checklist retained exact context, not a list of verified/legally mandatory documents."
+      },
+      {
+        "turn": 9,
+        "input": "把这个清单改写成一封发给制造商的中文邮件，不要用英文，也不要声称产品已经通过认证。",
+        "answer": "您好，请提供规格表、排放检测报告及已有认证文件，用于核对这些查询条件（DEU · construction · 200.5 kW · 2026-08-13 · CLIENT200）。请尽可能附上文件版本、测试用途与功率、测试循环、签发机构、有效期及可追溯原件。我们会先核对适用性与未解决缺口，再讨论结论，本次索取材料不代表已合规或获准销售。",
+        "passed": true,
+        "reason": "Explicit Chinese overrode English UI; neutral greeting, model/context/no-approval caveat preserved."
+      },
+      {
+        "turn": 10,
+        "input": "再简短一些。",
+        "answer": "Hello, please share the specification sheet, test reports and available certificates for (DEU · construction · 200.5 kW · 2026-08-13 · CLIENT200). Please include document versions and traceable originals. We will verify applicability and remaining gaps; this request does not confirm compliance or permission to sell.",
+        "passed": false,
+        "reason": "再简短一些 switched the Chinese draft to English; should retain draft language."
+      },
+      {
+        "turn": 11,
+        "input": "请继续用中文，不要切回英文；再短一点，保留型号、查询条件和不代表销售许可的提醒。",
+        "answer": "您好，请提供规格表、检测报告及已有证书，用于核对（DEU · construction · 200.5 kW · 2026-08-13 · CLIENT200）。请附上文件版本与可追溯原件。我们会核验适用性和剩余缺口，本次索取材料不代表已合规或获准销售。",
+        "passed": true,
+        "reason": "Explicit Chinese clarification restored language and produced shorter draft with context/caveat."
+      },
+      {
+        "turn": 12,
+        "input": "Does that mean CLIENT200 is approved for sale in Germany? Answer briefly and keep the same assessment conditions.",
+        "answer": "This request lacks enough evidence for an affirmative regulatory, market, or product conclusion.\n\nNext steps:\n1. DEU lacks sufficient evidence for a conclusive product-fit decision for Construction equipment, 200.5 kW, as of Aug 13, 2026. Check product, certification, and regulatory evidence.\n\nFor information only; not a substitute for formal certification or legal advice.",
+        "passed": true,
+        "reason": "After reload, retained DEU/construction200.5/date/model and freshly checked product evidence; drafting did not become permission to sell."
+      }
+    ]
+  },
+  "remaining": [
+    {
+      "kind": "source_query_continuity",
+      "turn": "api/6",
+      "detail": "Retaining the earlier source task did not retain its Regulation (EU)2016/1628 test cycle query; the new product-fit wording was searched instead."
+    },
+    {
+      "kind": "task_filter_reset",
+      "turn": "api/7",
+      "detail": "Switching to market-only kept obsolete application/power filters and asked an unnecessary clarification; explicit reset on api/8 recovered."
+    },
+    {
+      "kind": "draft_language_continuity",
+      "turn": "browser/10",
+      "detail": "Natural Chinese shortening request reverted to English UI language; explicit Chinese clarification on browser/11 recovered."
+    },
+    {
+      "kind": "provider_latency",
+      "check": "chat-provider-sse",
+      "detail": "The original15-second canary timed out at15003ms. Six browser starters later passed without retries. The timeout remains a failure; no longer timeout was used to relabel it."
+    }
+  ],
+  "operatorCommandFailures": [
+    {
+      "step": "independent-host-validation-first-invocation",
+      "exitCode": 70,
+      "reason": "Operator invoked rollback validator via relative path; immutable-entry guard correctly rejected it. Corrected absolute-path read-only validation passed; no rollback action was invoked."
+    }
+  ],
+  "finalReadback": {
+    "health": {
+      "status": "ok",
+      "timestamp": "2026-10-14T05:28:23.642Z",
+      "version": "936a1af58c68418bf37cfbe52ea56732f57e851e"
+    },
+    "readiness": {
+      "status": "ok",
+      "timestamp": "2026-10-14T05:28:25.158Z",
+      "version": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+      "checks": {
+        "database": "ok",
+        "aiChatAdmission": "ok",
+        "aiChatRateLimit": "ok"
+      }
+    },
+    "localMaster": "936a1af58c68418bf37cfbe52ea56732f57e851e",
+    "remoteMaster": "936a1af58c68418bf37cfbe52ea56732f57e851e"
+  },
+  "boundaries": [
+    "No database migrations, seed/publication writes, backup deletion, quota adjustment or temporary database tunnel.",
+    "Public synthetic questions only; no customer documents, API keys or raw signed receipts are recorded.",
+    "No new application edits or deployments after this acceptance; documentation updates are not a new runtime release.",
+    "These short observations are not a long-term reliability/SLO claim."
+  ]
+}

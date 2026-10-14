@@ -15,6 +15,17 @@ export const conversationStateSchema = z.object({
 }).strict();
 export type ConversationState = z.infer<typeof conversationStateSchema>;
 
+// Working memory contains intent and presentation only, never retrieved facts.
+// It survives the bounded prose history, and is authoritative only when signed.
+export const conversationMemorySchema = z.object({
+  sourceRequest: z.string().min(1).max(2_000).nullable(),
+  marketScope: applicationScopeSchema.nullable(),
+  responseLocale: z.enum(["en", "zh-CN"]),
+  draftLength: z.enum(["standard", "brief", "minimal"]),
+  outputKind: z.enum(["evidence", "request_checklist", "request_email"]),
+}).strict();
+export type ConversationMemory = z.infer<typeof conversationMemorySchema>;
+
 // A receipt is opaque to the browser. Display state is never server evidence.
 export const conversationMetadataSchema = z.object({
   conversation: z.object({

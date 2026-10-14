@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-14T00:43:47.471Z",
+      "capturedAt": "2026-10-14T02:15:01.665Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -306,7 +306,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "27a1c0574d3f6422e1f533bb7b9cdcd87625dc4341facfcbd6f57c264948b016",
+      "sourceFingerprint": "9b9787a03fd1fe9c19d0efbb2b6a6d31a0054a55fea00ee394cc5f24058b9bab",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -314,7 +314,7 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-14T00:43:49.707Z",
+      "capturedAt": "2026-10-14T02:15:03.879Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
@@ -620,7 +620,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "a6ac57ff7b5ae666aba7bd9e3868e274d6feb70d88a5fbd2a5bfe09b7281fbe5",
+      "sourceFingerprint": "9115addfa0830007f5a410475340807bd2a1c939ce1a455ef523f2a144c64fe8",
       "viewport": {
         "height": 1000,
         "width": 1600

@@ -7,6 +7,7 @@ import { calculateOpportunityScoreInputSchema, compareMarketsInputSchema, compar
 import { buildEvidenceGapResponse, regulatoryDisclaimer } from "@/domain/ai/evidence-gap-response";
 import { buildMarketProfileResponse } from "@/domain/ai/market-profile-response";
 import { buildRegulationComparisonResponse } from "@/domain/ai/regulation-comparison-response";
+import { buildCountryProfileResponse } from "@/domain/ai/country-profile-response";
 import { compiledEvidenceToolCalls } from "@/server/ai/sales-chat-loop";
 import { evidenceContractAllowsModelText, evidenceNeedsRegulatoryDisclaimer, evidenceQueryWasAnswered,
   type SalesChatEvidenceContract } from "@/server/ai/evidence-contract";
@@ -38,7 +39,8 @@ export function compiledResearchAnswer(contract: SalesChatEvidenceContract, resu
     evidenceQueryWasAnswered(contract, result));
   const summaries = [
     buildRegulationComparisonResponse(verified.filter(result => result.tool === "compareRegulations"), locale, { allowSingleCountry: true }),
-    buildMarketProfileResponse(verified.filter(result => result.tool === "getCountryProfile"), locale),
+    buildMarketProfileResponse(verified.filter(result => result.tool === "getCountryProfile"), locale) ??
+      buildCountryProfileResponse(verified.filter(result => result.tool === "getCountryProfile"), locale),
   ].filter(Boolean);
   let text = full ? summaries.join("\n\n") || (locale === "en"
     ? "The requested evidence checks completed. The cards show the verified records and their limitations; they do not establish any additional compliance or sale approval."
@@ -52,6 +54,7 @@ export function compiledResearchAnswer(contract: SalesChatEvidenceContract, resu
 export function conversationResearchResponse(input: {
   contract: SalesChatEvidenceContract; tools: SalesChatTools; signal: AbortSignal; locale: Locale;
   metadata: (answer: string) => unknown;
+  requestId?: string;
 }): Response {
   const { contract, tools, signal, locale } = input;
   const stream = createUIMessageStream({
@@ -72,6 +75,7 @@ export function conversationResearchResponse(input: {
         const toolCallId = `compiled-evidence-${seen.size}`;
         if (containsEmbeddedReasoningMarkupInValue(call.input)) { failed = true; break; }
         writer.write({ type: "tool-input-available", toolCallId, toolName: call.tool, input: call.input, dynamic: true });
+        const startedAt = performance.now();
         try {
           const result = aiToolResultSchema.parse(await executeCall(call, tools, signal, toolCallId));
           // This is the same provenance, determinism, sufficiency, query and
@@ -89,6 +93,9 @@ export function conversationResearchResponse(input: {
           failed = true;
           writer.write({ type: "tool-output-error", toolCallId, errorText: locale === "en" ? "The query or returned evidence could not be verified." : "查询或返回证据未能通过核验。", dynamic: true });
           break;
+        } finally {
+          console.info(JSON.stringify({ event: "ai.phase", requestId: input.requestId, phase: "evidence",
+            tool: call.tool, durationMs: Math.max(0, performance.now() - startedAt) }));
         }
       }
       const text = compiledResearchAnswer(contract, results, failed, locale);

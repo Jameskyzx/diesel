@@ -91,6 +91,24 @@ contract. Source requests use the resolved state's filters and grounded source
 terms rather than reparsing old country mentions. Required page/section delivery
 and native quoted/Boolean/exclusion search syntax remain binding.
 
+The signed receipt also carries task/presentation working memory, not facts:
+the retained source request survives prose-history truncation, and adding a
+product task does not replace it. Source edits distinguish retain/replace/refine/clear;
+replacements preserve the complete human request, not a model-selected fragment.
+Refinements reuse the existing locator/version/native-query parser; ambiguous OR
+edits and bounded-context overflow require clarification, never silent truncation.
+Market scope is independent of an earlier engine task: a new market-only request
+does not inherit irrelevant engine filters, while explicit market restrictions
+still require a supported query or clarification. Response language and draft
+length persist independently of UI locale, previous answer wording and changed
+query filters. Editing a Chinese draft from an English UI keeps it Chinese until
+the user asks for a language change.
+
+Validated country/profile lookups can finish with a server-authored summary and
+evidence cards instead of an extra model prose call. This does not weaken source,
+date or fact checks; explanations and factual rewrites still use the guarded
+model path. Slow/failed streams remain failures, not successful fallback answers.
+
 Greetings are short; greetings and app-capability help return without a provider
 call. Their signed context supports later references to that reply. Save/export controls appear only after a completed turn
 has a validated structured result (including an honest no-data result, not an

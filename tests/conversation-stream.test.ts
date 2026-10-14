@@ -48,6 +48,32 @@ function execute(answer: string, mode: "compose" | "explain" | "general", userTe
 }
 
 describe("conversational prose still crosses the production evidence boundary", () => {
+  it.each(["country", "regulations"] as const)("completes a validated %s profile without an unnecessary second provider call", async topic => {
+    const question = topic === "regulations" ? "CHN 目前有哪些有效法规？" : "CHN country profile";
+    const model = new MockLanguageModelV4({ doStream: async () => {
+      if (model.doStreamCalls.length > 1) throw new Error("An unnecessary provider request would exceed the latency budget");
+      return { stream: simulateReadableStream({ chunks: [
+        { type: "stream-start", warnings: [] },
+        { type: "tool-call", toolCallId: "profile", toolName: "getCountryProfile", input: JSON.stringify({ countryIso3: "CHN", topics: [topic], asOf: "2026-08-20" }) },
+        { type: "finish", finishReason: { unified: "tool-calls", raw: undefined }, usage },
+      ] }) };
+    } });
+    const sessionId = crypto.randomUUID();
+    const auditRepository = { recordToolCall: async () => undefined };
+    const stream = streamSalesChat({ model, runtimeContext, messages: [{ role: "user", content: question }],
+      trustedUserTexts: [question], selectedCountryIso3: null, sessionId, auditRepository,
+      tools: createSalesChatTools({ auditRepository, sessionId, selectedCountryIso3: null, defaultAsOf: "2026-08-20" }) });
+    const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
+    expect(model.doStreamCalls).toHaveLength(1);
+    expect(body).toContain('"finishReason":"stop"');
+    expect(body).toContain("2026-08-20");
+    expect(body).toContain("Fictional Demo");
+    if (topic === "regulations") {
+      expect(body).toContain("not an engine-specific applicability or sale approval");
+      expect(body).toContain("Effective");
+    }
+    expect(body).not.toContain('"type":"error"');
+  });
   it("answers complete single-country regulation research from validated records without a speculative prose step", async () => {
     const singleState = { ...state, countryIso3s: ["CHN"] };
     const question = "CHN non-road 100 kW emission regulations as of 2026-08-20";

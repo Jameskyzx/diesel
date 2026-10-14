@@ -1016,4 +1016,12 @@ describe("synthetic canary", () => {
       status: null,
     });
   });
+  it("retains received response identity when an SSE body times out, without passing the check", async () => {
+    const check = createCanaryChecks({ asOf: "2026-08-15", includeProviderAi: true }).find(item => item.id === "chat-provider-sse")!;
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(new Response(new ReadableStream({
+      pull(controller) { controller.error(new DOMException("Timeout", "TimeoutError")); },
+    }), { status: 200, headers: { "content-type": "text/event-stream", "x-vercel-ai-ui-message-stream": "v1", "x-request-id": "timed-out-request" } }));
+    await expect(runCanaryCheck({ baseUrl: new URL("https://jamesky.site"), check, fetchImpl, timeoutMs: 15_000 }))
+      .resolves.toMatchObject({ pass: false, errorCode: "TIMEOUT", requestId: "timed-out-request", status: 200 });
+  });
 });

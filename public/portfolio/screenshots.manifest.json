@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-14T02:15:01.665Z",
+      "capturedAt": "2026-10-14T07:04:05.661Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -129,6 +129,7 @@
         "src/domain/admin/parse-market-csv.ts",
         "src/domain/ai/application-scope-intent.ts",
         "src/domain/ai/chat-runtime-context.ts",
+        "src/domain/ai/country-profile-response.ts",
         "src/domain/ai/evidence-gap-response.ts",
         "src/domain/ai/live-eval-observability.ts",
         "src/domain/ai/live-eval-query-contract.ts",
@@ -306,7 +307,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "9b9787a03fd1fe9c19d0efbb2b6a6d31a0054a55fea00ee394cc5f24058b9bab",
+      "sourceFingerprint": "2dca5a41f8f0e88e43c426cc976c1dbf0cf4a8bd9da9f26d93a6e1a06afc0293",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -314,12 +315,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-14T02:15:03.879Z",
+      "capturedAt": "2026-10-14T07:04:07.377Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "bd60acf3a62753155247aab71916d34cb1e487222d678679a7942ca8510c966c",
+      "sha256": "c001b8ffab0cddd33bae0e58885207963d35bec47624540f7328e841da36125f",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -443,6 +444,7 @@
         "src/domain/admin/parse-market-csv.ts",
         "src/domain/ai/application-scope-intent.ts",
         "src/domain/ai/chat-runtime-context.ts",
+        "src/domain/ai/country-profile-response.ts",
         "src/domain/ai/evidence-gap-response.ts",
         "src/domain/ai/live-eval-observability.ts",
         "src/domain/ai/live-eval-query-contract.ts",
@@ -620,7 +622,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "9115addfa0830007f5a410475340807bd2a1c939ce1a455ef523f2a144c64fe8",
+      "sourceFingerprint": "efbffddcad42f793d847c330d7d7b546acc900f3eff9fbf5fd307881108c6035",
       "viewport": {
         "height": 1000,
         "width": 1600

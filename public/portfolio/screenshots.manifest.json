@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "capturedAt": "2026-10-14T17:18:29.912Z",
+      "capturedAt": "2026-10-14T20:34:02.656Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/live-dashboard.jpg",
@@ -241,6 +241,7 @@
         "src/server/ai/conversation-answer.ts",
         "src/server/ai/conversation-context.ts",
         "src/server/ai/conversation-plan.ts",
+        "src/server/ai/conversation-presentation.ts",
         "src/server/ai/conversation-receipt.ts",
         "src/server/ai/conversation-research.ts",
         "src/server/ai/evidence-contract.ts",
@@ -308,7 +309,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "4862f452c4d0a2b34a2eea8a6499c6e10704045cc57f2977797f3789de2e3f01",
+      "sourceFingerprint": "bcbc9d200d548ad7af74d0de07d4e85ad15d1badcd156f208742dc9ceb366c27",
       "viewport": {
         "height": 1000,
         "width": 1600
@@ -316,12 +317,12 @@
       "width": 1600
     },
     {
-      "capturedAt": "2026-10-14T17:18:31.705Z",
+      "capturedAt": "2026-10-14T20:34:04.895Z",
       "height": 1000,
       "locale": "en",
       "path": "public/portfolio/offline-evidence-chat.jpg",
       "route": "/chat?countryIso3=CHN&applicationScope=non-road&powerKw=100&asOf=2026-08-12&productModelCode=DEMO-ENG-200",
-      "sha256": "a51d316184b1823ec6ea0d26d93fcd9eaa162fd08b149cbff36c44f5963a1fbe",
+      "sha256": "b9ba3f8b93ef0f900b267470b5b6438a8df9fe88937d78a905eca4c339e544d1",
       "sourceFiles": [
         "drizzle/0000_initial_schema.sql",
         "drizzle/0001_knowledge_hybrid_search.sql",
@@ -557,6 +558,7 @@
         "src/server/ai/conversation-answer.ts",
         "src/server/ai/conversation-context.ts",
         "src/server/ai/conversation-plan.ts",
+        "src/server/ai/conversation-presentation.ts",
         "src/server/ai/conversation-receipt.ts",
         "src/server/ai/conversation-research.ts",
         "src/server/ai/evidence-contract.ts",
@@ -624,7 +626,7 @@
         "src/server/services/product-fit-service.ts",
         "tsconfig.json"
       ],
-      "sourceFingerprint": "1cebd2a97b7cda4f5736f25f87bbde9b964e4ec188183e3ff2616265ad35f844",
+      "sourceFingerprint": "46c1f69cf7ee7a995c26d5a2d98a04d6ccb92e92e774e6e47eb3382f61eddd6f",
       "viewport": {
         "height": 1000,
         "width": 1600

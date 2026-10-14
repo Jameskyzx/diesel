@@ -138,4 +138,9 @@ describe("signed task and presentation memory, independent of prose history", ()
     expect(buildEvidenceRequestResponse(result)).toContain("does not confirm compliance");
     expect(result.memory).not.toHaveProperty("facts");
   });
+  it("does not accept an unsolicited planner language switch just because the next question uses that language", () => {
+    const result = turn("What does the base period mean?", { mode: "explain", state: base,
+      presentation: { locale: "en", length: "keep" } });
+    expect(result.memory.responseLocale).toBe("zh-CN");
+  });
 });

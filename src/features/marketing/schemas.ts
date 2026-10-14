@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { marketReportingPeriodSchema } from "@/domain/marketing/reporting-period";
 
 import { modelOriginatedProductModelCodeSchema } from "@/domain/ai/model-originated-input";
 import {
@@ -91,6 +92,7 @@ export const compareMarketsInputSchema = z
     applicationScope: applicationScopeSchema.nullable().optional(),
     countryIso3s: countryComparisonListSchema,
     metricCodes: metricCodeListSchema.optional(),
+    marketPeriod: marketReportingPeriodSchema.optional(),
   })
   .strict();
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { marketReportingPeriodSchema } from "@/domain/marketing/reporting-period";
 
 import { containsEmbeddedReasoningMarkup } from "@/domain/ai/reasoning-markup";
 import { modelOriginatedProductModelCodeSchema } from "@/domain/ai/model-originated-input";
@@ -308,6 +309,7 @@ export const salesChatModelKnowledgeSearchInputSchema =
 
 export const getCountryProfileInputSchema = z
   .object({
+    marketPeriod: marketReportingPeriodSchema.optional().describe("Optional half-open market observation interval, distinct from asOf."),
     asOf: isoDateSchema
       .optional()
       .describe("YYYY-MM-DD date used to classify current and future rules."),
@@ -382,6 +384,7 @@ export const searchKnowledgeBaseResultSchema = toolResultBase
 
 export const getCountryProfileResultSchema = toolResultBase
   .extend({
+    marketPeriod: marketReportingPeriodSchema.optional(),
     profile: countryDetailResponseSchema.nullable(),
     requestedTopics: z
       .array(countryProfileTopicSchema)

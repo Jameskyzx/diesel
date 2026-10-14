@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { marketReportingPeriodSchema } from "@/domain/marketing/reporting-period";
 
 import { countryDetailResponseMatchesDeterministicRules } from "@/domain/countries/detail-consistency";
 import { aiKnowledgeSearchResultMatchesDeterministicRules } from "@/domain/knowledge/search-consistency";
@@ -282,6 +283,7 @@ const clientCountryProfileResultSchema = clientToolResultBase
         "requestedTopics must not contain duplicates",
       ),
     resolvedCountryIso3: iso3Schema.nullable(),
+    marketPeriod: marketReportingPeriodSchema.optional(),
     tool: z.literal("getCountryProfile"),
   })
   .strict();

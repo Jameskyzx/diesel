@@ -417,6 +417,7 @@ type CountryProfileRegulation = {
 
 type CountryProfileEvidenceResult = EvidenceBase & {
   informationAsOf: string;
+  marketPeriod?: MarketReportingPeriod;
   profile:
     | null
     | {
@@ -429,7 +430,7 @@ type CountryProfileEvidenceResult = EvidenceBase & {
           currentEffectiveRegulations: readonly CountryProfileRegulation[];
           futureAdoptedRegulations: readonly CountryProfileRegulation[];
           iso3: string;
-          marketMetrics: readonly { countryIso3: string }[];
+          marketMetrics: readonly { countryIso3: string; periodStart: string; periodEnd: string }[];
         };
         status: "available";
       };
@@ -639,7 +640,7 @@ export function countryProfilePayloadMatchesQuery(
     countryIso3 === result.resolvedCountryIso3 &&
     result.profile.asOf === result.informationAsOf &&
     result.profile.country.marketMetrics.every(
-      (metric) => metric.countryIso3 === countryIso3,
+      (metric) => metric.countryIso3 === countryIso3 && observationInReportingPeriod(metric, result.marketPeriod),
     ) &&
     regulations.every(
       (regulation) =>
@@ -2120,3 +2121,4 @@ export function aiEvidenceCitationsMatchFacts(value: unknown): boolean {
     return false;
   }
 }
+import { observationInReportingPeriod, type MarketReportingPeriod } from "@/domain/marketing/reporting-period";

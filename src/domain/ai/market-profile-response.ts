@@ -28,6 +28,8 @@ export function buildMarketProfileResponse(results: readonly AiToolResult[], loc
     sections.push(locale === "en"
       ? `${result.resolvedCountryIso3} market metrics below refer to their recorded observation periods, not the query year.`
       : `${result.resolvedCountryIso3} 的市场指标按实际统计期列示，不能把查询年份当作数据年份。`);
+    if (result.marketPeriod) sections.push((locale === "en" ? "Requested reporting period: " : "请求的统计期：") +
+      marketObservationPeriod(result.marketPeriod.start, result.marketPeriod.end, locale));
     sections.push(metrics.map(metric => {
       const scope = metric.applicationScope === null ? (locale === "en" ? "all applications" : "全口径")
         : applicationScopeLabel(metric.applicationScope, dictionary);

@@ -52,6 +52,7 @@ import {
 } from "@/domain/ai/chat-runtime-context";
 
 type EvidenceQueryExpectation = {
+  marketPeriod?: MarketReportingPeriod;
   applicationScope?: string | null;
   asOf?: string | null;
   countryIso3s?: readonly (string | null)[];
@@ -654,6 +655,7 @@ export function buildSalesChatEvidenceContract(input: {
 }
 
 type ResultQuery = {
+  marketPeriod?: MarketReportingPeriod;
   applicationScope?: string | null;
   asOf?: string | null;
   countryIso3s?: readonly (string | null)[];
@@ -680,6 +682,7 @@ function resultQuery(result: AiToolResult): ResultQuery {
   }
   if (result.tool === "getCountryProfile") {
     return {
+      marketPeriod: result.marketPeriod,
       applicationScope: null,
       asOf: result.informationAsOf,
       countryIso3s: [result.resolvedCountryIso3],
@@ -704,6 +707,7 @@ function resultQuery(result: AiToolResult): ResultQuery {
   }
   if (result.tool === "compareMarkets") {
     return {
+      marketPeriod: result.comparison.query.marketPeriod,
       applicationScope:
         result.comparison.query.applicationScope ?? null,
       countryIso3s: result.comparison.query.countryIso3s,
@@ -762,6 +766,9 @@ function queryMatchesExpectation(
   result: AiToolResult,
 ): boolean {
   const query = resultQuery(result);
+  if ((result.tool === "getCountryProfile" || result.tool === "compareMarkets") &&
+    (query.marketPeriod?.start !== expectation.marketPeriod?.start ||
+      query.marketPeriod?.end !== expectation.marketPeriod?.end)) return false;
 
   if (expectation.countryIso3s !== undefined) {
     if (query.countryIso3s === undefined) {
@@ -1027,3 +1034,4 @@ export function evidenceNeedsRegulatoryDisclaimer(
     );
   });
 }
+import type { MarketReportingPeriod } from "@/domain/marketing/reporting-period";

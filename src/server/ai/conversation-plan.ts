@@ -1,7 +1,7 @@
 import "server-only";
 import { generateText, stepCountIs, tool, type LanguageModel, type LanguageModelUsage } from "ai";
 import { z } from "zod";
-import { conversationMemorySchema, conversationStateSchema, type ConversationMemory, type ConversationState } from "@/features/ai/conversation-state";
+import { conversationMemorySchema, conversationStateSchema, preparationTopicSchema, type ConversationMemory, type ConversationState } from "@/features/ai/conversation-state";
 import { buildConversationBusinessContext, countryIso3sIn, hasExplicitSourceIntent, hasConversationComparisonIntent, filterResetControls } from "@/server/ai/conversation-context";
 import { buildSalesChatEvidenceContract, type SalesChatEvidenceContract } from "@/server/ai/evidence-contract";
 import type { ConversationReceipt } from "@/server/ai/conversation-receipt";
@@ -9,6 +9,7 @@ import type { ChatRuntimeContext } from "@/domain/ai/chat-runtime-context";
 import type { Locale } from "@/i18n/locale";
 import { buildKnowledgeRequestContext, knowledgeTermsIn } from "@/server/ai/knowledge-request-context";
 import { knowledgeQueryLiteralSpans, knowledgeSignedOperandSpans } from "@/domain/knowledge/query-literal-spans";
+import { explicitMarketReportingPeriod, marketReportingPeriodSchema } from "@/domain/marketing/reporting-period";
 
 export const conversationPlanSchema = z.object({
   mode: z.enum(["research", "explain", "compose", "general", "clarify"]),
@@ -18,7 +19,11 @@ export const conversationPlanSchema = z.object({
   sourceUpdate: z.enum(["retain", "replace", "refine", "clear"]).optional(),
   filterInheritance: z.enum(["compatible", "retain"]).default("compatible"),
   presentation: z.object({ locale: z.enum(["en", "zh-CN"]).nullable(),
-    length: z.enum(["keep", "shorter", "standard"]) }).strict().optional(),
+    length: z.enum(["keep", "shorter", "standard"]),
+    items: z.number().int().min(1).max(8).nullable().optional() }).strict().optional(),
+  preparationTopics: z.array(preparationTopicSchema).min(1).max(8).optional(),
+  marketPeriod: marketReportingPeriodSchema.nullable().optional(),
+  marketPeriodUpdate: z.enum(["retain", "replace", "clear"]).optional(),
 }).strict();
 export type ConversationPlan = z.infer<typeof conversationPlanSchema>;
 export type PreparedConversationTurn = ConversationPlan & {
@@ -60,13 +65,24 @@ export function prepareConversationPlan(input: {
   const current = buildConversationBusinessContext([latest]);
   const reset = filterResetControls(latest);
   const preparationContext = plan.outputKind !== "evidence" ? prior : undefined;
+  const marketOnly = plan.state.tasks.length === 1 && plan.state.tasks[0] === "market";
+  const periodUpdate = plan.marketPeriodUpdate;
+  const reporting = plan.state.tasks.includes("market") && periodUpdate !== "retain" && periodUpdate !== "clear"
+    ? explicitMarketReportingPeriod(latest) : { ambiguous: false };
+  const priorPeriod = prior?.tasks.includes("market") ? input.previous?.memory?.marketPeriod : undefined;
+  const clearPeriod = periodUpdate === "clear" || /(?:不限年份|不限报告期|所有年份|最新(?:市场|统计|数据)|\b(?:all years|any reporting period|latest (?:market |available )?data)\b)/iu.test(latest);
+  const marketPeriod = clearPeriod ? undefined : reporting.period ?? priorPeriod;
+  if (plan.marketPeriod && (!marketPeriod || plan.marketPeriod.start !== marketPeriod.start || plan.marketPeriod.end !== marketPeriod.end))
+    throw new Error("Ungrounded market reporting period");
+  if (periodUpdate === "replace" && !reporting.period) reporting.ambiguous = true;
   const state: ConversationState = { ...plan.state, tasks: [...new Set(plan.state.tasks)],
     countryIso3s: current.countryIso3s.length === 1 && !hasConversationComparisonIntent(latest)
       ? current.countryIso3s : preparationContext && countryIso3sIn(latest).length === 0
         ? preparationContext.countryIso3s : plan.state.countryIso3s,
     powerKw: reset.power || current.hasPowerConflict ? current.powerKw : current.powerKw ?? (preparationContext ? preparationContext.powerKw : plan.state.powerKw),
     applicationScope: reset.scope || current.hasScopeConflict ? current.applicationScope : current.applicationScope ?? (preparationContext ? preparationContext.applicationScope : plan.state.applicationScope),
-    asOf: current.asOf ?? (preparationContext ? preparationContext.asOf : plan.state.asOf),
+    // An annual observation request does not set a regulatory evaluation date.
+    asOf: current.asOf ?? (marketOnly && reporting.period ? prior?.asOf ?? null : preparationContext ? preparationContext.asOf : plan.state.asOf),
     productModelCode: current.productModelCode ?? (preparationContext ? preparationContext.productModelCode : plan.state.productModelCode),
   };
   // Validate after authoritative human scalars are applied, not before them.
@@ -211,6 +227,8 @@ export function prepareConversationPlan(input: {
       runtimeContext: input.runtimeContext, selectedCountryIso3: input.selectedCountryIso3,
       userTexts: [taskText(task, task === "market" ? { ...state, applicationScope: marketScope, powerKw: null, productModelCode: null } : state)],
     });
+    if (task === "market" && marketPeriod) for (const requirement of compiled.requirements)
+      requirement.query.marketPeriod = marketPeriod;
     return compiled;
   });
   const contract: SalesChatEvidenceContract = {
@@ -232,21 +250,32 @@ export function prepareConversationPlan(input: {
   // still enforce the unchanged fact, provenance and publication contracts.
   if (current.hasScopeConflict) contract.missingRequiredParameters.push("applicationScope");
   if (current.hasPowerConflict) contract.missingRequiredParameters.push("powerKw");
+  if (reporting.ambiguous) contract.missingRequiredParameters.push("marketReportingPeriod");
   if (!generalConversation && state.tasks.length === 0) contract.missingRequiredParameters.push("task");
   // Presentation is independent of UI language and is not inferred from the
   // last generated answer. Legacy callers without presentation edits use only
   // explicit language/length controls; every subsequent turn keeps signed state.
   const languageRequests = [...latest.matchAll(/(?:用|使用|以|改成|改为|译成|译为|翻译成|翻译为)\s*(?:简体)?(?:中文|英文)|\b(?:in|into|to|use)\s+(?:simplified\s+)?(?:Chinese|English)\b|(?:中文|英文)(?=.{0,8}(?:邮件|清单))/giu)]
     .filter(match => !/(?:\bnot|\bdon['’]t|不要|别|不)\s*$/iu.test(latest.slice(0, match.index)));
-  const explicitLanguage = languageRequests.at(-1)?.[0];
+  const explicitLanguage = languageRequests.at(-1)?.[0] ?? latest.match(/^\s*(?:(?:simplified\s+)?Chinese|English|简体中文|中文|英文)(?:\s*[,，]?\s*(?:please|谢谢))?[.!。！]?\s*$/iu)?.[0];
   const responseLocale = explicitLanguage ? /(?:English|英文)/iu.test(explicitLanguage) ? "en" : "zh-CN"
-    : plan.presentation?.locale ?? input.previous?.memory?.responseLocale ?? input.locale ?? "en";
+    : input.previous?.memory?.responseLocale ?? input.locale ?? "en";
   const lengthChange = plan.presentation?.length ?? (/(?:缩短|精简|简短|再短|短一点|\b(?:shorten|shorter|short|brief|concise)\b)/iu.test(latest) ? "shorter" : "keep");
   const previousLength = input.previous?.memory?.draftLength ?? "standard";
+  const sameTasks = prior?.tasks.length === state.tasks.length && state.tasks.every(task => prior.tasks.includes(task));
+  const preparationTopics = plan.preparationTopics ?? (sameTasks ? input.previous?.memory?.preparationTopics : undefined);
+  const explicitItems = latest.match(/(?:成|为|最多|只要|仅)\s*([一二两三四五六七八1-8])\s*[点项条]/u)?.[1]
+    ?? latest.match(/\b(one|two|three|four|five|six|seven|eight|[1-8])\s+(?:points?|items?|bullets?)\b/iu)?.[1]?.toLowerCase();
+  const itemNumbers: Record<string, number> = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8,
+    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 };
   const memory: ConversationMemory = conversationMemorySchema.parse({ sourceRequest: state.tasks.includes("knowledge") ? sourceRequest : null,
     sourceRefinements: state.tasks.includes("knowledge") ? sourceRefinements : [],
     marketScope: state.tasks.includes("market") ? marketScope : null, responseLocale,
+    ...(state.tasks.includes("market") && marketPeriod ? { marketPeriod } : {}),
     outputKind: plan.outputKind,
+    ...(preparationTopics ? { preparationTopics: [...new Set(preparationTopics)] } : {}),
+    draftItems: explicitItems ? itemNumbers[explicitItems] ?? Number(explicitItems)
+      : plan.presentation?.items !== undefined ? plan.presentation.items : input.previous?.memory?.draftItems ?? null,
     draftLength: lengthChange === "standard" ? "standard" : lengthChange === "shorter"
       ? previousLength === "standard" ? "brief" : "minimal" : previousLength });
   return { ...plan, sourceTerms, state, memory, contract, generalConversation, previousAnswer: input.previous ? JSON.stringify([
@@ -292,7 +321,9 @@ An open-ended request to prepare a customer conversation or discuss a workflow i
 outputKind: evidence for any factual analysis/verdict or rewriting factual results; request_checklist for a neutral list of materials to obtain for later verification; request_email for a neutral customer email asking for those materials. These two request formats do not assert current facts, required legal documents or a compliance result. Missing product evidence does NOT prevent asking its owner for a specification sheet/test reports/certification documents. Preserve filters/tasks for later, use compose for request_email and explain for request_checklist. Do not classify a guarantee or compliance verdict as a materials request.
 Always provide sourceUpdate, filterInheritance and presentation. sourceUpdate is an edit operation: retain for an unchanged source task, including "keep the earlier source lookup" alongside a different new task; replace for a NEW complete source topic/query; refine for a page/section/version/exclusion change to the existing source task without replacing its topic; clear when the source task is retired or absent. The server preserves the complete human source request and bounded refinements, not a model-selected fragment. Retain the signed sourceRequest even if it has aged out of earlierDialogue. Do not replace it with conversation controls or a new product task. Native quoted/Boolean/signed query syntax and locator requirements must remain complete. Without a previous source request, a source task must use replace, not refine.
 filterInheritance: compatible by default. Adding/replacing countries, power or dates within a task keeps its other filters. A newly selected market task does not inherit an earlier engine's application, power or model. Use retain ONLY when the user explicitly asks the NEW task to reuse those earlier constraints; that may legitimately require clarification, never silently broaden them. Explicit scope in this message always applies. A mixed regulation/market request does not implicitly filter the market using the regulation's old scope.
+Market reporting period is separate from state.asOf (a regulatory evaluation date). Always provide marketPeriodUpdate: replace ONLY when the user asks to query a new reporting period, retain when adding countries, editing a draft, or asking ABOUT an earlier year's observation, clear for an explicit latest/all-years request or no market task. A request for 2023 market data means marketPeriod={start:"2023-01-01",end:"2024-01-01"}, a half-open observation interval, NOT asOf=2023-12-31. Preserve the signed reporting period on retain. Set a new period only from explicit calendar years, never from document IDs, publication dates, legal dates, or a historical year mentioned in an explanation question. Do not claim an asOf date filters market records. Ambiguous or unsupported reporting periods require clarification, not a guessed interval.
 presentation: locale=null means keep the signed responseLocale (or UI locale initially); set en/zh-CN ONLY for a new explicit output-language instruction, never merely because the latest user sentence or UI is in that language. A request to edit/shorten a draft keeps its format and language. length=shorter for any request to make it more concise (regardless of wording/language), standard for an explicit expansion/reset, otherwise keep. These fields change presentation only, not evidence.
+For neutral preparation, preparationTopics selects ONLY the requested material categories, not findings. Defaults follow the active task: market uses market_definitions, market_periods, market_methodology, original_sources; product fit uses specifications, emission_tests, certifications, original_sources; regulations uses regulatory_scope, original_sources. An explicit focus/exclusion replaces the selection; otherwise preserve the signed selection on translation/shortening. Never add product certification materials to a market-only request. presentation.items sets a newly requested maximum bullet count (1–8); omit to retain it, null to remove the limit. Group related requested topics rather than dropping them when reducing bullets.
 sourceTerms: for a new or retained original-source task, copy only meaningful document identifiers and topic phrases VERBATIM from its latest human source question, e.g. ["Regulation (EU) 2016/1628", "test cycle"]. For an explanation follow-up use the authenticated earlier source question, not the generic explanation wording. Do not include conversation controls, excluded countries, queries not to run, or instructions. Retain complete identifiers/pages/sections. Use [] for actual quoted, Boolean or signed native SEARCH operands, or when no source task is requested. Conversational "do not query products or repeat limits" is not Boolean search syntax: still select the document/topic phrases. Metadata is supplied separately, never add a country/application/power to the search terms unless it is part of the actual source topic.
 Select ALL independently requested tasks. Comparing regulations AND providing original sources means [regulations, knowledge]; source-only means [knowledge]. A brief need not imply a product recommendation unless explicitly requested. General concepts such as NOx need no country or power; clear tasks for general mode but retain useful filters for later.
 For explain/compose retain the relevant previous tasks so facts will be re-queried. If previous tasks were [] (a general discussion), keep tasks=[] for its explanation/analogy/rewrite; do NOT invent a knowledge task unless the user explicitly asks for sources. Resolve references such as 'the second country', 'that difference', 'replace Japan with Germany', and declined tasks. A new topic can replace old tasks. Do not treat a request to shorten, translate, or change format as a new factual query topic.
@@ -324,6 +355,7 @@ export function conversationClarification(turn: PreparedConversationTurn, locale
     productModelCode: ["a product model", "产品型号"], targetCountryIso3: ["the target market", "目标市场"],
     knowledgeQuery: ["the document or topic to find", "要找的文件或主题"], task: ["what you want to find out", "想解决的问题"],
     marketApplicationScopeFilter: ["whether you want the available broad market data", "是否先查看已有全口径市场数据"],
+    marketReportingPeriod: ["one reporting year or an explicit year range", "一个统计年份或明确的年份区间"],
   };
   const missing = turn.contract.missingRequiredParameters.map(field => names[field]?.[locale === "en" ? 0 : 1]).filter(Boolean);
   const known = contextText(turn.state);

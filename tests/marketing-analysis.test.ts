@@ -39,6 +39,7 @@ import { evaluateProductFit } from "@/server/services/product-fit-service";
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
 import { aiEvidenceCitationsMatchFacts } from "@/features/ai/evidence-semantics";
 import { aiToolResultSchema } from "@/features/ai/schemas";
+import { buildSalesChatEvidenceContract, evidenceQueryWasAnswered } from "@/server/ai/evidence-contract";
 import {
   opportunityScoreModelToolOutputSchema,
   opportunityScoreResultToModelOutput,
@@ -2396,6 +2397,35 @@ describe("marketing analysis service", () => {
       expect(comparison.sources.map(({ entityId }) => entityId)).not.toContain(
         historicalMetricId,
       );
+      const marketPeriod = { start: "2024-01-01", end: "2025-01-01" };
+      const historical = await compareMarkets({ countryIso3s: ["CHN", "BRA"],
+        metricCodes: ["DEMO_ADDRESSABLE_UNITS"], marketPeriod });
+      expect(historical.metrics[0]?.observations.map(({ id }) => id)).toEqual([historicalMetricId]);
+      expect(historical.metrics[0]?.comparisonStatus).toBe("insufficient_data");
+      expect(historical.sources.map(({ entityId }) => entityId)).toEqual([historicalMetricId]);
+      const profile = await getCountryDetails({ iso3: "BRA", asOf: "2026-07-29", marketPeriod });
+      const result = buildCountryProfileResult({ profile, informationAsOf: "2026-07-29", resolvedCountryIso3: "BRA",
+        requestedTopics: ["market"], marketPeriod });
+      expect(result.marketPeriod).toEqual(marketPeriod);
+      expect(result.evidenceSufficient).toBe(true);
+      if (profile.status !== "available") throw new Error("Expected profile");
+      expect(profile.country.marketMetrics.map(({ id }) => id)).toEqual([historicalMetricId]);
+      expect(clientAiToolResultSchema.safeParse(result).success).toBe(true);
+      const unfilteredContract = buildSalesChatEvidenceContract({ userTexts: ["BRA market data as of 2026-07-29"], selectedCountryIso3: null });
+      expect(evidenceQueryWasAnswered(unfilteredContract, result)).toBe(false);
+      const filteredContract = { ...unfilteredContract, requirements: unfilteredContract.requirements.map(requirement => ({
+        ...requirement, query: { ...requirement.query, marketPeriod },
+      })) };
+      expect(evidenceQueryWasAnswered(filteredContract, result)).toBe(true);
+      const { marketPeriod: _period, ...missingPeriod } = result;
+      expect(_period).toEqual(marketPeriod);
+      expect(evidenceQueryWasAnswered(filteredContract, missingPeriod)).toBe(false);
+      expect(aiToolResultSchema.safeParse({ ...result, marketPeriod: { start: "2025-01-01", end: "2026-01-01" } }).success).toBe(false);
+      expect(clientAiToolResultSchema.safeParse({ ...result, marketPeriod: { start: "2025-01-01", end: "2026-01-01" } }).success).toBe(false);
+      const absentPeriod = { start: "1998-01-01", end: "1999-01-01" };
+      const absent = await getCountryDetails({ iso3: "BRA", marketPeriod: absentPeriod, asOf: "2026-07-29" });
+      expect(buildCountryProfileResult({ profile: absent, marketPeriod: absentPeriod, informationAsOf: "2026-07-29",
+        resolvedCountryIso3: "BRA", requestedTopics: ["market"] })).toMatchObject({ status: "no_data", evidenceSufficient: false });
     } finally {
       await database
         .delete(marketMetrics)

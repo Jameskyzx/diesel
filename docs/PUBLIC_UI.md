@@ -90,6 +90,9 @@ its owner for those materials; model factual prose still needs the full evidence
 contract. Source requests use the resolved state's filters and grounded source
 terms rather than reparsing old country mentions. Required page/section delivery
 and native quoted/Boolean/exclusion search syntax remain binding.
+Regulatory test cycles/methods are separate from product test reports. Concise
+draft labels retain methods and applicability/power/date categories through
+translation, shortening and email conversion; grouping must not omit a category.
 
 The signed receipt also carries task/presentation working memory, not facts:
 the retained source request survives prose-history truncation, and adding a

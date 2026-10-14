@@ -18,7 +18,7 @@ export type ConversationState = z.infer<typeof conversationStateSchema>;
 
 export const preparationTopicSchema = z.enum([
   "specifications", "emission_tests", "certifications", "original_sources",
-  "market_definitions", "market_periods", "market_methodology", "regulatory_scope",
+  "market_definitions", "market_periods", "market_methodology", "regulatory_scope", "regulatory_test_methods",
 ]);
 
 // Working memory contains intent and presentation only, never retrieved facts.
@@ -31,7 +31,7 @@ export const conversationMemorySchema = z.object({
   responseLocale: z.enum(["en", "zh-CN"]),
   draftLength: z.enum(["standard", "brief", "minimal"]),
   outputKind: z.enum(["evidence", "request_checklist", "request_email"]),
-  preparationTopics: z.array(preparationTopicSchema).min(1).max(8).optional(),
+  preparationTopics: z.array(preparationTopicSchema).min(1).max(9).optional(),
   draftItems: z.number().int().min(1).max(8).nullable().optional(),
 }).strict().refine(memory => (memory.sourceRequest?.length ?? 0) +
   memory.sourceRefinements.reduce((size, text) => size + text.length, 0) <= 4_000,

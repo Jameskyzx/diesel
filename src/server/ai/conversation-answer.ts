@@ -21,8 +21,10 @@ const preparationCopy: Record<PreparationTopic, { en: [string, string]; "zh-CN":
     "zh-CN": ["统计报告期", "观测起止日期、发布日期、比较基期及是否为历史数据"] },
   market_methodology: { en: ["statistical methodology", "collection method, sample coverage, calculation definitions, revisions and cross-country comparability"],
     "zh-CN": ["统计方法", "采集方法、样本覆盖、计算口径、修订情况及跨国可比性"] },
-  regulatory_scope: { en: ["regulatory applicability materials", "original text/version, jurisdiction, application, power range, adopted/effective dates and unresolved applicability questions"],
-    "zh-CN": ["法规适用范围材料", "原文与版本、辖区、用途、功率范围、采纳/生效日期及待核实的适用性问题"] },
+  regulatory_scope: { en: ["regulatory application, power ranges and validity dates", "original text/version, jurisdiction, application, power range, adopted/effective dates and unresolved applicability questions"],
+    "zh-CN": ["法规用途、功率范围与适用日期", "原文与版本、辖区、用途、功率范围、采纳/生效日期及待核实的适用性问题"] },
+  regulatory_test_methods: { en: ["regulatory test cycles and measurement methods", "original procedure/version, pollutant definitions, units, operating conditions and comparability limitations; not a product test result"],
+    "zh-CN": ["法规测试循环与测量方法", "原始程序与版本、污染物定义、单位、运行工况及可比性限制；不是产品检测结果"] },
 };
 
 function preparationTopics(turn: PreparedConversationTurn): PreparationTopic[] {
@@ -31,7 +33,7 @@ function preparationTopics(turn: PreparedConversationTurn): PreparationTopic[] {
   const topics: PreparationTopic[] = [];
   if (tasks.some(task => ["market", "opportunity_score", "sales_brief"].includes(task)))
     topics.push("market_definitions", "market_periods", "market_methodology");
-  if (tasks.includes("regulations")) topics.push("regulatory_scope");
+  if (tasks.includes("regulations")) topics.push("regulatory_scope", "regulatory_test_methods");
   if (tasks.includes("product_fit") || tasks.length === 0)
     topics.push("specifications", "emission_tests", "certifications");
   topics.push("original_sources");

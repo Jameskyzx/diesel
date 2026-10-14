@@ -1,0 +1,1082 @@
+{
+  "version": "diesel-production-conversation-invariants-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+  "observedAt": "2026-10-14T20:18:06.526Z",
+  "deployed": true,
+  "productionAcceptanceComplete": false,
+  "pullRequest": {
+    "number": 100,
+    "url": "https://github.com/Jameskyzx/diesel/pull/100",
+    "head": "3fa0342a2629190468e29804c535faa87f29a7bb",
+    "mergedAt": "2026-10-14T18:48:18Z"
+  },
+  "ci": {
+    "pullRequest": {
+      "runId": 38610621750,
+      "attempt": 1,
+      "jobs": 10,
+      "conclusion": "success"
+    },
+    "master": {
+      "runId": 38618270898,
+      "attempt": 1,
+      "head": "77957b0d6bc05dce7067256f668999f3bacb6851",
+      "jobs": [
+        {
+          "name": "Dependency and workflow supply-chain audit",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T18:49:11Z"
+        },
+        {
+          "name": "Linux release handoff (systemd cgroup + real build)",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T18:54:26Z"
+        },
+        {
+          "name": "Secret scanning (gitleaks)",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T18:48:42Z"
+        },
+        {
+          "name": "Linux deployment script contracts",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T18:52:08Z"
+        },
+        {
+          "name": "Lint, typecheck, app coverage, build",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T18:55:18Z"
+        },
+        {
+          "name": "PostgreSQL + pgvector migration smoke",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T18:49:17Z"
+        },
+        {
+          "name": "Portfolio demo via pnpm demo",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T18:58:17Z"
+        },
+        {
+          "name": "Playwright key flows",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T19:38:45Z"
+        },
+        {
+          "name": "Failure-first FDE workflow via pnpm demo:fde",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T18:56:42Z"
+        },
+        {
+          "name": "Required CI gate",
+          "conclusion": "success",
+          "completedAt": "2026-10-14T19:38:50Z"
+        }
+      ],
+      "conclusion": "success"
+    }
+  },
+  "staging": [
+    {
+      "authorization": {
+        "branch": "master",
+        "commit": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "format": "diesel-release-authorization-v1",
+        "origin": {
+          "fetchUrl": "https://github.com/Jameskyzx/diesel.git",
+          "pushUrl": "https://github.com/Jameskyzx/diesel.git",
+          "remoteMaster": "77957b0d6bc05dce7067256f668999f3bacb6851",
+          "remoteMasterReadback": "77957b0d6bc05dce7067256f668999f3bacb6851"
+        },
+        "protection": {
+          "allowDeletions": false,
+          "allowForcePushes": false,
+          "enforceAdmins": true,
+          "requiredCheck": "Required CI gate",
+          "requiredCheckAppId": null,
+          "strict": true
+        },
+        "repository": "Jameskyzx/diesel",
+        "verifiedAt": "2026-10-14T19:39:40.555Z",
+        "workflow": {
+          "gateJobId": 116063194139,
+          "gateJobUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38618270898/job/116063194139",
+          "id": 332591937,
+          "name": "CI",
+          "path": ".github/workflows/ci.yml",
+          "runAttempt": 1,
+          "runId": 38618270898,
+          "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38618270898",
+          "state": "active"
+        }
+      },
+      "commit": "77957b0d6bc05dce7067256f668999f3bacb6851",
+      "format": "diesel-release-stage-v1",
+      "inputDigest": "caa3d97c8caa3a0ab2d6529ae805914274e4e7e13cce67fcc2b7c5f67bb1792d",
+      "releaseDir": "/opt/diesel/releases/77957b0d6bc05dce7067256f668999f3bacb6851",
+      "target": "root@111.228.50.85"
+    },
+    {
+      "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+      "runId": 38618270898,
+      "runAttempt": 1,
+      "artifactId": 11920289935,
+      "archiveSha256": "69b628cae0d65eb32f663c5094a8fc21daf1c6a134966a48de7884480d0b38aa",
+      "destination": "/opt/diesel/release-inputs/77957b0d6bc05dce7067256f668999f3bacb6851/ci-runtime",
+      "temporary": "/private/tmp/diesel-ci-runtime-BKsbpj",
+      "staged": true,
+      "deployed": false
+    }
+  ],
+  "durableRelease": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+      "operationId": "ca14bc6e-1e60-49cd-b7e8-41b9f0eae9f8",
+      "mode": "application",
+      "createdAt": "2026-10-14T19:44:03.838Z",
+      "inputDigest": "caa3d97c8caa3a0ab2d6529ae805914274e4e7e13cce67fcc2b7c5f67bb1792d",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "completed",
+    "unit": {
+      "Id": "diesel-release-77957b0d6bc05dce7067256f668999f3bacb6851.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "Result": "success",
+      "InvocationID": "1d6fc834817f4c3e8171b36504ac286b",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 2437845
+    },
+    "completion": {
+      "operationId": "ca14bc6e-1e60-49cd-b7e8-41b9f0eae9f8",
+      "invocationId": "1d6fc834817f4c3e8171b36504ac286b",
+      "startedAt": "2026-10-14T19:44:04.945Z",
+      "workerPid": 2437845,
+      "completedAt": "2026-10-14T20:00:04.268Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 4429,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 468,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "independentHostValidation": {
+    "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+    "exitCode": 0,
+    "checks": [
+      "host-activation-ledger validate",
+      "rollback-host-release --validate-committed"
+    ],
+    "recordedAt": "2026-10-14T20:02:13Z"
+  },
+  "independentDataReadback": {
+    "checkedAt": "2026-10-14T20:01:51.098Z",
+    "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+    "previousRelease": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+    "beforeAt": "2026-10-14T19:51:27.414Z",
+    "afterAt": "2026-10-14T19:59:13.020Z",
+    "tableCount": 15,
+    "protectedFileCount": 144,
+    "dataContractSha256": "d823b25f2996c0f90fdf0cf2707d960fd980246d969139e98abb9c6e76fc1fd0",
+    "unchanged": true,
+    "current": "/opt/diesel/releases/77957b0d6bc05dce7067256f668999f3bacb6851",
+    "apps": [
+      {
+        "name": "jamesky-api",
+        "pid": 1033,
+        "status": "online",
+        "restarts": 0
+      },
+      {
+        "name": "diesel-demo",
+        "pid": 2476812,
+        "status": "online",
+        "restarts": 0
+      }
+    ]
+  },
+  "independentHttpValidation": {
+    "exitCode": 0,
+    "origins": [
+      "http://127.0.0.1:8788",
+      "https://diesel.jamesky.site"
+    ],
+    "runAs": "diesel",
+    "providerIncluded": false
+  },
+  "publicHealth": {
+    "service": "global-diesel-regulations",
+    "status": "ok",
+    "timestamp": "2026-10-14T20:18:06.526Z",
+    "version": "77957b0d6bc05dce7067256f668999f3bacb6851"
+  },
+  "canary": {
+    "timeoutMs": 15000,
+    "retries": 0,
+    "report": {
+      "checkedAt": "2026-10-14T20:02:45.762Z",
+      "expectedVersion": "77957b0d6bc05dce7067256f668999f3bacb6851",
+      "includeProviderAi": true,
+      "pass": true,
+      "results": [
+        {
+          "durationMs": 168,
+          "errorCode": null,
+          "id": "liveness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/live",
+          "requestId": "8934d3b9-af6b-4504-abb8-8e00f7e3cb13",
+          "status": 200
+        },
+        {
+          "durationMs": 243,
+          "errorCode": null,
+          "id": "readiness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/ready",
+          "requestId": "beeb8cef-264a-4d55-af06-ca6b54ed460e",
+          "status": 200
+        },
+        {
+          "durationMs": 1522,
+          "errorCode": null,
+          "id": "country-decision-summary",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-14",
+          "requestId": "83785269-e4ca-4f4c-8056-12da38e11bff",
+          "status": 200
+        },
+        {
+          "durationMs": 2774,
+          "errorCode": null,
+          "id": "country-decision-no-data",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-14",
+          "requestId": "4a10510a-b4f8-4052-bee7-1682424fd0b6",
+          "status": 200
+        },
+        {
+          "durationMs": 119,
+          "errorCode": null,
+          "id": "public-products",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/products",
+          "requestId": "afe58cd3-6810-4da5-adb8-bb647d76d8c6",
+          "status": 200
+        },
+        {
+          "durationMs": 1010,
+          "errorCode": null,
+          "id": "chat-direct-sse",
+          "method": "POST",
+          "pass": true,
+          "path": "/api/chat",
+          "requestId": "697c499a-3f68-41ca-860a-ae0c5845a93c",
+          "status": 200
+        },
+        {
+          "durationMs": 4798,
+          "errorCode": null,
+          "id": "chat-provider-sse",
+          "method": "POST",
+          "pass": true,
+          "path": "/api/chat",
+          "requestId": "9ddc2753-c16b-4011-82d6-f8abd156d8d0",
+          "status": 200
+        }
+      ],
+      "runError": null,
+      "targetOrigin": "https://diesel.jamesky.site",
+      "version": "synthetic-canary-v5"
+    }
+  },
+  "liveStarters": {
+    "retries": 0,
+    "actualReport": {
+      "path": "test-results/live-1792008177949/report.json",
+      "sha256": "8fdc43100d1499826df77d280ae6f28329aaa790a7c7c7319e28bb44a566d674",
+      "bytes": 2162290,
+      "stats": {
+        "startTime": "2026-10-14T20:02:57.950Z",
+        "duration": 44054.046,
+        "expected": 6,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "errors": []
+    }
+  },
+  "adaptiveConversation": {
+    "apiPath": ".data/release/production-conversation-778aa973-bdb6-4992-ba00-b2589764be8a.jsonl",
+    "apiProtocolPassed": 12,
+    "browserVisibleCompletionPassed": 8,
+    "browserSubmitActions": 8,
+    "requestCount": 20,
+    "semanticPassed": 15,
+    "semanticFailed": 5,
+    "apiResults": [
+      {
+        "checkedAt": "2026-10-14T20:04:16.615Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 1,
+        "turn": 1,
+        "input": "我有一台客户自有的 CLIENT-200 柴油机，用于工程机械，200 kW。按 2026-08-13 的德国要求，请核查产品合规适配；没有证据的地方请明确说明。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "8bbf71c6-49ca-4bf0-ae40-fb427f9762df",
+        "elapsedMs": 8458,
+        "state": {
+          "tasks": [
+            "regulations",
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT-200"
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "部分任务仍有证据缺口；已核验记录不能代替缺失部分的结论。\n\n有效法规查询：DEU，工程机械，200 kW，基准日期 2026-08-13。本次返回 1 条已生效记录：Regulation (EU) 2016/1628 on non-road mobile machinery emission limits (Stage V)。已记录的污染物限值和适用条件见证据卡片；这不证明法规覆盖完整、测试循环等同或任何型号已获准销售。\n\n信息参考，不替代正式认证或法律意见\n\n[Regulation (EU) 2016/1628 on requirements relating to gaseous and particulate pollutant emission limits and type-approval for internal combustion engines for non-road mobile machinery (Stage V)](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R1628)\n\n这次请求没有足够证据支持完整的肯定结论。已成功的结构化卡片仍可单独查看。\n\n下一步：\n1. DEU 在工程机械、200 kW、2026年8月13日条件下没有确定的适配结论；请核对产品目录、认证或法规证据。\n\n信息参考，不替代正式认证或法律意见",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareRegulations",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3s": [
+                "DEU"
+              ],
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 200
+            },
+            "citationCount": 9
+          },
+          {
+            "valid": true,
+            "tool": "findCompatibleProducts",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 200
+            },
+            "citationCount": 4
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:04:33.792Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 2,
+        "turn": 2,
+        "input": "那我应该向客户补齐哪些资料，才能继续核实这台机型？先给我一份中性的中文清单，不要替它下合规结论。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "23f1487f-ec0f-4104-ba9e-a1169283fd03",
+        "elapsedMs": 3265,
+        "state": {
+          "tasks": [
+            "regulations",
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT-200"
+        },
+        "mode": "explain",
+        "conversationReceiptPresent": true,
+        "text": "本轮没有重新核验事实。这是材料准备清单，不是法定必备文件清单（DEU · construction · 200 kW · 2026-08-13 · CLIENT-200）。已查到的内容请以此前证据卡片为准。\n\n- 规格表: 型号身份、额定功率、实际用途、规格版本及已有供应日期\n- 排放检测报告: 受测配置、污染物定义、单位、测试循环、报告版本与出具机构\n- 已有认证文件: 证书身份、覆盖的型号/配置、签发机构与有效期\n- 法规用途、功率范围与适用日期: 原文与版本、辖区、用途、功率范围、采纳/生效日期及待核实的适用性问题\n- 法规测试循环与测量方法: 原始程序与版本、污染物定义、单位、运行工况及可比性限制；不是产品检测结果\n- 可追溯原件及未解决缺口: 来源文件或链接、版本、缺少项目以及可提供材料的负责人\n\n以上材料均待核实，不构成产品适配、认证或销售许可结论。",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:04:50.636Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 3,
+        "turn": 3,
+        "input": "再简短一些。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "bb9383dc-a939-4f7c-90c8-b720ef5dc12a",
+        "elapsedMs": 3614,
+        "state": {
+          "tasks": [
+            "regulations",
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT-200"
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "本轮没有重新核验事实。这是材料准备清单，不是法定必备文件清单（DEU · construction · 200 kW · 2026-08-13 · CLIENT-200）。\n\n- 规格表\n- 排放检测报告\n- 已有认证文件\n- 法规用途、功率范围与适用日期\n- 法规测试循环与测量方法\n- 可追溯原件及未解决缺口\n\n以上材料均待核实，不构成产品适配、认证或销售许可结论。",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:05:17.466Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 4,
+        "turn": 4,
+        "input": "把这份清单改成一封简短的英文邮件，向客户索取材料。请保留待核实的语气。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "360a8eea-5c51-412c-b3d5-a448fe13cf82",
+        "elapsedMs": 4692,
+        "state": {
+          "tasks": [
+            "regulations",
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT-200"
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "Hello, please share specification sheet; emission test reports; available certification documents; regulatory application, power ranges and validity dates; regulatory test cycles and measurement methods; traceable originals and unresolved gaps for (DEU · construction · 200 kW · 2026-08-13 · CLIENT-200). This request does not confirm compliance or permission to sell.",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:05:34.771Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 5,
+        "turn": 5,
+        "input": "只把邮件里的目标市场从德国改成法国，其余条件和英文保持不变；这一轮不用重新查询。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "50bfcbfe-5ca3-42f3-a882-f9414ffeed18",
+        "elapsedMs": 3191,
+        "state": {
+          "tasks": [
+            "regulations",
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "FRA"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 200,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT-200"
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "Hello, please share specification sheet; emission test reports; available certification documents; regulatory application, power ranges and validity dates; regulatory test cycles and measurement methods; traceable originals and unresolved gaps for (FRA · construction · 200 kW · 2026-08-13 · CLIENT-200). This request does not confirm compliance or permission to sell.",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:05:59.650Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 6,
+        "turn": 6,
+        "input": "现在不写邮件了，真正查一下法国 150 kW 的适配情况，其余条件沿用。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "be2d1047-ad83-482c-b44b-9f9b9d22c265",
+        "elapsedMs": 7613,
+        "state": {
+          "tasks": [
+            "regulations",
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "FRA"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 150,
+          "asOf": "2026-08-13",
+          "productModelCode": "CLIENT-200"
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "Some requested evidence is still missing; verified records do not establish the missing conclusions.\n\nEffective regulation lookup: FRA, Construction equipment, 150 kW, as of 2026-08-13. This query returned 1 effective record(s): Regulation (EU) 2016/1628 on non-road mobile machinery emission limits (Stage V). The cards show the recorded pollutant limits and applicability; this is not proof of complete legal coverage, equivalent test cycles or approval of any engine model.\n\nFor information only; not a substitute for formal certification or legal advice.\n\n[Regulation (EU) 2016/1628 on requirements relating to gaseous and particulate pollutant emission limits and type-approval for internal combustion engines for non-road mobile machinery (Stage V)](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R1628)\n\nThis request lacks enough evidence for a complete affirmative conclusion. Successful structured cards remain independently reviewable.\n\nNext steps:\n1. FRA lacks sufficient evidence for a conclusive product-fit decision for Construction equipment, 150 kW, as of Aug 13, 2026. Check product, certification, and regulatory evidence.\n\nFor information only; not a substitute for formal certification or legal advice.",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareRegulations",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3s": [
+                "FRA"
+              ],
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 150
+            },
+            "citationCount": 9
+          },
+          {
+            "valid": true,
+            "tool": "findCompatibleProducts",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "FRA",
+              "asOf": "2026-08-13",
+              "applicationScope": "construction",
+              "powerKw": 150
+            },
+            "citationCount": 4
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:06:20.953Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 7,
+        "turn": 7,
+        "input": "接下来换一个任务：只看巴西 2023 年的市场数据，中文回答，先不查法规或产品。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "3af7fe65-e75d-49c7-a582-ee30f7248445",
+        "elapsedMs": 5207,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "BRA market metrics below refer to their recorded observation periods, not the query year.\n\nRequested reporting period: 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive\n\n- Truck power · 年末注册车队: 3,980,714 vehicle — 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive\n- Bus power · 年末注册车队: 1,152,852 vehicle — 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive\n- Truck power · 年末注册车队同比变化: 2.816008 percent — 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive\n- Bus power · 年末注册车队同比变化: 2.604513 percent — 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive\n\nThese are historical observations, not 2026 data. Publication and verification dates do not change the observation period. Do not extrapolate these values to current sales or forecasts; check each metric's definition and obtain a newer observation for a current-year decision.\n\n[Frota Nacional Dezembro 2023 — por UF e tipo de veículo](https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/frota-de-veiculos-2023)",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "getCountryProfile",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3": "BRA",
+              "asOf": "2026-08-13",
+              "marketPeriod": {
+                "start": "2023-01-01",
+                "end": "2024-01-01"
+              },
+              "topics": [
+                "market"
+              ]
+            },
+            "citationCount": 13
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:06:51.093Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 8,
+        "turn": 8,
+        "input": "把中国也加上，和巴西比较同一年的这些市场指标。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "e091d080-90bb-479a-9cfa-dc312b686cf0",
+        "elapsedMs": 4296,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "This request lacks enough evidence for an affirmative regulatory, market, or product conclusion.\n\nNext steps:\n1. Requested reporting period: 2023 calendar year; 2023-01-01 inclusive to 2024-01-01 exclusive\n2. No directly comparable market metric was found. Specify a metric and align period, unit, currency, methodology, and application.\n\nFor information only; not a substitute for formal certification or legal advice.",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareMarkets",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3s": [
+                "BRA",
+                "CHN"
+              ],
+              "marketPeriod": {
+                "start": "2023-01-01",
+                "end": "2024-01-01"
+              }
+            },
+            "citationCount": 8
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:07:13.739Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 9,
+        "turn": 9,
+        "input": "这次请用中文列出为这个市场比较需要补齐的资料，重点是指标定义、统计范围、单位和 2023 年的观测期；不需要产品认证文件。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "bfa06e5a-9534-47b9-b929-d0c71dc12ffa",
+        "elapsedMs": 3648,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "explain",
+        "conversationReceiptPresent": true,
+        "text": "本轮没有重新核验事实。材料准备清单（BRA / CHN · 2026-08-13 · 统计期: 2023 年；2023-01-01（含）至 2024-01-01（不含））：\n\n- 市场统计定义\n- 统计报告期\n- 统计方法\n- 可追溯原件及未解决缺口\n\n以上材料均待核实，不构成产品适配、认证或销售许可结论。",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:07:45.124Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 10,
+        "turn": 10,
+        "input": "压成两条英文要点，但保留刚才要求的市场资料内容。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "acf441df-ffd7-4f00-b0d6-b85d63e67d63",
+        "elapsedMs": 4810,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "compose",
+        "conversationReceiptPresent": true,
+        "text": "本轮没有重新核验事实。材料准备清单（BRA / CHN · 2026-08-13 · 统计期: 2023 年；2023-01-01（含）至 2024-01-01（不含））：\n\n- 市场统计定义；统计报告期\n- 统计方法；可追溯原件及未解决缺口\n\n以上材料均待核实，不构成产品适配、认证或销售许可结论。",
+        "tools": [],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:08:14.867Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 11,
+        "turn": 11,
+        "input": "现在回到事实查询，请用中文比较巴西和中国 2022 年的市场数据，不是继续改写清单。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "01ccfb02-c232-4688-af4e-d846ee394614",
+        "elapsedMs": 4719,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA",
+            "CHN"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "这次请求没有足够证据，暂时不能给出肯定的法规、市场或产品结论。\n\n下一步：\n1. 请求的统计期：2022 年；2022-01-01（含）至 2023-01-01（不含）\n2. 市场比较没有找到可直接比较的指标；请指定指标，并确保期间、单位、币种、口径和应用场景一致。\n\n信息参考，不替代正式认证或法律意见",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "compareMarkets",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3s": [
+                "BRA",
+                "CHN"
+              ],
+              "marketPeriod": {
+                "start": "2022-01-01",
+                "end": "2023-01-01"
+              }
+            },
+            "citationCount": 4
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-14T20:08:31.824Z",
+        "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+        "request": 12,
+        "turn": 12,
+        "input": "那先只看巴西，年份别变。把库里有的指标列出来。",
+        "locale": "zh-CN",
+        "status": 200,
+        "requestId": "2323d3c3-9232-497d-85aa-13d1c7c62e05",
+        "elapsedMs": 5402,
+        "state": {
+          "tasks": [
+            "market"
+          ],
+          "countryIso3s": [
+            "BRA"
+          ],
+          "applicationScope": null,
+          "powerKw": null,
+          "asOf": "2026-08-13",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "BRA 的市场指标按实际统计期列示，不能把查询年份当作数据年份。\n\n请求的统计期：2022 年；2022-01-01（含）至 2023-01-01（不含）\n\n- 客车动力 · 年末注册车队: 1,123,588 vehicle — 2022 年；2022-01-01（含）至 2023-01-01（不含）\n- 卡车动力 · 年末注册车队: 3,871,687 vehicle — 2022 年；2022-01-01（含）至 2023-01-01（不含）\n\n这些是历史观测，不能当作 2026 年的数据。发布日期和核验日期不改变统计期，也不能据此推算今年销量或预测。请按卡片中的指标定义使用数据；今年的判断需要补充新一期观测。\n\n[Frota Nacional Dezembro 2022 — por UF e tipo de veículo](https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/frota-de-veiculos-2022)",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "getCountryProfile",
+            "status": "ok",
+            "evidenceSufficient": true,
+            "query": {
+              "countryIso3": "BRA",
+              "asOf": "2026-08-13",
+              "marketPeriod": {
+                "start": "2022-01-01",
+                "end": "2023-01-01"
+              },
+              "topics": [
+                "market"
+              ]
+            },
+            "citationCount": 11
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      }
+    ],
+    "apiVerdicts": [
+      {
+        "turn": 1,
+        "channel": "https",
+        "passed": true,
+        "observation": "DEU/construction/200 kW/2026-08-13/CLIENT-200 retained; regulation evidence separated from unknown-product no_data; no sales approval claim."
+      },
+      {
+        "turn": 2,
+        "channel": "https",
+        "passed": true,
+        "observation": "Neutral Chinese checklist covers product specifications/tests/certificates and regulation scope/test methods; explicit unverified/non-statutory status, no fresh tools."
+      },
+      {
+        "turn": 3,
+        "channel": "https",
+        "passed": true,
+        "observation": "Shortened prior checklist while retaining Chinese, CLIENT-200 and exact jurisdiction/scope/power/date; no factual tool calls."
+      },
+      {
+        "turn": 4,
+        "channel": "https",
+        "passed": true,
+        "observation": "Explicit English mail request produces concise English materials request with original conditions and no compliance/sales assertion; no tools."
+      },
+      {
+        "turn": 5,
+        "channel": "https",
+        "passed": true,
+        "observation": "Country-only mail edit changes DEU to FRA, preserves English/200 kW/date/model, and performs zero fact queries."
+      },
+      {
+        "turn": 6,
+        "channel": "https",
+        "passed": true,
+        "observation": "Explicit research exits compose mode; factual tools receive FRA/150 kW/construction/2026-08-13, unknown CLIENT-200 remains; affirmative fit still refused. Prior explicit English is retained."
+      },
+      {
+        "turn": 7,
+        "channel": "https",
+        "passed": false,
+        "observation": "Market-only BRA 2023 query is correct and removes scope/power/model, keeping observation period separate from asOf. However explicit 中文回答 was ignored after prior English output: response remains English.",
+        "failure": "explicit_output_locale_not_overriding_prior_english"
+      },
+      {
+        "turn": 8,
+        "channel": "https",
+        "passed": false,
+        "observation": "BRA+CHN retains 2023 period with no stale product filters; compareMarkets returns honest no_data for noncomparable definitions. Wrong English from turn 7 persists despite prior explicit Chinese request.",
+        "failure": "inherited_output_locale_after_failed_override"
+      },
+      {
+        "turn": 9,
+        "channel": "https",
+        "passed": false,
+        "observation": "Chinese restored with 用中文; list is market-only, excludes certification, retains 2023 reporting period. But condensed labels omit explicitly requested units/statistical coverage.",
+        "failure": "short_market_checklist_loses_requested_units_and_scope"
+      },
+      {
+        "turn": 10,
+        "channel": "https",
+        "passed": false,
+        "observation": "Exactly two bullets and market-only topics retained, but explicit 两条英文要点 still answered Chinese; requested units/scope still absent.",
+        "failure": "explicit_language_modifier_ignored_and_short_labels_lossy"
+      },
+      {
+        "turn": 11,
+        "channel": "https",
+        "passed": true,
+        "observation": "Explicit factual 2022 research exits drafting, asks compareMarkets BRA+CHN with 2022 half-open period; correct Chinese and honest noncomparability."
+      },
+      {
+        "turn": 12,
+        "channel": "https",
+        "passed": true,
+        "observation": "Country-only narrowing keeps 2022 half-open period; BRA historical counts returned with original source and no old engine filters."
+      }
+    ],
+    "browserResults": [
+      {
+        "turn": 13,
+        "question": "请用中文帮我查德国工程机械 120 kW，基准日期 2026-08-13：只检索 EU 2016/1628 中柴油机排放测试循环及原文章节的来源，先不做产品适配。",
+        "answer": "这次请求没有足够证据，暂时不能给出肯定的法规、市场或产品结论。\n\n下一步：\n\nDEU 的知识库没有检索到匹配原文；请缩小法规名称、污染物、章节或日期范围。\n\n信息参考，不替代正式认证或法律意见",
+        "sourceQuery": "EU 2016/1628 柴油机排放测试循环",
+        "passed": true
+      },
+      {
+        "turn": 14,
+        "question": "保留刚才那项来源检索，检索词不要换掉。同时检查客户自有 CLIENT-200 的产品适配，国家、用途、功率和日期都沿用刚才的条件。",
+        "answer": "这次请求没有足够证据，暂时不能给出肯定的法规、市场或产品结论。\n\n下一步：\n\nDEU 的知识库没有检索到匹配原文；请缩小法规名称、污染物、章节或日期范围。\nDEU 在工程机械、120 kW、2026年8月13日条件下没有确定的适配结论；请核对产品目录、认证或法规证据。\n\n信息参考，不替代正式认证或法律意见",
+        "sourceQuery": "EU 2016/1628 柴油机排放测试循环 原文章节",
+        "originalSourceQuery": "EU 2016/1628 柴油机排放测试循环",
+        "productConditions": {
+          "country": "DEU",
+          "scope": "construction",
+          "powerKw": 120,
+          "date": "2026-08-13",
+          "model": "CLIENT-200"
+        },
+        "passed": false,
+        "failure": "Explicit keep-query instruction still allows planner to add search terms; product evidence boundary and inherited conditions are correct."
+      },
+      {
+        "turn": 15,
+        "question": "先停下来源检索和产品适配。改为比较日本与中国的工程机械 120 kW 排放要求，日期沿用。",
+        "answer": "法规比较：按 2026-08-13、工程机械 120 kW 比较 JPN / CHN 的已生效记录：数值相同的项目为CO (g/kWh)，数值不同的项目为NOX (g/kWh)、PM (g/kWh)；未返回的项目为 JPN: HC (g/kWh)；CHN: NMHC (g/kWh)；JPN: PN (e9/kWh)；记录中的功率段边界不同（JPN 75–130 kW; CHN 56–130 kW）。\n\n相同数值也不等于法规或认证要求等同；本次未返回测试循环，不能据此排名哪国更严或批准销售，下一步请索取原始测试循环与认证要求。\n\n信息参考，不替代正式认证或法律意见\n\n特定特殊自動車排出ガスの規制等に関して必要な事項を定める告示（平成十八年三省告示第一号、最終改正令和六年三省告示第四号）\n\nGB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单",
+        "conditions": {
+          "countries": [
+            "JPN",
+            "CHN"
+          ],
+          "scope": "construction",
+          "powerKw": 120,
+          "date": "2026-08-13"
+        },
+        "passed": true
+      },
+      {
+        "turn": 16,
+        "question": "卡片里日本 NOx 是 0.4，中国是 3.3。只凭这两个数，能不能直接说中国更宽松、产品更容易卖？为什么？",
+        "answer": "不能。单看 NOx 数值不能判定中国更宽松，也不能推出产品更容易卖：两国功率段边界不同（JPN 75–130 kW，CHN 56–130 kW），且本次未返回测试循环，数值不可直接互换比较；此外 PM、PN、HC/NMHC 等项目也不同，销售还取决于认证与适配，而非单一限值。\n\n信息参考，不替代正式认证或法律意见\n\n特定特殊自動車排出ガスの規制等に関して必要な事項を定める告示（平成十八年三省告示第一号、最終改正令和六年三省告示第四号）\n\nGB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单\n\n证据评估日期：2026-08-13。",
+        "passed": true,
+        "observation": "Rejects unsupported strictness/sales ranking; explicitly cites differing power ranges, absent test cycles, other pollutant definitions and certifications."
+      },
+      {
+        "turn": 17,
+        "question": "那列一份待核实的资料清单：法规原文、测试循环和测量方法、功率段和用途范围，以及适用日期。不要产品认证资料。",
+        "answer": "本轮没有重新核验事实。这是材料准备清单，不是法定必备文件清单（JPN / CHN · construction · 120 kW · 2026-08-13）。已查到的内容请以此前证据卡片为准。\n\n法规用途、功率范围与适用日期: 原文与版本、辖区、用途、功率范围、采纳/生效日期及待核实的适用性问题\n法规测试循环与测量方法: 原始程序与版本、污染物定义、单位、运行工况及可比性限制；不是产品检测结果\n可追溯原件及未解决缺口: 来源文件或链接、版本、缺少项目以及可提供材料的负责人\n\n以上材料均待核实，不构成产品适配、认证或销售许可结论。",
+        "passed": true,
+        "observation": "Regulation originals, test cycles/methods, power/application/date retained; no product certification item or new factual claim."
+      },
+      {
+        "turn": 18,
+        "question": "Please reduce that to two concise bullet points in English, keeping the original regulations, test cycles, power ranges, applications and dates.",
+        "answer": "This turn has not re-verified facts. This is a preparation checklist, not a statement of legally mandatory documents (JPN / CHN · construction · 120 kW · 2026-08-13).\n\nregulatory application, power ranges and validity dates\nregulatory test cycles and measurement methods; traceable originals and unresolved gaps\n\nNone of these materials has been verified; no fit, certification or sale approval is established.",
+        "passed": true,
+        "observation": "Exactly two English bullets retain regulatory applicability, power/date, test cycles/methods and traceable originals; explicit unverified boundary."
+      },
+      {
+        "turn": 19,
+        "question": "Now return to factual research: compare both countries at 80 kW using the same application and date. Do not rewrite the checklist.",
+        "answer": "Regulatory comparison: for JPN / CHN Construction equipment at 80 kW as of 2026-08-13, the effective records have equal numeric values for CO (g/kWh), differing values for NOX (g/kWh), PM (g/kWh), and missing rows for JPN: HC (g/kWh); CHN: NMHC (g/kWh); JPN: PN (e9/kWh); the recorded power-band bounds differ (JPN 75–130 kW; CHN 56–130 kW).\n\nMatching numbers do not establish legal equivalence; test cycles were not returned, so no stricter/weaker ranking or sales approval follows—next, obtain the original test-cycle and certification requirements.\n\nFor information only; not a substitute for formal certification or legal advice.\n\n特定特殊自動車排出ガスの規制等に関して必要な事項を定める告示（平成十八年三省告示第一号、最終改正令和六年三省告示第四号）\n\nGB 20891-2014 非道路移动机械用柴油机排气污染物排放限值及测量方法（中国第三、四阶段）及第 1 号修改单",
+        "conditions": {
+          "countries": [
+            "JPN",
+            "CHN"
+          ],
+          "scope": "construction",
+          "powerKw": 80,
+          "date": "2026-08-13"
+        },
+        "passed": true
+      },
+      {
+        "turn": 20,
+        "question": "Only Japan now, please. Keep the other conditions unchanged.",
+        "answer": "Effective regulation lookup: JPN, Construction equipment, 80 kW, as of 2026-08-13. This query returned 1 effective record(s): オフロード法 平成26年（2014年）ディーゼル特殊自動車排出ガス基準. The cards show the recorded pollutant limits and applicability; this is not proof of complete legal coverage, equivalent test cycles or approval of any engine model.\n\nFor information only; not a substitute for formal certification or legal advice.\n\n特定特殊自動車排出ガスの規制等に関して必要な事項を定める告示（平成十八年三省告示第一号、最終改正令和六年三省告示第四号）",
+        "conditions": {
+          "countries": [
+            "JPN"
+          ],
+          "scope": "construction",
+          "powerKw": 80,
+          "date": "2026-08-13"
+        },
+        "passed": true
+      }
+    ],
+    "remainingFailureClasses": [
+      "explicit response-language modifiers are ignored",
+      "short material lists omit units and statistical coverage",
+      "retained source task is re-projected into different search terms"
+    ],
+    "noTimeoutObserved": true,
+    "retries": 0,
+    "claims": "Browser observations verify visible completion/answers/cards, not a separately captured raw SSE transcript. API turns retain their actual protocol results. No result is replaced by a retry."
+  },
+  "capacity": {
+    "checkedAt": "2026-10-14T20:01:51.211Z",
+    "release": "77957b0d6bc05dce7067256f668999f3bacb6851",
+    "policy": {
+      "version": "diesel-capacity-policy-v1",
+      "minimumReleaseFreeBytes": 5368709120,
+      "warningFreeBytes": 8589934592,
+      "minimumFreeInodes": 20000,
+      "maximumReleaseUsedPercent": 95,
+      "warningUsedPercent": 85,
+      "databaseBackupDeletion": "never",
+      "incidentRecordDeletion": "never"
+    },
+    "totalBytes": 63089594368,
+    "freeBytes": 6325735424,
+    "totalInodes": 3932160,
+    "freeInodes": 2708300,
+    "usedPercent": 89.97,
+    "releaseAllowed": true,
+    "warning": true,
+    "remedy": "Only reviewed inactive build-cache cleanup is permitted automatically; preserve current/rollback releases, all database backups and incident records. Archive to approved external storage or expand capacity before the next release if necessary."
+  },
+  "preservation": {
+    "databaseSchemaChanged": false,
+    "fixturesAdded": false,
+    "quotaChanged": false,
+    "timeoutWidened": false,
+    "databaseTunnelUsed": false,
+    "backupsRemoved": false,
+    "additionalJournalCleanup": false,
+    "priorFailureRecord": "docs/evidence/operations/production-conversation-admission-2026-10-15.json"
+  },
+  "limits": [
+    "This is an operator observation, not externally signed release evidence or a long-term reliability claim.",
+    "Deployment and the 7/7 provider canary passed; semantic acceptance did not. The five failed turns remain failures until a separate repaired release is tested."
+  ]
+}

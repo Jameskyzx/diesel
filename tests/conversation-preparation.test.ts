@@ -17,6 +17,24 @@ function next(previous: ReturnType<typeof prepareConversationPlan>, text: string
     userTexts: [text], selectedCountryIso3: null, runtimeContext, locale: "en" });
 }
 describe("task-aware neutral preparation across signed multi-turn edits", () => {
+  it.each(["en", "zh-CN"] as const)("preserves verification dimensions through both shortening levels, translation and format changes (%s)", locale => {
+    let current = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_checklist", state },
+      userTexts: ["CHN market definitions, units, coverage, reporting period, methodology and sources"],
+      previous: null, selectedCountryIso3: null, runtimeContext, locale });
+    for (const outputKind of ["request_checklist", "request_checklist", "request_email", "request_checklist"] as const) {
+      current = next(current, "再精简成两条", { outputKind, presentation: { locale: null, length: "shorter", items: 2 } });
+      const answer = buildEvidenceRequestResponse(current)!;
+      for (const dimension of [/units|单位/u, /coverage|统计范围/u, /currency|币种/u, /observation|观测/u,
+        /base period|比较基期/u, /sample|样本/u, /comparability|可比性/u, /files\/links|文件\/链接/u]) expect(answer).toMatch(dimension);
+      expect(answer).not.toMatch(/available certification documents|已有认证文件/u);
+      if (outputKind === "request_checklist") expect(answer.match(/^- /gmu)).toHaveLength(2);
+    }
+    current = next(current, locale === "en" ? "中文要点" : "英文要点", {
+      presentation: { locale: locale === "en" ? "zh-CN" : "en", length: "keep", items: 2 } });
+    expect(current.memory.responseLocale).toBe(locale === "en" ? "zh-CN" : "en");
+    expect(buildEvidenceRequestResponse(current)).toMatch(/units|单位/u);
+    expect(buildEvidenceRequestResponse(current)).toMatch(/coverage|统计范围/u);
+  });
   it.each(["en", "zh-CN"] as const)("retains regulatory methods and applicability through every draft length and format (%s)", locale => {
     const regulatoryState: ConversationState = { ...state, tasks: ["regulations"], countryIso3s: ["JPN", "CHN"],
       applicationScope: "construction", powerKw: 120, asOf: "2026-08-13" };

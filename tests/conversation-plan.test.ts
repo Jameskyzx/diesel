@@ -20,6 +20,29 @@ function prepare(text: string, state: ConversationState, mode: "research" | "com
 }
 
 describe("purpose, conversation state and evidence are separate contracts", () => {
+  it.each([
+    ["加上 CHN，还是同一个统计期。", "add", ["BRA", "CHN"]],
+    ["Include Japan too, leave everything else alone.", "add", ["BRA", "JPN"]],
+    ["去掉 BRA，其他不变", "remove", []],
+    ["Do not change the countries; shorten the answer.", "retain", ["BRA"]],
+    ["只看 CHN", "replace", ["CHN"]],
+  ] as const)("applies a grounded country set edit independently of a guessed final set: %s", (text, countryUpdate, expected) => {
+    const confirmed: ConversationState = { ...scoped, tasks: ["market"], countryIso3s: ["BRA"] };
+    const result = prepareConversationPlan({ plan: { mode: "research", state: confirmed, countryUpdate },
+      userTexts: [text], previous: prior(confirmed), selectedCountryIso3: null, runtimeContext });
+    expect(result.state.countryIso3s).toEqual(expected);
+  });
+  it("rejects missing/removal operands and overflowing sets instead of inventing or truncating countries", () => {
+    for (const [text, countryUpdate, countries] of [
+      ["Keep the query", "add", ["BRA"]],
+      ["Remove CHN", "remove", ["BRA"]],
+      ["Add FRA", "add", ["BRA", "CHN", "JPN", "KOR", "DEU"]],
+    ] as const) {
+      const confirmed: ConversationState = { ...scoped, countryIso3s: [...countries] };
+      expect(() => prepareConversationPlan({ plan: { mode: "research", state: confirmed, countryUpdate },
+        userTexts: [text], previous: prior(confirmed), selectedCountryIso3: null, runtimeContext })).toThrow();
+    }
+  });
   it("greets briefly, without advertising a fabricated analysis", () => {
     expect(buildSocialChatResponse("你好", "zh-CN")).not.toContain("四类任务");
     expect(buildSocialChatResponse("Hello!", "en")?.length).toBeLessThan(220);

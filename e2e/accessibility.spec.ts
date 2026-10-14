@@ -213,6 +213,14 @@ for (const route of [
     }
     await page.goto(route);
     await expect(page.locator("main")).toBeVisible();
+    if (route === "/chat") {
+      // The scroll container itself must remain reachable even while starter
+      // buttons are disabled or a completed response has no interactive links.
+      const conversation = page.getByRole("region", { name: "AI conversation", exact: true });
+      await expect(conversation).toHaveAttribute("tabindex", "0");
+      await conversation.focus();
+      await expect(conversation).toBeFocused();
+    }
     if (route.startsWith("/countries/")) {
       await expect(page.getByTestId("product-fit-result")).toBeVisible();
       // This is a non-modal workspace panel: visible navigation and map

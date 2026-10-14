@@ -30,6 +30,10 @@ export function buildCountryProfileResponse(results: readonly AiToolResult[], lo
       if (market) sections.push(market);
     }
     if (result.requestedTopics.includes("country")) {
+      sections.push(en ? `Country overview: ${country.nameEn} (${country.iso3} / ${country.iso2})${country.regionCode ? `; region ${country.regionCode}` : ""}.`
+        : `国家基础概览：${country.nameLocal ?? country.nameEn}（${country.iso3} / ${country.iso2}）${country.regionCode ? `；区域 ${country.regionCode}` : ""}。`);
+      if (country.jurisdictions.length) sections.push((en ? "Recorded jurisdiction memberships: " : "已收录法域成员关系：") +
+        country.jurisdictions.map(item => `${item.name} (${item.code})${item.isDemo || item.membershipIsDemo ? (en ? " — fictional Demo" : " — 虚构 Demo") : ""}`).join("; "));
       sections.push(en ? "The country profile and jurisdiction memberships are shown in the evidence card. They do not establish product compliance."
         : "国家资料与法域成员关系见证据卡片，不据此建立产品合规结论。");
       sections.push(country.source.url ? `[${country.source.title}](${country.source.url})` : country.source.title);

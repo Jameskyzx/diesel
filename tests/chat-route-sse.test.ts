@@ -168,9 +168,19 @@ function regulatoryCardThenSourceFailureModel(error: Error) {
   });
 }
 
+// These tests exercise private model prose, not the deterministic research
+// summary. Use the actual planning protocol to select the explanation path.
+function countryExplanationPlan() {
+  return { warnings: [], usage: emptyUsage, finishReason: { unified: "tool-calls" as const, raw: undefined },
+    content: [{ type: "tool-call" as const, toolCallId: "profile-explanation-plan", toolName: "planConversation",
+      input: JSON.stringify({ mode: "explain", state: { tasks: ["country_profile"], countryIso3s: ["CHN"],
+        applicationScope: null, powerKw: null, asOf: "2026-08-13", productModelCode: null } }) }] };
+}
+
 function sufficientEvidenceEncodedReasoningModel() {
   return new MockLanguageModelV4({
     modelId: "mock-route-sse-encoded-reasoning",
+    doGenerate: async () => countryExplanationPlan(),
     provider: "mock",
     doStream: [
       {
@@ -249,6 +259,7 @@ function privateHistoryPublicProjectionModel() {
 
   return new MockLanguageModelV4({
     modelId: "mock-route-private-history-public-projection",
+    doGenerate: async () => countryExplanationPlan(),
     provider: "mock",
     doStream: [
       {
@@ -1139,7 +1150,7 @@ describe("POST /api/chat SSE evidence boundary", () => {
               id: "route-private-history-public-projection",
               parts: [
                 {
-                  text: "Give the CHN country profile as of 2026-08-13.",
+                  text: "Explain the CHN country profile as of 2026-08-13.",
                   type: "text",
                 },
               ],
@@ -1147,6 +1158,7 @@ describe("POST /api/chat SSE evidence boundary", () => {
             },
           ],
           sessionId: crypto.randomUUID(),
+          conversation: { version: 1 },
         }),
         headers: { "content-type": "application/json" },
         method: "POST",
@@ -1256,7 +1268,7 @@ describe("POST /api/chat SSE evidence boundary", () => {
               id: "route-sse-encoded-reasoning",
               parts: [
                 {
-                  text: "Give the CHN country profile as of 2026-08-13.",
+                  text: "Explain the CHN country profile as of 2026-08-13.",
                   type: "text",
                 },
               ],
@@ -1264,6 +1276,7 @@ describe("POST /api/chat SSE evidence boundary", () => {
             },
           ],
           sessionId: crypto.randomUUID(),
+          conversation: { version: 1 },
         }),
         headers: { "content-type": "application/json" },
         method: "POST",

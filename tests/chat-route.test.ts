@@ -50,13 +50,17 @@ function chatRequest(): Request {
 }
 
 describe("POST /api/chat rate limiting contract (ADR-041)", () => {
-  it("fails closed with a sanitized 503 when the shared limiter is unavailable", async () => {
+  it.each(["sync", "async"])("fails closed with a sanitized 503 when the shared limiter is unavailable (%s)", async (mode) => {
     const sensitiveText = "postgres://rate-limit:secret@example.test/database";
     const consoleSpy = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
     (globalThis as { __aiChatRateLimiter?: unknown }).__aiChatRateLimiter = {
-      check: vi.fn().mockRejectedValue(new Error(sensitiveText)),
+      check: vi.fn(() => {
+        const error = new Error(sensitiveText, { cause: { code: "55P03", detail: sensitiveText } });
+        if (mode === "sync") throw error;
+        return Promise.reject(error);
+      }),
       reset: vi.fn(),
     };
 
@@ -77,7 +81,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
       );
       expect(consoleSpy).toHaveBeenCalledWith(
         "AI chat rate limiter unavailable",
-        { errorCode: "Error" },
+        { errorCode: "Error", databaseErrorCode: "55P03", requestId: response.headers.get("X-Request-Id") },
       );
     } finally {
       delete (globalThis as { __aiChatRateLimiter?: unknown })

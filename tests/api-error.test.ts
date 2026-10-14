@@ -2,12 +2,41 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import {
+  getAdmissionDatabaseErrorCode,
   getErrorCode,
   parseApiErrorCode,
   parseSerializedApiErrorCode,
   parseSerializedApiErrorMessage,
   toUserFacingErrorMessage,
 } from "@/lib/api-error";
+
+describe("admission database diagnostic codes", () => {
+  it.each(["55P03", "57014", "25P03", "CONNECTION_CLOSED", "ECONNRESET"])(
+    "retains allowlisted %s through wrappers regardless of constructor name", (code) => {
+      class a extends Error {}
+      const cause = Object.assign(new a("private connection information"), { code });
+      expect(getAdmissionDatabaseErrorCode(new Error("private SQL", { cause }))).toBe(code);
+    },
+  );
+
+  it("never derives a code from private messages or arbitrary properties", () => {
+    expect(getAdmissionDatabaseErrorCode({ code: "postgres://secret", message: "55P03" }))
+      .toBe("UNKNOWN_DATABASE_ERROR");
+    expect(getAdmissionDatabaseErrorCode({ message: "57014", sql: "private" }))
+      .toBe("UNKNOWN_DATABASE_ERROR");
+  });
+
+  it("bounds cause traversal and safely handles cycles and hostile getters", () => {
+    const cycle: { cause?: unknown } = {};
+    cycle.cause = cycle;
+    expect(getAdmissionDatabaseErrorCode(cycle)).toBe("UNKNOWN_DATABASE_ERROR");
+    expect(getAdmissionDatabaseErrorCode(new Proxy({}, { has() { throw new Error("private"); } })))
+      .toBe("UNKNOWN_DATABASE_ERROR");
+    let nested: unknown = { code: "55P03" };
+    for (let i = 0; i < 5; i += 1) nested = { cause: nested };
+    expect(getAdmissionDatabaseErrorCode(nested)).toBe("UNKNOWN_DATABASE_ERROR");
+  });
+});
 
 describe("serialized API error messages", () => {
   const fallback = "请求暂时失败。";

@@ -6,6 +6,9 @@ import {
   createRateLimitRepository,
   RATE_LIMIT_CLEANUP_BATCH_SIZE,
   RATE_LIMIT_CLEANUP_GRACE_MS,
+  RATE_LIMIT_IDLE_TRANSACTION_TIMEOUT_MS,
+  RATE_LIMIT_LOCK_TIMEOUT_MS,
+  RATE_LIMIT_STATEMENT_TIMEOUT_MS,
   type ReserveAiChatHourlyRequestInput,
   type ReserveAiChatAdmissionProviderCallUnitsInput,
 } from "@/server/repositories/rate-limit-repository";
@@ -50,23 +53,13 @@ function validHourlyInput(): ReserveAiChatHourlyRequestInput {
 }
 
 function createFakeDatabase(returnedCounts: Array<number | null>) {
-  const insertedScopes: string[] = [];
-  const returning = vi.fn(async () => {
-    const count = returnedCounts.shift();
-    return count === null || count === undefined
-      ? []
-      : [{ requestCount: count }];
-  });
-  const onConflictDoUpdate = vi.fn(() => ({ returning }));
-  const values = vi.fn((value: { scope: string }) => {
-    insertedScopes.push(value.scope);
-    return { onConflictDoUpdate };
-  });
   const transaction = {
-    execute: vi.fn(async (query?: unknown) => {
-      void query;
+    execute: vi.fn(async (query?: SQL) => {
+      if (query && new PgDialect().sqlToQuery(query).sql.includes("with global_reservation")) {
+        const [globalCount = null, clientCount = null] = returnedCounts;
+        return [{ globalCount, clientCount: globalCount === null ? null : clientCount }];
+      }
     }),
-    insert: vi.fn(() => ({ values })),
   };
   const database = {
     transaction: vi.fn(
@@ -74,7 +67,12 @@ function createFakeDatabase(returnedCounts: Array<number | null>) {
         callback(transaction),
     ),
   };
-  return { database, insertedScopes, onConflictDoUpdate, transaction };
+  return { database, transaction };
+}
+
+function pairQuery(fake: ReturnType<typeof createFakeDatabase>) {
+  expect(fake.transaction.execute).toHaveBeenCalledTimes(2);
+  return new PgDialect().sqlToQuery(fake.transaction.execute.mock.calls[1][0]!);
 }
 
 describe("rate-limit repository AI admission transaction", () => {
@@ -90,11 +88,20 @@ describe("rate-limit repository AI admission transaction", () => {
       globalCount: 1,
     });
 
-    expect(fake.transaction.execute).toHaveBeenCalledTimes(1);
-    expect(fake.insertedScopes).toEqual([
-      "ai-chat-hourly-global-v1",
-      "ai-chat-hourly-v1",
+    const query = pairQuery(fake);
+    expect(query.sql).not.toContain("delete from");
+    expect(query.sql).toContain("from global_reservation");
+    expect(query.sql.match(/insert into/g)).toHaveLength(2);
+    expect(query.params).toContain("ai-chat-hourly-global-v1");
+    expect(query.params).toContain("ai-chat-hourly-v1");
+    expect(query.sql).not.toContain("ai-chat-hourly-v1");
+    const settings = new PgDialect().sqlToQuery(fake.transaction.execute.mock.calls[0][0]!);
+    expect(settings.params).toEqual([
+      String(RATE_LIMIT_STATEMENT_TIMEOUT_MS),
+      String(RATE_LIMIT_LOCK_TIMEOUT_MS),
+      String(RATE_LIMIT_IDLE_TRANSACTION_TIMEOUT_MS),
     ]);
+    expect(settings.params).toEqual(["2500", "1500", "5000"]);
   });
 
   it("fails hourly admission atomically in fixed global-to-client order", async () => {
@@ -104,9 +111,7 @@ describe("rate-limit repository AI admission transaction", () => {
         globalExhausted.database as never,
       ).reserveAiChatHourlyRequest(validHourlyInput()),
     ).resolves.toEqual({ allowed: false });
-    expect(globalExhausted.insertedScopes).toEqual([
-      "ai-chat-hourly-global-v1",
-    ]);
+    expect(pairQuery(globalExhausted).sql).toContain("from global_reservation");
 
     const clientExhausted = createFakeDatabase([2, null]);
     await expect(
@@ -114,10 +119,7 @@ describe("rate-limit repository AI admission transaction", () => {
         clientExhausted.database as never,
       ).reserveAiChatHourlyRequest(validHourlyInput()),
     ).resolves.toEqual({ allowed: false });
-    expect(clientExhausted.insertedScopes).toEqual([
-      "ai-chat-hourly-global-v1",
-      "ai-chat-hourly-v1",
-    ]);
+    expect(pairQuery(clientExhausted).sql).toContain("from global_reservation");
   });
 
   it.each([
@@ -182,11 +184,11 @@ describe("rate-limit repository AI admission transaction", () => {
     await expect(
       repository.reserveAiChatAdmissionProviderCallUnits(validInput()),
     ).resolves.toBe(true);
-    expect(fake.insertedScopes).toEqual([
-      "ai-chat-admission-provider-call-global-v1",
-      "ai-chat-admission-provider-call-client-v1",
-    ]);
-    expect(fake.onConflictDoUpdate).toHaveBeenCalledTimes(2);
+    const query = pairQuery(fake);
+    expect(query.sql.indexOf("global_reservation as")).toBeLessThan(query.sql.indexOf("client_reservation as"));
+    expect(query.sql).toContain("from global_reservation");
+    expect(query.params).toContain(495);
+    expect(query.params).toContain(45);
   });
 
   it("reports exhaustion when either conditional UPSERT returns no row", async () => {
@@ -196,9 +198,7 @@ describe("rate-limit repository AI admission transaction", () => {
         globalExhausted.database as never,
       ).reserveAiChatAdmissionProviderCallUnits(validInput()),
     ).resolves.toBe(false);
-    expect(globalExhausted.insertedScopes).toEqual([
-      "ai-chat-admission-provider-call-global-v1",
-    ]);
+    expect(pairQuery(globalExhausted).sql).toContain("from global_reservation");
 
     const clientExhausted = createFakeDatabase([10, null]);
     await expect(
@@ -206,10 +206,7 @@ describe("rate-limit repository AI admission transaction", () => {
         clientExhausted.database as never,
       ).reserveAiChatAdmissionProviderCallUnits(validInput()),
     ).resolves.toBe(false);
-    expect(clientExhausted.insertedScopes).toEqual([
-      "ai-chat-admission-provider-call-global-v1",
-      "ai-chat-admission-provider-call-client-v1",
-    ]);
+    expect(pairQuery(clientExhausted).sql).toContain("from global_reservation");
   });
 
   it.each([
@@ -276,13 +273,27 @@ describe("rate-limit repository AI admission transaction", () => {
       expect(fake.database.transaction).not.toHaveBeenCalled();
     }
 
-    for (const invalidCount of [0, 6, 505, Number.NaN]) {
-      const fake = createFakeDatabase([invalidCount]);
+    for (const invalidCount of [0, 6, 505]) {
+      const fake = createFakeDatabase([invalidCount, 5]);
       await expect(
         createRateLimitRepository(
           fake.database as never,
         ).reserveAiChatAdmissionProviderCallUnits(validInput()),
       ).rejects.toThrow("invalid reserved count");
     }
+  });
+
+  it.each([
+    undefined,
+    [],
+    [{ globalCount: 1, clientCount: 1 }, { globalCount: 1, clientCount: 1 }],
+    [{ globalCount: null, clientCount: 1 }],
+    [{ globalCount: Number.NaN, clientCount: 1 }],
+    [{ globalCount: "1", clientCount: 1 }],
+  ].map((result) => ({ result })))("rejects malformed pair results without granting admission: %j", async ({ result }) => {
+    const fake = createFakeDatabase([]);
+    fake.transaction.execute.mockResolvedValueOnce(undefined).mockResolvedValueOnce(result as never);
+    await expect(createRateLimitRepository(fake.database as never).reserveAiChatHourlyRequest(validHourlyInput()))
+      .rejects.toBeInstanceOf(Error);
   });
 });

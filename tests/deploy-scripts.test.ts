@@ -7027,7 +7027,7 @@ if [[ " $* " == *" install "* ]]; then
   printf '%s\\n' "$@" >${quoteShell(installInvocationPath)}
 fi
 if [[ " $* " == *" pnpm build "* ]]; then
-  [[ "${"$"}{NODE_OPTIONS:-}" == --max-old-space-size=1536 ]] || exit 92
+  [[ "${"$"}{NODE_OPTIONS:-}" == --max-old-space-size=1664 ]] || exit 92
   printf '%s\n' '// rewritten by Next during the fixture build' >next-env.d.ts
   mkdir -p .next/server .next/cache
   printf '%s\n' '${TEST_RELEASE_SHA}' >.next/BUILD_ID

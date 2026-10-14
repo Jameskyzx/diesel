@@ -344,6 +344,31 @@
     "journald": "active",
     "currentReleaseUnchanged": "34571465f0c8ecd1f682bbc327808a95ad9bd99d"
   },
+  "followupJournalArchival": {
+    "evidenceKind": "historical-operator-record-only",
+    "observedAt": "2026-10-14T17:31:21.452Z",
+    "target": "111.228.50.85",
+    "archive": "/opt/diesel/log-archives/closed-journal-20261015.4kkuTOL1",
+    "attemptedFiles": 21,
+    "completedFiles": 20,
+    "workerExitCode": 1,
+    "originalBytes": 2684354560,
+    "compressedBytes": 464914720,
+    "beforeFreeBytes": 5206851584,
+    "afterFreeBytes": 7417643008,
+    "verification": "Each completed original had ARCHIVED state, no open users, root ownership and one link; original journal integrity, gzip CRC, SHA256 and byte-for-byte restored comparison and restored journal integrity checked before exact original removal.",
+    "remaining": "system@26142db0756e45edb86c7d22a6d3d28e-00000000004cf679-00065dcc616af429.journal",
+    "remainingReason": "not_open guard failed before compression/removal; fuser independently reports systemd-journal PID 339 with open/mapped reference. Preserved original; no forced close or rotation.",
+    "currentRelease": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+    "journald": "active",
+    "capacity": {
+      "releaseAllowed": true,
+      "warning": true,
+      "freeBytes": 7417643008
+    },
+    "archiveMode": "0700/root",
+    "backupsAndReleasesPreserved": true
+  },
   "remaining": {
     "realStarterSuite": "not run for this release",
     "adaptiveTwentyTurns": "not started; admission failure is under repair",

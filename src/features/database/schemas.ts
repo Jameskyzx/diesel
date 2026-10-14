@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { marketReportingPeriodSchema } from "@/domain/marketing/reporting-period";
 
 export const governanceWorkflowStatuses = [
   "draft",
@@ -211,6 +212,7 @@ export const countryDetailQuerySchema = countryQuerySchema.extend({
   applicationScope: applicationScopeSchema.optional(),
   asOf: isoDateSchema.optional(),
   powerKw: powerKwSchema.optional(),
+  marketPeriod: marketReportingPeriodSchema.optional(),
 });
 
 export const applicableRegulationsQuerySchema = z

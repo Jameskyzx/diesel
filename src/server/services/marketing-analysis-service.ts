@@ -1,4 +1,5 @@
 import "server-only";
+import { observationInReportingPeriod } from "@/domain/marketing/reporting-period";
 
 import { compareCanonicalText } from "@/domain/canonical-order";
 import {
@@ -491,7 +492,7 @@ export async function compareMarkets(
   throwIfRequestAborted(options.signal);
   const rows = await repository.findForComparison(query, options);
   throwIfRequestAborted(options.signal);
-  const observations = rows.map(
+  const observations = rows.filter(row => observationInReportingPeriod(row, query.marketPeriod)).map(
     (row): MarketObservation => ({
       applicationScope: row.applicationScope,
       countryIso3: row.countryIso3,

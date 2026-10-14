@@ -459,6 +459,7 @@ export function buildKnowledgeResult(input: {
 }
 
 export function buildCountryProfileResult(input: {
+  marketPeriod?: GetCountryProfileInput["marketPeriod"];
   informationAsOf: string;
   profile: CountryDetailResponse | null;
   requestedTopics: GetCountryProfileInput["topics"];
@@ -470,6 +471,7 @@ export function buildCountryProfileResult(input: {
     input.resolvedCountryIso3 === null
   ) {
     return getCountryProfileResultSchema.parse({
+      ...(input.marketPeriod ? { marketPeriod: input.marketPeriod } : {}),
       citations: [],
       evidenceSufficient: false,
       informationAsOf: input.informationAsOf,
@@ -733,6 +735,7 @@ export function buildCountryProfileResult(input: {
   const evidenceSufficient = hasRequiredFacts && citations.length > 0;
 
   return getCountryProfileResultSchema.parse({
+    ...(input.marketPeriod ? { marketPeriod: input.marketPeriod } : {}),
     citations,
     evidenceSufficient,
     informationAsOf: input.informationAsOf,
@@ -1078,6 +1081,7 @@ export function buildToolErrorResult(
     }
     return assertCanonicalToolErrorResult(getCountryProfileResultSchema.parse({
       ...common,
+      ...(input.marketPeriod ? { marketPeriod: input.marketPeriod } : {}),
       profile: null,
       requestedTopics: input.topics,
       resolvedCountryIso3: input.countryIso3 ?? null,

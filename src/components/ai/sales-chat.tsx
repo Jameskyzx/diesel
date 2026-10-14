@@ -32,6 +32,7 @@ import { AssistantMarkdown } from "@/components/ai/assistant-markdown";
 import { MarketComparisonFacts } from "@/components/ai/market-comparison-facts";
 import { SaveAnalysis } from "@/components/analyses/save-analysis";
 import { readConversationMetadata } from "@/features/ai/conversation-state";
+import { marketObservationPeriod } from "@/domain/ai/market-profile-response";
 import { SourceExcerpt } from "@/components/analyses/source-review";
 import type { AnalysisPayload } from "@/features/analyses/schemas";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -641,6 +642,11 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
         : []),
     ];
   }
+
+  const marketPeriod = result.tool === "getCountryProfile" ? result.marketPeriod
+    : result.tool === "compareMarkets" ? result.comparison.query.marketPeriod : undefined;
+  if (marketPeriod) fields.push({ label: locale === "en" ? "Reporting period" : "统计期",
+    value: marketObservationPeriod(marketPeriod.start, marketPeriod.end, locale), fullMobileRow: true });
 
   return (
     <dl

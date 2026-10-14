@@ -123,6 +123,7 @@ export function clientToolResultMatchesPartInput(
     return (
       parsed.success &&
       exactValue(parsed.data.topics, result.requestedTopics) &&
+      exactValue(parsed.data.marketPeriod, result.marketPeriod) &&
       (parsed.data.countryIso3 == null ||
         parsed.data.countryIso3 === result.resolvedCountryIso3) &&
       (parsed.data.asOf === undefined ||

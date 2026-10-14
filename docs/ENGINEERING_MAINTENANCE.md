@@ -57,6 +57,13 @@ repository masks, checking directory 0755, regular-file 0644, executable 0755
 and unchanged bytes. This fixes only the CI fixture; trusted-path checks are
 not relaxed, and local permission tests do not replace the full Linux run.
 
+The 2026-10-14 PR #98 handoff run exhausted its 1536 MiB V8 heap during cold
+whole-repository TypeScript checking. The builder now uses a fixed 1664 MiB
+heap, leaving 384 MiB below the unchanged 2 GiB aggregate cgroup ceiling for
+native/parent overhead. The 1 GiB swap limit, full TypeScript scope, process
+containment and runtime application memory settings remain unchanged. A warm
+local build is not proof of a cold Linux handoff; the latter remains a CI gate.
+
 以前两次 SSH 255 的根因仍未被证明。本改动消除“SSH 连接必须持续存在”的执行依赖，
 不是把旧失败改写为成功，也不关闭主机信号、锁或恢复检查。
 

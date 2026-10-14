@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { applicationScopeSchema } from "@/features/database/schemas";
+import { marketReportingPeriodSchema } from "@/domain/marketing/reporting-period";
 
 export const conversationTaskSchema = z.enum([
   "country_profile", "regulations", "market", "product_fit",
@@ -15,15 +16,23 @@ export const conversationStateSchema = z.object({
 }).strict();
 export type ConversationState = z.infer<typeof conversationStateSchema>;
 
+export const preparationTopicSchema = z.enum([
+  "specifications", "emission_tests", "certifications", "original_sources",
+  "market_definitions", "market_periods", "market_methodology", "regulatory_scope",
+]);
+
 // Working memory contains intent and presentation only, never retrieved facts.
 // It survives the bounded prose history, and is authoritative only when signed.
 export const conversationMemorySchema = z.object({
   sourceRequest: z.string().min(1).max(2_000).nullable(),
   sourceRefinements: z.array(z.string().min(1).max(2_000)).max(8).default([]),
   marketScope: applicationScopeSchema.nullable(),
+  marketPeriod: marketReportingPeriodSchema.optional(),
   responseLocale: z.enum(["en", "zh-CN"]),
   draftLength: z.enum(["standard", "brief", "minimal"]),
   outputKind: z.enum(["evidence", "request_checklist", "request_email"]),
+  preparationTopics: z.array(preparationTopicSchema).min(1).max(8).optional(),
+  draftItems: z.number().int().min(1).max(8).nullable().optional(),
 }).strict().refine(memory => (memory.sourceRequest?.length ?? 0) +
   memory.sourceRefinements.reduce((size, text) => size + text.length, 0) <= 4_000,
 "Source task context exceeds its bounded capacity");

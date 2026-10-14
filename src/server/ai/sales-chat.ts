@@ -324,6 +324,7 @@ const invalidToolInputKnownFields: Record<
     "applicationScope",
     "countryIso3s",
     "metricCodes",
+    "marketPeriod",
   ]),
   compareRegulations: new Set([
     "applicationScope",
@@ -347,7 +348,7 @@ const invalidToolInputKnownFields: Record<
     "productModelCode",
     "targetCountryIso3",
   ]),
-  getCountryProfile: new Set(["asOf", "countryIso3", "topics"]),
+  getCountryProfile: new Set(["asOf", "countryIso3", "topics", "marketPeriod"]),
   searchKnowledgeBase: new Set([
     "applicationScope",
     "asOf",
@@ -772,12 +773,14 @@ export function createSalesChatTools({
                         {
                           asOf: informationAsOf,
                           iso3: countryIso3,
+                          ...(input.marketPeriod ? { marketPeriod: input.marketPeriod } : {}),
                         },
                         { signal },
                       );
 
                 return buildCountryProfileResult({
                   informationAsOf,
+                  ...(input.marketPeriod ? { marketPeriod: input.marketPeriod } : {}),
                   profile,
                   requestedTopics: canonicalInput.topics,
                   resolvedCountryIso3: countryIso3,

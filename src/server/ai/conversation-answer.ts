@@ -2,6 +2,41 @@ import "server-only";
 import type { AiToolResult } from "@/features/ai/schemas";
 import type { PreparedConversationTurn } from "@/server/ai/conversation-plan";
 import { contextText } from "@/server/ai/conversation-plan";
+import type { ConversationMemory } from "@/features/ai/conversation-state";
+import { marketObservationPeriod } from "@/domain/ai/market-profile-response";
+
+type PreparationTopic = NonNullable<ConversationMemory["preparationTopics"]>[number];
+const preparationCopy: Record<PreparationTopic, { en: [string, string]; "zh-CN": [string, string] }> = {
+  specifications: { en: ["specification sheet", "model identity, rated power, actual application, specification version and supply dates if available"],
+    "zh-CN": ["规格表", "型号身份、额定功率、实际用途、规格版本及已有供应日期"] },
+  emission_tests: { en: ["emission test reports", "tested configuration, pollutant definitions, units, test cycles, report version and issuing body"],
+    "zh-CN": ["排放检测报告", "受测配置、污染物定义、单位、测试循环、报告版本与出具机构"] },
+  certifications: { en: ["available certification documents", "certificate identity, model/configuration covered, issuer and validity dates"],
+    "zh-CN": ["已有认证文件", "证书身份、覆盖的型号/配置、签发机构与有效期"] },
+  original_sources: { en: ["traceable originals and unresolved gaps", "source files or links, document versions, missing items and the person who can supply them"],
+    "zh-CN": ["可追溯原件及未解决缺口", "来源文件或链接、版本、缺少项目以及可提供材料的负责人"] },
+  market_definitions: { en: ["market statistical definitions", "metric meaning, stock versus sales/flow, units, currency and country/application coverage"],
+    "zh-CN": ["市场统计定义", "指标含义、保有量与销量/流量的区别、单位、币种及国家/行业口径"] },
+  market_periods: { en: ["reporting periods", "observation start/end, publication date, comparison base period and whether the data are historical"],
+    "zh-CN": ["统计报告期", "观测起止日期、发布日期、比较基期及是否为历史数据"] },
+  market_methodology: { en: ["statistical methodology", "collection method, sample coverage, calculation definitions, revisions and cross-country comparability"],
+    "zh-CN": ["统计方法", "采集方法、样本覆盖、计算口径、修订情况及跨国可比性"] },
+  regulatory_scope: { en: ["regulatory applicability materials", "original text/version, jurisdiction, application, power range, adopted/effective dates and unresolved applicability questions"],
+    "zh-CN": ["法规适用范围材料", "原文与版本、辖区、用途、功率范围、采纳/生效日期及待核实的适用性问题"] },
+};
+
+function preparationTopics(turn: PreparedConversationTurn): PreparationTopic[] {
+  if (turn.memory.preparationTopics) return turn.memory.preparationTopics;
+  const tasks = turn.state.tasks;
+  const topics: PreparationTopic[] = [];
+  if (tasks.some(task => ["market", "opportunity_score", "sales_brief"].includes(task)))
+    topics.push("market_definitions", "market_periods", "market_methodology");
+  if (tasks.includes("regulations")) topics.push("regulatory_scope");
+  if (tasks.includes("product_fit") || tasks.length === 0)
+    topics.push("specifications", "emission_tests", "certifications");
+  topics.push("original_sources");
+  return topics;
+}
 
 /** Document requests describe a future verification workflow, not present facts
  * or jurisdiction-specific legal requirements. Server-authored copy is the only
@@ -9,28 +44,32 @@ import { contextText } from "@/server/ai/conversation-plan";
 export function buildEvidenceRequestResponse(turn: PreparedConversationTurn): string | null {
   if (turn.outputKind === "evidence" || turn.contract.blocksModelText) return null;
   const english = turn.memory.responseLocale === "en";
-  const context = contextText(turn.state);
+  const context = [contextText(turn.state), turn.memory.marketPeriod ?
+    `${english ? "reporting period" : "统计期"}: ${marketObservationPeriod(turn.memory.marketPeriod.start, turn.memory.marketPeriod.end, turn.memory.responseLocale)}` : ""].filter(Boolean).join(" · ");
+  const copy = preparationTopics(turn).map(topic => preparationCopy[topic][turn.memory.responseLocale]);
+  const length = turn.memory.draftLength;
+  const materials = copy.map(([label, detail]) => length === "standard" ? `${label}: ${detail}` : label);
+  const boundary = english ? "This request does not confirm compliance or permission to sell."
+    : "本次索取材料不代表已合规或获准销售。";
   if (turn.outputKind === "request_email") {
-    const brief = turn.memory.draftLength !== "standard";
-    const briefText = english
-      ? `Hello, please share the specification sheet, test reports and available certificates${context ? ` for (${context})` : ""}. Please include document versions and traceable originals. We will verify applicability and remaining gaps; this request does not confirm compliance or permission to sell.`
-      : `您好，请提供规格表、检测报告及已有证书${context ? `，用于核对（${context}）` : ""}。请附上文件版本与可追溯原件。我们会核验适用性和剩余缺口，本次索取材料不代表已合规或获准销售。`;
-    if (brief) {
-      // Length is a signed presentation state, not an equality check against
-      // old answer text (which changes when filters or language change).
-      const minimalText = english
-        ? `Hello, please send versioned, traceable specifications, test reports and available certificates${context ? ` for (${context})` : ""}. This request does not confirm compliance or permission to sell.`
-        : `您好，请提供带版本、可追溯的规格表、检测报告及已有证书${context ? `（${context}）` : ""}。本次索取不代表已合规或获准销售。`;
-      if (turn.memory.draftLength === "minimal") return minimalText;
-      return briefText;
-    }
-    return english
-      ? `Hello, please share the specification sheet, emission test reports and any available certification documents${context ? ` for the assessment context (${context})` : ""}. Please include document versions, the tested application and power, test cycles, issuer, validity dates and traceable originals where available. We will review their applicability and outstanding gaps before drawing any conclusion; this request does not confirm compliance or permission to sell.`
-      : `您好，请提供规格表、排放检测报告及已有认证文件${context ? `，用于核对这些查询条件（${context}）` : ""}。请尽可能附上文件版本、测试用途与功率、测试循环、签发机构、有效期及可追溯原件。我们会先核对适用性与未解决缺口，再讨论结论，本次索取材料不代表已合规或获准销售。`;
+    const review = length === "minimal" ? "" : english
+      ? " All materials remain unverified; we will review their applicability and remaining gaps before drawing conclusions."
+      : "所有材料均待核实，我们会先核对适用性和剩余缺口，再讨论结论。";
+    return english ? `Hello, please share ${materials.join("; ")}${context ? ` for (${context})` : ""}.${review} ${boundary}`
+      : `您好，请提供${materials.join("；")}${context ? `（${context}）` : ""}。${review}${boundary}`;
   }
-  return english
-    ? `This turn has not re-verified facts; refer to the earlier evidence cards for what was actually checked. The following is a preparation checklist, not a statement of legally mandatory documents${context ? ` (assessment context: ${context})` : ""}.\n\n- Specification sheet: model identity, rated power, actual application, specification version and supply dates if available.\n- Emission test reports: tested configuration, pollutant definitions, units, test cycles, report version and issuing body.\n- Available certification documents: certificate identity, model/configuration covered, issuer and validity dates.\n- Traceable originals and unresolved gaps: source files/links, missing items and who can supply them.\n\nNone of these materials has been verified by this checklist; no fit, certification or sale approval is established.`
-    : `本轮没有重新核验事实；已查到的内容请以此前证据卡片为准。以下是材料准备清单，不是当地法定必备文件清单${context ? `（查询条件：${context}）` : ""}。\n\n- 规格表：型号身份、额定功率、实际用途、规格版本及已有供应日期。\n- 排放检测报告：受测配置、污染物定义、单位、测试循环、报告版本与出具机构。\n- 已有认证文件：证书身份、覆盖的型号/配置、签发机构与有效期。\n- 可追溯原件及未解决缺口：来源文件或链接、缺少项目以及可提供材料的负责人。\n\n这份清单没有核验任何材料，不构成产品适配、认证或销售许可结论。`;
+  const count = Math.min(turn.memory.draftItems ?? materials.length, materials.length);
+  // Group instead of silently discarding requested categories to hit a limit.
+  const groups = Array.from({ length: count }, (_, index) => materials.slice(
+    Math.floor(index * materials.length / count), Math.floor((index + 1) * materials.length / count)).join(english ? "; " : "；"));
+  const intro = length === "minimal" ? english ? `This turn has not re-verified facts. Preparation checklist${context ? ` (${context})` : ""}:`
+    : `本轮没有重新核验事实。材料准备清单${context ? `（${context}）` : ""}：`
+    : english ? `This turn has not re-verified facts. This is a preparation checklist, not a statement of legally mandatory documents${context ? ` (${context})` : ""}.`
+    : `本轮没有重新核验事实。这是材料准备清单，不是法定必备文件清单${context ? `（${context}）` : ""}。`;
+  const detail = length === "standard" ? english ? " Refer to earlier evidence cards for what was actually checked." : "已查到的内容请以此前证据卡片为准。" : "";
+  const end = english ? "None of these materials has been verified; no fit, certification or sale approval is established."
+    : "以上材料均待核实，不构成产品适配、认证或销售许可结论。";
+  return `${intro}${detail}\n\n${groups.map(group => `- ${group}`).join("\n")}\n\n${end}`;
 }
 
 /** Additional guard for purpose-specific prose. Cards remain the authoritative

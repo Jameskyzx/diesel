@@ -128,8 +128,10 @@ corepack pnpm --config.registry="${registry}" \
   --frozen-lockfile --trust-lockfile --package-import-method=copy \
   --ignore-scripts --ignore-pnpmfile
 
-# Keep V8 collection below the build cgroup's aggregate memory ceiling. This
-# applies to Next's compilation/type-check workers, not the runtime app or root
+# Keep V8 collection below the build cgroup's aggregate memory ceiling.
+# Cold whole-repository TypeScript checking exhausted the old 1536 MiB heap.
+# 1664 MiB leaves 384 MiB below the unchanged 2 GiB cgroup ceiling for native
+# and parent overhead. This applies to compilation/type-check workers, not the runtime app or root
 # verifiers. Next may reset this option for static-page workers; the cgroup
 # ceiling still bounds the entire build, including those workers.
 # Do not inherit caller-supplied Node options or skip the Next TypeScript check.
@@ -140,7 +142,7 @@ env -i \
   CI=1 \
   COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
   NODE_ENV=production \
-  NODE_OPTIONS=--max-old-space-size=1536 \
+  NODE_OPTIONS=--max-old-space-size=1664 \
   corepack pnpm build
 
 [[ -f "${next_environment_path}" && ! -L "${next_environment_path}" &&

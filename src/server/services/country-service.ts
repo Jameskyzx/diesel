@@ -1,4 +1,5 @@
 import "server-only";
+import { observationInReportingPeriod } from "@/domain/marketing/reporting-period";
 
 import {
   regulationIsCurrentAt,
@@ -212,7 +213,7 @@ export async function getCountryDetails(
 }
 
 async function getCountryDetailsFromRepositories(
-  { applicationScope, asOf, iso3, powerKw }: CountryDetailReadQuery,
+  { applicationScope, asOf, iso3, powerKw, marketPeriod }: CountryDetailReadQuery,
   repositories: CountryDetailReadRepositories,
   includeDemoData: boolean,
   options: RequestSignalOptions,
@@ -313,7 +314,7 @@ async function getCountryDetailsFromRepositories(
     : country.marketMetrics.filter(
         (metric) => !isDemoMarketMetric(metric),
       );
-  const marketMetrics = visibleMarketMetricRows.map((metric) => ({
+  const marketMetrics = visibleMarketMetricRows.filter(metric => observationInReportingPeriod(metric, marketPeriod)).map((metric) => ({
     ...metric,
     source: {
       ...metric.source,

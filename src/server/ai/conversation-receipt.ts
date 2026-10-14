@@ -2,7 +2,7 @@ import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { env } from "@/env";
-import { conversationStateSchema, type ConversationState } from "@/features/ai/conversation-state";
+import { conversationStateSchema, conversationMemorySchema, type ConversationMemory, type ConversationState } from "@/features/ai/conversation-state";
 
 const lifetimeMs = 24 * 60 * 60 * 1_000;
 // Domain-separated from provider authentication. Rotation invalidates receipts;
@@ -13,17 +13,18 @@ const receiptSchema = z.object({
   version: z.literal(1), sessionId: z.uuid(), selectedCountryIso3: z.string().nullable(),
   issuedAt: z.number().int(), userText: z.string().max(2_000),
   answer: z.string().max(6_000), state: conversationStateSchema,
+  memory: conversationMemorySchema.optional(),
   history: z.array(z.object({ user: z.string().max(700), answer: z.string().max(1_000) }).strict()).max(2),
 }).strict();
 export type ConversationReceipt = z.infer<typeof receiptSchema>;
 
 export function signConversationReceipt(input: {
   sessionId: string; selectedCountryIso3: string | null; userText: string;
-  answer: string; state: ConversationState; previous?: ConversationReceipt | null;
+  answer: string; state: ConversationState; memory?: ConversationMemory; previous?: ConversationReceipt | null;
 }, now = Date.now()): string {
   const { previous, ...current } = input;
   const history = previous ? [...previous.history, { user: previous.userText.slice(0, 700), answer: previous.answer.slice(0, 1_000) }].slice(-2) : [];
-  const value = receiptSchema.parse({ ...current, history, answer: input.answer.slice(0, 6_000), issuedAt: now, version: 1 });
+  const value = receiptSchema.parse({ ...current, memory: current.memory ?? previous?.memory, history, answer: input.answer.slice(0, 6_000), issuedAt: now, version: 1 });
   const payload = Buffer.from(JSON.stringify(value)).toString("base64url");
   const signature = createHmac("sha256", key).update(payload).digest("base64url");
   return `${payload}.${signature}`;

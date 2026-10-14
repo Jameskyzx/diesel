@@ -501,6 +501,8 @@ export async function runCanaryCheck(input: {
   const fetchImpl = input.fetchImpl ?? fetch;
   const now = input.now ?? Date.now;
   const requestStartedAtMs = now();
+  let requestId: string | null = null;
+  let status: number | null = null;
 
   try {
     const response = await fetchImpl(new URL(input.check.path, input.baseUrl), {
@@ -513,7 +515,8 @@ export async function runCanaryCheck(input: {
       signal: AbortSignal.timeout(input.timeoutMs),
     });
     const responseReceivedAtMs = now();
-    const requestId = response.headers.get("x-request-id");
+    requestId = response.headers.get("x-request-id");
+    status = response.status;
     let errorCode: CanaryErrorCode | null = null;
     let bodyRead = false;
 
@@ -601,8 +604,8 @@ export async function runCanaryCheck(input: {
       method: input.check.method,
       pass: false,
       path: input.check.path,
-      requestId: null,
-      status: null,
+      requestId,
+      status,
     };
   }
 }

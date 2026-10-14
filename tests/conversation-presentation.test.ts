@@ -38,6 +38,8 @@ describe("grounded response-language edits", () => {
     "What does the base period mean?",
     "不要用英文回答。",
     "Don't answer in English.",
+    "不要写英文索取邮件。",
+    "Don't draft an English request email.",
     "Please retrieve English sources, with the original dates.",
     "Find source text in English.",
     "Find the English summary of that regulation.",
@@ -51,6 +53,7 @@ describe("grounded response-language edits", () => {
     expect(resolveConversationLocale({ text, previous: "zh-CN", ui: "en", planned: "en" })).toBe("zh-CN");
   });
   it("applies the latest affirmative output edit without depending on the planner's locale", () => {
+    expect(resolveConversationLocale({ text: "为 BRA 市场资料写一封中文索取邮件", ui: "en" })).toBe("zh-CN");
     expect(resolveConversationLocale({ text: "English reply. 不，中文回答。", previous: "en", planned: "en" })).toBe("zh-CN");
     expect(resolveConversationLocale({ text: "中文回答。改成英文要点。", previous: "zh-CN", planned: null })).toBe("en");
   });

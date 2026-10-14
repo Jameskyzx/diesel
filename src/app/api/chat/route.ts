@@ -11,6 +11,7 @@ import {
   validateUIMessages,
 } from "ai";
 import { z, ZodError } from "zod";
+import { resolveConversationLocale } from "@/server/ai/conversation-presentation";
 
 import { captureChatRuntimeContext } from "@/domain/ai/chat-runtime-context";
 import { requestsSalesGuarantee } from "@/domain/ai/sales-guarantee-intent";
@@ -494,6 +495,9 @@ async function processChatRequest(
     completedPhase("audit");
     let conversationTurn: PreparedConversationTurn | undefined;
     if (body.conversation && !allowUnverifiedAttachmentResponse) {
+      // Resolve independent presentation before planning so a failed query edit
+      // cannot revert to the UI language or lose an explicit language change.
+      locale = resolveConversationLocale({ text: latestUserText, previous: previous?.memory?.responseLocale, ui: locale });
       try {
         conversationTurn = await planConversationTurn({ model, userTexts, previous,
           selectedCountryIso3: body.selectedCountryIso3, runtimeContext, signal: abortSignal, locale,
@@ -505,7 +509,7 @@ async function processChatRequest(
       } catch (error) {
         throwIfChatRequestAborted(abortSignal);
         conversationTurn = explicitRegulationResearchFallback({ userTexts, previous,
-          selectedCountryIso3: body.selectedCountryIso3, runtimeContext }) ?? undefined;
+          selectedCountryIso3: body.selectedCountryIso3, runtimeContext, locale }) ?? undefined;
         console.warn("AI conversation planner failed", { requestId, errorCode: getErrorCode(error),
           explicitResearchFallback: conversationTurn !== undefined });
         if (!conversationTurn) {
@@ -515,7 +519,11 @@ async function processChatRequest(
           const state = previous?.state ?? { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
           return directChatResponse(answer, { conversation: { state, mode: "clarify",
             receipt: signConversationReceipt({ sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
-              userText: latestUserText, answer, state, previous }),
+              userText: latestUserText, answer, state, previous,
+              memory: previous?.memory ? { ...previous.memory, responseLocale: locale } : {
+                sourceRequest: null, sourceRefinements: [], marketScope: null, responseLocale: locale,
+                draftLength: "standard", outputKind: "evidence",
+              } }),
           } });
         }
       }

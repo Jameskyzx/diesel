@@ -3,8 +3,8 @@ import type { Locale } from "@/i18n/locale";
 
 const languageName = /英文|英语|中文|汉语|\bEnglish\b|\bChinese\b/giu;
 const outputTarget = /回答|回复|作答|输出|解释|说明|描述|总结|概括|邮件|清单|要点|摘要|短信|版本|译文|\b(?:answer|reply|response|output|explanation|summary|email|message|checklist|bullets?|points?|version|translation)\b/iu;
-const outputAction = /回答|回复|作答|输出|解释|说明|描述|总结|概括|翻译|改写|\b(?:answer|reply|respond|write|draft|compose|explain|summari[sz]e|translate|rewrite|render)\b/iu;
-const negatedLanguageControl = /(?:不要|不用|不必|别|\bnot\b|\bdon['’]t\b|\bavoid\b)\s*(?:(?:再|用|使用|以|改成|改为|译成|译为|翻译成|翻译为|切换成|切换为|change|switch|turn|write|answer|reply|respond|translate|it|this|that|the|response|language|a|an|in|into|to|as)\s*){0,8}$/iu;
+const outputAction = /回答|回复|作答|输出|解释|说明|描述|总结|概括|翻译|改写|写|起草|\b(?:answer|reply|respond|write|draft|compose|explain|summari[sz]e|translate|rewrite|render)\b/iu;
+const negatedLanguageControl = /(?:不要|不用|不必|别|\bnot\b|\bdon['’]t\b|\bavoid\b)\s*(?:(?:再|用|使用|以|写|起草|改成|改为|译成|译为|翻译成|翻译为|切换成|切换为|change|switch|turn|write|draft|compose|answer|reply|respond|translate|it|this|that|the|response|language|a|an|in|into|to|as)\s*){0,8}$/iu;
 
 /** Language names in quoted source text are not response-language edits. Keep
  * quoted bare locale choices (e.g. use "English") but not quoted directives. */
@@ -38,7 +38,7 @@ export function resolveConversationLocale(input: {
     const targetAfter = /^\s*(?:的|简短|精简|简洁|简要|短|版|\s|brief|short|concise){0,8}(?:回答|回复|作答|输出|解释|说明|描述|总结|概括|邮件|清单|要点|摘要|短信|版本|译文|\b(?:answer|reply|response|output|explanation|summary|email|message|checklist|bullets?|points?|version|translation)\b)/iu.test(right);
     const bareChoice = /^\s*(?:(?:simplified\s+)?Chinese|English|简体中文|中文|汉语|英文|英语)(?:\s*(?:please|is fine|works|谢谢|即可|就好|就行))?\s*$/iu.test(`${left}${match[0]}${right}`);
     const groundedSemanticEdit = input.planned === locale && outputTarget.test(`${left} ${right}`);
-    if (controlBefore || targetAfter || bareChoice || groundedSemanticEdit) edits.push(locale);
+    if (controlBefore || targetAfter || bareChoice || groundedSemanticEdit || (outputAction.test(left) && outputTarget.test(right))) edits.push(locale);
   }
   return edits.at(-1) ?? input.previous ?? input.ui ?? "en";
 }

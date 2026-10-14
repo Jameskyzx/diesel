@@ -24,6 +24,7 @@ import {
 } from "@/server/ai/sales-chat";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { getCountryDetails } from "@/server/services/country-service";
+import { prepareConversationPlan } from "@/server/ai/conversation-plan";
 
 const testCase = (() => {
   const candidate = salesChatLiveCases.find(({ id }) => id === "country-overview-china");
@@ -103,6 +104,12 @@ async function observePublicStream(answer: string, noData = false) {
     },
   });
   const generated = streamSalesChat({
+    // Research profiles now finish deterministically. Exercise the factual
+    // explanation path here: it must still validate and diagnose model prose.
+    conversationTurn: prepareConversationPlan({ plan: { mode: "explain", state: {
+      tasks: ["country_profile"], countryIso3s: ["CHN"], applicationScope: null,
+      powerKw: null, asOf: "2026-08-13", productModelCode: null,
+    } }, userTexts: testCase.userTexts, previous: null, selectedCountryIso3: null, runtimeContext }),
     auditRepository, locale: testCase.locale, model, runtimeContext,
     messages: testCase.userTexts.map((content) => ({ role: "user" as const, content })),
     onBoundaryRejection: (reason) => { boundaryRejections.push(reason); },

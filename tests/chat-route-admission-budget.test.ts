@@ -196,7 +196,7 @@ describe("POST /api/chat application-side admission budget", () => {
     const secretMarker = "203.0.113.93 postgres://budget-secret";
     runtime.__aiChatAdmissionBudget = {
       reserve: vi.fn(async () => {
-        throw new Error(secretMarker);
+        throw new Error(secretMarker, { cause: { code: "57014", detail: secretMarker } });
       }),
       reset: vi.fn(),
     };
@@ -219,7 +219,7 @@ describe("POST /api/chat application-side admission budget", () => {
       expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain(secretMarker);
       expect(consoleSpy).toHaveBeenCalledWith(
         "AI chat admission budget unavailable",
-        { errorCode: "Error" },
+        { errorCode: "Error", databaseErrorCode: "57014", requestId: response.headers.get("X-Request-Id") },
       );
       expect(mocks.getConfiguredAiModel).toHaveBeenCalledOnce();
       expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();

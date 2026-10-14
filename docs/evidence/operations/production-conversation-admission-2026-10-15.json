@@ -1,0 +1,383 @@
+{
+  "version": "diesel-production-conversation-admission-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "release": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+  "observedAt": "2026-10-14T17:14:59.457Z",
+  "deployed": true,
+  "productionAcceptanceComplete": false,
+  "pullRequest": {
+    "number": 99,
+    "url": "https://github.com/Jameskyzx/diesel/pull/99",
+    "mergedAt": "2026-10-14T15:50:44Z",
+    "head": "b4fc8a5f81b7074f83e939077091cbcda9de9fef"
+  },
+  "ci": {
+    "pullRequest": {
+      "id": 38585856533,
+      "head": "b4fc8a5f81b7074f83e939077091cbcda9de9fef",
+      "attempt": 1,
+      "jobs": 10,
+      "conclusion": "success"
+    },
+    "master": {
+      "id": 38592915918,
+      "sha": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+      "attempt": 1,
+      "jobs": 10,
+      "conclusion": "success",
+      "gateCompletedAt": "2026-10-14T16:32:20Z"
+    }
+  },
+  "staging": [
+    {
+      "authorization": {
+        "branch": "master",
+        "commit": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+        "format": "diesel-release-authorization-v1",
+        "origin": {
+          "fetchUrl": "https://github.com/Jameskyzx/diesel.git",
+          "pushUrl": "https://github.com/Jameskyzx/diesel.git",
+          "remoteMaster": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+          "remoteMasterReadback": "7db396bc277cd2c70f9d01928a0f4b451fe71d42"
+        },
+        "protection": {
+          "allowDeletions": false,
+          "allowForcePushes": false,
+          "enforceAdmins": true,
+          "requiredCheck": "Required CI gate",
+          "requiredCheckAppId": null,
+          "strict": true
+        },
+        "repository": "Jameskyzx/diesel",
+        "verifiedAt": "2026-10-14T16:33:38.312Z",
+        "workflow": {
+          "gateJobId": 115972743827,
+          "gateJobUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38592915918/job/115972743827",
+          "id": 332591937,
+          "name": "CI",
+          "path": ".github/workflows/ci.yml",
+          "runAttempt": 1,
+          "runId": 38592915918,
+          "runUrl": "https://github.com/Jameskyzx/diesel/actions/runs/38592915918",
+          "state": "active"
+        }
+      },
+      "commit": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+      "format": "diesel-release-stage-v1",
+      "inputDigest": "f02b29db14e755e614603aeb783f8dd0ff7927403fe955cd2473d381de16020a",
+      "releaseDir": "/opt/diesel/releases/7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+      "target": "root@111.228.50.85"
+    },
+    {
+      "release": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+      "runId": 38592915918,
+      "runAttempt": 1,
+      "artifactId": 11908378043,
+      "archiveSha256": "f20225e318dcd01ef24fc5d2ef5a48df4fb20873b01269afe05834a99c8b84fc",
+      "destination": "/opt/diesel/release-inputs/7db396bc277cd2c70f9d01928a0f4b451fe71d42/ci-runtime",
+      "temporary": "/private/tmp/diesel-ci-runtime-t0RsY8",
+      "staged": true,
+      "deployed": false
+    }
+  ],
+  "durableRelease": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+      "operationId": "11fda0b4-ac9d-400f-9e88-19d8dcc1e402",
+      "mode": "application",
+      "createdAt": "2026-10-14T16:38:08.348Z",
+      "inputDigest": "f02b29db14e755e614603aeb783f8dd0ff7927403fe955cd2473d381de16020a",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "completed",
+    "unit": {
+      "Id": "diesel-release-7db396bc277cd2c70f9d01928a0f4b451fe71d42.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "Result": "success",
+      "InvocationID": "50804c9574814f5d91bd1de5d4ebf3c0",
+      "ExecMainCode": 1,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 0,
+      "ExecMainPID": 2337832
+    },
+    "completion": {
+      "operationId": "11fda0b4-ac9d-400f-9e88-19d8dcc1e402",
+      "invocationId": "50804c9574814f5d91bd1de5d4ebf3c0",
+      "startedAt": "2026-10-14T16:38:09.605Z",
+      "workerPid": 2337832,
+      "completedAt": "2026-10-14T17:00:21.960Z",
+      "exitCode": 0,
+      "signal": null,
+      "spawnFailed": false,
+      "logs": {
+        "stdout": {
+          "bytes": 4429,
+          "truncated": false,
+          "failed": false
+        },
+        "stderr": {
+          "bytes": 468,
+          "truncated": false,
+          "failed": false
+        }
+      }
+    },
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "independentHostValidation": {
+    "release": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+    "exitCode": 0,
+    "checks": [
+      "host-activation-ledger validate",
+      "rollback-host-release --validate-committed"
+    ],
+    "observedAt": "2026-10-14 17:02:23 UTC"
+  },
+  "independentDataReadback": {
+    "release": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+    "previousRelease": "34571465f0c8ecd1f682bbc327808a95ad9bd99d",
+    "beforeAt": "2026-10-14T16:45:40.900Z",
+    "afterAt": "2026-10-14T16:59:27.194Z",
+    "tableCount": 15,
+    "protectedFileCount": 144,
+    "dataContractSha256": "d823b25f2996c0f90fdf0cf2707d960fd980246d969139e98abb9c6e76fc1fd0",
+    "unchanged": true,
+    "current": "/opt/diesel/releases/7db396bc277cd2c70f9d01928a0f4b451fe71d42"
+  },
+  "independentHttpValidation": {
+    "release": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+    "session": 71078,
+    "exitCode": 0,
+    "origins": [
+      "http://127.0.0.1:8788",
+      "https://diesel.jamesky.site"
+    ],
+    "providerCanaryPassed": false,
+    "canaryReport": ".data/release/canary-7db396b-20261015.json",
+    "failedRequestId": "ce9d595f-1b85-4458-b5a6-070988ff3efe",
+    "failure": "RATE_LIMIT_UNAVAILABLE before input/model",
+    "status": 503,
+    "durationMs": 6648
+  },
+  "services": {
+    "diesel": {
+      "pid": 2375238,
+      "status": "online",
+      "restarts": 0
+    },
+    "jameskyApi": {
+      "pid": 1033,
+      "status": "online",
+      "restarts": 0
+    }
+  },
+  "canary": {
+    "checkedAt": "2026-10-14T17:02:30.120Z",
+    "expectedVersion": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+    "includeProviderAi": true,
+    "pass": false,
+    "results": [
+      {
+        "durationMs": 176,
+        "errorCode": null,
+        "id": "liveness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/live",
+        "requestId": "269783e7-ed3f-4a1d-8ea2-c4b828bf9bf1",
+        "status": 200
+      },
+      {
+        "durationMs": 318,
+        "errorCode": null,
+        "id": "readiness",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/health/ready",
+        "requestId": "8ded3bcc-042b-472e-867f-4e4b7cbfc31a",
+        "status": 200
+      },
+      {
+        "durationMs": 5284,
+        "errorCode": null,
+        "id": "country-decision-summary",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-14",
+        "requestId": "a0e05ef3-551a-45fd-b969-47db5ce252b4",
+        "status": 200
+      },
+      {
+        "durationMs": 4406,
+        "errorCode": null,
+        "id": "country-decision-no-data",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-14",
+        "requestId": "25c95724-14ee-4835-b41e-797cd92430f7",
+        "status": 200
+      },
+      {
+        "durationMs": 286,
+        "errorCode": null,
+        "id": "public-products",
+        "method": "GET",
+        "pass": true,
+        "path": "/api/products",
+        "requestId": "3662e7bb-cfd1-4005-a54d-d3ed86accb2c",
+        "status": 200
+      },
+      {
+        "durationMs": 5543,
+        "errorCode": null,
+        "id": "chat-direct-sse",
+        "method": "POST",
+        "pass": true,
+        "path": "/api/chat",
+        "requestId": "4f0665cf-b435-4132-a9e8-7d5169123031",
+        "status": 200
+      },
+      {
+        "durationMs": 6648,
+        "errorCode": "STATUS_MISMATCH",
+        "id": "chat-provider-sse",
+        "method": "POST",
+        "pass": false,
+        "path": "/api/chat",
+        "requestId": "ce9d595f-1b85-4458-b5a6-070988ff3efe",
+        "status": 503
+      }
+    ],
+    "runError": null,
+    "targetOrigin": "https://diesel.jamesky.site",
+    "version": "synthetic-canary-v5"
+  },
+  "canaryDiagnosis": {
+    "requestId": "ce9d595f-1b85-4458-b5a6-070988ff3efe",
+    "routeErrorCode": "RATE_LIMIT_UNAVAILABLE",
+    "serverDurationMs": 6412.548331000027,
+    "publicDurationMs": 6648,
+    "httpStatus": 503,
+    "modelStarted": false,
+    "serverErrorCode": "UNKNOWN_ERROR",
+    "specificDatabaseCause": "not recovered; existing minified constructor-only logs did not retain SQLSTATE",
+    "claim": "The observed failure is before model execution. This is not a passing 15-second provider result or proof of a specific database lock/network cause."
+  },
+  "rollbackDiagnostic": {
+    "version": "temporary-admission-diagnostic-v1",
+    "release": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+    "checkedAt": "2026-10-14T17:07:04.038Z",
+    "runId": "73edf48c-69c6-47df-87d8-8e9917345b56",
+    "providerCalls": 0,
+    "isolatedScopes": true,
+    "forcedRollback": true,
+    "extraSavepointOverhead": true,
+    "remainingRows": 0,
+    "timedOut": false,
+    "records": [
+      {
+        "phase": "cold",
+        "index": 0,
+        "elapsedMs": 2990,
+        "passed": true
+      },
+      {
+        "phase": "warm",
+        "index": 1,
+        "elapsedMs": 2516,
+        "passed": true
+      },
+      {
+        "phase": "warm",
+        "index": 2,
+        "elapsedMs": 1596,
+        "passed": true
+      },
+      {
+        "phase": "concurrent",
+        "index": 0,
+        "elapsedMs": 970,
+        "passed": true
+      },
+      {
+        "phase": "concurrent",
+        "index": 2,
+        "elapsedMs": 2044,
+        "passed": true
+      },
+      {
+        "phase": "concurrent",
+        "index": 1,
+        "elapsedMs": 2506,
+        "passed": true
+      },
+      {
+        "phase": "concurrent",
+        "index": 3,
+        "elapsedMs": 3288,
+        "passed": true
+      }
+    ]
+  },
+  "journalArchival": {
+    "evidenceKind": "historical-operator-record-only",
+    "observedAt": "2026-10-14T11:03:23Z",
+    "target": "111.228.50.85",
+    "archives": [
+      "/opt/diesel/log-archives/closed-journal-20261014.EMifFTUy",
+      "/opt/diesel/log-archives/closed-journal-20261014.dkvwGC2v"
+    ],
+    "files": 12,
+    "originalBytes": 1610612736,
+    "compressedBytes": 280940695,
+    "beforeAvailableBytes": 5373100032,
+    "afterAvailableBytes": 6671278080,
+    "verification": "Each original was ARCHIVED, checksummed, compressed, restored byte-for-byte and journalctl --verify checked before removing that exact original. Current logs, backups and releases preserved.",
+    "failures": [
+      "First attempt emitted unsupported fuser -- syntax; stopped its owned worker after one fully restored/verified file. That original remains recoverable, partial second archive preserved. Corrected fuser invocation and empty-stderr check; explicit remaining eleven completed exit 0."
+    ],
+    "journald": "active",
+    "currentReleaseUnchanged": "34571465f0c8ecd1f682bbc327808a95ad9bd99d"
+  },
+  "followupJournalArchival": {
+    "evidenceKind": "historical-operator-record-only",
+    "observedAt": "2026-10-14T17:31:21.452Z",
+    "target": "111.228.50.85",
+    "archive": "/opt/diesel/log-archives/closed-journal-20261015.4kkuTOL1",
+    "attemptedFiles": 21,
+    "completedFiles": 20,
+    "workerExitCode": 1,
+    "originalBytes": 2684354560,
+    "compressedBytes": 464914720,
+    "beforeFreeBytes": 5206851584,
+    "afterFreeBytes": 7417643008,
+    "verification": "Each completed original had ARCHIVED state, no open users, root ownership and one link; original journal integrity, gzip CRC, SHA256 and byte-for-byte restored comparison and restored journal integrity checked before exact original removal.",
+    "remaining": "system@26142db0756e45edb86c7d22a6d3d28e-00000000004cf679-00065dcc616af429.journal",
+    "remainingReason": "not_open guard failed before compression/removal; fuser independently reports systemd-journal PID 339 with open/mapped reference. Preserved original; no forced close or rotation.",
+    "currentRelease": "7db396bc277cd2c70f9d01928a0f4b451fe71d42",
+    "journald": "active",
+    "capacity": {
+      "releaseAllowed": true,
+      "warning": true,
+      "freeBytes": 7417643008
+    },
+    "archiveMode": "0700/root",
+    "backupsAndReleasesPreserved": true
+  },
+  "remaining": {
+    "realStarterSuite": "not run for this release",
+    "adaptiveTwentyTurns": "not started; admission failure is under repair",
+    "followupBranch": "codex/admission-atomic-reservation",
+    "followupNotDeployed": true
+  },
+  "limitations": [
+    "Operator observations are not signed external attestations.",
+    "A passing isolated rollback diagnostic does not erase the real 503 or establish a long-term availability SLO.",
+    "No quota, database URL, schema, provider timeout or canary deadline was changed; no canary retry overwrote the failure."
+  ]
+}

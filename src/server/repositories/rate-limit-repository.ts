@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import { z } from "zod";
 
 import * as schema from "@/server/db/schema";
 import { apiRateLimitBuckets } from "@/server/db/schema";
@@ -204,6 +205,72 @@ function assertValidHourlyCount(count: number, limit: number): void {
   }
 }
 
+const pairRowSchema = z.strictObject({
+  globalCount: z.number().int().nullable(),
+  clientCount: z.number().int().nullable(),
+}).refine((row) => row.globalCount !== null || row.clientCount === null);
+const pairRowsSchema = z.array(pairRowSchema).length(1);
+const pairResultSchema = z.union([
+  pairRowsSchema,
+  z.object({ rows: pairRowsSchema }).passthrough(),
+]);
+
+function readReservedPair(result: unknown) {
+  const parsed = pairResultSchema.parse(result);
+  return (Array.isArray(parsed) ? parsed : parsed.rows)[0];
+}
+
+function reservePairQuery(input: {
+  client: RateLimitBucketInput;
+  global: RateLimitBucketInput;
+  now: Date;
+  windowStart: Date;
+  expiresAt: Date;
+  units: number;
+}) {
+  // The client INSERT depends on the global RETURNING relation: keep lock
+  // ordering, and do not create a client bucket when global admission fails.
+  // Both writes run in one server command. No network round trip separates
+  // acquiring the shared global row lock from reserving the client bucket.
+  // A missing result still throws inside the enclosing transaction, rolling
+  // back the provisional global increment when the client bucket is full.
+  return sql`
+    with global_reservation as (
+      insert into ${apiRateLimitBuckets}
+        (scope, key_hash, window_start, request_count, expires_at, updated_at)
+      values (
+        ${input.global.scope}, ${input.global.keyHash},
+        ${input.windowStart.toISOString()}, ${input.units},
+        ${input.expiresAt.toISOString()}, ${input.now.toISOString()}
+      )
+      on conflict (scope, key_hash, window_start) do update set
+        request_count = ${apiRateLimitBuckets.requestCount} + ${input.units},
+        expires_at = excluded.expires_at,
+        updated_at = excluded.updated_at
+      where ${apiRateLimitBuckets.requestCount} <= ${input.global.limit - input.units}
+      returning request_count
+    ), client_reservation as (
+      insert into ${apiRateLimitBuckets}
+        (scope, key_hash, window_start, request_count, expires_at, updated_at)
+      select
+        ${input.client.scope}, ${input.client.keyHash},
+        ${input.windowStart.toISOString()}::timestamptz, ${input.units},
+        ${input.expiresAt.toISOString()}::timestamptz,
+        ${input.now.toISOString()}::timestamptz
+      from global_reservation
+      on conflict (scope, key_hash, window_start) do update set
+        request_count = ${apiRateLimitBuckets.requestCount} + ${input.units},
+        expires_at = excluded.expires_at,
+        updated_at = excluded.updated_at
+      where ${apiRateLimitBuckets.requestCount} <= ${input.client.limit - input.units}
+      returning request_count
+    )
+    select
+      (select request_count from global_reservation) as "globalCount",
+      (select request_count from client_reservation) as "clientCount"
+  `;
+}
+
 /**
  * PostgreSQL-backed rate-limit counters shared by every application instance.
  * Hourly request admission reserves the global and client buckets in one
@@ -284,45 +351,13 @@ export function createRateLimitRepository<
               )
           `);
 
-          const reserveBucket = async (bucketInput: RateLimitBucketInput) => {
-            const [bucket] = await transaction
-              .insert(apiRateLimitBuckets)
-              .values({
-                expiresAt: input.expiresAt,
-                keyHash: bucketInput.keyHash,
-                requestCount: 1,
-                scope: bucketInput.scope,
-                updatedAt: input.now,
-                windowStart: input.windowStart,
-              })
-              .onConflictDoUpdate({
-                set: {
-                  expiresAt: input.expiresAt,
-                  requestCount: sql`${apiRateLimitBuckets.requestCount} + 1`,
-                  updatedAt: input.now,
-                },
-                setWhere: sql`${apiRateLimitBuckets.requestCount} < ${bucketInput.limit}`,
-                target: [
-                  apiRateLimitBuckets.scope,
-                  apiRateLimitBuckets.keyHash,
-                  apiRateLimitBuckets.windowStart,
-                ],
-              })
-              .returning({ requestCount: apiRateLimitBuckets.requestCount });
-
-            if (!bucket) {
-              throw new AiChatHourlyRateLimitExhaustedError();
-            }
-            assertValidHourlyCount(bucket.requestCount, bucketInput.limit);
-            return bucket.requestCount;
-          };
-
-          // Every request locks the shared global bucket first. Global
-          // exhaustion therefore never creates a client row. If the client is
-          // full, throwing rolls the provisional global increment back so the
-          // pair remains all-or-nothing across application instances.
-          const globalCount = await reserveBucket(input.global);
-          const clientCount = await reserveBucket(input.client);
+          const { globalCount, clientCount } = readReservedPair(
+            await transaction.execute(reservePairQuery({ ...input, units: 1 })),
+          );
+          if (globalCount === null) throw new AiChatHourlyRateLimitExhaustedError();
+          assertValidHourlyCount(globalCount, input.global.limit);
+          if (clientCount === null) throw new AiChatHourlyRateLimitExhaustedError();
+          assertValidHourlyCount(clientCount, input.client.limit);
           return { allowed: true, clientCount, globalCount } as const;
         });
       } catch (error: unknown) {
@@ -356,47 +391,13 @@ export function createRateLimitRepository<
               )
           `);
 
-          const reserveBucket = async (bucketInput: AiChatAdmissionBucketInput) => {
-            const [bucket] = await transaction
-              .insert(apiRateLimitBuckets)
-              .values({
-                expiresAt: input.resetAt,
-                keyHash: bucketInput.keyHash,
-                requestCount: input.units,
-                scope: bucketInput.scope,
-                updatedAt: input.now,
-                windowStart: input.windowStart,
-              })
-              .onConflictDoUpdate({
-                set: {
-                  expiresAt: input.resetAt,
-                  requestCount: sql`${apiRateLimitBuckets.requestCount} + ${input.units}`,
-                  updatedAt: input.now,
-                },
-                setWhere: sql`${apiRateLimitBuckets.requestCount} <= ${bucketInput.limit - input.units}`,
-                target: [
-                  apiRateLimitBuckets.scope,
-                  apiRateLimitBuckets.keyHash,
-                  apiRateLimitBuckets.windowStart,
-                ],
-              })
-              .returning({ requestCount: apiRateLimitBuckets.requestCount });
-
-            if (!bucket) {
-              throw new AiChatAdmissionBudgetExhaustedError();
-            }
-            assertValidReservedCount(
-              bucket.requestCount,
-              bucketInput.limit,
-              input.units,
-            );
-          };
-
-          // Every transaction locks the shared bucket first and the client
-          // bucket second. If the latter is full, throwing rolls the former
-          // reservation back, so the pair is all-or-nothing across instances.
-          await reserveBucket(input.global);
-          await reserveBucket(input.client);
+          const { globalCount, clientCount } = readReservedPair(
+            await transaction.execute(reservePairQuery({ ...input, expiresAt: input.resetAt })),
+          );
+          if (globalCount === null) throw new AiChatAdmissionBudgetExhaustedError();
+          assertValidReservedCount(globalCount, input.global.limit, input.units);
+          if (clientCount === null) throw new AiChatAdmissionBudgetExhaustedError();
+          assertValidReservedCount(clientCount, input.client.limit, input.units);
           return true;
         });
       } catch (error: unknown) {

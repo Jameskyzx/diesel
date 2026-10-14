@@ -499,10 +499,11 @@ async function processChatRequest(
           const answer = locale === "en"
             ? "I couldn't reliably resolve this request. The previously confirmed context is retained, but these unresolved changes have not been applied. Please restate the goal or changed conditions; I haven't queried using guessed filters."
             : "这次没能可靠地理解你的任务。此前已确认的条件仍保留，本次未理解的修改尚未应用；请换个说法说明目标或变化，我没有用猜测的条件进行查询。";
-          return directChatResponse(answer, previous ? { conversation: { state: previous.state, mode: "clarify",
+          const state = previous?.state ?? { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
+          return directChatResponse(answer, { conversation: { state, mode: "clarify",
             receipt: signConversationReceipt({ sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
-              userText: latestUserText, answer, state: previous.state, previous }),
-          } } : undefined);
+              userText: latestUserText, answer, state, previous }),
+          } });
         }
       }
     }

@@ -1,23 +1,56 @@
 import "server-only";
+import { z } from "zod";
 import type { AiToolResult } from "@/features/ai/schemas";
 import type { PreparedConversationTurn } from "@/server/ai/conversation-plan";
 import { contextText } from "@/server/ai/conversation-plan";
 import type { Locale } from "@/i18n/locale";
+
+function latestAnswer(turn: PreparedConversationTurn): string | null {
+  try {
+    const history = z.array(z.object({ answer: z.string() })).safeParse(JSON.parse(turn.previousAnswer ?? "null"));
+    return history.success ? history.data.at(-1)?.answer ?? null : null;
+  } catch { return null; }
+}
+
+function materialsLocale(text: string, locale: Locale, previousAnswer: string | null): Locale {
+  // Presentation instructions do not change the confirmed query or facts.
+  const requests = [...text.matchAll(/(?:用|使用|以|改成|改为|译成|译为|翻译成|翻译为)\s*(?:简体)?(?:中文|英文)|\b(?:in|into|to|use)\s+(?:simplified\s+)?(?:Chinese|English)\b|(?:中文|英文)(?=.{0,8}(?:邮件|清单))/giu)]
+    .filter(match => !/(?:\bnot|\bdon['’]t|不要|别|不)\s*$/iu.test(text.slice(0, match.index)));
+  const requested = requests.at(-1)?.[0];
+  if (requested) return /(?:English|英文)/iu.test(requested) ? "en" : "zh-CN";
+  // A follow-up rewrite keeps the draft's language, not the UI's language.
+  // Only a known neutral-draft prefix is used; no earlier facts are reused.
+  if (/(?:缩短|精简|再短|改写|重写|翻译|\b(?:shorten|shorter|more concise|rewrite|translate)\b)/iu.test(text)) {
+    if (previousAnswer?.startsWith("您好，请") || previousAnswer?.startsWith("本轮没有重新核验事实")) return "zh-CN";
+    if (previousAnswer?.startsWith("Hello, please") || previousAnswer?.startsWith("This turn has not re-verified facts")) return "en";
+  }
+  return locale;
+}
 
 /** Document requests describe a future verification workflow, not present facts
  * or jurisdiction-specific legal requirements. Server-authored copy is the only
  * text allowed in this channel; model prose never bypasses the evidence guard. */
 export function buildEvidenceRequestResponse(turn: PreparedConversationTurn, locale: Locale, latestUserText: string): string | null {
   if (turn.outputKind === "evidence" || turn.contract.blocksModelText) return null;
-  const english = /(?:用英文|英文.{0,8}(?:邮件|清单)|\bin English\b)/iu.test(latestUserText) || locale === "en";
+  const previousAnswer = latestAnswer(turn);
+  const english = materialsLocale(latestUserText, locale, previousAnswer) === "en";
   const context = contextText(turn.state);
   if (turn.outputKind === "request_email") {
-    const brief = /(?:缩短|精简|简短|\b(?:shorten|short|brief|concise)\b)/iu.test(latestUserText);
-    if (brief) return english
-      ? `Dear Customer, please share the specification sheet, test reports and available certificates${context ? ` for (${context})` : ""}. Please include document versions and traceable originals. We will verify applicability and remaining gaps; this request does not confirm compliance or permission to sell.`
+    const brief = /(?:缩短|精简|简短|再短|短一点|\b(?:shorten|shorter|short|brief|concise)\b)/iu.test(latestUserText);
+    const briefText = english
+      ? `Hello, please share the specification sheet, test reports and available certificates${context ? ` for (${context})` : ""}. Please include document versions and traceable originals. We will verify applicability and remaining gaps; this request does not confirm compliance or permission to sell.`
       : `您好，请提供规格表、检测报告及已有证书${context ? `，用于核对（${context}）` : ""}。请附上文件版本与可追溯原件。我们会核验适用性和剩余缺口，本次索取材料不代表已合规或获准销售。`;
+    if (brief) {
+      // Previous prose may determine presentation length, never current facts.
+      // A second shortening request must not repeat the same short template.
+      const minimalText = english
+        ? `Hello, please send versioned, traceable specifications, test reports and available certificates${context ? ` for (${context})` : ""}. This request does not confirm compliance or permission to sell.`
+        : `您好，请提供带版本、可追溯的规格表、检测报告及已有证书${context ? `（${context}）` : ""}。本次索取不代表已合规或获准销售。`;
+      if (previousAnswer === briefText || previousAnswer === minimalText) return minimalText;
+      return briefText;
+    }
     return english
-      ? `Dear Customer, please share the specification sheet, emission test reports and any available certification documents${context ? ` for the assessment context (${context})` : ""}. Please include document versions, the tested application and power, test cycles, issuer, validity dates and traceable originals where available. We will review their applicability and outstanding gaps before drawing any conclusion; this request does not confirm compliance or permission to sell.`
+      ? `Hello, please share the specification sheet, emission test reports and any available certification documents${context ? ` for the assessment context (${context})` : ""}. Please include document versions, the tested application and power, test cycles, issuer, validity dates and traceable originals where available. We will review their applicability and outstanding gaps before drawing any conclusion; this request does not confirm compliance or permission to sell.`
       : `您好，请提供规格表、排放检测报告及已有认证文件${context ? `，用于核对这些查询条件（${context}）` : ""}。请尽可能附上文件版本、测试用途与功率、测试循环、签发机构、有效期及可追溯原件。我们会先核对适用性与未解决缺口，再讨论结论，本次索取材料不代表已合规或获准销售。`;
   }
   return english

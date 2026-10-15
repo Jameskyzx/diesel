@@ -200,8 +200,14 @@ function countriesInExplicitSourceSpans(text: string): string[] {
   if (!hasExplicitSourceIntent(metadataText) && hasExplicitSourceIntent(text)) {
     return countryIso3sIn(metadataText);
   }
-  return uniqueCountries(
-    splitCountryAwareClauses(metadataText, sourceSpanBoundaryPattern).flatMap((span) => {
+  return uniqueCountries(explicitSourceRequestSpans(metadataText).flatMap(countryIso3sIn));
+}
+
+/** Independent task clauses are not source search constraints. Callers retain
+ * the complete user text for safety/delivery; native literals must not be split. */
+export function explicitSourceRequestSpans(text: string): string[] {
+  if (maskKnowledgeQueryLiterals(text) !== text) return [text];
+  return splitCountryAwareClauses(text, sourceSpanBoundaryPattern).flatMap((span) => {
       const clauses = splitCountryAwareClauses(span, weakConjunctionPattern);
       const sourceClauseIndexes = clauses.flatMap((clause, index) =>
         hasExplicitSourceIntent(clause) ? [index] : [],
@@ -226,10 +232,9 @@ function countriesInExplicitSourceSpans(text: string): string[] {
           end += 1;
         }
 
-        return countryIso3sIn(clauses.slice(start, end).join(" "));
+        return clauses.slice(start, end).join(" ").trim();
       });
-    }),
-  );
+    });
 }
 
 function powerKwsInIntentClauses(text: string, intentPattern: RegExp): number[] {

@@ -122,7 +122,7 @@ const marketTopicPattern =
 const explicitSourceIntentPattern =
   /(?:原文|公告|文档|出处|来源|页码|章节|依据|原始文件)/iu;
 const explicitEnglishSourceIntentPattern =
-  /(?<![\p{L}\p{N}_])(?:sources?|citations?|(?:official|original)\s+(?:documents?|files?|texts?|wording|notices?|publications?))(?![\p{L}\p{N}_])/iu;
+  /(?<![\p{L}\p{N}_])(?:sources?|citations?|(?:official|original)\s+(?:documents?|files?|texts?|wording|notices?|publications?)|original\b[^,;.!?\n]{0,120}\b(?:documents?|texts?|wording))(?![\p{L}\p{N}_])/iu;
 const knowledgeIntentPattern =
   /(?:原文|公告|文档|章节|条款|知识库|检索证据|来源|出处|页码|依据|original\s*(?:text|wording)|knowledge\s*base|section|clause)/iu;
 const countryProfileIntentPattern =

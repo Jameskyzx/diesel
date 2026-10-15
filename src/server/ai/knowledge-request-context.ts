@@ -428,6 +428,19 @@ export function knowledgeTermsIn(
   );
 }
 
+/** A request for citations alone refers to its surrounding/retained subject;
+ * it is not a replacement retrieval topic. Share this test with task splitting. */
+export function hasSubstantiveKnowledgeTopic(text: string, contextCountryIso3s: readonly string[] = []): boolean {
+  const excludedCountries = uniqueCountries([...contextCountryIso3s, ...countryIso3sIn(text)]);
+  const topicText = text.replace(/^(?:\s*(?:and|also|then|please|explain|provide|include|list|show|give|their|its)\b\s*|\s*(?:并且?|同时|请|说明|提供|列出|给出|附上|其))+/iu, "");
+  const terms = knowledgeTermsIn(maskKnowledgeSignedOperands(topicText), excludedCountries);
+  const identifierSyntaxTokens = knowledgeIdentifierSyntaxTokens(
+    terms.filter(term => nonSubstantiveKnowledgeIdentifierPrefix(term) !== null),
+  );
+  return terms.some(term => !genericSourceFollowUpTokens.has(term) && !sourceRequirementWords.has(term) &&
+    nonSubstantiveKnowledgeIdentifierPrefix(term) === null && !identifierSyntaxTokens.has(term));
+}
+
 function latestSubstantiveKnowledgeRequestIn(
   userTexts: readonly string[],
   contextCountryIso3s: readonly string[],
@@ -439,26 +452,7 @@ function latestSubstantiveKnowledgeRequestIn(
   const knowledgeRequests = userTexts.map((text, index) => ({ text, index })).filter(
     ({ text }) => activeConversationTaskIn(text) === "knowledge",
   );
-  const substantiveRequest = knowledgeRequests.findLast(({ text }) => {
-    const excludedCountries = uniqueCountries([
-      ...contextCountryIso3s,
-      ...countryIso3sIn(text),
-    ]);
-    // A source-only refinement such as "continue sources -BRA" does not
-    // replace the established business topic with the excluded country word.
-    const terms = knowledgeTermsIn(maskKnowledgeSignedOperands(text), excludedCountries);
-    const identifierSyntaxTokens = knowledgeIdentifierSyntaxTokens(
-      terms.filter(
-        (term) => nonSubstantiveKnowledgeIdentifierPrefix(term) !== null,
-      ),
-    );
-    return terms.some(
-      (term) =>
-        !genericSourceFollowUpTokens.has(term) &&
-        nonSubstantiveKnowledgeIdentifierPrefix(term) === null &&
-        !identifierSyntaxTokens.has(term),
-    );
-  });
+  const substantiveRequest = knowledgeRequests.findLast(({ text }) => hasSubstantiveKnowledgeTopic(text, contextCountryIso3s));
 
   return substantiveRequest ?? knowledgeRequests.at(-1) ?? null;
 }
@@ -697,6 +691,29 @@ function referenceSpansIn(text: string): Array<TextReplacement & { terms: string
   }));
 }
 
+/** In an explicit reference replacement, the old locator is context, not an
+ * additional search operand. Reuse reference spans so quotes/IDs stay atomic. */
+function referenceEditOperands(text: string): string {
+  const spans = [...new Map(referenceSpansIn(text).map(span => [`${span.start}/${span.end}`, span])).values()]
+    .sort((left, right) => left.start - right.start);
+  const removals: TextReplacement[] = [];
+  for (let index = 0; index + 1 < spans.length; index += 1) {
+    const old = spans[index]!, next = spans[index + 1]!;
+    const prefix = old.terms.map(replaceableKnowledgeIdentifierPrefix).find(Boolean);
+    if (!prefix || !next.terms.some(term => term.startsWith(prefix))) continue;
+    const before = text.slice(0, old.start).split(/[,，。;；!?！？\n]/u).at(-1) ?? "";
+    const between = text.slice(old.end, next.start).trim();
+    const replaces = /^(?:换成|换为|改成|改为|变为)$/u.test(between) ||
+      (/^to$/iu.test(between) && /\bfrom\s*$/iu.test(before)) ||
+      (/^with$/iu.test(between) && /\breplace\s*$/iu.test(before));
+    if (!replaces) continue;
+    const negated = /(?:不要|不用|不必|别|\b(?:not|don't|never)\b)/iu.test(before);
+    removals.push({ start: old.start, end: old.end, value: " " });
+    if (negated) removals.push({ start: next.start, end: next.end, value: " " });
+  }
+  return replaceSpans(text, removals);
+}
+
 function withCurrentReferences(text: string, terms: readonly string[]): string {
   const references = terms.filter((term) => replaceableKnowledgeIdentifierPrefix(term) !== null);
   const replacements = referenceSpansIn(text).flatMap((span) => {
@@ -777,6 +794,7 @@ export function buildKnowledgeRequestContext(
   const countries = uniqueCountries([...context.countryIso3s, ...countryIso3sIn(request.text)]);
   const scopedText = withCurrentScope(sourceSearchTextIn(unwrapKnowledgeTermRequest(request.text)), context);
   let terms = knowledgeTermsIn(scopedText, countries);
+  const sourceIncludesPower = terms.some(term => term.startsWith("power:"));
   const signedRefinements: string[] = [];
   let requiresRestatement = false;
   for (const followUp of requestTexts.slice(request.index + 1)) {
@@ -795,9 +813,13 @@ export function buildKnowledgeRequestContext(
         signedRefinementHasUnboundWords(followUpQuery)) requiresRestatement = true;
       signedRefinements.push(...signed);
     }
-    const identifiers = knowledgeIdentifierTermsIn(followUp).filter((term) => replaceableKnowledgeIdentifierPrefix(term) !== null);
+    const identifiers = knowledgeIdentifierTermsIn(referenceEditOperands(followUp)).filter((term) => replaceableKnowledgeIdentifierPrefix(term) !== null &&
+      // Typed source state owns the retained search projection. A shared power
+      // edit must not introduce a new FTS condition into a source-only topic;
+      // an existing explicit power term can still be updated normally.
+      (!options.retainFirstRequest || sourceIncludesPower || !term.startsWith("power:")));
     terms = mergeContextualKnowledgeIdentifiers(terms, identifiers);
-    if (activeConversationTaskIn(followUp) === "knowledge") {
+    if (!options.retainFirstRequest && activeConversationTaskIn(followUp) === "knowledge") {
       const requested = knowledgeTermsIn(followUp, uniqueCountries([...countries, ...countryIso3sIn(followUp)]))
         .filter((term) => sourceRequirementWords.has(term));
       // An equivalent localized spelling does not add a second requirement.
@@ -819,5 +841,10 @@ export function buildKnowledgeRequestContext(
   }
   // Never truncate a query to fit the tool cap: Zod and the evidence boundary
   // must reject an unrepresentable request instead of silently dropping terms.
-  return { query, terms, requiresRestatement, ...knowledgeDeliveryIn(query, terms, countries) };
+  const delivery = knowledgeDeliveryIn(query, terms, countries);
+  // A typed retained source task already separates its topic from follow-up
+  // controls. Locator delivery is structured metadata, not individual Chinese
+  // characters to append to the search topic. Keep native signed/ID edits above.
+  if (options.retainFirstRequest) delivery.delivery = knowledgeDeliveryIn(requestTexts.join("\n"), terms, countries).delivery;
+  return { query, terms, requiresRestatement, ...delivery };
 }

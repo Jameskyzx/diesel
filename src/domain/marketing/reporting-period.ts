@@ -23,11 +23,55 @@ export function explicitMarketReportingPeriod(text: string): { period?: MarketRe
   const years = [...prose.matchAll(/(?<![\dA-Za-z])((?:19|20)\d{2})(?:年|\b)/gu)].map(match => Number(match[1]));
   const unique = [...new Set(years)];
   if (unique.length === 0) return { ambiguous: false };
-  if (/(?:发布|出版|签发|文件版本|\b(?:published|publication|issued|released|document version)\b)/iu.test(prose))
+  if (/(?:发布|出版|签发|文件版本|\b(?:published|publication|issued|released|edition|document version)\b)/iu.test(prose))
     return { ambiguous: true };
   const start = range ? Number(range[1]) : unique[0]!;
   const end = range ? Number(range[2]) : start;
   if ((unique.length > 1 && !range) || unique.some(year => year < start || year > end) || end < start)
     return { ambiguous: true };
   return { ambiguous: false, period: { start: `${start}-01-01`, end: `${end + 1}-01-01` } };
+}
+
+/** Ground the planner's selected operand, not every number mentioned in a
+ * compound edit. Selection cannot turn an excluded/publication/identifier year
+ * into a requested observation period or slice a range into a different one. */
+export function selectedMarketReportingPeriod(text: string, expression: string) {
+  if (!text.includes(expression)) return { ambiguous: true };
+  const parsed = explicitMarketReportingPeriod(expression);
+  if (!parsed.ambiguous) return groundedPeriodOperand(text, expression);
+  // Providers may select the whole correction, including its declined operand.
+  // Resolve roles in the complete user clause, then normalize the one positive
+  // operand. Multiple positive periods remain ambiguous; do not pick the first.
+  const periods = [...expression.matchAll(/(?<![\dA-Za-z])(?:19|20)\d{2}(?:年|\b)(?:\s*(?:至|到|through|to|–|—)\s*(?:19|20)\d{2}(?:年|\b))?/giu)]
+    .map(match => groundedPeriodOperand(text, match[0]).period).filter(period => period !== undefined);
+  const unique = [...new Map(periods.map(period => [`${period.start}/${period.end}`, period])).values()];
+  return unique.length === 1 ? { ambiguous: false, period: unique[0] } : { ambiguous: true };
+}
+
+function groundedPeriodOperand(text: string, expression: string): { period?: MarketReportingPeriod; ambiguous: boolean } {
+  const parsed = explicitMarketReportingPeriod(expression);
+  if (!parsed.period) return parsed;
+  let offset = text.indexOf(expression);
+  while (offset >= 0) {
+    const before = text.slice(0, offset);
+    const after = text.slice(offset + expression.length);
+    const clauseBoundary = /[,，。;；!?！？\n]|\.(?=\s|$)/u;
+    const clauseBefore = before.split(clauseBoundary).at(-1) ?? "";
+    const clauseAfter = after.split(clauseBoundary)[0] ?? "";
+    const clause = clauseBefore + expression + clauseAfter;
+    const invalidRole = /(?:不要|不使用|别用|而非|不是|发布|出版|签发|文件版本|\b(?:not|instead of|rather than|published|publication|issued|released|edition|document version)\b)/iu
+      .test(clauseBefore + expression) || /^\s*(?:年)?\s*(?:发布|出版|签发|千瓦|\b(?:publication|release|edition|kW)\b)/iu.test(clauseAfter);
+    // A separator belongs to an identifier only when it connects word parts.
+    // Sentence-final punctuation must not turn an ordinary year into an ID.
+    const splitToken = /(?:[A-Za-z0-9_]|[A-Za-z0-9_][./-])$/u.test(before) ||
+      /^(?:[A-Za-z0-9_]|[./-][A-Za-z0-9_])/u.test(after);
+    const quoted = [...text.matchAll(/["“][^"”]*["”]/gu)]
+      .some(match => offset >= match.index && offset < match.index + match[0].length);
+    const positiveAlternative = /(?:或者|或是|\bor\b)/iu.test(clause) && explicitMarketReportingPeriod(clause).ambiguous;
+    const whole = explicitMarketReportingPeriod(clause);
+    const splitsRange = whole.period && (whole.period.start !== parsed.period.start || whole.period.end !== parsed.period.end);
+    if (!invalidRole && !splitToken && !quoted && !positiveAlternative && !splitsRange) return parsed;
+    offset = text.indexOf(expression, offset + 1);
+  }
+  return { ambiguous: true };
 }

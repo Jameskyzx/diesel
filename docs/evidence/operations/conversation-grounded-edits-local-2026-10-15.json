@@ -3955,6 +3955,265 @@
     "automaticRetries": 0,
     "note": "The actual provider failure remains failed; earlier API-call failure was misclassified as clarification and is preserved separately."
   },
+  "preReleaseFullTestFailure": {
+    "sourceCommit": "e2a9c6e",
+    "testFiles": 314,
+    "tests": 9206,
+    "passed": 9199,
+    "failed": 1,
+    "skipped": 6,
+    "captureExitCode": 1,
+    "failure": "tests/conversation-plan.test.ts: continues independent research when the planner paraphrases a Chinese source request; source query lost 排放法规 and became 说明证据来源",
+    "focusedReproduction": "82 tests: 81 passed, 1 failed; same assertion reproduced",
+    "resolution": "Keep the surrounding question's topic when its source clause is referential rather than substantive. Preserve separate document-topic isolation for independent source requests. Original assertion retained."
+  },
+  "topicRepairRealRun": {
+    "path": ".data/release/production-conversation-0a1dcb54-17f5-4763-b160-282f2d82f3c5.jsonl",
+    "expectations": [
+      {
+        "turn": 1,
+        "text": "In English, find the original EU 2016/1628 test-cycle text on page 4 for DEU construction as of 2026-09-01, and separately check product CLIENT-200 at 150 kW. Keep missing evidence explicit.",
+        "expected": "Both knowledge and product_fit; source query has EU identifier/test-cycle/page 4, not CLIENT-200 or power; state DEU construction150/date; unknown product remains unknown."
+      },
+      {
+        "turn": 2,
+        "text": "Change the power to 80 kW. Keep the source topic, page and all other conditions.",
+        "expected": "power80 only; same two tasks; query unchanged EU test-cycle page4, no power inserted."
+      },
+      {
+        "turn": 3,
+        "text": "Stop checking the product. Change from page 4 to page 5; keep only the original source lookup.",
+        "expected": "Only knowledge; page5 replaces4; DEU/construction/date retained; no product tool."
+      },
+      {
+        "turn": 4,
+        "text": "Change topics: compare Brazil and China market observations for 2023. Do not carry over the engine filters or source search.",
+        "expected": "Only market BRA+CHN, reporting2023 interval, no old scope/power/product/source, not clarify."
+      }
+    ],
+    "verdicts": [
+      {
+        "turn": 1,
+        "passed": true,
+        "reason": "Both independently scoped tools executed; exact source identifiers/page retained, unknown product no_data, English gap, no reasoning."
+      },
+      {
+        "turn": 2,
+        "passed": true,
+        "reason": "Power changed to80; source query exactly retained; both tasks/other filters intact."
+      },
+      {
+        "turn": 3,
+        "passed": true,
+        "reason": "Product retired; only source tool; page5 replaces4 without accumulation."
+      },
+      {
+        "turn": 4,
+        "passed": false,
+        "reason": "HTTP503 after592ms; no signed state/SSE or tools. Semantic market transition not evaluated; not a pass."
+      }
+    ],
+    "turns": [
+      {
+        "checkedAt": "2026-10-15T01:51:44.501Z",
+        "release": "local-topic-repair",
+        "request": 1,
+        "turn": 1,
+        "input": "In English, find the original EU 2016/1628 test-cycle text on page 4 for DEU construction as of 2026-09-01, and separately check product CLIENT-200 at 150 kW. Keep missing evidence explicit.",
+        "locale": "en",
+        "status": 200,
+        "requestId": "f852f0ef-0059-44e8-a2e1-36f6c33d030c",
+        "elapsedMs": 5489,
+        "state": {
+          "tasks": [
+            "knowledge",
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 150,
+          "asOf": "2026-09-01",
+          "productModelCode": "CLIENT-200"
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "This request lacks enough evidence for an affirmative regulatory, market, or product conclusion.\n\nNext steps:\n1. The knowledge base has no matching source text for DEU. Narrow the regulation, pollutant, section, or date range.\n2. DEU lacks sufficient evidence for a conclusive product-fit decision for Construction equipment, 150 kW, as of Sep 1, 2026. Check product, certification, and regulatory evidence.\n\nFor information only; not a substitute for formal certification or legal advice.",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "searchKnowledgeBase",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-09-01",
+              "applicationScope": "construction",
+              "query": "EU 2016/1628 test-cycle text page 4"
+            },
+            "citationCount": 0
+          },
+          {
+            "valid": true,
+            "tool": "findCompatibleProducts",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-09-01",
+              "applicationScope": "construction",
+              "powerKw": 150,
+              "productModelCode": "CLIENT-200"
+            },
+            "citationCount": 4
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-15T01:52:02.563Z",
+        "release": "local-topic-repair",
+        "request": 2,
+        "turn": 2,
+        "input": "Change the power to 80 kW. Keep the source topic, page and all other conditions.",
+        "locale": "en",
+        "status": 200,
+        "requestId": "e702968e-b079-44f9-914a-fa330dff5a3b",
+        "elapsedMs": 3739,
+        "state": {
+          "tasks": [
+            "knowledge",
+            "product_fit"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 80,
+          "asOf": "2026-09-01",
+          "productModelCode": "CLIENT-200"
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "This request lacks enough evidence for an affirmative regulatory, market, or product conclusion.\n\nNext steps:\n1. The knowledge base has no matching source text for DEU. Narrow the regulation, pollutant, section, or date range.\n2. DEU lacks sufficient evidence for a conclusive product-fit decision for Construction equipment, 80 kW, as of Sep 1, 2026. Check product, certification, and regulatory evidence.\n\nFor information only; not a substitute for formal certification or legal advice.",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "searchKnowledgeBase",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-09-01",
+              "applicationScope": "construction",
+              "query": "EU 2016/1628 test-cycle text page 4"
+            },
+            "citationCount": 0
+          },
+          {
+            "valid": true,
+            "tool": "findCompatibleProducts",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-09-01",
+              "applicationScope": "construction",
+              "powerKw": 80,
+              "productModelCode": "CLIENT-200"
+            },
+            "citationCount": 4
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-15T01:52:17.523Z",
+        "release": "local-topic-repair",
+        "request": 3,
+        "turn": 3,
+        "input": "Stop checking the product. Change from page 4 to page 5; keep only the original source lookup.",
+        "locale": "en",
+        "status": 200,
+        "requestId": "ec0a794d-7d78-459a-8602-eae0722bdbf8",
+        "elapsedMs": 2728,
+        "state": {
+          "tasks": [
+            "knowledge"
+          ],
+          "countryIso3s": [
+            "DEU"
+          ],
+          "applicationScope": "construction",
+          "powerKw": 80,
+          "asOf": "2026-09-01",
+          "productModelCode": null
+        },
+        "mode": "research",
+        "conversationReceiptPresent": true,
+        "text": "This request lacks enough evidence for an affirmative regulatory, market, or product conclusion.\n\nNext steps:\n1. The knowledge base has no matching source text for DEU. Narrow the regulation, pollutant, section, or date range.\n\nFor information only; not a substitute for formal certification or legal advice.",
+        "tools": [
+          {
+            "valid": true,
+            "tool": "searchKnowledgeBase",
+            "status": "no_data",
+            "evidenceSufficient": false,
+            "query": {
+              "countryIso3": "DEU",
+              "asOf": "2026-09-01",
+              "applicationScope": "construction",
+              "query": "EU 2016/1628 test-cycle text page 5"
+            },
+            "citationCount": 0
+          }
+        ],
+        "finishReason": "stop",
+        "done": true,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": true
+      },
+      {
+        "checkedAt": "2026-10-15T01:52:32.997Z",
+        "release": "local-topic-repair",
+        "request": 4,
+        "turn": 4,
+        "input": "Change topics: compare Brazil and China market observations for 2023. Do not carry over the engine filters or source search.",
+        "locale": "en",
+        "status": 503,
+        "requestId": "b0c34e8e-215d-4908-952f-2d03aacfdeb7",
+        "elapsedMs": 592,
+        "state": null,
+        "mode": null,
+        "conversationReceiptPresent": false,
+        "text": "",
+        "tools": [],
+        "finishReason": null,
+        "done": false,
+        "errors": 0,
+        "reasoningPresent": false,
+        "transportPassed": false
+      }
+    ],
+    "sourceState": "dirty local candidate after referential source-topic correction; not production acceptance",
+    "automaticRetries": 0,
+    "mocks": false,
+    "providerFailure": {
+      "requestId": "b0c34e8e-215d-4908-952f-2d03aacfdeb7",
+      "providerStatusCode": 503,
+      "publicStatusCode": 503,
+      "admissionPassed": true
+    }
+  },
   "boundaries": [
     "The aborted first chain retains its failed third turn.",
     "Later code changes are not retroactively proved by earlier passing turns.",

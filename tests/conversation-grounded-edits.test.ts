@@ -21,6 +21,23 @@ const filtersOf = (value: ConversationState) => Object.fromEntries(Object.entrie
 
 describe("grounded operands are separate from mentioned context and presentation", () => {
   it.each([
+    ["查询 DEU 工程机械 150 kW 在 2026-09-01 有效的排放法规，说明证据来源。", "排放法规"],
+    ["查询 DEU 工程机械 150 kW 在 2026-09-01 有效的排放法规，并给出原文来源。", "排放法规"],
+    ["Compare DEU construction emission regulations at 150 kW as of 2026-09-01; show original sources.", "emission regulations"],
+    ["Compare DEU construction emission regulations at 150 kW as of 2026-09-01 and include their sources.", "emission regulations"],
+  ])("keeps the subject of a referential source request: %s", (text, topic) => {
+    const turn = prepareConversationRequest({ ...common, previous: null, userTexts: [text], plan: {
+      operation: "research", state: filtersOf({ ...state, countryIso3s: ["DEU"] }),
+      countryUpdate: "replace", countryOperands: ["DEU"], filterResets: [], requests: [
+        { task: "regulations" }, { task: "knowledge", sourceUpdate: "replace", sourceTerms: ["unmentioned paraphrase"] },
+      ],
+    } });
+    expect(turn.sourceTerms).toEqual([]);
+    expect(turn.contract.requirements.map(requirement => requirement.acceptedTools)).toEqual([["compareRegulations"], ["searchKnowledgeBase"]]);
+    expect(turn.contract.requirements[1]?.query.knowledgeQuery).toContain(topic);
+    expect(turn.contract.requirements[1]?.query.knowledgeQuery).not.toContain("unmentioned paraphrase");
+  });
+  it.each([
     "Then use 2022, not 2023. Keep both countries and show what can actually be compared.",
     "Use 2022 instead of 2023",
     "Use 2022 rather than 2023",

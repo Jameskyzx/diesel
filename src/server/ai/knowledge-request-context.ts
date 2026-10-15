@@ -428,6 +428,19 @@ export function knowledgeTermsIn(
   );
 }
 
+/** A request for citations alone refers to its surrounding/retained subject;
+ * it is not a replacement retrieval topic. Share this test with task splitting. */
+export function hasSubstantiveKnowledgeTopic(text: string, contextCountryIso3s: readonly string[] = []): boolean {
+  const excludedCountries = uniqueCountries([...contextCountryIso3s, ...countryIso3sIn(text)]);
+  const topicText = text.replace(/^(?:\s*(?:and|also|then|please|explain|provide|include|list|show|give|their|its)\b\s*|\s*(?:并且?|同时|请|说明|提供|列出|给出|附上|其))+/iu, "");
+  const terms = knowledgeTermsIn(maskKnowledgeSignedOperands(topicText), excludedCountries);
+  const identifierSyntaxTokens = knowledgeIdentifierSyntaxTokens(
+    terms.filter(term => nonSubstantiveKnowledgeIdentifierPrefix(term) !== null),
+  );
+  return terms.some(term => !genericSourceFollowUpTokens.has(term) && !sourceRequirementWords.has(term) &&
+    nonSubstantiveKnowledgeIdentifierPrefix(term) === null && !identifierSyntaxTokens.has(term));
+}
+
 function latestSubstantiveKnowledgeRequestIn(
   userTexts: readonly string[],
   contextCountryIso3s: readonly string[],
@@ -439,26 +452,7 @@ function latestSubstantiveKnowledgeRequestIn(
   const knowledgeRequests = userTexts.map((text, index) => ({ text, index })).filter(
     ({ text }) => activeConversationTaskIn(text) === "knowledge",
   );
-  const substantiveRequest = knowledgeRequests.findLast(({ text }) => {
-    const excludedCountries = uniqueCountries([
-      ...contextCountryIso3s,
-      ...countryIso3sIn(text),
-    ]);
-    // A source-only refinement such as "continue sources -BRA" does not
-    // replace the established business topic with the excluded country word.
-    const terms = knowledgeTermsIn(maskKnowledgeSignedOperands(text), excludedCountries);
-    const identifierSyntaxTokens = knowledgeIdentifierSyntaxTokens(
-      terms.filter(
-        (term) => nonSubstantiveKnowledgeIdentifierPrefix(term) !== null,
-      ),
-    );
-    return terms.some(
-      (term) =>
-        !genericSourceFollowUpTokens.has(term) &&
-        nonSubstantiveKnowledgeIdentifierPrefix(term) === null &&
-        !identifierSyntaxTokens.has(term),
-    );
-  });
+  const substantiveRequest = knowledgeRequests.findLast(({ text }) => hasSubstantiveKnowledgeTopic(text, contextCountryIso3s));
 
   return substantiveRequest ?? knowledgeRequests.at(-1) ?? null;
 }

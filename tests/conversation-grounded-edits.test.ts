@@ -21,6 +21,37 @@ const filtersOf = (value: ConversationState) => Object.fromEntries(Object.entrie
 
 describe("grounded operands are separate from mentioned context and presentation", () => {
   it.each([
+    "Then use 2022, not 2023. Keep both countries and show what can actually be compared.",
+    "Use 2022 instead of 2023",
+    "Use 2022 rather than 2023",
+    "不要2023年的数据，统计期换为2022年。",
+    "那退回 2022 年再看，不要拿 2023 年的数据代替。",
+    "Compare observations for 2022; the report was published in 2024.",
+  ])("normalizes a whole correction without requiring a provider-chosen substring: %s", text => {
+    const market: ConversationState = { ...state, tasks: ["market"], applicationScope: null, powerKw: null, asOf: null };
+    const turn = prepareConversationRequest({ ...common, previous: prior(market, { ...memory,
+      marketPeriod: { start: "2023-01-01", end: "2024-01-01" } }), userTexts: [text], plan: {
+      operation: "research", state: filtersOf(market), countryOperands: [], filterResets: [], countryUpdate: "retain",
+      requests: [{ task: "market", marketPeriodUpdate: "replace", marketPeriodText: text }],
+    } });
+    expect(turn.memory.marketPeriod).toEqual({ start: "2022-01-01", end: "2023-01-01" });
+    expect(turn.contract.missingRequiredParameters).toEqual([]);
+    expect(compiledEvidenceToolCalls(turn.contract)[0]).toMatchObject({ tool: "compareMarkets",
+      input: { countryIso3s: ["JPN", "DEU"], marketPeriod: { start: "2022-01-01", end: "2023-01-01" } } });
+  });
+  it.each([
+    "Use 2022 or 2023", "Use 2022, or 2023", "Compare 2022 and 2023", "不要2022，也不要2023",
+    "not 2022, not 2023", "Report published in 2022, edition 2023", "Use 2022; use 2023",
+    "2022 through 2024 or 2025", "2000 kW, report published in 2023",
+  ])("cannot resolve an excluded, publication-only or multiply positive period: %s", text => {
+    expect(selectedMarketReportingPeriod(text, text).period).toBeUndefined();
+  });
+  it("keeps a complete positive range while excluding the declined prior period", () => {
+    const text = "Use 2020 through 2022, not 2023";
+    expect(selectedMarketReportingPeriod(text, text)).toEqual({ ambiguous: false,
+      period: { start: "2020-01-01", end: "2023-01-01" } });
+  });
+  it.each([
     ["先去掉日本，保留德国，其他条件照旧。", "remove", ["JPN"], ["DEU"]],
     ["Keep Germany; remove Japan.", "remove", ["JPN"], ["DEU"]],
     ["不动日本和德国，把法国加进来。", "add", ["FRA"], ["JPN", "DEU", "FRA"]],
@@ -105,6 +136,7 @@ describe("grounded operands are separate from mentioned context and presentation
   });
   it("cannot configure a source/market task independently of membership, or duplicate a task", () => {
     for (const extra of [{ sourceUpdate: "replace" }, { marketPeriodUpdate: "replace" },
+      { requests: [{ task: "market", marketPeriodUpdate: "replace", marketPeriodText: "2022", marketPeriod: { start: "2022-01-01", end: "2023-01-01" } }] },
       { state }, { requests: [{ task: "regulations" }, { task: "regulations" }] },
       { requests: [{ task: "regulations", sourceTerms: ["EU 2016/1628"] }] }]) {
       expect(conversationPlannerSchema.safeParse({ operation: "research", state: filtersOf(state), countryOperands: [], filterResets: [],
@@ -137,6 +169,70 @@ describe("grounded operands are separate from mentioned context and presentation
     expect(turn.state.tasks).toEqual(["market"]);
     expect(turn.memory.marketPeriod).toEqual(period);
     expect(turn.outputKind).toBe("request_checklist");
+  });
+  it("does not let irrelevant engine-reset metadata veto a new unscoped market task", () => {
+    const text = "Change topics: compare Brazil and China market observations for 2023. Do not carry over the engine filters or source search.";
+    const turn = prepareConversationRequest({ ...common, previous: prior(), userTexts: [text], plan: {
+      operation: "research", state: { countryIso3s: ["BRA", "CHN"], powerKw: null, applicationScope: null, asOf: null, productModelCode: null },
+      countryUpdate: "replace", countryOperands: ["BRA", "CHN"],
+      filterResets: [{ field: "power", expression: "Do not carry over the engine filters" }, { field: "scope", expression: "Do not carry over the engine filters" }],
+      requests: [{ task: "market", marketPeriodUpdate: "replace", marketPeriodText: "2023" }],
+    } });
+    expect(turn.filterResets).toEqual([]);
+    expect(turn.state).toMatchObject({ tasks: ["market"], countryIso3s: ["BRA", "CHN"], powerKw: null, applicationScope: null });
+    expect(turn.contract.missingRequiredParameters).toEqual([]);
+    expect(compiledEvidenceToolCalls(turn.contract)[0]).toMatchObject({ tool: "compareMarkets", input: { countryIso3s: ["BRA", "CHN"], marketPeriod: { start: "2023-01-01", end: "2024-01-01" } } });
+  });
+  it.each([
+    "In English, find the original EU 2016/1628 test-cycle text on page 4 for DEU construction as of 2026-09-01, and separately check product CLIENT-200 at 150 kW.",
+    "Check product CLIENT-200 at 150 kW for DEU construction as of 2026-09-01; find original EU 2016/1628 test-cycle text on page 4.",
+    "Find original EU 2016/1628 test-cycle text on page 4 and check product CLIENT-200 at 150 kW for DEU construction as of 2026-09-01.",
+  ])("grounds source constraints in their own task, not the independent product clause: %s", text => {
+    const sourceState: ConversationState = { ...state, tasks: ["knowledge", "product_fit"], countryIso3s: ["DEU"], productModelCode: "CLIENT-200" };
+    const turn = prepareConversationRequest({ ...common, previous: null, userTexts: [text], plan: {
+      operation: "research", state: filtersOf(sourceState), countryOperands: ["DEU"], filterResets: [],
+      requests: [{ task: "knowledge", sourceUpdate: "replace", sourceTerms: ["EU 2016/1628", "test-cycle text"] }, { task: "product_fit" }],
+    } });
+    expect(turn.memory.sourceRequest).toBe(text);
+    expect(turn.memory.sourceText).toBe("EU 2016/1628 test-cycle text page 4");
+    expect(turn.contract.requirements[0]?.query).toMatchObject({ knowledgeQuery: "EU 2016/1628 test-cycle text page 4",
+      knowledgeDelivery: { pages: ["4"] }, countryIso3s: ["DEU"], asOf: "2026-09-01", applicationScope: "construction" });
+    expect(turn.contract.requirements[1]?.query.productModelCode).toBe("CLIENT-200");
+  });
+  it("still binds identifiers that are actually inside the source task", () => {
+    const text = "Find original CLIENT-200 test-cycle text in DEU construction at 150 kW as of 2026-09-01 and check product CLIENT-200.";
+    const turn = prepareConversationRequest({ ...common, previous: null, userTexts: [text], plan: {
+      operation: "research", state: filtersOf({ ...state, countryIso3s: ["DEU"], productModelCode: "CLIENT-200" }), countryOperands: ["DEU"], filterResets: [],
+      requests: [{ task: "knowledge", sourceUpdate: "replace", sourceTerms: ["test-cycle text"] }, { task: "product_fit" }],
+    } });
+    expect(turn.contract.requirements[0]?.query.knowledgeQuery).toContain("CLIENT-200");
+    expect(turn.contract.requirements[0]?.query.knowledgeQuery).not.toContain("check product");
+  });
+  it.each([
+    ["EU 2016/1628 排放测试循环 page 4", "EU 2016/1628 排放测试循环 page 4"],
+    ["EU 2016/1628 排放测试循环 150 kW page 4", "EU 2016/1628 排放测试循环 80 kW page 4"],
+  ])("does not introduce a new source keyword from a shared power edit: %s", (source, expected) => {
+    const sourceState: ConversationState = { ...state, tasks: ["knowledge", "product_fit"], countryIso3s: ["DEU"], productModelCode: "CLIENT-200" };
+    const previous = prior(sourceState, { ...memory, sourceRequest: source, sourceText: source });
+    const turn = prepareConversationPlan({ ...common, previous, userTexts: ["那就按 80 kW 重新核对，其他条件全部沿用。"],
+      plan: { mode: "research", state: sourceState, sourceUpdate: "refine" } });
+    expect(turn.state.powerKw).toBe(80);
+    expect(turn.contract.requirements[0]?.query.knowledgeQuery).toBe(expected);
+    expect(turn.contract.requirements[0]?.query.knowledgeDelivery?.pages).toEqual(["4"]);
+  });
+  it.each([
+    ["把页码从第 4 页换成第 5 页，主题和日期保持。", "5"],
+    ["Change from page 4 to page 5; retain the topic.", "5"],
+    ["Replace page 4 with page 5.", "5"],
+    ["不要把第 4 页换成第 5 页。", "4"],
+    ["Do not replace page 4 with page 5.", "4"],
+  ])("treats a replaced locator as an edit operand, not an additional page: %s", (text, page) => {
+    const source = "EU 2016/1628 test-cycle text page 4";
+    const sourceState: ConversationState = { ...state, tasks: ["knowledge"], countryIso3s: ["DEU"] };
+    const turn = prepareConversationPlan({ ...common, previous: prior(sourceState, { ...memory, sourceRequest: source, sourceText: source }),
+      userTexts: [text], plan: { mode: "research", state: sourceState, sourceUpdate: "refine" } });
+    expect(turn.contract.requirements[0]?.query.knowledgeQuery).toBe(`EU 2016/1628 test-cycle text page ${page}`);
+    expect(turn.contract.requirements[0]?.query.knowledgeDelivery?.pages).toEqual([page]);
   });
   it.each([
     ["先清除功率条件，国家、用途和日期不动；不要默认继续用 120 kW。", "清除功率条件", "power"],

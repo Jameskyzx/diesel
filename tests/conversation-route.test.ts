@@ -1,4 +1,4 @@
-import { simulateReadableStream } from "ai";
+import { APICallError, simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({ model: vi.fn(), audit: { ensureSession: vi.fn(
 vi.mock("@/server/ai/model", () => ({ AiConfigurationError: class extends Error {}, getConfiguredAiModel: mocks.model }));
 vi.mock("@/server/services/ai-audit-service", () => ({ getAiAuditRepository: async () => mocks.audit }));
 import { POST } from "@/app/api/chat/route";
+import { getAiChatRateLimiter } from "@/server/http/rate-limit";
 
 const usage = { inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 }, outputTokens: { total: 1, text: 1, reasoning: 0 } };
 const empty = { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
@@ -19,7 +20,7 @@ function modelFor(plans: unknown[], answers: string[]) {
     const tasks = z.object({ tasks: z.array(z.string()) }).parse(fields.state).tasks;
     const filters = Object.fromEntries(Object.entries(z.record(z.string(), z.unknown()).parse(fields.state)).filter(([key]) => key !== "tasks"));
     const requests = tasks.map(task => task === "knowledge" ? { task, sourceUpdate: fields.sourceUpdate ?? (previousTasks.includes(task) ? "retain" : "replace"), sourceTerms: fields.sourceTerms ?? [] }
-      : task === "market" ? { task, marketPeriodUpdate: fields.marketPeriodUpdate ?? "retain", marketPeriodText: fields.marketPeriodText ?? null, marketPeriod: fields.marketPeriod ?? null } : { task });
+      : task === "market" ? { task, marketPeriodUpdate: fields.marketPeriodUpdate ?? "retain", marketPeriodText: fields.marketPeriodText ?? null } : { task });
     const common = Object.fromEntries(Object.entries(fields).filter(([key]) => !["sourceUpdate", "sourceTerms", "marketPeriodUpdate", "marketPeriodText", "marketPeriod"].includes(key)));
     previousTasks = tasks;
     return { countryOperands: [], filterResets: [], ...common, requests, state: filters, operation: outputKind === "request_checklist" ? "prepare_checklist"
@@ -45,9 +46,49 @@ async function request(sessionId: string, messages: unknown[], receipt?: string)
   const parts = body.split("\n").filter(line => line.startsWith("data: {")).map(line => z.object({ type: z.string(), messageMetadata: z.unknown().optional() }).parse(JSON.parse(line.slice(6))));
   return { response, body, metadata: parts.map(part => readConversationMetadata(part.messageMetadata)).findLast(Boolean) };
 }
-beforeEach(() => { mocks.model.mockReset(); mocks.audit.ensureSession.mockClear(); });
+beforeEach(() => {
+  mocks.model.mockReset(); mocks.audit.ensureSession.mockClear();
+  // Each mocked conversation is an independent unit-test fixture. Retain the
+  // real per-conversation limiter; don't accumulate earlier tests' requests.
+  getAiChatRateLimiter().reset();
+});
 
 describe("multi-turn API conversation protocol", () => {
+  it.each([false, true])("does not mislabel provider failure/timeout as user ambiguity (timeout=%s)", async timedOut => {
+    const secret = "DO_NOT_EXPOSE_PROVIDER_DETAIL";
+    const model = new MockLanguageModelV4({ doGenerate: async () => {
+      if (timedOut) throw new DOMException(secret, "TimeoutError");
+      throw new APICallError({ message: secret, url: "https://provider.invalid", requestBodyValues: { secret }, statusCode: 503, responseBody: secret });
+    } });
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    const result = await request(crypto.randomUUID(), [user("Compare BRA and CHN market observations for 2023.")]);
+    expect(result.response.status).toBe(timedOut ? 504 : 503);
+    expect(result.body).toContain(timedOut ? "did not respond in time" : "temporarily unavailable");
+    expect(result.body).not.toContain("restate");
+    expect(result.body).not.toContain(secret);
+    expect(result.metadata).toBeUndefined();
+    expect(model.doGenerateCalls).toHaveLength(1);
+    expect(model.doStreamCalls).toHaveLength(0);
+  });
+  it("changes a signed market period from a whole correction without a model-computed interval", async () => {
+    const state = { ...empty, tasks: ["market"], countryIso3s: ["BRA", "CHN"] };
+    const correction = "Then use 2022, not 2023. Keep both countries.";
+    const model = modelFor([
+      { mode: "research", state, marketPeriodUpdate: "replace", marketPeriodText: "2023" },
+      { mode: "research", state, marketPeriodUpdate: "replace", marketPeriodText: correction },
+    ], ["UNVERIFIED"]);
+    mocks.model.mockReturnValue({ model, modelId: "conversation-test" });
+    const sessionId = crypto.randomUUID();
+    const messages = [user("Compare BRA and CHN market observations for 2023.")];
+    const first = await request(sessionId, messages);
+    messages.push(user(correction));
+    const result = await request(sessionId, messages, first.metadata!.conversation.receipt);
+    expect(result.metadata?.conversation.mode).toBe("research");
+    expect(result.metadata?.conversation.state).toEqual(state);
+    expect(result.body).toContain('"marketPeriod":{"start":"2022-01-01","end":"2023-01-01"}');
+    expect(result.body).not.toContain("UNVERIFIED");
+    expect(model.doGenerateCalls).toHaveLength(2);
+  });
   it("applies a grounded power reset at the API boundary without querying the declined old value", async () => {
     const state = { ...empty, tasks: ["regulations"], countryIso3s: ["DEU", "FRA"], applicationScope: "construction",
       powerKw: 120, asOf: "2026-08-13" };
@@ -113,6 +154,10 @@ describe("multi-turn API conversation protocol", () => {
     expect(result.body).not.toContain("Hello, please share");
     expect(result.body).not.toContain("preparation checklist");
     expect(result.body).not.toContain("MUST_NOT_BYPASS_EVIDENCE");
+    const planningContext = JSON.stringify(model.doGenerateCalls[1]?.prompt);
+    expect(planningContext).toContain("researchMemory");
+    expect(planningContext).toContain("preparationDraft");
+    expect(planningContext).not.toContain("workingMemory");
     expect(model.doGenerateCalls).toHaveLength(2);
     expect(model.doStreamCalls).toHaveLength(0);
   });

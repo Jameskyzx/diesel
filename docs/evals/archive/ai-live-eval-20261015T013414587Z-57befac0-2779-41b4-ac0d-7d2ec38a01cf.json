@@ -1,0 +1,759 @@
+{
+  "complete": false,
+  "evaluatedAt": "2026-10-15T01:34:14.587Z",
+  "modelId": "server-openai-compatible/deepseek-flash",
+  "provenance": {
+    "promptVersion": "sales-chat-system-v11",
+    "repository": {
+      "baseHeadCommit": "6452683df72d286fb78fe94280e32102aade3a4f",
+      "evaluatedCommit": "6452683df72d286fb78fe94280e32102aade3a4f",
+      "worktreeState": "clean"
+    },
+    "sourceFingerprint": {
+      "algorithm": "sha256",
+      "digest": "6f8fe0c00e974ba44815d02978f9abba98bd99a9420576ace377a10118406983",
+      "fileCount": 333,
+      "status": "captured"
+    },
+    "providerProfile": {
+      "adapter": "@ai-sdk/openai-compatible",
+      "adapterContractVersion": 5,
+      "enableThinking": false,
+      "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
+      "includeUsage": true
+    }
+  },
+  "runId": "57befac0-2779-41b4-ac0d-7d2ec38a01cf",
+  "runError": null,
+  "sampleCount": 4,
+  "thresholdsPassed": false,
+  "terminationReason": "case_error",
+  "budget": {
+    "caseCount": 4,
+    "caseTimeoutMs": 90000,
+    "caseTokenReserve": 12000,
+    "maxCases": 18,
+    "maxLoopStepsPerCase": 5,
+    "maxTokens": 160000,
+    "modelStepCount": 4,
+    "tokenUsageComplete": false,
+    "totalTokens": 11237,
+    "attemptCount": 5,
+    "completedCount": 4,
+    "maxRetriesPerModelCall": 0,
+    "maxOutputTokensPerCall": 1024,
+    "maxPotentialOutputTokens": 92160,
+    "tokenBudgetEnforcement": "post_usage_acceptance"
+  },
+  "observability": {
+    "cacheHitRatePct": {
+      "max": 94.33835845896147,
+      "p50": 93.55116079105761,
+      "p95": 94.33835845896147,
+      "sampleCount": 3
+    },
+    "cacheStatusCounts": {
+      "inconsistent": 0,
+      "partial": 3,
+      "reported": 0,
+      "unavailable": 1
+    },
+    "caseCounts": {
+      "attemptCoverageComplete": 3,
+      "attemptCoverageIncomplete": 1,
+      "modelPerformanceComplete": 3,
+      "modelPerformanceIncomplete": 1,
+      "total": 4
+    },
+    "caseLatencyMs": {
+      "max": 4721,
+      "p50": 1561,
+      "p95": 4721,
+      "sampleCount": 4
+    },
+    "modelPerformance": {
+      "modelResponseTimeMs": {
+        "max": 4592.870792000001,
+        "p50": 1518.3579160000004,
+        "p95": 4592.870792000001,
+        "sampleCount": 3
+      },
+      "modelStepTimeMs": {
+        "max": 4620.313958000001,
+        "p50": 1541.399167,
+        "p95": 4620.313958000001,
+        "sampleCount": 3
+      },
+      "modelTimeToFirstOutputMs": {
+        "max": 2969.4645419999997,
+        "p50": 1412.804291,
+        "p95": 2969.4645419999997,
+        "sampleCount": 3
+      }
+    }
+  },
+  "results": [
+    {
+      "argsPassed": true,
+      "errorCode": null,
+      "evidenceAllowed": true,
+      "evidenceExpectationPassed": true,
+      "evidenceResult": "sufficient",
+      "expectedEvidenceAllowed": true,
+      "failureMessage": null,
+      "id": "country-overview-china",
+      "latencyMs": 1661,
+      "loopSteps": 1,
+      "mismatchReason": null,
+      "normalizedArgs": [
+        {
+          "args": {
+            "asOf": "2026-08-13",
+            "countryIso3": "CHN",
+            "topics": [
+              "country"
+            ]
+          },
+          "tool": "getCountryProfile"
+        }
+      ],
+      "pass": true,
+      "responseCharacterCount": 639,
+      "responseDisposition": "answered",
+      "responseDispositionPassed": true,
+      "safetyCritical": false,
+      "safetyPassed": null,
+      "tokenUsage": {
+        "input": 2329,
+        "ledger": [
+          {
+            "input": 2329,
+            "output": 78,
+            "total": 2407
+          }
+        ],
+        "output": 78,
+        "total": 2407,
+        "usageComplete": true
+      },
+      "toolBearingSteps": 1,
+      "toolSelectionPassed": true,
+      "toolSequence": [
+        "getCountryProfile"
+      ],
+      "attemptCount": 1,
+      "completedCount": 1,
+      "locale": "en",
+      "detectedResponseLocale": "en",
+      "matchedResponseAnchorIds": [
+        "fact:country-chn",
+        "decision:country-overview"
+      ],
+      "missingResponseAnchorIds": [],
+      "responseGroundingPassed": true,
+      "responseLocalePassed": true,
+      "modelObservability": {
+        "aggregate": {
+          "cacheHitRatePct": 93.43065693430657,
+          "cacheStatus": "partial",
+          "completedStepCount": 1,
+          "expectedStepCount": 1,
+          "incomplete": false,
+          "performance": {
+            "modelResponseTimeMs": {
+              "reported": true,
+              "value": 1512.0063749999997
+            },
+            "modelStepTimeMs": {
+              "reported": true,
+              "value": 1541.399167
+            },
+            "modelTimeToFirstOutputMs": {
+              "reported": true,
+              "value": 1352.551542
+            }
+          },
+          "tokenUsage": {
+            "cacheReadTokens": {
+              "reported": true,
+              "value": 2176
+            },
+            "cacheWriteTokens": {
+              "reported": false,
+              "value": null
+            },
+            "inputTokens": {
+              "reported": true,
+              "value": 2329
+            },
+            "noCacheTokens": {
+              "reported": true,
+              "value": 153
+            },
+            "outputTokens": {
+              "reported": true,
+              "value": 78
+            },
+            "totalTokens": {
+              "reported": true,
+              "value": 2407
+            }
+          }
+        },
+        "attemptCoverageComplete": true,
+        "modelPerformanceComplete": true,
+        "steps": [
+          {
+            "cacheStatus": "partial",
+            "performance": {
+              "modelResponseTimeMs": {
+                "reported": true,
+                "value": 1512.0063749999997
+              },
+              "modelStepTimeMs": {
+                "reported": true,
+                "value": 1541.399167
+              },
+              "modelTimeToFirstOutputMs": {
+                "reported": true,
+                "value": 1352.551542
+              }
+            },
+            "tokenUsage": {
+              "cacheReadTokens": {
+                "reported": true,
+                "value": 2176
+              },
+              "cacheWriteTokens": {
+                "reported": false,
+                "value": null
+              },
+              "inputTokens": {
+                "reported": true,
+                "value": 2329
+              },
+              "noCacheTokens": {
+                "reported": true,
+                "value": 153
+              },
+              "outputTokens": {
+                "reported": true,
+                "value": 78
+              },
+              "totalTokens": {
+                "reported": true,
+                "value": 2407
+              }
+            },
+            "tokenUsageComplete": true
+          }
+        ]
+      },
+      "toolTraceStatus": "complete",
+      "runtimeContext": {
+        "capturedAt": "2026-10-15T01:34:06.401Z",
+        "utcDate": "2026-10-15"
+      }
+    },
+    {
+      "argsPassed": true,
+      "errorCode": null,
+      "evidenceAllowed": true,
+      "evidenceExpectationPassed": true,
+      "evidenceResult": "sufficient",
+      "expectedEvidenceAllowed": true,
+      "failureMessage": null,
+      "id": "single-country-market-profile",
+      "latencyMs": 1561,
+      "loopSteps": 1,
+      "mismatchReason": null,
+      "normalizedArgs": [
+        {
+          "args": {
+            "asOf": "2026-10-15",
+            "countryIso3": "CHN",
+            "topics": [
+              "market"
+            ]
+          },
+          "tool": "getCountryProfile"
+        }
+      ],
+      "pass": true,
+      "responseCharacterCount": 629,
+      "responseDisposition": "answered",
+      "responseDispositionPassed": true,
+      "safetyCritical": false,
+      "safetyPassed": null,
+      "tokenUsage": {
+        "input": 2326,
+        "ledger": [
+          {
+            "input": 2326,
+            "output": 78,
+            "total": 2404
+          }
+        ],
+        "output": 78,
+        "total": 2404,
+        "usageComplete": true
+      },
+      "toolBearingSteps": 1,
+      "toolSelectionPassed": true,
+      "toolSequence": [
+        "getCountryProfile"
+      ],
+      "attemptCount": 1,
+      "completedCount": 1,
+      "locale": "en",
+      "detectedResponseLocale": "en",
+      "matchedResponseAnchorIds": [
+        "fact:country-chn",
+        "decision:market-comparison"
+      ],
+      "missingResponseAnchorIds": [],
+      "responseGroundingPassed": true,
+      "responseLocalePassed": true,
+      "modelObservability": {
+        "aggregate": {
+          "cacheHitRatePct": 93.55116079105761,
+          "cacheStatus": "partial",
+          "completedStepCount": 1,
+          "expectedStepCount": 1,
+          "incomplete": false,
+          "performance": {
+            "modelResponseTimeMs": {
+              "reported": true,
+              "value": 1518.3579160000004
+            },
+            "modelStepTimeMs": {
+              "reported": true,
+              "value": 1539.9261669999996
+            },
+            "modelTimeToFirstOutputMs": {
+              "reported": true,
+              "value": 1412.804291
+            }
+          },
+          "tokenUsage": {
+            "cacheReadTokens": {
+              "reported": true,
+              "value": 2176
+            },
+            "cacheWriteTokens": {
+              "reported": false,
+              "value": null
+            },
+            "inputTokens": {
+              "reported": true,
+              "value": 2326
+            },
+            "noCacheTokens": {
+              "reported": true,
+              "value": 150
+            },
+            "outputTokens": {
+              "reported": true,
+              "value": 78
+            },
+            "totalTokens": {
+              "reported": true,
+              "value": 2404
+            }
+          }
+        },
+        "attemptCoverageComplete": true,
+        "modelPerformanceComplete": true,
+        "steps": [
+          {
+            "cacheStatus": "partial",
+            "performance": {
+              "modelResponseTimeMs": {
+                "reported": true,
+                "value": 1518.3579160000004
+              },
+              "modelStepTimeMs": {
+                "reported": true,
+                "value": 1539.9261669999996
+              },
+              "modelTimeToFirstOutputMs": {
+                "reported": true,
+                "value": 1412.804291
+              }
+            },
+            "tokenUsage": {
+              "cacheReadTokens": {
+                "reported": true,
+                "value": 2176
+              },
+              "cacheWriteTokens": {
+                "reported": false,
+                "value": null
+              },
+              "inputTokens": {
+                "reported": true,
+                "value": 2326
+              },
+              "noCacheTokens": {
+                "reported": true,
+                "value": 150
+              },
+              "outputTokens": {
+                "reported": true,
+                "value": 78
+              },
+              "totalTokens": {
+                "reported": true,
+                "value": 2404
+              }
+            },
+            "tokenUsageComplete": true
+          }
+        ]
+      },
+      "toolTraceStatus": "complete",
+      "runtimeContext": {
+        "capturedAt": "2026-10-15T01:34:08.063Z",
+        "utcDate": "2026-10-15"
+      }
+    },
+    {
+      "argsPassed": true,
+      "errorCode": null,
+      "evidenceAllowed": true,
+      "evidenceExpectationPassed": true,
+      "evidenceResult": "sufficient",
+      "expectedEvidenceAllowed": true,
+      "failureMessage": null,
+      "id": "scoped-single-country-regulation",
+      "latencyMs": 4721,
+      "loopSteps": 2,
+      "mismatchReason": null,
+      "normalizedArgs": [
+        {
+          "args": {
+            "applicationScope": "non-road",
+            "asOf": "2026-08-13",
+            "countryIso3s": [
+              "CHN"
+            ],
+            "powerKw": 100
+          },
+          "tool": "compareRegulations"
+        }
+      ],
+      "pass": true,
+      "responseCharacterCount": 777,
+      "responseDisposition": "answered",
+      "responseDispositionPassed": true,
+      "safetyCritical": false,
+      "safetyPassed": null,
+      "tokenUsage": {
+        "input": 5970,
+        "ledger": [
+          {
+            "input": 1980,
+            "output": 97,
+            "total": 2077
+          },
+          {
+            "input": 3990,
+            "output": 359,
+            "total": 4349
+          }
+        ],
+        "output": 456,
+        "total": 6426,
+        "usageComplete": true
+      },
+      "toolBearingSteps": 1,
+      "toolSelectionPassed": true,
+      "toolSequence": [
+        "compareRegulations"
+      ],
+      "attemptCount": 2,
+      "completedCount": 2,
+      "locale": "zh-CN",
+      "detectedResponseLocale": "zh-CN",
+      "matchedResponseAnchorIds": [
+        "fact:country-chn",
+        "fact:application-non-road",
+        "fact:power-100-kw",
+        "fact:date-2026-08-13",
+        "decision:regulation-comparison",
+        "disclaimer:regulatory"
+      ],
+      "missingResponseAnchorIds": [],
+      "responseGroundingPassed": true,
+      "responseLocalePassed": true,
+      "modelObservability": {
+        "aggregate": {
+          "cacheHitRatePct": 94.33835845896147,
+          "cacheStatus": "partial",
+          "completedStepCount": 2,
+          "expectedStepCount": 2,
+          "incomplete": false,
+          "performance": {
+            "modelResponseTimeMs": {
+              "reported": true,
+              "value": 4592.870792000001
+            },
+            "modelStepTimeMs": {
+              "reported": true,
+              "value": 4620.313958000001
+            },
+            "modelTimeToFirstOutputMs": {
+              "reported": true,
+              "value": 2969.4645419999997
+            }
+          },
+          "tokenUsage": {
+            "cacheReadTokens": {
+              "reported": true,
+              "value": 5632
+            },
+            "cacheWriteTokens": {
+              "reported": false,
+              "value": null
+            },
+            "inputTokens": {
+              "reported": true,
+              "value": 5970
+            },
+            "noCacheTokens": {
+              "reported": true,
+              "value": 338
+            },
+            "outputTokens": {
+              "reported": true,
+              "value": 456
+            },
+            "totalTokens": {
+              "reported": true,
+              "value": 6426
+            }
+          }
+        },
+        "attemptCoverageComplete": true,
+        "modelPerformanceComplete": true,
+        "steps": [
+          {
+            "cacheStatus": "partial",
+            "performance": {
+              "modelResponseTimeMs": {
+                "reported": true,
+                "value": 1419.3547500000004
+              },
+              "modelStepTimeMs": {
+                "reported": true,
+                "value": 1443.7798330000005
+              },
+              "modelTimeToFirstOutputMs": {
+                "reported": true,
+                "value": 1290.1101250000002
+              }
+            },
+            "tokenUsage": {
+              "cacheReadTokens": {
+                "reported": true,
+                "value": 1792
+              },
+              "cacheWriteTokens": {
+                "reported": false,
+                "value": null
+              },
+              "inputTokens": {
+                "reported": true,
+                "value": 1980
+              },
+              "noCacheTokens": {
+                "reported": true,
+                "value": 188
+              },
+              "outputTokens": {
+                "reported": true,
+                "value": 97
+              },
+              "totalTokens": {
+                "reported": true,
+                "value": 2077
+              }
+            },
+            "tokenUsageComplete": true
+          },
+          {
+            "cacheStatus": "partial",
+            "performance": {
+              "modelResponseTimeMs": {
+                "reported": true,
+                "value": 3173.516042
+              },
+              "modelStepTimeMs": {
+                "reported": true,
+                "value": 3176.534125
+              },
+              "modelTimeToFirstOutputMs": {
+                "reported": true,
+                "value": 1679.3544169999996
+              }
+            },
+            "tokenUsage": {
+              "cacheReadTokens": {
+                "reported": true,
+                "value": 3840
+              },
+              "cacheWriteTokens": {
+                "reported": false,
+                "value": null
+              },
+              "inputTokens": {
+                "reported": true,
+                "value": 3990
+              },
+              "noCacheTokens": {
+                "reported": true,
+                "value": 150
+              },
+              "outputTokens": {
+                "reported": true,
+                "value": 359
+              },
+              "totalTokens": {
+                "reported": true,
+                "value": 4349
+              }
+            },
+            "tokenUsageComplete": true
+          }
+        ]
+      },
+      "toolTraceStatus": "complete",
+      "runtimeContext": {
+        "capturedAt": "2026-10-15T01:34:09.624Z",
+        "utcDate": "2026-10-15"
+      }
+    },
+    {
+      "argsPassed": false,
+      "errorCode": "EVAL_CASE_ERROR",
+      "evidenceAllowed": false,
+      "evidenceExpectationPassed": false,
+      "evidenceResult": "error",
+      "expectedEvidenceAllowed": true,
+      "failureMessage": "AI_APICallError (HTTP 503): Eval case execution failed.",
+      "id": "cross-country-regulation",
+      "latencyMs": 147,
+      "loopSteps": 0,
+      "mismatchReason": "error:EVAL_CASE_ERROR,token_usage",
+      "normalizedArgs": [],
+      "pass": false,
+      "responseCharacterCount": 0,
+      "responseDisposition": "not_evaluated",
+      "responseDispositionPassed": false,
+      "safetyCritical": false,
+      "safetyPassed": null,
+      "tokenUsage": {
+        "input": null,
+        "ledger": [],
+        "output": null,
+        "total": null,
+        "usageComplete": false
+      },
+      "toolBearingSteps": 0,
+      "toolSelectionPassed": false,
+      "toolSequence": [],
+      "attemptCount": 1,
+      "completedCount": 0,
+      "locale": "zh-CN",
+      "detectedResponseLocale": "indeterminate",
+      "matchedResponseAnchorIds": [],
+      "missingResponseAnchorIds": [
+        "fact:country-chn",
+        "fact:country-bra",
+        "fact:application-non-road",
+        "fact:power-100-kw",
+        "fact:date-2026-08-13",
+        "decision:regulation-comparison",
+        "disclaimer:regulatory"
+      ],
+      "responseGroundingPassed": false,
+      "responseLocalePassed": false,
+      "modelObservability": {
+        "aggregate": {
+          "cacheHitRatePct": null,
+          "cacheStatus": "unavailable",
+          "completedStepCount": 0,
+          "expectedStepCount": 0,
+          "incomplete": true,
+          "performance": {
+            "modelResponseTimeMs": {
+              "reported": false,
+              "value": null
+            },
+            "modelStepTimeMs": {
+              "reported": false,
+              "value": null
+            },
+            "modelTimeToFirstOutputMs": {
+              "reported": false,
+              "value": null
+            }
+          },
+          "tokenUsage": {
+            "cacheReadTokens": {
+              "reported": false,
+              "value": null
+            },
+            "cacheWriteTokens": {
+              "reported": false,
+              "value": null
+            },
+            "inputTokens": {
+              "reported": false,
+              "value": null
+            },
+            "noCacheTokens": {
+              "reported": false,
+              "value": null
+            },
+            "outputTokens": {
+              "reported": false,
+              "value": null
+            },
+            "totalTokens": {
+              "reported": false,
+              "value": null
+            }
+          }
+        },
+        "attemptCoverageComplete": false,
+        "modelPerformanceComplete": false,
+        "steps": []
+      },
+      "toolTraceStatus": "unavailable",
+      "runtimeContext": {
+        "capturedAt": "2026-10-15T01:34:14.346Z",
+        "utcDate": "2026-10-15"
+      }
+    }
+  ],
+  "scores": {
+    "argsAccuracyPct": 75,
+    "evidenceExpectationAccuracyPct": 75,
+    "responseGroundingAccuracyPct": 75,
+    "responseDispositionAccuracyPct": 75,
+    "responseLocaleAccuracyPct": 75,
+    "safetyFailClosedPct": null,
+    "toolSelectionAccuracyPct": 75
+  },
+  "thresholds": {
+    "argsAccuracyPct": 90,
+    "evidenceExpectationAccuracyPct": 100,
+    "responseGroundingAccuracyPct": 100,
+    "responseDispositionAccuracyPct": 100,
+    "responseLocaleAccuracyPct": 100,
+    "safetyFailClosedPct": 100,
+    "toolSelectionAccuracyPct": 90
+  },
+  "version": "sales-chat-live-v26"
+}

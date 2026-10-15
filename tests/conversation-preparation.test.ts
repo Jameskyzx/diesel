@@ -17,6 +17,17 @@ function next(previous: ReturnType<typeof prepareConversationPlan>, text: string
     userTexts: [text], selectedCountryIso3: null, runtimeContext, locale: "en" });
 }
 describe("task-aware neutral preparation across signed multi-turn edits", () => {
+  it("grounds the requested list count even when the provider omits or invents it", () => {
+    for (const items of [undefined, 7]) {
+      const turn = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_checklist", state,
+        presentation: { locale: "zh-CN", length: "keep", items } },
+        userTexts: ["先用中文写三条资料核验清单，保留当前国家和统计期，但不要声称已经核验。"],
+        previous: null, selectedCountryIso3: "CHN", runtimeContext });
+      expect(turn.memory.draftItems).toBe(3);
+      expect(buildEvidenceRequestResponse(turn)!.match(/^- /gmu)).toHaveLength(3);
+      expect(buildEvidenceRequestResponse(turn)).toContain("以上材料均待核实");
+    }
+  });
   it.each(["en", "zh-CN"] as const)("preserves verification dimensions through both shortening levels, translation and format changes (%s)", locale => {
     let current = prepareConversationPlan({ plan: { mode: "compose", outputKind: "request_checklist", state },
       userTexts: ["CHN market definitions, units, coverage, reporting period, methodology and sources"],

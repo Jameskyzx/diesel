@@ -42,12 +42,16 @@ export function selectedMarketReportingPeriod(text: string, expression: string) 
   while (offset >= 0) {
     const before = text.slice(0, offset);
     const after = text.slice(offset + expression.length);
-    const clauseBefore = before.split(/[,，。;；!?！？\n]/u).at(-1) ?? "";
-    const clauseAfter = after.split(/[,，。;；!?！？\n]/u)[0] ?? "";
+    const clauseBoundary = /[,，。;；!?！？\n]|\.(?=\s|$)/u;
+    const clauseBefore = before.split(clauseBoundary).at(-1) ?? "";
+    const clauseAfter = after.split(clauseBoundary)[0] ?? "";
     const clause = clauseBefore + expression + clauseAfter;
     const invalidRole = /(?:不要|不使用|别用|而非|不是|发布|出版|签发|文件版本|\b(?:not|instead of|rather than|published|publication|issued|released|document version)\b)/iu
       .test(clauseBefore + expression) || /^\s*(?:年)?\s*(?:发布|出版|签发|\b(?:publication|release|edition)\b)/iu.test(clauseAfter);
-    const splitToken = /[A-Za-z0-9_./-]$/u.test(before) || /^[A-Za-z0-9_./-]/u.test(after);
+    // A separator belongs to an identifier only when it connects word parts.
+    // Sentence-final punctuation must not turn an ordinary year into an ID.
+    const splitToken = /(?:[A-Za-z0-9_]|[A-Za-z0-9_][./-])$/u.test(before) ||
+      /^(?:[A-Za-z0-9_]|[./-][A-Za-z0-9_])/u.test(after);
     const quoted = [...text.matchAll(/["“][^"”]*["”]/gu)]
       .some(match => offset >= match.index && offset < match.index + match[0].length);
     const positiveAlternative = /(?:或者|或是|\bor\b)/iu.test(clause) && explicitMarketReportingPeriod(clause).ambiguous;

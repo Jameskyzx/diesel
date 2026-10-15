@@ -56,11 +56,28 @@ describe("grounded operands are separate from mentioned context and presentation
       input: { countryIso3s: ["JPN", "DEU"], marketPeriod: { start: "2022-01-01", end: "2023-01-01" } } });
   });
   it.each([
+    ["Compare Brazil and China for the reporting year 2023. Keep the observation period explicit.", "2023", "2023"],
+    ["Compare Brazil and China for the reporting year 2023. Keep the observation period explicit.", "reporting year 2023", "2023"],
+    ["Use 2022. Do not substitute 2023.", "2022", "2022"],
+    ["Do not use 2023. Use 2022.", "Use 2022", "2022"],
+    ["The report was published in 2024. Compare observations for 2022.", "2022", "2022"],
+    ["Use 2022... Keep both markets.", "2022", "2022"],
+    ["Use 2022 - keep both markets.", "2022", "2022"],
+  ])("distinguishes sentence punctuation from identifier connectors: %s", (text, expression, year) => {
+    expect(selectedMarketReportingPeriod(text, expression)).toEqual({ ambiguous: false,
+      period: { start: `${year}-01-01`, end: `${Number(year) + 1}-01-01` } });
+  });
+  it.each([
     ["Use 2022, not 2023", "2023"], ["不要2023，改为2022", "2023"],
     ["Use 2022 instead of 2023", "2023"], ["data published in 2023", "2023"],
     ["2023年发布的报告", "2023年"], ["document ISO-2023", "2023"],
     ["as of 2023-01-01", "2023"], ["2022 or 2023", "2022"],
     ["2022 through 2024", "2022"], ['document "2023"', "2023"],
+    ["document ISO.2023", "2023"], ["document 2023.rev1", "2023"],
+    ["document ISO/2023", "2023"], ["document 2023/24", "2023"],
+    ["value 2023.5", "2023"], ["document _2023", "2023"],
+    ["Do not use 2023. Use 2022.", "2023"],
+    ["The report was published in 2024. Compare observations for 2022.", "2024"],
     ["BRA market data", "2023"],
   ])("rejects an ungrounded or wrongly selected period: %s / %s", (text, expression) => {
     expect(selectedMarketReportingPeriod(text, expression).period).toBeUndefined();

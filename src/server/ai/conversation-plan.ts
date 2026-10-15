@@ -7,7 +7,7 @@ import { buildSalesChatEvidenceContract, explicitSourceRequestSpans, type SalesC
 import type { ConversationReceipt } from "@/server/ai/conversation-receipt";
 import type { ChatRuntimeContext } from "@/domain/ai/chat-runtime-context";
 import type { Locale } from "@/i18n/locale";
-import { buildKnowledgeRequestContext, knowledgeTermsIn } from "@/server/ai/knowledge-request-context";
+import { buildKnowledgeRequestContext, hasSubstantiveKnowledgeTopic, knowledgeTermsIn } from "@/server/ai/knowledge-request-context";
 import { knowledgeQueryLiteralSpans, knowledgeSignedOperandSpans } from "@/domain/knowledge/query-literal-spans";
 import { explicitMarketReportingPeriod, selectedMarketReportingPeriod, marketReportingPeriodSchema } from "@/domain/marketing/reporting-period";
 import { resolveConversationItems, resolveConversationLocale } from "@/server/ai/conversation-presentation";
@@ -275,7 +275,8 @@ export function prepareConversationPlan(input: {
   // product/market task's identifiers from contaminating the source topic.
   const sourceSpans = !nativeSearch && state.tasks.some(task => task !== "knowledge")
     ? explicitSourceRequestSpans(sourceRequest) : [];
-  const sourceQueryRequest = sourceSpans.length ? sourceSpans.join(" ") : sourceRequest;
+  const sourceQueryRequest = sourceSpans.some(span => hasSubstantiveKnowledgeTopic(span, state.countryIso3s))
+    ? sourceSpans.join(" ") : sourceRequest;
   const retainSourceText = input.previous?.memory?.sourceRequest && update !== "replace" && update !== "clear";
   let sourceText = retainSourceText ? input.previous?.memory?.sourceText ?? sourceRequest : sourceQueryRequest;
   // A retain/refine operation cannot re-project the source request. Even valid

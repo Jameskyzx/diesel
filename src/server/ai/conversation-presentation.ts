@@ -14,6 +14,28 @@ function presentationText(text: string): string {
       ? span.slice(1, -1) : " ".repeat(span.length));
 }
 
+/** List length is a presentation edit, never a number from source text or a
+ * model suggestion. Keep it independent of draft type, topic and language. */
+export function resolveConversationItems(input: { text: string; previous?: number | null }): number | null {
+  const text = presentationText(input.text);
+  const numbers: Record<string, number> = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8,
+    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 };
+  const edits: number[] = [];
+  if (/(?:不限条数|取消条数限制|\b(?:remove|clear) (?:the )?(?:item|bullet|point) limit\b)/iu.test(text)) return null;
+  for (const match of text.matchAll(/([一二两三四五六七八1-8])\s*[点项条]|\b(one|two|three|four|five|six|seven|eight|[1-8])\s+(?:(?:concise|short|brief)\s+)?(?:bullet\s+points?|points?|items?|bullets?)\b/giu)) {
+    const left = text.slice(0, match.index).split(/[，,。.!?！？;；\n]|\bbut\b|而是/iu).at(-1) ?? "";
+    const right = text.slice(match.index + match[0].length).split(/[，,。.!?！？;；\n]/u)[0] ?? "";
+    if (/(?:不要|不用|不必|别|\b(?:not|don't|avoid|or)\b)[^，,。.!?！？;；\n]*$/iu.test(left) ||
+      /^\s*(?:或|或者|\bor\b)/iu.test(right)) continue;
+    const control = /(?:成|为|最多|只要|仅|写|列|给|整理|压)\s*$|\b(?:write|give|use|make|list|into|to|as|in|maximum|most)\s*$/iu.test(left);
+    const bareChoice = !left.trim() && !right.trim();
+    if (!control && !bareChoice && !(outputAction.test(left) && outputTarget.test(right))) continue;
+    const count = (match[1] ?? match[2]!).toLowerCase();
+    edits.push(numbers[count] ?? Number(count));
+  }
+  return edits.at(-1) ?? input.previous ?? null;
+}
+
 /** Presentation is a grounded edit, not an inference from the UI, the prose
  * language, or a model's unsolicited locale. Semantic planning can recognize
  * output requests, but the requested language must occur in current human

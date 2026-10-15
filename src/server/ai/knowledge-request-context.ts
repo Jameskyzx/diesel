@@ -697,6 +697,29 @@ function referenceSpansIn(text: string): Array<TextReplacement & { terms: string
   }));
 }
 
+/** In an explicit reference replacement, the old locator is context, not an
+ * additional search operand. Reuse reference spans so quotes/IDs stay atomic. */
+function referenceEditOperands(text: string): string {
+  const spans = [...new Map(referenceSpansIn(text).map(span => [`${span.start}/${span.end}`, span])).values()]
+    .sort((left, right) => left.start - right.start);
+  const removals: TextReplacement[] = [];
+  for (let index = 0; index + 1 < spans.length; index += 1) {
+    const old = spans[index]!, next = spans[index + 1]!;
+    const prefix = old.terms.map(replaceableKnowledgeIdentifierPrefix).find(Boolean);
+    if (!prefix || !next.terms.some(term => term.startsWith(prefix))) continue;
+    const before = text.slice(0, old.start).split(/[,，。;；!?！？\n]/u).at(-1) ?? "";
+    const between = text.slice(old.end, next.start).trim();
+    const replaces = /^(?:换成|换为|改成|改为|变为)$/u.test(between) ||
+      (/^to$/iu.test(between) && /\bfrom\s*$/iu.test(before)) ||
+      (/^with$/iu.test(between) && /\breplace\s*$/iu.test(before));
+    if (!replaces) continue;
+    const negated = /(?:不要|不用|不必|别|\b(?:not|don't|never)\b)/iu.test(before);
+    removals.push({ start: old.start, end: old.end, value: " " });
+    if (negated) removals.push({ start: next.start, end: next.end, value: " " });
+  }
+  return replaceSpans(text, removals);
+}
+
 function withCurrentReferences(text: string, terms: readonly string[]): string {
   const references = terms.filter((term) => replaceableKnowledgeIdentifierPrefix(term) !== null);
   const replacements = referenceSpansIn(text).flatMap((span) => {
@@ -777,6 +800,7 @@ export function buildKnowledgeRequestContext(
   const countries = uniqueCountries([...context.countryIso3s, ...countryIso3sIn(request.text)]);
   const scopedText = withCurrentScope(sourceSearchTextIn(unwrapKnowledgeTermRequest(request.text)), context);
   let terms = knowledgeTermsIn(scopedText, countries);
+  const sourceIncludesPower = terms.some(term => term.startsWith("power:"));
   const signedRefinements: string[] = [];
   let requiresRestatement = false;
   for (const followUp of requestTexts.slice(request.index + 1)) {
@@ -795,7 +819,11 @@ export function buildKnowledgeRequestContext(
         signedRefinementHasUnboundWords(followUpQuery)) requiresRestatement = true;
       signedRefinements.push(...signed);
     }
-    const identifiers = knowledgeIdentifierTermsIn(followUp).filter((term) => replaceableKnowledgeIdentifierPrefix(term) !== null);
+    const identifiers = knowledgeIdentifierTermsIn(referenceEditOperands(followUp)).filter((term) => replaceableKnowledgeIdentifierPrefix(term) !== null &&
+      // Typed source state owns the retained search projection. A shared power
+      // edit must not introduce a new FTS condition into a source-only topic;
+      // an existing explicit power term can still be updated normally.
+      (!options.retainFirstRequest || sourceIncludesPower || !term.startsWith("power:")));
     terms = mergeContextualKnowledgeIdentifiers(terms, identifiers);
     if (!options.retainFirstRequest && activeConversationTaskIn(followUp) === "knowledge") {
       const requested = knowledgeTermsIn(followUp, uniqueCountries([...countries, ...countryIso3sIn(followUp)]))

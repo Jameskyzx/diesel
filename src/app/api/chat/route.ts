@@ -1,4 +1,5 @@
 import {
+  APICallError,
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -508,6 +509,17 @@ async function processChatRequest(
         });
       } catch (error) {
         throwIfChatRequestAborted(abortSignal);
+        const plannerTimedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+        if (APICallError.isInstance(error) || plannerTimedOut) {
+          console.warn("AI conversation provider unavailable", { requestId, errorCode: getErrorCode(error),
+            statusCode: APICallError.isInstance(error) ? error.statusCode : undefined });
+          return errorResponse("INTERNAL_ERROR", plannerTimedOut
+            ? locale === "en" ? "The AI model did not respond in time. Your confirmed conditions are unchanged; please try again later."
+              : "AI 模型响应超时，已确认的条件未改变，请稍后重试。"
+            : locale === "en" ? "The AI model service is temporarily unavailable. Your confirmed conditions are unchanged; please try again later."
+              : "AI 模型服务暂时不可用，已确认的条件未改变，请稍后重试。",
+          plannerTimedOut ? 504 : 503);
+        }
         conversationTurn = explicitRegulationResearchFallback({ userTexts, previous,
           selectedCountryIso3: body.selectedCountryIso3, runtimeContext, locale }) ?? undefined;
         console.warn("AI conversation planner failed", { requestId, errorCode: getErrorCode(error),

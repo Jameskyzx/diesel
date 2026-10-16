@@ -21,6 +21,12 @@ export function isApplicationOnlyInput(path: string): boolean {
   // This read-only deployment verifier is maintenance code, not an ingestion
   // or schema input. Its fingerprint SQL, DB runtime and migrations stay denied.
   if (path === "scripts/db/verify-application-release.ts") return true;
+  // This source-reported catalogue is bundled read-only, never seeded into
+  // governed products/certifications. Do not allow the rest of src/data here.
+  if (path === "src/data/products/weichai-catalog.json") return true;
+  // Enumerate existing browser-test configuration, not arbitrary root inputs.
+  if (["playwright.config.ts", "playwright.demo.config.ts", "playwright.fde.config.ts",
+    "playwright.live.config.ts", "playwright.production.config.ts"].includes(path)) return true;
   if (path === "docs/ACCEPTANCE.md" || path.startsWith("docs/research/") ||
     path === "src/server/config/public-product-publication.ts") return false;
   return /^(?:src\/(?:app|components|domain|features|i18n|lib)\/|src\/server\/(?:ai|config|repositories|services)\/|public\/|tests\/|e2e(?:-[a-z-]+)?\/|docs\/|\.github\/)/u.test(path) ||

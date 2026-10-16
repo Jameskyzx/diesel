@@ -32,6 +32,10 @@ describe("versioned application-only release contract", () => {
     "scripts/db/ingest-accepted-fixtures.ts", "scripts/db/application-fingerprint-query.ts",
     "scripts/db/production-readback.ts", "docs/ACCEPTANCE.md", "docs/research/signoff.md",
     "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "patches/something.patch", "unknown/data.json",
+    "src/data/products/approved.json", "src/data/products/weichai-catalog.json.sql",
+    "src/data/products/weichai-catalog.json/seed.ts", "src/data/regulations.json",
+    "src/server/db/seed/weichai-catalog.ts", "scripts/db/import-catalog.ts",
+    "playwright.database.config.ts", "next.config.ts", "drizzle.config.ts",
   ])("refuses changed or newly introduced data inputs: %s", (path) => {
     expect(isApplicationOnlyInput(path)).toBe(false);
     const nextFiles = files.filter((file) => file.path !== path);
@@ -47,6 +51,36 @@ describe("versioned application-only release contract", () => {
   ])("uses the verified code-only path for runtime changes: %s", (path) => {
     expect(isApplicationOnlyInput(path)).toBe(true);
     expect(classifyReleaseInputs(previous, { ...candidate, files: [...files, { ...files[0], path }] }).mode).toBe("application");
+  });
+  it.each([
+    "src/data/products/weichai-catalog.json", "playwright.config.ts", "playwright.demo.config.ts",
+    "playwright.fde.config.ts", "playwright.live.config.ts", "playwright.production.config.ts",
+  ])("classifies read-only catalogue and browser configuration additions, edits and removals: %s", (path) => {
+    const input = { ...files[0], path };
+    const beforeWithInput = { ...previous, files: [...files, input] };
+    for (const [before, after] of [
+      [previous, { ...candidate, files: [...files, input] }],
+      [beforeWithInput, { ...candidate, files: [...files, { ...input, sha256: "1".repeat(64) }] }],
+      [beforeWithInput, candidate],
+    ]) {
+      const classified = classifyReleaseInputs(before, after);
+      expect(classified.mode).toBe("application");
+      expect(classified.protectedFileCount).toBe(3);
+      expect(classified.dataContractSha256).toBe(classifyReleaseInputs(previous, candidate).dataContractSha256);
+      expect(classified.previousInputDigest).toBe(previous.inputDigest);
+      expect(classified.inputDigest).toBe(candidate.inputDigest);
+    }
+  });
+  it("keeps full publication mandatory when catalogue/UI changes accompany approved-product changes", () => {
+    const catalogueFiles = [...files, ...[
+      "src/data/products/weichai-catalog.json", "playwright.config.ts", "playwright.demo.config.ts",
+      "playwright.fde.config.ts", "src/server/ai/catalog-harness.ts", "src/app/products/page.tsx",
+    ].map(path => ({ ...files[0], path }))];
+    expect(classifyReleaseInputs(previous, { ...candidate, files: catalogueFiles }).mode).toBe("application");
+    const approvedFiles = catalogueFiles.map(file => file.path === "src/server/config/public-product-publication.ts"
+      ? { ...file, sha256: "1".repeat(64) } : file);
+    expect(classifyReleaseInputs(previous, { ...candidate, files: approvedFiles }).mode).toBe("full");
+    expect(() => compareApplicationInputs(previous, { ...candidate, files: approvedFiles })).toThrow(/full release required/u);
   });
   it("rejects deletion, duplicate path, same release and absent baseline schema", () => {
     expect(() => compareApplicationInputs(previous, { ...candidate, files: files.slice(1) })).toThrow();

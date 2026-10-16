@@ -312,11 +312,11 @@ This is the only current release/evidence index. Historical implementation notes
     "sources": 203
   },
   "liveEval": {
-    "archivePath": "docs/evals/archive/ai-live-eval-20261016T044300907Z-d3afc943-db3b-4804-bb4c-a6029eff1a8a.json",
+    "archivePath": "docs/evals/archive/ai-live-eval-20261016T120646330Z-9d6216b7-fe81-49e6-bdab-60357b62abf1.json",
     "attemptCount": 33,
     "complete": true,
     "completedCount": 33,
-    "evaluatedAt": "2026-10-16T04:43:00.907Z",
+    "evaluatedAt": "2026-10-16T12:06:46.330Z",
     "expectedModelId": "server-openai-compatible/deepseek-flash",
     "expectedProviderProfile": {
       "adapter": "@ai-sdk/openai-compatible",
@@ -325,24 +325,24 @@ This is the only current release/evidence index. Historical implementation notes
       "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
       "includeUsage": true
     },
-    "latestOutcome": "passed",
+    "latestOutcome": "failed",
     "latestSampleCount": 18,
     "modelStepCount": 33,
     "reportVersion": "sales-chat-live-v26",
     "runError": null,
-    "runId": "d3afc943-db3b-4804-bb4c-a6029eff1a8a",
+    "runId": "9d6216b7-fe81-49e6-bdab-60357b62abf1",
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "01736d240dd1cb07ff8a9111a17f19f901f47e9871547a5c78826d05b9f7d953",
+      "digest": "de7a1b2de064be0db519c9684c4273b9c2bfd73a12ddd34ec7840d5a9ea38c8a",
       "fileCount": 341,
       "status": "captured"
     },
     "suiteVersion": "sales-chat-live-v26",
     "suiteCaseCount": 18,
     "terminationReason": "completed",
-    "thresholdsPassed": true,
+    "thresholdsPassed": false,
     "tokenUsageComplete": true,
-    "totalTokens": 92374
+    "totalTokens": 92414
   },
   "lastDocumentedRelease": {
     "commit": "38541ac8201e260934fe9eeaab571d2c8a4262ee",
@@ -370,9 +370,14 @@ This is the only current release/evidence index. Historical implementation notes
 - 当前唯一 Vitest 执行证据指针：artifact `docs/evidence/vitest-execution-latest.json`；format `diesel-vitest-execution-evidence-v2`。
   动态测试计数、执行时间、HEAD 与 source fingerprint 仅从该 artifact 派生；`STATUS.md` 不复制这些值。
 
-- 当前 live-eval 证据台账：`passed`；evaluatedAt `2026-10-16T04:43:00.907Z`；run ID `d3afc943-db3b-4804-bb4c-a6029eff1a8a`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`33 provider attempts`；`33 completed provider calls`；`33 model steps`；
-  `92374 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
-  archive `docs/evals/archive/ai-live-eval-20261016T044300907Z-d3afc943-db3b-4804-bb4c-a6029eff1a8a.json`；source fingerprint `01736d240dd1cb07ff8a9111a17f19f901f47e9871547a5c78826d05b9f7d953` across `341` files。
+- 当前 live-eval 证据台账：`failed`；evaluatedAt `2026-10-16T12:06:46.330Z`；run ID `9d6216b7-fe81-49e6-bdab-60357b62abf1`；`18/18 cases`；`complete=true`；`terminationReason=completed`；`33 provider attempts`；`33 completed provider calls`；`33 model steps`；
+  `92414 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
+  archive `docs/evals/archive/ai-live-eval-20261016T120646330Z-9d6216b7-fe81-49e6-bdab-60357b62abf1.json`；source fingerprint `de7a1b2de064be0db519c9684c4273b9c2bfd73a12ddd34ec7840d5a9ea38c8a` across `341` files。
+
+- 本次 live-eval 完整执行 18 个案例，其中 17 个通过；`mixed-regulation-and-product-intent`
+  未匹配 `decision:regulation-comparison` 回答锚点，response grounding 为 94.44%，命令退出码为 1。
+  工具、参数、证据期望、语言、回答类型和安全子指标均通过；报告不保存原始回答，不能由锚点缺失进一步推断完整措辞。
+  这是保留真实失败的评估证据，不是 AI 质量全通过证明，也不替代新版产品库多轮生产验收。
 
 - 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `dbd9f7c4-85d8-4ea3-82a7-56a505a8366d`，artifact SHA-256 `2f026cefe17afd78c76428c4f92cf1d4c68d2ddff98bb70108eec7974412fff2`；
   observedAt `2026-10-16T11:47:47.286Z`，clean worktree / base HEAD `bff91f182aa1f43f43051b463795df59854dcf89`；

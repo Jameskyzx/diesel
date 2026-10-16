@@ -59,6 +59,7 @@ const englishDictionary = {
     siteTitle: "Global Regulations & Market Intelligence",
   },
   header: {
+    products: "Products",
     compare: "Compare",
     analyses: "Saved",
     analyze: "Start analysis",
@@ -834,6 +835,7 @@ const chineseDictionary: Dictionary = {
     siteTitle: "全球法规与市场分析平台",
   },
   header: {
+    products: "产品库",
     compare: "比较",
     analyses: "已保存",
     analyze: "开始分析",

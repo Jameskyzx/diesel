@@ -1,5 +1,8 @@
 "use client";
 
+import { CatalogResults } from "@/components/products/catalog-results";
+import { catalogResultSchema } from "@/features/product-catalog/schemas";
+
 import { useChat } from "@ai-sdk/react";
 import {
   AlertTriangle,
@@ -509,7 +512,7 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.chat;
   const labels = toolLabels(copy);
-  let fields: Array<{ label: string; value: string; fullMobileRow?: boolean }>;
+  let fields: Array<{ label: string; value: string }>;
 
   if (result.tool === "searchKnowledgeBase") {
     fields = [
@@ -590,7 +593,6 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
         ? [
             {
               label: copy.marketMetricCodes,
-              fullMobileRow: true,
               value: localizedList(
                 result.comparison.query.metricCodes,
                 locale,
@@ -646,15 +648,15 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
   const marketPeriod = result.tool === "getCountryProfile" ? result.marketPeriod
     : result.tool === "compareMarkets" ? result.comparison.query.marketPeriod : undefined;
   if (marketPeriod) fields.push({ label: locale === "en" ? "Reporting period" : "统计期",
-    value: marketObservationPeriod(marketPeriod.start, marketPeriod.end, locale), fullMobileRow: true });
+    value: marketObservationPeriod(marketPeriod.start, marketPeriod.end, locale) });
 
   return (
     <dl
       aria-label={`${labels[result.tool]}${dictionary.common.wordSeparator}${copy.queryConditions}`}
-      className="grid grid-cols-2 gap-x-3 gap-y-2 rounded-lg border border-primary/15 bg-background/80 p-2.5 text-xs sm:grid-cols-3"
+      className="grid grid-cols-3 gap-x-3 gap-y-2 rounded-lg border border-primary/15 bg-background/80 p-2.5 text-xs"
     >
       {fields.map((field) => (
-        <div className={cn("min-w-0", field.fullMobileRow && "col-span-2 sm:col-span-1")} key={field.label}>
+        <div className="min-w-0" key={field.label}>
           <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground">
             {field.label}
           </dt>
@@ -1193,6 +1195,11 @@ function citationUrlsForMessage(parts: readonly ChatMessagePart[]): string[] {
   const urls = new Set<string>();
 
   for (const part of parts) {
+    if (part.type === "data-productCatalog") {
+      const parsed = catalogResultSchema.safeParse(part.data);
+      parsed.data?.records.forEach(record => urls.add(record.source.url));
+      continue;
+    }
     if (!isToolUIPart(part)) {
       continue;
     }
@@ -1299,6 +1306,7 @@ function ToolPart({
 
 function hasCompletedAnalysis(message: Pick<SalesChatUiMessage, "role" | "parts">): boolean {
   return message.role === "assistant" && message.parts.some(part => {
+    if (part.type === "data-productCatalog") return catalogResultSchema.safeParse(part.data).success;
     if (!isToolUIPart(part)) return false;
     const presentation = toolPartPresentation(part);
     return presentation.kind === "result" && presentation.result.status !== "error";
@@ -1369,7 +1377,7 @@ export function SalesChat({
           return {
             body: {
               ...body,
-              ...(!demoMode ? { conversation: { version: 1,
+              ...(!demoMode ? { conversation: { version: 2,
                 ...(previousConversation ? { receipt: previousConversation.conversation.receipt } : {}),
               } } : {}),
               id,
@@ -1944,6 +1952,10 @@ export function SalesChat({
 
               if (part.type === "data-releasedAttachment") {
                 return null;
+              }
+              if (part.type === "data-productCatalog") {
+                const parsed = catalogResultSchema.safeParse(part.data);
+                return parsed.success ? <CatalogResults key={`${message.id}-catalog-${index}`} result={parsed.data} locale={locale} /> : null;
               }
 
               return (

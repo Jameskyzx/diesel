@@ -26,7 +26,7 @@ for (const locale of ["en", "zh-CN"] as const) {
       data: { locale },
     });
     expect(response.ok()).toBe(true);
-    await page.setViewportSize({ height: 720, width: 320 });
+    await page.setViewportSize({ height: 720, width: 1024 });
     await page.goto("/chat?countryIso3=CHN");
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
 
@@ -43,7 +43,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect.poll(() => brandIcon.evaluate(
       (image: HTMLImageElement) => image.complete && image.naturalWidth > 0,
     )).toBe(true);
-    for (const width of [320, 640, 767, 768, 1024]) {
+    for (const width of [1024, 1280, 1440]) {
       await page.setViewportSize({ height: 720, width });
       await expect(brandLink).toHaveAccessibleName(brandHomeNames[locale]);
       await expect(brandLink).toHaveAttribute("href", "/");
@@ -59,7 +59,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     );
 
     // Start at the document boundary so focus is reached by keyboard, not .focus().
-    await page.setViewportSize({ height: 720, width: 320 });
+    await page.setViewportSize({ height: 720, width: 1024 });
     await page.goto("about:blank");
     await page.goto("/chat?countryIso3=CHN");
     const tabKey = testInfo.project.name === "core-webkit" ? "Alt+Tab" : "Tab";

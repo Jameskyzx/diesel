@@ -71,6 +71,7 @@ import {
 import { planConversationTurn, conversationClarification, explicitRegulationResearchFallback, type PreparedConversationTurn } from "@/server/ai/conversation-plan";
 import { buildEvidenceRequestResponse } from "@/server/ai/conversation-answer";
 import { conversationResearchResponse } from "@/server/ai/conversation-research";
+import { catalogHarnessResponse } from "@/server/ai/catalog-harness";
 import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
 import type { conversationMetadataSchema } from "@/features/ai/conversation-state";
 import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
@@ -494,6 +495,13 @@ async function processChatRequest(
     });
     throwIfChatRequestAborted(abortSignal);
     completedPhase("audit");
+    if (body.conversation?.version === 2 && !hasAttachments) {
+      const tools = createSalesChatTools({ auditRepository, beginDeferredWork: deferredCleanup.begin,
+        runtimeContext, selectedCountryIso3: body.selectedCountryIso3, sessionId: body.sessionId, turnId: requestId });
+      return catalogHarnessResponse({ model, tools, signal: abortSignal, locale, today: runtimeContext.utcDate,
+        userText: latestUserText, messages: await convertToModelMessages(modelUiMessages), previous,
+        sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3, requestId });
+    }
     let conversationTurn: PreparedConversationTurn | undefined;
     if (body.conversation && !allowUnverifiedAttachmentResponse) {
       // Resolve independent presentation before planning so a failed query edit

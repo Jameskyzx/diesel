@@ -98,16 +98,6 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
-      name: "mobile-chromium",
-      testIgnore: [
-        "demo.spec.ts",
-        "fde-demo.spec.ts",
-        "global-error-hydration.spec.ts",
-        "knowledge.spec.ts",
-      ],
-      use: { ...devices["Pixel 7"] },
-    },
-    {
       name: "core-webkit",
       testMatch: ["accessibility.spec.ts", "locale.spec.ts", "map-runtime.spec.ts"],
       use: { ...devices["Desktop Safari"] },
@@ -124,7 +114,6 @@ export default defineConfig({
       name: "knowledge-chromium",
       dependencies: [
         "desktop-chromium",
-        "mobile-chromium",
         "core-webkit",
       ],
       fullyParallel: false,

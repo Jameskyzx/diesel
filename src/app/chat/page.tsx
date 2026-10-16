@@ -41,8 +41,10 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   const dictionary = getDictionary(locale);
   const copy = dictionary.chatPage;
   const demoMode = isPortfolioDemoMode();
+  const params = await searchParams;
+  const preparedPrompt = typeof params.prompt === "string" && params.prompt.length <= 2_000 ? params.prompt : "";
   const { canonicalQuery, context, needsRedirect } = parseChatUrlContext(
-    await searchParams,
+    params,
   );
   if (needsRedirect) {
     redirect(canonicalQuery ? `/chat?${canonicalQuery}` : "/chat");
@@ -78,13 +80,13 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
           </div>
         </aside>
         <SalesChat
-          key={JSON.stringify({ demoMode, ...context })}
-          historyKey={JSON.stringify({ demoMode, ...context })}
+          key={JSON.stringify({ demoMode, ...context, preparedPrompt })}
+          historyKey={JSON.stringify({ demoMode, ...context, preparedPrompt })}
           aiConfigured={isServerAiConfigured()}
           countryIso2ByIso3={countryIso2ByIso3}
           demoMode={demoMode}
           imageUploadsEnabled={isServerMultimodalAiConfigured()}
-          initialPrompt={initialPromptForContext(context, locale)}
+          initialPrompt={preparedPrompt || initialPromptForContext(context, locale)}
           selectedCountryIso3={context.countryIso3 ?? null}
           suggestedPrompts={conversationStarters}
         />

@@ -200,7 +200,7 @@ v3 以前的结果也不能解释为已验证 SSE 正文或 finish reason。旧�
 DIESEL_LIVE_ACCEPTANCE=true DIESEL_LIVE_RELEASE=<40-char-release-sha> pnpm test:e2e:live
 ```
 
-固定访问生产域名，先核对 release，再依次点击中文桌面和英文移动端六个示例；
+固定访问生产域名，先核对 release，再依次点击中文桌面和英文桌面六个示例；
 使用真实 PostgreSQL admission、业务查询和模型，不拦截或模拟 `/api/chat`。
 每个示例必须只发送一次，具有匹配的有效工具证据、完整 SSE 和可见回答；零重试，
 首个失败即停止，报告保留未执行项而非算作成功。每次输出到独立的

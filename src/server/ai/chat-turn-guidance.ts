@@ -76,11 +76,12 @@ export function allowsToolFreeAttachmentResponse(text: string): boolean {
 function capabilityResponse(selectedCountryIso3: string | null): string {
   return `可以。我会先查询平台里的结构化事实和可追溯来源，再给出解释，不会拿模型记忆冒充法规依据。
 
-我适合处理四类任务：
-1. 查询单个国家当前有效或未来已采纳的排放法规；
-2. 比较 2–5 个国家的法规或结构化市场指标；
-3. 按国家、用途、功率和日期判断产品适配；
-4. 生成带确定性评分、风险、产品和行动项的销售简报。
+我适合处理这些任务：
+1. 按具体型号、用途和功率查找授权展示的产品目录，逐条比较原始参数（不视为认证）；
+2. 查询单个国家当前有效或未来已采纳的排放法规；
+3. 比较 2–5 个国家的法规或结构化市场指标；
+4. 按国家、用途、功率和日期判断产品适配；
+5. 生成带确定性评分、风险、产品和行动项的销售简报。
 
 ${contextLine(selectedCountryIso3)}
 
@@ -172,10 +173,11 @@ function buildEnglishDirectChatResponse({
     return `Yes. I query structured facts and traceable sources before explaining a result; I do not present model memory as regulatory evidence.
 
 I can:
-1. find current effective or future adopted rules for one country;
-2. compare regulations or structured market metrics across 2–5 countries;
-3. evaluate product fit by country, application, power, and date; and
-4. create a sales brief with deterministic scores, risks, products, and actions.
+1. search the authorized product catalogue by model, application and power, keeping reported specifications separate from certification;
+2. find current effective or future adopted rules for one country;
+3. compare regulations or structured market metrics across 2–5 countries;
+4. evaluate product fit by country, application, power, and date; and
+5. create a sales brief with deterministic scores, risks, products, and actions.
 
 ${contextText}
 

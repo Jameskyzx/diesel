@@ -1,5 +1,7 @@
 "use client";
 
+import { CatalogResults } from "@/components/products/catalog-results";
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { isToolUIPart } from "ai";
@@ -68,6 +70,7 @@ export function AnalysisLibrary({ countryIso2ByIso3 }: { countryIso2ByIso3: Read
         <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">{copy.historicalNotice}</p>
         {selected.payload.kind === "comparison" ? <ComparisonResults snapshot={selected.payload.comparison} /> : selected.payload.history.messages.map(message => {
           const urls = message.parts.flatMap(part => {
+            if (part.type === "data-productCatalog") return part.data.records.map(record => record.source.url);
             if (!isToolUIPart(part)) return [];
             const presentation = toolPartPresentation(part);
             return presentation.kind === "result" ? presentation.result.citations.map(citation => citation.sourceUrl).filter(isNavigableEvidenceUrl) : [];
@@ -75,6 +78,7 @@ export function AnalysisLibrary({ countryIso2ByIso3 }: { countryIso2ByIso3: Read
           return <article className="space-y-3 rounded-md border p-3" key={message.id}>
             <h3 className="font-semibold">{message.role === "user" ? dictionary.chat.user : dictionary.chat.aiExplanation}</h3>
             {message.parts.map((part, index) => {
+              if (part.type === "data-productCatalog") return <CatalogResults key={index} result={part.data} locale={locale} />;
               if (part.type === "text") return message.role === "user" ? <p className="whitespace-pre-wrap" key={index}>{part.text}</p> : <AssistantMarkdown key={index} content={part.text} allowedExternalUrls={urls} hiddenImage={dictionary.chat.hiddenModelImage} hiddenImageWithAlt={dictionary.chat.hiddenModelImageWithAlt} />;
               if (isToolUIPart(part)) {
                 const presentation = toolPartPresentation(part);

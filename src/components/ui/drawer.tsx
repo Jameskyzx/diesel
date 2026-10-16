@@ -46,7 +46,7 @@ function DrawerContent({
     <DrawerPortal>
       <DrawerPrimitive.Content
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex h-dvh w-[min(94vw,34rem)] flex-col border-l bg-background shadow-2xl outline-none",
+          "fixed inset-y-0 right-0 z-50 flex h-dvh w-[34rem] flex-col border-l bg-background shadow-2xl outline-none",
           className,
         )}
         data-slot="drawer-content"
@@ -64,7 +64,7 @@ function DrawerHeader({
 }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("grid gap-1.5 border-b px-5 py-5 sm:px-7", className)}
+      className={cn("grid gap-1.5 border-b px-7 py-5", className)}
       data-slot="drawer-header"
       {...props}
     />
@@ -77,7 +77,7 @@ function DrawerFooter({
 }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("mt-auto border-t px-5 py-4 sm:px-7", className)}
+      className={cn("mt-auto border-t px-7 py-4", className)}
       data-slot="drawer-footer"
       {...props}
     />

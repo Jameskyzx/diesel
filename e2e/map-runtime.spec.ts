@@ -386,8 +386,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     await observeRuntime(page, testInfo, locale, "healthy", async (snapshot) => {
       await expectReadyMap(page, locale);
       expect((await snapshot("ready")).independentProbe.webgl2).toBe(true);
-      if ((testInfo.project.name === "desktop-chromium" && locale === "en") ||
-        (testInfo.project.name === "mobile-chromium" && locale === "zh-CN")) {
+      if (testInfo.project.name === "desktop-chromium") {
         await snapshot("before-initial-full-page-screenshot");
         await testInfo.attach("maplibre-v6-ready", {
           contentType: "image/png", body: await page.screenshot({ fullPage: true }),
@@ -409,8 +408,8 @@ for (const locale of ["en", "zh-CN"] as const) {
         const configuredWorldSize = 512 * 2 ** 1.15;
         // MapLibre 6.9 MercatorTransform.defaultConstrain fits a single world
         // when renderWorldCopies is false. A canvas wider than the configured
-        // world raises zoom and centers longitude at 0; mobile retains 8.
-        // Use the same real DEU coordinate in both viewports, not the old FRA
+        // world raises zoom and centers longitude at 0; smaller canvases retain 8.
+        // Use the same real DEU coordinate across desktop window sizes, not the old FRA
         // screen-point expectation derived from an unconstrained camera.
         const worldSize = Math.max(configuredWorldSize, bounds.width);
         const centerLng = bounds.width >= configuredWorldSize ? 0 : 8;
@@ -427,8 +426,7 @@ for (const locale of ["en", "zh-CN"] as const) {
           effectiveWorldSize: worldSize, effectiveCenterLng: centerLng,
           canvasBounds: bounds, position,
         });
-        if (testInfo.project.name === "mobile-chromium") await canvas.tap({ position });
-        else await canvas.click({ position });
+        await canvas.click({ position });
         await expect(page).toHaveURL((url) => url.pathname === "/countries/DEU");
         await expect(page.getByRole("dialog")).toBeVisible();
         await expect(page.getByRole("dialog").getByRole("heading", {
@@ -452,7 +450,7 @@ for (const locale of ["en", "zh-CN"] as const) {
 
   for (const mode of ["no-webgl", "webgl1-only", "map-canvas-only"] as const) {
     test(`keeps country navigation usable and really recovers after ${mode} (${locale})`, async ({ page }, testInfo) => {
-      test.skip(testInfo.project.name === "core-webkit", "Chromium desktop/mobile cover the injected fault matrix; WebKit runs real normal rendering.");
+      test.skip(testInfo.project.name === "core-webkit", "Desktop Chromium covers the injected fault matrix; WebKit runs real normal rendering.");
       await observeRuntime(page, testInfo, locale, mode, async (snapshot) => {
         await expectLocalFailure(page, locale);
         const failed = await snapshot("local-failure");

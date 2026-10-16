@@ -75,7 +75,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     await page.route("**/api/chat", async route => {
       requests += 1;
       const body = route.request().postDataJSON() as { conversation: { version: number; receipt?: string }; messages: { role: string }[] };
-      expect(body.conversation.version).toBe(1);
+      expect(body.conversation.version).toBe(2);
       expect(body.messages.every(message => message.role === "user")).toBe(true);
       if (requests === 3) expect(body.conversation.receipt).toBe("transport-only-receipt-2");
       const state = { tasks: requests === 1 ? [] : ["regulations"], countryIso3s: requests === 1 ? [] : ["CHN"],

@@ -39,7 +39,7 @@ export default defineConfig({
     : {
         command: "pnpm demo",
         env: {
-          // Desktop/mobile cases share one loopback client bucket. Give this
+          // Desktop cases share one loopback client bucket. Give this
           // isolated offline workload explicit capacity, not production defaults.
           AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR: "10000",
           AI_CHAT_RATE_LIMIT_PER_HOUR: "10000",
@@ -54,10 +54,6 @@ export default defineConfig({
     {
       name: "portfolio-demo-chromium",
       use: { ...devices["Desktop Chrome"] },
-    },
-    {
-      name: "portfolio-demo-mobile-chromium",
-      use: { ...devices["Pixel 7"] },
     },
   ],
 });

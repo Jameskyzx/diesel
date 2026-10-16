@@ -237,36 +237,36 @@ This is the only current release/evidence index. Historical implementation notes
 ```json
 {
   "browserSnapshot": {
-    "artifactByteLength": 207016,
+    "artifactByteLength": 112659,
     "artifactPath": "docs/evidence/playwright-e2e-latest.json",
-    "artifactSha256": "43deaf0c0d51d3e5ee92b7b2f67178f390026e20543d7480cdd6560af94b9776",
-    "baseHeadCommit": "0828fa5f11dfe33d237be03c2b9e74d5878ee2b8",
-    "evaluatedCommit": "0828fa5f11dfe33d237be03c2b9e74d5878ee2b8",
-    "observedAt": "2026-10-15T02:12:12.298Z",
-    "runId": "9fc83486-0da5-49c1-b6be-792ad7a67e4a",
+    "artifactSha256": "92c4c448cf8a0d850bd49b5532052345af216162b9f30991aaeacf07b6a937f9",
+    "baseHeadCommit": "2ee390c7fcb92cdfd02aef605963c8398cfc207f",
+    "evaluatedCommit": "2ee390c7fcb92cdfd02aef605963c8398cfc207f",
+    "observedAt": "2026-10-16T04:56:01.055Z",
+    "runId": "6a694540-1b38-4282-8ced-47be035892dc",
     "runs": [
       {
-        "collected": 499,
+        "collected": 266,
         "failed": 0,
         "flaky": 0,
-        "passed": 433,
-        "skipped": 66,
+        "passed": 253,
+        "skipped": 13,
         "id": "public"
       },
       {
-        "collected": 68,
+        "collected": 34,
         "failed": 0,
         "flaky": 0,
-        "passed": 68,
+        "passed": 34,
         "skipped": 0,
         "id": "demo"
       },
       {
-        "collected": 4,
+        "collected": 1,
         "failed": 0,
         "flaky": 0,
-        "passed": 2,
-        "skipped": 2,
+        "passed": 1,
+        "skipped": 0,
         "id": "fde"
       },
       {
@@ -280,8 +280,8 @@ This is the only current release/evidence index. Historical implementation notes
     ],
     "sourceFingerprint": {
       "algorithm": "sha256",
-      "digest": "64e64666a1b5a46f19ab67f070a4dff7b5a81d63d795b5bf2b20781d674d0b15",
-      "fileCount": 391
+      "digest": "6a7a66b32f97644d08162d606ee296471d3c2f40b6da60bc9c916392a281967c",
+      "fileCount": 399
     },
     "version": "diesel-playwright-evidence-v1",
     "worktreeState": "clean"
@@ -364,15 +364,15 @@ This is the only current release/evidence index. Historical implementation notes
   `92374 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=true`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
   archive `docs/evals/archive/ai-live-eval-20261016T044300907Z-d3afc943-db3b-4804-bb4c-a6029eff1a8a.json`；source fingerprint `01736d240dd1cb07ff8a9111a17f19f901f47e9871547a5c78826d05b9f7d953` across `341` files。
 
-- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `9fc83486-0da5-49c1-b6be-792ad7a67e4a`，artifact SHA-256 `43deaf0c0d51d3e5ee92b7b2f67178f390026e20543d7480cdd6560af94b9776`；
-  observedAt `2026-10-15T02:12:12.298Z`，clean worktree / base HEAD `0828fa5f11dfe33d237be03c2b9e74d5878ee2b8`；
-  `public` = `433 passed / 66 skipped / 0 failed / 0 flaky / 499 collected`；
-  `demo` = `68 passed / 0 skipped / 0 failed / 0 flaky / 68 collected`；
-  `fde` = `2 passed / 2 skipped / 0 failed / 0 flaky / 4 collected`；
+- 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `6a694540-1b38-4282-8ced-47be035892dc`，artifact SHA-256 `92c4c448cf8a0d850bd49b5532052345af216162b9f30991aaeacf07b6a937f9`；
+  observedAt `2026-10-16T04:56:01.055Z`，clean worktree / base HEAD `2ee390c7fcb92cdfd02aef605963c8398cfc207f`；
+  `public` = `253 passed / 13 skipped / 0 failed / 0 flaky / 266 collected`；
+  `demo` = `34 passed / 0 skipped / 0 failed / 0 flaky / 34 collected`；
+  `fde` = `1 passed / 0 skipped / 0 failed / 0 flaky / 1 collected`；
   `production-csp` = `2 passed / 0 skipped / 0 failed / 0 flaky / 2 collected`；
-  聚合为 505 passed / 68 skipped / 0 failed / 0 flaky / 573 collected。artifact 为 207016 bytes；
-  browser source fingerprint 为 391 files / `64e64666a1b5a46f19ab67f070a4dff7b5a81d63d795b5bf2b20781d674d0b15`。
-  因运行发生在 clean worktree，`evaluatedCommit=0828fa5f11dfe33d237be03c2b9e74d5878ee2b8`；它证明该本地候选上的浏览器验收，
+  聚合为 290 passed / 13 skipped / 0 failed / 0 flaky / 303 collected。artifact 为 112659 bytes；
+  browser source fingerprint 为 399 files / `6a7a66b32f97644d08162d606ee296471d3c2f40b6da60bc9c916392a281967c`。
+  因运行发生在 clean worktree，`evaluatedCommit=2ee390c7fcb92cdfd02aef605963c8398cfc207f`；它证明该本地候选上的桌面浏览器验收，
   不冒充远端 CI、安全审计、生产部署或现实用户成效证据。
 
 ## Acceptance and operations / 验收与运维

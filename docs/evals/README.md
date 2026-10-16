@@ -649,36 +649,44 @@ decision from discarded text.
 <!-- live-eval-current:start -->
 ```json
 {
-  "archivePath": "archive/ai-live-eval-20261016T044300907Z-d3afc943-db3b-4804-bb4c-a6029eff1a8a.json",
+  "archivePath": "archive/ai-live-eval-20261016T120646330Z-9d6216b7-fe81-49e6-bdab-60357b62abf1.json",
   "attemptCount": 33,
   "complete": true,
   "completedCount": 33,
-  "evaluatedAt": "2026-10-16T04:43:00.907Z",
-  "latestOutcome": "passed",
+  "evaluatedAt": "2026-10-16T12:06:46.330Z",
+  "latestOutcome": "failed",
   "modelStepCount": 33,
-  "runId": "d3afc943-db3b-4804-bb4c-a6029eff1a8a",
+  "runId": "9d6216b7-fe81-49e6-bdab-60357b62abf1",
   "runError": null,
   "sampleCount": 18,
   "sourceFingerprint": {
     "algorithm": "sha256",
-    "digest": "01736d240dd1cb07ff8a9111a17f19f901f47e9871547a5c78826d05b9f7d953",
+    "digest": "de7a1b2de064be0db519c9684c4273b9c2bfd73a12ddd34ec7840d5a9ea38c8a",
     "fileCount": 341,
     "status": "captured"
   },
   "suiteCaseCount": 18,
   "terminationReason": "completed",
-  "thresholdsPassed": true,
+  "thresholdsPassed": false,
   "tokenUsageComplete": true,
-  "totalTokens": 92374,
+  "totalTokens": 92414,
   "version": "sales-chat-live-v26"
 }
 ```
 <!-- live-eval-current:end -->
 
 <!-- live-eval-current-prose:start -->
-Current report result: `passed`; evaluatedAt `2026-10-16T04:43:00.907Z`; run ID `d3afc943-db3b-4804-bb4c-a6029eff1a8a`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `33 provider attempts`; `33 completed provider calls`; `33 model steps`; `92374 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=true`; `runError=none`.
-Current report provenance: archive `archive/ai-live-eval-20261016T044300907Z-d3afc943-db3b-4804-bb4c-a6029eff1a8a.json`; source fingerprint `01736d240dd1cb07ff8a9111a17f19f901f47e9871547a5c78826d05b9f7d953` across `341` files.
+Current report result: `failed`; evaluatedAt `2026-10-16T12:06:46.330Z`; run ID `9d6216b7-fe81-49e6-bdab-60357b62abf1`; `18/18 cases`; `complete=true`; `terminationReason=completed`; `33 provider attempts`; `33 completed provider calls`; `33 model steps`; `92414 known tokens`; `tokenUsageComplete=true`; `thresholdsPassed=false`; `runError=none`.
+Current report provenance: archive `archive/ai-live-eval-20261016T120646330Z-9d6216b7-fe81-49e6-bdab-60357b62abf1.json`; source fingerprint `de7a1b2de064be0db519c9684c4273b9c2bfd73a12ddd34ec7840d5a9ea38c8a` across `341` files.
 <!-- live-eval-current-prose:end -->
+
+All 18 cases completed; 17 passed. `mixed-regulation-and-product-intent` missed
+the `decision:regulation-comparison` response anchor, giving 94.44% response
+grounding and command exit 1. Tool selection, arguments, evidence expectations,
+response disposition, locale and safety dimensions passed. Raw answers are not
+persisted, so this report does not establish the exact wording behind the missing
+anchor. This is an honest failed observation, not an all-green model-quality claim
+or production acceptance of the new catalogue multi-turn harness.
 
 Completed execution, passing acceptance thresholds, and identifying a committed
 release are separate properties. Provider observations retain their actual

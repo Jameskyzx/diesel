@@ -81,6 +81,10 @@ unknown roots and any persistence/dependency changes.
   enumerated application/domain/AI/repository/service, presentation, public asset,
   test, documentation and maintenance paths can differ. Database fingerprints
   remain mandatory even when the changed code can access the database.
+  The exact read-only `src/data/products/weichai-catalog.json` source-report
+  and five existing root Playwright configurations are application inputs too.
+  This does not approve catalogue specifications/certifications or allow other
+  `src/data` files, future root configurations, seeds or ingestion changes.
   The single read-only `scripts/db/verify-application-release.ts` entry is also
   maintenance code; its fingerprint SQL, DB runtime, migration and ingestion
   inputs remain protected. Prepared predecessors and before/after candidates

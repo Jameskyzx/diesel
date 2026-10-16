@@ -202,6 +202,12 @@ This is the only current release/evidence index. Historical implementation notes
   按授权仅压缩归档 3 个已关闭旧 journal，并校验移除 8 份成功历史发布的非当前/非回滚构建包缓存（1,328,918,446 bytes）。
   独立读回可用空间 6,682,230,784 bytes（约 6.22 GiB）；运行目录、当前/回滚包、环境、部署记录、日志归档及全部数据库备份保留，`jamesky-api` PID 1033 / 重启 0 未变。
   [本轮部署、清理及 20 轮逐例验收记录](evidence/operations/production-conversation-atomic-edits-2026-10-15.json) 区分发布成功与未通过的语义验收；没有放宽超时、配额、证据或 CI 门槛。
+  2026-10-16 的产品目录候选 PR #103 / `ac7a67d1f674e791f5f52d0d1d2e9a02e0f9981a` 精确 master CI 10/10 通过，
+  但只读目录与根目录浏览器配置被旧分类器判为完整发布；恢复演练的读回达到原有 90 分钟上限，本次发布失败，禁止重用该 SHA。
+  截至 `2026-10-16T10:45:58.522Z`，自动恢复仍在运行，current 已切回 `99ddb305`，但 `HOST_ROLLBACK_REQUIRED` 尚未收敛，不能称恢复已完成。
+  `10:44:45.296Z` 公网 liveness 为 HTTP 200 / 旧版 `99ddb305`；候选激活期间目录 API 6/6、831 条全量比对和桌面目录交互通过，
+  这些不证明最终发布成功；新版真实多轮验收未开始。用户选择保留 VPS 原链路，并授权修正分类后以新的 CI-approved SHA 发布。
+  [本次超时、恢复与分类修复前观测](evidence/operations/deployment-catalogue-recovery-2026-10-16.json) 保留实际失败和未完成项；没有建立数据库转发或删除备份。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的

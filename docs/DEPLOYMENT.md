@@ -2373,9 +2373,10 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
 优先使用 `durable-release.bundle.mjs start-auto <sha>`：先验证前后两份输入树，
 数据库代码、迁移、fixture、发布批准和依赖不变时自动选代码发布；聊天、比较和路由
 修改不再触发全库导出、恢复及数据重发布。无法读取或畸形的输入直接失败，不降级猜测。
-仅用于只读展示的 `src/data/products/weichai-catalog.json` 和五个现有根目录
-Playwright 配置也属于代码输入；不放行其他 `src/data` 文件、未知配置、导入脚本
-或产品发布批准。目录参数仍为来源报告而非认证证据，前后数据库指纹核验保持不变。
+仅用于只读展示的虚构目录 `src/data/products/demo-engine-catalog.json`（以及已退役的
+旧目录路径，使其删除仍走代码发布）和五个现有根目录 Playwright 配置也属于代码输入；
+不放行其他 `src/data` 文件、未知配置、导入脚本或产品发布批准。目录声明不是认证证据，
+前后数据库指纹核验保持不变。
 `start <sha>` 显式执行完整发布；`start-application <sha>` 强制要求代码发布资格。
 
 ### CI 构建产物交付

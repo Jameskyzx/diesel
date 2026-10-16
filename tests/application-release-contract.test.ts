@@ -32,9 +32,9 @@ describe("versioned application-only release contract", () => {
     "scripts/db/ingest-accepted-fixtures.ts", "scripts/db/application-fingerprint-query.ts",
     "scripts/db/production-readback.ts", "docs/ACCEPTANCE.md", "docs/research/signoff.md",
     "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "patches/something.patch", "unknown/data.json",
-    "src/data/products/approved.json", "src/data/products/weichai-catalog.json.sql",
-    "src/data/products/weichai-catalog.json/seed.ts", "src/data/regulations.json",
-    "src/server/db/seed/weichai-catalog.ts", "scripts/db/import-catalog.ts",
+    "src/data/products/approved.json", "src/data/products/demo-engine-catalog.json.sql",
+    "src/data/products/demo-engine-catalog.json/seed.ts", "src/data/regulations.json",
+    "src/server/db/seed/demo-engine-catalog.ts", "scripts/db/import-catalog.ts",
     "playwright.database.config.ts", "next.config.ts", "drizzle.config.ts",
   ])("refuses changed or newly introduced data inputs: %s", (path) => {
     expect(isApplicationOnlyInput(path)).toBe(false);
@@ -53,7 +53,7 @@ describe("versioned application-only release contract", () => {
     expect(classifyReleaseInputs(previous, { ...candidate, files: [...files, { ...files[0], path }] }).mode).toBe("application");
   });
   it.each([
-    "src/data/products/weichai-catalog.json", "playwright.config.ts", "playwright.demo.config.ts",
+    "src/data/products/demo-engine-catalog.json", "src/data/products/weichai-catalog.json", "playwright.config.ts", "playwright.demo.config.ts",
     "playwright.fde.config.ts", "playwright.live.config.ts", "playwright.production.config.ts",
   ])("classifies read-only catalogue and browser configuration additions, edits and removals: %s", (path) => {
     const input = { ...files[0], path };
@@ -73,7 +73,7 @@ describe("versioned application-only release contract", () => {
   });
   it("keeps full publication mandatory when catalogue/UI changes accompany approved-product changes", () => {
     const catalogueFiles = [...files, ...[
-      "src/data/products/weichai-catalog.json", "playwright.config.ts", "playwright.demo.config.ts",
+      "src/data/products/demo-engine-catalog.json", "playwright.config.ts", "playwright.demo.config.ts",
       "playwright.fde.config.ts", "src/server/ai/catalog-harness.ts", "src/app/products/page.tsx",
     ].map(path => ({ ...files[0], path }))];
     expect(classifyReleaseInputs(previous, { ...candidate, files: catalogueFiles }).mode).toBe("application");

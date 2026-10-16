@@ -70,7 +70,8 @@ export function AnalysisLibrary({ countryIso2ByIso3 }: { countryIso2ByIso3: Read
         <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">{copy.historicalNotice}</p>
         {selected.payload.kind === "comparison" ? <ComparisonResults snapshot={selected.payload.comparison} /> : selected.payload.history.messages.map(message => {
           const urls = message.parts.flatMap(part => {
-            if (part.type === "data-productCatalog") return part.data.records.map(record => record.source.url);
+            // Fictional catalogue records carry no outbound source link.
+            if (part.type === "data-productCatalog") return [];
             if (!isToolUIPart(part)) return [];
             const presentation = toolPartPresentation(part);
             return presentation.kind === "result" ? presentation.result.citations.map(citation => citation.sourceUrl).filter(isNavigableEvidenceUrl) : [];

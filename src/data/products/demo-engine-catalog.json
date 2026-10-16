@@ -1,0 +1,177 @@
+{
+  "version": 2,
+  "isDemo": true,
+  "title": "DEMO ONLY — Fictional diesel engine catalogue",
+  "evidenceStatus": "fictional_declaration",
+  "notice": "Every model, rating and emission declaration in this file is invented for demonstration. No manufacturer is represented. Declared citation codes are what a fictional spec sheet claims, not certification or market-entry approval.",
+  "records": [
+    {
+      "id": "demo-cat-001", "model": "DEMO-H13-460", "series": "DEMO-H13", "category": "truck",
+      "applicationScopes": ["on-road-truck"], "ratedPowerKw": 338, "ratedSpeedRpm": 1900,
+      "powerMinKw": 300, "powerMaxKw": 360, "displacementL": 12.9, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR + ASC", "emissionLabel": "China VI",
+      "declaredCitationCodes": ["GB 17691-2018"]
+    },
+    {
+      "id": "demo-cat-002", "model": "DEMO-H13-460E", "series": "DEMO-H13", "category": "truck",
+      "applicationScopes": ["on-road-truck"], "ratedPowerKw": 338, "ratedSpeedRpm": 1900,
+      "powerMinKw": 300, "powerMaxKw": 360, "displacementL": 12.9, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR + ASC", "emissionLabel": "Euro VI",
+      "declaredCitationCodes": ["CELEX:32009R0595", "TUR Euro VI HD Diesel", "Land Transport Rule 33001 Table 2B / Euro VI Step C", "Israel IMR CY2026 / EU 2018/858 Annex II item 41A"]
+    },
+    {
+      "id": "demo-cat-003", "model": "DEMO-H10-375", "series": "DEMO-H10", "category": "truck",
+      "applicationScopes": ["on-road-truck"], "ratedPowerKw": 276, "ratedSpeedRpm": 1900,
+      "powerMinKw": 250, "powerMaxKw": 300, "displacementL": 9.5, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR + ASC", "emissionLabel": "China VI",
+      "declaredCitationCodes": ["GB 17691-2018"]
+    },
+    {
+      "id": "demo-cat-004", "model": "DEMO-H10-375E5", "series": "DEMO-H10", "category": "truck",
+      "applicationScopes": ["on-road-truck"], "ratedPowerKw": 276, "ratedSpeedRpm": 1900,
+      "powerMinKw": 250, "powerMaxKw": 300, "displacementL": 9.5, "cylinders": 6,
+      "aftertreatment": "SCR", "emissionLabel": "Euro V / TR CU Class 5",
+      "declaredCitationCodes": ["TR CU 018/2011 Class 5", "KAZ TR CU 018/2011 Class 5", "KGZ TR CU 018/2011 Class 5", "ARM TR CU 018/2011 Class 5", "BLR TR CU 018/2011 Class 5"]
+    },
+    {
+      "id": "demo-cat-005", "model": "DEMO-H10-300E2", "series": "DEMO-H10", "category": "truck",
+      "applicationScopes": ["on-road-truck"], "ratedPowerKw": 221, "ratedSpeedRpm": 2100,
+      "powerMinKw": 200, "powerMaxKw": 250, "displacementL": 9.5, "cylinders": 6,
+      "aftertreatment": "None", "emissionLabel": "Euro II",
+      "declaredCitationCodes": ["P.U.(A) 429/96 / VTA Euro II"]
+    },
+    {
+      "id": "demo-cat-006", "model": "DEMO-M9-350US", "series": "DEMO-M9", "category": "truck",
+      "applicationScopes": ["on-road-truck"], "ratedPowerKw": 261, "ratedSpeedRpm": 1800,
+      "powerMinKw": 240, "powerMaxKw": 290, "displacementL": 8.9, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR", "emissionLabel": "US EPA 2010",
+      "declaredCitationCodes": ["40 CFR 86.007-11", "SOR/2003-2"]
+    },
+    {
+      "id": "demo-cat-007", "model": "DEMO-M9-350US27", "series": "DEMO-M9", "category": "truck",
+      "applicationScopes": ["on-road-truck"], "ratedPowerKw": 261, "ratedSpeedRpm": 1800,
+      "powerMinKw": 240, "powerMaxKw": 290, "displacementL": 8.9, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + dual SCR", "emissionLabel": "US EPA 2027",
+      "declaredCitationCodes": ["40 CFR 1036.104", "40 CFR 86.007-11", "SOR/2003-2"]
+    },
+    {
+      "id": "demo-cat-008", "model": "DEMO-L4-150", "series": "DEMO-L4", "category": "truck",
+      "applicationScopes": ["on-road-truck"], "ratedPowerKw": 110, "ratedSpeedRpm": 2600,
+      "powerMinKw": 90, "powerMaxKw": 130, "displacementL": 4.5, "cylinders": 4,
+      "aftertreatment": "DOC + DPF + SCR", "emissionLabel": "China VI",
+      "declaredCitationCodes": ["GB 17691-2018"]
+    },
+    {
+      "id": "demo-cat-009", "model": "DEMO-L4-150IN", "series": "DEMO-L4", "category": "truck",
+      "applicationScopes": ["on-road-truck", "on-road-bus"], "ratedPowerKw": 110, "ratedSpeedRpm": 2600,
+      "powerMinKw": 90, "powerMaxKw": 130, "displacementL": 4.5, "cylinders": 4,
+      "aftertreatment": "DOC + DPF + SCR", "emissionLabel": "Bharat Stage VI",
+      "declaredCitationCodes": ["G.S.R. 889(E)"]
+    },
+    {
+      "id": "demo-cat-010", "model": "DEMO-B7-280", "series": "DEMO-B7", "category": "bus",
+      "applicationScopes": ["on-road-bus"], "ratedPowerKw": 206, "ratedSpeedRpm": 2300,
+      "powerMinKw": 180, "powerMaxKw": 230, "displacementL": 7.5, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR + ASC", "emissionLabel": "China VI",
+      "declaredCitationCodes": ["GB 17691-2018"]
+    },
+    {
+      "id": "demo-cat-011", "model": "DEMO-B7-280E", "series": "DEMO-B7", "category": "bus",
+      "applicationScopes": ["on-road-bus"], "ratedPowerKw": 206, "ratedSpeedRpm": 2300,
+      "powerMinKw": 180, "powerMaxKw": 230, "displacementL": 7.5, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR + ASC", "emissionLabel": "Euro VI",
+      "declaredCitationCodes": ["CELEX:32009R0595", "TUR Euro VI HD Diesel"]
+    },
+    {
+      "id": "demo-cat-012", "model": "DEMO-B9-330AU", "series": "DEMO-B9", "category": "bus",
+      "applicationScopes": ["on-road-bus", "on-road-truck"], "ratedPowerKw": 243, "ratedSpeedRpm": 2100,
+      "powerMinKw": 230, "powerMaxKw": 260, "displacementL": 8.9, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR + ASC", "emissionLabel": "Euro VI / ADR 80/04",
+      "declaredCitationCodes": ["ADR 80/04", "ADR 80/03"]
+    },
+    {
+      "id": "demo-cat-013", "model": "DEMO-N6-220", "series": "DEMO-N6", "category": "construction",
+      "applicationScopes": ["construction", "agriculture", "non-road"], "ratedPowerKw": 162, "ratedSpeedRpm": 2200,
+      "powerMinKw": 130, "powerMaxKw": 200, "displacementL": 6.7, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR", "emissionLabel": "China Non-road IV",
+      "declaredCitationCodes": ["GB 20891-2014", "DEMO-CHN-NR-A"]
+    },
+    {
+      "id": "demo-cat-014", "model": "DEMO-N6-220V", "series": "DEMO-N6", "category": "construction",
+      "applicationScopes": ["construction", "agriculture"], "ratedPowerKw": 162, "ratedSpeedRpm": 2200,
+      "powerMinKw": 130, "powerMaxKw": 200, "displacementL": 6.7, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR", "emissionLabel": "EU Stage V",
+      "declaredCitationCodes": ["CELEX:32016R1628", "GB NRMM Stage V", "TUR NRE Stage V 2016/1628/AB", "G.S.R. 598(E) CEV Stage V", "Israel NRMM IMR CY2026 / EU 2016/1628"]
+    },
+    {
+      "id": "demo-cat-015", "model": "DEMO-N6-220T4", "series": "DEMO-N6", "category": "construction",
+      "applicationScopes": ["construction", "agriculture"], "ratedPowerKw": 162, "ratedSpeedRpm": 2200,
+      "powerMinKw": 130, "powerMaxKw": 200, "displacementL": 6.7, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR", "emissionLabel": "US Tier 4 Final",
+      "declaredCitationCodes": ["40 CFR 1039.101", "SOR/2020-258"]
+    },
+    {
+      "id": "demo-cat-016", "model": "DEMO-N4-110", "series": "DEMO-N4", "category": "construction",
+      "applicationScopes": ["construction", "agriculture", "non-road"], "ratedPowerKw": 82, "ratedSpeedRpm": 2200,
+      "powerMinKw": 56, "powerMaxKw": 100, "displacementL": 4.5, "cylinders": 4,
+      "aftertreatment": "DOC + DPF", "emissionLabel": "China Non-road IV",
+      "declaredCitationCodes": ["GB 20891-2014", "DEMO-CHN-NR-A", "DEMO-BRA-NR-A"]
+    },
+    {
+      "id": "demo-cat-017", "model": "DEMO-N4-110V", "series": "DEMO-N4", "category": "construction",
+      "applicationScopes": ["construction"], "ratedPowerKw": 82, "ratedSpeedRpm": 2200,
+      "powerMinKw": 56, "powerMaxKw": 100, "displacementL": 4.5, "cylinders": 4,
+      "aftertreatment": "DOC + DPF + SCR", "emissionLabel": "EU Stage V",
+      "declaredCitationCodes": ["CELEX:32016R1628", "GB NRMM Stage V", "Israel NRMM IMR CY2026 / EU 2016/1628"]
+    },
+    {
+      "id": "demo-cat-018", "model": "DEMO-N12-400", "series": "DEMO-N12", "category": "construction",
+      "applicationScopes": ["construction", "non-road"], "ratedPowerKw": 300, "ratedSpeedRpm": 2100,
+      "powerMinKw": 260, "powerMaxKw": 360, "displacementL": 11.6, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR", "emissionLabel": "China Non-road IV",
+      "declaredCitationCodes": ["GB 20891-2014", "DEMO-CHN-NR-A"]
+    },
+    {
+      "id": "demo-cat-019", "model": "DEMO-N12-400S3A", "series": "DEMO-N12", "category": "agriculture",
+      "applicationScopes": ["agriculture"], "ratedPowerKw": 300, "ratedSpeedRpm": 2100,
+      "powerMinKw": 260, "powerMaxKw": 360, "displacementL": 11.6, "cylinders": 6,
+      "aftertreatment": "None", "emissionLabel": "Stage IIIA / TR CU Class 3A",
+      "declaredCitationCodes": ["TR CU 031/2012 Class 3A", "KAZ TR CU 031/2012 Stage IIIA", "KGZ TR CU 031/2012 Stage IIIA", "ARM TR CU 031/2012 Stage IIIA", "BLR TR CU 031/2012 Stage IIIA", "UzTR.10-006:2025 Stage IIIA"]
+    },
+    {
+      "id": "demo-cat-020", "model": "DEMO-A4-90", "series": "DEMO-A4", "category": "agriculture",
+      "applicationScopes": ["agriculture", "non-road"], "ratedPowerKw": 66, "ratedSpeedRpm": 2300,
+      "powerMinKw": 50, "powerMaxKw": 75, "displacementL": 4.1, "cylinders": 4,
+      "aftertreatment": "DOC + DPF", "emissionLabel": "China Non-road IV",
+      "declaredCitationCodes": ["GB 20891-2014", "DEMO-CHN-NR-A", "DEMO-BRA-NR-A"]
+    },
+    {
+      "id": "demo-cat-021", "model": "DEMO-A4-90IN", "series": "DEMO-A4", "category": "agriculture",
+      "applicationScopes": ["agriculture"], "ratedPowerKw": 66, "ratedSpeedRpm": 2300,
+      "powerMinKw": 50, "powerMaxKw": 75, "displacementL": 4.1, "cylinders": 4,
+      "aftertreatment": "DOC + DPF", "emissionLabel": "India TREM Stage V",
+      "declaredCitationCodes": ["G.S.R. 141(E) / G.S.R. 598(E) TREM Stage V"]
+    },
+    {
+      "id": "demo-cat-022", "model": "DEMO-A6-180", "series": "DEMO-A6", "category": "agriculture",
+      "applicationScopes": ["agriculture"], "ratedPowerKw": 132, "ratedSpeedRpm": 2200,
+      "powerMinKw": 110, "powerMaxKw": 160, "displacementL": 6.7, "cylinders": 6,
+      "aftertreatment": "DOC + DPF + SCR", "emissionLabel": "EU Stage V / US Tier 4 Final",
+      "declaredCitationCodes": ["CELEX:32016R1628", "40 CFR 1039.101", "SOR/2020-258"]
+    },
+    {
+      "id": "demo-cat-023", "model": "DEMO-G12-500", "series": "DEMO-G12", "category": "generator-set",
+      "applicationScopes": ["generator-set"], "ratedPowerKw": 400, "ratedSpeedRpm": 1500,
+      "powerMinKw": 360, "powerMaxKw": 450, "displacementL": 11.6, "cylinders": 6,
+      "aftertreatment": "None", "emissionLabel": "China Non-road IV (generator set)",
+      "declaredCitationCodes": ["GB 20891-2014"]
+    },
+    {
+      "id": "demo-cat-024", "model": "DEMO-W6-250", "series": "DEMO-W6", "category": "marine",
+      "applicationScopes": ["marine"], "ratedPowerKw": 184, "ratedSpeedRpm": 2100,
+      "powerMinKw": 150, "powerMaxKw": 220, "displacementL": 6.7, "cylinders": 6,
+      "aftertreatment": "None", "emissionLabel": "IMO Tier II",
+      "declaredCitationCodes": []
+    }
+  ]
+}

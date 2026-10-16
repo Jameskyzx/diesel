@@ -196,6 +196,843 @@
       "newReleaseAccepted": false
     }
   },
+  "subsequentApplicationRelease": {
+    "release": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+    "pr": 104,
+    "observedAt": "2026-10-16T14:21:21.458Z",
+    "deploymentFinalized": true,
+    "productionFunctionalAcceptancePassed": false,
+    "ci": {
+      "pr": {
+        "runId": 38902494127,
+        "head": "27f32d986dc40c37b158906a0ee99f334b64fc89",
+        "attempt": 1,
+        "jobsPassed": 10
+      },
+      "master": {
+        "runId": 38905984381,
+        "head": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+        "attempt": 1,
+        "jobsPassed": 10,
+        "requiredGateJob": 117001954294
+      }
+    },
+    "durableStatus": {
+      "operation": {
+        "format": "diesel-durable-release-v1",
+        "release": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+        "operationId": "03b85473-7b16-42ca-9788-a85c5c91b61d",
+        "mode": "application",
+        "createdAt": "2026-10-16T13:47:59.183Z",
+        "inputDigest": "8aa0ea69c071aa39ba7a230349e290cb912daf79410dfc45dd7f78b7a371272b",
+        "runnerSha256": "f1cdccc0bf905c07966e8f3eea32188850d1584cec0b5bc75725aedfddf42671"
+      },
+      "state": "completed",
+      "unit": {
+        "Id": "diesel-release-b6b7486eeb7df78da3bdabc70a14787ec0b0a045.service",
+        "LoadState": "loaded",
+        "ActiveState": "active",
+        "SubState": "exited",
+        "Result": "success",
+        "InvocationID": "6f04ed1a72e0420abcd427dc18926c6d",
+        "ExecMainCode": 1,
+        "ExecMainStatus": 0,
+        "NRestarts": 0,
+        "MainPID": 0,
+        "ExecMainPID": 3370043
+      },
+      "completion": {
+        "operationId": "03b85473-7b16-42ca-9788-a85c5c91b61d",
+        "invocationId": "6f04ed1a72e0420abcd427dc18926c6d",
+        "startedAt": "2026-10-16T13:48:00.231Z",
+        "workerPid": 3370043,
+        "completedAt": "2026-10-16T14:10:09.360Z",
+        "exitCode": 0,
+        "signal": null,
+        "spawnFailed": false,
+        "logs": {
+          "stdout": {
+            "bytes": 4429,
+            "truncated": false,
+            "failed": false
+          },
+          "stderr": {
+            "bytes": 468,
+            "truncated": false,
+            "failed": false
+          }
+        }
+      },
+      "deploymentVerified": false,
+      "requiresIndependentAcceptance": true
+    },
+    "independentValidation": {
+      "hostLedgerExitCode": 0,
+      "committedHostExitCode": 0,
+      "publicVerifyExitCode": 0,
+      "internalVerifyExitCode": 0,
+      "checkedAfter": "2026-10-16T14:11:00Z",
+      "hostState": "COMMITTED:APPLICATION_VERIFIED_V2",
+      "fingerprints": {
+        "observedAt": "2026-10-16T14:13:01.314Z",
+        "before": {
+          "format": "diesel-application-verification-v2",
+          "release": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+          "previousRelease": "99ddb305e8b653c1303977fc9f6c5d21620ce25e",
+          "inputDigest": "8aa0ea69c071aa39ba7a230349e290cb912daf79410dfc45dd7f78b7a371272b",
+          "previousInputDigest": "547d4b2b0105bdc20e543b8822aea25626f0814b19adc65db76c0fed8853d40c",
+          "dataContractSha256": "e546d03d2620548f0c2a0de69e785b36ed37f2d24070bed394735f2ddc5d2fee",
+          "protectedFileCount": 139,
+          "tables": [
+            {
+              "table": "countries",
+              "count": 178,
+              "sha256": "0fcfb7e0cce2d57146c482c1b2c76e88ad03809f1d9291527c4b28eecc7b45a3"
+            },
+            {
+              "table": "country_jurisdictions",
+              "count": 185,
+              "sha256": "d829e81484afd3cdd21c26e22be2478aa6ebd1afa833639c5e85a733232093ec"
+            },
+            {
+              "table": "data_change_logs",
+              "count": 20298,
+              "sha256": "8ffd5ccc4a2827079d28bc52fd45b9e715088a55bdecf1d6daba98cd7d88e334"
+            },
+            {
+              "table": "data_governance_drafts",
+              "count": 6758,
+              "sha256": "4a197f1c76ceed18d0c30e7d2a6f103de1adcdb9d9d70f74b926111825f8106f"
+            },
+            {
+              "table": "data_sources",
+              "count": 347,
+              "sha256": "d7b4bf799f415d523f15b4491f1c0802065787c65e799836887258958620eb9e"
+            },
+            {
+              "table": "jurisdictions",
+              "count": 155,
+              "sha256": "a55d42c6e57cf46155f7ed29bd0f1d68ef323f24e1667362eb61e2e7aecb6b3d"
+            },
+            {
+              "table": "market_import_batches",
+              "count": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "table": "market_metrics",
+              "count": 50,
+              "sha256": "321e0435491d0eb6d9887b8e36c4b54589a883ed823a242ed3e2fd6cba9248ba"
+            },
+            {
+              "table": "regulation_limits",
+              "count": 12403,
+              "sha256": "5efc8af40fd3ba25e37483b599902095c6b67a1b5c3487d8638dcf38ac7b51a9"
+            },
+            {
+              "table": "regulations",
+              "count": 94,
+              "sha256": "4ae725a3957dfc11b2ea531ac8ff7c300216ce5d5f9f24a2149039e4bfcf1acf"
+            },
+            {
+              "table": "products",
+              "count": 10,
+              "sha256": "8c46574d1c1a2ac4c9d9a5bc13163a16e6531537249bcbdeb4eea6920ada067d"
+            },
+            {
+              "table": "product_certifications",
+              "count": 1,
+              "sha256": "95103904cad69b019fe40d904ee69c5b26f0185356fb2aee81b96694d7bbd296"
+            },
+            {
+              "table": "documents",
+              "count": 4,
+              "sha256": "c8878fdbd8bca515b88a100a019addcd0bd073adf8fa0b369374b66fae2df406"
+            },
+            {
+              "table": "document_chunks",
+              "count": 4,
+              "sha256": "711765f97f1d64a1c7695dc1defc93617bac15731374760713b758590c0e16d2"
+            },
+            {
+              "table": "drizzle.__drizzle_migrations",
+              "count": 15,
+              "sha256": "a3bc010262639824d49d3f38355bb9002124e42ec475872596af6945b110514c"
+            }
+          ],
+          "checkedAt": "2026-10-16T13:56:14.192Z"
+        },
+        "after": {
+          "format": "diesel-application-verification-v2",
+          "release": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+          "previousRelease": "99ddb305e8b653c1303977fc9f6c5d21620ce25e",
+          "inputDigest": "8aa0ea69c071aa39ba7a230349e290cb912daf79410dfc45dd7f78b7a371272b",
+          "previousInputDigest": "547d4b2b0105bdc20e543b8822aea25626f0814b19adc65db76c0fed8853d40c",
+          "dataContractSha256": "e546d03d2620548f0c2a0de69e785b36ed37f2d24070bed394735f2ddc5d2fee",
+          "protectedFileCount": 139,
+          "tables": [
+            {
+              "table": "countries",
+              "count": 178,
+              "sha256": "0fcfb7e0cce2d57146c482c1b2c76e88ad03809f1d9291527c4b28eecc7b45a3"
+            },
+            {
+              "table": "country_jurisdictions",
+              "count": 185,
+              "sha256": "d829e81484afd3cdd21c26e22be2478aa6ebd1afa833639c5e85a733232093ec"
+            },
+            {
+              "table": "data_change_logs",
+              "count": 20298,
+              "sha256": "8ffd5ccc4a2827079d28bc52fd45b9e715088a55bdecf1d6daba98cd7d88e334"
+            },
+            {
+              "table": "data_governance_drafts",
+              "count": 6758,
+              "sha256": "4a197f1c76ceed18d0c30e7d2a6f103de1adcdb9d9d70f74b926111825f8106f"
+            },
+            {
+              "table": "data_sources",
+              "count": 347,
+              "sha256": "d7b4bf799f415d523f15b4491f1c0802065787c65e799836887258958620eb9e"
+            },
+            {
+              "table": "jurisdictions",
+              "count": 155,
+              "sha256": "a55d42c6e57cf46155f7ed29bd0f1d68ef323f24e1667362eb61e2e7aecb6b3d"
+            },
+            {
+              "table": "market_import_batches",
+              "count": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "table": "market_metrics",
+              "count": 50,
+              "sha256": "321e0435491d0eb6d9887b8e36c4b54589a883ed823a242ed3e2fd6cba9248ba"
+            },
+            {
+              "table": "regulation_limits",
+              "count": 12403,
+              "sha256": "5efc8af40fd3ba25e37483b599902095c6b67a1b5c3487d8638dcf38ac7b51a9"
+            },
+            {
+              "table": "regulations",
+              "count": 94,
+              "sha256": "4ae725a3957dfc11b2ea531ac8ff7c300216ce5d5f9f24a2149039e4bfcf1acf"
+            },
+            {
+              "table": "products",
+              "count": 10,
+              "sha256": "8c46574d1c1a2ac4c9d9a5bc13163a16e6531537249bcbdeb4eea6920ada067d"
+            },
+            {
+              "table": "product_certifications",
+              "count": 1,
+              "sha256": "95103904cad69b019fe40d904ee69c5b26f0185356fb2aee81b96694d7bbd296"
+            },
+            {
+              "table": "documents",
+              "count": 4,
+              "sha256": "c8878fdbd8bca515b88a100a019addcd0bd073adf8fa0b369374b66fae2df406"
+            },
+            {
+              "table": "document_chunks",
+              "count": 4,
+              "sha256": "711765f97f1d64a1c7695dc1defc93617bac15731374760713b758590c0e16d2"
+            },
+            {
+              "table": "drizzle.__drizzle_migrations",
+              "count": 15,
+              "sha256": "a3bc010262639824d49d3f38355bb9002124e42ec475872596af6945b110514c"
+            }
+          ],
+          "checkedAt": "2026-10-16T14:09:16.124Z"
+        },
+        "identicalExceptTimestamp": true,
+        "markers": [
+          "APPLICATION_VERIFIED_V2",
+          "HOST_ACTIVATION_COMMITTED",
+          "HOST_ACTIVATION_V1"
+        ]
+      },
+      "productionObservation": {
+        "observedAt": "2026-10-16T14:19+00:00",
+        "health": {
+          "service": "global-diesel-regulations",
+          "status": "ok",
+          "timestamp": "2026-10-16T14:19:40.071Z",
+          "version": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045"
+        },
+        "localMaster": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+        "remoteMaster": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+        "freeBytes": 4602494976,
+        "services": [
+          {
+            "name": "jamesky-api",
+            "pid": 1033,
+            "status": "online",
+            "restarts": 0
+          },
+          {
+            "name": "diesel-demo",
+            "pid": 3413955,
+            "status": "online",
+            "restarts": 0
+          }
+        ]
+      }
+    },
+    "deploymentMode": "application",
+    "originalVpsDatabaseRoute": true,
+    "temporaryForwardingUsed": false,
+    "databaseExportRestoreOrPublicationPerformed": false,
+    "ciRuntimeArtifactDigest": "873fa509ce36f52cfa3da9ca5d89d08a92edfd422954e428664e205f76a39a64",
+    "catalogueApi": {
+      "release": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+      "startedAt": "2026-10-16T14:11:11.626Z",
+      "phase": "independent-finalized-release-acceptance",
+      "checks": [
+        {
+          "name": "same-model-distinct-configurations",
+          "params": {
+            "query": "WP10H375E62",
+            "limit": "20"
+          },
+          "passed": true,
+          "status": 200,
+          "requestId": "346be5c1-75e8-4a69-afff-98f94d518034",
+          "total": 4,
+          "recordIds": [
+            "weichai-row-2",
+            "weichai-row-347",
+            "weichai-row-448",
+            "weichai-row-607"
+          ],
+          "durationMs": 310
+        },
+        {
+          "name": "construction-power",
+          "params": {
+            "category": "工程机械用发动机",
+            "minPowerKw": "150",
+            "maxPowerKw": "200",
+            "limit": "20"
+          },
+          "passed": true,
+          "status": 200,
+          "requestId": "3af1689f-b2f3-44bc-95e5-5e78e6d20e32",
+          "total": 13,
+          "recordIds": [
+            "weichai-row-601",
+            "weichai-row-718",
+            "weichai-row-719",
+            "weichai-row-723",
+            "weichai-row-724",
+            "weichai-row-726",
+            "weichai-row-727",
+            "weichai-row-729",
+            "weichai-row-730",
+            "weichai-row-732",
+            "weichai-row-733",
+            "weichai-row-735",
+            "weichai-row-736"
+          ],
+          "durationMs": 95
+        },
+        {
+          "name": "exact-source-row",
+          "params": {
+            "recordIds": "weichai-row-718"
+          },
+          "passed": true,
+          "status": 200,
+          "requestId": "416a2fcb-229b-4d1b-a131-d69cc217c12e",
+          "total": 1,
+          "recordIds": [
+            "weichai-row-718"
+          ],
+          "durationMs": 52
+        },
+        {
+          "name": "missing-model",
+          "params": {
+            "query": "DOES-NOT-EXIST"
+          },
+          "passed": true,
+          "status": 200,
+          "requestId": "82d69fe5-e02c-4926-8d11-e19abb005527",
+          "total": 0,
+          "recordIds": [],
+          "durationMs": 52
+        },
+        {
+          "name": "invalid-power-range",
+          "params": {
+            "minPowerKw": "200",
+            "maxPowerKw": "150"
+          },
+          "passed": true,
+          "status": 400,
+          "requestId": "13d78dce-5f27-4c40-b742-a41eb94140ff",
+          "durationMs": 47
+        },
+        {
+          "name": "unknown-input-rejected",
+          "params": {
+            "untrusted": "1"
+          },
+          "passed": true,
+          "status": 400,
+          "requestId": "b48c6d53-78e0-40ed-bcf5-ccedeb8f3314",
+          "durationMs": 49
+        }
+      ],
+      "completedAt": "2026-10-16T14:11:12.232Z",
+      "passed": true
+    },
+    "cataloguePagination": {
+      "release": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+      "startedAt": "2026-10-16T14:11:12.291Z",
+      "phase": "independent-finalized-release-acceptance",
+      "pages": 42,
+      "passed": true,
+      "records": 831,
+      "models": 589,
+      "ambiguousPower": 197,
+      "sourceSha256": "fac7eea98771485f71f77c4c3528fbdbc5f4fca736bf0d559f8fd886d7fdc580",
+      "completedAt": "2026-10-16T14:11:14.982Z"
+    },
+    "catalogueUi": {
+      "release": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+      "startedAt": "2026-10-16T14:11:30Z",
+      "checks": [
+        "WP10H375E62 returns four distinct application rows with 276 kW; source claims separated from certification.",
+        "Expanded source row 2 contains exact model/family values and workbook/sheet/row/SHA provenance.",
+        "Switch English retains model URL query; html lang=en, refresh retains English.",
+        "Construction 150–200 kW returns 13 configurations; rows 601,718,719 power177,160,190 respectively.",
+        "Selected row718 prepares draft only, no automatic paid request; English retained."
+      ]
+    },
+    "providerCanary": {
+      "checkedAt": "2026-10-16T14:21:21.458Z",
+      "expectedVersion": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+      "includeProviderAi": true,
+      "pass": true,
+      "results": [
+        {
+          "durationMs": 168,
+          "errorCode": null,
+          "id": "liveness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/live",
+          "requestId": "dc4f0b99-d289-4c1c-92bd-5a906506a70c",
+          "status": 200
+        },
+        {
+          "durationMs": 254,
+          "errorCode": null,
+          "id": "readiness",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/health/ready",
+          "requestId": "356d7877-ee3b-4137-8c56-578e7867edf7",
+          "status": 200
+        },
+        {
+          "durationMs": 7344,
+          "errorCode": null,
+          "id": "country-decision-summary",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-10-16",
+          "requestId": "41d06edf-5bef-4c58-8a1a-b3ce2566f509",
+          "status": 200
+        },
+        {
+          "durationMs": 8590,
+          "errorCode": null,
+          "id": "country-decision-no-data",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-10-16",
+          "requestId": "cba4b84e-e1bb-41ed-af73-99703a97eef2",
+          "status": 200
+        },
+        {
+          "durationMs": 614,
+          "errorCode": null,
+          "id": "public-products",
+          "method": "GET",
+          "pass": true,
+          "path": "/api/products",
+          "requestId": "162c2586-680f-4c02-b3da-7f492ed798cf",
+          "status": 200
+        },
+        {
+          "durationMs": 1576,
+          "errorCode": null,
+          "id": "chat-direct-sse",
+          "method": "POST",
+          "pass": true,
+          "path": "/api/chat",
+          "requestId": "0c6bf8ed-e429-4b33-a6eb-682acfcdc2ed",
+          "status": 200
+        },
+        {
+          "durationMs": 10093,
+          "errorCode": null,
+          "id": "chat-provider-sse",
+          "method": "POST",
+          "pass": true,
+          "path": "/api/chat",
+          "requestId": "09dd09c1-ed01-436c-aea2-bc2936280a55",
+          "status": 200
+        }
+      ],
+      "runError": null,
+      "targetOrigin": "https://diesel.jamesky.site",
+      "version": "synthetic-canary-v5"
+    },
+    "liveStarters": {
+      "reportPath": "test-results/live-1792159922912/report.json",
+      "passed": 1,
+      "failed": 1,
+      "notRun": 4,
+      "exitCode": 1,
+      "reason": "Comparison makes CHN/JPN query followed by unsolicited JPN-only query; signed follow-up state narrowed to JPN. Strict one-tool expectation fails; evidence sufficient and finish stop."
+    },
+    "adaptiveMultiturn": {
+      "version": 2,
+      "provider": "existing DeepSeek Flash configuration, unchanged",
+      "retryCount": 0,
+      "scope": "One six-request real UI conversation and one six-request real HTTPS conversation; follow-ups chosen from actual responses. Original failed UI question edited into a different narrower request, not rerun.",
+      "summary": {
+        "attempted": 12,
+        "passed": 8,
+        "failed": 4,
+        "uiBudgetFailures": 1
+      },
+      "ui": [
+        {
+          "turn": 1,
+          "prompt": "Review catalogue record weichai-row-718 (WP7HG218E470, 挖掘机), then help assess target-market fit. Do not treat catalogue emission claims as certification.",
+          "verdict": "passed",
+          "observed": "Exact row718/160kW with disclaimer; asks target market, scope and power; no premature approval."
+        },
+        {
+          "turn": 2,
+          "prompt": "Target China (CHN), construction excavator use, rated power 160 kW, as of 2026-10-16. Check the applicable regulations and tell me whether this exact configuration can be sold there.",
+          "verdict": "passed",
+          "observed": "Regulations CHN/construction/160/2026-10-16 and exact-model product-fit; insufficient certified evidence, no approval. Re-asks whether already-confirmed rated power is nameplate power (redundant clarification)."
+        },
+        {
+          "turn": 3,
+          "prompt": "Now compare those regulations with Germany. Keep the same date, use and power. Do not change the selected product.",
+          "verdict": "failed",
+          "observed": "Only DEU queried, no CHN/DEU comparison. Unrequested product-fit retains model/power/date. Ended model/time budget error, partial records explicitly labeled. No automatic retry. Original failure preserved in tool transcript; UI Edit and retry subsequently removed failed visible turn to edit a different narrower question."
+        },
+        {
+          "turn": 4,
+          "prompt": "只查德国的法规，不做产品适配，也不与其他国家比较。其余查询条件沿用，用中文回答。",
+          "verdict": "passed",
+          "observed": "New narrower question after editing failed attempt; DEU only,construction160kW2026-10-16 retained, no fit query; Chinese answer. Prior failed question not re-run."
+        },
+        {
+          "turn": 5,
+          "prompt": "我们选中的那个型号原始参数来自哪里？只看产品资料，不要再查德国法规。",
+          "verdict": "failed",
+          "observed": "After reload, remembered exact WP7HG218E470/row718 and retrieved catalogue; source search used meaningful terms with no DEU scope. However prose called the user-supplied workbook an official Weichai catalogue and manufacturer-submitted data without evidence of that provenance; unnecessary generic legal search-gap advice also added.",
+          "partialPasses": [
+            "product memory after reload",
+            "catalogue source locator",
+            "no country-filter leakage"
+          ]
+        },
+        {
+          "turn": 6,
+          "prompt": "我现在只需要给同事的下一步清单，不要再检索。用中文列两条：第一条核对资料，第二条核对认证。不要写已批准销售。",
+          "verdict": "failed",
+          "observed": "Returned generic evidence-boundary text and asked target country instead of requested two-item general checklist. No tools; no false sales approval."
+        }
+      ],
+      "uiReload": {
+        "passed": true,
+        "observed": "Reload retained completed catalogue card, regulatory/fit evidence and three successful exchanges; previous English page language persisted; signed follow-up tested next."
+      },
+      "https": [
+        {
+          "prompt": "帮我找工程机械用发动机，功率150到200 kW，先列3条具体配置。只查产品目录，不判断能否销售。",
+          "startedAt": "2026-10-16T14:17:48.751Z",
+          "status": 200,
+          "requestId": "fc4ad976-ce81-4d9d-a2ab-a8c8a29d9782",
+          "finishReason": "stop",
+          "done": true,
+          "reasoningPartCount": 0,
+          "durationMs": 7681,
+          "toolCalls": [],
+          "state": {
+            "tasks": [],
+            "countryIso3s": [],
+            "applicationScope": "construction",
+            "powerKw": null,
+            "asOf": null,
+            "productModelCode": null
+          },
+          "catalogueQueries": [
+            {
+              "query": {
+                "query": "",
+                "category": "工程机械用发动机",
+                "fuel": "",
+                "minPowerKw": 150,
+                "maxPowerKw": 200,
+                "recordIds": [],
+                "offset": 0,
+                "limit": 3
+              },
+              "total": 13,
+              "recordIds": [
+                "weichai-row-601",
+                "weichai-row-718",
+                "weichai-row-719"
+              ]
+            }
+          ],
+          "turn": 1,
+          "verdict": "passed",
+          "observed": "Returned correct construction 150–200 kW catalogue query, total13, first3 source rows. Unnecessary country clarification remained; cards satisfy requested parameters."
+        },
+        {
+          "prompt": "把功率范围改成180到220 kW，其他条件保持，仍只列3条。",
+          "startedAt": "2026-10-16T14:18:23.988Z",
+          "status": 200,
+          "requestId": "d9496c41-14e2-4961-b41e-66f221dd1af3",
+          "finishReason": "stop",
+          "done": true,
+          "reasoningPartCount": 0,
+          "durationMs": 6979,
+          "toolCalls": [],
+          "state": {
+            "tasks": [],
+            "countryIso3s": [],
+            "applicationScope": "construction",
+            "powerKw": null,
+            "asOf": null,
+            "productModelCode": null
+          },
+          "catalogueQueries": [
+            {
+              "query": {
+                "query": "",
+                "category": "工程机械用发动机",
+                "fuel": "",
+                "minPowerKw": 180,
+                "maxPowerKw": 220,
+                "recordIds": [],
+                "offset": 0,
+                "limit": 3
+              },
+              "total": 6,
+              "recordIds": [
+                "weichai-row-719",
+                "weichai-row-724",
+                "weichai-row-727"
+              ]
+            }
+          ],
+          "turn": 2,
+          "verdict": "passed",
+          "observed": "Changed only power range to180–220 kW; retained construction and limit3; returned correct total6/rows719,724,727."
+        },
+        {
+          "prompt": "就选第二条。告诉我它的功率、原始排放宣称和来源行，不要替我判断认证。",
+          "startedAt": "2026-10-16T14:18:49.809Z",
+          "status": 200,
+          "requestId": "370a4900-56d9-4ef5-ad6b-9ea664b313be",
+          "finishReason": "stop",
+          "done": true,
+          "reasoningPartCount": 0,
+          "durationMs": 8370,
+          "toolCalls": [],
+          "state": {
+            "tasks": [],
+            "countryIso3s": [],
+            "applicationScope": "construction",
+            "powerKw": null,
+            "asOf": null,
+            "productModelCode": null
+          },
+          "catalogueQueries": [
+            {
+              "query": {
+                "query": "",
+                "category": "工程机械用发动机",
+                "fuel": "",
+                "minPowerKw": 180,
+                "maxPowerKw": 220,
+                "recordIds": [
+                  "weichai-row-724"
+                ],
+                "offset": 0,
+                "limit": 3
+              },
+              "total": 1,
+              "recordIds": [
+                "weichai-row-724"
+              ]
+            }
+          ],
+          "turn": 3,
+          "verdict": "passed",
+          "observed": "Resolved 'second one' to row724 WP7HG258E471; exact190kW/raw emission claim/source row present in catalogue payload. Prose again unnecessarily asked target country."
+        },
+        {
+          "prompt": "确认这条WP7HG258E471用于工程机械挖掘机，额定功率190 kW，德国，日期2026-10-16。只查该条件的法规，不做产品适配。",
+          "startedAt": "2026-10-16T14:19:27.821Z",
+          "status": 200,
+          "requestId": "900b2dcc-84cc-40e0-a82f-0d77d307cbc3",
+          "finishReason": "stop",
+          "done": true,
+          "reasoningPartCount": 0,
+          "durationMs": 11304,
+          "toolCalls": [
+            {
+              "id": "call_00_o6ScXf8EMKWucIkQAfBk5198",
+              "name": "compareRegulations",
+              "input": {
+                "countryIso3s": [
+                  "DEU"
+                ],
+                "asOf": "2026-10-16",
+                "applicationScope": "construction",
+                "powerKw": 190
+              }
+            }
+          ],
+          "state": {
+            "tasks": [
+              "regulations"
+            ],
+            "countryIso3s": [
+              "DEU"
+            ],
+            "applicationScope": "construction",
+            "powerKw": 190,
+            "asOf": "2026-10-16",
+            "productModelCode": "WP7HG258E471"
+          },
+          "catalogueQueries": [],
+          "turn": 4,
+          "verdict": "passed",
+          "observed": "Regulations-only DEU/construction/190kW/2026-10-16, selected model preserved, no product-fit call."
+        },
+        {
+          "prompt": "德国先不看了，只换成巴西，其他条件保持。",
+          "startedAt": "2026-10-16T14:19:48.917Z",
+          "status": 200,
+          "requestId": "17a1056d-e420-4995-bb56-e51d6f0e74d0",
+          "finishReason": "stop",
+          "done": true,
+          "reasoningPartCount": 0,
+          "durationMs": 7777,
+          "toolCalls": [
+            {
+              "id": "call_00_Pd85T2hGMWzUuiHEAEFo2201",
+              "name": "compareRegulations",
+              "input": {
+                "countryIso3s": [
+                  "BRA"
+                ],
+                "asOf": "2026-10-16",
+                "applicationScope": "construction",
+                "powerKw": 190
+              }
+            }
+          ],
+          "state": {
+            "tasks": [
+              "regulations"
+            ],
+            "countryIso3s": [
+              "BRA"
+            ],
+            "applicationScope": "construction",
+            "powerKw": 190,
+            "asOf": "2026-10-16",
+            "productModelCode": "WP7HG258E471"
+          },
+          "catalogueQueries": [],
+          "turn": 5,
+          "verdict": "passed",
+          "observed": "Replaced DEU with BRA, preserving construction/190kW/date/model; no comparison with excluded DEU."
+        },
+        {
+          "prompt": "Switch to English. Without doing any more searches, give two short next steps to verify documentation for this selected model. Do not claim approval or invent missing facts.",
+          "startedAt": "2026-10-16T14:20:21.360Z",
+          "status": 200,
+          "requestId": "c6dc5bdb-7ecd-4b75-bfac-879fc6a17b0b",
+          "finishReason": "stop",
+          "done": true,
+          "reasoningPartCount": 0,
+          "durationMs": 21677,
+          "toolCalls": [
+            {
+              "id": "call_00_8hWVol2Ng76c2iIGd8gm3113",
+              "name": "compareRegulations",
+              "input": {
+                "countryIso3s": [
+                  "BRA"
+                ],
+                "asOf": "2026-10-16",
+                "applicationScope": "construction",
+                "powerKw": 190
+              }
+            }
+          ],
+          "state": {
+            "tasks": [
+              "regulations"
+            ],
+            "countryIso3s": [
+              "BRA"
+            ],
+            "applicationScope": "construction",
+            "powerKw": 190,
+            "asOf": "2026-10-16",
+            "productModelCode": "WP7HG258E471"
+          },
+          "catalogueQueries": [],
+          "turn": 6,
+          "verdict": "failed",
+          "observed": "English two-step text produced, but compareRegulations was called despite explicit 'without doing any more searches'; extra regulatory result appended."
+        }
+      ],
+      "reasoningBoundary": "No reasoning SSE parts in all six inspected HTTPS replies; UI-only turns do not independently prove stream internals.",
+      "approvalBoundary": "No positive sales approval returned in these scenarios. Catalogue parameters remain source_reported_unverified;0 approved real products."
+    },
+    "knownFailures": [
+      "Starter comparison unnecessarily re-queried JPN and narrowed signed follow-up state from CHN/JPN to JPN.",
+      "UI cross-country follow-up changed to DEU-only, added product fit and ended model/time-budget error instead of completing comparison.",
+      "UI source explanation called the user-provided workbook an official manufacturer catalogue without proof; structured source card did not grant that authority.",
+      "UI two-item general checklist became a country clarification. HTTPS English checklist ignored explicit no-search instruction and executed another regulation query."
+    ],
+    "legacyLiveEval": "Existing current sales-chat-live-v26 report remains honestly failed; not overwritten by these v2 operational checks.",
+    "operationalNotes": [
+      "Only user-authorized closed journals and exact old compiler cache were removed. All backups retained.",
+      "Post-deployment free space4602494976bytes, below the next release admission threshold; no additional cleanup performed.",
+      "An observer initially used incorrect PM2_HOME=/home/diesel/.pm2 and got permission errors; no daemon launched. Correct existing root daemon readback confirmed both applications online with0 restarts, jamesky-api PID1033 unchanged.",
+      "No further source change, model switch, timeout increase, threshold weakening, or deployment retry was made to hide acceptance failures."
+    ],
+    "currentPendingWork": [
+      "Correct turn-level intent/state transitions and avoid redundant tool calls, including comparison accumulation versus replacement.",
+      "Constrain source-authority wording to actual provided provenance.",
+      "Honor non-retrieval drafting/checklist requests and explicit tool prohibitions.",
+      "Resolve the observed v2 budget failure without disguising partial results as completion; preserve existing failed live-eval history."
+    ]
+  },
+  "pendingWorkNote": "The following list belongs to the original 10:45 observation; later deployment and actual acceptance results are recorded above.",
   "pendingWork": [
     "Automatic recovery terminal proof",
     "New classification fix exact CI-approved release",

@@ -23,9 +23,9 @@ This is the only current release/evidence index. Historical implementation notes
 以下为带时间的历史生产观测，不声明仓库当前 HEAD 等于线上版本：
 
 - 公开只读演示：<https://diesel.jamesky.site>。只读核验中，
-  observedAt=`2026-10-15T04:33+00:00`；`/api/health` readbackAt=`2026-10-15T04:33+00:00` returned `status=ok`,
-  `version=99ddb305e8b653c1303977fc9f6c5d21620ce25e`；服务器当前 release 链接解析为
-  `/opt/diesel/releases/99ddb305e8b653c1303977fc9f6c5d21620ce25e`。因此当前公开 release ID
+  observedAt=`2026-10-16T14:19+00:00`；`/api/health` readbackAt=`2026-10-16T14:19+00:00` returned `status=ok`,
+  `version=b6b7486eeb7df78da3bdabc70a14787ec0b0a045`；服务器当前 release 链接解析为
+  `/opt/diesel/releases/b6b7486eeb7df78da3bdabc70a14787ec0b0a045`。因此当前公开 release ID
   与 Git commit 均为该完整 SHA；同时观测的本地 `master` 和只读
   `git ls-remote origin master` 也均为该 SHA。这是带时间的只读快照，CI 中的
   `portfolio:verify` 只校验已记录对象和等值关系，不联网声称其仍然最新。该记录的证据类型固定为
@@ -210,8 +210,17 @@ This is the only current release/evidence index. Historical implementation notes
   自动恢复随后于 `2026-10-16T11:49:14.779Z` 完成，原发布保留 exit 70；独立严格账本、回滚及当前主机校验均 exit 0，
   确认 `ROLLED_BACK:HOST_ROLLBACK_COMPLETED`。`11:51:15.699Z` 公网 readiness 返回旧版 `99ddb305`，数据库和两项 AI 准入探针均为 ok。
   PR #104 首轮 CI 的一个产品匹配用例失败后重试通过，必需检查正确拒绝；已复现并修复并发页面切换覆盖新结果的问题，
-  本地完整浏览器和单测证据通过，仍待新 CI、正式发布和真实多轮验收。按授权归档 10 份旧日志并仅移除核实的旧编译缓存，全部备份保留。
-  [本次超时、恢复与分类修复前观测](evidence/operations/deployment-catalogue-recovery-2026-10-16.json) 保留实际失败和未完成项；没有建立数据库转发或删除备份。
+  当时本地完整浏览器和单测证据通过，仍待新 CI、正式发布和真实多轮验收。按授权归档 10 份旧日志并仅移除核实的旧编译缓存，全部备份保留。
+  随后 PR #104 / `b6b7486eeb7df78da3bdabc70a14787ec0b0a045` 的 PR 与精确 master CI 均 10/10 通过。
+  单次 application-only 发布于 `2026-10-16T14:10:09.360Z` exit 0 完成；未重做数据库导出、恢复或数据发布。
+  独立账本及主机验收为 `COMMITTED:APPLICATION_VERIFIED_V2`，15 表/139 项保护输入前后对照及内外网页面/SSE 检查通过。
+  产品目录 API 6/6、42 页全部 831 条配置/589 型号比对、桌面筛选/来源/语言切换/选型草稿及刷新恢复通过；资料授权不等于认证或市场准入。
+  原 15 秒 provider-inclusive canary 7/7，但真实示例为 1 通过、1 失败、4 未运行：比较额外查询日本并把后续条件缩成单国。
+  新版另做 6 轮真实网页和 6 轮真实 HTTPS 自适应追问，8/12 满足完整请求，4 轮失败，未重试刷绿。
+  失败涉及跨国比较变单国并超时、把用户表格称为官方型谱表、中文清单变多余追问，以及英文清单忽略“不再检索”。
+  因此产品库已上线，但多轮对话尚未全部达标；结构化证据与未核验目录仍分离，未将目录宣称当作销售许可。
+  `jamesky-api` PID 1033 / 重启 0 不变；剩余 4,602,494,976 bytes，不满足下一次发布的起始余量门槛，未额外删除文件。
+  [本次超时、恢复、发布及真实验收记录](evidence/operations/deployment-catalogue-recovery-2026-10-16.json) 保留所有失败；没有建立数据库转发、放宽超时或删除备份。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git
   `38541ac8201e260934fe9eeaab571d2c8a4262ee`。它于 2026-08-14 完成仅代码的
@@ -297,11 +306,11 @@ This is the only current release/evidence index. Historical implementation notes
     "worktreeState": "clean"
   },
   "currentPublicRelease": {
-    "commit": "99ddb305e8b653c1303977fc9f6c5d21620ce25e",
+    "commit": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
     "evidenceKind": "historical-operator-record-only",
-    "id": "99ddb305e8b653c1303977fc9f6c5d21620ce25e",
-    "observedAt": "2026-10-15T04:33+00:00",
-    "releasePath": "/opt/diesel/releases/99ddb305e8b653c1303977fc9f6c5d21620ce25e"
+    "id": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+    "observedAt": "2026-10-16T14:19+00:00",
+    "releasePath": "/opt/diesel/releases/b6b7486eeb7df78da3bdabc70a14787ec0b0a045"
   },
   "evidenceSummary": {
     "approvedRealCertifications": 0,
@@ -350,18 +359,18 @@ This is the only current release/evidence index. Historical implementation notes
   },
   "publicRuntime": {
     "evidenceKind": "historical-operator-record-only",
-    "readbackAt": "2026-10-15T04:33+00:00",
+    "readbackAt": "2026-10-16T14:19+00:00",
     "status": "ok",
-    "version": "99ddb305e8b653c1303977fc9f6c5d21620ce25e"
+    "version": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045"
   },
   "qualitySnapshot": {
     "artifactPath": "docs/evidence/vitest-execution-latest.json",
     "version": "diesel-vitest-execution-evidence-v2"
   },
   "repositoryHead": {
-    "local": "99ddb305e8b653c1303977fc9f6c5d21620ce25e",
-    "observedAt": "2026-10-15T04:33+00:00",
-    "remote": "99ddb305e8b653c1303977fc9f6c5d21620ce25e"
+    "local": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045",
+    "observedAt": "2026-10-16T14:19+00:00",
+    "remote": "b6b7486eeb7df78da3bdabc70a14787ec0b0a045"
   }
 }
 ```

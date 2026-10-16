@@ -1195,11 +1195,8 @@ function citationUrlsForMessage(parts: readonly ChatMessagePart[]): string[] {
   const urls = new Set<string>();
 
   for (const part of parts) {
-    if (part.type === "data-productCatalog") {
-      const parsed = catalogResultSchema.safeParse(part.data);
-      parsed.data?.records.forEach(record => urls.add(record.source.url));
-      continue;
-    }
+    // Fictional catalogue records carry no outbound source link.
+    if (part.type === "data-productCatalog") continue;
     if (!isToolUIPart(part)) {
       continue;
     }

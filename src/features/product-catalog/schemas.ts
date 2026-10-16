@@ -1,43 +1,119 @@
 import { z } from "zod";
+import {
+  applicableRegulationsQuerySchema,
+  applicationScopeSchema,
+  isoDateSchema,
+} from "@/features/database/schemas";
+
+export const catalogCategories = ["truck", "bus", "construction", "agriculture", "generator-set", "marine"] as const;
+export const catalogCategorySchema = z.enum(catalogCategories);
+export type CatalogCategory = z.infer<typeof catalogCategorySchema>;
+export const catalogRecordIdSchema = z.string().regex(/^demo-cat-\d{3}$/u);
 
 export const catalogQuerySchema = z.object({
   query: z.string().trim().max(100).default(""),
-  category: z.string().trim().max(60).default(""),
-  fuel: z.string().trim().max(60).default(""),
+  category: z.union([catalogCategorySchema, z.literal("")]).default(""),
   minPowerKw: z.number().nonnegative().max(100_000).optional(),
   maxPowerKw: z.number().positive().max(100_000).optional(),
-  recordIds: z.array(z.string().regex(/^weichai-row-\d+$/u)).max(5).default([]),
+  recordIds: z.array(catalogRecordIdSchema).max(5).default([]),
   offset: z.number().int().nonnegative().max(10_000).default(0),
   limit: z.number().int().min(1).max(20).default(10),
 }).strict().refine(q => q.minPowerKw === undefined || q.maxPowerKw === undefined || q.minPowerKw <= q.maxPowerKw,
   "Minimum power cannot exceed maximum power");
 export type CatalogQuery = z.infer<typeof catalogQuerySchema>;
 
+/** A fictional spec-sheet entry. `declaredCitationCodes` is what the sheet
+ * claims to meet; it is matched literally and never treated as certification. */
 export const catalogRecordSchema = z.object({
-  id: z.string(), model: z.string(), category: z.string(), application: z.string(), product: z.string(),
-  familyFuel: z.string(), ratedPowerKw: z.number().positive().nullable(), ratedSpeedRpm: z.number().positive().nullable(),
-  family: z.record(z.enum(["series", "adaptation", "powerRange", "torqueRange", "displacement", "emissionClaim", "type", "cylinders", "valves", "aspiration", "dimensions", "weight"]), z.string()),
-  raw: z.object({ power: z.string(), torque: z.string(), displacement: z.string(), emissionClaim: z.string(),
-    technicalRoute: z.string(), vehicle: z.string(), valves: z.string(), purpose: z.string(), type: z.string(),
-    aspiration: z.string(), weight: z.string(), outputInterface: z.string(), headers: z.string(),
-    speed: z.string(), idle: z.string() }).strict(),
-  source: z.object({ sheet: z.literal("型谱表明细"), row: z.number().int().positive(),
-    familyRow: z.number().int().positive().nullable(), url: z.url().refine(url => {
-      const parsed = new URL(url); return parsed.protocol === "https:" && parsed.hostname === "www.weichaipower.com";
-    }) }).strict(),
-  issues: z.array(z.enum(["ambiguous_power", "missing_family", "multiple_model_records"])),
-}).strict();
+  id: catalogRecordIdSchema,
+  model: z.string().regex(/^DEMO-[A-Z0-9-]+$/u),
+  series: z.string().regex(/^DEMO-[A-Z0-9]+$/u),
+  category: catalogCategorySchema,
+  applicationScopes: z.array(applicationScopeSchema).min(1),
+  ratedPowerKw: z.number().positive(),
+  ratedSpeedRpm: z.number().positive(),
+  powerMinKw: z.number().nonnegative(),
+  powerMaxKw: z.number().positive(),
+  displacementL: z.number().positive(),
+  cylinders: z.number().int().positive(),
+  aftertreatment: z.string().min(1),
+  emissionLabel: z.string().min(1),
+  declaredCitationCodes: z.array(z.string().min(1)).max(20),
+}).strict().refine(r => r.powerMinKw < r.powerMaxKw && r.ratedPowerKw >= r.powerMinKw && r.ratedPowerKw < r.powerMaxKw,
+  "Rated power must sit inside the declared half-open power band");
 export type CatalogRecord = z.infer<typeof catalogRecordSchema>;
 
+const catalogIdentity = {
+  isDemo: z.literal(true),
+  title: z.string().startsWith("DEMO ONLY"),
+  evidenceStatus: z.literal("fictional_declaration"),
+};
+
 export const catalogSnapshotSchema = z.object({
-  version: z.literal(1), workbook: z.literal("weichai_engines.xlsx"), sha256: z.string().regex(/^[a-f0-9]{64}$/u),
-  publicDisplay: z.literal("user_authorized"), evidenceStatus: z.literal("source_reported_unverified"),
-  importedOn: z.iso.date(), familyCount: z.number().int(), excludedHeaderRows: z.array(z.number().int()),
-  records: z.array(catalogRecordSchema),
-}).strict();
+  version: z.literal(2), ...catalogIdentity, notice: z.string().min(1),
+  records: z.array(catalogRecordSchema).min(1),
+}).strict().refine(s => new Set(s.records.map(r => r.id)).size === s.records.length, "Duplicate catalogue record ID")
+  .refine(s => new Set(s.records.map(r => r.model)).size === s.records.length, "Duplicate catalogue model code");
+export type CatalogSnapshot = z.infer<typeof catalogSnapshotSchema>;
+
 export const catalogResultSchema = z.object({
-  kind: z.literal("product_catalog"), evidenceStatus: z.literal("source_reported_unverified"),
+  kind: z.literal("product_catalog"), ...catalogIdentity,
   query: catalogQuerySchema, total: z.number().int().nonnegative(), modelCount: z.number().int(),
-  workbook: z.string(), sha256: z.string(), records: z.array(catalogRecordSchema).max(20),
+  records: z.array(catalogRecordSchema).max(20),
 }).strict();
 export type CatalogResult = z.infer<typeof catalogResultSchema>;
+
+export const catalogFitQuerySchema = applicableRegulationsQuerySchema;
+export type CatalogFitQuery = z.infer<typeof catalogFitQuerySchema>;
+
+export const catalogFitRegulationSchema = z.object({
+  regulationId: z.string().min(1),
+  citationCode: z.string().nullable(),
+  canonicalName: z.string().min(1),
+  recordStatus: z.enum(["effective", "superseded"]),
+  effectiveFrom: isoDateSchema,
+  effectiveTo: isoDateSchema.nullable(),
+  jurisdictionCode: z.string().min(1),
+  isDemo: z.boolean(),
+  source: z.object({
+    id: z.string().min(1), title: z.string().min(1), url: z.string().nullable(),
+    verifiedAt: z.iso.datetime(), isDemo: z.boolean(),
+  }).strict(),
+}).strict();
+export type CatalogFitRegulation = z.infer<typeof catalogFitRegulationSchema>;
+
+export const catalogFitStatuses = ["declared_match", "declaration_gap", "unknown", "not_fit"] as const;
+export const catalogFitStatusSchema = z.enum(catalogFitStatuses);
+export type CatalogFitStatus = z.infer<typeof catalogFitStatusSchema>;
+export const catalogFitReasonSchema = z.enum([
+  "DECLARATION_COVERS_ALL_APPLICABLE",
+  "DECLARATION_GAP",
+  "NO_APPLICABLE_REGULATION_DATA",
+  "APPLICATION_SCOPE_MISMATCH",
+  "POWER_OUT_OF_RANGE",
+]);
+export type CatalogFitReason = z.infer<typeof catalogFitReasonSchema>;
+
+export const catalogFitEvaluationSchema = z.object({
+  record: catalogRecordSchema,
+  status: catalogFitStatusSchema,
+  reason: catalogFitReasonSchema,
+  scopeMatch: z.boolean(),
+  powerMatch: z.boolean(),
+  declaredRegulationIds: z.array(z.string()),
+  undeclaredRegulationIds: z.array(z.string()),
+}).strict();
+export type CatalogFitEvaluation = z.infer<typeof catalogFitEvaluationSchema>;
+
+export const catalogFitResultSchema = z.object({
+  kind: z.literal("catalog_fit"),
+  rulesetVersion: z.literal("catalog-fit-v1"),
+  evidenceBasis: z.literal("manufacturer_declaration"),
+  certificationVerified: z.literal(false),
+  catalog: z.object(catalogIdentity).strict(),
+  query: catalogFitQuerySchema,
+  applicableRegulations: z.array(catalogFitRegulationSchema),
+  evaluations: z.array(catalogFitEvaluationSchema),
+  counts: z.record(catalogFitStatusSchema, z.number().int().nonnegative()),
+}).strict();
+export type CatalogFitResult = z.infer<typeof catalogFitResultSchema>;

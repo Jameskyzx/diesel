@@ -11,17 +11,30 @@ test scope and are not rewritten as current desktop-only evidence.
 
 ## Product catalogue and conversation v2
 
-`/products` adds a bilingual, read-only source-reported catalogue. Search model,
-application/category, family fuel and explicit-unit power; preserve source rows
-and keep conflicting configurations separate. Unknown power units are excluded
-from numeric filters, never guessed. Selecting a row prepares a chat question;
-it does not automatically send a paid request or establish legal applicability.
-Catalogue cards show public-display authorization separately from verification,
-and survive chat history reload and local analysis saving. Raw source text stays
-in its original language. Existing approved-product selection remains separate.
+`/products` is a bilingual product-selection page over a **fictional** demo
+engine catalogue (`src/data/products/demo-engine-catalog.json`, every model
+prefixed `DEMO-`; it represents no manufacturer).
+
+- Target-market selection: `?market=<ISO3>&scope=<scope>&power=<kW>&asOf=<date>`
+  is a shareable URL. `catalog-fit-v1` matches each model's declared citation
+  codes literally against the regulations in force for that country, scope,
+  power and date. Statuses are `declared_match` (every applicable regulation is
+  named; certification still unverified), `declaration_gap` (lists the missing
+  citations), `unknown` (no applicable regulation data) and `not_fit` (scope or
+  half-open rating band). No cross-jurisdiction equivalence is inferred, and a
+  declaration is never shown as certification. The applicable regulations, their
+  status, validity interval, source and verification date stay visible. When the
+  regulations are real and the products fictional, the page says the result
+  demonstrates the workflow and is not a sales conclusion. Invalid input and
+  unavailable regulation data render explicit alerts.
+- Browse: search model, series or declaration text, category and rated power.
+  Selecting a model prepares a chat question; it does not automatically send a
+  paid request or establish legal applicability. Catalogue cards survive chat
+  history reload and local analysis saving. Existing approved-product selection
+  remains separate.
 
 Text chat now sends conversation version 2 and uses a single bounded tool loop.
-Validated query intent, source-reported catalogue parameters and verified
+Validated query intent, fictional catalogue declarations and verified
 regulatory/fit evidence remain distinct. No catalogue record is an approval or
 certificate. Attachments and legacy clients retain their previous guarded path.
 

@@ -1,49 +1,79 @@
-import { describe, it, expect } from "vitest";
-import snapshot from "@/data/products/weichai-catalog.json";
+import { readFileSync } from "node:fs";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import snapshot from "@/data/products/demo-engine-catalog.json";
 import { catalogSnapshotSchema } from "@/features/product-catalog/schemas";
-import { importWeichaiCatalog } from "@/domain/products/import-catalog";
-import { catalogSummary, searchProductCatalog } from "@/server/services/product-catalog";
+import { catalogSummary, demoEngineCatalog, searchProductCatalog } from "@/server/services/product-catalog";
 import { GET } from "@/app/api/product-catalog/route";
+import { evaluateCatalogFitForMarket } from "@/server/services/catalog-fit-service";
 
-describe("authorized source-reported product catalogue", () => {
-  it("retains all source configurations, without treating repeated headers as engines", () => {
+describe("fictional demo engine catalogue", () => {
+  it("is explicitly fictional and names no real manufacturer", () => {
     expect(catalogSnapshotSchema.safeParse(snapshot).success).toBe(true);
-    expect(catalogSummary).toMatchObject({ records: 831, models: 589, families: 154, excludedHeaderRows: 32 });
-    expect(new Set(snapshot.records.map(r => r.source.familyRow)).size).toBe(154);
-    expect(new Set(snapshot.records.map(r => r.id)).size).toBe(831);
-    expect(snapshot.records.every(r => r.model !== "型号" && !snapshot.excludedHeaderRows.includes(r.source.row))).toBe(true);
-    expect(snapshot.evidenceStatus).toBe("source_reported_unverified");
+    expect(demoEngineCatalog).toMatchObject({ isDemo: true, evidenceStatus: "fictional_declaration" });
+    expect(demoEngineCatalog.title).toMatch(/^DEMO ONLY/u);
+    expect(demoEngineCatalog.records.every(record => record.model.startsWith("DEMO-") && record.series.startsWith("DEMO-"))).toBe(true);
+    const raw = readFileSync("src/data/products/demo-engine-catalog.json", "utf8");
+    expect(raw).not.toMatch(/weichai|潍柴|https?:\/\//iu);
+    expect(catalogSummary).toMatchObject({ records: 24, series: 13 });
   });
-  it("does not combine model variants or replace their conflicting power values", () => {
-    const result = searchProductCatalog({query:"WP11T480E62"});
-    expect(result.modelCount).toBe(1);
-    expect(new Set(result.records.map(r => r.raw.power)).size).toBeGreaterThan(1);
-    expect(result.records.every(r => r.issues.includes("multiple_model_records"))).toBe(true);
+
+  it("rejects a rated power outside the declared half-open band", () => {
+    const [record] = demoEngineCatalog.records;
+    const broken = { ...snapshot, records: [{ ...record, ratedPowerKw: record!.powerMaxKw }] };
+    expect(catalogSnapshotSchema.safeParse(broken).success).toBe(false);
   });
-  it("uses explicit units only, never treats an ambiguous hyphen as power or invents an interval", () => {
-    const ambiguous = searchProductCatalog({recordIds:["weichai-row-837"]}).records[0]!;
-    expect(ambiguous.raw.power).toBe("140-2200");
-    expect(ambiguous.ratedPowerKw).toBeNull();
-    expect(searchProductCatalog({recordIds:[ambiguous.id], minPowerKw:1}).records).toEqual([]);
-    expect(searchProductCatalog({recordIds:["weichai-row-2"]}).records[0]).toMatchObject({ratedPowerKw:276,ratedSpeedRpm:1900});
-    expect(snapshot.records.filter(r=>r.ratedPowerKw===null)).toHaveLength(197);
+
+  it("searches model, series and declaration text and filters by category and rated power", () => {
+    expect(searchProductCatalog({ query: "DEMO-H13" }).records.map(record => record.model)).toEqual(["DEMO-H13-460", "DEMO-H13-460E"]);
+    expect(searchProductCatalog({ query: "stage v" }).records.every(record => /stage v/iu.test(record.emissionLabel))).toBe(true);
+    expect(searchProductCatalog({ category: "bus" }).records.every(record => record.category === "bus")).toBe(true);
+    const band = searchProductCatalog({ minPowerKw: 200, maxPowerKw: 300, limit: 20 });
+    expect(band.total).toBeGreaterThan(0);
+    expect(band.records.every(record => record.ratedPowerKw >= 200 && record.ratedPowerKw <= 300)).toBe(true);
   });
-  it("preserves non-diesel fuels, family claims, hashes and original provenance", () => {
-    const gas = searchProductCatalog({fuel:"天然气"});
-    expect(gas.total).toBeGreaterThan(0);
-    expect(gas.records.every(r=>r.familyFuel==="天然气")).toBe(true);
-    expect(gas.sha256).toMatch(/^[a-f0-9]{64}$/u);
-    expect(gas.records[0]?.source.url).toMatch(/^https:\/\/www.weichaipower.com\//u);
-    expect(gas.records[0]?.family).toHaveProperty("powerRange");
-  });
-  it("validates API bounds and supports exact row selection", async () => {
+
+  it("validates API bounds and supports exact record selection", async () => {
     expect(GET(new Request("http://localhost/api/product-catalog?limit=1000")).status).toBe(400);
     expect(GET(new Request("http://localhost/api/product-catalog?minPowerKw=400&maxPowerKw=100")).status).toBe(400);
     expect(GET(new Request("http://localhost/api/product-catalog?unknown=1")).status).toBe(400);
-    const response = GET(new Request("http://localhost/api/product-catalog?recordIds=weichai-row-2&recordIds=weichai-row-3"));
+    expect(GET(new Request("http://localhost/api/product-catalog?recordIds=weichai-row-2")).status).toBe(400);
+    const response = GET(new Request("http://localhost/api/product-catalog?recordIds=demo-cat-001&recordIds=demo-cat-002"));
     expect((await response.json()).records).toHaveLength(2);
   });
-  it("fails closed on layout drift rather than guessing a new column mapping", () => {
-    expect(()=>importWeichaiCatalog({},"a".repeat(64),"2026-10-16")).toThrow("layout");
+});
+
+describe("catalogue fit against the fictional demo regulations", () => {
+  const originalDatabaseMode = process.env.DATABASE_MODE;
+  beforeAll(() => { process.env.DATABASE_MODE = "pglite-demo"; });
+  afterAll(() => {
+    if (originalDatabaseMode === undefined) delete process.env.DATABASE_MODE;
+    else process.env.DATABASE_MODE = originalDatabaseMode;
+  });
+
+  it("ranks declared matches first and reads only regulations in force on the query date", async () => {
+    const result = await evaluateCatalogFitForMarket({ countryIso3: "CHN", applicationScope: "non-road", powerKw: 82, asOf: "2026-10-17" });
+    expect(result).toMatchObject({ kind: "catalog_fit", rulesetVersion: "catalog-fit-v1", certificationVerified: false, evidenceBasis: "manufacturer_declaration" });
+    // The proposed and future adopted demo regulations are never in force; the superseded one ended in 2025.
+    expect(result.applicableRegulations.map(regulation => regulation.citationCode)).toEqual(["DEMO-CHN-NR-A"]);
+    expect(result.evaluations[0]).toMatchObject({ status: "declared_match", record: { model: "DEMO-N4-110" } });
+    expect(result.counts.declared_match).toBe(1);
+    expect(result.evaluations.filter(evaluation => evaluation.status !== "not_fit").map(evaluation => evaluation.record.model)).toEqual(["DEMO-N4-110"]);
+  });
+
+  it("keeps the superseded demo regulation inside its historical interval", async () => {
+    const result = await evaluateCatalogFitForMarket({ countryIso3: "CHN", applicationScope: "non-road", powerKw: 82, asOf: "2022-06-01" });
+    expect(result.applicableRegulations).toEqual([expect.objectContaining({ citationCode: "DEMO-CHN-NR-Z", recordStatus: "superseded" })]);
+    expect(result.evaluations.find(evaluation => evaluation.record.model === "DEMO-N4-110")).toMatchObject({ status: "declaration_gap" });
+  });
+
+  it("isolates countries and keeps missing regulation data unknown", async () => {
+    const brazil = await evaluateCatalogFitForMarket({ countryIso3: "BRA", applicationScope: "non-road", powerKw: 66, asOf: "2026-10-17" });
+    expect(brazil.applicableRegulations.map(regulation => regulation.citationCode)).toEqual(["DEMO-BRA-NR-A"]);
+    expect(brazil.evaluations.find(evaluation => evaluation.record.model === "DEMO-A4-90")).toMatchObject({ status: "declared_match" });
+
+    const marine = await evaluateCatalogFitForMarket({ countryIso3: "CHN", applicationScope: "marine", powerKw: 184, asOf: "2026-10-17" });
+    expect(marine.applicableRegulations).toEqual([]);
+    expect(marine.evaluations.find(evaluation => evaluation.record.model === "DEMO-W6-250")).toMatchObject({ status: "unknown", reason: "NO_APPLICABLE_REGULATION_DATA" });
+    expect(marine.counts.declared_match).toBe(0);
   });
 });

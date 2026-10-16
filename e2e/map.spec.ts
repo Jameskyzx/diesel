@@ -955,6 +955,18 @@ test("shows a stale verification badge under a small threshold", async ({
 test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   page,
 }) => {
+  // Exercise interrupted RSC rendering as well as fast API responses. Without
+  // commit-phase navigation ownership, the final 150 kW result can be replaced
+  // by an unsolicited evaluation of the old 100 kW form.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
+  const requestedFits: Array<{ powerKw: unknown; productModelCode: unknown }> = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/product-fit" && request.method() === "POST") {
+      const body = request.postDataJSON() as Record<string, unknown>;
+      requestedFits.push({ powerKw: body.powerKw, productModelCode: body.productModelCode });
+    }
+  });
   await page.goto("/countries/CHN");
   await expect(page.getByTestId("country-detail")).toBeVisible();
   await expect(
@@ -1039,6 +1051,10 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await expect(page.getByTestId("product-fit-result")).toBeHidden();
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   const notFitResult = page.getByTestId("product-fit-status-not_fit");
+  await expect(page).toHaveURL((url) =>
+    url.searchParams.get("powerKw") === "150" &&
+    url.searchParams.get("productModelCode") === "DEMO-ENG-100",
+  );
   await expect(notFitResult).toBeVisible();
   await expect(
     notFitResult.getByText("产品功率范围不覆盖请求的功率。"),
@@ -1047,4 +1063,9 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
     "[50, 150) kW",
   );
   await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue("150");
+  expect(requestedFits).toEqual([
+    { powerKw: "100", productModelCode: "DEMO-ENG-100" },
+    { powerKw: "100", productModelCode: "DEMO-ENG-200" },
+    { powerKw: "150", productModelCode: "DEMO-ENG-100" },
+  ]);
 });

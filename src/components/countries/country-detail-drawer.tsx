@@ -15,7 +15,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -543,11 +543,18 @@ function CountryDetailContent({
     : reconcileProductFitNavigation(navigationState, routeKey, {
         external: historyTarget !== null,
       });
-  // Reconcile during render so an external route never paints the old result.
-  // These are local state updates only; request cancellation stays in events
-  // and effect cleanup. An own replace acknowledges without resetting drafts.
-  if (navigation !== navigationState) setNavigationState(navigation);
-  if (historyTarget !== null && !waitingForHistoryRoute) setHistoryTarget(null);
+  // Derive the rendered owner immediately, but acknowledge it only at commit.
+  // A concurrent RSC render may be abandoned by the next evaluation. Recording
+  // its route during render lets an urgent update reconcile the still-current
+  // props against that speculative destination, remounting the form and
+  // auto-submitting old filters. Layout timing also prevents an external route
+  // from painting a result owned by the previous destination.
+  /* eslint-disable react-hooks/set-state-in-effect -- One bounded commit-phase acknowledgement is required; render-phase acknowledgement leaks from interrupted RSC transitions. */
+  useLayoutEffect(() => {
+    if (navigation !== navigationState) setNavigationState(navigation);
+    if (historyTarget !== null && !waitingForHistoryRoute) setHistoryTarget(null);
+  }, [historyTarget, navigation, navigationState, waitingForHistoryRoute]);
+  /* eslint-enable react-hooks/set-state-in-effect */
   const contextKey = `${routeKey}:${navigation.routeRevision}`;
   const [committedFilters, setCommittedFilters] = useState<{
     contextKey: string;

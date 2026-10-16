@@ -374,11 +374,6 @@ This is the only current release/evidence index. Historical implementation notes
   `92414 known tokens`；`tokenUsageComplete=true`；`thresholdsPassed=false`；`runError=none`；`suiteVersion=sales-chat-live-v26`；`reportVersion=sales-chat-live-v26`；
   archive `docs/evals/archive/ai-live-eval-20261016T120646330Z-9d6216b7-fe81-49e6-bdab-60357b62abf1.json`；source fingerprint `de7a1b2de064be0db519c9684c4273b9c2bfd73a12ddd34ec7840d5a9ea38c8a` across `341` files。
 
-- 本次 live-eval 完整执行 18 个案例，其中 17 个通过；`mixed-regulation-and-product-intent`
-  未匹配 `decision:regulation-comparison` 回答锚点，response grounding 为 94.44%，命令退出码为 1。
-  工具、参数、证据期望、语言、回答类型和安全子指标均通过；报告不保存原始回答，不能由锚点缺失进一步推断完整措辞。
-  这是保留真实失败的评估证据，不是 AI 质量全通过证明，也不替代新版产品库多轮生产验收。
-
 - 当前浏览器证据快照：format `diesel-playwright-evidence-v1`，run ID `dbd9f7c4-85d8-4ea3-82a7-56a505a8366d`，artifact SHA-256 `2f026cefe17afd78c76428c4f92cf1d4c68d2ddff98bb70108eec7974412fff2`；
   observedAt `2026-10-16T11:47:47.286Z`，clean worktree / base HEAD `bff91f182aa1f43f43051b463795df59854dcf89`；
   `public` = `253 passed / 13 skipped / 0 failed / 0 flaky / 266 collected`；

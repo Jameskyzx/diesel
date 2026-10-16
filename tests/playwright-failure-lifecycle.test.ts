@@ -47,7 +47,7 @@ it("retains actual dependency-blocked results from a real failing Playwright run
     writeFileSync(join(workspace, "e2e/upstream.spec.cjs"), `
 const { test, expect } = require(${testImport});
 test("PRIVATE_SYNTHETIC_FAILURE_TITLE", ({}, info) => {
-  expect(info.project.name === "mobile-chromium").toBe(false);
+  expect(info.project.name === "core-webkit").toBe(false);
 });
 test.skip("PRIVATE_SYNTHETIC_SKIP_TITLE", () => {});
 `);
@@ -71,7 +71,7 @@ test("PRIVATE_SYNTHETIC_BLOCKED_TWO", () => { expect(true).toBe(true); });
         name,
         testMatch: name === "knowledge-chromium" ? "dependent.spec.cjs" : "upstream.spec.cjs",
         ...(name === "knowledge-chromium" ? {
-          dependencies: ["desktop-chromium", "mobile-chromium", "core-webkit"],
+          dependencies: ["desktop-chromium", "core-webkit"],
         } : {}),
       })),
     })};\n`);
@@ -125,7 +125,7 @@ test("PRIVATE_SYNTHETIC_BLOCKED_TWO", () => { expect(true).toBe(true); });
       reporterExitCode: 1,
       runStatus: "failed",
       stage: "run",
-      totals: { collected: 10, passed: 3, failed: 1, skipped: 4, notRun: 2, timedOut: 0, interrupted: 0 },
+      totals: { collected: 8, passed: 2, failed: 1, skipped: 3, notRun: 2, timedOut: 0, interrupted: 0 },
     });
     expect(diagnostic.tests.filter((test) => test.attempts === 0)).toHaveLength(2);
     for (const test of diagnostic.tests.filter((test) => test.project === "knowledge-chromium")) {

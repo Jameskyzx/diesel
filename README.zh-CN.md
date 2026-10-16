@@ -229,7 +229,7 @@ symlink、遗留目录与孤立 publication candidate 状态全部
 rename 的短窗口不是原子 compare-and-swap。该机制是有界清理与漂移保护，不是互斥锁
 或崩溃恢复：同一 checkout 不应并行运行 Next 进程，不可捕获的终止仍可能需要人工检查。
 
-`pnpm portfolio:capture-playwright-evidence` 会按顺序运行固定的浏览器矩阵：公开桌面/移动
+`pnpm portfolio:capture-playwright-evidence` 会按顺序运行固定的浏览器矩阵：公开桌面
 流程、零配置 Demo、失败优先 FDE 流程，以及针对全新本地生产构建的 CSP 检查。每套 suite
 只生成最小化 receipt，保留有界的测试身份、结果、重试、project 与 provenance 字段；不保存
 浏览器输出、附件、stack、请求数据或页面内容。只有四份 receipt 的命令/project 矩阵精确、
@@ -327,7 +327,7 @@ OpenAI-compatible provider 必须给出原始基础计数，并与 SDK 归一化
 micro-USD，并且永不冒充实际账单。
 
 当前本地 CI workflow 已配置为执行 lint、严格 TypeScript、coverage 门、migration check、
-build、桌面/移动 Playwright、零配置 Demo 合同、失败优先 FDE 流程、真实 PostgreSQL +
+build、桌面 Playwright、零配置 Demo 合同、失败优先 FDE 流程、真实 PostgreSQL +
 pgvector migration smoke、完整历史密钥扫描和依赖告警策略。工作流还定义了 merge-blocking
 门中的应用 coverage 与完整历史 Linux deployment-script contract 分别使用 30 和 45 分钟
 上限的独立 job；后者在单次 Vitest 调用中运行四个测试文件：`deploy-scripts`、

@@ -717,7 +717,7 @@ export const aiToolResultSchema = z
 export const chatRequestSchema = z
   .object({
     // AI SDK DefaultChatTransport 信封字段（非业务输入，忽略但允许）。
-    conversation: z.object({ version: z.literal(1), receipt: z.string().max(64_000).optional() }).strict().optional(),
+    conversation: z.object({ version: z.union([z.literal(1), z.literal(2)]), receipt: z.string().max(64_000).optional() }).strict().optional(),
     id: z.string().trim().min(1).max(100).optional(),
     locale: z.enum(locales).optional(),
     messages: z.array(z.unknown()).min(1).max(40),

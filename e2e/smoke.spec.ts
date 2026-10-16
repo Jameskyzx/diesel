@@ -277,7 +277,8 @@ test("answers a capability question without forcing a fact tool", async ({ page 
   await expect(conversation).toContainText("比较 2–5 个国家");
   const markdown = conversation.getByTestId("assistant-markdown");
   await expect(markdown.getByRole("list")).toBeVisible();
-  await expect(markdown.getByRole("listitem")).toHaveCount(4);
+  await expect(markdown.getByRole("listitem")).toHaveCount(5);
+  await expect(markdown).toContainText("产品目录");
   await expect(conversation).not.toContainText("没有足够证据");
   await expect(conversation).not.toContainText("正在执行确定性查询");
   await expect(conversation.getByRole("region")).toHaveCount(0);
@@ -388,13 +389,9 @@ test("lets the user stop a held chat request without showing a retry error", asy
   page,
 }, testInfo) => {
   test.skip(
-    !["desktop-chromium", "mobile-chromium"].includes(testInfo.project.name),
-    "Chromium desktop and narrow mobile cover the stop control and transport abort contract.",
+    testInfo.project.name !== "desktop-chromium",
+    "Desktop Chromium covers the stop control and transport abort contract.",
   );
-
-  if (testInfo.project.name === "mobile-chromium") {
-    await page.setViewportSize({ height: 800, width: 320 });
-  }
 
   const heldRequest = await holdNextChatRequest(page);
   try {
@@ -742,19 +739,13 @@ test("returns a structured health response", async ({ request }) => {
   );
 });
 
-test("serves the engine favicon selected by the page and the matching touch icon", async ({ page, request }) => {
+test("serves the engine favicon selected by the page", async ({ page, request }) => {
   await page.goto("/map");
   const faviconHref = await page.locator('link[rel="icon"][type="image/svg+xml"]').getAttribute("href");
   // Next's content-versioned URL must select the new artwork, not a stale W asset.
   expect(faviconHref).toMatch(/^\/icon\.svg\?[^\s]+$/u);
-  for (const [path, localPath] of [
-    [faviconHref!, "src/app/icon.svg"],
-    ["/apple-touch-icon.png", "public/apple-touch-icon.png"],
-  ]) {
-    const response = await request.get(path);
-
-    expect(response.ok(), `${path} should resolve`).toBe(true);
-    expect(response.headers()["content-type"]).toContain("image/");
-    expect(await response.body()).toEqual(await readFile(localPath));
-  }
+  const response = await request.get(faviconHref!);
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["content-type"]).toContain("image/");
+  expect(await response.body()).toEqual(await readFile("src/app/icon.svg"));
 });

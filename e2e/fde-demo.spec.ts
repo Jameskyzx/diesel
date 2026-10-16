@@ -94,23 +94,3 @@ test("runs the fictional CSV governance lifecycle and restores the query", async
   await page.goto(queryUrl);
   await expect(page.getByText("DEMO ONLY — FDE pipeline index")).toHaveCount(0);
 });
-
-test("supports persona switching and CSV field errors on mobile", async ({
-  page,
-}, testInfo) => {
-  test.skip(testInfo.project.name !== "fde-demo-mobile");
-
-  await page.goto("/admin");
-  await expect(page.getByTestId("fde-demo-banner")).toBeVisible();
-  await page.getByRole("link", { name: "切换 reviewer" }).click();
-  await expect(
-    page.getByText("角色：reviewer", { exact: true }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: "切换 editor" }).click();
-  await page
-    .getByLabel("CSV 文件")
-    .setInputFiles(csvFile(invalidFdeMarketCsv, "invalid-mobile.csv"));
-  await page.getByRole("button", { name: "预览并校验" }).click();
-  await expect(page.getByText(/^第 2 行 valueNumeric：/u)).toBeVisible();
-  await expect(page.getByText(/^第 2 行 periodEnd：/u)).toBeVisible();
-});

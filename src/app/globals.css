@@ -61,7 +61,7 @@
   }
 
   body {
-    @apply min-h-screen bg-background text-foreground antialiased;
+    @apply min-h-screen min-w-[1024px] bg-background text-foreground antialiased;
   }
 
   ::selection {
@@ -71,7 +71,7 @@
 
 @layer components {
   .page-shell {
-    @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[1440px] px-8;
   }
 
   .display-title {
@@ -91,35 +91,23 @@
   }
 
   .app-header {
-    @apply sticky top-0 z-50 flex flex-wrap items-center border-b bg-card;
+    @apply sticky top-0 z-50 flex h-16 items-center border-b bg-card;
   }
 
   .app-brand {
-    @apply flex h-16 min-w-0 items-center gap-2 rounded-md pl-3 outline-none focus-visible:ring-2 focus-visible:ring-ring;
-  }
-
-  .brand-subtitle {
-    @apply text-muted-foreground;
+    @apply flex h-16 min-w-0 items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring;
   }
 
   .app-toolbar {
-    @apply ml-auto flex items-center px-3;
+    @apply ml-auto flex items-center;
   }
 
   .app-navigation {
-    @apply flex w-full items-center justify-around border-t px-2;
+    @apply flex;
   }
 
   .sidebar-link {
-    @apply inline-flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-xs font-medium text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:flex-row sm:gap-2 sm:px-3 sm:text-sm;
-  }
-
-  .sidebar-link-active {
-    @apply bg-accent text-accent-foreground;
-  }
-
-  .app-sidebar-surface, .sidebar-section-label, .sidebar-evidence-note, .sidebar-footnote {
-    display: none;
+    @apply inline-flex min-h-11 min-w-11 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring;
   }
 
   .workspace-table th {
@@ -134,26 +122,6 @@
     @apply bg-accent/30;
   }
 
-  @media (max-width: 639px) {
-    .workspace-table thead {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-    }
-    .workspace-table tbody { display: block; }
-    .workspace-table tbody tr {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      border-top: 1px solid var(--border);
-    }
-    .workspace-table tbody td { border: 0; padding: 0.5rem 1rem 1rem; }
-    .workspace-table tbody td:first-child { grid-column: 1 / -1; padding: 1rem 1rem 0.25rem; }
-    .workspace-table tbody td:last-child { font-size: 0.75rem; padding-left: 0; }
-    .workspace-table tbody td[colspan] { grid-column: 1 / -1; }
-  }
-
   .country-record-sections > section {
     @apply scroll-mt-4 border-t pt-5;
   }
@@ -162,63 +130,59 @@
     scroll-margin-top: 1rem;
   }
 
-  @media (min-width: 1024px) {
-    .app-frame { padding-left: 15rem; }
-    .app-header { height: 4rem; }
-    .app-sidebar-surface {
-      display: block;
-      position: fixed;
-      inset: 0 auto 0 0;
-      width: 15rem;
-      background: #182433;
-    }
-    .app-brand {
-      position: fixed;
-      left: 0;
-      top: 0;
-      width: 15rem;
-      padding-left: 1.25rem;
-      color: #fff;
-    }
-    .brand-subtitle { color: #b7c3d2; }
-    .app-toolbar { width: 100%; padding-inline: 1.5rem; }
-    .app-navigation {
-      position: fixed;
-      inset: 5.5rem auto 0 0;
-      width: 15rem;
-      padding: 0 1rem 1rem;
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      gap: 0.25rem;
-      border: 0;
-      overflow-y: auto;
-      color: #b7c3d2;
-    }
-    .sidebar-section-label {
-      display: block;
-      margin: 0 0 0.5rem;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.6875rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .sidebar-link { justify-content: flex-start; min-height: 2.75rem; color: #b7c3d2; }
-    .sidebar-link:hover { color: #fff; background: #23354b; }
-    .sidebar-link-active { color: #fff; background: #2d435d; }
-    .sidebar-evidence-note {
-      display: block;
-      margin-top: auto;
-      border: 1px solid #3b4b60;
-      border-radius: 0.375rem;
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-    .sidebar-evidence-note > p:first-of-type { color: #fff; }
-    .sidebar-footnote { display: block; font-size: 0.6875rem; padding-inline: 0.25rem; }
+  .app-frame { padding-left: 15rem; }
+  .app-sidebar-surface {
+    display: block;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 15rem;
+    background: #182433;
   }
-
+  .app-brand {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 15rem;
+    padding-left: 1.25rem;
+    color: #fff;
+  }
+  .brand-subtitle { color: #b7c3d2; }
+  .app-toolbar { width: 100%; padding-inline: 1.5rem; }
+  .app-navigation {
+    position: fixed;
+    inset: 5.5rem auto 0 0;
+    width: 15rem;
+    padding: 0 1rem 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.25rem;
+    border: 0;
+    overflow-y: auto;
+    color: #b7c3d2;
+  }
+  .sidebar-section-label {
+    display: block;
+    margin: 0 0 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .sidebar-link { justify-content: flex-start; min-height: 2.75rem; color: #b7c3d2; }
+  .sidebar-link:hover { color: #fff; background: #23354b; }
+  .sidebar-link-active { color: #fff; background: #2d435d; }
+  .sidebar-evidence-note {
+    display: block;
+    margin-top: auto;
+    border: 1px solid #3b4b60;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .sidebar-evidence-note > p:first-of-type { color: #fff; }
+  .sidebar-footnote { display: block; font-size: 0.6875rem; padding-inline: 0.25rem; }
   @media (min-width: 1280px) {
     .chat-workbench { height: max(38rem, calc(100dvh - 16rem)); }
   }
@@ -268,7 +232,7 @@ body:has([data-slot="drawer-content"]) .country-server-fallback {
   display: none;
 }
 
-/* Docked detail panels override the drawer primitive's mobile geometry. */
+/* Wide desktop windows keep the detail panel beside the map. */
 @media (min-width: 1440px) {
   .country-workspace-panel {
     top: 5rem;

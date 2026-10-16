@@ -15,7 +15,7 @@ test.describe.configure({ timeout: 30_000 });
 test.beforeEach(async ({ context }, testInfo) => {
   test.skip(
     testInfo.project.name !== "desktop-chromium",
-    "The desktop Header brand is pointer-accessible beside the drawer; this is not mobile navigation coverage.",
+    "Desktop Chromium covers Header navigation beside the drawer.",
   );
   await context.clearCookies();
 });

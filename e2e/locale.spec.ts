@@ -950,32 +950,16 @@ test("relocalizes an untouched deep-link prompt without overwriting an edit", as
   await expect(input).toHaveValue("保留这条用户编辑的内容");
 });
 
-test("keeps the locale control reachable on a mobile viewport", async ({ page }) => {
-  await page.setViewportSize({ height: 667, width: 375 });
-  await page.goto("/chat");
-  await expect(page).toHaveTitle(
-    "AI chat · Global Regulations & Market Intelligence",
-  );
-
-  const toggle = page.getByTestId("locale-toggle");
-  await expect(toggle).toBeVisible();
-  await toggle.getByRole("button", { name: "中文" }).click();
-  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
-  await expect(page).toHaveTitle("AI 对话 · 全球法规与市场分析平台");
-  await expect(
-    page.getByRole("heading", { name: "和数据一起讨论下一步" }),
-  ).toBeVisible();
-});
 
 for (const locale of ["en", "zh-CN"] as const) {
-  test(`fully exposes labeled header navigation at responsive boundaries in ${locale}`, async ({ page }) => {
+  test(`fully exposes labeled header navigation at desktop widths in ${locale}`, async ({ page }) => {
     const response = await page.request.post("/api/preferences/locale", { data: { locale } });
     expect(response.ok()).toBe(true);
     // This checks header layout and navigation, not on-demand compilation.
     // Load the real destinations without clicking or warming the browser router;
     // every original click, URL, active-link and layout assertion still runs.
     await test.step("Prepare real navigation destinations before header assertions", async () => {
-      for (const pathname of ["/", "/chat", "/map", "/compare", "/analyses"]) {
+      for (const pathname of ["/", "/chat", "/map", "/compare", "/products", "/analyses"]) {
         const destination = await page.request.get(pathname, { timeout: 30_000 });
         expect(destination.status()).toBe(200);
         expect(new URL(destination.url()).pathname).toBe(pathname);
@@ -983,7 +967,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     }, { timeout: 30_000 });
     await page.goto("/chat");
     const navigation = page.getByRole("navigation", { name: locale === "en" ? "Primary navigation" : "主导航" });
-    const labels = locale === "en" ? ["Home", "Chat", "Map", "Compare", "Saved"] : ["首页", "对话", "地图", "比较", "已保存"];
+    const labels = locale === "en" ? ["Home", "Chat", "Map", "Compare", "Products", "Saved"] : ["首页", "对话", "地图", "比较", "产品库", "已保存"];
     await expect(navigation.getByRole("link")).toHaveText(labels);
 
     const expectHeaderFits = async (width: number) => {
@@ -1022,62 +1006,29 @@ for (const locale of ["en", "zh-CN"] as const) {
       });
     };
 
-    for (const width of [320, 375, 393, 639, 640, 767, 768, 1024]) {
+    for (const width of [1024, 1280, 1440]) {
       await page.setViewportSize({ height: 720, width });
       await expectHeaderFits(width);
-      if ([320, 640, 1024].includes(width)) {
+      if (width === 1024) {
         await navigation.locator("xpath=ancestor::header").screenshot({
           path: test.info().outputPath(`header-${locale}-${width}.png`),
         });
       }
     }
 
-    await page.setViewportSize({ height: 720, width: 320 });
-    for (const [index, pathname] of ["/", "/chat", "/map", "/compare", "/analyses"].entries()) {
-      await expectHeaderFits(320);
+    await page.setViewportSize({ height: 720, width: 1024 });
+    for (const [index, pathname] of ["/", "/chat", "/map", "/compare", "/products", "/analyses"].entries()) {
+      await expectHeaderFits(1024);
       await navigation.getByRole("link", { exact: true, name: labels[index]! }).click();
       await expect.poll(() => new URL(page.url()).pathname).toBe(pathname);
       await expect(navigation.getByRole("link", { exact: true, name: labels[index]! }))
         .toHaveAttribute("aria-current", "page");
-      await expectHeaderFits(320);
+      await expectHeaderFits(1024);
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
     }
   });
 }
 
-test("keeps the home page inside a 320px viewport in both locales", async ({
-  context,
-  page,
-}, testInfo) => {
-  test.skip(
-    testInfo.project.name !== "desktop-chromium",
-    "One Chromium project covers the deterministic narrow-layout boundary.",
-  );
-  await context.clearCookies();
-  await page.setViewportSize({ height: 667, width: 320 });
-  await page.goto("/");
-
-  const expectNoHorizontalOverflow = async () => {
-    await expect
-      .poll(() =>
-        page.evaluate(() => ({
-          clientWidth: document.documentElement.clientWidth,
-          scrollWidth: document.documentElement.scrollWidth,
-        })),
-      )
-      .toEqual({ clientWidth: 320, scrollWidth: 320 });
-  };
-
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expectNoHorizontalOverflow();
-
-  await page
-    .getByTestId("locale-toggle")
-    .getByRole("button", { exact: true, name: "中文" })
-    .click();
-  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
-  await expectNoHorizontalOverflow();
-});
 
 test("localizes visible country names and dates while preserving the ISO query", async ({
   page,

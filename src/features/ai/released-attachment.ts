@@ -1,5 +1,6 @@
 import type { FileUIPart, UIMessage } from "ai";
 import { z } from "zod";
+import type { CatalogResult } from "@/features/product-catalog/schemas";
 
 import {
   MAX_CHAT_ATTACHMENT_FILENAME_CHARACTERS,
@@ -30,6 +31,7 @@ export type ReleasedAttachmentData = z.infer<
 
 export type SalesChatDataParts = {
   releasedAttachment: ReleasedAttachmentData;
+  productCatalog: CatalogResult;
 };
 
 export type SalesChatUiMessage = UIMessage<unknown, SalesChatDataParts>;

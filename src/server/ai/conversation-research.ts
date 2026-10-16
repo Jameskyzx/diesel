@@ -20,7 +20,7 @@ type CompiledCall = ReturnType<typeof compiledEvidenceToolCalls>[number];
 
 /** Execute the existing audited read-only tools; no second model interprets
  * already-resolved arguments, no fake provider usage and no parameter repair. */
-async function executeCall(call: CompiledCall, tools: SalesChatTools, signal: AbortSignal, toolCallId: string) {
+export async function executeEvidenceCall(call: CompiledCall, tools: SalesChatTools, signal: AbortSignal, toolCallId: string) {
   const options = { abortSignal: signal, toolCallId, messages: [], context: {} };
   switch (call.tool) {
     case "getCountryProfile": return tools.getCountryProfile.execute!(getCountryProfileInputSchema.parse(call.input), options);
@@ -77,7 +77,7 @@ export function conversationResearchResponse(input: {
         writer.write({ type: "tool-input-available", toolCallId, toolName: call.tool, input: call.input, dynamic: true });
         const startedAt = performance.now();
         try {
-          const result = aiToolResultSchema.parse(await executeCall(call, tools, signal, toolCallId));
+          const result = aiToolResultSchema.parse(await executeEvidenceCall(call, tools, signal, toolCallId));
           // This is the same provenance, determinism, sufficiency, query and
           // publication validation used by the production evidence contract.
           // No-data completes a query, never supplies affirmative evidence.

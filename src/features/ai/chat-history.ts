@@ -1,5 +1,6 @@
 import { isToolUIPart } from "ai";
 import { z } from "zod";
+import { catalogResultSchema } from "@/features/product-catalog/schemas";
 
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
 import { aiToolNames } from "@/features/ai/schemas";
@@ -37,7 +38,8 @@ const toolErrorSchema = z.object({
 const historyMessageSchema = z.object({
   id: z.string().min(1).max(200), role: z.enum(["user", "assistant"]),
   metadata: conversationMetadataSchema.optional(),
-  parts: z.array(z.union([textPartSchema, attachmentPartSchema, toolPartSchema, toolErrorSchema])).min(1).max(16),
+  parts: z.array(z.union([textPartSchema, attachmentPartSchema, toolPartSchema, toolErrorSchema,
+    z.object({type: z.literal("data-productCatalog"), data: catalogResultSchema}).strict()])).min(1).max(16),
 }).strict();
 export const chatHistorySnapshotSchema = z.object({
   version: z.literal(1), contextKey: z.string().min(1).max(1_000),
@@ -66,6 +68,7 @@ export function serializeChatHistory(input: Omit<ChatHistorySnapshot, "savedAt" 
       ? { metadata: readConversationMetadata(message.metadata)! } : {}),
     parts: message.parts.flatMap((part): unknown[] => {
       if (part.type === "text") return [{ type: "text", text: part.text }];
+      if (part.type === "data-productCatalog") { const parsed = catalogResultSchema.safeParse(part.data); return parsed.success ? [{type: part.type, data: parsed.data}] : []; }
       const attachment = parseReleasedAttachmentPart(part);
       if (attachment) return [{ type: "data-releasedAttachment", data: attachment }];
       if (!isToolUIPart(part)) return [];

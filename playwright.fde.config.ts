@@ -43,9 +43,5 @@ export default defineConfig({
       name: "fde-demo-desktop",
       use: { ...devices["Desktop Chrome"] },
     },
-    {
-      name: "fde-demo-mobile",
-      use: { ...devices["Pixel 7"] },
-    },
   ],
 });

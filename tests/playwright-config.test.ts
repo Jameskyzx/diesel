@@ -174,7 +174,7 @@ describe("Playwright server contracts", () => {
     expect(e2eConfig.workers).toBe(1);
   });
 
-  it("runs the formal demo entry for desktop and mobile without a conditional skip", () => {
+  it("runs the formal demo entry on desktop without a conditional skip", () => {
     expect(firstWebServer(demoConfig)?.command).toBe("pnpm demo");
     expect(firstWebServer(demoConfig)?.env).toMatchObject({
       AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR: "10000",
@@ -182,7 +182,6 @@ describe("Playwright server contracts", () => {
     });
     expect(demoConfig.projects?.map(({ name }) => name)).toEqual([
       "portfolio-demo-chromium",
-      "portfolio-demo-mobile-chromium",
     ]);
   });
 
@@ -226,13 +225,12 @@ describe("Playwright server contracts", () => {
     expect(knowledgeProject).toMatchObject({
       dependencies: [
         "desktop-chromium",
-        "mobile-chromium",
         "core-webkit",
       ],
       fullyParallel: false,
       testMatch: "knowledge.spec.ts",
     });
-    for (const projectName of ["desktop-chromium", "mobile-chromium"]) {
+    for (const projectName of ["desktop-chromium"]) {
       const project = projects.find(({ name }) => name === projectName);
       expect(project?.testIgnore).toContain("knowledge.spec.ts");
       expect(project?.testIgnore).toContain("fde-demo.spec.ts");

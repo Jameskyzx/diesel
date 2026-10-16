@@ -830,10 +830,10 @@ describe("Playwright portfolio evidence", () => {
       "production-csp",
     ]);
     expect(value.totals).toEqual({
-      collected: 20,
+      collected: 14,
       failed: 0,
       flaky: 0,
-      passed: 20,
+      passed: 14,
       skipped: 0,
     });
     expect(value.complete).toBe(true);
@@ -1191,7 +1191,7 @@ describe("Playwright receipt inventory binding", () => {
     {
       label: "project",
       mutate(test: PlaywrightTestObservation) {
-        test.project = "mobile-chromium";
+        test.project = test.project === "desktop-chromium" ? "core-webkit" : "desktop-chromium";
       },
     },
     {

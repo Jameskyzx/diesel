@@ -199,8 +199,8 @@ for (const locale of ["en", "zh-CN"] as const) {
     page,
   }, testInfo) => {
     test.skip(
-      !["desktop-chromium", "mobile-chromium"].includes(testInfo.project.name),
-      "Desktop and mobile Chromium cover the same mounted form's async continuation.",
+      testInfo.project.name !== "desktop-chromium",
+      "Desktop Chromium covers the same mounted form's async continuation.",
     );
     await context.clearCookies();
     if (locale === "zh-CN") {

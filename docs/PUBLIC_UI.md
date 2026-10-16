@@ -1,5 +1,30 @@
 # Public workspace reconstruction
 
+## Supported interface
+
+The current product is desktop-only (minimum layout width: 1024 CSS pixels).
+Phone-specific navigation, compact table layouts, swipe dismissal, map touch
+gestures and mobile browser projects have been removed at the user's request.
+Desktop Chrome and Safari, keyboard navigation, accessibility, and desktop
+window resizing remain supported. Historical reports describe their original
+test scope and are not rewritten as current desktop-only evidence.
+
+## Product catalogue and conversation v2
+
+`/products` adds a bilingual, read-only source-reported catalogue. Search model,
+application/category, family fuel and explicit-unit power; preserve source rows
+and keep conflicting configurations separate. Unknown power units are excluded
+from numeric filters, never guessed. Selecting a row prepares a chat question;
+it does not automatically send a paid request or establish legal applicability.
+Catalogue cards show public-display authorization separately from verification,
+and survive chat history reload and local analysis saving. Raw source text stays
+in its original language. Existing approved-product selection remains separate.
+
+Text chat now sends conversation version 2 and uses a single bounded tool loop.
+Validated query intent, source-reported catalogue parameters and verified
+regulatory/fit evidence remain distinct. No catalogue record is an approval or
+certificate. Attachments and legacy clients retain their previous guarded path.
+
 The public UI follows the structural patterns of Tabler's vertical dashboard:
 a fixed desktop sidebar, a separate utility toolbar, compact page headers,
 metric tiles, card headers and data tables. It is implemented with the existing
@@ -47,19 +72,17 @@ Tabler is MIT licensed; the upstream notice is preserved below.
 
 ### Conversational workspace
 
-The live browser sends `conversation.version=1`. A bounded semantic planner
-separates research, explanation, composition and general discussion from the
-evidence tasks. Comparison plus original sources is a composed request, not a
-source-only override. Country/application/power/date/model filters must be
-grounded in user input or authenticated previous state; conflicting input still
-requires clarification. One planning call plus at most four executor calls fits
-the existing five-call admission reservation, with no provider retries.
-Research executes the compiled queries through the existing audited read-only
-tools directly (at most four), without asking the model to rewrite their
-arguments. Query execution is not recorded as fake provider activity or usage.
-Fact explanations/rewrites retain the guarded model flow; the admission budget
-is unchanged. Explicit filter-reset controls remove the old scope/power instead
-of treating their names as new affirmative filters.
+The live text browser sends `conversation.version=2`. One bounded typed-action
+loop handles conversation, catalogue selection and evidence queries, with at most
+five provider calls, no retries, a 30-second step limit and a 90-second turn limit.
+Country/application/power/date/model operands must be grounded in user input or
+authenticated state. Catalogue selection is not regulatory confirmation. Source
+country/scope and market scope belong to their respective tasks; a source lookup
+does not inherit an unrelated target-market filter, and an unsupported market
+filter cannot be silently removed to obtain a result. Existing audited tools
+still execute deterministic queries, validate query/result identity and expose
+structured cards. No email or external-action tools are added. Version 1 and
+attachment requests remain on the previous guarded compatibility path.
 
 The server returns a signed, session/context-bound, 24-hour conversation receipt
 in assistant metadata. It carries bounded two-sided dialogue and query state,
@@ -75,13 +98,16 @@ excluded from saved/exported analysis payloads. No server history database,
 public write API or new dependency is introduced.
 
 General concepts and their follow-up explanations need no country/power query.
-They are not a channel for jurisdiction/product-specific conclusions. Factual
-explanations and customer-message rewrites still re-query and pass the existing
-evidence contract. Their prose is no longer replaced by the standard research
-summary; additional quantity/ranking checks do not claim arbitrary semantic
-verification. Independent no-data results do not erase successful fact cards;
-any partial summary is server-derived and explicitly incomplete.
+They are not a channel for jurisdiction/product-specific conclusions. Version 2
+renders factual summaries from validated tool results; model-authored guidance
+is separately screened and unsafe guidance is replaced with a bounded next step.
+This screening is not a proof of arbitrary natural-language claims. Independent
+no-data results do not erase successful fact cards; interrupted turns are marked
+incomplete and cannot replace the last confirmed working context.
 
+#### Version 1 compatibility behavior
+
+The following describes the retained version 1 planner, not the new text loop.
 Neutral specification/certification preparation is not a product-fit verdict.
 A checklist or document-request email uses server-authored non-conclusive copy,
 preserves the query context for later, and does not assert that documents are
@@ -121,6 +147,8 @@ evidence cards instead of an extra model prose call. This does not weaken source
 date or fact checks; explanations and factual rewrites still use the guarded
 model path. Slow/failed streams remain failures, not successful fallback answers.
 
+#### Shared UI behavior
+
 Greetings are short; greetings and app-capability help return without a provider
 call. Their signed context supports later references to that reply. Save/export controls appear only after a completed turn
 has a validated structured result (including an honest no-data result, not an
@@ -137,7 +165,7 @@ Starters send immediately through the same guarded submission path as the
 composer (including attachment validation, locale, cancellation and recovery).
 They are disabled while a request or file validation is pending. Browser tests
 cover the request body and rendered reply for all three starters in both locales
-on desktop and mobile; these mocked transport tests are not live-model evidence.
+on desktop; these mocked transport tests are not live-model evidence.
 
 The live entry points are CHN current regulations, CHN/JPN construction-equipment
 120 kW regulation comparison, and CHN market metrics/reporting periods. Generic
@@ -262,8 +290,9 @@ No approved real products means no real recommendation; Demo records cannot
 substitute for an explicitly requested real product. Query errors
 remain distinct from missing data, and legal-sales guarantees are not offered.
 
-The browser tab and Apple touch icons reuse that same approved diesel-engine
-artwork. Regenerate them with `pnpm exec tsx scripts/portfolio/generate-brand-icons.ts`.
+The browser tab icon reuses that same approved diesel-engine artwork. The
+phone home-screen icon has been removed with mobile support. Regenerate the
+favicon with `pnpm exec tsx scripts/portfolio/generate-brand-icons.ts`.
 `src/app/icon.svg` embeds its small PNG directly so it needs no external image
 fetch; Next's file-based metadata supplies a content-versioned favicon URL.
 The browser regression checks the icon actually selected by the page, not just

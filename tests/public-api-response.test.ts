@@ -86,6 +86,7 @@ describe("public API response cache policy", () => {
       "health/ready/route.ts",
       "health/route.ts",
       "preferences/locale/route.ts",
+      "product-catalog/route.ts",
       "product-fit/route.ts",
       "products/route.ts",
     ]);

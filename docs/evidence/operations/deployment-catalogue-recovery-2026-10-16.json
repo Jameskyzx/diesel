@@ -1,0 +1,149 @@
+{
+  "version": "diesel-release-observation-v1",
+  "evidenceKind": "historical-operator-record-only",
+  "release": "ac7a67d1f674e791f5f52d0d1d2e9a02e0f9981a",
+  "pr": 103,
+  "masterCi": {
+    "runId": 38857724163,
+    "conclusion": "success",
+    "jobsPassed": 10
+  },
+  "observedAt": "2026-10-16T10:45:58.522Z",
+  "releaseOutcome": "failed_restore_rehearsal_timeout",
+  "deploymentFinalized": false,
+  "productionAcceptanceComplete": false,
+  "automaticFailureRecovery": "running",
+  "operation": {
+    "format": "diesel-durable-release-v1",
+    "release": "ac7a67d1f674e791f5f52d0d1d2e9a02e0f9981a",
+    "operationId": "91fe6ba7-e382-4a5b-a7f1-ef4bc9748fc0",
+    "mode": "full",
+    "createdAt": "2026-10-16T06:33:05.271Z",
+    "inputDigest": "e06af9754099d08521f730d78ba9e46b51be201fb09aa1edd74203459c2b9c45",
+    "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+  },
+  "current": "/opt/diesel/releases/99ddb305e8b653c1303977fc9f6c5d21620ce25e",
+  "markers": [
+    "HOST_ACTIVATION_PENDING",
+    "HOST_ACTIVATION_V1",
+    "HOST_ROLLBACK_REQUIRED",
+    "diesel-demo.pre-switch",
+    "env.production.local.pre-switch",
+    "governance-before.json",
+    "jamesky.site.pre-switch",
+    "previous-release",
+    "validate-public-governance.sh"
+  ],
+  "restoreReadTimeout": {
+    "observedAt": "2026-10-16T09:08:20.509Z",
+    "phase": "restore-rehearsal-readback",
+    "lastBatch": 283,
+    "durationMs": 5400048,
+    "exitCode": null,
+    "signal": "SIGTERM",
+    "automaticFailureRecoveryStarted": true,
+    "approvedRoute": "original-VPS"
+  },
+  "snapshotBefore": {
+    "path": "/opt/diesel/backups/ac7a67d1f674e791f5f52d0d1d2e9a02e0f9981a/governance-before.json",
+    "sha256": "928b5b3f62fee5955176ad6575b1f6a7618ec02a2b743c38f8fbeb052deb8cbd",
+    "bytes": 105114950,
+    "savedAt": "2026-10-16T07:30:22.142Z",
+    "counts": {
+      "countries": 178,
+      "country_jurisdictions": 185,
+      "data_change_logs": 20298,
+      "data_governance_drafts": 6758,
+      "data_sources": 347,
+      "jurisdictions": 155,
+      "market_import_batches": 0,
+      "market_metrics": 50,
+      "regulation_limits": 12403,
+      "regulations": 94
+    },
+    "dryRunValid": true
+  },
+  "restoreApplied": {
+    "observedAt": "2026-10-16T07:38:47Z",
+    "applied": true,
+    "mode": "apply",
+    "sha256": "928b5b3f62fee5955176ad6575b1f6a7618ec02a2b743c38f8fbeb052deb8cbd",
+    "strategy": "snapshot-upsert-and-delete"
+  },
+  "catalogueUiChecks": {
+    "release": "ac7a67d1f674e791f5f52d0d1d2e9a02e0f9981a",
+    "phase": "activated-before-finalization",
+    "at": "2026-10-16T06:43:00Z/2026-10-16T06:44:40Z",
+    "observations": [
+      "Default English /products WP10H375E62 renders 4 separate application configurations, 276kW and source-reported-unverified disclosure.",
+      "Expanded row2 shows exact original power/torque/emission/route, family-level separation, workbook/sheet/row/SHA256.",
+      "Switched to Chinese preserving query URL; html lang zh-CN.",
+      "Construction 150–200 kW UI returns13records; first601=177kW,718=160kW,719=190kW.",
+      "Nonexistent query shows0, explicit absence disclaimer.",
+      "Back to filtered list, select WP7HG218E470: draft contains weichai-row-718 and no auto-send, Chinese preserved."
+    ]
+  },
+  "catalogueApiReport": "Private local diagnostic catalog-readback.json: 6/6 passed on activated candidate before release failure",
+  "catalogueFullPaginationReport": "Private local diagnostic catalog-pagination.json: 42 pages, all 831 records equal to authorized catalogue; before release failure",
+  "realMultiturnAcceptance": "not_started",
+  "route": "original VPS; no temporary forwarding",
+  "noBackupsDeleted": true,
+  "durableStatus": {
+    "operation": {
+      "format": "diesel-durable-release-v1",
+      "release": "ac7a67d1f674e791f5f52d0d1d2e9a02e0f9981a",
+      "operationId": "91fe6ba7-e382-4a5b-a7f1-ef4bc9748fc0",
+      "mode": "full",
+      "createdAt": "2026-10-16T06:33:05.271Z",
+      "inputDigest": "e06af9754099d08521f730d78ba9e46b51be201fb09aa1edd74203459c2b9c45",
+      "runnerSha256": "2be14e2d6bca82262ecbf88e05b57d5155b199308538d9ca5735129d0e7f8cde"
+    },
+    "state": "running",
+    "unit": {
+      "Id": "diesel-release-ac7a67d1f674e791f5f52d0d1d2e9a02e0f9981a.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "Result": "success",
+      "InvocationID": "ab517d75f53e4f679c45853d0d074e98",
+      "ExecMainCode": 0,
+      "ExecMainStatus": 0,
+      "NRestarts": 0,
+      "MainPID": 3185030,
+      "ExecMainPID": 3185030
+    },
+    "completion": null,
+    "deploymentVerified": false,
+    "requiresIndependentAcceptance": true
+  },
+  "latestRecoveryProgress": {
+    "kind": "governance-snapshot-progress-v1",
+    "table": "data_change_logs",
+    "batch": 113,
+    "durationMs": 10742
+  },
+  "publicLiveness": {
+    "observedAt": "2026-10-16T10:44:45.296Z",
+    "httpStatus": 200,
+    "status": "ok",
+    "version": "99ddb305e8b653c1303977fc9f6c5d21620ce25e",
+    "provesFinalizedDeployment": false
+  },
+  "latestAuthorization": {
+    "databaseRoute": "original VPS only; temporary forwarding declined",
+    "releaseClassificationFix": true,
+    "repeatFailedSha": false
+  },
+  "capacity": {
+    "availableBytes": 4370866176,
+    "minimumStartAvailableBytes": 5368709120,
+    "usagePct": 93,
+    "cleanupPerformed": false
+  },
+  "pendingWork": [
+    "Automatic recovery terminal proof",
+    "New classification fix exact CI-approved release",
+    "Capacity sufficient for staging and submission",
+    "Independent product catalogue and adaptive multi-turn production acceptance"
+  ]
+}

@@ -140,6 +140,39 @@
     "usagePct": 93,
     "cleanupPerformed": false
   },
+  "followUpObservations": {
+    "closedJournalArchive": {
+      "completedFiles": 10,
+      "retainedOpenFiles": 1,
+      "originalBytes": 1342177280,
+      "compressedBytes": 234991580,
+      "verification": "gzip integrity, full decompression, SHA-256, byte equality and journalctl verify; independent second readback passed",
+      "currentJournalAndDatabaseBackupsPreserved": true
+    },
+    "approvedExactCacheCleanup": {
+      "completedAt": "2026-10-16T11:11:23.461Z",
+      "target": "/opt/diesel/build-workspaces/1a74dd5be5564a58ef4e59fb5856ecb84c66eebd/.next/cache",
+      "filesRemoved": 9,
+      "allocatedBytes": 306970624,
+      "availableBytesAfter": 5767450624,
+      "receipt": "/opt/diesel/cache-cleanup-20261016.uIxYCq/receipt.json",
+      "processReferences": 0,
+      "codeDiagnosticsReleasesAndBackupsPreserved": true,
+      "independentReadbackPassed": true
+    },
+    "classificationPrFirstCi": {
+      "pr": 104,
+      "head": "354a9531d6b538044738e7b23b765746e6b5d0b0",
+      "runId": 38889617602,
+      "attempt": 1,
+      "conclusion": "failure",
+      "publicBrowser": { "passed": 252, "flaky": 1, "skipped": 13 },
+      "failure": "150 kW not_fit response was followed by an unsolicited old 100 kW fit evaluation; Required CI gate correctly failed",
+      "localReproduction": "Original code with 6x Chromium CPU throttling: first repetition passed, second failed with the same reset; no retries",
+      "fixFocusedVerification": "Commit-phase route acknowledgement: 10 consecutive repetitions passed with the same 6x CPU throttle, unchanged deadlines, exact three POSTs, final URL/input/result consistency",
+      "newFullReleaseValidation": "pending"
+    }
+  },
   "pendingWork": [
     "Automatic recovery terminal proof",
     "New classification fix exact CI-approved release",

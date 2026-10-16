@@ -170,7 +170,30 @@
       "failure": "150 kW not_fit response was followed by an unsolicited old 100 kW fit evaluation; Required CI gate correctly failed",
       "localReproduction": "Original code with 6x Chromium CPU throttling: first repetition passed, second failed with the same reset; no retries",
       "fixFocusedVerification": "Commit-phase route acknowledgement: 10 consecutive repetitions passed with the same 6x CPU throttle, unchanged deadlines, exact three POSTs, final URL/input/result consistency",
-      "newFullReleaseValidation": "pending"
+      "newFullReleaseValidation": "Local lint/typecheck passed; browser capture dbd9f7c4-85d8-4ea3-82a7-56a505a8366d passed 290 with 13 existing skips and zero flakes, including build/CSP; Vitest capture 85dbbb10-f4eb-4f7a-b249-b514c343ad22 passed 9240 with 6 existing skips. New CI and production acceptance remain pending."
+    },
+    "recoveryTerminal": {
+      "completedAt": "2026-10-16T11:49:14.779Z",
+      "originalReleaseOutcome": "failed",
+      "exitCode": 70,
+      "signal": null,
+      "workerPid": 3185030,
+      "invocationId": "ab517d75f53e4f679c45853d0d074e98",
+      "workerStopped": true,
+      "restartCount": 0,
+      "hostState": "ROLLED_BACK:HOST_ROLLBACK_COMPLETED",
+      "independentLedgerValidationExit": 0,
+      "independentRollbackValidationExit": 0,
+      "independentCurrentCommittedHostValidationExit": 0,
+      "currentRelease": "99ddb305e8b653c1303977fc9f6c5d21620ce25e",
+      "publicReadiness": {
+        "at": "2026-10-16T11:51:15.699Z",
+        "httpStatus": 200,
+        "status": "ok",
+        "version": "99ddb305e8b653c1303977fc9f6c5d21620ce25e",
+        "checks": { "aiChatAdmission": "ok", "aiChatRateLimit": "ok", "database": "ok" }
+      },
+      "newReleaseAccepted": false
     }
   },
   "pendingWork": [

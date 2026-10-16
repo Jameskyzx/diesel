@@ -207,6 +207,10 @@ This is the only current release/evidence index. Historical implementation notes
   截至 `2026-10-16T10:45:58.522Z`，自动恢复仍在运行，current 已切回 `99ddb305`，但 `HOST_ROLLBACK_REQUIRED` 尚未收敛，不能称恢复已完成。
   `10:44:45.296Z` 公网 liveness 为 HTTP 200 / 旧版 `99ddb305`；候选激活期间目录 API 6/6、831 条全量比对和桌面目录交互通过，
   这些不证明最终发布成功；新版真实多轮验收未开始。用户选择保留 VPS 原链路，并授权修正分类后以新的 CI-approved SHA 发布。
+  自动恢复随后于 `2026-10-16T11:49:14.779Z` 完成，原发布保留 exit 70；独立严格账本、回滚及当前主机校验均 exit 0，
+  确认 `ROLLED_BACK:HOST_ROLLBACK_COMPLETED`。`11:51:15.699Z` 公网 readiness 返回旧版 `99ddb305`，数据库和两项 AI 准入探针均为 ok。
+  PR #104 首轮 CI 的一个产品匹配用例失败后重试通过，必需检查正确拒绝；已复现并修复并发页面切换覆盖新结果的问题，
+  本地完整浏览器和单测证据通过，仍待新 CI、正式发布和真实多轮验收。按授权归档 10 份旧日志并仅移除核实的旧编译缓存，全部备份保留。
   [本次超时、恢复与分类修复前观测](evidence/operations/deployment-catalogue-recovery-2026-10-16.json) 保留实际失败和未完成项；没有建立数据库转发或删除备份。
 - 最后一个完整记录了发布步骤与独立读回的时间戳 release lineage 仍是
   release `20260814144537` / Git

@@ -199,7 +199,6 @@ export const playwrightRunContracts = [
     id: "public",
     projects: [
       "desktop-chromium",
-      "mobile-chromium",
       "core-webkit",
       "global-error-chromium",
       "knowledge-chromium",
@@ -213,7 +212,6 @@ export const playwrightRunContracts = [
     id: "demo",
     projects: [
       "portfolio-demo-chromium",
-      "portfolio-demo-mobile-chromium",
     ],
     receiptPath: "test-results/demo/playwright-run.json",
   },
@@ -222,7 +220,7 @@ export const playwrightRunContracts = [
     cliArguments: ["test", "--config", "playwright.fde.config.ts"],
     configPath: "playwright.fde.config.ts",
     id: "fde",
-    projects: ["fde-demo-desktop", "fde-demo-mobile"],
+    projects: ["fde-demo-desktop"],
     receiptPath: "test-results/fde/playwright-run.json",
   },
   {

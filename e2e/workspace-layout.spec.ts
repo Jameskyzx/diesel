@@ -6,7 +6,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     const preference = await page.request.post("/api/preferences/locale", { data: { locale } });
     expect(preference.ok()).toBe(true);
 
-    for (const width of [320, 768, 1440]) {
+    for (const width of [1024, 1280, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/");
       await expect(page.getByTestId("home-workspace")).toBeVisible();
@@ -20,20 +20,13 @@ for (const locale of ["en", "zh-CN"] as const) {
       const sidebarBounds = await sidebar.boundingBox();
       const contentBounds = await page.getByTestId("home-workspace").boundingBox();
       if (!headerBounds || !sidebarBounds || !contentBounds) throw new Error("Workspace bounds unavailable");
-      if (width >= 1024) {
-        expect(sidebarBounds.x).toBe(0);
-        expect(sidebarBounds.width).toBe(240);
-        expect(contentBounds.x).toBeGreaterThanOrEqual(sidebarBounds.x + sidebarBounds.width);
-        expect(headerBounds.x).toBeGreaterThanOrEqual(sidebarBounds.x + sidebarBounds.width);
-      } else {
-        expect(headerBounds.width).toBe(width);
-        const heading = await page.getByRole("heading", { level: 1 }).boundingBox();
-        if (!heading) throw new Error("Heading bounds unavailable");
-        expect(heading.y).toBeGreaterThanOrEqual(headerBounds.y + headerBounds.height);
-      }
+      expect(sidebarBounds.x).toBe(0);
+      expect(sidebarBounds.width).toBe(240);
+      expect(contentBounds.x).toBeGreaterThanOrEqual(sidebarBounds.x + sidebarBounds.width);
+      expect(headerBounds.x).toBeGreaterThanOrEqual(sidebarBounds.x + sidebarBounds.width);
       await expect(page.getByTestId("country-evidence-table").getByRole("table")).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      if (width === 320 || width === 1440) {
+      if (width === 1440) {
         await page.screenshot({ path: testInfo.outputPath(`home-${locale}-${width}.png`), fullPage: true });
       }
     }

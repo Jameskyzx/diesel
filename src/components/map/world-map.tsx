@@ -224,6 +224,8 @@ export function WorldMap({
           "NavigationControl.ZoomOut": copy.zoomOut,
         },
         renderWorldCopies: false,
+        touchZoomRotate: false,
+        touchPitch: false,
         style: mapStyle,
         zoom: 1.15,
       });

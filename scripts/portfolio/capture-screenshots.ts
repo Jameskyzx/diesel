@@ -68,21 +68,13 @@ async function captureCandidates(
           .first();
         await finalResponse.waitFor({ state: "visible" });
         await page.locator("#sales-chat-panel").evaluate((panel) => {
-          const globalHeader = document.querySelector<HTMLElement>(
-            '[data-testid="app-navigation-shell"]',
-          );
-          const headerBounds = globalHeader?.getBoundingClientRect();
-          // Only the horizontal mobile bar occludes the top of the content.
-          const topBarHeight = headerBounds && headerBounds.width >= window.innerWidth - 1
-            ? headerBounds.height
-            : 0;
           const panelTop =
             panel.getBoundingClientRect().top + window.scrollY;
           window.scrollTo(
             0,
             Math.max(
               0,
-              panelTop - topBarHeight - 16,
+              panelTop - 16,
             ),
           );
         });

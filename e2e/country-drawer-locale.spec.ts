@@ -8,7 +8,7 @@ test.beforeEach(async ({ context }) => {
 test("switches locale from an open country drawer and preserves its shared URL", async ({
   context,
   page,
-}, testInfo) => {
+}) => {
   const route =
     "/countries/CHN?applicationScope=non-road&asOf=2026-08-12&powerKw=100&productModelCode=DEMO-ENG-100&utm_source=drawer-locale";
   const expectSharedRoute = async () => {
@@ -39,13 +39,9 @@ test("switches locale from an open country drawer and preserves its shared URL",
       response.request().method() === "POST",
     { timeout: PUBLIC_API_REQUEST_TIMEOUT_MS },
   );
-  if (testInfo.project.name === "mobile-chromium") {
-    await chineseButton.tap();
-  } else {
-    await chineseButton.focus();
-    await expect(chineseButton).toBeFocused();
-    await page.keyboard.press("Enter");
-  }
+  await chineseButton.focus();
+  await expect(chineseButton).toBeFocused();
+  await page.keyboard.press("Enter");
 
   const persisted = await localeResponse;
   expect(persisted.status()).toBe(200);

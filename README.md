@@ -296,7 +296,7 @@ do not overlap Next processes in one checkout, and an uncatchable termination
 can still require operator inspection.
 
 `pnpm portfolio:capture-playwright-evidence` runs the canonical browser matrix
-sequentially: the public desktop/mobile flow, the zero-configuration Demo, the
+sequentially: the public desktop flow, the zero-configuration Demo, the
 failure-first FDE flow, and the CSP check against a fresh local production
 build. Each suite emits a minimal receipt containing only bounded test identity,
 outcome, retry, project, and provenance fields—never browser output,
@@ -437,7 +437,7 @@ the emitted model ID and its inclusive `validThrough` date has not passed.
 Estimates are labelled in integer micro-USD and are never treated as billed cost.
 
 The current local CI workflow is configured to run lint, strict TypeScript,
-coverage gates, migration checks, build, desktop/mobile Playwright, the
+coverage gates, migration checks, build, desktop Playwright, the
 zero-config demo contract, the failure-first FDE workflow, real PostgreSQL +
 pgvector migration smoke tests, deterministic
 governance row-lock concurrency checks, full-history secret scanning, and the

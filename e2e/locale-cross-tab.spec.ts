@@ -8,7 +8,7 @@ import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
 
 test.describe.configure({ timeout: 60_000 });
 test.beforeEach(async ({ context }, testInfo) => {
-  test.skip(testInfo.project.name !== "desktop-chromium", "This observes desktop cross-tab document/RSC coherence, not mobile tab-switching behavior.");
+  test.skip(testInfo.project.name !== "desktop-chromium", "Desktop Chromium covers cross-tab document/RSC coherence.");
   await context.clearCookies();
 });
 

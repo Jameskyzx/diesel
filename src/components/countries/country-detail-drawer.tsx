@@ -316,6 +316,7 @@ export function CountryDetailDrawer({
       autoFocus
       direction="right"
       dismissible
+      handleOnly
       modal={false}
       onOpenChange={(open) => {
         if (!open) {

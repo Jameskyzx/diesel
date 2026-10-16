@@ -15,6 +15,7 @@ const navigationItems = [
   { href: "/chat", icon: MessageSquareText, label: "chat", matches: (path: string) => path.startsWith("/chat") },
   { href: "/map", icon: Map, label: "map", matches: (path: string) => path === "/map" || path.startsWith("/countries/") },
   { href: "/compare", icon: Columns3, label: "compare", matches: (path: string) => path === "/compare" },
+  { href: "/products", icon: Database, label: "products", matches: (path: string) => path === "/products" },
   { href: "/analyses", icon: FolderOpen, label: "analyses", matches: (path: string) => path === "/analyses" },
 ] as const;
 
@@ -40,7 +41,7 @@ export function AppHeader() {
       </Link>
 
       <div className="app-toolbar">
-        <div className="hidden min-w-0 items-center gap-2 text-xs text-muted-foreground lg:flex">
+        <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           <Database aria-hidden="true" className="size-4" />
           <span>{dictionary.workspace.name}</span>
           <ChevronRight aria-hidden="true" className="size-3" />
@@ -48,7 +49,7 @@ export function AppHeader() {
         </div>
         <div className="ml-auto shrink-0"><LocaleToggle /></div>
         <Link
-          className="ml-3 hidden h-9 shrink-0 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:inline-flex"
+          className="ml-3 inline-flex h-9 shrink-0 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href="/chat"
           onNavigate={notifyPublicNavigationIntent}
           title={dictionary.header.openChat}

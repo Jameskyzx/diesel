@@ -221,6 +221,7 @@ This is the only current release/evidence index. Historical implementation notes
 | --- | --- | --- |
 | 国家目录 | 178 个 ISO3；177 个地图 feature | 目录/几何不代表数值法规覆盖 |
 | 真实产品/认证 | 0 条获准公开 fixture | 不宣称真实商业可售性 |
+| 授权产品资料库（本地候选） | 831 条配置 / 589 个型号 / 154 组产品 | 用户已授权公开参数；来源报告值尚未独立核验，不作为认证或市场准入结论；待本次部署验收 |
 | Demo 产品 | 2 个虚构配置 | 仅用于展示证据链 |
 | 市场观测 | 24 条签核 fixture | CHN/USA/DEU/BRA 的 2022/2023 观测，不冒充实时市场 |
 
@@ -390,7 +391,7 @@ This is the only current release/evidence index. Historical implementation notes
 
 | 门槛 | 状态 | 完成所需材料 |
 | --- | --- | --- |
-| 真实产品与认证 | 未获批准 | 产品所有者授权、规格版本与可追溯认证来源 |
+| 真实产品合规发布 | 参数展示已授权；认证未核验 | 产品资料库不替代规格版本核验与可追溯认证来源；获批合规 fixture 仍为 0 |
 | 法规专家验收 | 未完成 | 外部专家对日期、scope、数值和来源的独立签核 |
 | 真实销售试点 | 未开展 | 真实参与者、基线、任务记录、反馈及效果测量 |
 | FDE 历史公开归档 | 禁止发布 | LICENSE/NOTICE、资产权利与 copyleft 再分发复核，见 [历史审查](DEVELOPMENT_HISTORY.md) |

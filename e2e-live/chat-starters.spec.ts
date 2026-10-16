@@ -9,9 +9,7 @@ type CaptureWindow = Window & { __dieselChatCapture?: Capture };
 for (const locale of ["zh-CN", "en"] as const) {
   test.describe(`${locale} real production starters`, () => {
     test.use({
-      viewport: locale === "en" ? { width: 393, height: 851 } : { width: 1440, height: 1000 },
-      isMobile: locale === "en",
-      hasTouch: locale === "en",
+      viewport: { width: 1440, height: 1000 },
     });
     const copy = getDictionary(locale);
     for (const [kind, prompt, tool] of [

@@ -10,7 +10,7 @@ test.describe.configure({ timeout: 30_000 });
 test.beforeEach(async ({ context }, testInfo) => {
   test.skip(
     testInfo.project.name !== "desktop-chromium",
-    "The desktop brand link remains pointer-accessible beside the open drawer; mobile is not equivalent coverage.",
+    "Desktop Chromium covers the brand link beside the open drawer.",
   );
   await context.clearCookies();
 });

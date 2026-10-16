@@ -125,7 +125,10 @@ describe("PortfolioPlaywrightRunReporter", () => {
         ...tests[1], expectedStatus: "skipped",
         results: [{ retry: 0, status: "skipped" }], outcome: () => "skipped",
       } as TestCase;
-      tests[4] = { ...tests[4], results: [], outcome: () => "skipped" } as TestCase;
+      const blockedIndex = playwrightRunContracts[0].projects.indexOf("knowledge-chromium");
+      tests[blockedIndex] = {
+        ...tests[blockedIndex], results: [], outcome: () => "skipped",
+      } as TestCase;
       const reporter = initializeReporter(tests);
       vi.spyOn(process.stderr, "write").mockReturnValue(true);
 
@@ -135,7 +138,7 @@ describe("PortfolioPlaywrightRunReporter", () => {
       const diagnostic = persistedDiagnostic();
       expect(diagnostic).toMatchObject({
         runStatus: status, stage: "run", reporterExitCode: 1,
-        totals: { collected: 5, passed: 2, failed: 1, skipped: 1, notRun: 1 },
+        totals: { collected: 4, passed: 1, failed: 1, skipped: 1, notRun: 1 },
       });
       expect(diagnostic.tests.find((test) => test.project === "knowledge-chromium"))
         .toMatchObject({ attempts: 0, finalStatus: null, outcome: "skipped" });
@@ -147,7 +150,10 @@ describe("PortfolioPlaywrightRunReporter", () => {
 
   it("retains a validation failure even when the runner claims a pass", async () => {
     const tests = playwrightRunContracts[0].projects.map(passingTest);
-    tests[4] = { ...tests[4], results: [], outcome: () => "skipped" } as TestCase;
+    const blockedIndex = playwrightRunContracts[0].projects.indexOf("knowledge-chromium");
+    tests[blockedIndex] = {
+      ...tests[blockedIndex], results: [], outcome: () => "skipped",
+    } as TestCase;
     const reporter = initializeReporter(tests);
     vi.spyOn(process.stderr, "write").mockReturnValue(true);
 

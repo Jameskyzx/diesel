@@ -127,48 +127,6 @@ describe("POST /api/chat validation ordering", () => {
   });
 
   it.each([
-    {
-      expectedText: "rated power in kW",
-      locale: "en",
-      text: "Check current CHN non-road regulations.",
-    },
-    {
-      expectedText: "不能按应用场景过滤",
-      locale: "zh-CN",
-      text: "不做跨国比较，只看 CHN non-road 市场数据。",
-    },
-  ])(
-    "fails a partial $locale query closed before model and audit setup",
-    async ({ expectedText, locale, text }) => {
-      const response = await POST(
-        new Request("http://localhost/api/chat", {
-          body: JSON.stringify({
-            locale,
-            messages: [
-              {
-                id: crypto.randomUUID(),
-                parts: [{ text, type: "text" }],
-                role: "user",
-              },
-            ],
-            sessionId: crypto.randomUUID(),
-          }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        }),
-      );
-
-      expect(response.status).toBe(200);
-      const body = await response.text();
-      expect(body).toContain(expectedText);
-      await expect(validateUiMessageSse(body)).resolves.toBe(true);
-      expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
-      expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();
-      expect(mocks.ensureSession).not.toHaveBeenCalled();
-    },
-  );
-
-  it.each([
     { cookie: "diesel_locale=zh-CN", locale: "zh-CN" },
     { cookie: "diesel_locale=%7Ah-CN", locale: "zh-CN" },
     { cookie: "diesel_locale=%65%6E", locale: "en" },

@@ -1,11 +1,11 @@
-import { simulateReadableStream } from "ai";
-import { MockLanguageModelV4 } from "ai/test";
+
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { compareRegulationsResultSchema, type AiToolResult } from "@/features/ai/schemas";
 import { buildSalesChatEvidenceContract, evidenceContractAllowsModelText } from "@/server/ai/evidence-contract";
-import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
-import { resolveSalesChatLoopPolicy } from "@/server/ai/sales-chat-loop";
+import { createSalesChatTools } from "@/server/ai/sales-chat";
+
 import { getDemoDatabase } from "@/server/db/demo-client";
 
 const originalMode = process.env.DATABASE_MODE;
@@ -48,46 +48,5 @@ describe("application-scope intent at the production evidence boundary", () => {
     expect(evidence.citations.length).toBeGreaterThan(0);
     const contract = buildSalesChatEvidenceContract({ runtimeContext, selectedCountryIso3: null, userTexts: [text] });
     expect(evidenceContractAllowsModelText(contract, [evidence])).toBe(true);
-  });
-
-  it.each([
-    "Check CHN marine and non-road regulations at 100 kW.",
-    "Retrieve CHN marine and non-road source evidence.",
-    "Compare CHN and BRA non-road or construction market metrics.",
-  ])("does not let sufficient evidence choose an unresolved scope for %s", (text) => {
-    const contract = buildSalesChatEvidenceContract({ runtimeContext, selectedCountryIso3: null, userTexts: [text] });
-    expect(evidenceContractAllowsModelText(contract, [evidence])).toBe(false);
-    expect(resolveSalesChatLoopPolicy({ allowToolFreeAttachmentResponse: false, contract, hasExecutionFailure: false, results: [] })).toEqual({ activeTools: [], phase: "evidence_gap", toolChoice: "none" });
-  });
-
-  it.each(validRequests.slice(0, 2))("releases verified text through the real multi-step stream for %s", async (text) => {
-    const marker = "Verified non-road scope response.";
-    const usage = { inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 }, outputTokens: { reasoning: 0, text: 1, total: 1 } };
-    const model = new MockLanguageModelV4({
-      provider: "mock", modelId: "scope-intent-mock",
-      doStream: [
-        { stream: simulateReadableStream({ chunks: [
-          { type: "stream-start", warnings: [] },
-          { type: "tool-call", toolName: "compareRegulations", toolCallId: "scope-regulations", input: JSON.stringify(query) },
-          { type: "finish", finishReason: { raw: undefined, unified: "tool-calls" }, usage },
-        ] }) },
-        { stream: simulateReadableStream({ chunks: [
-          { type: "stream-start", warnings: [] },
-          { type: "text-start", id: "scope-answer" },
-          { type: "text-delta", id: "scope-answer", delta: marker },
-          { type: "text-end", id: "scope-answer" },
-          { type: "finish", finishReason: { raw: undefined, unified: "stop" }, usage },
-        ] }) },
-      ],
-    });
-    const result = streamSalesChat({
-      auditRepository, locale: "en", messages: [{ role: "user", content: text }], model,
-      runtimeContext, selectedCountryIso3: null, sessionId: crypto.randomUUID(), tools: productionTools(), trustedUserTexts: [text],
-    });
-    const released = await result.text;
-    expect(released).toContain(marker);
-    expect(released).not.toContain("lacks enough evidence");
-    expect((await result.toolResults)[0]?.output).toMatchObject({ status: "ok", evidenceSufficient: true });
-    expect(model.doStreamCalls).toHaveLength(2);
   });
 });

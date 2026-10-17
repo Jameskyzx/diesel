@@ -1374,9 +1374,9 @@ export function SalesChat({
           return {
             body: {
               ...body,
-              ...(!demoMode ? { conversation: { version: 2,
+              conversation: { version: 2,
                 ...(previousConversation ? { receipt: previousConversation.conversation.receipt } : {}),
-              } } : {}),
+              },
               id,
               messageId,
               messages: requestMessages,
@@ -1385,7 +1385,7 @@ export function SalesChat({
           };
         },
       }),
-    [attachmentMessageRelease, demoMode],
+    [attachmentMessageRelease],
   );
   const chatId =
     activeChatRequest !== null && activeChatRequest.locale !== locale

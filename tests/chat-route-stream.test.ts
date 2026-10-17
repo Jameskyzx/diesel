@@ -7,8 +7,7 @@ const mocks = vi.hoisted(() => ({
   ensureSession: vi.fn(async () => undefined),
   getAiAuditRepository: vi.fn(),
   getConfiguredAiModel: vi.fn(),
-  streamSalesChat: vi.fn(),
-  toUIMessageStreamResponse: vi.fn(),
+  catalogHarnessResponse: vi.fn(),
 }));
 
 vi.mock("@/server/ai/model", () => ({
@@ -18,7 +17,10 @@ vi.mock("@/server/ai/model", () => ({
 
 vi.mock("@/server/ai/sales-chat", () => ({
   createSalesChatTools: mocks.createSalesChatTools,
-  streamSalesChat: mocks.streamSalesChat,
+}));
+
+vi.mock("@/server/ai/catalog-harness", () => ({
+  catalogHarnessResponse: mocks.catalogHarnessResponse,
 }));
 
 vi.mock("@/server/services/ai-audit-service", () => ({
@@ -33,8 +35,7 @@ describe("POST /api/chat stream boundary", () => {
     mocks.ensureSession.mockClear();
     mocks.getAiAuditRepository.mockReset();
     mocks.getConfiguredAiModel.mockReset();
-    mocks.streamSalesChat.mockReset();
-    mocks.toUIMessageStreamResponse.mockReset();
+    mocks.catalogHarnessResponse.mockReset();
     mocks.getAiAuditRepository.mockResolvedValue({
       ensureSession: mocks.ensureSession,
       recordToolCall: vi.fn(async () => undefined),
@@ -44,23 +45,11 @@ describe("POST /api/chat stream boundary", () => {
       model: {},
       modelId: "mock/stream-boundary",
     });
-    mocks.toUIMessageStreamResponse.mockImplementation(
-      ({ sendReasoning }: { sendReasoning?: boolean }) => {
-        const visibleParts = ["没有足够证据"];
-        if (sendReasoning) {
-          visibleParts.unshift("REASONING-API-MOCK-FAKE-99");
-        }
-        return new Response(visibleParts.join("\n"), {
-          headers: { "content-type": "text/event-stream" },
-        });
-      },
-    );
-    mocks.streamSalesChat.mockReturnValue({
-      toUIMessageStreamResponse: mocks.toUIMessageStreamResponse,
-    });
+    mocks.catalogHarnessResponse.mockImplementation(() =>
+      new Response("没有足够证据", { headers: { "content-type": "text/event-stream" } }));
   });
 
-  it("explicitly prevents reasoning parts from reaching the browser", async () => {
+  it("returns the harness stream with private no-store headers", async () => {
     const response = await POST(
       new Request("http://localhost/api/chat", {
         body: JSON.stringify({
@@ -93,21 +82,13 @@ describe("POST /api/chat stream boundary", () => {
     expect(response.headers.get("X-Request-Id")).toBeTruthy();
     const body = await response.text();
     expect(body).toContain("没有足够证据");
-    expect(body).not.toContain("REASONING-API-MOCK-FAKE-99");
-    expect(mocks.toUIMessageStreamResponse).toHaveBeenCalledWith(
-      expect.objectContaining({ sendReasoning: false }),
-    );
-    expect(mocks.streamSalesChat).toHaveBeenCalledWith(
-      expect.objectContaining({
-        costProfile: { profileMarker: "server-only-cost-profile" },
-        maxRetries: 0,
-      }),
-    );
+    // Reasoning suppression itself is covered by the harness tests.
+    expect(mocks.catalogHarnessResponse).toHaveBeenCalledOnce();
   });
 
   it("aborts the provider stream when the client cancels the response", async () => {
     const underlyingCancel = vi.fn();
-    mocks.toUIMessageStreamResponse.mockReturnValue(
+    mocks.catalogHarnessResponse.mockReturnValue(
       new Response(
         new ReadableStream<Uint8Array>({ cancel: underlyingCancel }),
         { headers: { "content-type": "text/event-stream" } },
@@ -134,8 +115,7 @@ describe("POST /api/chat stream boundary", () => {
         method: "POST",
       }),
     );
-    const signal = mocks.streamSalesChat.mock.calls.at(-1)?.[0]
-      .abortSignal as AbortSignal;
+    const signal = mocks.catalogHarnessResponse.mock.calls.at(-1)?.[0].signal as AbortSignal;
 
     expect(signal.aborted).toBe(false);
     await response.body?.cancel("client-disconnected");
@@ -147,7 +127,7 @@ describe("POST /api/chat stream boundary", () => {
 
   it("retains admission after reader cancellation while a started tool remains pending", async () => {
     const underlyingCancel = vi.fn(async () => undefined);
-    mocks.toUIMessageStreamResponse.mockImplementation(
+    mocks.catalogHarnessResponse.mockImplementation(
       () =>
         new Response(
           new ReadableStream<Uint8Array>({ cancel: underlyingCancel }),
@@ -210,7 +190,7 @@ describe("POST /api/chat stream boundary", () => {
       await Promise.resolve();
     }
 
-    mocks.toUIMessageStreamResponse.mockReturnValueOnce(
+    mocks.catalogHarnessResponse.mockReturnValueOnce(
       new Response("complete", {
         headers: { "content-type": "text/event-stream" },
       }),
@@ -221,7 +201,7 @@ describe("POST /api/chat stream boundary", () => {
   });
 
   it("seals normal responses but retains admission until started tools settle", async () => {
-    mocks.toUIMessageStreamResponse.mockImplementation(
+    mocks.catalogHarnessResponse.mockImplementation(
       () =>
         new Response("complete", {
           headers: { "content-type": "text/event-stream" },
@@ -279,7 +259,7 @@ describe("POST /api/chat stream boundary", () => {
 
   it("aborts the provider stream when reading the provider response fails", async () => {
     const readFailure = new Error("provider stream read failed");
-    mocks.toUIMessageStreamResponse.mockReturnValue(
+    mocks.catalogHarnessResponse.mockReturnValue(
       new Response(
         new ReadableStream<Uint8Array>({
           pull(controller) {
@@ -310,8 +290,7 @@ describe("POST /api/chat stream boundary", () => {
         method: "POST",
       }),
     );
-    const signal = mocks.streamSalesChat.mock.calls.at(-1)?.[0]
-      .abortSignal as AbortSignal;
+    const signal = mocks.catalogHarnessResponse.mock.calls.at(-1)?.[0].signal as AbortSignal;
 
     await expect(response.body?.getReader().read()).rejects.toBe(readFailure);
     expect(signal.aborted).toBe(true);
@@ -322,7 +301,7 @@ describe("POST /api/chat stream boundary", () => {
     vi.useFakeTimers();
     try {
       const underlyingCancel = vi.fn();
-      mocks.toUIMessageStreamResponse.mockReturnValue(
+      mocks.catalogHarnessResponse.mockReturnValue(
         new Response(
           new ReadableStream<Uint8Array>({ cancel: underlyingCancel }),
           { headers: { "content-type": "text/event-stream" } },
@@ -349,8 +328,7 @@ describe("POST /api/chat stream boundary", () => {
           method: "POST",
         }),
       );
-      const signal = mocks.streamSalesChat.mock.calls.at(-1)?.[0]
-        .abortSignal as AbortSignal;
+      const signal = mocks.catalogHarnessResponse.mock.calls.at(-1)?.[0].signal as AbortSignal;
 
       expect(signal.aborted).toBe(false);
       await vi.advanceTimersByTimeAsync(MAX_CHAT_RESPONSE_LEASE_MS);
@@ -373,7 +351,7 @@ describe("POST /api/chat stream boundary", () => {
             finishCancels.push(resolve);
           }),
       );
-      mocks.toUIMessageStreamResponse.mockImplementation(
+      mocks.catalogHarnessResponse.mockImplementation(
         () =>
           new Response(
             new ReadableStream<Uint8Array>({ cancel: underlyingCancel }),
@@ -423,7 +401,7 @@ describe("POST /api/chat stream boundary", () => {
         await Promise.resolve();
       }
 
-      mocks.toUIMessageStreamResponse.mockReturnValueOnce(
+      mocks.catalogHarnessResponse.mockReturnValueOnce(
         new Response("complete", {
           headers: { "content-type": "text/event-stream" },
         }),

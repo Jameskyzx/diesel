@@ -26,12 +26,6 @@ const capabilityPattern =
   /(?:你能(?:做|干|帮我做)(?:什么|啥)|你会什么|有哪些功能|可以做什么|怎么使用|怎么用|使用帮助|介绍一下(?:你自己)?|what can you do|how (?:do i|to) use (?:this|you)|help me use (?:this|you))/iu;
 const vagueAnalysisPattern =
   /^(?:(?:帮我)?(?:分析一下|看看|给点建议|怎么卖|该怎么做|你怎么看)|(?:please )?(?:analy[sz]e this|take a look|give me advice|what should i do))[!！?？。,.，\s]*$/iu;
-const pureAttachmentContentRequestPatterns = [
-  /^(?:(?:请|请你|帮我|麻烦你?|能否|可以)\s*)?(?:概述|总结|摘要|描述|识别|提取|读取|读出|转录|翻译|ocr)\s*(?:一下)?\s*(?:我)?\s*(?:刚刚|刚才)?\s*(?:上传的|所附的|这个|这张|这份|这些)?\s*(?:附件|文件|图片|图像|照片|截图|pdf|csv|markdown)\s*(?:中|里|内|上)?\s*(?:的)?\s*(?:文字|文本|内容|表格|信息)?\s*(?:(?:并)?\s*(?:翻译)?(?:成|为)\s*(?:中文|英文|英语|汉语))?\s*[!！?？。,.，]*$/iu,
-  /^(?:(?:请|请你|帮我|麻烦你?)\s*)?(?:这张|这个|这份|这些)\s*(?:图片|图像|照片|截图|附件|文件|pdf)\s*(?:里|内|上|中)?\s*(?:有|写着|写了|包含)\s*(?:什么|哪些)\s*(?:内容|文字|信息)?\s*[!！?？。,.，]*$/iu,
-  /^(?:please\s+)?(?:summari[sz]e|describe|transcribe|translate|extract|read|ocr)\s+(?:(?:the|this|these|my|attached|uploaded)\s+)*(?:attachment|file|image|photo|screenshot|pdf|csv|markdown)(?:\s+(?:text|content|table))?(?:\s+(?:to|into)\s+(?:chinese|english))?\s*[.!?]*$/iu,
-  /^(?:please\s+)?(?:extract|read|transcribe|ocr)\s+(?:the\s+)?(?:text|content|table)\s+from\s+(?:(?:the|this|my|attached|uploaded)\s+)*(?:attachment|file|image|photo|screenshot|pdf)\s*[.!?]*$/iu,
-] as const;
 
 function normalize(text: string): string {
   return text.trim().replace(/\s+/g, " ");
@@ -59,18 +53,6 @@ function contextLine(selectedCountryIso3: string | null): string {
   return selectedCountryIso3
     ? `当前国家上下文是 ${selectedCountryIso3}；你明确写出的国家会覆盖它。`
     : "当前没有国家上下文，提问时请写国家名称或 ISO3。";
-}
-
-/**
- * Only pure extraction/description turns may answer without a fact tool.
- * Mixed prompts fail closed: an unrelated upload must never weaken the
- * evidence boundary for regulations, certifications, products, or markets.
- */
-export function allowsToolFreeAttachmentResponse(text: string): boolean {
-  const normalized = normalize(text);
-  return pureAttachmentContentRequestPatterns.some((pattern) =>
-    pattern.test(normalized),
-  );
 }
 
 function capabilityResponse(selectedCountryIso3: string | null): string {

@@ -86,7 +86,7 @@ describe("POST /api/chat production admission configuration", () => {
     );
 
     expect(response.status).toBe(200);
-    await expect(response.text()).resolves.toContain("structured facts");
+    await expect(response.text()).resolves.toContain("What are you working on");
     expect(mocks.getDatabase).not.toHaveBeenCalled();
     expect(mocks.getAdmissionDatabase).not.toHaveBeenCalled();
     expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();

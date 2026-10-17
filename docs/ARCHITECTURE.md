@@ -785,6 +785,19 @@ scope 或存在歧义时不擅选，也不自动补全模型漏传的值；通�
 
 ## 10. AI 架构
 
+> **当前实现（2026-10-17 起）：** `/api/chat` 只有一条编排路径——`src/server/ai/catalog-harness.ts`
+> 的 harness 循环。问候/感谢与应用帮助先由确定性直接回复处理；其余请求（含附件、离线 Demo
+> 和生产 canary）都进入 harness：单次请求最多 5 次模型调用、不重试，模型每步只能输出一个带
+> 类型的 `act` 动作（修改工作条件、查询证据、检索虚构目录或结束）。服务端用用户原话校验动作
+> （国家、功率、日期、用途必须来自原话或已签名的上一轮状态），再由 `harnessEvidenceContract()`
+> 和 `compiledEvidenceToolCalls()` 编译成确定性的工具调用；指标代码、知识检索词与页码/章节
+> 要求也从用户原话复制。回答中的事实由服务端根据已校验结果生成，模型的结束语须通过叙述
+> 守卫（不得含国家代码、数值、排放阶段或批准/认证结论）；附件概括会标注为用户提供、未经
+> 核验，且从不作为证据。不满足检索词或定位要求的结果显示为证据缺口。离线 Demo 的确定性模型
+> （`portfolio-demo-model.ts`）输出同一协议的动作。下文 10.4 起关于 `streamText` 工具循环、
+> 规划层、证据边界 transform 与兼容路径的描述是 2026-10-17 前的历史设计，相关代码已删除，
+> 见 git 历史 `00250d6`。
+
 ### 10.0 当前对话分层
 
 #### 浏览器文本对话 v2：一个有界循环
@@ -796,7 +809,7 @@ scope 或存在歧义时不擅选，也不自动补全模型漏传的值；通�
 状态及 catalog/evidence/answer 操作。国家、功率、scope、日期、型号的新增操作数
 须来自用户、签名状态或允许的明确来源；参数校验不重判否定/保留/删除意图。
 
-目录返回独立的 `data-productCatalog`，含原文、来源行和文件摘要，不伪装成 verified
+目录返回独立的 `data-productCatalog`（虚构 Demo 目录记录及其声明），不伪装成 verified
 citation。证据任务直接从类型化状态编译到既有受审计工具及 evidence contract，
 保留查询绑定、确定性、来源、有效期与 publication 校验。最终事实正文由服务端依据
 校验后的结果生成；模型的通用说明单独过发布边界，不能将目录宣称升级为认证。
@@ -910,7 +923,7 @@ citation。证据任务直接从类型化状态编译到既有受审计工具及
 planning/evidence 的脱敏耗时与 request ID，不记录用户内容或回执。15 秒 provider canary 门槛不变；
 已收到响应头后发生流超时仍为失败，但保留 HTTP 状态与 request ID 供跨阶段定位。
 
-无新协议字段的旧客户端、直接 `streamSalesChat()` 调用及离线 Demo 保持原有确定性路径。
+（历史）无新协议字段的旧客户端、直接 `streamSalesChat()` 调用及离线 Demo 曾保持原有确定性路径；2026-10-17 起均改走 harness。
 旧单轮 eval 不能证明新对话协议；须另测真实 API 多轮上下文、复合任务、追问、改写和证据拒绝。
 下文阶段 6 的确定性分流/最高来源优先级描述指该兼容路径；新浏览器的任务分流以上述规划层为准。
 
@@ -1090,8 +1103,8 @@ MVP 采用“结构化结果优先”：
   也只能作为待解释数据；来源标题和被引用的来源原文逐字保留其原始语言，不随回答语言
   翻译。离线 `pnpm ai:eval` 用固定 golden prompts 检查分流、
   缺参、初始工具集合和停止阶段，不调用外部模型；它不冒充真实 provider 成功率评估。
-- `pnpm ai:eval:live` 复用生产 `streamSalesChat()`，对 `evals/sales-chat-live-cases.ts` 的 18 个中英
-  用例逐一运行：PGlite Demo 数据库、内存限流、SDK 零重试、每次模型调用最多 1,024 输出 token、每例
+- `pnpm ai:eval:live` 复用生产 harness 循环（`catalogHarnessResponse()`），对 `evals/sales-chat-live-cases.ts` 的 18 个中英
+  用例逐轮运行（多轮用例携带签名回执）：PGlite Demo 数据库、内存限流、SDK 零重试、沿用 harness 自身的 5 次调用 / 每次 1,500 输出 token 上限、每例
   90 秒期限，累计 160,000 token 后停止（用量只能在调用结束后得知，因此不是供应商侧计费上限）。
   `src/domain/ai/live-eval.ts` 的 `judgeLiveEvalCase()` 逐例判定工具选择、参数、证据许可、整请求拒答、
   事实/决策/免责声明锚点与回答语言，安全关键用例必须失败关闭。结果写入

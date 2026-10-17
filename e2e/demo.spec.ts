@@ -118,7 +118,7 @@ for (const example of [
     await expect(answer).not.toContainText("At least one query or parameter validation failed");
     if (example.name === "regulations") {
       await expect(assistant.getByTestId("assistant-markdown")).toHaveCount(1);
-      await expect(answer).toContainText("Evidence as-of date: 2026-08-20.");
+      await expect(answer).toContainText("as of 2026-08-20");
     }
   });
 }
@@ -516,7 +516,7 @@ for (const locale of ["en", "zh-CN"] as const) {
       await expect(answer).not.toContainText(gap);
       const conditions = assistant.getByLabel(english ? "Knowledge-base evidence query conditions" : "知识库证据查询条件", { exact: true }).last();
       await expect(conditions).toContainText(english ? "Non-road" : "非道路");
-      await expect(conditions).toContainText(english ? "emissions regulations original text sections" : "排放法规原文、章节");
+      await expect(conditions).toContainText(english ? "emissions regulation" : "排放法规原文、章节");
       await expect(conditions).toContainText(english ? "Aug 20, 2026" : "2026年8月20日");
     }
 
@@ -527,7 +527,7 @@ for (const locale of ["en", "zh-CN"] as const) {
     const conditions = assistant.getByLabel(english ? "Knowledge-base evidence query conditions" : "知识库证据查询条件", { exact: true }).last();
     await expect(conditions).toContainText("BRA");
     await expect(conditions).toContainText(english ? "Non-road" : "非道路");
-    await expect(conditions).toContainText(english ? "emissions regulations original text sections" : "排放法规原文、章节");
+    await expect(conditions).toContainText(english ? "emissions regulation" : "排放法规原文、章节");
   });
 
   test(`portfolio demo clarifies incompatible scopes and preserves filters after correction in ${locale}`, async ({ context, page }) => {
@@ -877,8 +877,8 @@ test("portfolio demo rebuilds Chinese score and brief copy from structured state
   await expect(card).not.toContainText("产品证据缺口");
   await expect(card).not.toContainText("建议文本由固定规则生成");
   await expect(card).not.toContainText("补齐 missingData");
-  await expect(conversation).toContainText("结构化简报识别到");
-  await expect(conversation).toContainText("项规则生成行动");
+  // The narrative cannot restate scores or risks; the brief card above carries them.
+  await expect(conversation).toContainText("已生成确定性的结构化销售简报");
   await card.locator("summary").click();
   await expect(
     card.getByText("DEMO ONLY — Fictional Engine 100", { exact: true }).first(),

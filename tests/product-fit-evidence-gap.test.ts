@@ -1,19 +1,17 @@
-import { simulateReadableStream } from "ai";
-import { MockLanguageModelV3 } from "ai/test";
+
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { z } from "zod";
 
 import { buildEvidenceGapResponse, regulatoryDisclaimer } from "@/domain/ai/evidence-gap-response";
 import { findCompatibleProductsResultSchema } from "@/features/ai/schemas";
 import type { Locale } from "@/i18n/locale";
 import { buildSalesChatEvidenceContract, evidenceContractAllowsModelText } from "@/server/ai/evidence-contract";
-import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
+import { createSalesChatTools } from "@/server/ai/sales-chat";
 import { getDemoDatabase } from "@/server/db/demo-client";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
 let database: Awaited<ReturnType<typeof getDemoDatabase>>;
 const auditRepository = { recordToolCall: async () => undefined };
-const outputPartSchema = z.object({ type: z.literal("tool-output-available"), output: findCompatibleProductsResultSchema });
 const query = { applicationScope: "non-road" as const, asOf: "2026-08-12", countryIso3: "CHN", powerKw: 100 };
 const cases = [
   { model: "DEMO-ENG-100", status: "fit", readiness: "ready", allowed: true },
@@ -36,27 +34,6 @@ afterAll(async () => {
   else process.env.DATABASE_MODE = originalDatabaseMode;
   await database?.$client.close();
 });
-
-const usage = {
-  inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
-  outputTokens: { reasoning: 0, text: 1, total: 1 },
-};
-function modelFor(model: string, marker: string) {
-  return new MockLanguageModelV3({ doStream: [
-    { stream: simulateReadableStream({ chunks: [
-      { type: "stream-start", warnings: [] },
-      { type: "tool-call", toolName: "findCompatibleProducts", toolCallId: "product-gap-call", input: JSON.stringify({ ...query, productModelCode: model }) },
-      { type: "finish", finishReason: { unified: "tool-calls", raw: undefined }, usage },
-    ] }) },
-    { stream: simulateReadableStream({ chunks: [
-      { type: "stream-start", warnings: [] },
-      { type: "text-start", id: "product-answer" },
-      { type: "text-delta", id: "product-answer", delta: marker },
-      { type: "text-end", id: "product-answer" },
-      { type: "finish", finishReason: { unified: "stop", raw: undefined }, usage },
-    ] }) },
-  ] });
-}
 
 describe("product-fit evidence gaps distinguish a result from a conclusive decision", () => {
   for (const locale of ["en", "zh-CN"] as const) {
@@ -81,31 +58,6 @@ describe("product-fit evidence gaps distinguish a result from a conclusive decis
       expect(response).not.toContain("has no deterministic fit result");
       expect(response).toContain(regulatoryDisclaimer(locale));
       expect(result).toEqual(before);
-    });
-
-    it.each(cases)(`keeps the $model SSE boundary and fixed explanation in ${locale}`, async ({ model, status, readiness, allowed }) => {
-      const marker = "MODEL_PRODUCT_ANSWER";
-      const sessionId = crypto.randomUUID();
-      const text = request(model, locale);
-      const result = streamSalesChat({ auditRepository, locale, sessionId, selectedCountryIso3: null,
-        messages: [{ role: "user", content: text }], trustedUserTexts: [text],
-        tools: createSalesChatTools({ auditRepository, selectedCountryIso3: null, sessionId }), model: modelFor(model, marker) });
-      const body = await result.toUIMessageStreamResponse({ sendReasoning: false }).text();
-      const outputs = body.split("\n").filter((line) => line.startsWith("data: {")).flatMap((line) => {
-        const part = outputPartSchema.safeParse(JSON.parse(line.slice("data: ".length)) as unknown);
-        return part.success ? [part.data.output] : [];
-      });
-      expect(outputs).toHaveLength(1);
-      expect(outputs[0]).toMatchObject({ status: allowed ? "ok" : "no_data", evidenceSufficient: allowed,
-        query: { ...query, productModelCode: model } });
-      expect(outputs[0]?.evaluations).toHaveLength(1);
-      expect(outputs[0]?.evaluations[0]).toMatchObject({ status, commercialReadiness: readiness });
-      expect(body.includes(marker)).toBe(allowed);
-      expect(body).not.toContain("has no deterministic fit result");
-      if (!allowed) {
-        expect(body).toContain(explanation(locale));
-        expect(body).toContain(regulatoryDisclaimer(locale));
-      }
     });
   }
 });

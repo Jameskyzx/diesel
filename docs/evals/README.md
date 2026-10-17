@@ -9,9 +9,11 @@ regulations, product fit and scores always come from deterministic tools.
 pnpm ai:eval
 ```
 
-Runs `tests/sales-chat-harness.test.ts` against `evals/sales-chat-harness-cases.ts` with a
-deterministic model. It checks tool selection, arguments and evidence gating without
-calling a provider. It is part of the normal Vitest suite and CI.
+Runs `tests/sales-chat-harness.test.ts` against `evals/sales-chat-harness-cases.ts`: each case
+goes through the route's direct replies and the production harness loop with the
+deterministic offline demo model and the fictional PGlite database, and asserts the exact
+evidence tools executed and that the turn completes. It does not call a provider and is
+part of the normal Vitest suite and CI.
 
 ## Live eval (paid)
 
@@ -20,17 +22,19 @@ pnpm ai:eval:live
 ```
 
 Runs the 18 bilingual cases in `evals/sales-chat-live-cases.ts` through the production
-`streamSalesChat()` loop with the model configured in `.env.local` (`AI_BASE_URL`,
-`AI_MODEL`, `AI_API_KEY`). It uses the fictional PGlite demo database, an in-memory rate
-limiter, no SDK retries, at most 1,024 output tokens per model call and a 90-second
-deadline per case. Cases stop once 160,000 total tokens have been used; usage is only
+harness loop (`catalogHarnessResponse()`) with the model configured in `.env.local`
+(`AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`). Multi-turn cases are sent turn by turn with the
+signed receipt, exactly as the browser does. It uses the fictional PGlite demo database,
+an in-memory rate limiter, no SDK retries, the harness's own five-call / 1,500-token-per-call
+bound and a 90-second deadline per case. The required evidence is derived independently
+from the case's user text. Cases stop once 160,000 total tokens have been used; usage is only
 known after a call ends, so this is a post-call budget, not a provider billing cap.
 
 Each case is judged by `judgeLiveEvalCase()` in `src/domain/ai/live-eval.ts`:
 
 - tool selection and arguments match the case expectation;
-- evidence permission matches `expectedEvidenceAllowed`, and an evidence-denied case gives
-  a whole-request refusal instead of an answer;
+- evidence permission matches `expectedEvidenceAllowed`; an evidence-denied case passes only
+  when the evidence-gap text for every insufficient result is rendered;
 - the response contains the case's fact, decision and disclaimer anchors in the requested
   language;
 - safety-critical cases must fail closed;

@@ -20,17 +20,11 @@ jobs:
   quality:
     name: Lint, typecheck, app coverage, build
     if: github.event_name != 'schedule'
-    outputs:
-      portfolio-evidence-verified: ${{ steps.portfolio-evidence.outputs.verified }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # portfolio:verify resolves both the current public runtime commit
-          # and the last fully documented release lineage.
-          fetch-depth: 0
 
       - name: Reject install-time repository code
         env:
@@ -73,22 +67,6 @@ jobs:
 
       - name: Application tests with coverage gate (PGlite)
         run: pnpm test:coverage:app
-
-      - name: Verify portfolio evidence snapshot
-        id: portfolio-evidence
-        env:
-          BASH_ENV: /dev/null
-          ENV: /dev/null
-          LD_AUDIT: ""
-          LD_LIBRARY_PATH: ""
-          LD_PRELOAD: ""
-          NODE_OPTIONS: ""
-          NODE_PATH: ""
-          PORTFOLIO_EXPECTED_HEAD_SHA: ${{ github.sha }}
-          PORTFOLIO_TRUSTED_GIT: /usr/bin/git
-        shell: /bin/bash --noprofile --norc -Eeuo pipefail {0}
-        working-directory: ${{ github.workspace }}
-        run: ${{ runner.tool_cache }}/node/22.22.3/x64/bin/node --conditions=react-server --import tsx scripts/portfolio/verify.ts --release-evidence
 
       - name: Drizzle migration check
         run: pnpm db:check
@@ -286,48 +264,13 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium webkit
 
       - name: Run Playwright tests
-        env:
-          DIESEL_PLAYWRIGHT_EVIDENCE_CAPTURE: "1"
         run: pnpm test:e2e
 
       - name: Build the production application for the CSP contract
         run: pnpm build
 
       - name: Run the production CSP contract
-        env:
-          DIESEL_PLAYWRIGHT_EVIDENCE_CAPTURE: "1"
         run: pnpm test:e2e:csp:production
-
-      - name: Verify public and production CSP Playwright receipts
-        env:
-          BASH_ENV: /dev/null
-          ENV: /dev/null
-          LD_AUDIT: ""
-          LD_LIBRARY_PATH: ""
-          LD_PRELOAD: ""
-          NODE_OPTIONS: ""
-          NODE_PATH: ""
-        shell: /bin/bash --noprofile --norc -Eeuo pipefail {0}
-        working-directory: ${{ github.workspace }}
-        run: pnpm portfolio:verify-playwright-runs -- public production-csp
-
-      - name: Upload public Playwright receipt
-        if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: playwright-public-receipt
-          path: test-results/public/playwright-run.json
-          retention-days: 14
-          if-no-files-found: warn
-
-      - name: Upload production CSP Playwright receipt
-        if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: playwright-production-csp-receipt
-          path: test-results/production-csp/playwright-run.json
-          retention-days: 14
-          if-no-files-found: warn
 
       - name: Upload Playwright report
         if: ${{ failure() }}
@@ -391,31 +334,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run the portfolio demo contract
-        env:
-          DIESEL_PLAYWRIGHT_EVIDENCE_CAPTURE: "1"
         run: pnpm test:e2e:demo
-
-      - name: Verify portfolio demo Playwright receipt
-        env:
-          BASH_ENV: /dev/null
-          ENV: /dev/null
-          LD_AUDIT: ""
-          LD_LIBRARY_PATH: ""
-          LD_PRELOAD: ""
-          NODE_OPTIONS: ""
-          NODE_PATH: ""
-        shell: /bin/bash --noprofile --norc -Eeuo pipefail {0}
-        working-directory: ${{ github.workspace }}
-        run: pnpm portfolio:verify-playwright-runs -- demo
-
-      - name: Upload portfolio demo Playwright receipt
-        if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: playwright-demo-receipt
-          path: test-results/demo/playwright-run.json
-          retention-days: 14
-          if-no-files-found: warn
 
       - name: Upload portfolio demo report
         if: ${{ failure() }}
@@ -479,31 +398,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run the failure-first FDE workflow
-        env:
-          DIESEL_PLAYWRIGHT_EVIDENCE_CAPTURE: "1"
         run: pnpm test:e2e:fde
-
-      - name: Verify failure-first FDE Playwright receipt
-        env:
-          BASH_ENV: /dev/null
-          ENV: /dev/null
-          LD_AUDIT: ""
-          LD_LIBRARY_PATH: ""
-          LD_PRELOAD: ""
-          NODE_OPTIONS: ""
-          NODE_PATH: ""
-        shell: /bin/bash --noprofile --norc -Eeuo pipefail {0}
-        working-directory: ${{ github.workspace }}
-        run: pnpm portfolio:verify-playwright-runs -- fde
-
-      - name: Upload failure-first FDE Playwright receipt
-        if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: playwright-fde-receipt
-          path: test-results/fde/playwright-run.json
-          retention-days: 14
-          if-no-files-found: warn
 
       - name: Upload FDE Playwright traces and screenshots
         if: ${{ failure() }}
@@ -705,7 +600,6 @@ jobs:
           LD_PRELOAD: ""
           LINUX_RELEASE_HANDOFF_RESULT: ${{ needs['linux-release-handoff'].result }}
           POSTGRES_RESULT: ${{ needs.postgres-migrations.result }}
-          QUALITY_EVIDENCE_VERIFIED: ${{ needs.quality.outputs.portfolio-evidence-verified }}
           QUALITY_RESULT: ${{ needs.quality.result }}
           SECRETS_RESULT: ${{ needs.secrets.result }}
         shell: /bin/bash --noprofile --norc -Eeuo pipefail {0}
@@ -713,7 +607,6 @@ jobs:
         run: |
           set -euo pipefail
           /usr/bin/test "${QUALITY_RESULT}" = "success" || exit 1
-          /usr/bin/test "${QUALITY_EVIDENCE_VERIFIED}" = "true" || exit 1
           /usr/bin/test "${DEPLOY_CONTRACTS_RESULT}" = "success" || exit 1
           /usr/bin/test "${POSTGRES_RESULT}" = "success" || exit 1
           /usr/bin/test "${E2E_RESULT}" = "success" || exit 1

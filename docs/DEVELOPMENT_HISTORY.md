@@ -1,5 +1,9 @@
 # Development history evidence
 
+> 2026-10-17: the `history:verify` replay tool, its audit manifest and the archived
+> scan/license artifacts were removed with the portfolio evidence tooling. They remain
+> in git history at commit `d8d0591`. The text below is a historical record.
+
 > Status: local, unpublished archive. The 2026-08-20 secret-scan claim remains
 > an operator record without its raw report. A separate 2026-09-05 scan now has
 > repository-contained logs, reports, and a manifest; these preserve a dated
@@ -49,7 +53,7 @@ the history must not be published merely to improve the portfolio narrative.
 
 ### 2026-09-12 bounded material review
 
-The [dated human-review summary](evidence/fde-development-history-human-review-2026-09-12.md)
+The dated human-review summary (`docs/evidence/fde-development-history-human-review-2026-09-12.md`)
 now preserves the completed local map/component, visual, nine-source market-policy
 and selected dependency-body observations. Only the summary is retained here;
 original local reports, upstream text copies and inspection archives are not
@@ -120,14 +124,14 @@ The machine-readable artifact preserves that distinction with
 
 ### 2026-09-05 retained secret-scan record
 
-The [retained manifest](evidence/fde-development-history-secret-scan-2026-09-05.manifest.json)
+The retained manifest (`docs/evidence/fde-development-history-secret-scan-2026-09-05.manifest.json`)
 has evidence level `repository-contained-dated-run-record`. It binds four
 saved outputs:
 
-- [History process log](evidence/fde-development-history-secret-scan-2026-09-05.history-log.json)
-  and [history findings report](evidence/fde-development-history-secret-scan-2026-09-05.history-report.json).
-- [Canary process log](evidence/fde-development-history-secret-scan-2026-09-05.canary-log.json)
-  and [canary findings report](evidence/fde-development-history-secret-scan-2026-09-05.canary-report.json).
+- History process log (`docs/evidence/fde-development-history-secret-scan-2026-09-05.history-log.json`)
+  and history findings report (`docs/evidence/fde-development-history-secret-scan-2026-09-05.history-report.json`).
+- Canary process log (`docs/evidence/fde-development-history-secret-scan-2026-09-05.canary-log.json`)
+  and canary findings report (`docs/evidence/fde-development-history-secret-scan-2026-09-05.canary-report.json`).
 
 The retained history invocation exited 0, recorded no scanner error diagnostic,
 reported 50 scanner-counted commits, and saved zero findings. The source history
@@ -154,8 +158,8 @@ public redistribution.
 
 ### 2026-09-05 retained dependency-license record
 
-The [dependency manifest](evidence/fde-development-history-dependency-licenses-2026-09-05.manifest.json)
-binds a [bounded gzip JSON/base64 data record](evidence/fde-development-history-dependency-licenses-2026-09-05.raw.json.gz)
+The dependency manifest (`docs/evidence/fde-development-history-dependency-licenses-2026-09-05.manifest.json`)
+binds a bounded gzip JSON/base64 data record (`docs/evidence/fde-development-history-dependency-licenses-2026-09-05.raw.json.gz`)
 containing 810 files: the original bundle's 807 inventoried files, its manifest,
 README, and packaging script. Raw inputs, capture scripts, process receipts,
 stdout/stderr, run manifests, and the completed install's policy journal retain
@@ -253,7 +257,7 @@ publication. The historical V2 object is preserved rather than rewritten.
 
 ### 2026-09-12 有限材料审查摘要
 
-[日期化人工审查摘要](evidence/fde-development-history-human-review-2026-09-12.md)
+日期化人工审查摘要 (`docs/evidence/fde-development-history-human-review-2026-09-12.md`)
 现已保留地图/组件、视觉素材、九项市场来源政策及选定依赖包体的本地观察。入库的是
 摘要，不包含原始临时报告、上游全文副本或下载包体；它不是许可证授权、完整权利审阅、
 重新扫描或归档发布批准。既有五项阻塞不变，发布证据校验只绑定摘要的提交字节，不验证
@@ -293,13 +297,13 @@ package license 字段或弱 copyleft/NOTICE 政策，因此第三方依赖元�
 
 ### 2026-09-05 已留档密钥扫描记录
 
-[留档 manifest](evidence/fde-development-history-secret-scan-2026-09-05.manifest.json)
+留档 manifest (`docs/evidence/fde-development-history-secret-scan-2026-09-05.manifest.json`)
 的证据等级为 `repository-contained-dated-run-record`，绑定以下四份已保存输出：
 
-- [历史扫描进程日志](evidence/fde-development-history-secret-scan-2026-09-05.history-log.json)
-  与[历史扫描发现报告](evidence/fde-development-history-secret-scan-2026-09-05.history-report.json)。
-- [Canary 进程日志](evidence/fde-development-history-secret-scan-2026-09-05.canary-log.json)
-  与[Canary 发现报告](evidence/fde-development-history-secret-scan-2026-09-05.canary-report.json)。
+- 历史扫描进程日志 (`docs/evidence/fde-development-history-secret-scan-2026-09-05.history-log.json`)
+  与历史扫描发现报告 (`docs/evidence/fde-development-history-secret-scan-2026-09-05.history-report.json`)。
+- Canary 进程日志 (`docs/evidence/fde-development-history-secret-scan-2026-09-05.canary-log.json`)
+  与Canary 发现报告 (`docs/evidence/fde-development-history-secret-scan-2026-09-05.canary-report.json`)。
 
 留档的历史扫描调用退出码为 0，没有 scanner 错误诊断，日志记录 50 个 scanner-counted
 commits，保存的发现数为 0。源历史也有 50 个 Git 提交，但这次数字相同不代表两种计数
@@ -318,8 +322,8 @@ license 字段缺失，历史资产/复制材料人工复核未完成，弱 copy
 
 ### 2026-09-05 已留档依赖许可证记录
 
-[依赖 manifest](evidence/fde-development-history-dependency-licenses-2026-09-05.manifest.json)
-绑定一份[有界 gzip JSON/base64 数据记录](evidence/fde-development-history-dependency-licenses-2026-09-05.raw.json.gz)，
+依赖 manifest (`docs/evidence/fde-development-history-dependency-licenses-2026-09-05.manifest.json`)
+绑定一份有界 gzip JSON/base64 数据记录 (`docs/evidence/fde-development-history-dependency-licenses-2026-09-05.raw.json.gz`)，
 包含 810 份文件：原证据包清单中的 807 份文件，以及原 manifest、README 与打包脚本。
 原始输入、采集脚本、进程回执、stdout/stderr、运行 manifest 和成功安装的 policy journal
 均保留原始字节。原 README 描述的是采集时的本地证据包；其中“尚未集成”的措辞是日期化

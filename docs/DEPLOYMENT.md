@@ -2373,11 +2373,28 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
 优先使用 `durable-release.bundle.mjs start-auto <sha>`：先验证前后两份输入树，
 数据库代码、迁移、fixture、发布批准和依赖不变时自动选代码发布；聊天、比较和路由
 修改不再触发全库导出、恢复及数据重发布。无法读取或畸形的输入直接失败，不降级猜测。
-仅用于只读展示的虚构目录 `src/data/products/demo-engine-catalog.json`（以及已退役的
-旧目录路径，使其删除仍走代码发布）和五个现有根目录 Playwright 配置也属于代码输入；
+已退役的两个只读目录路径（`src/data/products/*`，保留在清单中使其删除仍走代码发布；
+目录固定数据现位于受保护的 `src/server/db/seed/`）和五个现有根目录 Playwright 配置也属于代码输入；
 不放行其他 `src/data` 文件、未知配置、导入脚本或产品发布批准。目录声明不是认证证据，
 前后数据库指纹核验保持不变。
 `start <sha>` 显式执行完整发布；`start-application <sha>` 强制要求代码发布资格。
+
+### 4.4 受治理目录（Migration `0014`）
+
+Migration `0014_governed_catalog_engines.sql` 新增 `catalog_engines` 表、`catalog_engine` 治理实体和
+`market_import_batches.entity_type` 列，并新增依赖 `read-excel-file`，因此首次发布必须走完整发布。
+完整发布及读回成功后，在同一维护窗口内用与法规 fixture 相同的数据库凭据执行一次：
+
+```bash
+pnpm db:ingest-demo-catalogue
+```
+
+脚本以独立的 editor/reviewer 自动化身份逐条草稿、审核、发布虚构目录来源与 24 个型号；已一致的
+记录跳过，重复执行安全，不删除任何数据。完成前公开 `/products` 显示“目录尚无已发布型号”。
+
+已知未完成：`catalog_engines` 尚未加入治理快照（`scripts/db/governance-snapshot-format.ts`）和代码发布
+的数据库指纹清单（`applicationDataTables`）。发布流程本身不写目录表，因此回滚不会改动目录数据；
+加入这两个清单需要另做一次主机演练后再改发布脚本。
 
 ### CI 构建产物交付
 

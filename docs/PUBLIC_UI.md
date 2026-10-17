@@ -11,9 +11,11 @@ test scope and are not rewritten as current desktop-only evidence.
 
 ## Product catalogue and conversation v2
 
-`/products` is a bilingual product-selection page over a **fictional** demo
-engine catalogue (`src/data/products/demo-engine-catalog.json`, every model
-prefixed `DEMO-`; it represents no manufacturer).
+`/products` is a bilingual product-selection page over the published, governed
+catalogue (`catalog_engines`). The public read returns demo rows only: today the
+**fictional** demo engine catalogue (every model prefixed `DEMO-`; it represents no
+manufacturer). Until records are published the page shows an explicit empty state, and
+a failed catalogue read renders an alert.
 
 - Target-market selection: `?market=<ISO3>&scope=<scope>&power=<kW>&asOf=<date>`
   is a shareable URL. `catalog-fit-v1` matches each model's declared citation

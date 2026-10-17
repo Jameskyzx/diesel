@@ -294,10 +294,10 @@ ${input.hasAttachments ? `The CURRENT request includes uploaded files. Their con
                 const key = JSON.stringify({state: step.state, action});
                 if (seen.has(key)) throw new Error("This query already completed. Use its result or finish; do not retry it.");
                 if (action.type === "catalog") {
-                  const allowedIds = new Set([...recordIds, ...input.userText.matchAll(/demo-cat-\d{3}/gu)].map(v => typeof v === "string" ? v : v[0]));
+                  const allowedIds = new Set([...recordIds, ...input.userText.matchAll(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/giu)].map(v => typeof v === "string" ? v : v[0]));
                   catalogs.forEach(c => c.records.forEach(r => allowedIds.add(r.id)));
                   if (action.query.recordIds.some(id => !allowedIds.has(id))) throw new Error("Unknown record selection; query the catalogue first.");
-                  const result = searchProductCatalog(action.query);
+                  const result = await searchProductCatalog(action.query, { signal });
                   seen.add(key);
                   console.info(JSON.stringify({event: "ai.catalog.query", requestId: input.requestId, catalogue: result.title,
                     recordIds: result.records.map(r => r.id), total: result.total, evidenceStatus: result.evidenceStatus}));

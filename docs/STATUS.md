@@ -14,9 +14,10 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   continuously verified claim.
 - Not yet deployed: the fictional catalogue and target-market selection (`catalog-fit-v1`),
   the removal of the portfolio evidence tooling, and the single AI orchestration path (all chat
-  requests, uploads and the offline demo now use the harness loop). The next release changes
-  `package.json`, so the release contract requires a full (governance) release, not the
-  code-only path.
+  requests, uploads and the offline demo now use the harness loop), the multilingual customer
+  brief, and the governed catalogue (Migration `0014`, `read-excel-file` dependency). The next
+  release changes `package.json` and adds a migration, so it requires a full (governance)
+  release, followed by `pnpm db:ingest-demo-catalogue` (see DEPLOYMENT.md §4.4).
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health`.
 
@@ -39,7 +40,7 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 | Published regulation closure | 97 jurisdictions / 28 regulations / 651 limits / 203 sources | Reviewed public-source fixtures; not legal advice |
 | Country directory | 178 ISO3 entries, 177 map features | Directory presence is not numeric-regulation coverage |
 | Approved real products / certifications | 0 / 0 | No real commercial-availability claim |
-| Product catalogue | 24 fictional `DEMO-` models | Declarations, not certification; represents no manufacturer |
+| Product catalogue | Governed `catalog_engines`; fixture of 24 fictional `DEMO-` models | Declarations, not certification; public read returns demo rows only |
 | Demo governed products | 2 fictional configurations | Exercise `fit / not_fit / unknown` |
 | Market observations | 24 reviewed fixtures (CHN/USA/DEU/BRA, 2022/2023) | Not live market data |
 

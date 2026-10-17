@@ -16,6 +16,7 @@ import {
   dataSourceDraftPayloadSchema,
   documentDraftPayloadSchema,
   jurisdictionDraftPayloadSchema,
+  catalogEngineDraftPayloadSchema,
   marketMetricDraftPayloadSchema,
   productCertificationDraftPayloadSchema,
   productDraftPayloadSchema,
@@ -51,6 +52,7 @@ import {
   documentChunks,
   documents,
   jurisdictions,
+  catalogEngines,
   marketImportBatches,
   marketMetrics,
   productCertifications,
@@ -107,6 +109,8 @@ function assertDocumentReprocessingDraftAccess(input: {
     documentReprocessingDraftConflictMessage,
   );
 }
+
+type ImportEntityType = "market_metric" | "catalog_engine";
 
 function requiredId(id: string | undefined, entityType: string): string {
   if (!id) {
@@ -698,6 +702,19 @@ export function createGovernanceRepository<
                 .limit(1),
             },
             {
+              label: "catalogue engines",
+              query: transaction
+                .select({ id: catalogEngines.id })
+                .from(catalogEngines)
+                .where(
+                  and(
+                    eq(catalogEngines.dataSourceId, sourceId),
+                    isNull(catalogEngines.archivedAt),
+                  ),
+                )
+                .limit(1),
+            },
+            {
               label: "published documents",
               query: transaction
                 .select({ id: documents.id })
@@ -974,6 +991,28 @@ export function createGovernanceRepository<
                 isNull(marketMetrics.archivedAt),
               ),
             );
+        } else if (input.entityType === "catalog_engine") {
+          const [before] = await transaction
+            .select()
+            .from(catalogEngines)
+            .where(
+              and(
+                eq(catalogEngines.id, input.entityKey),
+                isNull(catalogEngines.archivedAt),
+              ),
+            )
+            .limit(1)
+            .for("update");
+          beforeData = before ?? null;
+          await transaction
+            .update(catalogEngines)
+            .set({ archivedAt: now, updatedAt: now })
+            .where(
+              and(
+                eq(catalogEngines.id, input.entityKey),
+                isNull(catalogEngines.archivedAt),
+              ),
+            );
         } else if (input.entityType === "data_source") {
           const [before] = await transaction
             .select()
@@ -1150,8 +1189,11 @@ export function createGovernanceRepository<
     async confirmMarketImport(input: {
       actor: AdminPrincipal;
       batchId: string;
+      /** Defaults to market metrics; catalogue batches pass catalog_engine. */
+      entityType?: ImportEntityType;
       reason: string;
     }) {
+      const entityType = input.entityType ?? "market_metric";
       return database.transaction(async (transaction) => {
         await assertGovernanceWriteAllowed(transaction);
         const [batch] = await transaction
@@ -1162,6 +1204,7 @@ export function createGovernanceRepository<
               eq(marketImportBatches.id, input.batchId),
               eq(marketImportBatches.createdBy, input.actor.email),
               eq(marketImportBatches.status, "previewed"),
+              eq(marketImportBatches.entityType, entityType),
             ),
           )
           .limit(1)
@@ -1199,7 +1242,9 @@ export function createGovernanceRepository<
               "A valid preview batch contained an empty parsed row.",
             );
           }
-          return marketMetricDraftPayloadSchema.parse(row.parsed);
+          return entityType === "catalog_engine"
+            ? catalogEngineDraftPayloadSchema.parse(row.parsed)
+            : marketMetricDraftPayloadSchema.parse(row.parsed);
         });
         const now = new Date();
         const drafts = await transaction
@@ -1211,7 +1256,7 @@ export function createGovernanceRepository<
                 changeReason: input.reason,
                 createdBy: input.actor.email,
                 entityKey: id,
-                entityType: "market_metric" as const,
+                entityType,
                 payload: { ...payload, id },
                 version: 1,
               };
@@ -1237,7 +1282,7 @@ export function createGovernanceRepository<
             afterData: draft.payload,
             draftId: draft.id,
             entityKey: draft.entityKey,
-            entityType: "market_metric" as const,
+            entityType,
             importBatchId: input.batchId,
             reason: input.reason,
           })),
@@ -1248,7 +1293,7 @@ export function createGovernanceRepository<
           actorRole: input.actor.role,
           afterData: { createdDrafts: drafts.length },
           entityKey: input.batchId,
-          entityType: "market_metric",
+          entityType,
           importBatchId: input.batchId,
           reason: input.reason,
         });
@@ -1727,6 +1772,8 @@ export function createGovernanceRepository<
 
     async createMarketImportPreview(input: {
       actor: AdminPrincipal;
+      /** Defaults to market metrics; catalogue batches pass catalog_engine. */
+      entityType?: ImportEntityType;
       contentSha256: string;
       errors: ImportValidationError[];
       fileName: string;
@@ -1750,6 +1797,7 @@ export function createGovernanceRepository<
         const [batch] = await transaction
           .insert(marketImportBatches)
           .values({
+            entityType: input.entityType ?? "market_metric",
             contentSha256: input.contentSha256,
             createdBy: input.actor.email,
             invalidRows,
@@ -1775,9 +1823,11 @@ export function createGovernanceRepository<
             validRows,
           },
           entityKey: batch.id,
-          entityType: "market_metric",
+          entityType: input.entityType ?? "market_metric",
           importBatchId: batch.id,
-          reason: "CSV preview created; no market facts were written.",
+          reason: input.entityType === "catalog_engine"
+            ? "Spreadsheet preview created; no catalogue records were written."
+            : "CSV preview created; no market facts were written.",
         });
 
         return batch;
@@ -1944,6 +1994,18 @@ export function createGovernanceRepository<
               eq(marketMetrics.dataSourceId, dataSources.id),
             )
             .where(eq(marketMetrics.id, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = rowState(row);
+        } else if (draft.entityType === "catalog_engine") {
+          const [row] = await transaction
+            .select({
+              archivedAt: catalogEngines.archivedAt,
+              sourceArchivedAt: dataSources.archivedAt,
+            })
+            .from(catalogEngines)
+            .innerJoin(dataSources, eq(catalogEngines.dataSourceId, dataSources.id))
+            .where(eq(catalogEngines.id, draft.entityKey))
             .limit(1)
             .for("update");
           formalEntityState = rowState(row);
@@ -2842,6 +2904,71 @@ export function createGovernanceRepository<
             if (hasPostgresErrorCode(error, "23505")) {
               throw new GovernanceConflictError(
                 "Market observation conflicts with an existing natural key; revise the existing entity instead of publishing a duplicate.",
+              );
+            }
+            throw error;
+          }
+          afterData = { ...payload, id };
+        } else if (draft.entityType === "catalog_engine") {
+          const payload = catalogEngineDraftPayloadSchema.parse(draft.payload);
+          await requirePublishableSources([
+            {
+              isDemo: payload.isDemo,
+              label: "catalogue engine",
+              sourceId: payload.dataSourceId,
+            },
+          ]);
+          const id = requiredId(payload.id, draft.entityType);
+          const [sameModel] = await transaction
+            .select({ id: catalogEngines.id })
+            .from(catalogEngines)
+            .where(
+              and(
+                eq(catalogEngines.modelCode, payload.modelCode),
+                isNull(catalogEngines.archivedAt),
+              ),
+            )
+            .limit(1);
+          if (sameModel && sameModel.id !== id) {
+            throw new GovernanceConflictError(
+              `Catalogue model ${payload.modelCode} already belongs to entity ${sameModel.id}; revise that entity instead of publishing a duplicate.`,
+            );
+          }
+          const [before] = await transaction
+            .select()
+            .from(catalogEngines)
+            .where(eq(catalogEngines.id, id))
+            .limit(1)
+            .for("update");
+          beforeData = before ?? null;
+          const values = {
+            aftertreatment: payload.aftertreatment,
+            applicationScopes: payload.applicationScopes,
+            archivedAt: null,
+            category: payload.category,
+            cylinders: payload.cylinders,
+            dataSourceId: payload.dataSourceId,
+            declaredCitationCodes: payload.declaredCitationCodes,
+            displacementL: payload.displacementL,
+            emissionLabel: payload.emissionLabel,
+            isDemo: payload.isDemo,
+            modelCode: payload.modelCode,
+            powerMaxKw: payload.powerMaxKw,
+            powerMinKw: payload.powerMinKw,
+            ratedPowerKw: payload.ratedPowerKw,
+            ratedSpeedRpm: payload.ratedSpeedRpm,
+            series: payload.series,
+            verifiedAt: new Date(payload.verifiedAt),
+          };
+          try {
+            await transaction
+              .insert(catalogEngines)
+              .values({ ...values, id })
+              .onConflictDoUpdate({ set: { ...values, updatedAt: now }, target: catalogEngines.id });
+          } catch (error: unknown) {
+            if (hasPostgresErrorCode(error, "23505")) {
+              throw new GovernanceConflictError(
+                "Catalogue model conflicts with an active entity; revise the existing entity instead of publishing a duplicate.",
               );
             }
             throw error;

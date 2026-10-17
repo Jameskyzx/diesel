@@ -3,7 +3,7 @@ import { evaluateCatalogFit, evaluateCatalogRecordFit } from "@/domain/products/
 import type { CatalogFitRegulation, CatalogRecord, CatalogSnapshot } from "@/features/product-catalog/schemas";
 
 const record: CatalogRecord = {
-  id: "demo-cat-901", model: "DEMO-T-300", series: "DEMO-T", category: "truck", applicationScopes: ["on-road-truck"],
+  id: "00000000-0000-4000-8000-000000000901", model: "DEMO-T-300", series: "DEMO-T", category: "truck", applicationScopes: ["on-road-truck"],
   ratedPowerKw: 300, ratedSpeedRpm: 1900, powerMinKw: 280, powerMaxKw: 320, displacementL: 12, cylinders: 6,
   aftertreatment: "SCR", emissionLabel: "Fictional VI", declaredCitationCodes: ["REG-A", "REG-B"],
 };
@@ -40,9 +40,9 @@ describe("catalog-fit-v1 deterministic rules", () => {
     const catalog: CatalogSnapshot = {
       version: 2, isDemo: true, title: "DEMO ONLY — test", evidenceStatus: "fictional_declaration", notice: "test",
       records: [
-        { ...record, id: "demo-cat-903", model: "DEMO-Z", applicationScopes: ["on-road-bus"] },
-        { ...record, id: "demo-cat-902", model: "DEMO-B", declaredCitationCodes: ["REG-A"] },
-        { ...record, id: "demo-cat-901", model: "DEMO-A" },
+        { ...record, id: "00000000-0000-4000-8000-000000000903", model: "DEMO-Z", applicationScopes: ["on-road-bus"] },
+        { ...record, id: "00000000-0000-4000-8000-000000000902", model: "DEMO-B", declaredCitationCodes: ["REG-A"] },
+        { ...record, id: "00000000-0000-4000-8000-000000000901", model: "DEMO-A" },
       ],
     };
     const result = evaluateCatalogFit({ catalog, query, applicableRegulations: [regulation("b", "REG-B"), regulation("a", "REG-A")] });

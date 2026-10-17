@@ -18,7 +18,7 @@ import {
   type ApplicableRegulationRecord,
 } from "@/server/repositories/applicable-regulations";
 import { createRegulationRepository } from "@/server/repositories/regulation-repository";
-import { demoEngineCatalog } from "@/server/services/product-catalog";
+import { loadPublishedCatalog } from "@/server/services/product-catalog";
 
 async function getRegulationRepository(options: RequestSignalOptions) {
   throwIfRequestAborted(options.signal);
@@ -65,8 +65,11 @@ export async function evaluateCatalogFitForMarket(
   const rows = await repository.findEffectiveByCountry(query, options);
   throwIfRequestAborted(options.signal);
 
+  const catalog = await loadPublishedCatalog(options);
+  throwIfRequestAborted(options.signal);
+
   return evaluateCatalogFit({
-    catalog: demoEngineCatalog,
+    catalog,
     query,
     applicableRegulations: groupApplicableRegulationRows(rows).map(toCatalogFitRegulation),
   });

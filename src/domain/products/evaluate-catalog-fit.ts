@@ -49,7 +49,7 @@ export function evaluateCatalogRecordFit(
 }
 
 export function evaluateCatalogFit(input: {
-  catalog: CatalogSnapshot;
+  catalog: Pick<CatalogSnapshot, "isDemo" | "title" | "evidenceStatus" | "records">;
   query: CatalogFitQuery;
   applicableRegulations: readonly CatalogFitRegulation[];
 }): CatalogFitResult {

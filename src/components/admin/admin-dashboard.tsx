@@ -101,6 +101,7 @@ const documentReprocessResponseSchema = z
   .strict();
 
 const entityLabels = {
+  catalog_engine: "目录发动机",
   country: "国家数据",
   data_source: "数据来源",
   document: "文档",
@@ -1132,6 +1133,7 @@ export function AdminDashboard({
             ) : null}
           </div>
 
+          <CatalogImportForm busy={busy} runAction={runAction} />
           <DocumentAdminForms busy={busy} runAction={runAction} />
           <SourceVerificationForm
             busy={busy}
@@ -1601,6 +1603,106 @@ type ActionRunner = <T>(
   onSuccess?: (result: T) => string | void,
   isOperationCurrent?: () => boolean,
 ) => Promise<void>;
+
+/** Catalogue .xlsx import: preview writes nothing; confirm creates one draft per row. */
+function CatalogImportForm({
+  busy,
+  runAction,
+}: {
+  busy: boolean;
+  runAction: ActionRunner;
+}) {
+  const [preview, setPreview] = useState<z.infer<typeof previewResponseSchema> | null>(null);
+  const selectionGeneration = useRef(0);
+
+  async function previewWorkbook(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const generation = selectionGeneration.current + 1;
+    selectionGeneration.current = generation;
+    setPreview(null);
+    await runAction(async (principal) => responseJsonAs(
+      await adminActionFetch(principal, "/api/admin/imports/catalog/preview", { body: new FormData(form), method: "POST" }),
+      previewResponseSchema,
+      principal,
+    ), "工作簿只完成预览；尚未写入目录或草稿。", (parsed) => {
+      setPreview(parsed);
+    }, () => selectionGeneration.current === generation);
+  }
+
+  async function confirmWorkbook() {
+    if (!preview) return;
+    await runAction(async (principal) => responseJsonAs(
+      await adminActionFetch(principal, `/api/admin/imports/catalog/${preview.batchId}/confirm`, {
+        body: JSON.stringify({ reason: "确认目录工作簿预览并创建待审核目录发动机草稿。" }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }),
+      marketImportConfirmationResponseSchema,
+      principal,
+    ), undefined, (parsed) => {
+      setPreview(null);
+      return parsed.status === "committed"
+        ? `已原子创建 ${parsed.createdDrafts} 条目录草稿，尚未发布。`
+        : "预览包含错误，批次已拒绝且未写入任何草稿或目录记录。";
+    });
+  }
+
+  return (
+    <div className="rounded-2xl border bg-card p-5" data-testid="catalog-import">
+      <div className="flex items-center gap-2">
+        <Upload className="size-5 text-primary" aria-hidden="true" />
+        <div>
+          <h2 className="font-semibold">目录发动机 xlsx</h2>
+          <p className="text-xs text-muted-foreground">
+            读取第一个工作表；预览不写入目录，确认后每行生成一条待审核草稿。声明不是认证。
+          </p>
+        </div>
+      </div>
+      <form className="mt-4 space-y-3" onSubmit={previewWorkbook}>
+        <FieldLabel htmlFor="catalog-xlsx-file">xlsx 工作簿</FieldLabel>
+        <input
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          className={inputClass}
+          id="catalog-xlsx-file"
+          name="file"
+          onChange={() => { selectionGeneration.current += 1; setPreview(null); }}
+          required
+          type="file"
+        />
+        <Button disabled={busy} type="submit" variant="outline">预览目录工作簿</Button>
+      </form>
+      {preview ? (
+        <div className="mt-4 rounded-xl border bg-muted/30 p-3 text-sm">
+          <p>总行数 {preview.totalRows} · 有效 {preview.validRows} · 错误 {preview.invalidRows}</p>
+          {preview.errors.map((item) => (
+            <p className="mt-1 text-xs text-destructive" key={`${item.rowNumber}:${item.field}:${item.message}`}>
+              第 {item.rowNumber} 行 {item.field ?? "整表"}：{item.message}
+            </p>
+          ))}
+          <div className="mt-3 max-h-56 overflow-auto rounded-lg border bg-background">
+            <table className="w-full min-w-[620px] text-left text-xs">
+              <thead className="sticky top-0 border-b bg-background">
+                <tr><th className="px-2 py-2">行</th><th className="px-2 py-2">校验后的预览</th></tr>
+              </thead>
+              <tbody>
+                {preview.rows.slice(0, 20).map((row) => (
+                  <tr className="border-b align-top" key={row.rowNumber}>
+                    <td className="px-2 py-2">{row.rowNumber}</td>
+                    <td className="px-2 py-2 font-mono">{row.parsed ? JSON.stringify(row.parsed) : "无有效记录；请根据上方错误修正工作簿"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Button className="mt-3" disabled={busy || preview.invalidRows > 0 || preview.validRows === 0} onClick={confirmWorkbook} type="button">
+            确认目录批次
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function DocumentAdminForms({
   busy,

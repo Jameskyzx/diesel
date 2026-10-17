@@ -54,7 +54,7 @@ Tabler is MIT licensed; the upstream notice is preserved below.
 - Home: the versioned published snapshot is the primary metric row: 97
   jurisdictions, 28 regulations, 651 limit records, 203 sources and zero approved
   real products. These values are checked against the signed publication closure
-  by unit tests and `portfolio:verify`; they are not live database counts. API-derived
+  by unit tests; they are not live database counts. API-derived
   catalog/review/freshness counts remain separate. Review counts are not numerical
   regulatory coverage, and the offline Demo retains its fictional counts.
 - Map: country selector and shortcuts in the map card's toolbar. At 1440 px and
@@ -305,7 +305,7 @@ remain distinct from missing data, and legal-sales guarantees are not offered.
 
 The browser tab icon reuses that same approved diesel-engine artwork. The
 phone home-screen icon has been removed with mobile support. Regenerate the
-favicon with `pnpm exec tsx scripts/portfolio/generate-brand-icons.ts`.
+favicon with `pnpm exec tsx scripts/assets/generate-brand-icons.ts`.
 `src/app/icon.svg` embeds its small PNG directly so it needs no external image
 fetch; Next's file-based metadata supplies a content-versioned favicon URL.
 The browser regression checks the icon actually selected by the page, not just

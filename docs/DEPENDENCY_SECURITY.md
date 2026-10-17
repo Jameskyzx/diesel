@@ -170,7 +170,7 @@ dependency-policy failure remains in CI run `37450548900` and is not relabeled.
 ## Historical dependency-license evidence (collected 2026-09-05)
 
 The history audit's v3 `retainedDependencyLicenseScan` binds the
-[dependency manifest](evidence/fde-development-history-dependency-licenses-2026-09-05.manifest.json)
+dependency manifest (`docs/evidence/fde-development-history-dependency-licenses-2026-09-05.manifest.json`, removed 2026-10-17 with the history audit tooling; in git history at `d8d0591`)
 and its bounded gzip JSON/base64 record. It retains 810 files, including all
 807 originally inventoried raw files, the original bundle manifest, README, and
 packaging script. Verification consumes these only as data, without executing

@@ -1090,157 +1090,14 @@ MVP 采用“结构化结果优先”：
   也只能作为待解释数据；来源标题和被引用的来源原文逐字保留其原始语言，不随回答语言
   翻译。离线 `pnpm ai:eval` 用固定 golden prompts 检查分流、
   缺参、初始工具集合和停止阶段，不调用外部模型；它不冒充真实 provider 成功率评估。
-- `pnpm ai:eval:live` 的 v12 合同直接复用上述生产 `streamSalesChat`、独立多轮用户消息与最多五步
-  的动态工具循环。每条 case 都硬性核对 evidence allow/deny 期望，异常不能计为安全通过；
-  报告另外保存总模型步数、工具步数与 160,000 token 的验收上限，不保存 prompt 或
-  完整模型输出。每条 case 保存已完成 provider call 的 token `ledger`，并把 ledger 求和与
-  AI SDK 的 aggregate usage 交叉核对；只有流完整结束、ledger 数量与生产 loop step 数一致、
-  每步 `input + output = total` 且 aggregate 逐字段一致时 usage 才完整。缺失、部分或矛盾
-  usage 不补零：已知成本按每组 `max(total, input + output, input, output)` 计算，再取 ledger
-  总下界与 aggregate 下界的较大值。执行异常仍保留此前已完成 step 的 ledger/工具步/成本，
-  但标记 incomplete、停止后续 case 并让 threshold 失败；`EVAL_CASE_ERROR` 只能出现在结果
-  序列末尾，即使它是第 18 条结果也不能把报告标成 complete。因此
-  未知或不完整的 token 账本不能解释为 provider 实际零消耗。
-  报告使用 `terminationReason` 区分完整结束、case/初始化错误、usage 不完整、预算 reserve、
-  总 token 越界与 case 上限；零分母 score 为 `null`/N/A，不伪装成 100%。
-  OpenAI-compatible usage 只在 provider step 完成后可得，因此 runner 会在每条 case 前保留
-  12,000 token 并在未知 usage 时停止，但不能把该应用层门槛描述成 provider 账单级硬限额；
-  真正的预消费硬限额还需要获批 provider 的账户预算或对应 tokenizer/preflight 能力。
-  v4 起逐 case 区分 provider `attemptCount` 与 `completedCount`；在 v4–v11 中二者必须都等于生产
-  `loopSteps`，否则 retry 后已知 token 只作为 incomplete lower bound。v5 再为 18 条 case
-  定义稳定 ID 的事实、带极性决策和按需免责声明 anchor，并确定性检测最终回答为 `en`、`zh-CN`
-  或 `indeterminate`。逐例通过必须同时满足所有 anchor 和请求 locale；两项汇总门槛均为
-  100%。产品 ready case 将合规适配与供应就绪拆成两个必需决策，并用 `noneOf` 否定候选
-  阻止同一回答中的相反结论借正向关键词通过。报告只保存检测语言、matched/missing anchor ID、布尔判定与 mismatch reason，
-  不落盘最终回答；这证明约定的关键语义出现，不把子串 anchor 评分冒充开放式事实评审。
-  v6 在初始化 provider 前强制远端 adapter 请求流式 usage，并把每次模型调用的 SDK retry
-  固定为 0；报告机器记录 `maxRetriesPerModelCall=0`，verifier 同时锁定 usage 请求、retry
-  预算与最多 18 × 5 次成功路径调用。它减少不可计量的失败重试，但仍不把事后 160,000
-  token 验收门表述成预消费硬限额。
-  v7 把生产循环的 eval-only 单次输出限制为 1,024 token，并机器记录
-  `maxPotentialOutputTokens=92,160` 与
-  `tokenBudgetEnforcement=post_usage_acceptance`；verifier 从 18 × 5 × 1,024 独立重算。
-  verifier 还会逐 step 拒绝已回报 output usage 超过 1,024，并按 canonical case 前缀重放
-  12,000 token pre-case reserve，禁止在本应停止后追加结果；第 18 条 usage 不完整或执行异常
-  仍必须保持 incomplete。
-  每个 completed step 后，eval-only stop condition 从生产流回调得到的 ledger 和 provider
-  attempt/completion 覆盖重算用量；usage 缺失/矛盾/retry 不可观测，或本次运行累计达到/超过
-  160,000 时，在下一 provider call 前终止。预算终止在 v11 及以后合同中以
-  `EVAL_BUDGET_STOP` 写在最后一行，并让该例跳过评分与后续用例；runner 与 verifier 共用
-  同一终止原因派生，threshold 还独立要求 `terminationReason=completed`。因此最后一例恰好
-  达到上限不能伪装成完整成功；自然完成全部案例且总量恰好等于上限仍可通过预算条件。
-  已开始的 step 仍可能自身越界，这只降低同一 case 继续调用造成的越界空间，输入 token 也仍
-  不能在任意 OpenAI-compatible provider 上预先严格证明。
-  v8 不改变 v7 的报告字段与预算结构，但收紧其 scorer 语义：安全关键型 evidence-denied
-  case 只有在 evidence gate 关闭、最终处置为整题拒绝且全部回答 anchor 通过时，
-  `safetyPassed` 才能为 true；拒绝 anchor 另带强肯定业务结论的反向候选，使“先拒绝、后宣称
-  适配/可供货/法规生效/市场或来源已确认”的回答同时失败 grounding 与 safety。该有限词表仍
-  只是可复核合同，不是开放式语义证明。
-  v9 将 stream observer 报出的任何 provider 错误视为整例执行失败；即使 AI SDK 的 text、
-  tool、usage 与 steps 便利 Promise 随后以 fallback 值正常 resolve，也只能记录
-  `EVAL_CASE_ERROR/not_evaluated`，保留此前已知 token ledger 后停止。报告中的知识检索
-  `query` 不再保存原文，而是严格替换为字符数与 SHA-256 摘要；真实查询仍仅在本次进程内
-  用于工具执行和参数评分。v10 进一步先以每个工具的生产 Zod schema 校验实际输入，再把
-  query、产品型号、指标代码和非空辖区 ID 等 provider 可控自由字符串统一按 canonical 值
-  指纹化。知识检索另外只保存 matched/missing/forbidden 的有限契约 ID；runner 把该观察纳入
-  参数判定，verifier 从安全字段重算，但不会声称能由摘要重放被丢弃的原始 query。v9 及更早
-  归档继续按各自历史 schema 验证，不回写 v10 字段。v11 再把生产流已经归一化的逐 step
-  observability 接入报告：只保存基础/cache token 的 `reported/value`、cache status、provider
-  response、完整 step 与模型首个输出耗时，不保存 raw usage、prompt、回答、endpoint 或价格。
-  每条 case 的 aggregate、attempt coverage 与 performance completeness 必须由 step 行重算；基础
-  token 还要与既有 ledger 逐项相等。顶层 case latency、三类模型耗时和 cache hit rate 使用
-  nearest-rank p50/p95/max，并保存 sample count、四类 cache status 与完整/不完整 case 数；
-  verifier 只从逐例行重建该摘要。缺失性能或 cache 报告会保持缺失/partial，不补零；v11 暂不以
-  任意漂亮延迟或 cache 命中率设门槛。v10 及更早报告继续走历史 schema，不回填这些字段。
-  v11 原子 step schema 还会从保留字段重算 token completeness 与 cache-status 兼容性，
-  拒绝 `reported=false` 却携带值、cache 状态与指标矛盾或 completed call/ledger/step 数量不闭合的
-  行；失败路径最多保留一次未完成 attempt，所有已完成行仍必须一一对齐。v12 保留相同字段，
-  但明确把 `tokenUsage.ledger` 作为 provider-call completion 的唯一计费台账，把
-  `modelObservability.steps` 作为实际 `onStepEnd` 行；正常路径继续一一对齐，provider 已完成而
-  后续工具执行或流终止时允许计费行恰好多一条，step 反向领先或差值大于一均由 schema 与
-  verifier 失败关闭。模型名、最终
-  model ID 与 report schema 共用同一安全字符合同，runner 在持久化前严格解析整份报告。
-  `portfolio:verify` 选取符合现代 run-ID 文件名格式的归档，按
-  [live-eval-report-schema.ts](../scripts/portfolio/live-eval-report-schema.ts)
-  中已注册的版本专用 strict schema 校验；未知版本失败关闭。仅有两份明确命名的早期现代 v2
-  文件例外，分别绑定到 [verify-live-eval.ts](../scripts/portfolio/verify-live-eval.ts)
-  中冻结的精确全文 SHA-256，不是宽松跳过。
-  schema 校验通过不等于评估过门槛，也不等于发布获批。
-  该归档检查不证明历史 scorer 正确，也不使用当前 scorer 重评历史观察；当前报告的一致性与
-  发布要求另行检查。
-
-  生产流还把无效/动态/provider-executed
-  调用、不完整输入、孤立或畸形结果、工具错误、输出拒绝、协议外 provider part 与最终缓冲
-  reasoning 命中通过只含稳定分类的 observer 上报；observer 不接收原始 payload，也不能改变
-  公开流。live runner 只消费是否发生拒绝，不持久化分类、call ID 或原始 payload；观测到任一
-  分类即把该 case 记录为 `TOOL_RESULT_ERROR`，不能把 transform 已丢弃的调用误记为正常完成。
-  v10 起的无效输入 `{}` 哨兵也只允许与该错误码同时出现。
-  报告绑定 prompt version、运行前后复核的 Git provenance，以及评估相关源码的 scoped
-  SHA-256：稳定 clean 工作树可记录精确 evaluated commit；dirty 只记录 base HEAD 且
-  `evaluatedCommit=null`；fingerprint 覆盖 `evals/`、`src/`、`drizzle/`、`scripts/ai/`、
-  `scripts/portfolio/`、`.nvmrc`、Vitest config、package/lock/workspace/tsconfig 的 tracked 与未忽略
-  untracked 普通文件，并在起止摘要变化时标为 unstable。它不代表整个 repository；
-  `portfolio:verify` 会用当前工作树重新计算，clean 报告还会从 claimed commit tree 重建同一
-  摘要。v5 起另记录不含 endpoint/key 的 provider profile（endpoint SHA-256、adapter contract、
-  thinking 与 usage flag），并与 STATUS 中的预期配置比较。初始化失败可以诚实记录本地
-  `portfolio-demo` profile；任何无 run-level error 的成功候选则必须同时由报告和 STATUS
-  声明远端 `@ai-sdk/openai-compatible` adapter，不能用本地 Demo adapter 冒充 provider 观察。
-  provider URL 只接受公开 HTTPS 的 origin/path，不允许账号、密码、query 或 fragment；认证只能
-  进入独立的服务端 API-key 字段，因此 endpoint 指纹不会把误放在 URL 中的秘密固化为可关联摘要。
-  CLI 先以不加载应用代码的纯 ESM bootstrap 启动，在保护层内读取可选 `.env.local` 并 fork
-  tsx child。fork 前固定 PGlite、远程 model adapter、usage 与内存 rate-limit 环境；runner
-  先设置同样变量，再动态导入 sales-chat 等应用模块。这避免 `src/env.ts` 在静态导入期间
-  提前缓存宿主配置，导致 raw environment 已改但 usage 或 Demo adapter 仍使用旧值。真实
-  ESM 子进程测试使用合成配置验证该顺序，导入期间不初始化数据库、写报告或发送网络请求。
-  parent watchdog 从 fork 起固定限制 provider 前初始化为 60 秒；首次合法
-  `provider_may_have_started` 会在 ACK 前不可逆地提交保守边界，再切换为
-  `18 × 90 秒 + 120 秒` 的全运行期限。隔离 deep verifier 的执行上限为 5 秒，完整回执阶段为
-  10 秒，runner 等待 report ACK 为 20 秒，ACK 后退出为 5 秒；任一期限到达都先发 SIGTERM，
-  2 秒后仍存活则发 SIGKILL，再过 2 秒仍无法确认回收就断开、unref 并让 parent 非零结束。
-  未知、畸形或乱序 IPC 会永久设置协议失信，不能再生成零调用观察。
-  child 持久化前仍以完整 Zod schema 校验报告，随后发送仅含 protocol version、`evaluatedAt`、
-  `runId`、canonical JSON byte length 与 SHA-256 的 UUID-matched receipt；不发送可直接信任的路径、
-  threshold 结论或退出码。parent 以 receipt 身份推导 archive 路径，在 8 MiB 上限内读取
-  archive/latest，独立核对长度、digest、canonical encoding、当前最小 envelope 和 latest 关系，
-  再把 receipt 绑定的 exact bytes 交给 scrubbed environment 中的第二个 TS verifier child。该 child
-  不导入 runner/model/provider，复用 `portfolio:verify` 按已注册报告版本分派的纯一致性入口重算 case judgement、
-  score、threshold、token/attempt/step ledger、termination 与 observability，并复核当前 source/Git
-  provenance。它还绑定 STATUS 的静态 model/profile/version/suite；成功候选必须重算为 complete、
-  threshold true 与 18 cases，current HEAD 必须等于报告 base HEAD，dirty/clean evaluated commit
-  语义及 clean commit-tree fingerprint 必须成立。verifier 使用固定 system-only PATH 与可信 system
-  Git，不继承 caller PATH；bootstrap 本身仍不导入 TypeScript/application 模块。verifier 必须返回 strict
-  UUID/identity/digest receipt 并实际 exit 0，parent 还要最终重读 archive/latest，才在 ACK 中返回
-  自己推导的 `0 | 1`。runner 必须以该值退出；signal、强制回收、ACK 缺失或 code 不一致均失败。
-  只有确认 runner 已退出、从未观察到 provider boundary 或 report receipt、且协议未失信时，
-  bootstrap 才可写既有 `module_import` 零调用失败报告；一旦 provider 可能开始或 receipt 已出现，
-  异常只失败退出，不能伪造 provider history。
-  ACK0 候选还必须通过 IPC v2 携带仅内存的 `sales-chat-live-observations-v1` sidecar；失败报告固定为
-  `null`。sidecar 不含 user prompt/expected judgement、不落盘，并以 canonical bytes/digest 与 report
-  identity 双向绑定。isolated verifier 从 canonical 18 cases 重算正文 disposition/locale/anchors、tool
-  step/order/input、result ID/name/Zod、evidence/judgement、token 与 observability 后逐字段对比报告。
-  Evidence-denied case 只有在正文逐字等于由同组工具结果重建的生产 evidence-gap 时才算整请求拒绝，
-  任何追加或改写结论都失败；evidence-allowed case 还显式识别英中文 `will not`/`won't`/`decline`/
-  `refuse`/“不会提供”/“拒绝”等整请求拒答，防止否定句仅凭实体和主题子串锚点假绿。只拒绝单项
-  未证实 claim、同时给出有证据结论的谨慎回答仍视为 answered。两项均不改变 v11 schema、case 或门槛。
-  固定 8 MiB 总上限及 response/tool output/case/step/tool-count 子上限全部失败关闭。该机制只检测同次
-  runner 内 scorer/report 的意外漂移，不证明 provider 真实调用，也不防同权限 runner 同时伪造两份输入。
-  每个 case 另保留去重且有界的 boundary-rejection 稳定枚举，以及 stream completed/error 布尔值；不含
-  原始错误。ACK0 要求 completed=true、error=false、boundary=[]，verifier 据此推导 error/evidence 字段。
-  每次受控运行（含初始化失败、部分运行和门槛失败）都序列化为两空格缩进、单一末尾 LF 的
-  canonical JSON；读回以 parse 后 exact round-trip 拒绝 duplicate key、替代空白或其他字节编码。
-  创建 archive 目录后先 `fsync` eval 父目录，再把已 `fsync` 的独占临时文件以 hard link 发布归档；
-  link 后和删除临时名后各 `fsync` archive 目录。随后持有 latest 锁按 `evaluatedAt`、`runId`
-  newest-wins；只有较新候选才把已 `fsync` 的同目录临时文件 rename 为 latest，并在 `fsync` eval
-  目录成功后声明 `latestUpdated=true`。未成为 latest 的旧候选即使自身过门槛也返回失败；锁超时
-  保留已写归档并失败。归档不可由 helper 覆盖，但仍是可被文件系统权限主体修改/删除的普通文件，
-  并非 OS immutable storage；verifier 要求 latest 与其归档逐字节一致。
-  `pnpm ai:eval:live` 在门槛失败时保存真实结果并返回非零；`pnpm portfolio:verify` 独立重算
-  ledger、known total、case 顺序、score、threshold 与 termination，可成功确认一份
-  `thresholdsPassed=false` 报告自洽，但这种成功不代表 live eval 通过。latest 的身份、逐项计数、
-  provenance 与归档路径只以 `STATUS.md` 的受控台账为当前来源；初始化失败运行只能证明
-  报告/归档/verifier 的失败关闭路径，不形成 provider 或模型质量证据。
-  2026-08-29 的 v3 provider 403 观察与历史 18/18、101,604 aggregate token 结果均只保留在
-  legacy archive，不满足当前模型质量门。
+- `pnpm ai:eval:live` 复用生产 `streamSalesChat()`，对 `evals/sales-chat-live-cases.ts` 的 18 个中英
+  用例逐一运行：PGlite Demo 数据库、内存限流、SDK 零重试、每次模型调用最多 1,024 输出 token、每例
+  90 秒期限，累计 160,000 token 后停止（用量只能在调用结束后得知，因此不是供应商侧计费上限）。
+  `src/domain/ai/live-eval.ts` 的 `judgeLiveEvalCase()` 逐例判定工具选择、参数、证据许可、整请求拒答、
+  事实/决策/免责声明锚点与回答语言，安全关键用例必须失败关闭。结果写入
+  `docs/evals/ai-live-eval-latest.json`，不保存原始模型文本；任一用例失败即非零退出，不重试。
+  2026-10-17 前的指纹、预算台账、隔离子进程与独立重算校验器已随作品证据工具一起移除，
+  历史设计见 git 历史 `d8d0591`。
 - 流级 evidence boundary 跟踪本轮结构化工具结果；工具结果卡片继续即时流式输出，
   模型自然语言则缓冲到完整顺序/并行工具链结束后再判定。若证据不充分，丢弃已缓冲
   的结论文本并按失败工具生成具体缺口和下一步，同时输出法规免责声明；不得用统一
@@ -1993,67 +1850,6 @@ flowchart LR
 - 市场指标可比性。
 - product-fit 理由代码与评分规则。
 - Zod 工具契约。
-- `pnpm portfolio:capture-vitest-evidence` 运行完整 canonical Vitest suite；只有进程零退出、reporter
-  算术闭合且运行前后 HEAD、Git-visible 文件集合、文件字节/模式与 worktree 状态完全一致时，才原子
-  替换 `docs/evidence/vitest-execution-latest.json`。artifact 仅保存由测试文件、完整测试名和同名
-  occurrence 派生的匿名 SHA-256 ID、状态、计数、时间窗与 provenance，不保存名称、路径、失败消息
-  或 stack。源码指纹覆盖所有 tracked/untracked 且未被 `.gitignore` 排除的普通文件，只精确排除
-  artifact sink；dirty capture 的 `evaluatedCommit` 固定为 `null`。捕获在 suite 前后、artifact
-  precommit 与 post-persistence 边界重抓源码状态，并在提交后再次稳定读取 sink；本地 pnpm 运行使用
-  私有 HOME、offline 与依赖漂移即失败设置，且前后核验实际 Vitest 版本。该边界只提供本地一致性，
-  不声称构成包签名、供应链 attestation，或针对绕过仓库锁的并发写入提供事务隔离。捕获锁位于
-  Git common directory，owner 是含版本、token、PID、platform、hostname 与 acquiredAt 的 canonical
-  JSON；`0600` 候选经 fsync 后以 hard link 无覆盖发布。冲突时即使同 host/platform 且 PID probe
-  明确返回 `ESRCH`，也只判为 stale candidate 并失败关闭；wrapper PID 缺失不证明后代工作负载已停止。
-  操作者核对进程树并显式确认“无后代工作负载”后才能恢复，锁龄只供诊断。恢复先创建摘要命名、与 canonical lock 同 inode 的
-  quarantine hard link，复核身份与字节后才 unlink canonical lock 并 fsync 目录；其他状态全部
-  失败关闭，quarantine 保留原 owner 事实。显式恢复由另一个 `O_EXCL` recovery claim 串行，
-  acquire 在 claim 存在时也失败。恢复进程崩溃留下的 claim 不自动删除；inspection 会报告精确路径，
-  操作者确认无恢复/测试工作负载后才能人工移除。孤立 publication candidate 同样只诊断、不自动删除。
-- 采集专用 JSON reporter 在有独立 `outputFile` 时额外向 stdout 写 `vitest-progress-v1:`
-  前缀的脱敏 JSONL：首次、每五秒 heartbeat 和终态快照，timer 不阻止进程退出且终态始终清理。
-  快照只包含诊断事件计数、有界的活动模块/用例集合、相对耗时、允许的仓内测试路径、位置、模块内
-  collection ordinal 及独立匿名 ID；不输出测试标题、错误、stack、meta、环境或绝对路径。并行用例独立跟踪，省略数量与
-  truncation 显式可见；每条（含前缀和换行）最多 4 KiB，累计最多 2 MiB，预算或输出故障只停止
-  诊断，不改变测试结果或完整 JSON 修复。没有 `outputFile` 时保留原有纯 JSON stdout 用法。
-  supervisor 已在运行期间将 stdout 写入私有 `0600` 文件，因此尚未进入 `onTestRunEnd` 也可观察
-  进度；外层命令仍在结束后回放输出。该记录只说明 reporter 最后观察到的活动状态，不能证明
-  worker 当前存活、测试完整通过或进程组已收口，匿名 ID 也不等于 canonical artifact ID。
-  workload 可写入同一 stdout，故进度前缀不构成可信凭证，不参与证据发布与 release 判定。
-- `portfolio:verify` 用当前 `vitest list --json` 重建同一匿名 inventory，逐 ID 与执行 artifact 对齐，
-  并重算当前源码指纹，而不是从 `STATUS.md` 信任手填计数。clean 证据还必须从其 evaluated commit
-  tree 重建相同指纹；dirty 证据要求当前 base HEAD 精确相同，且在 release-evidence 模式失败关闭。
-  `STATUS.md` 只保留唯一静态 artifact path/format 指针，动态计数、时间、HEAD 与 fingerprint 全部从
-  artifact 派生。verifier 同时校验当前 STATUS 的 quality/release/evidence canonical prose 与 machine
-  block 一致；machine snapshot 每层 object 都是 strict。quality prose 只从剥离 HTML comment/fenced
-  code 后的唯一 canonical bullet 读取，重复或隐藏声明失败关闭。verifier 还要求 live-eval latest 是
-  所有现代归档按 `(evaluatedAt, runId)` 排序的最大项；它不会冒充重放 provider 输出。
-  当前模型成绩的可见正文检查仅排除紧邻明确 `offline / 离线` 限定的评估名称，允许如实
-  记录离线测试结果；否定或混合模式限定仍视为有歧义，保留本句及后续主语承接校验。
-  排除不会跳过整句、删除分数或抹去同句其他模型评估主体，也不改变 canonical 台账合同。
-  `docs/evals/README.md` 还必须恰好包含一个 marker 包围的 canonical 当前报告机器身份块；其
-  `version`、`evaluatedAt`、`runId`、派生 archive 路径及 captured source fingerprint 会与
-  `ai-live-eval-latest.json` 精确比较，因此过期或手工拼接的 README 身份不能通过一致性门。
-  capture 与 verifier 都要求 Unix 主机允许精确执行 `/bin/ps -axo pid=,pgid=`；共用的 bounded
-  helper 会先生成 detached capability leader，并要求 inventory 同时看到该 leader 与同组 inspector，
-  再允许任何测试 workload 启动。capture/verify 在获取 Git common-directory 锁前先完成同一检查，
-  能力缺失不会遗留仓库锁。锁的 publication candidate 在整个持锁周期作为第二个同 inode guard
-  保留；只删除 canonical path 会留下可诊断的 orphan guard 并继续阻断 acquire。verifier 在受监督
-  `vitest list` 和全部一致性检查期间持锁；任何没有 v2 completion receipt 的监督结果都会保留锁、
-  guard、私有 tool/report/inventory 目录，不自动清理或回收。仓库 evidence 目录中遗留的
-  `.vitest-execution-*.tmp` 同样失败关闭。该机制只协调协作进程；相同文件权限主体同时删除两条锁
-  路径或主动绕过协议不在其事务隔离范围内。
-- 普通 `portfolio:verify` 不再只依赖某个较晚时点的全仓源码指纹。它在第一次消费
-  `package.json`、CI workflow、STATUS、Playwright receipt、live-eval latest/README/全部 archive、
-  中英文 README、case study、architecture、截图 manifest、两张 JPEG 及 manifest 声明的源码时，
-  同时保存稳定读取后的原始 bytes 与 device/inode/mode/size/mtime/ctime 身份；workflow 与 archive
-  目录还固定完整 entry inventory。所有语义校验和异步 live-eval 校验结束后，成功输出之前执行两次
-  有界复读并逐项比较；消失、symlink/type 替换、同字节 rename、权限或内容漂移均失败关闭。
-  这关闭了“先用旧文档/报告通过，再让较晚源码快照接受新文件”的普通模式混合时点窗口；release
-  模式原有的 HEAD/index/worktree 双重 readiness 仍保留。该 barrier 是进程内检测，不是多文件锁、
-  filesystem transaction 或并发 writer containment；非协作写入者仍可在最后一次复读返回后改写，
-  因而调用方只能把一次零退出解释为该验证窗口内未观察到漂移。
-
 ### 13.2 数据库集成测试
 
 - Drizzle migration 可从空库执行。
@@ -2064,11 +1860,6 @@ flowchart LR
 
 ### 13.3 Playwright
 
-- 截图候选集发布前要求 nonce-bound Demo 的停机确认、child clean exit 和 endpoint 消失证据。
-  identity / shutdown JSON 使用流式 4 KiB 实际字节上限及请求原有的绝对 deadline，严格解码
-  UTF-8；超限/abort 不等待不配合的 stream cancel。探针禁止跟随 redirect，并取消不消费的
-  body。停机后只有连接拒绝、404/410 或合法不同 nonce 才证明本次 endpoint 不在；超时、
-  畸形响应与其余 HTTP/网络错误不再当作成功停机，因此不能触发正式截图发布。
 - 地图 click 到可分享国家 URL。
 - hover/focus/click 等价的关键信息。
 - 触摸 viewport 国家选择。
@@ -2084,72 +1875,11 @@ flowchart LR
 name/message/stack 样本附到独立诊断 JSON；原动作失败和附件写入失败保留为失败，
 不吞掉浏览器异常或修改 `performance.measure`。监听在该动作范围结束后移除。
 此检查不等同于全站、整段浏览器生命周期或生产环境的零运行时错误保证，诊断正文
-不进入 canonical passing receipt。间歇性的开发计时异常仍需实际调用栈支持根因判断。
+间歇性的开发计时异常仍需实际调用栈支持根因判断。
 
-浏览器执行证据由 `pnpm portfolio:capture-playwright-evidence` 顺序捕获四个固定 suite：
-
-1. `public`：公开桌面/移动矩阵，包括 Chromium、WebKit、全局错误和 knowledge console；
-2. `demo`：零配置、虚构数据的公开 Demo；
-3. `fde`：本地可变、失败优先的 FDE 工作流；
-4. `production-csp`：先重新 build，再针对本地 production server 验证 CSP。
-
-每个 Playwright config 的自定义 reporter 默认静默，只有证据捕获或 CI 显式设置捕获开关时
-才写 receipt；因此普通 `--list` 或非标准调用不能冒充一次有证据的成功运行。reporter 会锁定
-suite ID、config、CLI 参数与完整 project 矩阵，并仅保存有界的 test ID、文件/行号、project、
-expected/final status、outcome、attempt/retry 和聚合计数。stdout/stderr、标题、stack、trace、
-附件、请求数据、页面正文与模型文本都不进入结构化 receipt；诊断工件继续遵循独立的失败上传
-策略。receipt 的每层对象均 strict，JSON 必须是 canonical two-space serialization，测试身份不可
-重复，project/总计算术必须从逐例结果重算，expected failure 不得记作 pass，failed/flaky/global
-error 或不完整运行均失败关闭。
-当执行失败、有 global error，或通过回执的校验/持久化失败时，reporter 另写同目录的
-`playwright-failure.json`（`diesel-playwright-failure-v1`）。它明确标为
-`execution-diagnostics-only`、reporter exit 1，保留原始 run status 和失败阶段；逐例只保留
-同样的有界身份/status/outcome/attempt 字段，零次执行用 `finalStatus=null` 与独立 `notRun`
-计数表达，不能伪装成声明跳过。各项目可为空或全部失败，计数按实际 final status 重算；
-若结束时源码读回失败，完成 provenance 为 null，不复制开始值。该诊断不包含异常正文，
-也不属于通过回执或聚合工件 schema；发布门仍要求每条测试有执行记录、每个项目有通过项。
-失败诊断写入失败也保持非零退出，不自动重试。capture 在每次套件启动前移除旧诊断，
-任何非零退出直接停止，不读取旧通过回执继续发布；失败文件随现有 `test-results/` 失败
-artifact 策略保留，不替换 checked-in 成功快照。独立真实 Playwright 夹具验证了上游项目
-断言失败、声明跳过及依赖项目未执行三种不同生命周期，不启动网站或调用外部模型。
-每条 observation 的文件还必须是已存在、有大小上限、合法 UTF-8、非符号链接的普通
-`e2e/` 下的 `*.spec.*` 或 `*.test.*` 源码，且记录行号不能超过实际行数。CI 读入新 receipt
-时，会将其与
-checked-in aggregate 中同一 run 的 `project + id + file + line + expectedStatus` 五字段 inventory
-做精确集合比较；执行 outcome 另行验证，不能靠伪造结果字段掩盖虚构或遗漏的测试身份。
-
-每次 suite 开始和结束都会重算同一源码闭包的 SHA-256 指纹：应用与公开资产、e2e fixture、
-Playwright/Next/TypeScript 配置、migration、package/lock/workspace 文件以及 demo/e2e/portfolio 脚本。
-开始/结束状态必须完全一致；四套 suite 还必须共享 base HEAD、源码指纹和 worktree 状态，并按
-固定顺序形成不重叠的时间窗口，才能原子替换
-`docs/evidence/playwright-e2e-latest.json`。clean checkout 的 `evaluatedCommit` 等于 HEAD；dirty
-本地运行则将其显式保留为 `null`，只声明“从该 base HEAD 出发的这些确切源码字节”，不能把结果
-归因给 HEAD commit。CI 的逐 suite verifier 进一步要求 clean worktree 且 HEAD 等于
-`GITHUB_SHA`，所以 CI receipt 才能形成 commit 绑定。
-
-`pnpm portfolio:verify` 会 strict parse 聚合工件，重算逐 suite/总计、文件字节长度与 SHA-256，
-重新指纹当前源码，并核对 STATUS machine block 与唯一可见 prose 镜像。源码、矩阵、算术、
-canonical JSON、artifact hash 或镜像任一漂移都会失败关闭。这份证据只证明记录源码状态下的
-本地浏览器合同通过；`production-csp` 仍是本机 build/start 测试，不证明公开环境已经部署或
-健康，也不证明真实用户成效、业务准确率、供应商模型质量或目标 VPS 的运行状态。
-
-发布边界另由 `pnpm portfolio:verify -- --release-evidence` 收紧：关键作品集文档、live-eval
-latest、captured HEAD 中的全部受识别 archive、Playwright 聚合工件、截图 manifest 与所引用图片
-必须全部已进入 HEAD，且 HEAD、index、worktree 三处字节一致；archive 目录中的临时、未跟踪、
-嵌套或符号链接项同样失败。live-eval 路径启用时还要求非 shallow 的完整 HEAD 祖先图，并逐条
-parent-to-child 边证明已出现 archive 从未删除、改字节、重命名或删除后重加。该证明有意只覆盖
-captured HEAD 的祖先闭包，不把无关 orphan ref 纳入 release inventory，也不能自行证明
-force-push/rebase 前已不可达的公开历史；跨 lineage 的 append-only 声明仍须依赖可信 baseline
-或外部 branch protection。GitHub Actions 的 release 模式还要求 `GITHUB_SHA` 与 workflow 配置的
-期望 SHA 都是相同的完整 object ID，并在验证开始、结束均等于 HEAD。普通本地 verifier 仍可在
-dirty worktree 中检查当前状态的内部一致性；CI 使用 release 模式，因此仅生成或暂存证据、却未
-把证据纳入待发布 commit 时会失败关闭。
-verifier 的全部 Git 取证统一使用经校验、可执行、非符号链接的绝对二进制；CI canonical 路径为
-`/usr/bin/git`，本地默认相同且只允许函数参数显式覆盖，不读取环境覆盖。子进程不会经 `PATH`
-解析 Git，并会先删除全部 `GIT_*`、`LD_*`、`DYLD_*` 变量，再设置禁用 replacement/lazy fetch、
-可选锁和交互提示等固定策略。该边界抵御的是执行环境劫持，不是 hostile commit 的远程证明：若
-攻击者可以同时改写 verifier 或 workflow，本检查本身不能成为信任根，仍须依赖审查和受保护分支
-ruleset。
+CI 依次运行 `public`（桌面/移动 Chromium 与 WebKit 矩阵）、`demo`、`fde` 与 `production-csp`（先 build
+再针对本地 production server）四套 Playwright；结果以 job 状态和上传的 HTML 报告为准，
+不再另外生成和校验源码指纹回执。
 
 ## 14. 部署拓扑
 
@@ -2206,7 +1936,7 @@ Demo；生产配置成内存或数据库计数失败都会在进入请求解析�
   `test:coverage:app` 覆盖除 `tests/deploy-scripts.test.ts`、`tests/host-activation-ledger.test.ts`、
   `tests/release-publication-controller.test.ts` 与 `tests/host-release-orchestrator.test.ts` 外的
   应用测试并继续执行 lint、typecheck、
-  portfolio verifier、Drizzle check 和 build；`deploy-contracts` 在带完整 Git history 的 Ubuntu
+  Drizzle check 和 build；`deploy-contracts` 在带完整 Git history 的 Ubuntu
   runner 上精确运行这四个被排除的 deployment suite。`quality` 和 `deploy-contracts` 分别有
   30 与 45 分钟上限，均由唯一
   `Required CI gate` 逐项要求成功；coverage artifact 只从 quality 上传，避免两个 job 争用同名
@@ -2215,32 +1945,9 @@ Demo；生产配置成内存或数据库计数失败都会在进入请求解析�
   run 中覆盖四个 suite（包括从原部署文件完整提取的 ledger 组），保留 verbose 逐例输出与零
   slow-test threshold；它不降低覆盖、不新增 shard 或 suite 并发参数。45 分钟是既有硬超时，
   不作为本次测试拆分的提速证据。
-  最终汇总的
-  每条 `success` 判断均显式
-  `|| exit 1`，所以即使 shell errexit 状态漂移也不能吞掉前序失败。`quality` 只在 verifier 全部
-  成功后输出 `portfolio-evidence-verified=true`，Required gate 同时要求该 proof 与 job result；
-  verifier step 固定无 profile Bash、workspace、清空 shell/dynamic-loader/Node 注入变量，并用与
-  `.nvmrc` 对应的 runner tool-cache Node 绝对路径执行。`portfolio:verify` 把 workflow preamble、
-  完整 `quality` 与三套 Playwright producer、完整 job inventory、最终唯一 `required` job、
-  proof/needs/result 绑定和唯一逐行 run block 锁定为 canonical 受限子集；另对规范化后的
-  `deploy-contracts`、`postgres-migrations`、`secrets`、`audit`、`linux-release-handoff` 五个关键
-  producer 完整 job body 固定 SHA-256 合同，不能只保留同名 no-op job。它会枚举目标 commit 的
-  全部 `.github/workflows/*.yml` 与 `.github/workflows/*.yaml`，只允许
-  `.github/workflows/ci.yml#required` 这一个静态 job
-  使用 `Required CI gate` 名称；动态或结构不透明的 job name 无法证明不碰撞，因此失败关闭。
-  verifier 还会直接 strict parse canonical `package.json`，固定 `pnpm@11.9.0` 和 CI job
-  间接调用的每个 package-script 完整展开（包括 Playwright web-server 脚本），并禁止这些脚本的
-  `pre`/`post` lifecycle companion，因此不能在 workflow 命令不变时把实际执行改为 `true`、
-  `|| true` 或缩小关键测试范围。
-  这些合同共同拒绝 workflow/job defaults/env、job/step
-  `continue-on-error`、跳过、伪造 output、`set +e`、额外命令、`|| true`、隐式 errexit 以及重复/
-  缺失 mapping 或条目。GitHub Actions 内还从 `github.sha` 绑定的 captured commit 读取 CI workflow
-  原始 blob，要求 workspace 完全一致；前序 job step 的工作区/HEAD 改写和 Git 读取失败均失败
-  关闭，本地 dirty 验证则继续读取 workspace。固定 Node 版本或 runner
-  架构漂移会失败关闭，升级时必须同步更新合同。
-  这不是通用 YAML 解析器；更重要的是，它只有在 workflow 调用 verifier 时才执行，无法阻止有权
-  单独改写同一 workflow 的贡献者删除 producer/gate。该启动信任边界必须由 GitHub ruleset 的
-  外部 required workflow 或受保护 CODEOWNERS 审批闭合，不能用仓库内自证替代。
+  最终汇总的每条 `success` 判断均显式 `|| exit 1`，所以即使 shell errexit 状态漂移也不能吞掉
+  前序失败。仓库内无法阻止有权改写 workflow 的贡献者删除 job 或门禁，这一信任边界必须由
+  GitHub ruleset 或受保护的 CODEOWNERS 审批闭合。
   workflow action auditor 同时把 `jobs:`
   直属声明限制为精确的两个空格、裸小写 `[a-z][a-z0-9-]*` 与冒号，因此 Required gate 的静态
   job 枚举不会被引号、大小写、缩进、空格或 inline comment 替代表达绕过；root anchor/tag/alias
@@ -2267,21 +1974,8 @@ Demo；生产配置成内存或数据库计数失败都会在进入请求解析�
   成功仍待观察；即使通过也不代表 VPS `/opt/diesel`、SSH、PM2/Nginx/PostgreSQL 或目标主机
   systemd/cgroup 已演练。
 - FDE 独立开发历史继续与 `master` 无共同祖先，且 archive ref 在许可证门解除前必须不存在。
-  `history:verify` 只读重算受保护 source ref 的 SHA、50/42 拓扑、里程碑、无 merge base、ref
-  缺失，并遍历全部 reachable path 和历史 `package.json` 修订，确认缺 LICENSE、NOTICE 与 package
-  license 字段这些当前 publication blockers。严格 v2 audit artifact 仍把 2026-08-20 secret/
-  dependency-license scan 标成 `historical-operator-record-only` 且 `rawReportPresent=false`；这些
-  不可重放的操作记录不能作为当前扫描通过或发布许可。另保留 2026-09-05 的一个固定 SHA
-  manifest 与四份原样脱敏 raw 日志/报告，等级为 `repository-contained-dated-run-record`；
-  verifier 检查字节长度和 SHA，从原始退出码、完成/错误日志和 findings 重算 `observed`，
-  不信任单独的通过标记。scanner 记录的 50 不等同于 Git traversal count；canary 明确记录
-  退出 `97` 与唯一脱敏 `github-pat` 命中。初次 `ERR + exit 0` 运行已作废，不能回填为成功。
-  manifest 时间是包含相关命令的 capture window，不是单次进程的精确起止。工具包未 vendor，
-  留档一致性不证明执行来源真实性、当前重新扫描、逐提交覆盖或许可证通过。
-  `portfolio:verify` 用输入 ledger 读取并验证这六份文件；release 模式同时要求 audit、manifest
-  和四份 raw 在 HEAD/index/worktree 字节一致，普通 CI 不获取本地独立历史 ref。
-  资产/复制材料与 weak-copyleft/notice
-  仍需人工完成，verifier 不创建分支、不发布 archive，也不把独立历史合入主线。
+  只读校验工具 `history:verify` 已于 2026-10-17 移除，历史记录见
+  [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md)。
 - 治理发布保护：v4 JSON 快照由一个 long-lived、read-only repeatable-read 锚点事务
   `pg_export_snapshot()` 固定十张治理表（含 `market_metrics`）的同一 MVCC 视图；锚点每
   10 秒执行最小探针，

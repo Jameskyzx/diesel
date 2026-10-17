@@ -99,10 +99,11 @@ pass, records mismatch reasons and loop steps, and requires 100% evidence
 expectation accuracy. The live path reuses the production five-step
 `streamSalesChat()` loop under an 18-case / 160,000-token acceptance ceiling.
 `pnpm ai:eval:live` saves a real failure and returns a non-zero exit code.
-`pnpm portfolio:verify` independently recomputes persisted scores, judgements,
-budgets, and provenance consistency from case-level fields; it can validate a
-self-consistent current-version failed report while rejecting a stale or
-malformed one. Because raw model text and tool results are deliberately not
+Until 2026-10-17 a separate `pnpm portfolio:verify` independently recomputed
+persisted scores, judgements, budgets, and provenance from case-level fields. It
+was then removed with the rest of the portfolio evidence tooling: its maintenance
+cost had outgrown its value, and the same deterministic case judgement still runs
+inside `pnpm ai:eval:live`, which now writes a plain pass-rate report. Because raw model text and tool results are deliberately not
 retained, it does not replay the provider interaction. Missing provider usage
 is not treated as zero: each completed provider-call lower bound remains visible, token completeness
 fails closed, and no later case runs against an unknowable remaining budget.
@@ -184,19 +185,15 @@ locale into `streamSalesChat()`, and v5 onward stores the locale—not the promp
 result so portfolio verification can reject a case-ID/locale mismatch.
 
 The 2026-08-19 v2 run is retained only as a
-[legacy historical archive](evals/archive/ai-live-eval-2026-08-19-v2-passed-legacy.json).
+legacy historical archive (`docs/evals/archive/`, removed 2026-10-17; in git history at `d8d0591`).
 It completed all 18 cases in 36 provider steps and reported 101,604 tokens;
 tool selection, argument accuracy, evidence-expectation accuracy, and safety
 fail-closed all scored 100% under that report's contract. It predates the
 stricter per-step usage-completeness marker, so it is not the current acceptance
 result and must not be cited as a current pass.
 
-The [canonical report file](evals/ai-live-eval-latest.json) is paired with a
-controlled ledger. Its exact report identity, result, counts, provenance, and archive path are recorded only in
-[STATUS.md](STATUS.md), where `portfolio:verify` binds the machine ledger and
-visible summary to the report. For a run that fails during initialization,
-the artifact validates only the fail-closed report/archive/verifier path; it does not constitute a provider
-call or a model-quality, latency, cost, or cache result. The prior 2026-08-29 v3 provider-403 observation
+The latest run's result is summarized in [STATUS.md](STATUS.md); the runner writes
+its report to `docs/evals/ai-live-eval-latest.json`. The prior 2026-08-29 v3 provider-403 observation
 remains in the historical archive. The honest next action is still an authorized
 clean-worktree provider run, not an inferred or backfilled success.
 
@@ -238,11 +235,9 @@ next model request.
   redaction, reasoning suppression, and eval recomputation.
 - Playwright covers desktop/mobile public flows and locale persistence;
   PostgreSQL smoke tests inspect real constraint definitions.
-- `STATUS.md` is the single current release source. `pnpm portfolio:verify`
-  resolves its Git SHA, counts Vitest files/cases, recomputes the 97/28/651/203
-  closure and zero-real-product manifests, and validates the live report. This
-  is an offline repository check; it does not inspect the production database
-  or VPS.
+- `STATUS.md` is the single current release source; unit tests recompute the
+  97/28/651/203 closure and zero-real-product manifests from fixtures. This is an
+  offline repository check; it does not inspect the production database or VPS.
 - Sourceable deployment seams and fake commands test control flow and
   fail-closed behavior. They do not prove production root metadata, canonical
   Node/PM2, systemd state, or execution on the target VPS.
@@ -334,9 +329,9 @@ canary 和版本化回滚/读回。
 case 使用 `safetyPassed: null`；异常绝不计为安全通过；逐例记录 mismatch reason 与
 loop steps；证据期望准确率门槛为 100%。Live 路径直接复用生产的五步
 `streamSalesChat()` 循环，并设置 18 case / 160,000 token 验收上限。
-`pnpm ai:eval:live` 会保存真实失败并以非零退出码返回；`pnpm portfolio:verify` 则从逐例
-字段独立重算持久化的分数、判定、预算和 provenance 一致性，可接受自洽的当前版本失败
-报告，但会拒绝陈旧或畸形报告。由于模型文本与工具原始结果不会留存，它不能重放 provider
+`pnpm ai:eval:live` 会保存真实失败并以非零退出码返回。2026-10-17 前另有 `pnpm portfolio:verify`
+从逐例字段独立重算分数、判定、预算和 provenance；它随作品证据工具一起移除，因为维护成本已超过
+价值，而同样的确定性判定仍在 `pnpm ai:eval:live` 内执行，现在只输出一份通过率报告。由于模型文本与工具原始结果不会留存，它不能重放 provider
 交互。provider usage 缺失不会被当成零：已完成 provider call 的已知下界继续保留，token 完整性
 失败关闭，且不会在剩余预算不可知时继续执行下一条 case。
 通用 OpenAI-compatible usage 只能在调用后获得，因此这里不宣称 provider 账单级硬限额；
@@ -394,16 +389,12 @@ runner 将每条声明的 locale 传入 `streamSalesChat()`；v5 起逐结果只
 prompt，因此 portfolio 校验可以拒绝 case ID 与 locale 不一致的报告。
 
 2026-08-19 的 v2 运行现在只作为
-[legacy 历史归档](evals/archive/ai-live-eval-2026-08-19-v2-passed-legacy.json)
+legacy 历史归档（`docs/evals/archive/`，2026-10-17 移除，见 git 历史 `d8d0591`）
 保留。它以 36 个 provider steps、101,604 tokens 完整执行 18 条 case；在该报告当时的
 合同下，工具选择、参数准确率、证据期望准确率与安全失败关闭均为 100%。这次运行早于
 更严格的逐 step usage 完整性字段，因此它不是当前验收结果，也不得引用为当前通过成绩。
 
-[canonical 报告文件](evals/ai-live-eval-latest.json)与受控台账配对；报告的精确身份、结果、
-计数、provenance 与归档路径只记录在 [STATUS.md](STATUS.md)；`portfolio:verify` 会把其中的
-机器台账和可见摘要绑定到报告。
-若某次运行在初始化阶段失败，其工件只能证明报告、归档与 verifier 的失败关闭路径，不能构成 provider 调用或
-模型质量、延迟、成本、缓存成绩。此前 2026-08-29 的 v3 provider 403 观察仍保留在历史归档；
+最近一次运行结果摘要见 [STATUS.md](STATUS.md)，报告写入 `docs/evals/ai-live-eval-latest.json`。此前 2026-08-29 的 v3 provider 403 观察仍保留在历史归档；
 诚实的下一步仍是获批后在 clean worktree 上运行完整 hardened suite，而不是推断或回填
 成功结果。
 
@@ -435,9 +426,8 @@ pnpm demo:fde
 - 单元/集成测试覆盖时态、精确功率边界、产品双轴语义、发布漂移、append-only AI 审计、
   日志脱敏、reasoning 抑制和 eval 重算。
 - Playwright 覆盖桌面/移动公开流程与语言持久化；PostgreSQL smoke 读取真实约束定义。
-- `STATUS.md` 是唯一当前 release 来源；`pnpm portfolio:verify` 解析其 Git SHA、统计
-  Vitest 文件/用例、重算 97/28/651/203 闭包与零真实产品 manifest，并校验 live 报告；这是离线
-  repository 校验，不访问生产数据库或 VPS。
+- `STATUS.md` 是唯一当前 release 来源；单元测试从 fixture 重算 97/28/651/203 闭包与零真实产品
+  manifest。这是离线 repository 校验，不访问生产数据库或 VPS。
 - sourceable 部署 seam 与 fake command 只验证控制流和失败关闭合同，不证明生产 root metadata、
   canonical Node/PM2、systemd 状态或目标 VPS 已执行。
 - FDE 的 50 个增量提交与 `master` 是独立历史；2026-08-20 密钥扫描结论仍是缺少原始

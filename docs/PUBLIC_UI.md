@@ -33,10 +33,11 @@ prefixed `DEMO-`; it represents no manufacturer).
   history reload and local analysis saving. Existing approved-product selection
   remains separate.
 
-Text chat now sends conversation version 2 and uses a single bounded tool loop.
-Validated query intent, fictional catalogue declarations and verified
-regulatory/fit evidence remain distinct. No catalogue record is an approval or
-certificate. Attachments and legacy clients retain their previous guarded path.
+Every chat request, including uploads and the offline demo, sends conversation
+version 2 and runs the single bounded harness loop. Validated query intent,
+fictional catalogue declarations and verified regulatory/fit evidence remain
+distinct. No catalogue record is an approval or certificate. An upload summary is
+labelled as user-provided, unverified material and is never used as evidence.
 
 The public UI follows the structural patterns of Tabler's vertical dashboard:
 a fixed desktop sidebar, a separate utility toolbar, compact page headers,

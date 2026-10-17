@@ -13,7 +13,8 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   `99ddb305e8b653c1303977fc9f6c5d21620ce25e`. This is an operator observation, not a
   continuously verified claim.
 - Not yet deployed: the fictional catalogue and target-market selection (`catalog-fit-v1`),
-  and the removal of the portfolio evidence tooling. The next release changes
+  the removal of the portfolio evidence tooling, and the single AI orchestration path (all chat
+  requests, uploads and the offline demo now use the harness loop). The next release changes
   `package.json`, so the release contract requires a full (governance) release, not the
   code-only path.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
@@ -50,8 +51,10 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 - Offline AI eval: `pnpm ai:eval` (deterministic, no paid model).
 - Paid live AI eval: `pnpm ai:eval:live` writes `docs/evals/ai-live-eval-latest.json`;
   see [evals/README.md](evals/README.md). Last recorded run, 2026-10-16
-  (`sales-chat-live-v26`, previous runner): 17/18 passed; `mixed-regulation-and-product-intent`
-  failed on response grounding. That failure is unresolved.
+  (`sales-chat-live-v26`, previous runner on the old `streamSalesChat()` path): 17/18 passed;
+  `mixed-regulation-and-product-intent` failed on response grounding. The eval now runs the
+  harness loop production uses; it has not been run on the harness yet, so its case
+  expectations are unvalidated until the next authorized paid run.
 - Production canary: every 6 hours via
   [production-canary.yml](../.github/workflows/production-canary.yml), including one real
   AI starter.

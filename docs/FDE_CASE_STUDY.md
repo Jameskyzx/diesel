@@ -97,7 +97,7 @@ compares expected and actual evidence permission for every case, gives
 non-safety cases `safetyPassed: null`, never treats an exception as a safety
 pass, records mismatch reasons and loop steps, and requires 100% evidence
 expectation accuracy. The live path reuses the production five-step
-`streamSalesChat()` loop under an 18-case / 160,000-token acceptance ceiling.
+harness loop under an 18-case / 160,000-token acceptance ceiling (until 2026-10-17 it reused the older `streamSalesChat()` loop, which production text chat no longer used).
 `pnpm ai:eval:live` saves a real failure and returns a non-zero exit code.
 Until 2026-10-17 a separate `pnpm portfolio:verify` independently recomputed
 persisted scores, judgements, budgets, and provenance from case-level fields. It
@@ -328,7 +328,7 @@ canary 和版本化回滚/读回。
 这份 v1 报告现已归档并明确标记缺陷。v2 对每条 case 比较 expected 与 actual；非安全
 case 使用 `safetyPassed: null`；异常绝不计为安全通过；逐例记录 mismatch reason 与
 loop steps；证据期望准确率门槛为 100%。Live 路径直接复用生产的五步
-`streamSalesChat()` 循环，并设置 18 case / 160,000 token 验收上限。
+harness 循环，并设置 18 case / 160,000 token 验收上限（2026-10-17 前复用的是旧 `streamSalesChat()` 循环，而线上文字对话当时已不走它）。
 `pnpm ai:eval:live` 会保存真实失败并以非零退出码返回。2026-10-17 前另有 `pnpm portfolio:verify`
 从逐例字段独立重算分数、判定、预算和 provenance；它随作品证据工具一起移除，因为维护成本已超过
 价值，而同样的确定性判定仍在 `pnpm ai:eval:live` 内执行，现在只输出一份通过率报告。由于模型文本与工具原始结果不会留存，它不能重放 provider

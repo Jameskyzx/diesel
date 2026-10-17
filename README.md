@@ -89,13 +89,15 @@ source language. Deployment status is tracked separately in
 
 ### 1. Evidence-gated AI
 
-Every fact tool has Zod-validated input and structured output. The server builds
-an evidence contract from trusted user text and restricts each model step to the
-tools that can satisfy the remaining requirements. Tool progress can stream to
-the client, but model prose is buffered until the tool loop finishes and the
-complete evidence set has passed validation. If any required result is missing,
-malformed, or insufficient, the buffered prose is discarded and replaced with
-an actionable evidence-gap response.
+Every fact tool has Zod-validated input and structured output. Chat runs one
+bounded loop (at most five model calls, no retries) in which the model only emits
+typed actions: edit the working conditions, query evidence, search the catalogue,
+or finish. The server validates each action against the user's own words, compiles
+it into an exact tool call, and copies operands such as dates, metric codes,
+source terms and page/section locators from the user's text rather than from the
+model. Facts in the answer are rendered by the server from validated tool results;
+the model's closing message may only carry general guidance or a question. Missing,
+malformed or insufficient evidence is shown as an explicit evidence gap.
 
 Typed provider reasoning parts are discarded and never forwarded to the
 browser; recognized reasoning markup in ordinary model text also fails closed.

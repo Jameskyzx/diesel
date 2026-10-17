@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
 import { buildDirectChatResponse } from "@/server/ai/chat-turn-guidance";
 import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
-import { selectPortfolioDemoTool } from "@/server/ai/portfolio-demo-model";
+import { selectPortfolioDemoTool } from "./helpers/portfolio-demo";
 import { applicationScopes } from "@/features/database/schemas";
 
 const context = (text: string) => buildConversationBusinessContext([text]);

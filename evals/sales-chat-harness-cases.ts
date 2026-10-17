@@ -1,224 +1,38 @@
 import type { AiToolName } from "@/features/ai/schemas";
-import type { SalesChatLoopPhase } from "@/server/ai/sales-chat-loop";
 
-export const SALES_CHAT_HARNESS_VERSION = "sales-chat-harness-v2";
+export const SALES_CHAT_HARNESS_VERSION = "sales-chat-harness-v3";
 
+/**
+ * Offline end-to-end cases: route-level direct replies, then the production
+ * harness loop with the deterministic offline demo model and the fictional
+ * PGlite database. `tools` is the exact sequence of executed evidence tools;
+ * an empty list means the turn finished with a question or guidance only.
+ */
 export type SalesChatHarnessCase = {
-  expected: {
-    activeTools: readonly AiToolName[];
-    missingRequiredParameters: readonly string[];
-    phase: "direct_response" | SalesChatLoopPhase;
-  };
-  hasAttachments?: boolean;
+  expected: "direct_response" | { tools: readonly AiToolName[] };
   id: string;
   selectedCountryIso3: string | null;
   userTexts: readonly string[];
 };
 
+const tools = (...names: AiToolName[]) => ({ tools: names });
+
 export const salesChatHarnessCases = [
-  {
-    expected: {
-      activeTools: [],
-      missingRequiredParameters: [],
-      phase: "direct_response",
-    },
-    id: "greeting-stays-tool-free",
-    selectedCountryIso3: null,
-    userTexts: ["你好"],
-  },
-  {
-    expected: {
-      activeTools: [],
-      missingRequiredParameters: [],
-      phase: "direct_response",
-    },
-    id: "missing-product-parameters-are-requested-directly",
-    selectedCountryIso3: "CHN",
-    userTexts: ["中国有哪些适配产品？"],
-  },
-  {
-    expected: {
-      activeTools: ["getCountryProfile"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "single-country-regulation-overview",
-    selectedCountryIso3: null,
-    userTexts: ["CHN 当前有哪些有效法规？"],
-  },
-  {
-    expected: {
-      activeTools: ["compareRegulations"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "scoped-single-country-regulation",
-    selectedCountryIso3: null,
-    userTexts: ["核对 CHN non-road 100 kW 当前法规。"],
-  },
-  {
-    expected: {
-      activeTools: [],
-      missingRequiredParameters: [],
-      phase: "direct_response",
-    },
-    id: "single-country-regulation-scope-needs-power",
-    selectedCountryIso3: null,
-    userTexts: ["核对 CHN non-road 当前法规。"],
-  },
-  {
-    expected: {
-      activeTools: [],
-      missingRequiredParameters: [],
-      phase: "direct_response",
-    },
-    id: "single-country-regulation-power-needs-scope",
-    selectedCountryIso3: null,
-    userTexts: ["Check current CHN regulations at 100 kW."],
-  },
-  {
-    expected: {
-      activeTools: ["compareRegulations"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "single-country-regulation-multi-turn-completes-filter",
-    selectedCountryIso3: null,
-    userTexts: ["核对 CHN non-road 当前法规。", "功率是 100 kW。"],
-  },
-  {
-    expected: {
-      activeTools: [],
-      missingRequiredParameters: [],
-      phase: "direct_response",
-    },
-    id: "negated-comparison-does-not-bypass-partial-filter",
-    selectedCountryIso3: null,
-    userTexts: ["不做跨国比较，只看 CHN non-road 当前法规。"],
-  },
-  {
-    expected: {
-      activeTools: ["compareRegulations"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "cross-country-regulation-comparison",
-    selectedCountryIso3: null,
-    userTexts: ["比较 CHN 和 BRA 在 non-road 100 kW 的法规。"],
-  },
-  {
-    expected: {
-      activeTools: ["findCompatibleProducts"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "product-fit",
-    selectedCountryIso3: null,
-    userTexts: ["CHN non-road 100 kW 有哪些适配产品？"],
-  },
-  {
-    expected: {
-      activeTools: ["findCompatibleProducts", "compareRegulations"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "mixed-regulation-and-product-fit",
-    selectedCountryIso3: null,
-    userTexts: [
-      "核对 CHN non-road 100 kW 法规，并推荐 CHN non-road 100 kW 适配产品。",
-    ],
-  },
-  {
-    expected: {
-      activeTools: ["compareMarkets"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "market-comparison",
-    selectedCountryIso3: null,
-    userTexts: ["比较 CHN 和 BRA 的市场指标。"],
-  },
-  {
-    expected: {
-      activeTools: [],
-      missingRequiredParameters: [],
-      phase: "direct_response",
-    },
-    id: "scoped-single-country-market-fails-closed",
-    selectedCountryIso3: null,
-    userTexts: ["Show CHN non-road market data with no cross-country comparison."],
-  },
-  {
-    expected: {
-      activeTools: ["getCountryProfile"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "unscoped-single-country-market-remains-supported",
-    selectedCountryIso3: null,
-    userTexts: ["Show CHN market data with no cross-country comparison."],
-  },
-  {
-    expected: {
-      activeTools: ["calculateOpportunityScore"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "opportunity-score",
-    selectedCountryIso3: null,
-    userTexts: ["比较 CHN 和 BRA non-road 100 kW 的机会评分。"],
-  },
-  {
-    expected: {
-      activeTools: ["generateSalesBrief"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "sales-brief",
-    selectedCountryIso3: null,
-    userTexts: [
-      "以 CHN 为目标国家，对比 BRA 生成 non-road 100 kW 销售简报。",
-    ],
-  },
-  {
-    expected: {
-      activeTools: ["searchKnowledgeBase"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "source-document-search",
-    selectedCountryIso3: null,
-    userTexts: ["查 CHN 当前排放法规原文和来源。"],
-  },
-  {
-    expected: {
-      activeTools: ["searchKnowledgeBase"],
-      missingRequiredParameters: [],
-      phase: "gather_evidence",
-    },
-    id: "scoped-source-search-remains-supported",
-    selectedCountryIso3: null,
-    userTexts: ["查 CHN non-road 排放法规原文和来源。"],
-  },
-  {
-    expected: {
-      activeTools: [],
-      missingRequiredParameters: [],
-      phase: "attachment_only",
-    },
-    hasAttachments: true,
-    id: "unverified-attachment-summary",
-    selectedCountryIso3: null,
-    userTexts: ["请概述我上传的图片。"],
-  },
-  {
-    expected: {
-      activeTools: [],
-      missingRequiredParameters: [],
-      phase: "evidence_gap",
-    },
-    id: "unsupported-factual-prose-fails-closed",
-    selectedCountryIso3: null,
-    userTexts: ["直接给我一个确定结论。"],
-  },
+  { id: "greeting-stays-tool-free", expected: "direct_response", selectedCountryIso3: null, userTexts: ["你好"] },
+  { id: "product-fit-without-model-asks-for-model", expected: tools(), selectedCountryIso3: "CHN", userTexts: ["中国有哪些适配产品？"] },
+  { id: "single-country-regulation-overview", expected: tools("getCountryProfile"), selectedCountryIso3: null, userTexts: ["CHN 当前有哪些有效法规？"] },
+  { id: "scoped-single-country-regulation", expected: tools("compareRegulations"), selectedCountryIso3: null, userTexts: ["核对 CHN non-road 100 kW 当前法规。"] },
+  { id: "single-country-regulation-scope-needs-power", expected: tools(), selectedCountryIso3: null, userTexts: ["核对 CHN non-road 当前法规。"] },
+  { id: "single-country-regulation-without-scope-uses-profile", expected: tools("getCountryProfile"), selectedCountryIso3: null, userTexts: ["Check current CHN regulations at 100 kW."] },
+  { id: "single-country-regulation-multi-turn-completes-filter", expected: tools("compareRegulations"), selectedCountryIso3: null, userTexts: ["核对 CHN non-road 当前法规。", "功率是 100 kW。"] },
+  { id: "negated-comparison-does-not-bypass-partial-filter", expected: tools(), selectedCountryIso3: null, userTexts: ["不做跨国比较，只看 CHN non-road 当前法规。"] },
+  { id: "cross-country-regulation-comparison", expected: tools("compareRegulations"), selectedCountryIso3: null, userTexts: ["比较 CHN 和 BRA 在 non-road 100 kW 的法规。"] },
+  { id: "market-comparison", expected: tools("compareMarkets"), selectedCountryIso3: null, userTexts: ["比较 CHN 和 BRA 的市场指标。"] },
+  { id: "scoped-single-country-market-fails-closed", expected: tools(), selectedCountryIso3: null, userTexts: ["Show CHN non-road market data with no cross-country comparison."] },
+  { id: "unscoped-single-country-market-remains-supported", expected: tools("getCountryProfile"), selectedCountryIso3: null, userTexts: ["Show CHN market data with no cross-country comparison."] },
+  { id: "opportunity-score", expected: tools("calculateOpportunityScore"), selectedCountryIso3: null, userTexts: ["比较 CHN 和 BRA non-road 100 kW 的机会评分。"] },
+  { id: "sales-brief", expected: tools("generateSalesBrief"), selectedCountryIso3: null, userTexts: ["以 CHN 为目标国家，对比 BRA 生成 non-road 100 kW 销售简报。"] },
+  { id: "source-document-search", expected: tools("searchKnowledgeBase"), selectedCountryIso3: null, userTexts: ["查 CHN 当前排放法规原文和来源。"] },
+  { id: "scoped-source-search-remains-supported", expected: tools("searchKnowledgeBase"), selectedCountryIso3: null, userTexts: ["查 CHN non-road 排放法规原文和来源。"] },
+  { id: "unsupported-factual-prose-fails-closed", expected: tools(), selectedCountryIso3: null, userTexts: ["直接给我一个确定结论。"] },
 ] as const satisfies readonly SalesChatHarnessCase[];

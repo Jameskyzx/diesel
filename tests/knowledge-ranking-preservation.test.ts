@@ -1,3 +1,4 @@
+import { selectPortfolioDemoTool } from "./helpers/portfolio-demo";
 import { drizzle } from "drizzle-orm/pglite";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -6,11 +7,9 @@ import { createLocalHashEmbedding } from "@/domain/knowledge/embedding";
 import { selectKnowledgeRankingCandidates } from "@/domain/knowledge/ranking-candidates";
 import { isKnowledgeResultRelevant } from "@/domain/knowledge/retrieval-policy";
 import { hybridSearchResponseMatchesDeterministicRules, recomputeKnowledgeFinalScore, roundKnowledgeScore } from "@/domain/knowledge/search-consistency";
-import { salesChatModelKnowledgeSearchInputSchema, searchKnowledgeBaseResultSchema } from "@/features/ai/schemas";
+
 import { hybridSearchQuerySchema } from "@/features/knowledge/schemas";
-import { buildSalesChatEvidenceContract, evidenceContractAllowsModelText } from "@/server/ai/evidence-contract";
-import { createPortfolioDemoModel, selectPortfolioDemoTool } from "@/server/ai/portfolio-demo-model";
-import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
+
 import { getDemoDatabase } from "@/server/db/demo-client";
 import * as schema from "@/server/db/schema";
 import { createKnowledgeRepository } from "@/server/repositories/knowledge-repository";
@@ -20,10 +19,6 @@ const runtimeContext = { capturedAt: "2026-08-20T12:00:00.000Z", utcDate: "2026-
 const chineseTurns = [
   "检索中国船用排放法规原文、章节和来源证据，截至 2026-08-20。",
   "改为非道路。", "不要从非道路改为船用。", "现在查 BRA。",
-];
-const englishTurns = [
-  "Retrieve China marine emissions regulations original text sections source evidence as of 2026-08-20.",
-  "Actually use non-road.", "Do not switch from non-road to marine.", "Now BRA.",
 ];
 const queryInput = {
   applicationScope: "non-road" as const, asOf: runtimeContext.utcDate,
@@ -77,40 +72,6 @@ describe("complete ranking pairs are selected without manufacturing stronger evi
 });
 
 describe("ranking preserves the original Chinese Demo correction path", () => {
-  it.each([
-    { locale: "zh-CN" as const, turns: chineseTurns },
-    { locale: "en" as const, turns: englishTurns },
-  ])("runs all four actual Demo turns through source retrieval and the public evidence boundary in $locale", async ({ locale, turns }) => {
-    for (const [index, expectedAllowed] of [false, true, true, false].entries()) {
-      const userTexts = turns.slice(0, index + 1);
-      const selected = selectPortfolioDemoTool(userTexts.at(-1)!, userTexts);
-      expect(selected.toolName).toBe("searchKnowledgeBase");
-      const auditRepository = { recordToolCall: async () => undefined };
-      const sessionId = crypto.randomUUID();
-      const tools = createSalesChatTools({ auditRepository, runtimeContext, selectedCountryIso3: null, sessionId });
-      if (!tools.searchKnowledgeBase.execute) throw new Error("Missing source tool");
-      const toolResult = searchKnowledgeBaseResultSchema.parse(await tools.searchKnowledgeBase.execute(salesChatModelKnowledgeSearchInputSchema.parse(selected.input), {
-        context: undefined as never, messages: [], toolCallId: `correction-${index}`,
-      }));
-      expect(toolResult.search.query).toBe(selected.input.query);
-      expect(toolResult.search.filters).toMatchObject({
-        applicationScope: index === 0 ? "marine" : "non-road",
-        asOf: runtimeContext.utcDate, countryIso3: index === 3 ? "BRA" : "CHN", limit: 5,
-      });
-      expect(toolResult.status).toBe(expectedAllowed ? "ok" : "no_data");
-      const contract = buildSalesChatEvidenceContract({ runtimeContext, selectedCountryIso3: null, userTexts });
-      expect(evidenceContractAllowsModelText(contract, [toolResult])).toBe(expectedAllowed);
-      const stream = streamSalesChat({
-        auditRepository, locale, messages: userTexts.map((content) => ({ role: "user", content })),
-        model: createPortfolioDemoModel(), runtimeContext, selectedCountryIso3: null, sessionId, tools,
-        trustedUserTexts: userTexts,
-      });
-      const text = await stream.text;
-      expect(text).toContain(expectedAllowed
-        ? locale === "en" ? "Traceable document evidence was searched." : "已检索可追溯文档证据"
-        : locale === "en" ? "This request lacks enough evidence" : "这次请求没有足够证据");
-    }
-  });
 
   it("retains the reproduced Chinese original score pair instead of the lower projected pair", async () => {
     const selected = selectPortfolioDemoTool(chineseTurns[1]!, chineseTurns.slice(0, 2));

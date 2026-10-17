@@ -136,7 +136,7 @@ describe("POST /api/chat application-side admission budget", () => {
     const response = await POST(requestFor("Hello"));
 
     expect(response.status).toBe(200);
-    expect(await response.text()).toContain("structured facts");
+    expect(await response.text()).toContain("What are you working on");
     expect(reserve).not.toHaveBeenCalled();
     expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
   });

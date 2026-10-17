@@ -1,6 +1,5 @@
 import "server-only";
-import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
-import { aiToolResultSchema, findCompatibleProductsInputSchema, getCountryProfileInputSchema,
+import { findCompatibleProductsInputSchema, getCountryProfileInputSchema,
   salesChatModelKnowledgeSearchInputSchema, type AiToolResult } from "@/features/ai/schemas";
 import { calculateOpportunityScoreInputSchema, compareMarketsInputSchema, compareRegulationsInputSchema,
   generateSalesBriefInputSchema } from "@/features/marketing/schemas";
@@ -11,10 +10,8 @@ import { buildCountryProfileResponse } from "@/domain/ai/country-profile-respons
 import { compiledEvidenceToolCalls } from "@/server/ai/sales-chat-loop";
 import { evidenceContractAllowsModelText, evidenceNeedsRegulatoryDisclaimer, evidenceQueryWasAnswered,
   type SalesChatEvidenceContract } from "@/server/ai/evidence-contract";
-import { containsEmbeddedReasoningMarkupInValue, type SalesChatTools } from "@/server/ai/sales-chat";
+import type { SalesChatTools } from "@/server/ai/sales-chat";
 import type { Locale } from "@/i18n/locale";
-import { ZodError } from "zod";
-import { getErrorCode } from "@/lib/api-error";
 
 type CompiledCall = ReturnType<typeof compiledEvidenceToolCalls>[number];
 
@@ -49,62 +46,4 @@ export function compiledResearchAnswer(contract: SalesChatEvidenceContract, resu
       ...summaries, buildEvidenceGapResponse(results, failed, false, locale)].filter(Boolean).join("\n\n");
   if (evidenceNeedsRegulatoryDisclaimer(contract, results) && !text.includes(regulatoryDisclaimer(locale))) text += `\n\n${regulatoryDisclaimer(locale)}`;
   return text;
-}
-
-export function conversationResearchResponse(input: {
-  contract: SalesChatEvidenceContract; tools: SalesChatTools; signal: AbortSignal; locale: Locale;
-  metadata: (answer: string) => unknown;
-  requestId?: string;
-}): Response {
-  const { contract, tools, signal, locale } = input;
-  const stream = createUIMessageStream({
-    onError: () => locale === "en" ? "The evidence query could not be completed." : "本次证据查询未能完成。",
-    execute: async ({ writer }) => {
-      writer.write({ type: "start" });
-      const results: AiToolResult[] = [];
-      let failed = false;
-      const seen = new Set<string>();
-      // At most four deterministic executions after one planner call; the
-      // existing five-unit admission and cancellation lease are unchanged.
-      for (const call of compiledEvidenceToolCalls(contract)) {
-        const key = JSON.stringify(call);
-        if (seen.has(key)) continue;
-        if (seen.size >= 4) break;
-        if (signal.aborted) throw signal.reason;
-        seen.add(key);
-        const toolCallId = `compiled-evidence-${seen.size}`;
-        if (containsEmbeddedReasoningMarkupInValue(call.input)) { failed = true; break; }
-        writer.write({ type: "tool-input-available", toolCallId, toolName: call.tool, input: call.input, dynamic: true });
-        const startedAt = performance.now();
-        try {
-          const result = aiToolResultSchema.parse(await executeEvidenceCall(call, tools, signal, toolCallId));
-          // This is the same provenance, determinism, sufficiency, query and
-          // publication validation used by the production evidence contract.
-          // No-data completes a query, never supplies affirmative evidence.
-          if (containsEmbeddedReasoningMarkupInValue(result) || !evidenceQueryWasAnswered(contract, result)) throw new Error("Unverified tool result");
-          results.push(result);
-          writer.write({ type: "tool-output-available", toolCallId, output: result, dynamic: true });
-          if (result.status === "error") { failed = true; break; }
-        } catch (error) {
-          if (signal.aborted) throw signal.reason;
-          console.warn("AI compiled evidence query rejected", JSON.stringify({ tool: call.tool, errorCode: getErrorCode(error),
-            fields: error instanceof ZodError ? error.issues.map(issue => ({ code: issue.code, path: issue.path.join("."),
-              ...(issue.code === "unrecognized_keys" ? { keys: issue.keys } : {}) })) : [] }));
-          failed = true;
-          writer.write({ type: "tool-output-error", toolCallId, errorText: locale === "en" ? "The query or returned evidence could not be verified." : "查询或返回证据未能通过核验。", dynamic: true });
-          break;
-        } finally {
-          console.info(JSON.stringify({ event: "ai.phase", requestId: input.requestId, phase: "evidence",
-            tool: call.tool, durationMs: Math.max(0, performance.now() - startedAt) }));
-        }
-      }
-      const text = compiledResearchAnswer(contract, results, failed, locale);
-      const id = "compiled-research-answer";
-      writer.write({ type: "text-start", id });
-      writer.write({ type: "text-delta", id, delta: text });
-      writer.write({ type: "text-end", id });
-      writer.write({ type: "finish", finishReason: "stop", messageMetadata: input.metadata(text) });
-    },
-  });
-  return createUIMessageStreamResponse({ stream });
 }

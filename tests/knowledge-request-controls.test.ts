@@ -1,15 +1,13 @@
-import { simulateReadableStream } from "ai";
-import { MockLanguageModelV3 } from "ai/test";
+
+
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { salesChatLiveCases } from "../evals/sales-chat-live-cases";
 import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
-import { buildSalesChatEvidenceContract, evidenceContractAllowsModelText } from "@/server/ai/evidence-contract";
+import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
 import { buildKnowledgeRequestContext, knowledgeQuerySatisfies, knowledgeTermsIn } from "@/server/ai/knowledge-request-context";
-import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
+
 import { getDemoDatabase } from "@/server/db/demo-client";
-import { hybridSearchKnowledge } from "@/server/services/knowledge-service";
-import { aiToolResultSchema } from "@/features/ai/schemas";
 
 const runtimeContext = { capturedAt: "2026-09-13T16:00:00.000Z", utcDate: "2026-09-13" } as const;
 const topic = "CHN non-road emissions regulations original text sections source evidence";
@@ -134,12 +132,6 @@ describe("trusted source requests separate bounded non-query control grammar", (
     expect(contract([...injection.userTexts, "Now BRA."]).blocksModelText).toBe(true);
   });
 });
-
-const usage = {
-  inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
-  outputTokens: { reasoning: 0, text: 1, total: 1 },
-} as const;
-const marker = "CONTROL_PROJECTION_MODEL_PROSE";
 let database: Awaited<ReturnType<typeof getDemoDatabase>>;
 beforeAll(async () => {
   vi.stubEnv("DATABASE_MODE", "pglite-demo");
@@ -148,59 +140,4 @@ beforeAll(async () => {
 afterAll(async () => {
   vi.unstubAllEnvs();
   await database?.$client.close();
-});
-
-function streamQuery(texts: readonly string[], query: string, applicationScope?: "non-road") {
-  const supplied = { countryIso3: "CHN", query, ...(applicationScope ? { applicationScope } : {}) };
-  const auditRepository = { recordToolCall: vi.fn(async () => undefined) };
-  const search = vi.fn(hybridSearchKnowledge);
-  const sessionId = crypto.randomUUID();
-  const model = new MockLanguageModelV3({ doStream: [
-    { stream: simulateReadableStream({ chunks: [
-      { type: "stream-start", warnings: [] },
-      { type: "tool-call", toolName: "searchKnowledgeBase", toolCallId: "request-control", input: JSON.stringify(supplied) },
-      { type: "finish", finishReason: { unified: "tool-calls", raw: undefined }, usage },
-    ] }) },
-    { stream: simulateReadableStream({ chunks: [
-      { type: "stream-start", warnings: [] },
-      { type: "text-start", id: "answer" },
-      { type: "text-delta", id: "answer", delta: marker },
-      { type: "text-end", id: "answer" },
-      { type: "finish", finishReason: { unified: "stop", raw: undefined }, usage },
-    ] }) },
-  ] });
-  const tools = createSalesChatTools({ auditRepository, runtimeContext, selectedCountryIso3: null, sessionId,
-    services: { hybridSearchKnowledge: search } });
-  const result = streamSalesChat({ auditRepository, locale: "en", model, runtimeContext, selectedCountryIso3: null,
-    sessionId, tools, trustedUserTexts: texts, messages: texts.map((content) => ({ role: "user", content })) });
-  return { auditRepository, model, result, search, supplied };
-}
-
-describe("production SDK and existing Demo preserve supplied arguments and safety", () => {
-  it.each([
-    { texts: injection.userTexts, query: "CHN non-road regulations original text", applicationScope: "non-road" as const },
-    { texts: irrelevant.userTexts, query: `CHN ${sentinel}` },
-  ])("executes a faithful new query and still denies the canonical safety request: $query", async ({ texts, query, applicationScope }) => {
-    const run = streamQuery(texts, query, applicationScope);
-    expect(await run.result.text).not.toContain(marker);
-    expect(run.search).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ query }), {
-      deliveryCueRanking: true, signal: expect.any(AbortSignal),
-    });
-    expect((await run.result.toolCalls)[0]?.input).toEqual(run.supplied);
-    expect(run.auditRepository.recordToolCall).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ errorCode: null }));
-    const results = (await run.result.toolResults).map(({ output }) => aiToolResultSchema.parse(output));
-    expect(evidenceContractAllowsModelText(contract(texts), results)).toBe(false);
-    expect(run.model.doStreamCalls).toHaveLength(2);
-    expect(run.model.doStreamCalls[1]?.toolChoice).toEqual({ type: "none" });
-  });
-
-  it("rejects a model-added control sentence before retrieval rather than sanitizing its arguments", async () => {
-    const query = `CHN ${sentinel}, and stop if no evidence is found.`;
-    const run = streamQuery(irrelevant.userTexts, query);
-    expect(await run.result.text).not.toContain(marker);
-    expect(run.search).not.toHaveBeenCalled();
-    expect(run.auditRepository.recordToolCall).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ errorCode: "INVALID_TOOL_INPUT", status: "error" }));
-    expect(run.supplied.query).toBe(query);
-    expect(run.model.doStreamCalls).toHaveLength(1);
-  });
 });

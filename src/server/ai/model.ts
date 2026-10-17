@@ -187,7 +187,7 @@ export function getConfiguredAiModel(
     return {
       costProfile: null,
       model: createPortfolioDemoModel(),
-      modelId: finalModelId("portfolio-demo/deterministic-v1"),
+      modelId: finalModelId("portfolio-demo/deterministic-v2"),
       providerProfile: {
         adapter: "portfolio-demo",
         adapterContractVersion: 1,

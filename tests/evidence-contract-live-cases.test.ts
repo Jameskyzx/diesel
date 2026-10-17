@@ -1,53 +1,21 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { simulateReadableStream } from "ai";
-import { MockLanguageModelV3 } from "ai/test";
+
 import { getDictionary } from "@/i18n/dictionaries";
 
-import {
-  salesChatLiveCases,
-  type SalesChatLiveCase,
-} from "../evals/sales-chat-live-cases";
-import {
-  aiToolResultSchema,
-  findCompatibleProductsInputSchema,
-  findCompatibleProductsResultSchema,
-  type AiToolResult,
-} from "@/features/ai/schemas";
+import { salesChatLiveCases, type SalesChatLiveCase } from "../evals/sales-chat-live-cases";
+import { aiToolResultSchema, findCompatibleProductsInputSchema, findCompatibleProductsResultSchema, type AiToolResult } from "@/features/ai/schemas";
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
-import {
-  buildSalesChatEvidenceContract,
-  evidenceContractAllowsModelText,
-  remainingEvidenceTools,
-} from "@/server/ai/evidence-contract";
-import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
-import { buildSalesChatInstructions } from "@/server/ai/sales-chat-prompt";
-import {
-  buildCompatibleProductsResult,
-  buildCountryProfileResult,
-  buildKnowledgeResult,
-  buildMarketComparisonResult,
-  buildOpportunityScoreResult,
-  buildRegulationComparisonResult,
-  buildSalesBriefResult,
-  buildToolErrorResult,
-  currentUtcDate,
-} from "@/server/ai/tool-results";
+import { buildSalesChatEvidenceContract, evidenceContractAllowsModelText, remainingEvidenceTools } from "@/server/ai/evidence-contract";
+import { createSalesChatTools } from "@/server/ai/sales-chat";
+
+import { buildCompatibleProductsResult, buildCountryProfileResult, buildKnowledgeResult, buildMarketComparisonResult, buildOpportunityScoreResult, buildRegulationComparisonResult, buildSalesBriefResult, buildToolErrorResult, currentUtcDate } from "@/server/ai/tool-results";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { createProductRepository } from "@/server/repositories/product-repository";
 import { evaluateProductFit } from "@/server/services/product-fit-service";
 import { getCountryDetails } from "@/server/services/country-service";
-import {
-  calculateOpportunityScore,
-  compareMarkets,
-  compareRegulations,
-  generateSalesBrief,
-} from "@/server/services/marketing-analysis-service";
+import { calculateOpportunityScore, compareMarkets, compareRegulations, generateSalesBrief } from "@/server/services/marketing-analysis-service";
 import { hybridSearchResponseSchema } from "@/features/knowledge/schemas";
-import {
-  latestVerifiedAtFromCitations,
-  latestVerifiedAtMatchesCitations,
-  marketComparisonSourcesMatchFacts,
-} from "@/features/ai/evidence-semantics";
+import { latestVerifiedAtFromCitations, latestVerifiedAtMatchesCitations, marketComparisonSourcesMatchFacts } from "@/features/ai/evidence-semantics";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
 
@@ -477,38 +445,6 @@ function recomputeLatestVerifiedAt(result: AiToolResult): string | null {
 }
 
 describe("live-eval evidence-contract regressions", () => {
-  it.each(["en", "zh-CN"] as const)("keeps the sales-brief evaluation date visible when the model omits it (%s)", async (locale) => {
-    const testCase = liveCase("sales-brief");
-    const auditRepository = { recordToolCall: async () => undefined };
-    const sessionId = crypto.randomUUID();
-    const usage = { inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 }, outputTokens: { total: 1, text: 1, reasoning: 0 } };
-    const modelText = locale === "en" ? "The sales brief is based on the returned evidence." : "销售简报基于返回的结构化证据。";
-    const model = new MockLanguageModelV3({
-      doStream: [
-        { stream: simulateReadableStream({ chunks: [
-          { type: "stream-start" as const, warnings: [] },
-          { type: "tool-call" as const, toolCallId: "brief-date", toolName: "generateSalesBrief", input: JSON.stringify(testCase.expectedArgs.generateSalesBrief) },
-          { type: "finish" as const, finishReason: { unified: "tool-calls" as const, raw: undefined }, usage },
-        ] }) },
-        { stream: simulateReadableStream({ chunks: [
-          { type: "stream-start" as const, warnings: [] },
-          { type: "text-start" as const, id: "answer" },
-          { type: "text-delta" as const, id: "answer", delta: modelText },
-          { type: "text-end" as const, id: "answer" },
-          { type: "finish" as const, finishReason: { unified: "stop" as const, raw: undefined }, usage },
-        ] }) },
-      ],
-    });
-    const result = streamSalesChat({
-      auditRepository, sessionId, locale, model, selectedCountryIso3: null,
-      messages: testCase.userTexts.map(content => ({role: "user" as const, content})),
-      trustedUserTexts: testCase.userTexts,
-      tools: createSalesChatTools({auditRepository, sessionId, selectedCountryIso3: null}),
-    });
-    const text = await result.text;
-    expect(text).toContain(modelText);
-    expect(text).toContain(locale === "en" ? "Evidence as-of date: 2026-08-13." : "证据评估日期：2026-08-13。");
-  });
 
   it("orders latest citation freshness by instant rather than timestamp text", () => {
     const citations = [
@@ -975,26 +911,6 @@ describe("live-eval evidence-contract regressions", () => {
       );
     },
   );
-
-  it("keeps an explicit profile date fail-closed until the tool echoes it", async () => {
-    const testCase = liveCase("country-overview-china");
-    const contract = buildSalesChatEvidenceContract({
-      selectedCountryIso3: testCase.selectedCountryIso3,
-      userTexts: testCase.userTexts,
-    });
-
-    expect(testCase.expectedArgs.getCountryProfile).toMatchObject({
-      asOf: "2026-08-13",
-    });
-    expect(
-      evidenceContractAllowsModelText(contract, [
-        await countryProfileEvidence({ asOf: "2026-08-14", topic: "country" }),
-      ]),
-    ).toBe(false);
-    expect(buildSalesChatInstructions(null, "zh-CN")).toContain(
-      "用户明确给出 asOf 时，必须把该日期原样传给每个支持 asOf 的工具",
-    );
-  });
 
   it.each([
     {

@@ -1,15 +1,12 @@
-import { simulateReadableStream } from "ai";
-import { MockLanguageModelV3 } from "ai/test";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { z } from "zod";
+
+
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { buildEvidenceGapResponse, regulatoryDisclaimer } from "@/domain/ai/evidence-gap-response";
-import { buildMarketProfileResponse } from "@/domain/ai/market-profile-response";
-import { buildRegulationComparisonResponse } from "@/domain/ai/regulation-comparison-response";
-import { validateUiMessageSse } from "@/domain/operations/synthetic-canary";
+
 import { aiToolResultSchema, type AiToolName } from "@/features/ai/schemas";
 import type { Locale } from "@/i18n/locale";
-import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
+
 import { buildCountryProfileResult, buildToolErrorResult } from "@/server/ai/tool-results";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { getCountryDetails } from "@/server/services/country-service";
@@ -60,8 +57,6 @@ const failureDetail = (locale: Locale) => locale === "en"
   ? "The service could not complete this query or validate its tool parameters. This does not mean the requested data is absent. Retry the same question; no need to change valid inputs."
   : "系统未能完成本次查询或校验工具参数，这不代表没有相关数据。可以原样重试，无需修改已经正确提供的条件。";
 const absentDataAssertions = /no matching source text|lacks the .* evidence|lacks sufficient evidence for a conclusive product-fit|no sufficient visible|No directly comparable market metric|Opportunity ranking needs|The sales brief lacks|知识库没有检索到|缺少本次请求所需|没有确定的适配结论|没有足够的可见|市场比较没有找到|机会排名至少需要|销售简报缺少/u;
-const outputPartSchema = z.object({ type: z.literal("tool-output-available"), output: aiToolResultSchema });
-const textPartSchema = z.object({ type: z.literal("text-delta"), delta: z.string() });
 const originalDatabaseMode = process.env.DATABASE_MODE;
 let database: Awaited<ReturnType<typeof getDemoDatabase>>;
 
@@ -76,165 +71,7 @@ afterAll(async () => {
   await database?.$client.close();
 });
 
-function mockModel(tool: AiToolName, input: Record<string, unknown>, marker: string,
-  firstFinishReason: "tool-calls" | "length" | "content-filter" | "error" | "other" = "tool-calls") {
-  const usage = {
-    inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
-    outputTokens: { reasoning: 0, text: 1, total: 1 },
-  };
-  return new MockLanguageModelV3({ doStream: [
-    { stream: simulateReadableStream({ chunks: [
-      { type: "stream-start", warnings: [] },
-      { type: "tool-call", toolName: tool, toolCallId: "gap-query", input: JSON.stringify(input) },
-      { type: "finish", finishReason: { unified: firstFinishReason, raw: undefined }, usage },
-    ] }) },
-    { stream: simulateReadableStream({ chunks: [
-      { type: "stream-start", warnings: [] },
-      { type: "text-start", id: "answer" },
-      { type: "text-delta", id: "answer", delta: marker },
-      { type: "text-end", id: "answer" },
-      { type: "finish", finishReason: { unified: "stop", raw: undefined }, usage },
-    ] }) },
-  ] });
-}
-
-function readPublicSse(body: string) {
-  const parts: unknown[] = body.split("\n")
-    .filter((line) => line.startsWith("data: {"))
-    .map((line) => JSON.parse(line.slice(6)) as unknown);
-  return {
-    outputs: parts.flatMap((part) => {
-      const parsed = outputPartSchema.safeParse(part);
-      return parsed.success ? [parsed.data.output] : [];
-    }),
-    finalText: parts.flatMap((part) => {
-      const parsed = textPartSchema.safeParse(part);
-      return parsed.success ? [parsed.data.delta] : [];
-    }).join(""),
-  };
-}
-
 describe("execution errors are not evidence of absent data", () => {
-  it.each(["en", "zh-CN"] as const)("derives short comparison explanations in %s after one provider step", async locale => {
-    const text = `Compare CHN and BRA non-road 100 kW regulations as of ${asOf}. Explain the differences briefly in two sentences.`;
-    const auditRepository = { recordToolCall: async () => undefined };
-    const sessionId = crypto.randomUUID();
-    const model = mockModel("compareRegulations", countries, "FALSE_STRICTNESS_AND_POWER_BANDS");
-    const stream = streamSalesChat({ auditRepository, locale, selectedCountryIso3: null, sessionId,
-      messages: [{ role: "user", content: text }], trustedUserTexts: [text], model,
-      tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
-    });
-    const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
-    const { outputs, finalText } = readPublicSse(body);
-    expect(await validateUiMessageSse(body, { name: "compareRegulations", evidenceSufficient: true })).toBe(true);
-    const parts = [];
-    for await (const part of stream.fullStream) parts.push(part);
-    expect(parts.filter(part => part.type === "finish")).toMatchObject([{ finishReason: "stop" }]);
-    expect(parts.filter(part => part.type === "finish-step")).toMatchObject([{ finishReason: "tool-calls" }]);
-    expect(outputs).toHaveLength(1);
-    expect(finalText).toContain(buildRegulationComparisonResponse(outputs, locale));
-    expect(finalText).not.toContain("FALSE_STRICTNESS_AND_POWER_BANDS");
-    expect(finalText).toContain(locale === "en" ? "Fictional Demo" : "虚构 Demo");
-    expect(finalText).toContain(locale === "en" ? "no stricter/weaker ranking" : "不能据此排名哪国更严");
-    expect(finalText).toContain(regulatoryDisclaimer(locale));
-    expect(await stream.steps).toHaveLength(1);
-    expect(model.doStreamCalls).toHaveLength(1);
-    // The pure summarizer compares exact recorded boundaries, never the
-    // shared queried power; final-stream validation still owns provenance.
-    const variants = structuredClone(outputs);
-    for (const result of variants) if (result.tool === "compareRegulations") {
-      result.comparison.countries.forEach((country, index) => country.currentEffectiveRegulations.forEach(regulation =>
-        regulation.limits.forEach(limit => { limit.powerMinKw = 56; limit.powerMaxKw = index === 0 ? 130 : 150; })));
-      expect(buildRegulationComparisonResponse(variants, locale)).toContain(locale === "en" ? "bounds differ" : "边界不同");
-      result.comparison.countries.forEach(country => country.currentEffectiveRegulations.forEach(regulation =>
-        regulation.limits.forEach(limit => { limit.powerMaxKw = 130; })));
-      expect(buildRegulationComparisonResponse(variants, locale)).toContain(locale === "en" ? "bounds match" : "边界相同");
-      result.comparison.countries[0]!.currentEffectiveRegulations[0]!.limits[0]!.powerMaxKw = null;
-      expect(buildRegulationComparisonResponse(variants, locale)).toContain(locale === "en" ? "not recorded" : "未记录");
-    }
-  });
-  it.each(["en", "zh-CN"] as const)("uses code-owned market periods in %s SSE, never a model's invented year", async locale => {
-    const input = { asOf, countryIso3: "CHN", topics: ["market"] };
-    const text = `CHN market metrics as of ${asOf}. Which observation years are these?`;
-    const auditRepository = { recordToolCall: async () => undefined };
-    const sessionId = crypto.randomUUID();
-    const marker = "FABRICATED_MARKET_YEAR_2099";
-    const stream = streamSalesChat({ auditRepository, locale, selectedCountryIso3: null, sessionId,
-      messages: [{ role: "user", content: text }], trustedUserTexts: [text],
-      model: mockModel("getCountryProfile", input, marker),
-      tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
-    });
-    const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
-    const { outputs, finalText } = readPublicSse(body);
-    expect(await validateUiMessageSse(body, { name: "getCountryProfile", evidenceSufficient: true })).toBe(true);
-    expect(outputs).toHaveLength(1);
-    const summary = buildMarketProfileResponse(outputs, locale);
-    expect(summary).not.toBeNull();
-    expect(finalText).toContain(summary);
-    expect(finalText).not.toContain(marker);
-    expect(finalText).toContain(locale === "en" ? "exclusive" : "不含");
-    expect(finalText).toContain(locale === "en" ? "fictional Demo" : "虚构 Demo");
-    expect(finalText).toContain(locale === "en" ? "Evidence as-of date" : "证据评估日期");
-    expect(await stream.steps).toHaveLength(1);
-    expect(buildMarketProfileResponse([buildToolErrorResult("getCountryProfile", asOf, input)], locale)).toBeNull();
-  });
-  it.each(["length", "content-filter", "error", "other"] as const)(
-    "does not relabel provider termination %s as a successful deterministic completion", async reason => {
-      const text = `Compare CHN and BRA non-road 100 kW regulations as of ${asOf}.`;
-      const auditRepository = { recordToolCall: async () => undefined };
-      const sessionId = crypto.randomUUID();
-      const stream = streamSalesChat({ auditRepository, locale: "en", selectedCountryIso3: null, sessionId,
-        messages: [{ role: "user", content: text }], trustedUserTexts: [text],
-        model: mockModel("compareRegulations", countries, "UNUSED", reason),
-        tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
-      });
-      const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
-      expect(body).toContain(`"finishReason":"${reason}"`);
-      expect(await validateUiMessageSse(body)).toBe(false);
-    },
-  );
-  it("does not relabel an unfinished tool-only opportunity analysis as a completed answer", async () => {
-    // Profiles now have a complete server-authored summary. Keep this guard on
-    // an evidence task that still needs its model answer, not that fast path.
-    const text = `Calculate opportunity scores for CHN and BRA non-road 100 kW as of ${asOf}.`;
-    const auditRepository = { recordToolCall: async () => undefined };
-    const sessionId = crypto.randomUUID();
-    const stream = streamSalesChat({ auditRepository, locale: "en", selectedCountryIso3: null, sessionId,
-      messages: [{ role: "user", content: text }], trustedUserTexts: [text], shouldStopAfterStep: () => true,
-      model: mockModel("calculateOpportunityScore", countries, "UNUSED"),
-      tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
-    });
-    const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
-    expect(readPublicSse(body).outputs).toEqual([expect.objectContaining({
-      tool: "calculateOpportunityScore", status: "ok", evidenceSufficient: true,
-    })]);
-    expect(body).toContain('"finishReason":"tool-calls"');
-    expect(await validateUiMessageSse(body)).toBe(false);
-  });
-  it.each(cases.filter(({ tool }) => tool === "compareRegulations" || tool === "compareMarkets"))(
-    "releases an English $tool explanation only after actual two-country evidence",
-    async ({ tool, input, request }) => {
-      const auditRepository = { recordToolCall: async () => undefined };
-      const sessionId = crypto.randomUUID();
-      const marker = "ACTUAL_DEMO_EVIDENCE_ANSWER";
-      const stream = streamSalesChat({ auditRepository, locale: "en", selectedCountryIso3: null, sessionId,
-        messages: [{ role: "user", content: request.en }], trustedUserTexts: [request.en],
-        model: mockModel(tool, input, marker),
-        tools: createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null }),
-      });
-      const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
-      const { outputs, finalText } = readPublicSse(body);
-      expect(outputs).toHaveLength(1);
-      expect(outputs[0]).toMatchObject({ tool, status: "ok", evidenceSufficient: true,
-        comparison: { query: { countryIso3s: ["CHN", "BRA"] } } });
-      if (tool === "compareRegulations") {
-        expect(finalText).not.toContain(marker);
-        expect(finalText).toContain("effective records");
-        expect(finalText).toContain("no stricter/weaker ranking");
-      } else expect(finalText).toContain(marker);
-      expect(finalText).not.toContain(failureDetail("en"));
-    },
-  );
 
   for (const locale of ["en", "zh-CN"] as const) {
     it.each(cases)(`explains a canonical $tool error without inventing data absence in ${locale}`, ({ tool, input }) => {
@@ -248,42 +85,6 @@ describe("execution errors are not evidence of absent data", () => {
         expect(response).toContain(regulatoryDisclaimer(locale));
       }
       expect(result).toEqual(before);
-    });
-
-    it.each(cases)(`keeps a real $tool service error fail-closed in public ${locale} SSE`, async ({ tool, input, request }) => {
-      const privateMarker = "PRIVATE_SIMULATED_QUERY_FAILURE";
-      const modelMarker = "UNVERIFIED_MODEL_ANSWER";
-      const fail = vi.fn(async () => { throw new Error(privateMarker); });
-      const audits: string[] = [];
-      const auditRepository = { recordToolCall: async ({ status }: { status: string }) => { audits.push(status); } };
-      const sessionId = crypto.randomUUID();
-      const model = mockModel(tool, input, modelMarker);
-      const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
-      try {
-        const tools = createSalesChatTools({ auditRepository, defaultAsOf: asOf, sessionId, selectedCountryIso3: null,
-          services: {
-            calculateOpportunityScore: fail, compareMarkets: fail, compareRegulations: fail,
-            findCompatibleProducts: fail, generateSalesBrief: fail, getCountryDetails: fail, hybridSearchKnowledge: fail,
-          },
-        });
-        const text = request[locale];
-        const stream = streamSalesChat({ auditRepository, locale, model, sessionId, selectedCountryIso3: null,
-          messages: [{ role: "user", content: text }], trustedUserTexts: [text], tools });
-        const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
-        const { outputs, finalText } = readPublicSse(body);
-        expect(fail).toHaveBeenCalledTimes(1);
-        expect(audits).toEqual(["error"]);
-        expect(outputs).toHaveLength(1);
-        expect(outputs[0]).toMatchObject({ tool, status: "error", evidenceSufficient: false, citations: [] });
-        expect(body).not.toContain(privateMarker);
-        expect(body).not.toContain(modelMarker);
-        expect(model.doStreamCalls).toHaveLength(2);
-        expect(finalText).toContain(failureDetail(locale));
-        expect(finalText).not.toMatch(absentDataAssertions);
-        expect(finalText).toContain(regulatoryDisclaimer(locale));
-      } finally {
-        consoleError.mockRestore();
-      }
     });
 
     it(`preserves actual no-data guidance and successful cards beside errors in ${locale}`, async () => {

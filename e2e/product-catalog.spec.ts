@@ -57,3 +57,38 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect(page.getByRole("alert").filter({hasText: zh ? "选型条件无效" : "Invalid selection"})).toBeVisible();
   });
 }
+
+test("exports a customer brief in the selected language and prints without site navigation", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "diesel_locale", value: "en", url: baseURL! }]);
+  await page.goto("/products?market=CHN&scope=non-road&power=82&asOf=2026-10-17");
+  const exportForm = page.getByRole("form", { name: "Export customer brief" });
+  await exportForm.getByRole("combobox", { name: "Brief language" }).selectOption("es");
+  await exportForm.getByRole("button", { name: "Export customer brief" }).click();
+  await expect(page).toHaveURL(/\/products\/brief\?.*lang=es/u);
+
+  const brief = page.getByTestId("customer-brief");
+  await expect(brief).toHaveAttribute("lang", "es");
+  await expect(brief.getByRole("heading", { level: 1 })).toContainText("Informe de cumplimiento de emisiones — China");
+  await expect(brief.getByTestId("brief-regulation")).toContainText("DEMO-CHN-NR-A");
+  await expect(brief.getByTestId("brief-candidate")).toHaveCount(1);
+  await expect(brief.getByTestId("brief-candidate")).toContainText("DEMO-N4-110");
+  await expect(brief.getByTestId("brief-notes")).toContainText("catálogo de demostración ficticio");
+  await expect(page.getByTestId("print-brief")).toBeVisible();
+
+  await page.getByRole("link", { name: "العربية" }).click();
+  await expect(brief).toHaveAttribute("dir", "rtl");
+  await expect(brief.getByRole("heading", { level: 1 })).toContainText("موجز الامتثال");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByTestId("app-navigation-shell")).toBeHidden();
+  await expect(page.getByTestId("print-brief")).toBeHidden();
+  await expect(brief).toBeVisible();
+});
+
+test("refuses a brief without valid selection conditions", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "diesel_locale", value: "zh-CN", url: baseURL! }]);
+  await page.goto("/products/brief?market=CHN&lang=ru");
+  await expect(page.getByRole("alert").filter({ hasText: "简报条件无效" })).toBeVisible();
+  await expect(page.getByTestId("customer-brief")).toHaveCount(0);
+});

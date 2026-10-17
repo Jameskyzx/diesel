@@ -5,6 +5,7 @@ import { isNavigableEvidenceUrl } from "@/lib/source-link";
 import { getDictionary } from "@/i18n/dictionaries";
 import type { Locale } from "@/i18n/locale";
 import { applicationScopeLabel } from "@/i18n/structured-labels";
+import { briefLanguages, customerBriefCopy } from "@/i18n/customer-brief";
 
 const statusCopy: Record<CatalogFitStatus, { en: string; zh: string; tone: string }> = {
   declared_match: { en: "Declaration covers every applicable regulation — certification still to be verified", zh: "声明覆盖全部适用法规 · 仍需核实认证", tone: "border-emerald-600/40" },
@@ -71,6 +72,21 @@ export function CatalogFitResults({ result, countryName, locale }: { result: Cat
     <p className="text-sm" data-testid="catalog-fit-counts">{zh
       ? `声明覆盖 ${result.counts.declared_match} · 声明缺口 ${result.counts.declaration_gap} · 无法规数据 ${result.counts.unknown} · 不适配 ${result.counts.not_fit}`
       : `Declared match ${result.counts.declared_match} · Declaration gap ${result.counts.declaration_gap} · No regulation data ${result.counts.unknown} · Not fit ${result.counts.not_fit}`}</p>
+
+    <form action="/products/brief" className="flex flex-wrap items-end gap-3 rounded-md border bg-card p-3" aria-label={zh ? "导出客户简报" : "Export customer brief"}>
+      <input type="hidden" name="market" value={query.countryIso3} />
+      <input type="hidden" name="scope" value={query.applicationScope} />
+      <input type="hidden" name="power" value={String(query.powerKw)} />
+      <input type="hidden" name="asOf" value={query.asOf} />
+      <label className="text-sm">{zh ? "简报语言" : "Brief language"}
+        <select name="lang" defaultValue={locale} className="mt-1 block rounded-md border p-2">
+          {briefLanguages.map(language => <option key={language} value={language}>{customerBriefCopy[language].languageName}</option>)}
+        </select></label>
+      <button className="rounded-md bg-primary px-4 py-2 text-primary-foreground">{zh ? "导出客户简报" : "Export customer brief"}</button>
+      <p className="basis-full text-xs text-muted-foreground">{zh
+        ? "简报只列出声明覆盖全部适用法规的型号，可打印或另存为 PDF。"
+        : "The brief lists only models whose declarations cover every applicable regulation; print it or save it as PDF."}</p>
+    </form>
 
     {(["declared_match", "declaration_gap", "unknown"] as const).map(status => group(status).length > 0 &&
       <section key={status} className="space-y-2" aria-label={zh ? statusCopy[status].zh : statusCopy[status].en}>

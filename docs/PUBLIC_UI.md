@@ -27,6 +27,19 @@ prefixed `DEMO-`; it represents no manufacturer).
   regulations are real and the products fictional, the page says the result
   demonstrates the workflow and is not a sales conclusion. Invalid input and
   unavailable regulation data render explicit alerts.
+- Customer brief: the selection results offer "Export customer brief" with a
+  language choice (English, Simplified Chinese, Spanish, Brazilian Portuguese,
+  Russian, Arabic). `/products/brief?market=&scope=&power=&asOf=&lang=` renders a
+  print-ready, shareable page built only from the deterministic selection:
+  applicable regulations with status, validity, source and verification date;
+  only `declared_match` models with their covered citations; documents to confirm
+  before ordering; and the fictional-catalogue, not-certification and source-language
+  notes. Arabic is laid out right to left. "Print / Save as PDF" uses the browser's
+  print dialog; the app header, footer and sidebar are hidden in print. Only the
+  template is translated (regulation names and source titles stay in their source
+  language), and translations should be reviewed by a native speaker before a brief
+  is sent. Invalid conditions or unavailable regulation data render an alert, not a
+  brief.
 - Browse: search model, series or declaration text, category and rated power.
   Selecting a model prepares a chat question; it does not automatically send a
   paid request or establish legal applicability. Catalogue cards survive chat

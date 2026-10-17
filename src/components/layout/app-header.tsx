@@ -25,7 +25,7 @@ export function AppHeader() {
   const currentPage = navigationItems.find((item) => item.matches(pathname));
 
   return (
-    <header className="app-header" data-testid="app-navigation-shell">
+    <header className="app-header print:hidden" data-testid="app-navigation-shell">
       <div aria-hidden="true" className="app-sidebar-surface" />
       <Link
         aria-label={dictionary.header.brandHome}

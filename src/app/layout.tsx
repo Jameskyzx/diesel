@@ -56,7 +56,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               <div className="flex-1" id="main-content" tabIndex={-1}>
                 {children}
               </div>
-              <footer className="mt-auto border-t">
+              <footer className="mt-auto border-t print:hidden">
                 <div className="page-shell flex flex-col gap-2 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm font-semibold text-foreground">
                     Global Diesel

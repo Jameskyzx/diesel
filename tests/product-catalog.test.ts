@@ -1,55 +1,68 @@
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import snapshot from "@/data/products/demo-engine-catalog.json";
+import snapshot from "@/server/db/seed/demo-engine-catalog.json";
 import { catalogSnapshotSchema } from "@/features/product-catalog/schemas";
-import { catalogSummary, demoEngineCatalog, searchProductCatalog } from "@/server/services/product-catalog";
+import { demoEngineCatalogFixture } from "@/server/db/seed/demo-engine-catalog";
+import { loadPublishedCatalog, searchProductCatalog, summarizeCatalog } from "@/server/services/product-catalog";
 import { GET } from "@/app/api/product-catalog/route";
 import { evaluateCatalogFitForMarket } from "@/server/services/catalog-fit-service";
 
-describe("fictional demo engine catalogue", () => {
+const originalDatabaseMode = process.env.DATABASE_MODE;
+beforeAll(() => { process.env.DATABASE_MODE = "pglite-demo"; });
+afterAll(() => {
+  if (originalDatabaseMode === undefined) delete process.env.DATABASE_MODE;
+  else process.env.DATABASE_MODE = originalDatabaseMode;
+});
+
+const [h13, h13e] = ["DEMO-H13-460", "DEMO-H13-460E"].map(model => demoEngineCatalogFixture.records.find(record => record.model === model)!);
+
+describe("fictional demo engine catalogue fixture", () => {
   it("is explicitly fictional and names no real manufacturer", () => {
     expect(catalogSnapshotSchema.safeParse(snapshot).success).toBe(true);
-    expect(demoEngineCatalog).toMatchObject({ isDemo: true, evidenceStatus: "fictional_declaration" });
-    expect(demoEngineCatalog.title).toMatch(/^DEMO ONLY/u);
-    expect(demoEngineCatalog.records.every(record => record.model.startsWith("DEMO-") && record.series.startsWith("DEMO-"))).toBe(true);
-    const raw = readFileSync("src/data/products/demo-engine-catalog.json", "utf8");
+    expect(demoEngineCatalogFixture).toMatchObject({ isDemo: true, evidenceStatus: "fictional_declaration" });
+    expect(demoEngineCatalogFixture.title).toMatch(/^DEMO ONLY/u);
+    expect(demoEngineCatalogFixture.records).toHaveLength(24);
+    expect(demoEngineCatalogFixture.records.every(record => record.model.startsWith("DEMO-") && record.series.startsWith("DEMO-"))).toBe(true);
+    const raw = readFileSync("src/server/db/seed/demo-engine-catalog.json", "utf8");
     expect(raw).not.toMatch(/weichai|潍柴|https?:\/\//iu);
-    expect(catalogSummary).toMatchObject({ records: 24, series: 13 });
   });
 
   it("rejects a rated power outside the declared half-open band", () => {
-    const [record] = demoEngineCatalog.records;
+    const [record] = demoEngineCatalogFixture.records;
     const broken = { ...snapshot, records: [{ ...record, ratedPowerKw: record!.powerMaxKw }] };
     expect(catalogSnapshotSchema.safeParse(broken).success).toBe(false);
   });
+});
 
-  it("searches model, series and declaration text and filters by category and rated power", () => {
-    expect(searchProductCatalog({ query: "DEMO-H13" }).records.map(record => record.model)).toEqual(["DEMO-H13-460", "DEMO-H13-460E"]);
-    expect(searchProductCatalog({ query: "stage v" }).records.every(record => /stage v/iu.test(record.emissionLabel))).toBe(true);
-    expect(searchProductCatalog({ category: "bus" }).records.every(record => record.category === "bus")).toBe(true);
-    const band = searchProductCatalog({ minPowerKw: 200, maxPowerKw: 300, limit: 20 });
+describe("published catalogue read", () => {
+  it("serves the published demo rows from the governed table", async () => {
+    const catalog = await loadPublishedCatalog();
+    expect(catalog).toMatchObject({ isDemo: true, evidenceStatus: "fictional_declaration" });
+    expect(catalog.records.map(record => record.model)).toEqual(expect.arrayContaining(demoEngineCatalogFixture.records.map(record => record.model)));
+    expect(summarizeCatalog(catalog).series).toBeGreaterThanOrEqual(13);
+  });
+
+  it("searches model, series and declaration text and filters by category and rated power", async () => {
+    expect((await searchProductCatalog({ query: "DEMO-H13" })).records.map(record => record.model)).toEqual(["DEMO-H13-460", "DEMO-H13-460E"]);
+    expect((await searchProductCatalog({ query: "stage v" })).records.every(record => /stage v/iu.test(record.emissionLabel))).toBe(true);
+    expect((await searchProductCatalog({ category: "bus" })).records.every(record => record.category === "bus")).toBe(true);
+    const band = await searchProductCatalog({ minPowerKw: 200, maxPowerKw: 300, limit: 20 });
     expect(band.total).toBeGreaterThan(0);
     expect(band.records.every(record => record.ratedPowerKw >= 200 && record.ratedPowerKw <= 300)).toBe(true);
   });
 
   it("validates API bounds and supports exact record selection", async () => {
-    expect(GET(new Request("http://localhost/api/product-catalog?limit=1000")).status).toBe(400);
-    expect(GET(new Request("http://localhost/api/product-catalog?minPowerKw=400&maxPowerKw=100")).status).toBe(400);
-    expect(GET(new Request("http://localhost/api/product-catalog?unknown=1")).status).toBe(400);
-    expect(GET(new Request("http://localhost/api/product-catalog?recordIds=weichai-row-2")).status).toBe(400);
-    const response = GET(new Request("http://localhost/api/product-catalog?recordIds=demo-cat-001&recordIds=demo-cat-002"));
+    expect((await GET(new Request("http://localhost/api/product-catalog?limit=1000"))).status).toBe(400);
+    expect((await GET(new Request("http://localhost/api/product-catalog?minPowerKw=400&maxPowerKw=100"))).status).toBe(400);
+    expect((await GET(new Request("http://localhost/api/product-catalog?unknown=1"))).status).toBe(400);
+    expect((await GET(new Request("http://localhost/api/product-catalog?recordIds=weichai-row-2"))).status).toBe(400);
+    const response = await GET(new Request(`http://localhost/api/product-catalog?recordIds=${h13!.id}&recordIds=${h13e!.id}`));
+    expect(response.status).toBe(200);
     expect((await response.json()).records).toHaveLength(2);
   });
 });
 
 describe("catalogue fit against the fictional demo regulations", () => {
-  const originalDatabaseMode = process.env.DATABASE_MODE;
-  beforeAll(() => { process.env.DATABASE_MODE = "pglite-demo"; });
-  afterAll(() => {
-    if (originalDatabaseMode === undefined) delete process.env.DATABASE_MODE;
-    else process.env.DATABASE_MODE = originalDatabaseMode;
-  });
-
   it("ranks declared matches first and reads only regulations in force on the query date", async () => {
     const result = await evaluateCatalogFitForMarket({ countryIso3: "CHN", applicationScope: "non-road", powerKw: 82, asOf: "2026-10-17" });
     expect(result).toMatchObject({ kind: "catalog_fit", rulesetVersion: "catalog-fit-v1", certificationVerified: false, evidenceBasis: "manufacturer_declaration" });

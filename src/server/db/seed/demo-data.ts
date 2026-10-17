@@ -12,6 +12,7 @@ import {
   documentChunks,
   documents,
   jurisdictions,
+  catalogEngines,
   marketMetrics,
   productCertifications,
   products,
@@ -22,6 +23,7 @@ import {
   countryCatalog,
   plannedCoverageIso3,
 } from "@/server/db/seed/country-catalog";
+import { demoCatalogDraftPayloads, demoCatalogSource, demoCatalogVerifiedAt } from "@/server/db/seed/demo-engine-catalog";
 
 const demoTimestamp = new Date("2026-01-15T00:00:00.000Z");
 const demoRecordTimestamps = {
@@ -639,6 +641,11 @@ export async function seedDemoData<TQueryResult extends PgQueryResultHKT>(
       .values(demoRegulationLimits)
       .onConflictDoNothing();
     await transaction.insert(products).values(demoProducts).onConflictDoNothing();
+    await transaction.insert(dataSources).values({ ...demoCatalogSource, createdAt: demoTimestamp,
+      updatedAt: demoTimestamp, verifiedAt: new Date(demoCatalogVerifiedAt) }).onConflictDoNothing();
+    await transaction.insert(catalogEngines).values(demoCatalogDraftPayloads().map((payload) => ({
+      ...payload, createdAt: demoTimestamp, updatedAt: demoTimestamp, verifiedAt: new Date(payload.verifiedAt),
+    }))).onConflictDoNothing();
     await transaction
       .insert(productCertifications)
       .values(demoCertifications)

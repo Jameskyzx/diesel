@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { MockLanguageModelV4 } from "ai/test";
 import { catalogHarnessResponse, harnessEvidenceContract, harnessNarrativeMayPublish, resolveHarnessMarketPeriod, resolveHarnessMarketScope, validateHarnessState } from "@/server/ai/catalog-harness";
 import { getDemoDatabase } from "@/server/db/demo-client";
@@ -8,13 +8,21 @@ import { readConversationMetadata, type ConversationState } from "@/features/ai/
 import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
 import { searchProductCatalog } from "@/server/services/product-catalog";
 import { serializeChatHistory, parseChatHistory } from "@/features/ai/chat-history";
+import { demoEngineCatalogFixture } from "@/server/db/seed/demo-engine-catalog";
 import { compiledEvidenceToolCalls } from "@/server/ai/sales-chat-loop";
 
+const h10 = demoEngineCatalogFixture.records.find(record => record.model === "DEMO-H10-375")!.id;
 const empty: ConversationState = { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
 const usage = {inputTokens:{total:1,noCache:1,cacheRead:0,cacheWrite:0},outputTokens:{total:1,text:1,reasoning:0}};
 const sessionId = crypto.randomUUID();
 let demoDatabase: Awaited<ReturnType<typeof getDemoDatabase>> | undefined;
-afterAll(async()=>{await demoDatabase?.$client.close();});
+const fileDatabaseMode = process.env.DATABASE_MODE;
+// Catalogue lookups read the governed catalogue table from the demo database.
+beforeAll(() => { process.env.DATABASE_MODE = "pglite-demo"; });
+afterAll(async()=>{
+  await demoDatabase?.$client.close();
+  if (fileDatabaseMode === undefined) delete process.env.DATABASE_MODE; else process.env.DATABASE_MODE = fileDatabaseMode;
+});
 function modelFor(actions: unknown[]) { let index = 0; return new MockLanguageModelV4({doGenerate: async () => ({
   warnings:[],usage,finishReason:{unified:"tool-calls",raw:undefined},content:[{type:"reasoning",text:"PRIVATE_REASONING_MARKER"},
     {type:"tool-call",toolCallId:`action-${index}`,toolName:"act",input:JSON.stringify(actions[index++] ?? {state:empty,locale:"en",action:{type:"answer",message:"Which configuration would you like to inspect?"}})}],
@@ -92,17 +100,17 @@ describe("single typed multi-turn catalogue harness", () => {
     expect(body).toContain('"finishReason":"stop"');
   });
   it("retains signed product selection across follow-up turns and ignores browser-authored facts", async () => {
-    const firstText = "Look up demo-cat-003";
-    const first = await request(modelFor([{state:empty,locale:"en",action:{type:"catalog",query:{recordIds:["demo-cat-003"]}}},
+    const firstText = `Look up ${h10}`;
+    const first = await request(modelFor([{state:empty,locale:"en",action:{type:"catalog",query:{recordIds:[h10]}}},
       {state:empty,locale:"en",action:{type:"answer",message:"Which country is the target market?"}}]),firstText).text();
     const previous = verifyConversationReceipt(metadata(first)!.conversation.receipt,{sessionId,selectedCountryIso3:null,previousUserText:firstText});
-    expect(previous?.memory?.catalogRecordIds).toEqual(["demo-cat-003"]);
+    expect(previous?.memory?.catalogRecordIds).toEqual([h10]);
     const next = {...empty,countryIso3s:["DEU"]};
     const model = modelFor([{state:next,locale:"zh-CN",action:{type:"answer",message:"请确认实际用途和功率，目录参数尚不能作为认证证明。"}}]);
     const second = await request(model,"德国，用中文，先别查法规",previous).text();
     expect(metadata(second)?.conversation.state).toEqual(next);
     expect(second).not.toContain("tool-input-available");
-    expect(verifyConversationReceipt(metadata(second)!.conversation.receipt,{sessionId,selectedCountryIso3:null,previousUserText:"德国，用中文，先别查法规"})?.memory?.catalogRecordIds).toEqual(["demo-cat-003"]);
+    expect(verifyConversationReceipt(metadata(second)!.conversation.receipt,{sessionId,selectedCountryIso3:null,previousUserText:"德国，用中文，先别查法规"})?.memory?.catalogRecordIds).toEqual([h10]);
   });
   it("applies country removals and power resets without a second intent parser", () => {
     const prior = {...empty,countryIso3s:["DEU","FRA"],applicationScope:"construction" as const,powerKw:120,asOf:"2026-10-01"};
@@ -111,11 +119,11 @@ describe("single typed multi-turn catalogue harness", () => {
     expect(()=>validateHarnessState({...next,countryIso3s:["USA"]},prior,"只保留德国",null,[])).toThrow();
     expect(()=>validateHarnessState({...next,powerKw:999},prior,"只保留德国",null,[])).toThrow();
   });
-  it("does not derive certification scope or regulatory power from a catalogue record", () => {
-    const catalog = searchProductCatalog({recordIds:["demo-cat-003"]});
+  it("does not derive certification scope or regulatory power from a catalogue record", async () => {
+    const catalog = await searchProductCatalog({recordIds:[h10]});
     expect(()=>validateHarnessState({...empty,powerKw:276},empty,"用这个型号",null,[catalog])).toThrow();
     expect(()=>validateHarnessState({...empty,applicationScope:"on-road-truck"},empty,"用这个型号",null,[catalog])).toThrow();
-    expect(()=>validateHarnessState({...empty,productModelCode:"demo-cat-003"},empty,"选demo-cat-003",null,[])).toThrow("not a model code");
+    expect(()=>validateHarnessState({...empty,productModelCode:h10},empty,`选${h10}`,null,[])).toThrow("not a model code");
   });
   it("compiles selected evidence tasks exactly and independently", () => {
     const state: ConversationState = {...empty,tasks:["product_fit"],countryIso3s:["DEU"],applicationScope:"construction",powerKw:120,productModelCode:"DEMO-H10"};
@@ -141,8 +149,8 @@ describe("single typed multi-turn catalogue harness", () => {
     expect(body).toContain("does not establish compliance");
     expect(body).toContain('"finishReason":"stop"');
   });
-  it("retains catalogue provenance in browser history without converting it to verified evidence", () => {
-    const data = searchProductCatalog({recordIds:["demo-cat-003"]});
+  it("retains catalogue provenance in browser history without converting it to verified evidence", async () => {
+    const data = await searchProductCatalog({recordIds:[h10]});
     const serialized = serializeChatHistory({contextKey:"catalog",sessionId,messages:[{id:"u",role:"user",parts:[{type:"text",text:"Show row 2"}]},
       {id:"a",role:"assistant",parts:[{type:"data-productCatalog",data},{type:"text",text:"Fictional declaration only"}]}]});
     expect(parseChatHistory(serialized,"catalog")?.messages[1]?.parts[0]).toEqual({type:"data-productCatalog",data});

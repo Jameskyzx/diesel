@@ -12,8 +12,8 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect(first).toContainText("GB 17691-2018");
     await first.getByRole("link",{name:zh ? "用此型号开始分析" : "Analyze this model"}).click();
     const copy = getDictionary(locale).chat;
-    await expect(page.getByRole("textbox",{name:copy.questionInput,exact:true})).toHaveValue(/demo-cat-001/u);
-    const response = await page.request.get("/api/product-catalog?recordIds=demo-cat-001");
+    await expect(page.getByRole("textbox",{name:copy.questionInput,exact:true})).toHaveValue(/00000000-0000-4000-8000-000000000801/u);
+    const response = await page.request.get("/api/product-catalog?recordIds=00000000-0000-4000-8000-000000000801");
     const data = await response.json();
     await page.route("**/api/chat", async route => {
       expect(route.request().postDataJSON().conversation.version).toBe(2);

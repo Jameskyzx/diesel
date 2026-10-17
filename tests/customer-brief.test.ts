@@ -10,7 +10,7 @@ import { briefCountryName, briefDirection, briefLanguages, customerBriefCopy, fo
 import { evaluateCatalogFitForMarket } from "@/server/services/catalog-fit-service";
 
 const record: CatalogRecord = {
-  id: "demo-cat-901", model: "DEMO-T-300", series: "DEMO-T", category: "truck", applicationScopes: ["on-road-truck"],
+  id: "00000000-0000-4000-8000-000000000901", model: "DEMO-T-300", series: "DEMO-T", category: "truck", applicationScopes: ["on-road-truck"],
   ratedPowerKw: 300, ratedSpeedRpm: 1900, powerMinKw: 280, powerMaxKw: 320, displacementL: 12, cylinders: 6,
   aftertreatment: "SCR", emissionLabel: "Fictional VI", declaredCitationCodes: ["REG-A", "REG-B"],
 };
@@ -20,7 +20,7 @@ const regulation = (regulationId: string, citationCode: string, isDemo = true): 
   source: { id: `source-${regulationId}`, title: "Official gazette", url: "https://example.gov/reg", verifiedAt: "2026-01-01T00:00:00.000Z", isDemo },
 });
 const catalog: CatalogSnapshot = { version: 2, isDemo: true, title: "DEMO ONLY — test", evidenceStatus: "fictional_declaration", notice: "test",
-  records: [record, { ...record, id: "demo-cat-902", model: "DEMO-T-GAP", declaredCitationCodes: ["REG-A"] }, { ...record, id: "demo-cat-903", model: "DEMO-BUS", applicationScopes: ["on-road-bus"] }] };
+  records: [record, { ...record, id: "00000000-0000-4000-8000-000000000902", model: "DEMO-T-GAP", declaredCitationCodes: ["REG-A"] }, { ...record, id: "00000000-0000-4000-8000-000000000903", model: "DEMO-BUS", applicationScopes: ["on-road-bus"] }] };
 const query = { countryIso3: "BRA", applicationScope: "on-road-truck" as const, powerKw: 300, asOf: "2026-10-17" };
 
 describe("customer brief template", () => {

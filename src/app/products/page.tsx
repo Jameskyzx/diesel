@@ -6,7 +6,7 @@ import { LocaleRenderReceipt } from "@/components/i18n/locale-controller";
 import { CatalogFitResults } from "@/components/products/catalog-fit-results";
 import { CatalogResults, catalogCategoryLabel } from "@/components/products/catalog-results";
 import { applicationScopes } from "@/features/database/schemas";
-import { catalogFitQuerySchema, catalogQuerySchema } from "@/features/product-catalog/schemas";
+import { catalogFitQuerySchema, catalogQuerySchema, type CatalogCategory } from "@/features/product-catalog/schemas";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getRequestLocale } from "@/i18n/server";
@@ -15,7 +15,7 @@ import { getErrorCode } from "@/lib/api-error";
 import { runPublicDataRenderOperation } from "@/server/http/public-data-admission";
 import { evaluateCatalogFitForMarket } from "@/server/services/catalog-fit-service";
 import { getCountryDirectory } from "@/server/services/country-directory";
-import { catalogSummary, searchProductCatalog } from "@/server/services/product-catalog";
+import { loadPublishedCatalog, searchCatalog, summarizeCatalog } from "@/server/services/product-catalog";
 
 const PRODUCTS_PAGE_DATA_ROUTE = "/products";
 const fitKeys = ["market", "scope", "power", "asOf"] as const;
@@ -43,11 +43,19 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
       errorCode: fitOperation.status === "failed" ? getErrorCode(fitOperation.error) : `PUBLIC_DATA_${fitOperation.status.toUpperCase()}` });
   }
 
+  const catalogOperation = await runPublicDataRenderOperation({ headers: await headers(), route: PRODUCTS_PAGE_DATA_ROUTE,
+    work: signal => loadPublishedCatalog({ signal }) });
+  if (catalogOperation.status !== "fulfilled") {
+    console.error("Catalogue read failed", { route: PRODUCTS_PAGE_DATA_ROUTE, status: catalogOperation.status,
+      errorCode: catalogOperation.status === "failed" ? getErrorCode(catalogOperation.error) : `PUBLIC_DATA_${catalogOperation.status.toUpperCase()}` });
+  }
+  const catalog = catalogOperation.status === "fulfilled" ? catalogOperation.value : null;
+  const catalogSummary = catalog ? summarizeCatalog(catalog) : { records: 0, series: 0, categories: [] as CatalogCategory[] };
   const parsed = catalogQuerySchema.safeParse({ query: value("query"), category: value("category"),
     minPowerKw: value("minPowerKw") ? Number(value("minPowerKw")) : undefined,
     maxPowerKw: value("maxPowerKw") ? Number(value("maxPowerKw")) : undefined,
     offset: value("offset") ? Number(value("offset")) : 0, limit: 20 });
-  const result = parsed.success ? searchProductCatalog(parsed.data) : null;
+  const result = parsed.success && catalog ? searchCatalog(catalog, parsed.data) : null;
   const pageUrl = (offset: number) => { const next = new URLSearchParams(); for (const key of ["query", "category", "minPowerKw", "maxPowerKw"]) if (value(key)) next.set(key, value(key)); next.set("offset", String(offset)); return `/products?${next}`; };
   const field = "block border rounded-md p-2 mt-1";
 
@@ -83,6 +91,11 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     {result ? <><CatalogResults result={result} locale={locale} /><nav aria-label={zh ? "产品翻页" : "Catalogue pagination"} className="flex gap-4 text-primary">
       {result.query.offset > 0 && <Link href={pageUrl(Math.max(0, result.query.offset - 20))}>{zh ? "上一页" : "Previous"}</Link>}
       {result.query.offset + 20 < result.total && <Link href={pageUrl(result.query.offset + 20)}>{zh ? "下一页" : "Next"}</Link>}
-    </nav></> : <p role="alert">{zh ? "筛选条件无效，请检查功率区间和页码。" : "Invalid filters. Check the power range and page offset."}</p>}
+    </nav></> : <p role="alert">{!catalog
+      ? zh ? "目录数据暂时不可用，请稍后重试。" : "Catalogue data is temporarily unavailable. Please retry."
+      : zh ? "筛选条件无效，请检查功率区间和页码。" : "Invalid filters. Check the power range and page offset."}</p>}
+    {catalog && catalogSummary.records === 0 && <p role="status" className="text-sm">{zh
+      ? "目录中还没有已发布的型号。目录通过管理后台的 xlsx 导入，经审核发布后才会出现在这里。"
+      : "No catalogue models are published yet. The catalogue is imported from .xlsx in the admin workspace and appears here once reviewed and published."}</p>}
   </main>;
 }

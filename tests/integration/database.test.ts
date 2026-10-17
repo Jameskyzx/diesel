@@ -6,6 +6,7 @@ import {
   aiChatSessions,
   aiCitations,
   aiToolCalls,
+  catalogEngines,
   countries,
   countryJurisdictions,
   dataChangeLogs,
@@ -74,6 +75,7 @@ describe("database migration and demo seed", () => {
       "ai_citations",
       "ai_tool_calls",
       "api_rate_limit_buckets",
+      "catalog_engines",
       "countries",
       "country_jurisdictions",
       "data_change_logs",
@@ -649,6 +651,7 @@ describe("database migration and demo seed", () => {
     await seedDemoData(testDatabase.database);
 
     const tables = [
+      catalogEngines,
       countries,
       countryJurisdictions,
       dataSources,
@@ -671,7 +674,7 @@ describe("database migration and demo seed", () => {
       }),
     );
 
-    expect(counts).toEqual([178, 2, 6, 2, 2, 2, 2, 1, 2, 6, 5]);
+    expect(counts).toEqual([24, 178, 2, 7, 2, 2, 2, 2, 1, 2, 6, 5]);
   });
 
   it("seeds searchable embeddings for the Demo source-document fixture", async () => {

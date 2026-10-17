@@ -1938,3 +1938,33 @@ test("invalidates an old CSV preview before retrying or selecting another file",
     page.getByText("CSV 只完成预览；尚未写入市场指标或草稿。"),
   ).toBeHidden();
 });
+
+test("imports a catalogue workbook through preview and confirmation into review drafts", async ({ page }) => {
+  await page.setExtraHTTPHeaders({ [identityHeader]: "admin@example.test" });
+  const { buildXlsx } = await import("../tests/helpers/xlsx");
+  const { catalogSheetHeaders } = await import("../src/domain/admin/parse-catalog-sheet");
+  const model = `DEMO-E2E-${Date.now()}`;
+  const values: Record<string, string | number | boolean> = {
+    model_code: model, series: "DEMO-E2E", category: "construction", application_scopes: "construction",
+    rated_power_kw: 120, rated_speed_rpm: 2200, power_min_kw: 100, power_max_kw: 140, displacement_l: 6.7, cylinders: 6,
+    aftertreatment: "DOC + DPF", emission_label: "EU Stage V", declared_citation_codes: "CELEX:32016R1628",
+    data_source_id: "00000000-0000-4000-8000-000000000007", verified_at: "2026-10-01T00:00:00.000Z", is_demo: true,
+  };
+  const workbook = buildXlsx([[...catalogSheetHeaders], catalogSheetHeaders.map(header => values[header] ?? null)]);
+
+  await page.goto("/admin");
+  const panel = page.getByTestId("catalog-import");
+  await panel.getByLabel("xlsx 工作簿").setInputFiles({
+    buffer: Buffer.from(workbook),
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    name: "catalogue.xlsx",
+  });
+  await panel.getByRole("button", { name: "预览目录工作簿" }).click();
+  await expect(panel.getByText("总行数 1 · 有效 1 · 错误 0")).toBeVisible();
+  await expect(panel).toContainText(model);
+  await expect(page.getByText("工作簿只完成预览；尚未写入目录或草稿。")).toBeVisible();
+
+  await panel.getByRole("button", { name: "确认目录批次" }).click();
+  await expect(page.getByText("已原子创建 1 条目录草稿，尚未发布。")).toBeVisible();
+  await expect(page.getByRole("button", { name: "确认目录批次" })).toHaveCount(0);
+});

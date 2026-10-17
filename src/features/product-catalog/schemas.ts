@@ -8,7 +8,7 @@ import {
 export const catalogCategories = ["truck", "bus", "construction", "agriculture", "generator-set", "marine"] as const;
 export const catalogCategorySchema = z.enum(catalogCategories);
 export type CatalogCategory = z.infer<typeof catalogCategorySchema>;
-export const catalogRecordIdSchema = z.string().regex(/^demo-cat-\d{3}$/u);
+export const catalogRecordIdSchema = z.uuid();
 
 export const catalogQuerySchema = z.object({
   query: z.string().trim().max(100).default(""),
@@ -22,12 +22,13 @@ export const catalogQuerySchema = z.object({
   "Minimum power cannot exceed maximum power");
 export type CatalogQuery = z.infer<typeof catalogQuerySchema>;
 
-/** A fictional spec-sheet entry. `declaredCitationCodes` is what the sheet
- * claims to meet; it is matched literally and never treated as certification. */
+/** A published catalogue entry (governed `catalog_engines` row). `declaredCitationCodes`
+ * is what the spec sheet claims to meet; it is matched literally and never
+ * treated as certification. The public read currently returns demo rows only. */
 export const catalogRecordSchema = z.object({
   id: catalogRecordIdSchema,
-  model: z.string().regex(/^DEMO-[A-Z0-9-]+$/u),
-  series: z.string().regex(/^DEMO-[A-Z0-9]+$/u),
+  model: z.string().min(1).max(100),
+  series: z.string().min(1).max(100),
   category: catalogCategorySchema,
   applicationScopes: z.array(applicationScopeSchema).min(1),
   ratedPowerKw: z.number().positive(),
@@ -48,6 +49,13 @@ const catalogIdentity = {
   title: z.string().startsWith("DEMO ONLY"),
   evidenceStatus: z.literal("fictional_declaration"),
 };
+
+/** Identity of the public catalogue read, which returns demo rows only. */
+export const publicCatalogIdentity = {
+  isDemo: true,
+  title: "DEMO ONLY — Fictional diesel engine catalogue",
+  evidenceStatus: "fictional_declaration",
+} as const;
 
 export const catalogSnapshotSchema = z.object({
   version: z.literal(2), ...catalogIdentity, notice: z.string().min(1),

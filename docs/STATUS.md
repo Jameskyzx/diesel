@@ -17,7 +17,8 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   requests, uploads and the offline demo now use the harness loop), the multilingual customer
   brief, and the governed catalogue (Migration `0014`, `read-excel-file` dependency). The next
   release changes `package.json` and adds a migration, so it requires a full (governance)
-  release, followed by `pnpm db:ingest-demo-catalogue` (see DEPLOYMENT.md §4.4).
+  release; its fixture queue publishes the demo catalogue and the governance snapshot is now
+  v5 with `catalog_engines` (see DEPLOYMENT.md §4.4, ADR-274).
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health`.
 
@@ -51,11 +52,16 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   secret scan, supply-chain audit, deployment contracts, Linux release handoff).
 - Offline AI eval: `pnpm ai:eval` (deterministic, no paid model).
 - Paid live AI eval: `pnpm ai:eval:live` writes `docs/evals/ai-live-eval-latest.json`;
-  see [evals/README.md](evals/README.md). Last recorded run, 2026-10-16
-  (`sales-chat-live-v26`, previous runner on the old `streamSalesChat()` path): 17/18 passed;
-  `mixed-regulation-and-product-intent` failed on response grounding. The eval now runs the
-  harness loop production uses; it has not been run on the harness yet, so its case
-  expectations are unvalidated until the next authorized paid run.
+  see [evals/README.md](evals/README.md). Last recorded run, 2026-10-18, first run on the
+  harness loop (`sales-chat-live-v26`, `deepseek-flash`, prompt `sales-chat-system-v11`):
+  **7/18 passed, failed**; 13 cases evaluated, then the 160,000-token budget stopped the run
+  (176,657 tokens), so 5 cases were not run. All 6 failures include `response_grounding`: the
+  cases still expect facts and decisions in the model text, while the harness puts them in
+  structured result cards and its narrative guard keeps them out of the text. Both product cases
+  also called `compareRegulations` before `findCompatibleProducts` (`tool_selection`), and
+  `source-document-retrieval` also failed `arguments`/`evidence_expectation`. The live eval
+  contract therefore does not yet match the harness; the earlier 17/18 (2026-10-16) was on the
+  removed `streamSalesChat()` path and is not evidence for the harness.
 - Production canary: every 6 hours via
   [production-canary.yml](../.github/workflows/production-canary.yml), including one real
   AI starter.

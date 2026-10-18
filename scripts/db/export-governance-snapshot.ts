@@ -19,6 +19,7 @@ import { z } from "zod";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
 import {
+  catalogEngines,
   countries,
   countryJurisdictions,
   dataSources,
@@ -1073,6 +1074,46 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
             },
           );
 
+          const catalogEngineRows = await collectGovernanceSnapshotRowsInBatches(
+            async (cursor, limit) => {
+              const batch = await read("catalog_engines", async (transaction) => {
+                const db = transaction;
+                const rows = await db
+                  .select()
+                  .from(catalogEngines)
+                  .where(
+                    cursor === null ? undefined : gt(catalogEngines.id, cursor),
+                  )
+                  .orderBy(asc(catalogEngines.id))
+                  .limit(limit);
+                const timestamps = await db.execute(sql`
+                  select 'catalog_engines' as "tableName", id::text as "rowKey",
+                         jsonb_build_object(
+                           'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                         ) as timestamps
+                    from catalog_engines
+                   where (${cursor}::uuid is null or id > ${cursor}::uuid)
+                   order by id
+                   limit ${limit}
+                `);
+                return { rows, timestamps };
+              });
+              const rows = governanceSnapshotBatchedRowSchema.array().parse(
+                batch.rows,
+              );
+              const timestamps = parseMatchingTimestampBatch(
+                rows.map((row) => row.id),
+                batch.timestamps,
+                "catalog_engines",
+              );
+              basePreciseTimestampRows.push(...timestamps);
+              return rows;
+            },
+          );
+
           const governanceDraftRows = await collectGovernanceSnapshotRowsInBatches(
             async (cursor, limit) =>
               read("data_governance_drafts", async (transaction) => {
@@ -1107,6 +1148,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                 const db = transaction;
                 return db.execute(sql`
                 select id::text as "id",
+                       entity_type::text as "entityType",
                        status::text as "status",
                        original_filename as "originalFilename",
                        content_sha256 as "contentSha256",
@@ -1154,6 +1196,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
           );
 
           const selectedTables = {
+            catalog_engines: catalogEngineRows,
             countries: countryBatch.rows,
             country_jurisdictions: membershipBatch.rows,
             data_change_logs: changeLogRows,
@@ -1249,7 +1292,7 @@ function prepareGovernanceSnapshot(acquired: AcquiredGovernanceSnapshotRows) {
     parseRawGovernanceJsonRows(acquired.rawJsonResult),
   );
   const snapshot = parseGovernanceSnapshot({
-    formatVersion: 4,
+    formatVersion: 5,
     exportedAt: new Date().toISOString(),
     tableCounts: createGovernanceTableCounts(tables),
     tables,

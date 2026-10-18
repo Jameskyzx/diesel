@@ -1,0 +1,273 @@
+{
+  "version": "sales-chat-live-v26",
+  "runAt": "2026-10-18T02:41:25.650Z",
+  "modelId": "server-openai-compatible/deepseek-flash",
+  "providerProfile": {
+    "adapter": "@ai-sdk/openai-compatible",
+    "adapterContractVersion": 5,
+    "enableThinking": false,
+    "endpointSha256": "a34e2a4708ed1c61008a151688838dcf1c44d4e7f08054633e72ba7c0b16cfc1",
+    "includeUsage": true
+  },
+  "promptVersion": "sales-chat-system-v11",
+  "summary": {
+    "cases": 18,
+    "evaluated": 13,
+    "passed": 7,
+    "passRatePct": 38.9,
+    "safetyCriticalFailed": 0,
+    "totalTokens": 176657,
+    "tokenBudget": 160000,
+    "stoppedForBudget": true
+  },
+  "cases": [
+    {
+      "id": "country-overview-china",
+      "locale": "en",
+      "safetyCritical": false,
+      "pass": true,
+      "mismatchReason": null,
+      "expectedTools": [
+        "getCountryProfile"
+      ],
+      "toolSequence": [
+        "getCountryProfile"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [],
+      "totalTokens": 7200,
+      "latencyMs": 2531
+    },
+    {
+      "id": "single-country-market-profile",
+      "locale": "en",
+      "safetyCritical": false,
+      "pass": true,
+      "mismatchReason": null,
+      "expectedTools": [
+        "getCountryProfile"
+      ],
+      "toolSequence": [
+        "getCountryProfile"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [],
+      "totalTokens": 7520,
+      "latencyMs": 2602
+    },
+    {
+      "id": "scoped-single-country-regulation",
+      "locale": "zh-CN",
+      "safetyCritical": false,
+      "pass": true,
+      "mismatchReason": null,
+      "expectedTools": [
+        "compareRegulations"
+      ],
+      "toolSequence": [
+        "compareRegulations"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [],
+      "totalTokens": 9448,
+      "latencyMs": 2597
+    },
+    {
+      "id": "cross-country-regulation",
+      "locale": "zh-CN",
+      "safetyCritical": false,
+      "pass": true,
+      "mismatchReason": null,
+      "expectedTools": [
+        "compareRegulations"
+      ],
+      "toolSequence": [
+        "compareRegulations"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [],
+      "totalTokens": 22004,
+      "latencyMs": 4079
+    },
+    {
+      "id": "product-ready-dual-axis",
+      "locale": "en",
+      "safetyCritical": false,
+      "pass": false,
+      "mismatchReason": "tool_selection,evidence_expectation,response_grounding",
+      "expectedTools": [
+        "findCompatibleProducts"
+      ],
+      "toolSequence": [
+        "compareRegulations",
+        "findCompatibleProducts"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [
+        "decision:product-compatible",
+        "decision:supply-ready"
+      ],
+      "totalTokens": 17842,
+      "latencyMs": 4633
+    },
+    {
+      "id": "product-outside-supply-period",
+      "locale": "zh-CN",
+      "safetyCritical": false,
+      "pass": false,
+      "mismatchReason": "tool_selection,evidence_expectation,response_grounding",
+      "expectedTools": [
+        "findCompatibleProducts"
+      ],
+      "toolSequence": [
+        "findCompatibleProducts",
+        "compareRegulations"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [
+        "fact:model-demo-eng-100",
+        "decision:product-not-ready"
+      ],
+      "totalTokens": 26590,
+      "latencyMs": 7531
+    },
+    {
+      "id": "unknown-product-fails-closed",
+      "locale": "en",
+      "safetyCritical": true,
+      "pass": true,
+      "mismatchReason": null,
+      "expectedTools": [
+        "findCompatibleProducts"
+      ],
+      "toolSequence": [
+        "findCompatibleProducts"
+      ],
+      "responseDisposition": "whole_request_refusal",
+      "missingResponseAnchorIds": [],
+      "totalTokens": 15998,
+      "latencyMs": 5373
+    },
+    {
+      "id": "comparable-market-metric",
+      "locale": "zh-CN",
+      "safetyCritical": false,
+      "pass": false,
+      "mismatchReason": "response_grounding",
+      "expectedTools": [
+        "compareMarkets"
+      ],
+      "toolSequence": [
+        "compareMarkets"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [
+        "fact:country-chn",
+        "fact:country-bra",
+        "fact:metric-demo-addressable-units",
+        "decision:market-comparison"
+      ],
+      "totalTokens": 11816,
+      "latencyMs": 3361
+    },
+    {
+      "id": "opportunity-score",
+      "locale": "zh-CN",
+      "safetyCritical": false,
+      "pass": false,
+      "mismatchReason": "response_grounding",
+      "expectedTools": [
+        "calculateOpportunityScore"
+      ],
+      "toolSequence": [
+        "calculateOpportunityScore"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [
+        "fact:country-chn",
+        "fact:country-bra",
+        "fact:power-100-kw",
+        "fact:date-2026-08-13",
+        "decision:opportunity-score"
+      ],
+      "totalTokens": 11717,
+      "latencyMs": 3037
+    },
+    {
+      "id": "sales-brief",
+      "locale": "zh-CN",
+      "safetyCritical": false,
+      "pass": false,
+      "mismatchReason": "response_grounding",
+      "expectedTools": [
+        "generateSalesBrief"
+      ],
+      "toolSequence": [
+        "generateSalesBrief"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [
+        "fact:country-chn",
+        "fact:country-bra",
+        "fact:power-100-kw",
+        "fact:date-2026-08-13",
+        "decision:sales-brief"
+      ],
+      "totalTokens": 11820,
+      "latencyMs": 3212
+    },
+    {
+      "id": "source-document-retrieval",
+      "locale": "en",
+      "safetyCritical": false,
+      "pass": false,
+      "mismatchReason": "arguments,evidence_expectation,response_grounding",
+      "expectedTools": [
+        "searchKnowledgeBase"
+      ],
+      "toolSequence": [
+        "searchKnowledgeBase"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [
+        "fact:application-non-road"
+      ],
+      "totalTokens": 6962,
+      "latencyMs": 3055
+    },
+    {
+      "id": "explicit-country-overrides-map",
+      "locale": "zh-CN",
+      "safetyCritical": false,
+      "pass": true,
+      "mismatchReason": null,
+      "expectedTools": [
+        "getCountryProfile"
+      ],
+      "toolSequence": [
+        "getCountryProfile"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [],
+      "totalTokens": 7203,
+      "latencyMs": 2920
+    },
+    {
+      "id": "multi-turn-country-conflict",
+      "locale": "zh-CN",
+      "safetyCritical": false,
+      "pass": true,
+      "mismatchReason": null,
+      "expectedTools": [
+        "compareRegulations"
+      ],
+      "toolSequence": [
+        "compareRegulations"
+      ],
+      "responseDisposition": "answered",
+      "missingResponseAnchorIds": [],
+      "totalTokens": 20537,
+      "latencyMs": 6954
+    }
+  ]
+}

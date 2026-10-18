@@ -1942,7 +1942,6 @@ test("invalidates an old CSV preview before retrying or selecting another file",
 test("imports a catalogue workbook through preview and confirmation into review drafts", async ({ page }) => {
   await page.setExtraHTTPHeaders({ [identityHeader]: "admin@example.test" });
   const { buildXlsx } = await import("../tests/helpers/xlsx");
-  const { catalogSheetHeaders } = await import("../src/domain/admin/parse-catalog-sheet");
   const model = `DEMO-E2E-${Date.now()}`;
   const values: Record<string, string | number | boolean> = {
     model_code: model, series: "DEMO-E2E", category: "construction", application_scopes: "construction",
@@ -1950,7 +1949,10 @@ test("imports a catalogue workbook through preview and confirmation into review 
     aftertreatment: "DOC + DPF", emission_label: "EU Stage V", declared_citation_codes: "CELEX:32016R1628",
     data_source_id: "00000000-0000-4000-8000-000000000007", verified_at: "2026-10-01T00:00:00.000Z", is_demo: true,
   };
-  const workbook = buildXlsx([[...catalogSheetHeaders], catalogSheetHeaders.map(header => values[header] ?? null)]);
+  // The 16 template columns (docs/DATA_MODEL.md §7.6). Spelled out rather than
+  // imported: app modules use the "@/" alias, which Playwright does not resolve.
+  const headers = Object.keys(values);
+  const workbook = buildXlsx([headers, headers.map(header => values[header] ?? null)]);
 
   await page.goto("/admin");
   const panel = page.getByTestId("catalog-import");

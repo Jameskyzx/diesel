@@ -155,4 +155,54 @@ describe("single typed multi-turn catalogue harness", () => {
       {id:"a",role:"assistant",parts:[{type:"data-productCatalog",data},{type:"text",text:"Fictional declaration only"}]}]});
     expect(parseChatHistory(serialized,"catalog")?.messages[1]?.parts[0]).toEqual({type:"data-productCatalog",data});
   });
+  it("asks for an explicit source scope the user named, and returns status, not evidence, to the model", async () => {
+    demoDatabase ??= await getDemoDatabase();
+    const text = "Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations.";
+    const state: ConversationState = {...empty,tasks:["knowledge"],countryIso3s:["CHN"],applicationScope:"non-road"};
+    const knowledge = (scope: object) => ({state,locale:"en",action:{type:"evidence",task:"knowledge",countryIso3:"CHN",sourceQuery:"non-road emissions regulations",marketPeriod:null,...scope}});
+    // Scope only in engine context would search unscoped; the guard asks first.
+    const model = modelFor([knowledge({}),knowledge({sourceScope:"non-road"}),{state,locale:"en",action:{type:"answer",message:"Review the source evidence below."}}]);
+    const body = await request(model,text).text();
+    const searches = body.split("\n").filter(l=>l.startsWith("data: {")).map(l=>JSON.parse(l.slice(6))).filter(p=>p.type==="tool-input-available");
+    expect(searches).toHaveLength(1);
+    expect(searches[0].input).toMatchObject({countryIso3:"CHN",applicationScope:"non-road"});
+    expect(JSON.stringify(model.doGenerateCalls[1]?.prompt)).toContain("Set sourceScope explicitly");
+    // The verified card reaches the user; the model sees only the query status.
+    expect(body).toContain("DEMO ONLY");
+    const modelView = JSON.stringify(model.doGenerateCalls[2]?.prompt);
+    expect(modelView).toMatch(/answered\\*":true/u);
+    expect(modelView).not.toContain("DEMO ONLY");
+    expect(body).toContain('"finishReason":"stop"');
+  });
+  it.each(["非道路 排放法规 原文 章节", "China's non-road emission regulations", "GB 20891 non-road emission regulation", "non-road emission regulation text or sections"])(
+    "searches the user's own source terms whatever the model's wording (%s)", async (sourceQuery) => {
+    demoDatabase ??= await getDemoDatabase();
+    const text = "Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations.";
+    const state: ConversationState = {...empty,tasks:["knowledge"],countryIso3s:["CHN"]};
+    const model = modelFor([{state,locale:"en",action:{type:"evidence",task:"knowledge",countryIso3:"CHN",sourceQuery,sourceScope:"non-road",marketPeriod:null}},
+      {state,locale:"en",action:{type:"answer",message:"Review the source evidence below."}}]);
+    const parts = (await request(model,text).text()).split("\n").filter(l=>l.startsWith("data: {")).map(l=>JSON.parse(l.slice(6)));
+    expect(parts.find(p=>p.type==="tool-input-available")?.input.query).toBe("non road emissions regulation");
+    const output = parts.find(p=>p.type==="tool-output-available")?.output;
+    expect(output?.status).toBe("ok");
+    expect(output?.search.results[0]?.sectionLocator).toBe("DEMO-SECTION-1");
+  });
+  it("keeps the model's query when the user's own request has constructs a term list cannot preserve", () => {
+    const state = {...empty,tasks:["knowledge" as const],countryIso3s:["CHN"]};
+    const action = {type:"evidence" as const,task:"knowledge" as const,countryIso3:"CHN",sourceQuery:"非道路 法规",sourceScope:"non-road" as const,marketPeriod:null};
+    for (const userText of ["查 CHN 非道路法规原文。", "Search the CHN knowledge base for ZZZ_QUANTUM_BANANA_98765."]) {
+      expect(harnessEvidenceContract(state,action,"2026-10-18",[userText]).requirements[0]?.query.knowledgeQuery).toBe("非道路 法规");
+    }
+  });
+  it("finishes on the brief target it ran, whatever the working-country order", async () => {
+    demoDatabase ??= await getDemoDatabase();
+    const state: ConversationState = {...empty,tasks:["sales_brief"],countryIso3s:["BRA","CHN"],applicationScope:"non-road",powerKw:100,asOf:"2026-08-13"};
+    const model = modelFor([{state,locale:"en",action:{type:"evidence",task:"sales_brief",countryIso3:"CHN",sourceQuery:null,marketPeriod:null}},
+      {state,locale:"en",action:{type:"answer",message:"Review the brief below."}}]);
+    const body = await request(model,"Sales brief for CHN as target with BRA as comparison, non-road 100 kW, 2026-08-13.").text();
+    const briefs = body.split("\n").filter(l=>l.startsWith("data: {")).map(l=>JSON.parse(l.slice(6))).filter(p=>p.type==="tool-input-available");
+    expect(briefs.map(p=>[p.toolName,p.input.targetCountryIso3])).toEqual([["generateSalesBrief","CHN"]]);
+    expect(model.doGenerateCalls).toHaveLength(2);
+    expect(body).toContain('"finishReason":"stop"');
+  });
 });

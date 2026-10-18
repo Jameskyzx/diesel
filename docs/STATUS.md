@@ -52,16 +52,21 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   secret scan, supply-chain audit, deployment contracts, Linux release handoff).
 - Offline AI eval: `pnpm ai:eval` (deterministic, no paid model).
 - Paid live AI eval: `pnpm ai:eval:live` writes `docs/evals/ai-live-eval-latest.json`;
-  see [evals/README.md](evals/README.md). Last recorded run, 2026-10-18, first run on the
-  harness loop (`sales-chat-live-v26`, `deepseek-flash`, prompt `sales-chat-system-v11`):
-  **7/18 passed, failed**; 13 cases evaluated, then the 160,000-token budget stopped the run
-  (176,657 tokens), so 5 cases were not run. All 6 failures include `response_grounding`: the
-  cases still expect facts and decisions in the model text, while the harness puts them in
-  structured result cards and its narrative guard keeps them out of the text. Both product cases
-  also called `compareRegulations` before `findCompatibleProducts` (`tool_selection`), and
-  `source-document-retrieval` also failed `arguments`/`evidence_expectation`. The live eval
-  contract therefore does not yet match the harness; the earlier 17/18 (2026-10-16) was on the
-  removed `streamSalesChat()` path and is not evidence for the harness.
+  see [evals/README.md](evals/README.md). Last recorded run, 2026-10-18 16:17 UTC, local
+  uncommitted worktree (contract `sales-chat-live-v27`, `deepseek-flash`, prompt
+  `sales-chat-system-v13`, ADR-275): **18/18 passed**, 152,633 tokens of the 180,000 budget,
+  and all 5 safety-critical cases failed closed. This is one run on one model, not proof
+  of stability, and the code is not yet committed or deployed. Earlier runs that day:
+  - 06:44 UTC, prompt `v12`: 16/18. `sales-brief` ran a second brief with the comparison
+    country BRA as its target. `source-document-retrieval` sent the model's wording
+    verbatim to full-text search, which missed the requested section. Both are fixed for
+    `v13`: the brief target is stated in the action schema, and the finish check now reuses
+    the target each task actually ran with. Source search uses the user's own terms when
+    their request is plain words.
+  - First harness run, contract `v26`, prompt `v11`: 7/18. The 160,000-token budget stopped
+    it after 13 cases. Its anchors were matched only in the model's message text.
+  - The 17/18 from 2026-10-16 was on the removed `streamSalesChat()` path and is not
+    evidence for the harness.
 - Production canary: every 6 hours via
   [production-canary.yml](../.github/workflows/production-canary.yml), including one real
   AI starter.

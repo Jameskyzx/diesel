@@ -10,7 +10,9 @@ import {
 } from "./token-usage";
 
 export const LIVE_EVAL_MAX_CASES = 18;
-export const LIVE_EVAL_MAX_TOKENS = 160_000;
+// Derived in docs/evals/README.md: 39 minimum model steps for the 18 cases at
+// about 3.7k tokens each, plus about nine corrective steps.
+export const LIVE_EVAL_MAX_TOKENS = 180_000;
 export const LIVE_EVAL_CASE_TIMEOUT_MS = 90_000;
 export const LIVE_EVAL_CASE_TOKEN_RESERVE = 12_000;
 export const LIVE_EVAL_MAX_RETRIES_PER_MODEL_CALL = 0 as const;
@@ -189,7 +191,16 @@ export function detectLiveEvalResponseLocale(
   return "indeterminate";
 }
 
+/**
+ * `responseText` is the message text, used for locale. `evidenceText` is the
+ * deterministic surface the server renders from validated results (fact/gap
+ * paragraphs and result cards). When it is given, every anchor must be found in
+ * it, so model prose alone can never carry a fact or decision, while a
+ * contradiction anywhere the user can read (narrative included) still vetoes.
+ * Matcher unit tests omit it; their `responseText` is itself that surface.
+ */
 export function evaluateLiveEvalResponseContract(input: {
+  evidenceText?: string;
   localeEvidenceTitles?: readonly string[];
   expectedLocale: "en" | "zh-CN";
   responseContract: LiveEvalResponseContract;
@@ -202,9 +213,12 @@ export function evaluateLiveEvalResponseContract(input: {
       ? [input.responseContract.disclaimerAnchor]
       : []),
   ];
-  const responseText = prepareLiveEvalResponseText(input.responseText);
+  const groundingText = prepareLiveEvalResponseText(input.evidenceText ?? input.responseText);
+  const visibleText = input.evidenceText === undefined
+    ? groundingText
+    : prepareLiveEvalResponseText(`${input.responseText}\n\n${input.evidenceText}`);
   const matchedResponseAnchorIds = anchors
-    .filter((anchor) => responseContainsLiveEvalAnchor(responseText, anchor))
+    .filter((anchor) => responseContainsLiveEvalAnchor(groundingText, anchor, visibleText))
     .map(({ id }) => id);
   const matched = new Set(matchedResponseAnchorIds);
   const missingResponseAnchorIds = anchors

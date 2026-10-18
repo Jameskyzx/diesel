@@ -16,10 +16,13 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
+import type { LanguageModel } from "ai";
+
 import { salesChatLiveCases, SALES_CHAT_LIVE_EVAL_VERSION } from "../../evals/sales-chat-live-cases";
 import { captureChatRuntimeContext } from "../../src/domain/ai/chat-runtime-context";
 import {
   LIVE_EVAL_CASE_TIMEOUT_MS,
+  LIVE_EVAL_CASE_TOKEN_RESERVE,
   LIVE_EVAL_MAX_TOKENS,
   evaluateLiveEvalResponseContract,
   judgeLiveEvalCase,
@@ -30,6 +33,9 @@ import {
 import { liveEvalLocaleCitationTitles } from "../../src/domain/ai/live-eval-response-locale";
 import { SALES_CHAT_SYSTEM_PROMPT_VERSION } from "../../src/features/ai/constants";
 import { aiToolNameSchema } from "../../src/features/ai/schemas";
+import { toolResultCardText } from "../../src/features/ai/tool-card-summary";
+import { toolPartPresentation } from "../../src/features/ai/tool-part-presentation";
+import type { Locale } from "../../src/i18n/locale";
 import { matchesExpectedLiveEvalReportArgs, sanitizeLiveEvalReportArgs } from "./live-eval-report-args";
 
 process.env.DATABASE_MODE = "pglite-demo";
@@ -48,17 +54,22 @@ type CaseReport = {
   mismatchReason: string | null;
   expectedTools: readonly string[];
   toolSequence: string[];
+  /** Sanitized like the v10 report: free text is fingerprinted, never stored. */
+  normalizedArgs: Array<{ tool: string; args: Record<string, unknown> }>;
+  evidenceAllowed: boolean | null;
   responseDisposition: string;
   missingResponseAnchorIds: string[];
   totalTokens: number | null;
   latencyMs: number;
 };
 
+type LiveEvalCase = (typeof salesChatLiveCases)[number];
+
 function sameTools(actual: readonly string[], expected: readonly string[]) {
   return actual.length === expected.length && actual.every((tool, index) => tool === expected[index]);
 }
 
-type StreamPart = { type: string; toolCallId?: string; toolName?: string; input?: unknown; output?: unknown; delta?: string; messageMetadata?: unknown };
+export type StreamPart = { type: string; toolCallId?: string; toolName?: string; input?: unknown; output?: unknown; delta?: string; messageMetadata?: unknown };
 
 async function readUiStream(response: Response): Promise<StreamPart[]> {
   const body = await response.text();
@@ -68,7 +79,20 @@ async function readUiStream(response: Response): Promise<StreamPart[]> {
   });
 }
 
-export async function runLiveEval() {
+/**
+ * The deterministic text a user sees in the result cards: each completed tool
+ * part goes through the browser's own presentation check (an invalid result
+ * renders an error, not facts) and the card's own field projection.
+ */
+export function renderedCardText(parts: readonly StreamPart[], locale: Locale): string {
+  return parts.filter(part => part.type === "tool-output-available").flatMap(part => {
+    const input = parts.find(candidate => candidate.type === "tool-input-available" && candidate.toolCallId === part.toolCallId);
+    const presentation = toolPartPresentation({ type: "dynamic-tool", toolName: input?.toolName, state: "output-available", input: input?.input, output: part.output });
+    return presentation.kind === "result" ? [toolResultCardText(presentation.result, locale)] : [];
+  }).join("\n\n");
+}
+
+async function loadHarnessModules() {
   const [
     { aiToolResultSchema },
     { buildSalesChatEvidenceContract, evidenceContractAllowsModelText },
@@ -77,8 +101,6 @@ export async function runLiveEval() {
     { verifyConversationReceipt },
     { readConversationMetadata },
     { buildEvidenceGapResponse },
-    { getConfiguredAiModel },
-    { getDemoDatabase },
   ] = await Promise.all([
     import("../../src/features/ai/schemas"),
     import("../../src/server/ai/evidence-contract"),
@@ -87,96 +109,121 @@ export async function runLiveEval() {
     import("../../src/server/ai/conversation-receipt"),
     import("../../src/features/ai/conversation-state"),
     import("../../src/domain/ai/evidence-gap-response"),
+  ]);
+  return { aiToolResultSchema, buildSalesChatEvidenceContract, evidenceContractAllowsModelText, createSalesChatTools,
+    catalogHarnessResponse, verifyConversationReceipt, readConversationMetadata, buildEvidenceGapResponse };
+}
+
+/** Runs and judges one case through the production harness. Exported so the
+ * offline suite can replay the same contract with the deterministic model. */
+export async function runLiveEvalCase(testCase: LiveEvalCase, model: LanguageModel,
+  onFinalParts?: (parts: readonly StreamPart[]) => void): Promise<CaseReport> {
+  const {
+    aiToolResultSchema, buildSalesChatEvidenceContract, evidenceContractAllowsModelText, createSalesChatTools,
+    catalogHarnessResponse, verifyConversationReceipt, readConversationMetadata, buildEvidenceGapResponse,
+  } = await loadHarnessModules();
+  type TurnSummary = Parameters<NonNullable<Parameters<typeof catalogHarnessResponse>[0]["onTurnComplete"]>>[0];
+  const startedAt = performance.now();
+  const runtimeContext = captureChatRuntimeContext();
+  const auditRepository = { recordToolCall: async () => undefined };
+  const contract = buildSalesChatEvidenceContract({ runtimeContext, selectedCountryIso3: testCase.selectedCountryIso3, userTexts: testCase.userTexts });
+  const sessionId = crypto.randomUUID();
+  let errorCode: LiveEvalResultErrorCode | null = null;
+  let report: Omit<CaseReport, "latencyMs">;
+  let caseTokens: number | null = 0;
+
+  try {
+    const signal = AbortSignal.timeout(LIVE_EVAL_CASE_TIMEOUT_MS);
+    let previous: ReturnType<typeof verifyConversationReceipt> = null;
+    let parts: StreamPart[] = [];
+    let summary: TurnSummary | null = null;
+    for (const [turn, userText] of testCase.userTexts.entries()) {
+      summary = null;
+      const tools = createSalesChatTools({ auditRepository, runtimeContext, selectedCountryIso3: testCase.selectedCountryIso3,
+        sessionId, turnId: `live-eval-${testCase.id}-${turn}` });
+      const response = catalogHarnessResponse({ model, tools, signal, locale: testCase.locale, today: runtimeContext.utcDate,
+        userText, messages: [{ role: "user", content: userText }], previous, sessionId,
+        selectedCountryIso3: testCase.selectedCountryIso3, requestId: crypto.randomUUID(),
+        onStepUsage: usage => { caseTokens = caseTokens === null || usage.totalTokens === undefined ? null : caseTokens + usage.totalTokens; },
+        onTurnComplete: value => { summary = value; } });
+      parts = await readUiStream(response);
+      const receipt = readConversationMetadata(parts.findLast(part => part.type === "finish")?.messageMetadata)?.conversation.receipt;
+      previous = verifyConversationReceipt(receipt, { sessionId, selectedCountryIso3: testCase.selectedCountryIso3, previousUserText: userText });
+    }
+    onFinalParts?.(parts);
+    const turnSummary = summary as TurnSummary | null;
+    if (!turnSummary) throw new Error("The harness did not report a completed turn.");
+
+    const toolCalls = parts.filter(part => part.type === "tool-input-available");
+    const outputs = parts.filter(part => part.type === "tool-output-available" || part.type === "tool-output-error");
+    const toolSequence = toolCalls.map(({ toolName }) => toolName ?? "unknown");
+    const normalizedArgs = toolCalls.flatMap(call => {
+      const tool = aiToolNameSchema.safeParse(call.toolName);
+      return tool.success ? [{ tool: tool.data, args: sanitizeLiveEvalReportArgs({ args: call.input, tool: tool.data,
+        knowledgeQueryContract: testCase.knowledgeQueryContract }) }] : [];
+    });
+    const argsPassed = Object.entries(testCase.expectedArgs).every(([toolName, expected]) => {
+      const call = normalizedArgs.find(candidate => candidate.tool === toolName);
+      return call !== undefined && expected !== undefined && matchesExpectedLiveEvalReportArgs({ actual: call.args, expected,
+        runtimeContext, knowledgeQueryContract: testCase.knowledgeQueryContract, tool: call.tool });
+    });
+    const parsedResults = outputs.flatMap(({ output }) => { const parsed = aiToolResultSchema.safeParse(output); return parsed.success ? [parsed.data] : []; });
+    const evidenceAllowed = evidenceContractAllowsModelText(contract, parsedResults);
+    if (!turnSummary.completed || outputs.length !== toolCalls.length || outputs.length !== parsedResults.length ||
+      parsedResults.some(({ status }) => status === "error")) errorCode = "TOOL_RESULT_ERROR";
+
+    const responseText = turnSummary.text;
+    // Anchors are grounded only on what the server renders from validated
+    // results: its fact/gap paragraphs and the result cards. The narrative can
+    // only veto (see evaluateLiveEvalResponseContract).
+    const evidenceText = [turnSummary.evidenceText, renderedCardText(parts, testCase.locale)].filter(Boolean).join("\n\n");
+    // In the harness the narrative cannot carry facts; a denied case fails
+    // closed when every insufficient result's evidence-gap text is rendered.
+    const gapTexts = turnSummary.evidence.filter(({ result }) => !(result.status === "ok" && result.evidenceSufficient))
+      .map(({ result }) => buildEvidenceGapResponse([result], result.status === "error", false, testCase.locale));
+    const responseDisposition = testCase.expectedEvidenceAllowed || errorCode !== null
+      ? resolveLiveEvalResponseDisposition({ errorCode, responseText })
+      : responseText.trim().length === 0 ? "empty" as const
+        : gapTexts.length > 0 && gapTexts.every(text => responseText.includes(text)) ? "whole_request_refusal" as const : "answered" as const;
+    const observation = errorCode === null
+      ? evaluateLiveEvalResponseContract({ expectedLocale: testCase.locale, responseContract: testCase.responseContract, responseText, evidenceText,
+        localeEvidenceTitles: liveEvalLocaleCitationTitles({ evidenceAllowed, toolResults: parsedResults }) })
+      : { missingResponseAnchorIds: liveEvalResponseContractAnchorIds(testCase.responseContract), responseGroundingPassed: false, responseLocalePassed: false };
+    const judgement = judgeLiveEvalCase({ argsPassed, errorCode, evidenceAllowed, expectedEvidenceAllowed: testCase.expectedEvidenceAllowed,
+      responseDisposition, responseGroundingPassed: observation.responseGroundingPassed, responseLocalePassed: observation.responseLocalePassed,
+      safetyCritical: testCase.safetyCritical, tokenUsageComplete: caseTokens !== null, toolSelectionPassed: sameTools(toolSequence, testCase.expectedTools) });
+    report = { id: testCase.id, locale: testCase.locale, safetyCritical: testCase.safetyCritical, pass: judgement.pass,
+      mismatchReason: judgement.mismatchReason, expectedTools: testCase.expectedTools, toolSequence, normalizedArgs, evidenceAllowed,
+      responseDisposition, missingResponseAnchorIds: observation.missingResponseAnchorIds, totalTokens: caseTokens };
+  } catch (error) {
+    report = { id: testCase.id, locale: testCase.locale, safetyCritical: testCase.safetyCritical, pass: false,
+      mismatchReason: `error:${error instanceof Error ? error.name : "UnknownError"}`, expectedTools: testCase.expectedTools,
+      toolSequence: [], normalizedArgs: [], evidenceAllowed: null, responseDisposition: "not_evaluated",
+      missingResponseAnchorIds: liveEvalResponseContractAnchorIds(testCase.responseContract), totalTokens: caseTokens };
+  }
+  return { ...report, latencyMs: Math.round(performance.now() - startedAt) };
+}
+
+export async function runLiveEval() {
+  const [{ getConfiguredAiModel }, { getDemoDatabase }] = await Promise.all([
     import("../../src/server/ai/model"),
     import("../../src/server/db/demo-client"),
   ]);
   await getDemoDatabase();
   const { model, modelId, providerProfile } = getConfiguredAiModel();
-  type TurnSummary = Parameters<NonNullable<Parameters<typeof catalogHarnessResponse>[0]["onTurnComplete"]>>[0];
 
   const cases: CaseReport[] = [];
   let totalTokens = 0;
   let stoppedForBudget = false;
 
   for (const testCase of salesChatLiveCases) {
-    // The budget is checked after each case: usage is only known once a call ends.
-    if (totalTokens >= LIVE_EVAL_MAX_TOKENS) { stoppedForBudget = true; break; }
-    const startedAt = performance.now();
-    const runtimeContext = captureChatRuntimeContext();
-    const auditRepository = { recordToolCall: async () => undefined };
-    const contract = buildSalesChatEvidenceContract({ runtimeContext, selectedCountryIso3: testCase.selectedCountryIso3, userTexts: testCase.userTexts });
-    const sessionId = crypto.randomUUID();
-    let errorCode: LiveEvalResultErrorCode | null = null;
-    let report: Omit<CaseReport, "latencyMs">;
-    let caseTokens: number | null = 0;
-
-    try {
-      const signal = AbortSignal.timeout(LIVE_EVAL_CASE_TIMEOUT_MS);
-      let previous: ReturnType<typeof verifyConversationReceipt> = null;
-      let parts: StreamPart[] = [];
-      let summary: TurnSummary | null = null;
-      for (const [turn, userText] of testCase.userTexts.entries()) {
-        summary = null;
-        const tools = createSalesChatTools({ auditRepository, runtimeContext, selectedCountryIso3: testCase.selectedCountryIso3,
-          sessionId, turnId: `live-eval-${testCase.id}-${turn}` });
-        const response = catalogHarnessResponse({ model, tools, signal, locale: testCase.locale, today: runtimeContext.utcDate,
-          userText, messages: [{ role: "user", content: userText }], previous, sessionId,
-          selectedCountryIso3: testCase.selectedCountryIso3, requestId: crypto.randomUUID(),
-          onStepUsage: usage => { caseTokens = caseTokens === null || usage.totalTokens === undefined ? null : caseTokens + usage.totalTokens; },
-          onTurnComplete: value => { summary = value; } });
-        parts = await readUiStream(response);
-        const receipt = readConversationMetadata(parts.findLast(part => part.type === "finish")?.messageMetadata)?.conversation.receipt;
-        previous = verifyConversationReceipt(receipt, { sessionId, selectedCountryIso3: testCase.selectedCountryIso3, previousUserText: userText });
-      }
-      const turnSummary = summary as TurnSummary | null;
-      if (!turnSummary) throw new Error("The harness did not report a completed turn.");
-      totalTokens += caseTokens ?? 0;
-
-      const toolCalls = parts.filter(part => part.type === "tool-input-available");
-      const outputs = parts.filter(part => part.type === "tool-output-available" || part.type === "tool-output-error");
-      const toolSequence = toolCalls.map(({ toolName }) => toolName ?? "unknown");
-      const normalizedArgs = toolCalls.flatMap(call => {
-        const tool = aiToolNameSchema.safeParse(call.toolName);
-        return tool.success ? [{ tool: tool.data, args: sanitizeLiveEvalReportArgs({ args: call.input, tool: tool.data,
-          knowledgeQueryContract: testCase.knowledgeQueryContract }) }] : [];
-      });
-      const argsPassed = Object.entries(testCase.expectedArgs).every(([toolName, expected]) => {
-        const call = normalizedArgs.find(candidate => candidate.tool === toolName);
-        return call !== undefined && expected !== undefined && matchesExpectedLiveEvalReportArgs({ actual: call.args, expected,
-          runtimeContext, knowledgeQueryContract: testCase.knowledgeQueryContract, tool: call.tool });
-      });
-      const parsedResults = outputs.flatMap(({ output }) => { const parsed = aiToolResultSchema.safeParse(output); return parsed.success ? [parsed.data] : []; });
-      const evidenceAllowed = evidenceContractAllowsModelText(contract, parsedResults);
-      if (!turnSummary.completed || outputs.length !== toolCalls.length || outputs.length !== parsedResults.length ||
-        parsedResults.some(({ status }) => status === "error")) errorCode = "TOOL_RESULT_ERROR";
-
-      const responseText = turnSummary.text;
-      // In the harness the narrative cannot carry facts; a denied case fails
-      // closed when every insufficient result's evidence-gap text is rendered.
-      const gapTexts = turnSummary.evidence.filter(({ result }) => !(result.status === "ok" && result.evidenceSufficient))
-        .map(({ result }) => buildEvidenceGapResponse([result], result.status === "error", false, testCase.locale));
-      const responseDisposition = testCase.expectedEvidenceAllowed || errorCode !== null
-        ? resolveLiveEvalResponseDisposition({ errorCode, responseText })
-        : responseText.trim().length === 0 ? "empty" as const
-          : gapTexts.length > 0 && gapTexts.every(text => responseText.includes(text)) ? "whole_request_refusal" as const : "answered" as const;
-      const observation = errorCode === null
-        ? evaluateLiveEvalResponseContract({ expectedLocale: testCase.locale, responseContract: testCase.responseContract, responseText,
-          localeEvidenceTitles: liveEvalLocaleCitationTitles({ evidenceAllowed, toolResults: parsedResults }) })
-        : { missingResponseAnchorIds: liveEvalResponseContractAnchorIds(testCase.responseContract), responseGroundingPassed: false, responseLocalePassed: false };
-      const judgement = judgeLiveEvalCase({ argsPassed, errorCode, evidenceAllowed, expectedEvidenceAllowed: testCase.expectedEvidenceAllowed,
-        responseDisposition, responseGroundingPassed: observation.responseGroundingPassed, responseLocalePassed: observation.responseLocalePassed,
-        safetyCritical: testCase.safetyCritical, tokenUsageComplete: caseTokens !== null, toolSelectionPassed: sameTools(toolSequence, testCase.expectedTools) });
-      report = { id: testCase.id, locale: testCase.locale, safetyCritical: testCase.safetyCritical, pass: judgement.pass,
-        mismatchReason: judgement.mismatchReason, expectedTools: testCase.expectedTools, toolSequence, responseDisposition,
-        missingResponseAnchorIds: observation.missingResponseAnchorIds, totalTokens: caseTokens };
-    } catch (error) {
-      report = { id: testCase.id, locale: testCase.locale, safetyCritical: testCase.safetyCritical, pass: false,
-        mismatchReason: `error:${error instanceof Error ? error.name : "UnknownError"}`, expectedTools: testCase.expectedTools,
-        toolSequence: [], responseDisposition: "not_evaluated", missingResponseAnchorIds: liveEvalResponseContractAnchorIds(testCase.responseContract), totalTokens: null };
-    }
-    const latencyMs = Math.round(performance.now() - startedAt);
-    cases.push({ ...report, latencyMs });
-    process.stdout.write(`${report.pass ? "PASS" : "FAIL"}  ${testCase.id}${report.mismatchReason ? `  (${report.mismatchReason})` : ""}  ${latencyMs} ms\n`);
+    // Usage is only known once a call ends, so the budget is checked before
+    // each case: a case starts only while a typical case still fits.
+    if (totalTokens + LIVE_EVAL_CASE_TOKEN_RESERVE > LIVE_EVAL_MAX_TOKENS) { stoppedForBudget = true; break; }
+    const report = await runLiveEvalCase(testCase, model);
+    totalTokens += report.totalTokens ?? 0;
+    cases.push(report);
+    process.stdout.write(`${report.pass ? "PASS" : "FAIL"}  ${testCase.id}${report.mismatchReason ? `  (${report.mismatchReason})` : ""}  ${report.totalTokens ?? "?"} tokens  ${report.latencyMs} ms\n`);
   }
 
   const passed = cases.filter(item => item.pass).length;

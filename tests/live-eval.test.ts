@@ -4,7 +4,9 @@ import {
   classifyLiveEvalResponse,
   evaluateLiveEvalResponseContract,
   judgeLiveEvalCase,
+  LIVE_EVAL_CASE_TOKEN_RESERVE,
   LIVE_EVAL_MAX_OUTPUT_TOKENS_PER_CALL,
+  LIVE_EVAL_MAX_TOKENS,
   LIVE_EVAL_MAX_RETRIES_PER_MODEL_CALL,
   LIVE_EVAL_TOKEN_BUDGET_ENFORCEMENT,
   liveEvalAttemptBudgetPassed,
@@ -147,21 +149,21 @@ describe("live eval scoring and budget", () => {
       shouldStopLiveEval({
         caseCount: 1,
         tokenUsageComplete: true,
-        totalTokens: 160_000,
+        totalTokens: LIVE_EVAL_MAX_TOKENS,
       }),
     ).toBe(true);
     expect(
       shouldStopLiveEval({
         caseCount: 17,
         tokenUsageComplete: true,
-        totalTokens: 147_999,
+        totalTokens: LIVE_EVAL_MAX_TOKENS - LIVE_EVAL_CASE_TOKEN_RESERVE - 1,
       }),
     ).toBe(false);
     expect(
       shouldStopLiveEval({
         caseCount: 17,
         tokenUsageComplete: true,
-        totalTokens: 148_001,
+        totalTokens: LIVE_EVAL_MAX_TOKENS - LIVE_EVAL_CASE_TOKEN_RESERVE + 1,
       }),
     ).toBe(true);
     expect(
@@ -344,7 +346,7 @@ describe("live eval scoring and budget", () => {
       input: {
         caseCount: 18,
         tokenUsageComplete: true,
-        totalTokens: 160_001,
+        totalTokens: LIVE_EVAL_MAX_TOKENS + 1,
       },
     },
     {
@@ -352,7 +354,7 @@ describe("live eval scoring and budget", () => {
       input: {
         caseCount: 17,
         tokenUsageComplete: true,
-        totalTokens: 160_000,
+        totalTokens: LIVE_EVAL_MAX_TOKENS,
       },
     },
     {
@@ -368,7 +370,7 @@ describe("live eval scoring and budget", () => {
       input: {
         caseCount: 1,
         tokenUsageComplete: true,
-        totalTokens: 148_001,
+        totalTokens: LIVE_EVAL_MAX_TOKENS - LIVE_EVAL_CASE_TOKEN_RESERVE + 1,
       },
     },
     {
@@ -376,7 +378,7 @@ describe("live eval scoring and budget", () => {
       input: {
         caseCount: 1,
         tokenUsageComplete: true,
-        totalTokens: 147_999,
+        totalTokens: LIVE_EVAL_MAX_TOKENS - LIVE_EVAL_CASE_TOKEN_RESERVE - 1,
       },
     },
   ] as const)("resolves the explicit stop reason $expected", ({
@@ -395,7 +397,7 @@ describe("live eval scoring and budget", () => {
         runError: false,
         suiteCaseCount: 18,
         tokenUsageComplete: true,
-        totalTokens: 160_000,
+        totalTokens: LIVE_EVAL_MAX_TOKENS,
       },
       label: "a partial run exactly at the token limit",
     },
@@ -407,7 +409,7 @@ describe("live eval scoring and budget", () => {
         runError: false,
         suiteCaseCount: 18,
         tokenUsageComplete: true,
-        totalTokens: 160_000,
+        totalTokens: LIVE_EVAL_MAX_TOKENS,
       },
       label: "a naturally completed full run exactly at the token limit",
     },
@@ -419,7 +421,7 @@ describe("live eval scoring and budget", () => {
         runError: false,
         suiteCaseCount: 18,
         tokenUsageComplete: true,
-        totalTokens: 160_000,
+        totalTokens: LIVE_EVAL_MAX_TOKENS,
       },
       label: "a full-length run whose final case hit the budget guard",
     },
@@ -1320,7 +1322,7 @@ describe("live eval scoring and budget", () => {
         scores: perfectScores,
         terminationReason: "completed",
         tokenUsageComplete: true,
-        totalTokens: 160_000,
+        totalTokens: LIVE_EVAL_MAX_TOKENS,
       }),
     ).toBe(true);
     expect(
@@ -1330,7 +1332,7 @@ describe("live eval scoring and budget", () => {
         scores: perfectScores,
         terminationReason: "token_limit_exceeded",
         tokenUsageComplete: true,
-        totalTokens: 160_000,
+        totalTokens: LIVE_EVAL_MAX_TOKENS,
       }),
     ).toBe(false);
     expect(
@@ -1340,7 +1342,7 @@ describe("live eval scoring and budget", () => {
         scores: perfectScores,
         terminationReason: "completed",
         tokenUsageComplete: true,
-        totalTokens: 160_001,
+        totalTokens: LIVE_EVAL_MAX_TOKENS + 1,
       }),
     ).toBe(false);
     expect(
@@ -1370,5 +1372,31 @@ describe("live eval scoring and budget", () => {
         .filter(({ safetyCritical }) => safetyCritical)
         .every(({ expectedEvidenceAllowed }) => !expectedEvidenceAllowed),
     ).toBe(true);
+  });
+});
+
+describe("harness grounding surface", () => {
+  const responseContract = salesChatLiveCases.find(({ id }) => id === "product-ready-dual-axis")!.responseContract;
+  const cardText = [
+    "Deterministic product fit", "Evidence retrieved", "Country: CHN", "Application: Non-road", "Power: 100 kW",
+    "Date: Aug 13, 2026", "Product: DEMO-ENG-100", "Regulation/certification fit: Confirmed fit · Commercially ready",
+    "For information only; not a substitute for formal certification or legal advice.",
+  ].join("\n");
+
+  it("grounds anchors only on server-rendered evidence, never on the narrative alone", () => {
+    const grounded = evaluateLiveEvalResponseContract({ expectedLocale: "en", responseContract,
+      responseText: "Review the product-fit result below.", evidenceText: cardText });
+    expect(grounded.missingResponseAnchorIds).toEqual([]);
+    const narrativeOnly = evaluateLiveEvalResponseContract({ expectedLocale: "en", responseContract,
+      responseText: cardText.replaceAll("\n", ". "), evidenceText: "The requested evidence checks completed." });
+    expect(narrativeOnly.responseGroundingPassed).toBe(false);
+    expect(narrativeOnly.missingResponseAnchorIds).toContain("fact:model-demo-eng-100");
+  });
+
+  it("still vetoes a contradiction the narrative adds to valid evidence", () => {
+    const observation = evaluateLiveEvalResponseContract({ expectedLocale: "en", responseContract,
+      responseText: "Note: DEMO-ENG-100 is not compatible with this market.", evidenceText: cardText });
+    expect(observation.responseGroundingPassed).toBe(false);
+    expect(observation.missingResponseAnchorIds).toContain("decision:product-compatible");
   });
 });

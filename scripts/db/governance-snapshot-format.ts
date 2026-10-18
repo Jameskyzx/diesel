@@ -14,6 +14,7 @@ import {
 } from "../../src/features/database/schemas";
 
 export const governanceTableNames = [
+  "catalog_engines",
   "countries",
   "country_jurisdictions",
   "data_change_logs",
@@ -76,6 +77,15 @@ const preciseTimestampConfig: Record<
     properties: ReadonlySet<string>;
   }
 > = {
+  catalog_engines: {
+    key: (row) => String(row.id),
+    properties: new Set([
+      "verifiedAt",
+      "createdAt",
+      "updatedAt",
+      "archivedAt",
+    ]),
+  },
   countries: {
     key: (row) => String(row.iso3),
     properties: new Set([
@@ -402,7 +412,60 @@ const limitRowSchema = z
     message: "Limit validity end must follow its start",
   });
 
+const catalogEngineRowSchema = z
+  .object({
+    aftertreatment: z.string(),
+    applicationScopes: z
+      .array(
+        z.enum([
+          "on-road",
+          "non-road",
+          "marine",
+          "generator-set",
+          "agriculture",
+          "construction",
+          "on-road-truck",
+          "on-road-bus",
+        ]),
+      )
+      .min(1),
+    archivedAt: nullableTimestampSchema,
+    category: z.enum([
+      "truck",
+      "bus",
+      "construction",
+      "agriculture",
+      "generator-set",
+      "marine",
+    ]),
+    createdAt: timestampSchema,
+    cylinders: z.number().int().positive(),
+    dataSourceId: uuidSchema,
+    declaredCitationCodes: z.array(z.string()),
+    displacementL: z.number().positive(),
+    emissionLabel: z.string(),
+    id: uuidSchema,
+    isDemo: z.boolean(),
+    modelCode: z.string(),
+    powerMaxKw: z.number(),
+    powerMinKw: z.number().nonnegative(),
+    ratedPowerKw: z.number(),
+    ratedSpeedRpm: z.number().positive(),
+    series: z.string(),
+    updatedAt: timestampSchema,
+    verifiedAt: timestampSchema,
+  })
+  .strict()
+  .refine(
+    (row) =>
+      row.powerMaxKw > row.powerMinKw &&
+      row.ratedPowerKw >= row.powerMinKw &&
+      row.ratedPowerKw < row.powerMaxKw,
+    "Catalogue rated power must lie inside its half-open power band",
+  );
+
 const governedEntityTypeSchema = z.enum([
+  "catalog_engine",
   "country",
   "regulation",
   "product",
@@ -454,6 +517,7 @@ const marketImportBatchRowSchema = z
     contentSha256: z.string().regex(/^[0-9a-f]{64}$/),
     createdAt: timestampSchema,
     createdBy: z.string(),
+    entityType: z.enum(["market_metric", "catalog_engine"]),
     id: uuidSchema,
     invalidRows: z.number().int().nonnegative(),
     originalFilename: z.string(),
@@ -560,6 +624,7 @@ const tableCountsSchema = z
 
 const tablesSchema = z
   .object({
+    catalog_engines: z.array(catalogEngineRowSchema),
     countries: z.array(countryRowSchema),
     country_jurisdictions: z.array(membershipRowSchema),
     data_change_logs: z.array(changeLogRowSchema),
@@ -596,7 +661,7 @@ function reportDuplicateKeys(
 const governanceSnapshotSchema = z
   .object({
     exportedAt: timestampSchema,
-    formatVersion: z.literal(4),
+    formatVersion: z.literal(5),
     tableCounts: tableCountsSchema,
     tables: tablesSchema,
   })
@@ -650,6 +715,7 @@ const governanceSnapshotSchema = z
       ["tables", "country_jurisdictions"],
     );
     for (const tableName of [
+      "catalog_engines",
       "regulations",
       "regulation_limits",
       "market_metrics",
@@ -669,6 +735,12 @@ const governanceSnapshotSchema = z
       (row) => `${String(row.entityType)}:${String(row.entityKey)}:${String(row.version)}`,
       context,
       ["tables", "data_governance_drafts"],
+    );
+    reportDuplicateKeys(
+      snapshot.tables.catalog_engines.filter((row) => row.archivedAt === null),
+      (row) => String(row.modelCode),
+      context,
+      ["tables", "catalog_engines"],
     );
     reportDuplicateKeys(
       snapshot.tables.regulations.filter(
@@ -799,6 +871,14 @@ const governanceSnapshotSchema = z
         "dataSourceId",
       );
     });
+    snapshot.tables.catalog_engines.forEach((row, index) =>
+      requireReference(
+        sourceIds.has(row.dataSourceId),
+        "catalog_engines",
+        index,
+        "dataSourceId",
+      ),
+    );
     snapshot.tables.market_metrics.forEach((row, index) => {
       requireReference(
         countryIds.has(row.countryIso3),
@@ -906,7 +986,7 @@ const governanceSnapshotSchema = z
             ? draftPayload.documentId
             : null;
 
-        // Documents are intentionally outside the v4 snapshot closure. Bind
+        // Documents are intentionally outside the v5 snapshot closure. Bind
         // the marker to its exported document draft and source here; runtime
         // publication additionally binds sourceId to documents.dataSourceId.
         requireReference(

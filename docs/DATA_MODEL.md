@@ -379,8 +379,8 @@ Migration `0011` 先拒绝已有负下界或 `max <= min` 的记录，再追加�
 
 记录规格书“声明”的内容，与 `products`/`product_certifications` 的“已审批产品 + 认证”分开，
 从不作为认证。只经治理草稿发布写入：管理后台 xlsx 导入（预览批次 → 逐行草稿 → 审核 →
-发布），或 `pnpm db:ingest-demo-catalogue` 发布虚构 Demo 目录固定数据
-（`src/server/db/seed/demo-engine-catalog.json`）。
+发布），或 `pnpm db:ingest-demo-catalogue`（完整发布的 fixture 队列会自动运行）发布虚构 Demo
+目录固定数据（`src/server/db/seed/demo-engine-catalog.json`）。该表属于治理快照 v5（ADR-274）。
 
 | 字段 | 约束 | 说明 |
 | --- | --- | --- |

@@ -1989,8 +1989,8 @@ Demo；生产配置成内存或数据库计数失败都会在进入请求解析�
 - FDE 独立开发历史继续与 `master` 无共同祖先，且 archive ref 在许可证门解除前必须不存在。
   只读校验工具 `history:verify` 已于 2026-10-17 移除，历史记录见
   [DEVELOPMENT_HISTORY.md](DEVELOPMENT_HISTORY.md)。
-- 治理发布保护：v4 JSON 快照由一个 long-lived、read-only repeatable-read 锚点事务
-  `pg_export_snapshot()` 固定十张治理表（含 `market_metrics`）的同一 MVCC 视图；锚点每
+- 治理发布保护：v5 JSON 快照（ADR-274）由一个 long-lived、read-only repeatable-read 锚点事务
+  `pg_export_snapshot()` 固定十一张治理表（含 `market_metrics` 与 `catalog_engines`）的同一 MVCC 视图；锚点每
   10 秒执行最小探针，
   60 秒 idle-in-transaction 上限使失活连接快速失败。顶层时间保留
   PostgreSQL 六位微秒，JSONB 以原始 `jsonb::text` 保存，避免 JavaScript 数值舍入。
@@ -2015,7 +2015,7 @@ Demo；生产配置成内存或数据库计数失败都会在进入请求解析�
   IPC 非法、超过 10,000 条或诊断输出失败同样先终止并回收 worker，不把日志当成功凭据。
   只有 worker
   的锚点与全部 reader 只读事务完成、各连接已排队协议写被清空、同连接 teardown
-  探针成功、严格 v4 校验和
+  探针成功、严格 v5 校验和
   `0600` 临时文件全部完成，父进程才以
   同目录 hard-link 原子、无覆盖地提升为正式快照。
   恢复入口先按原始文件 SHA-256、严格 Zod schema、逐表计数与引用闭包失败关闭，显式
@@ -2168,7 +2168,7 @@ Demo；生产配置成内存或数据库计数失败都会在进入请求解析�
   ecosystem 重建并要求实际 OS uid 为 `diesel`。committed/finalized host validator 会重复验证
   live process 与 durable dump，未通过时不能迁移账本。状态机对
   publish/finalize/active recovery 再次执行相同无秘密门。
-  `recover-required` 以重新导出的 v4 快照对
+  `recover-required` 以重新导出的 v5 快照对
   发布前 snapshot 的 `tableCounts + tables` 深比较：先把旧数据库已恢复事实从
   `RECOVERY_REQUIRED` durable 迁移为 `HOST_ROLLBACK_REQUIRED`，再由版本化 restore-only host rollback 只收敛到
   persisted `previous-release`。旧 release verifier 以 `diesel` 用户和无数据库/模型秘密的最小环境

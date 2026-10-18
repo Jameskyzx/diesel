@@ -21,8 +21,10 @@ import { governanceMaintenanceTokenEnvironmentVariable } from "@/server/db/gover
 
 const ids = {
   batch: "00000000-0000-4000-8000-000000000008",
+  catalogEngine: "00000000-0000-4000-8000-000000000010",
   draft: "00000000-0000-4000-8000-000000000007",
   extraBatch: "00000000-0000-4000-8000-000000000098",
+  extraCatalogEngine: "00000000-0000-4000-8000-000000000087",
   extraChunk: "00000000-0000-4000-8000-000000000089",
   extraDocument: "00000000-0000-4000-8000-000000000090",
   extraDraft: "00000000-0000-4000-8000-000000000094",
@@ -43,6 +45,30 @@ const timestamp = "2026-08-11T00:00:00.000Z";
 
 function buildSnapshot(): GovernanceSnapshot {
   const tables = {
+    catalog_engines: [
+      {
+        aftertreatment: "DOC + DPF",
+        applicationScopes: ["construction", "agriculture"],
+        archivedAt: null,
+        category: "construction",
+        createdAt: timestamp,
+        cylinders: 6,
+        dataSourceId: ids.source,
+        declaredCitationCodes: ["ZZZ-2026", "CELEX:32016R1628"],
+        displacementL: 6.7,
+        emissionLabel: "Snapshot stage",
+        id: ids.catalogEngine,
+        isDemo: false,
+        modelCode: "SNAPSHOT-120",
+        powerMaxKw: 140,
+        powerMinKw: 100,
+        ratedPowerKw: 120.125,
+        ratedSpeedRpm: 2200,
+        series: "SNAPSHOT",
+        updatedAt: timestamp,
+        verifiedAt: timestamp,
+      },
+    ],
     countries: [
       {
         archivedAt: null,
@@ -148,6 +174,7 @@ function buildSnapshot(): GovernanceSnapshot {
         contentSha256: "a".repeat(64),
         createdAt: timestamp,
         createdBy: "editor@example.test",
+        entityType: "market_metric",
         id: ids.batch,
         invalidRows: 0,
         originalFilename: "snapshot.csv",
@@ -227,7 +254,7 @@ function buildSnapshot(): GovernanceSnapshot {
   };
   return parseGovernanceSnapshot({
     exportedAt: timestamp,
-    formatVersion: 4,
+    formatVersion: 5,
     tableCounts: Object.fromEntries(
       Object.entries(tables).map(([tableName, rows]) => [
         tableName,
@@ -262,6 +289,16 @@ async function seedRowsOutsideSnapshot(
       [ids.extraSource, "b".repeat(64), timestamp],
     );
   }
+  await client.query(
+    `insert into catalog_engines
+       (id, model_code, series, category, application_scopes, rated_power_kw,
+        rated_speed_rpm, power_min_kw, power_max_kw, displacement_l, cylinders,
+        aftertreatment, emission_label, data_source_id, verified_at, is_demo,
+        created_at, updated_at)
+     values ($1, 'SNAPSHOT-EXTERNAL', 'SNAPSHOT', 'truck', '{on-road-truck}', 300,
+             1900, 280, 320, 12, 6, 'SCR', 'External', $2, $3, false, $3, $3)`,
+    [ids.extraCatalogEngine, ids.extraSource, timestamp],
+  );
   await client.query(
     `insert into countries
        (iso3, iso2, name_en, data_coverage_status, data_source_id,
@@ -343,6 +380,7 @@ async function seedRowsOutsideSnapshot(
 }
 
 const physicalStateQueries = [
+  { orderBy: "id", tableName: "catalog_engines" },
   { orderBy: "iso3", tableName: "countries" },
   {
     orderBy: "country_iso3, jurisdiction_id, valid_from",
@@ -424,6 +462,45 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     expect(() => parseGovernanceSnapshot(value)).toThrow("Duplicate snapshot key");
   });
 
+  it("rejects two active catalogue entities for one model but allows an archived predecessor", () => {
+    const value = structuredClone(buildSnapshot());
+    value.tables.catalog_engines.push({
+      ...value.tables.catalog_engines[0]!,
+      id: "00000000-0000-4000-8000-000000000086",
+    });
+    value.tableCounts.catalog_engines += 1;
+    expect(() => parseGovernanceSnapshot(value)).toThrow("Duplicate snapshot key");
+
+    value.tables.catalog_engines[1]!.archivedAt = timestamp;
+    expect(() => parseGovernanceSnapshot(value)).not.toThrow();
+  });
+
+  it("refuses to restore over a different active entity for the same catalogue model", async () => {
+    const { client, database } = await createTestDatabase();
+    openClients.push(client);
+    await client.query(
+      `insert into data_sources
+         (id, title, source_type, verified_at, is_demo, created_at, updated_at)
+       values ($1, 'Target source', 'other', $2, false, $2, $2)`,
+      [ids.extraSource, timestamp],
+    );
+    await client.query(
+      `insert into catalog_engines
+         (id, model_code, series, category, application_scopes, rated_power_kw,
+          rated_speed_rpm, power_min_kw, power_max_kw, displacement_l, cylinders,
+          aftertreatment, emission_label, data_source_id, verified_at, is_demo)
+       values ($1, 'SNAPSHOT-120', 'SNAPSHOT', 'construction', '{construction}', 120,
+               2200, 100, 140, 6.7, 6, 'DOC', 'Target', $2, $3, false)`,
+      [ids.extraCatalogEngine, ids.extraSource, timestamp],
+    );
+
+    await expect(
+      database.transaction((transaction) =>
+        restoreGovernanceSnapshotInTransaction(transaction, buildSnapshot()),
+      ),
+    ).rejects.toThrow("catalog_engines active model");
+  });
+
   it("preflights market natural keys above PostgreSQL's parameter limit in safe batches", async () => {
     const baseRow = buildSnapshot().tables.market_metrics[0]!;
     const rowCount =
@@ -489,20 +566,39 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
 
       const safeExtras = await client.query<{
         batches: number;
+        engines: number;
         logs: number;
         sources: number;
       }>(
         `select
          (select count(*)::int from market_import_batches where id = $1) as batches,
          (select count(*)::int from data_change_logs where id = $2) as logs,
-         (select count(*)::int from data_sources where id = $3) as sources`,
-        [ids.extraBatch, ids.extraLog, ids.extraSource],
+         (select count(*)::int from data_sources where id = $3) as sources,
+         (select count(*)::int from catalog_engines where id = $4) as engines`,
+        [ids.extraBatch, ids.extraLog, ids.extraSource, ids.extraCatalogEngine],
       );
       expect(safeExtras.rows[0]).toEqual({
         batches: 0,
+        engines: 0,
         logs: 0,
         sources: 0,
       });
+      const engine = await client.query<{
+        applicationScopes: string[];
+        declaredCitationCodes: string[];
+        ratedPowerKw: string;
+      }>(
+        `select application_scopes::text[] as "applicationScopes",
+                declared_citation_codes as "declaredCitationCodes",
+                rated_power_kw::text as "ratedPowerKw"
+           from catalog_engines where id = $1`,
+        [ids.catalogEngine],
+      );
+      expect(engine.rows).toEqual([{
+        applicationScopes: ["construction", "agriculture"],
+        declaredCitationCodes: ["ZZZ-2026", "CELEX:32016R1628"],
+        ratedPowerKw: "120.125",
+      }]);
     },
     15_000,
   );
@@ -838,6 +934,7 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     openClients.push(client);
     const draftId = "00000000-0000-4000-8000-000000000095";
     const tables = {
+      catalog_engines: [],
       countries: [],
       country_jurisdictions: [],
       data_change_logs: [],
@@ -882,7 +979,7 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     ]);
     const snapshot = parseGovernanceSnapshot({
       exportedAt: timestamp,
-      formatVersion: 4,
+      formatVersion: 5,
       tableCounts: createGovernanceTableCounts(exportedTables),
       tables: exportedTables,
     });

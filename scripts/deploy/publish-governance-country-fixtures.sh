@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
 # This file is deliberately source-only. The caller owns the governance
-# recovery traps, so running the 97-country loop in another long-lived shell
-# would weaken the existing signal and rollback boundary.
+# recovery traps, so running the 97-country loop and the demo catalogue
+# publication in another long-lived shell would weaken the existing signal and
+# rollback boundary. Both run after the pre-publish snapshot, so a failure
+# restores catalogue rows together with every other governance table.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   echo "Usage: source this script inside the protected governance publish shell" >&2
   exit 64
@@ -42,6 +44,7 @@ publish_governance_country_fixtures_for_root() {
   local seen_country_codes=' '
   local country_iso3=''
   local country_status=0
+  local catalogue_status=0
   local country_index=0
   local signal_name=''
   local -a country_iso3s=(
@@ -138,6 +141,12 @@ publish_governance_country_fixtures_for_root() {
      [[ -L scripts/db/ingest-accepted-fixtures.ts ]]; then
     publish_governance_country_fixtures_error \
       "the versioned fixture ingester is unavailable"
+    return 70
+  fi
+  if [[ ! -f scripts/db/ingest-demo-catalogue.ts ]] ||
+     [[ -L scripts/db/ingest-demo-catalogue.ts ]]; then
+    publish_governance_country_fixtures_error \
+      "the versioned catalogue ingester is unavailable"
     return 70
   fi
 
@@ -243,6 +252,29 @@ publish_governance_country_fixtures_for_root() {
       return "${country_status}"
     fi
   done
+
+  printf 'GOVERNANCE_CATALOGUE_START\n'
+  if declare -F governance_run_tsx >/dev/null 2>&1; then
+    if governance_run_tsx scripts/db/ingest-demo-catalogue.ts; then
+      catalogue_status=0
+    else
+      catalogue_status="$?"
+    fi
+  else
+    if corepack pnpm exec tsx \
+      --conditions=react-server \
+      scripts/db/ingest-demo-catalogue.ts; then
+      catalogue_status=0
+    else
+      catalogue_status="$?"
+    fi
+  fi
+  if [[ "${catalogue_status}" -ne 0 ]]; then
+    printf 'GOVERNANCE_CATALOGUE_FAILED status=%d\n' \
+      "${catalogue_status}" >&2
+    return "${catalogue_status}"
+  fi
+  printf 'GOVERNANCE_CATALOGUE_COMPLETE\n'
 }
 
 publish_governance_country_fixtures() {

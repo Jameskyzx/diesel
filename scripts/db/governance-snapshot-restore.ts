@@ -16,6 +16,8 @@ export const GOVERNANCE_PREFLIGHT_BIND_PARAMETER_BUDGET = 60_000;
 export const MARKET_METRIC_NATURAL_KEY_PARAMETERS_PER_ROW = 7;
 
 type ColumnSpec = {
+  /** PostgreSQL element type for a text[]/enum[] column restored from a JSON array. */
+  arrayType?: "application_scope" | "text";
   json?: boolean;
   name: string;
   property: string;
@@ -54,6 +56,35 @@ const tableSpecs: Record<GovernanceTableName, TableSpec> = {
     ],
     keyColumns: [{ name: "id", property: "id" }],
     name: "data_sources",
+  },
+  catalog_engines: {
+    columns: [
+      { name: "id", property: "id" },
+      { name: "model_code", property: "modelCode" },
+      { name: "series", property: "series" },
+      { name: "category", property: "category" },
+      {
+        arrayType: "application_scope",
+        name: "application_scopes",
+        property: "applicationScopes",
+      },
+      { name: "rated_power_kw", property: "ratedPowerKw" },
+      { name: "rated_speed_rpm", property: "ratedSpeedRpm" },
+      { name: "power_min_kw", property: "powerMinKw" },
+      { name: "power_max_kw", property: "powerMaxKw" },
+      { name: "displacement_l", property: "displacementL" },
+      { name: "cylinders", property: "cylinders" },
+      { name: "aftertreatment", property: "aftertreatment" },
+      { name: "emission_label", property: "emissionLabel" },
+      {
+        arrayType: "text",
+        name: "declared_citation_codes",
+        property: "declaredCitationCodes",
+      },
+      ...commonGovernedColumns,
+    ],
+    keyColumns: [{ name: "id", property: "id" }],
+    name: "catalog_engines",
   },
   countries: {
     columns: [
@@ -158,6 +189,7 @@ const tableSpecs: Record<GovernanceTableName, TableSpec> = {
   market_import_batches: {
     columns: [
       { name: "id", property: "id" },
+      { name: "entity_type", property: "entityType" },
       { name: "status", property: "status" },
       { name: "original_filename", property: "originalFilename" },
       { name: "content_sha256", property: "contentSha256" },
@@ -226,6 +258,7 @@ const restoreOrder = [
   "regulations",
   "regulation_limits",
   "market_metrics",
+  "catalog_engines",
   "data_governance_drafts",
   "market_import_batches",
   "data_change_logs",
@@ -233,6 +266,7 @@ const restoreOrder = [
 
 const deleteOrder = [
   "data_change_logs",
+  "catalog_engines",
   "market_metrics",
   "regulation_limits",
   "country_jurisdictions",
@@ -423,6 +457,30 @@ async function assertNoTargetNaturalKeyConflicts(
     }
   }
 
+  const activeEngines = snapshot.tables.catalog_engines.filter(
+    (row) => row.archivedAt === null,
+  );
+  if (activeEngines.length > 0) {
+    const incoming = sql.join(
+      activeEngines.map(
+        (row) => sql`(${row.id}::uuid, ${row.modelCode}::text)`,
+      ),
+      sql.raw(", "),
+    );
+    const result = await transaction.execute(sql`
+      with incoming(id, model_code) as (values ${incoming})
+      select 1
+        from catalog_engines existing
+        join incoming on incoming.model_code = existing.model_code
+       where existing.archived_at is null
+         and existing.id <> incoming.id
+       limit 1
+    `);
+    if (queryReturnedRows(result)) {
+      throw new Error("Target natural key conflict: catalog_engines active model");
+    }
+  }
+
   await assertNoMarketMetricTargetNaturalKeyConflicts(
     transaction,
     snapshot.tables.market_metrics,
@@ -433,9 +491,20 @@ function asRecord(value: object): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-function renderValue(value: unknown, isJson: boolean): SQL {
+function renderValue(
+  value: unknown,
+  isJson: boolean,
+  arrayType?: ColumnSpec["arrayType"],
+): SQL {
   if (value === null) {
     return sql`${null}`;
+  }
+  if (arrayType) {
+    if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+      throw new Error("Snapshot array value must be a list of strings");
+    }
+    // Bind the whole list as one jsonb parameter; the driver never expands it.
+    return sql`array(select item.value from jsonb_array_elements_text(${JSON.stringify(value)}::jsonb) with ordinality as item(value, position) order by item.position)::${sql.raw(arrayType)}[]`;
   }
   if (isJson) {
     if (typeof value !== "string") {
@@ -492,7 +561,11 @@ async function upsertRows(
         const record = asRecord(row);
         return sql`(${sql.join(
           spec.columns.map((column) =>
-            renderValue(record[column.property], column.json === true),
+            renderValue(
+              record[column.property],
+              column.json === true,
+              column.arrayType,
+            ),
           ),
           sql.raw(", "),
         )})`;

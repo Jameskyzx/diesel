@@ -38,6 +38,7 @@ import {
 const temporaryDirectories: string[] = [];
 
 const emptyTableCounts = {
+  catalog_engines: 0,
   countries: 0,
   country_jurisdictions: 0,
   data_change_logs: 0,
@@ -52,9 +53,10 @@ const emptyTableCounts = {
 
 const emptySnapshot = {
   exportedAt: "2026-08-11T00:00:00.000Z",
-  formatVersion: 4,
+  formatVersion: 5,
   tableCounts: emptyTableCounts,
   tables: {
+    catalog_engines: [],
     countries: [],
     country_jurisdictions: [],
     data_change_logs: [],

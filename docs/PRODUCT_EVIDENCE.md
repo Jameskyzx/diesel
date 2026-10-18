@@ -7,7 +7,7 @@
 本项目是 Demo，不与任何真实制造商关联。此前导入的真实厂商目录已移除。目录现在是受治理的
 `catalog_engines` 表（见 [DATA_MODEL.md §7.6](DATA_MODEL.md)），只能经草稿、审核、发布写入：
 管理后台上传 xlsx（预览批次 → 逐行草稿 → 审核 → 发布），或用 `pnpm db:ingest-demo-catalogue`
-发布虚构 Demo 目录固定数据 `src/server/db/seed/demo-engine-catalog.json`：13 个系列、24 个虚构型号
+（完整发布时自动运行）发布虚构 Demo 目录固定数据 `src/server/db/seed/demo-engine-catalog.json`：13 个系列、24 个虚构型号
 （全部以 `DEMO-` 开头），覆盖卡车、客车、工程机械、农业机械、发电机组和船用。每个型号的
 `declaredCitationCodes` 是规格书声称满足的法规编号。公开读取目前只返回 `is_demo = true` 的记录；
 真实厂商目录要公开，需先建立类似产品 publication manifest 的批准门。

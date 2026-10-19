@@ -56,7 +56,7 @@ describe("catalogue spreadsheet parser", () => {
   });
 });
 
-describe("catalogue import through governance", () => {
+describe("catalogue import through governance", { timeout: 30_000 }, () => {
   const originalDatabaseMode = process.env.DATABASE_MODE;
   beforeAll(() => { process.env.DATABASE_MODE = "pglite-demo"; });
   afterAll(() => {

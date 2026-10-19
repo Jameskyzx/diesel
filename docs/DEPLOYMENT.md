@@ -2383,6 +2383,14 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
 
 Migration `0014_governed_catalog_engines.sql` 新增 `catalog_engines` 表、`catalog_engine` 治理实体和
 `market_import_batches.entity_type` 列，并新增依赖 `read-excel-file`，因此首次发布必须走完整发布。
+
+**发布流程不运行 Migration。** 完整发布在任何写入前用新代码导出 v5 治理快照，而 v5 读取
+`catalog_engines`；该表不存在时导出失败，发布在写入治理数据前自动回滚（2026-10-19 `16274fc` 即如此，
+该一次性 candidate 保留取证，不能以同一 SHA 重试）。因此必须先在维护锁内按 §4.1.1 的
+`run_database_command` 形式，从一个已准备好运行时、包含 `0014` 的 release 目录执行
+`scripts/db/backup-postgres.ts`（并 `pg_restore --list` / `sha256sum --check` 校验）、
+`scripts/db/migrate.ts` 和 `run_production_readback ... scripts/db/verify-production-readback.ts`，
+再对新的 master SHA 走完整发布。`0014` 只新增表、枚举值和带默认值的列，旧 release 可在迁移后继续运行。
 完整发布的 fixture 队列（`publish-governance-country-fixtures.sh`）在 97 国之后自动运行
 `scripts/db/ingest-demo-catalogue.ts`，无需另行操作。它与国家发布处在同一发布前快照、恢复 trap 和
 维护锁内：日志依次出现 `GOVERNANCE_CATALOGUE_START` / `GOVERNANCE_CATALOGUE_COMPLETE`；失败时打印

@@ -1,0 +1,35 @@
+import { NextResponse } from "next/server";
+
+import {
+  handleAdminRoute,
+  readAdminJsonRequest,
+} from "@/server/http/admin-route";
+import { confirmCatalogImport } from "@/server/services/governance-service";
+
+export const runtime = "nodejs";
+
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ batchId: string }> },
+): Promise<Response> {
+  return handleAdminRoute(
+    request,
+    "editor",
+    "/api/admin/imports/catalog/:batchId/confirm",
+    async (principal) => {
+      const { batchId } = await context.params;
+      const body = await readAdminJsonRequest(request);
+
+      return NextResponse.json(
+        await confirmCatalogImport({
+          actor: principal,
+          batchId,
+          reason:
+            typeof body === "object" && body !== null && "reason" in body
+              ? body.reason
+              : undefined,
+        }),
+      );
+    },
+  );
+}

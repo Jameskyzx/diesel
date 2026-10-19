@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildDirectChatResponse } from "@/server/ai/chat-turn-guidance";
 import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
 import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
-import { buildEvidenceQueryGuidance, resolveSalesChatLoopPolicy } from "@/server/ai/sales-chat-loop";
+
 import { knowledgeQuerySatisfies, knowledgeTermsIn, knowledgeSearchSuggestion } from "@/server/ai/knowledge-request-context";
 
 const opening = "我有一台120kW柴油机，想卖到巴西，怎么判断能不能卖？";
@@ -16,32 +16,8 @@ describe("the real sales conversation, not only complete starter questions", () 
     const correction = locale === "en" ? "Actually use non-road, not marine." : "改为非道路，不是船用。";
     expect(contractFor([text, correction]).requirements[0]?.query).toMatchObject({ applicationScope: "non-road", countryIso3s: ["CHN"], powerKw: 100, asOf: "2026-08-20" });
   });
-  it("separates natural retrieval wording and the tool's default date from explicit filters", () => {
-    const text = "Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations.";
-    const guidance = buildEvidenceQueryGuidance(contractFor([text]), [], [text]);
-    expect(guidance).toContain('"query":"non road emissions regulation"');
-    expect(guidance).not.toContain('"asOf":');
-    const dated = `${text} As of 2026-08-13.`;
-    expect(buildEvidenceQueryGuidance(contractFor([dated]), [], [dated])).toContain('"asOf":"2026-08-13"');
-  });
   it.each(['"original text" regulations', 'regulations -gas', 'regulations OR emissions', 'DOC-CHN-100 section 2'])("never flattens constrained search syntax: %s", query => {
     expect(knowledgeSearchSuggestion(query, knowledgeTermsIn(query))).toBe(query);
-  });
-  it.each([
-    ["比较中国和巴西工程机械120kW的排放法规，日期2026-10-11。", ["CHN", "BRA"]],
-    ["中国和巴西哪个排放要求更严？我的发动机是120kW，用于工程机械。日期2026-10-11。", ["CHN", "BRA"]],
-    ["Compare construction-engine emissions requirements for China and Japan at 120 kW as of 2026-10-11.", ["CHN", "JPN"]],
-    ["Which emissions requirements are stricter, China or Brazil, for construction engines at 120 kW as of 2026-10-11?", ["CHN", "BRA"]],
-  ])("resolves the complete natural query once: %s", (text, countries) => {
-    const contract = contractFor([String(text)]);
-    expect(buildDirectChatResponse({ text: String(text), selectedCountryIso3: null })).toBeNull();
-    expect(contract.missingRequiredParameters).toEqual([]);
-    expect(contract.requirements).toEqual([{ acceptedTools: ["compareRegulations"], query: {
-      applicationScope: "construction", powerKw: 120, countryIso3s: countries, asOf: "2026-10-11",
-    } }]);
-    const guidance = buildEvidenceQueryGuidance(contract, []);
-    expect(guidance).toContain('"powerKw":120');
-    expect(guidance).toContain('"asOf":"2026-10-11"');
   });
 
   it("updates only the explicitly changed filters across Chinese and English turns", () => {
@@ -99,16 +75,6 @@ describe("the real sales conversation, not only complete starter questions", () 
     expect(contractFor([opening]).missingRequiredParameters).toEqual(["applicationScope"]);
   });
 
-  it("queries only the requested regulations after the user declines product certification", () => {
-    const contract = contractFor([opening, clarification]);
-    expect(contract.requirements).toEqual([{ acceptedTools: ["compareRegulations"], query: {
-      applicationScope: "construction", asOf: contract.asOf, countryIso3s: ["BRA"], powerKw: 120,
-    } }]);
-    expect(contract.missingRequiredParameters).toEqual([]);
-    expect(resolveSalesChatLoopPolicy({ contract, results: [], allowToolFreeAttachmentResponse: false, hasExecutionFailure: false }).activeTools)
-      .not.toContain("findCompatibleProducts");
-  });
-
   it.each(["和中国比呢？只比较排放法规。", "和中国比呢？", "Compare with China; regulations only."])("inherits the original country, scope, power and date: %s", followUp => {
     const userTexts = [opening + " 日期2026-10-11。", clarification, followUp];
     const contract = contractFor(userTexts);
@@ -130,14 +96,5 @@ describe("the real sales conversation, not only complete starter questions", () 
   it("keeps an explicit product request, including negative product findings", () => {
     expect(contractFor(["检查 BRA 工程机械120kW产品适配。"]).requirements.flatMap(item => item.acceptedTools)).toEqual(["findCompatibleProducts"]);
     expect(buildConversationBusinessContext(["这个产品不兼容，查一下认证。"]).activeTask).toBe("product_fit");
-  });
-
-  it("does not invent a comparison peer or relax missing evidence", () => {
-    expect(contractFor(["和中国比呢？只比较排放法规。"]).missingRequiredParameters).toContain("countryIso3s");
-    const contract = contractFor([opening, clarification, "和中国比呢？"]);
-    expect(resolveSalesChatLoopPolicy({ contract, results: [], allowToolFreeAttachmentResponse: false, hasExecutionFailure: false }).phase).not.toBe("final_answer");
-    const mixed = contractFor([opening, "比较中国工程机械120kW排放法规，并查巴西产品适配。"]);
-    expect(mixed.requirements.find(item => item.acceptedTools.includes("compareRegulations"))?.query.countryIso3s).toEqual(["CHN"]);
-    expect(mixed.missingRequiredParameters).toContain("countryIso3s");
   });
 });

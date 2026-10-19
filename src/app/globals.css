@@ -246,3 +246,12 @@ body:has([data-slot="drawer-content"]) .country-server-fallback {
     background: var(--card);
   }
 }
+
+/* Printed documents (customer briefs) drop the app shell and its sidebar offset. */
+@page { margin: 16mm; }
+
+@media print {
+  body { background: #fff; }
+  .app-frame { padding-left: 0; }
+  .app-sidebar-surface { display: none; }
+}

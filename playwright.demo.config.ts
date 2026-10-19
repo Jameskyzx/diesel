@@ -1,7 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
 
-import { shouldForbidOnlyInPlaywrightRun } from "./scripts/portfolio/playwright-evidence";
-
 const baseURL =
   process.env.PLAYWRIGHT_DEMO_BASE_URL ?? "http://127.0.0.1:3200";
 
@@ -9,23 +7,15 @@ export default defineConfig({
   testDir: "./e2e",
   testMatch: "demo.spec.ts",
   globalTeardown: "./scripts/e2e/demo-global-teardown.ts",
-  forbidOnly: shouldForbidOnlyInPlaywrightRun(),
+  forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI
     ? [
         ["github"],
         ["html", { open: "never", outputFolder: "playwright-demo-report" }],
-        [
-          "./scripts/portfolio/playwright-run-reporter.ts",
-          { id: "demo" },
-        ],
       ]
     : [
         ["list"],
-        [
-          "./scripts/portfolio/playwright-run-reporter.ts",
-          { id: "demo" },
-        ],
       ],
   outputDir: "test-results/demo",
   timeout: process.env.CI ? 60_000 : 30_000,

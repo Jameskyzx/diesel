@@ -10,11 +10,11 @@ const version = "a".repeat(40);
 function statusWithSnapshot(snapshot: unknown): string {
   return [
     "# Status",
-    "<!-- portfolio-verification:start -->",
+    "<!-- production-release:start -->",
     "```json",
     JSON.stringify(snapshot),
     "```",
-    "<!-- portfolio-verification:end -->",
+    "<!-- production-release:end -->",
   ].join("\n");
 }
 
@@ -48,11 +48,11 @@ describe("production version status snapshot", () => {
     [
       "invalid JSON",
       [
-        "<!-- portfolio-verification:start -->",
+        "<!-- production-release:start -->",
         "```json",
         "{broken",
         "```",
-        "<!-- portfolio-verification:end -->",
+        "<!-- production-release:end -->",
       ].join("\n"),
     ],
     [

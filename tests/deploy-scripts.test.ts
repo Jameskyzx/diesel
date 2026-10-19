@@ -2008,6 +2008,7 @@ async function executePrepareBeforeBuild(
 }
 
 type GovernanceCountryPublisherFixture = {
+  catalogueScript: string;
   commitMarker: string;
   deployRoot: string;
   fakePath: string;
@@ -2038,6 +2039,7 @@ async function createGovernanceCountryPublisherFixture(): Promise<GovernanceCoun
     "db",
     "ingest-accepted-fixtures.ts",
   );
+  const catalogueScript = join(dirname(ingestScript), "ingest-demo-catalogue.ts");
   const fakeBin = join(root, "bin");
   const invocationLog = join(root, "corepack-invocations.log");
   const trapLog = join(root, "recovery-traps.log");
@@ -2052,6 +2054,7 @@ async function createGovernanceCountryPublisherFixture(): Promise<GovernanceCoun
   ]);
   await Promise.all([
     writeFile(ingestScript, "// fixture\n", "utf8"),
+    writeFile(catalogueScript, "// fixture\n", "utf8"),
     writeFile(snapshotPath, snapshot, "utf8"),
     writeFile(
       recoveryMarker,
@@ -2096,10 +2099,15 @@ if [[ -n "\${GOVERNANCE_TEST_FAIL_COUNTRY:-}" ]] &&
    [[ "$country_argument" == "--country=\${GOVERNANCE_TEST_FAIL_COUNTRY}" ]]; then
   exit 23
 fi
+if [[ "\${GOVERNANCE_TEST_FAIL_CATALOGUE:-0}" == '1' ]] &&
+   [[ "$country_argument" == scripts/db/ingest-demo-catalogue.ts ]]; then
+  exit 24
+fi
 `,
   );
 
   return {
+    catalogueScript,
     commitMarker,
     deployRoot,
     fakePath: `${fakeBin}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
@@ -6767,7 +6775,7 @@ printf '%s\\n' "$value"
     );
   });
 
-  it("runs the fixed 97-country queue without changing the caller's recovery traps", async () => {
+  it("runs the fixed 97-country queue, then the demo catalogue, without changing the caller's recovery traps", async () => {
     const fixture = await createGovernanceCountryPublisherFixture();
     try {
       const result = await executeGovernanceCountryPublisher(fixture);
@@ -6776,17 +6784,22 @@ printf '%s\\n' "$value"
       const invocations = (await readFile(fixture.invocationLog, "utf8"))
         .trim()
         .split("\n");
-      expect(invocations).toHaveLength(97);
-      expect(invocations[0]).toBe(
+      expect(invocations).toHaveLength(98);
+      const countryInvocations = invocations.slice(0, 97);
+      expect(countryInvocations[0]).toBe(
         "pnpm exec tsx --conditions=react-server scripts/db/ingest-accepted-fixtures.ts --country=CRI",
       );
-      expect(invocations.at(-1)).toBe(
+      expect(countryInvocations.at(-1)).toBe(
         "pnpm exec tsx --conditions=react-server scripts/db/ingest-accepted-fixtures.ts --country=MLT",
       );
-      expect(invocations.every((invocation) => invocation.startsWith(
+      expect(countryInvocations.every((invocation) => invocation.startsWith(
         "pnpm exec tsx --conditions=react-server scripts/db/ingest-accepted-fixtures.ts --country=",
       ))).toBe(true);
-      expect(new Set(invocations).size).toBe(97);
+      expect(new Set(countryInvocations).size).toBe(97);
+      expect(invocations.at(-1)).toBe(
+        "pnpm exec tsx --conditions=react-server scripts/db/ingest-demo-catalogue.ts",
+      );
+      expect(result.stdout).toContain("GOVERNANCE_CATALOGUE_COMPLETE");
       await expect(readFile(fixture.trapLog, "utf8")).rejects.toMatchObject({
         code: "ENOENT",
       });
@@ -6817,7 +6830,26 @@ printf '%s\\n' "$value"
       expect(invocations).toHaveLength(5);
       expect(invocations.at(-1)).toContain("--country=PHL");
       expect(invocations.join("\n")).not.toContain("--country=PAK");
+      expect(invocations.join("\n")).not.toContain("ingest-demo-catalogue");
       await expect(readFile(fixture.trapLog, "utf8")).resolves.toBe("23\n");
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  });
+
+  it("lets the caller recovery trap preserve a failed catalogue publication", async () => {
+    const fixture = await createGovernanceCountryPublisherFixture();
+    try {
+      const result = await executeGovernanceCountryPublisher(fixture, {
+        environment: { GOVERNANCE_TEST_FAIL_CATALOGUE: "1" },
+      });
+      expect(result.exitCode).toBe(24);
+      expect(result.stderr).toContain("GOVERNANCE_CATALOGUE_FAILED status=24");
+      const invocations = (await readFile(fixture.invocationLog, "utf8"))
+        .trim()
+        .split("\n");
+      expect(invocations).toHaveLength(98);
+      await expect(readFile(fixture.trapLog, "utf8")).resolves.toBe("24\n");
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
     }
@@ -6834,6 +6866,7 @@ printf '%s\\n' "$value"
     "existing-commit-file",
     "existing-commit-symlink",
     "missing-recovery-trap",
+    "missing-catalogue-ingester",
   ] as const)("rejects %s before the first governance write", async (failureMode) => {
     const fixture = await createGovernanceCountryPublisherFixture();
     let releaseId = TEST_RELEASE_SHA;
@@ -6872,6 +6905,9 @@ printf '%s\\n' "$value"
           break;
         case "missing-recovery-trap":
           environment.GOVERNANCE_TEST_OMIT_TERM_TRAP = "1";
+          break;
+        case "missing-catalogue-ingester":
+          await rm(fixture.catalogueScript);
           break;
       }
 

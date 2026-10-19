@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -16,8 +14,6 @@ import {
 } from "@/features/ai/schemas";
 import { formatUtcDate } from "@/i18n/date";
 import { createSalesChatTools } from "@/server/ai/sales-chat";
-import { liveEvalReportSchema } from "../scripts/portfolio/live-eval-report-schema";
-import { verifyLiveEvalReportConsistency } from "../scripts/portfolio/verify-live-eval";
 
 function dateAnchor(date: string) {
   const anchor = salesChatLiveCases.flatMap(
@@ -28,32 +24,8 @@ function dateAnchor(date: string) {
 }
 
 describe("v13 localized calendar-date evidence", () => {
-  it("preserves the v12 observation and every canonical evidence expectation", async () => {
-    const archive = liveEvalReportSchema.parse(JSON.parse(await readFile(resolve(
-      process.cwd(),
-      "docs/evals/archive/ai-live-eval-20260906T140639473Z-b0893459-1cd0-46a8-8534-96ce2e9ef099.json",
-    ), "utf8")));
-    expect(archive.version).toBe("sales-chat-live-v12");
-    expect(archive.results.map(({ id, expectedEvidenceAllowed }) => ({
-      id, expectedEvidenceAllowed,
-    }))).toEqual(salesChatLiveCases.map(({ id, expectedEvidenceAllowed }) => ({
-      id, expectedEvidenceAllowed,
-    })));
-    expect(archive.results.find(({ id }) => id === "unknown-product-fails-closed"))
-      .toMatchObject({
-        expectedEvidenceAllowed: false,
-        evidenceAllowed: false,
-        missingResponseAnchorIds: ["fact:date-2026-08-13"],
-        safetyPassed: false,
-      });
-    expect(archive.thresholdsPassed).toBe(false);
-    await expect(verifyLiveEvalReportConsistency(archive)).rejects.toThrow(
-      "incompatible report version",
-    );
-  });
-
   it("versions the changed date contract without changing the 18 case identities", () => {
-    expect(SALES_CHAT_LIVE_EVAL_VERSION).toBe("sales-chat-live-v26");
+    expect(SALES_CHAT_LIVE_EVAL_VERSION).toBe("sales-chat-live-v27");
     expect(salesChatLiveCases).toHaveLength(18);
   });
 

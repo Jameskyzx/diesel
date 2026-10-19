@@ -13,7 +13,7 @@ const snapshotSchema = z
   .passthrough();
 
 const snapshotPattern =
-  /<!-- portfolio-verification:start -->\s*```json\s*([\s\S]*?)\s*```\s*<!-- portfolio-verification:end -->/u;
+  /<!-- production-release:start -->\s*```json\s*([\s\S]*?)\s*```\s*<!-- production-release:end -->/u;
 
 export function parseProductionVersion(value: string): string {
   const parsed = productionVersionSchema.safeParse(value);
@@ -27,7 +27,7 @@ export function productionVersionFromStatus(markdown: string): string {
   const match = snapshotPattern.exec(markdown);
   if (!match?.[1]) {
     throw new Error(
-      "STATUS.md is missing the portfolio verification snapshot.",
+      "STATUS.md is missing the production release block.",
     );
   }
 
@@ -35,7 +35,7 @@ export function productionVersionFromStatus(markdown: string): string {
   try {
     value = JSON.parse(match[1]);
   } catch {
-    throw new Error("STATUS.md contains an invalid portfolio JSON snapshot.");
+    throw new Error("STATUS.md contains an invalid production release JSON block.");
   }
 
   const parsed = snapshotSchema.safeParse(value);

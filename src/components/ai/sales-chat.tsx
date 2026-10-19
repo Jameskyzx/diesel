@@ -35,7 +35,6 @@ import { AssistantMarkdown } from "@/components/ai/assistant-markdown";
 import { MarketComparisonFacts } from "@/components/ai/market-comparison-facts";
 import { SaveAnalysis } from "@/components/analyses/save-analysis";
 import { readConversationMetadata } from "@/features/ai/conversation-state";
-import { marketObservationPeriod } from "@/domain/ai/market-profile-response";
 import { SourceExcerpt } from "@/components/analyses/source-review";
 import type { AnalysisPayload } from "@/features/analyses/schemas";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -72,7 +71,6 @@ import {
   type ClientAiToolResult,
 } from "@/features/ai/client-schemas";
 import {
-  countryProfileTopicLabel,
   localizedCitationLocator,
   localizedCitationTitle,
   localizedRegulationComparisonCountryName,
@@ -85,6 +83,14 @@ import {
   toolPartErrorMessage,
 } from "@/features/ai/client-tool-copy";
 import { toolPartPresentation } from "@/features/ai/tool-part-presentation";
+import {
+  commercialReadinessLabels,
+  fitStatusLabels,
+  toolLabels,
+  toolQuerySummaryFields,
+  toolResultCardLabel,
+  toolStatusLabels,
+} from "@/features/ai/tool-card-summary";
 import { toolDisplayEvidence } from "@/features/ai/tool-display-evidence";
 import { MAX_CHAT_USER_MESSAGE_CHARACTERS } from "@/features/ai/constants";
 import { CHAT_HISTORY_STORAGE_KEY, chatHistorySnapshotSchema, parseChatHistory, serializeChatHistory } from "@/features/ai/chat-history";
@@ -256,50 +262,12 @@ export function chatErrorMessage(
   return messages[code];
 }
 
-function toolLabels(
-  copy: Dictionary["chat"],
-): Record<ClientAiToolResult["tool"], string> {
-  return {
-    calculateOpportunityScore: copy.toolCalculateOpportunityScore,
-    compareMarkets: copy.toolCompareMarkets,
-    compareRegulations: copy.toolCompareRegulations,
-    findCompatibleProducts: copy.toolFindCompatibleProducts,
-    generateSalesBrief: copy.toolGenerateSalesBrief,
-    getCountryProfile: copy.toolGetCountryProfile,
-    searchKnowledgeBase: copy.toolSearchKnowledgeBase,
-  };
-}
-
-function statusLabels(copy: Dictionary["chat"]) {
-  return {
-    error: copy.toolStatusError,
-    no_data: copy.toolStatusNoData,
-    ok: copy.toolStatusOk,
-  } as const;
-}
-
 function regulationStatusLabels(dictionary: Dictionary) {
   return {
     adopted: dictionary.country.statusAdopted,
     effective: dictionary.country.statusEffective,
     proposed: dictionary.country.statusProposed,
     superseded: dictionary.country.statusSuperseded,
-  } as const;
-}
-
-function fitStatusLabels(dictionary: Dictionary) {
-  return {
-    fit: dictionary.productFit.fit,
-    not_fit: dictionary.productFit.notFit,
-    unknown: dictionary.productFit.unknownFit,
-  } as const;
-}
-
-function commercialReadinessLabels(dictionary: Dictionary) {
-  return {
-    not_ready: dictionary.productFit.commercialNotReady,
-    ready: dictionary.productFit.commercialReady,
-    unknown: dictionary.productFit.commercialUnknown,
   } as const;
 }
 
@@ -512,143 +480,7 @@ function ToolQuerySummary({ result }: { result: QuerySummaryResult }) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.chat;
   const labels = toolLabels(copy);
-  let fields: Array<{ label: string; value: string }>;
-
-  if (result.tool === "searchKnowledgeBase") {
-    fields = [
-      {
-        label: copy.country,
-        value: result.resolvedCountryIso3 ?? copy.unspecified,
-      },
-      {
-        label: copy.scope,
-        value: result.search.filters.applicationScope
-          ? applicationScopeLabel(
-              result.search.filters.applicationScope,
-              dictionary,
-            )
-          : copy.unspecified,
-      },
-      {
-        label: copy.date,
-        value: formatUtcDate(result.informationAsOf, locale),
-      },
-      { label: copy.queryConditions, value: result.search.query },
-    ];
-  } else if (result.tool === "getCountryProfile") {
-    fields = [
-      {
-        label: copy.country,
-        value: result.resolvedCountryIso3 ?? copy.unspecified,
-      },
-      {
-        label: copy.date,
-        value: formatUtcDate(result.informationAsOf, locale),
-      },
-      {
-        label: copy.queryConditions,
-        value: localizedList(
-          result.requestedTopics.map((topic) =>
-            countryProfileTopicLabel(topic, dictionary),
-          ),
-          locale,
-        ),
-      },
-    ];
-  } else if (result.tool === "findCompatibleProducts") {
-    fields = [
-      { label: copy.country, value: result.query.countryIso3 ?? copy.unspecified },
-      {
-        label: copy.scope,
-        value: applicationScopeLabel(
-          result.query.applicationScope,
-          dictionary,
-        ),
-      },
-      { label: copy.power, value: `${result.query.powerKw} kW` },
-      { label: copy.date, value: formatUtcDate(result.query.asOf, locale) },
-      ...(result.query.productModelCode
-        ? [{ label: copy.product, value: result.query.productModelCode }]
-        : []),
-    ];
-  } else if (result.tool === "compareMarkets") {
-    fields = [
-      {
-        label: copy.country,
-        value: localizedList(
-          result.comparison.query.countryIso3s,
-          locale,
-        ),
-      },
-      {
-        label: copy.scope,
-        value: result.comparison.query.applicationScope
-          ? applicationScopeLabel(
-              result.comparison.query.applicationScope,
-              dictionary,
-            )
-          : copy.unspecified,
-      },
-      ...(result.comparison.query.metricCodes
-        ? [
-            {
-              label: copy.marketMetricCodes,
-              value: localizedList(
-                result.comparison.query.metricCodes,
-                locale,
-              ),
-            },
-          ]
-        : []),
-    ];
-  } else if (result.tool === "generateSalesBrief") {
-    const { query } = result.brief;
-    fields = [
-      { label: copy.targetCountry, value: query.targetCountryIso3 },
-      {
-        label: copy.comparisonCountries,
-        value: localizedList(query.countryIso3s, locale),
-      },
-      {
-        label: copy.scope,
-        value: applicationScopeLabel(query.applicationScope, dictionary),
-      },
-      { label: copy.power, value: `${query.powerKw} kW` },
-      { label: copy.date, value: formatUtcDate(query.asOf, locale) },
-      ...(query.productModelCode
-        ? [{ label: copy.product, value: query.productModelCode }]
-        : []),
-    ];
-  } else {
-    const query =
-      result.tool === "compareRegulations"
-        ? result.comparison.query
-        : result.scorecard.query;
-    const productModelCode =
-      result.tool === "calculateOpportunityScore"
-        ? result.scorecard.query.productModelCode
-        : undefined;
-    fields = [
-      {
-        label: copy.country,
-        value: localizedList(query.countryIso3s, locale),
-      },
-      {
-        label: copy.scope,
-        value: applicationScopeLabel(query.applicationScope, dictionary),
-      },
-      { label: copy.power, value: `${query.powerKw} kW` },
-      { label: copy.date, value: formatUtcDate(query.asOf, locale) },
-      ...(productModelCode
-        ? [{ label: copy.product, value: productModelCode }]
-        : []),
-    ];
-  }
-
-  const marketPeriod = result.tool === "getCountryProfile" ? result.marketPeriod
-    : result.tool === "compareMarkets" ? result.comparison.query.marketPeriod : undefined;
-  if (marketPeriod) fields.push({ label: locale === "en" ? "Reporting period" : "统计期",
-    value: marketObservationPeriod(marketPeriod.start, marketPeriod.end, locale) });
+  const fields = toolQuerySummaryFields(result, dictionary, locale);
 
   return (
     <dl
@@ -1100,11 +932,8 @@ export function ToolResultCard({
 }) {
   const { dictionary, locale } = useLocale();
   const copy = dictionary.chat;
-  const labels = toolLabels(copy);
-  const label = result.tool === "getCountryProfile"
-    ? result.requestedTopics.map((topic) => countryProfileTopicLabel(topic, dictionary)).join(copy.listSeparator)
-    : labels[result.tool];
-  const statuses = statusLabels(copy);
+  const label = toolResultCardLabel(result, dictionary);
+  const statuses = toolStatusLabels(copy);
   const mayRenderFacts = toolResultMayRenderFacts(result);
   const hasDemoEvidence = resultContainsDemoEvidence(result);
   const warnings = localizedToolWarnings(result, locale, copy);
@@ -1195,11 +1024,8 @@ function citationUrlsForMessage(parts: readonly ChatMessagePart[]): string[] {
   const urls = new Set<string>();
 
   for (const part of parts) {
-    if (part.type === "data-productCatalog") {
-      const parsed = catalogResultSchema.safeParse(part.data);
-      parsed.data?.records.forEach(record => urls.add(record.source.url));
-      continue;
-    }
+    // Fictional catalogue records carry no outbound source link.
+    if (part.type === "data-productCatalog") continue;
     if (!isToolUIPart(part)) {
       continue;
     }
@@ -1377,9 +1203,9 @@ export function SalesChat({
           return {
             body: {
               ...body,
-              ...(!demoMode ? { conversation: { version: 2,
+              conversation: { version: 2,
                 ...(previousConversation ? { receipt: previousConversation.conversation.receipt } : {}),
-              } } : {}),
+              },
               id,
               messageId,
               messages: requestMessages,
@@ -1388,7 +1214,7 @@ export function SalesChat({
           };
         },
       }),
-    [attachmentMessageRelease, demoMode],
+    [attachmentMessageRelease],
   );
   const chatId =
     activeChatRequest !== null && activeChatRequest.locale !== locale

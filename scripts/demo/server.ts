@@ -9,30 +9,18 @@ import {
   restoreRecordedNextEnvironmentAfterFailure,
   restoreRecordedNextEnvironmentAfterOperation,
 } from "../next-environment-file";
-import {
-  screenshotDemoInstanceNonceEnvironmentVariable,
-  screenshotDemoInstanceNonceSchema,
-  screenshotDemoReadinessPath,
-  screenshotDemoShutdownNonceHeader,
-  screenshotDemoShutdownPath,
-  serializeScreenshotDemoReadiness,
-  serializeScreenshotDemoShutdown,
-} from "../portfolio/screenshot-demo-session";
 
 const demoServerEnvironmentSchema = z
   .object({
     DEMO_HOST: z
       .enum(["127.0.0.1", "localhost"])
       .default("127.0.0.1"),
-    DEMO_INSTANCE_NONCE: screenshotDemoInstanceNonceSchema.optional(),
     DEMO_PORT: z.coerce.number().int().min(1_024).max(65_535).default(3_000),
   })
   .strict();
 
 const serverEnvironment = demoServerEnvironmentSchema.parse({
   DEMO_HOST: process.env.DEMO_HOST,
-  DEMO_INSTANCE_NONCE:
-    process.env[screenshotDemoInstanceNonceEnvironmentVariable],
   DEMO_PORT: process.env.DEMO_PORT,
 });
 
@@ -42,7 +30,6 @@ delete process.env.AI_ENABLE_THINKING;
 delete process.env.AI_MODEL;
 delete process.env.ADMIN_ROLE_BINDINGS_JSON;
 delete process.env.DATABASE_URL;
-delete process.env[screenshotDemoInstanceNonceEnvironmentVariable];
 delete process.env.PLAYWRIGHT_E2E;
 
 process.env.AI_PROVIDER = "openai-compatible";
@@ -111,39 +98,8 @@ async function startDemoServer() {
 
   let shuttingDown = false;
   const server = createServer((request, response) => {
-    if (
-      request.method === "GET" &&
-      request.url === screenshotDemoReadinessPath &&
-      serverEnvironment.DEMO_INSTANCE_NONCE !== undefined
-    ) {
-      response.writeHead(200, {
-        "cache-control": "no-store",
-        "content-type": "application/json",
-      });
-      response.end(
-        serializeScreenshotDemoReadiness(
-          serverEnvironment.DEMO_INSTANCE_NONCE,
-        ),
-      );
-      return;
-    }
-    if (
-      request.method === "POST" &&
-      request.url === screenshotDemoShutdownPath
-    ) {
-      if (
-        serverEnvironment.DEMO_INSTANCE_NONCE !== undefined &&
-        request.headers[screenshotDemoShutdownNonceHeader] !==
-          serverEnvironment.DEMO_INSTANCE_NONCE
-      ) {
-        response.writeHead(403, {
-          "cache-control": "no-store",
-          connection: "close",
-          "content-type": "application/json",
-        });
-        response.end(JSON.stringify({ status: "unauthorized" }));
-        return;
-      }
+    // Playwright's demo teardown stops the server through this loopback route.
+    if (request.method === "POST" && request.url === "/__demo/shutdown") {
       void shutdown(false).then(
         () => {
           response.once("finish", () => {
@@ -154,13 +110,7 @@ async function startDemoServer() {
             "cache-control": "no-store",
             "content-type": "application/json",
           });
-          response.end(
-            serverEnvironment.DEMO_INSTANCE_NONCE === undefined
-              ? JSON.stringify({ status: "stopped" })
-              : serializeScreenshotDemoShutdown(
-                  serverEnvironment.DEMO_INSTANCE_NONCE,
-                ),
-          );
+          response.end(JSON.stringify({ status: "stopped" }));
         },
         (error: unknown) => {
           console.error(formatErrorTree(error, "demo-shutdown").trimEnd());

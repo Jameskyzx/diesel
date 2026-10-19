@@ -225,10 +225,12 @@ export function matchesExpectedLiveEvalReportArgs(input: {
   if (input.runtimeContext !== undefined) {
     const runtime = chatRuntimeContextSchema.safeParse(input.runtimeContext);
     if (!runtime.success) return false;
-    if (input.tool === "getCountryProfile" && !Object.hasOwn(expected, "asOf")) {
-      // The production Zod transform inserts this value before the SDK exposes
-      // generated.toolCalls. It is required in a post-schema observation, not
-      // an arbitrary extra provider filter. Explicit user dates stay exact.
+    if (!Object.hasOwn(expected, "asOf") && (input.tool === "getCountryProfile" ||
+      (input.tool === "searchKnowledgeBase" && Object.hasOwn(actual, "asOf")))) {
+      // The server inserts this date: the profile Zod transform always, and
+      // the harness compiles its working date (today by default) into every
+      // source search, where an absent date also means today. It is not an
+      // arbitrary extra provider filter. Explicit user dates stay exact.
       expected.asOf = runtime.data.utcDate;
     }
   }

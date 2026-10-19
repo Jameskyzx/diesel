@@ -2,23 +2,25 @@
 
 ## 1. 状态与用途
 
-### 已授权的目录资料层（2026-10-16，本地实现）
+### 虚构 Demo 目录层（2026-10-17 起）
 
-用户提供 `weichai_engines.xlsx` 并明确授权公开参数。版本化快照位于
-`src/data/products/weichai-catalog.json`，保留工作簿 SHA256、原表行号、厂商链接、
-型号原始字段和系列字段。154 组产品对应 831 条有效配置记录、589 个型号代码；
-863 行明细中的 32 行重复表头被显式排除并记录行号。197 条功率记录缺少明确单位
-或格式有歧义，不参与数值筛选；不把 `140-2200` 猜成 `140 kW / 2200 rpm`。
+本项目是 Demo，不与任何真实制造商关联。此前导入的真实厂商目录已移除。目录现在是受治理的
+`catalog_engines` 表（见 [DATA_MODEL.md §7.6](DATA_MODEL.md)），只能经草稿、审核、发布写入：
+管理后台上传 xlsx（预览批次 → 逐行草稿 → 审核 → 发布），或用 `pnpm db:ingest-demo-catalogue`
+（完整发布时自动运行）发布虚构 Demo 目录固定数据 `src/server/db/seed/demo-engine-catalog.json`：13 个系列、24 个虚构型号
+（全部以 `DEMO-` 开头），覆盖卡车、客车、工程机械、农业机械、发电机组和船用。每个型号的
+`declaredCitationCodes` 是规格书声称满足的法规编号。公开读取目前只返回 `is_demo = true` 的记录；
+真实厂商目录要公开，需先建立类似产品 publication manifest 的批准门。
 
-`/products` 与 `/api/product-catalog` 是 **source-reported、未独立核验** 的只读资料层，
-允许检索、查看原文、选定来源行并进入对话。授权仅覆盖用户提供的参数，不扩展为
-对官网其他内容的复制许可。导入日期/文件摘要不是厂商规格版本，排放宣称不是认证。
-同型号多用途/冲突值保持独立，系列燃料和参数不能覆盖具体型号参数。
+`/products` 的目标市场选型使用 `catalog-fit-v1`：把声明的法规编号与目标国家、场景、
+功率和日期下实际生效的法规记录逐条按字面比对，返回 `declared_match`、
+`declaration_gap`、`unknown` 或 `not_fit`。规则不推断跨地区等效，也不把声明升级为
+认证（`certificationVerified=false`）。法规记录可能是真实来源，产品始终是虚构的，
+因此结果只演示选型流程，不构成可销售结论。
 
-此资料层不写入治理库、不修改 schema、不加入真实产品/认证 publication manifest，
-也不进入已核验 `/api/products` 列表。AI 可以引用明确标注的目录资料，但产品适配
-仍经过原有审批、规格版本、来源、认证和有效期校验；缺证据不能返回获准销售。
-下文的产品/认证验收要求继续约束 **已核验适配证据层**。
+目录声明与 `products`/`product_certifications` 分表保存，不加入真实产品/认证 publication manifest，
+也不进入已核验 `/api/products` 列表。下文的产品/认证验收要求继续约束
+**已核验适配证据层**。
 
 - 状态：M3 证据门，2026-08-05 建立；尚无获准发布的真实产品 fixture。
 - 目标：一次接收 5–10 个可报价或可认证的具体产品配置，以及能连接到已发布
@@ -30,24 +32,7 @@
 
 ## 2. 已核验来源入口
 
-### 2.1 潍柴英文官网产品目录
-
-官方目录覆盖本项目四个场景：
-
-- 卡车动力：<https://en.weichai.com/cpyfw/wmdyw/dlzc/dlzc_kcyfdj/>
-- 客车动力：<https://en.weichai.com/cpyfw/wmdyw/dlzc/kcyfdj/>
-- 工程机械动力：<https://en.weichai.com/cpyfw/wmdyw/dlzc/gcjxyfdj/>
-- 农业装备动力：<https://en.weichai.com/cpyfw/wmdyw/dlzc/Agricultuireengines/>
-
-官网法律声明：
-<https://en.weichai.com/sy_94/sy_common/sy_flsm/201401/t20140108_1888.htm>
-
-2026-08-05 读回结论：站内信息限个人、非商业用途，禁止未经授权的修改、复制、
-公开展示、发布或分发；产品、价格和配置可能不经通知变更。因此目录目前只作为
-候选入口和外部链接，不把页面参数复制到公开作品、文档库或真实 fixture。若要使用，
-需产品 owner 提供可公开展示的主数据或取得书面许可，并重新核验具体配置版本。
-
-### 2.2 机动车环保信息公开平台（VECC）
+### 2.1 机动车环保信息公开平台（VECC）
 
 公众查询入口：<https://info.vecc.org.cn/ve/index>
 
@@ -137,4 +122,4 @@
 - ADR-021 尚未批准真实配置粒度、`partial_fit` 和规则批准人。
 
 在上述输入到位前，现有 Demo 产品继续显式标记 `is_demo = true`，不得改名伪装为
-真实潍柴产品。
+任何真实厂商的产品。

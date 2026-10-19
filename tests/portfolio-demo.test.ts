@@ -1,40 +1,14 @@
+import { selectPortfolioDemoTool } from "./helpers/portfolio-demo";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  buildConversationBusinessContext,
-  countryIso3sIn,
-} from "@/server/ai/conversation-context";
-import {
-  createPortfolioDemoModel,
-  salesBriefSummaryFromPrompt,
-  selectPortfolioDemoTool,
-} from "@/server/ai/portfolio-demo-model";
+import { buildConversationBusinessContext, countryIso3sIn } from "@/server/ai/conversation-context";
+
 import { resolvePortfolioDemoMode } from "@/server/config/portfolio-demo";
-import {
-  buildSalesBriefResult,
-  buildToolErrorResult,
-} from "@/server/ai/tool-results";
-import { generateSalesBrief } from "@/server/services/marketing-analysis-service";
-import { salesBriefResultToModelOutput } from "@/features/ai/model-tool-output";
-import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
-const portfolioBriefInput = {
-  applicationScope: "non-road" as const,
-  asOf: "2026-08-13",
-  countryIso3s: ["CHN", "BRA"],
-  metricCodes: ["DEMO_ADDRESSABLE_UNITS"],
-  powerKw: 100,
-  targetCountryIso3: "CHN",
-};
-let canonicalBriefResult: ReturnType<typeof buildSalesBriefResult>;
 
 beforeAll(async () => {
   process.env.DATABASE_MODE = "pglite-demo";
-  canonicalBriefResult = buildSalesBriefResult({
-    brief: await generateSalesBrief(portfolioBriefInput),
-    informationAsOf: portfolioBriefInput.asOf,
-  });
 });
 
 afterAll(() => {
@@ -45,50 +19,7 @@ afterAll(() => {
   }
 });
 
-function salesBriefPrompt(hasScore: boolean): unknown[] {
-  const result = hasScore
-    ? canonicalBriefResult
-    : buildToolErrorResult(
-        "generateSalesBrief",
-        portfolioBriefInput.asOf,
-        portfolioBriefInput,
-      );
-  const value = salesBriefResultToModelOutput(result);
-  return [
-    {
-      content: [
-        {
-          output: { type: "json", value },
-          toolCallId: "portfolio-demo-generateSalesBrief",
-          toolName: "generateSalesBrief",
-          type: "tool-result",
-        },
-      ],
-      role: "tool",
-    },
-  ];
-}
-
 describe("portfolio demo runtime", () => {
-  it.each(["en", "zh-CN"] as const)("keeps the structured brief summary through actual Demo tool calls in %s", async (locale) => {
-    const text = locale === "en"
-      ? "Generate a sales brief for DEMO-ENG-100 in CHN and BRA non-road 100 kW as of 2026-08-12, targeting CHN."
-      : "为 CHN 和 BRA 生成 DEMO-ENG-100 在 non-road 100 kW 的销售简报，日期 2026-08-12，目标 CHN。";
-    const auditRepository = { recordToolCall: async () => undefined };
-    const sessionId = crypto.randomUUID();
-    const errors: unknown[] = [];
-    const result = streamSalesChat({
-      auditRepository, locale, model: createPortfolioDemoModel(), messages: [{ role: "user", content: text }],
-      onStreamError: (error) => errors.push(error), selectedCountryIso3: null, sessionId,
-      tools: createSalesChatTools({ auditRepository, selectedCountryIso3: null, sessionId }), trustedUserTexts: [text],
-    });
-    const parts = await Array.fromAsync(result.fullStream);
-    expect(errors).toEqual([]);
-    expect(parts.filter((part) => part.type === "tool-result")).toHaveLength(1);
-    const answer = parts.flatMap((part) => part.type === "text-delta" ? [part.text] : []).join("");
-    expect(answer).toContain(locale === "en" ? "The structured brief identifies" : "结构化简报识别到");
-    expect(answer).toContain(locale === "en" ? "rule-generated action(s)" : "项规则生成行动");
-  });
 
   it("only enables the simulation for development + pglite-demo", () => {
     expect(
@@ -364,20 +295,12 @@ describe("portfolio demo deterministic tool routing", () => {
     });
   });
 
-  it("routes a complete product-fit question without inventing inputs", () => {
+  it("asks for the exact model before product fit instead of listing every product", () => {
     expect(
       selectPortfolioDemoTool(
         "CHN 的 non-road 100 kW 产品在 2026-08-09 是否适配？",
       ),
-    ).toEqual({
-      input: {
-        applicationScope: "non-road",
-        asOf: "2026-08-09",
-        countryIso3: "CHN",
-        powerKw: 100,
-      },
-      toolName: "findCompatibleProducts",
-    });
+    ).toEqual({ input: {}, toolName: "clarify" });
   });
 
   it("preserves an explicitly named product instead of returning the catalog", () => {
@@ -577,74 +500,5 @@ describe("portfolio demo deterministic tool routing", () => {
       },
       toolName: "generateSalesBrief",
     });
-  });
-});
-
-describe("portfolio demo structured sales-brief summary", () => {
-  it("turns the validated brief into a directly reusable conclusion", () => {
-    const summary = salesBriefSummaryFromPrompt(salesBriefPrompt(true), "zh-CN");
-    const score = canonicalBriefResult.brief.marketScore;
-
-    expect(summary).toContain(
-      `${score.countryIso3} 总体机会分为 ${score.overallScore}/100`,
-    );
-    expect(summary).toContain(`数据覆盖率 ${score.dataCoveragePct}%`);
-    expect(summary).toContain(
-      `结构化简报识别到 ${canonicalBriefResult.brief.risks.length} 项风险`,
-    );
-    expect(summary).toContain(
-      `结构化简报提供 ${canonicalBriefResult.brief.salesActions.length} 项规则生成行动`,
-    );
-    expect(summary).not.toContain("认证缺口");
-    expect(summary).not.toContain("认证证据尚不完整");
-    expect(summary).not.toContain("先补齐认证资料再联系客户");
-    expect(summary).toContain("不可用于报价、认证声明或销售承诺");
-  });
-
-  it("does not convert an unavailable score into zero", () => {
-    const summary = salesBriefSummaryFromPrompt(
-      salesBriefPrompt(false),
-      "zh-CN",
-    );
-
-    expect(summary).toContain("CHN 当前证据下不可评分");
-    expect(summary).not.toContain("0/100");
-  });
-
-  it("defaults the fixed summary to English without translating original card text", () => {
-    const summary = salesBriefSummaryFromPrompt(salesBriefPrompt(true));
-    const score = canonicalBriefResult.brief.marketScore;
-
-    expect(summary).toContain(
-      `${score.countryIso3} has an overall opportunity score of ${score.overallScore}/100`,
-    );
-    expect(summary).toContain(
-      `identifies ${canonicalBriefResult.brief.risks.length} risk(s)`,
-    );
-    expect(summary).toContain(
-      `provides ${canonicalBriefResult.brief.salesActions.length} rule-generated action(s)`,
-    );
-    expect(summary).toContain(
-      "For information only; not a substitute for formal certification or legal advice.",
-    );
-    expect(summary).not.toMatch(/[\p{Script=Han}]/u);
-  });
-
-  it("rejects a non-JSON or mismatched tool result", () => {
-    expect(
-      salesBriefSummaryFromPrompt([
-        {
-          content: [
-            {
-              output: { type: "text", value: "untrusted" },
-              toolCallId: "portfolio-demo-generateSalesBrief",
-              toolName: "generateSalesBrief",
-              type: "tool-result",
-            },
-          ],
-          role: "tool",
-        },
-      ]),
-    ).toBeNull();
   });
 });

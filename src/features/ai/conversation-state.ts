@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { applicationScopeSchema } from "@/features/database/schemas";
 import { marketReportingPeriodSchema } from "@/domain/marketing/reporting-period";
-import { catalogQuerySchema } from "@/features/product-catalog/schemas";
+import { catalogQuerySchema, catalogRecordIdSchema } from "@/features/product-catalog/schemas";
 
 export const conversationTaskSchema = z.enum([
   "country_profile", "regulations", "market", "product_fit",
@@ -37,7 +37,7 @@ export const conversationMemorySchema = z.object({
   outputKind: z.enum(["evidence", "request_checklist", "request_email"]),
   preparationTopics: z.array(preparationTopicSchema).min(1).max(9).optional(),
   draftItems: z.number().int().min(1).max(8).nullable().optional(),
-  catalogRecordIds: z.array(z.string().regex(/^weichai-row-\d+$/u)).max(5).optional(),
+  catalogRecordIds: z.array(catalogRecordIdSchema).max(5).optional(),
   catalogQuery: catalogQuerySchema.optional(),
   sourceCountryIso3: z.string().regex(/^[A-Z]{3}$/u).nullable().optional(),
   sourceScope: applicationScopeSchema.nullable().optional(),

@@ -1,474 +1,206 @@
 import "server-only";
 
-import { simulateReadableStream } from "ai";
-import { MockLanguageModelV3 } from "ai/test";
+import { MockLanguageModelV4 } from "ai/test";
 
-import { salesBriefModelToolOutputSchema } from "@/features/ai/model-tool-output";
+import type { ConversationState } from "@/features/ai/conversation-state";
 import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
-import { metricCodesByTask } from "@/server/ai/evidence-contract";
 import { buildKnowledgeRequestContext } from "@/server/ai/knowledge-request-context";
-import { currentUtcDate } from "@/server/ai/tool-results";
 import type { Locale } from "@/i18n/locale";
 
-const emptyUsage = {
-  inputTokens: {
-    cacheRead: 0,
-    cacheWrite: 0,
-    noCache: 1,
-    total: 1,
-  },
-  outputTokens: {
-    reasoning: 0,
-    text: 1,
-    total: 1,
-  },
+/**
+ * Deterministic offline model for `pnpm demo`. It speaks the same typed `act`
+ * protocol as a real provider in the harness loop: the first step derives one
+ * typed operation from the user's own words, the next step finishes with
+ * general guidance. Facts are always rendered by the server from tool results.
+ */
+
+const usage = {
+  inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
+  outputTokens: { reasoning: 0, text: 1, total: 1 },
 } as const;
 
-type PortfolioDemoToolCall = {
-  input: Record<string, unknown>;
-  toolName:
-    | "calculateOpportunityScore"
-    | "compareMarkets"
-    | "compareRegulations"
-    | "findCompatibleProducts"
-    | "generateSalesBrief"
-    | "getCountryProfile"
-    | "searchKnowledgeBase";
-};
-
-function latestUserText(prompt: unknown): string {
-  if (!Array.isArray(prompt)) {
-    return "";
-  }
-
-  for (let index = prompt.length - 1; index >= 0; index -= 1) {
-    const message = prompt[index];
-    if (
-      typeof message !== "object" ||
-      message === null ||
-      !("role" in message) ||
-      message.role !== "user" ||
-      !("content" in message) ||
-      !Array.isArray(message.content)
-    ) {
-      continue;
-    }
-
-    return message.content
-      .flatMap((part: unknown) =>
-        typeof part === "object" &&
-        part !== null &&
-        "text" in part &&
-        typeof part.text === "string"
-          ? [part.text]
-          : [],
-      )
-      .join("\n");
-  }
-
-  return "";
-}
-
-function userTexts(prompt: unknown): string[] {
-  if (!Array.isArray(prompt)) {
-    return [];
-  }
-
-  return prompt
-    .flatMap((message: unknown) => {
-      if (
-        typeof message !== "object" ||
-        message === null ||
-        !("role" in message) ||
-        message.role !== "user" ||
-        !("content" in message) ||
-        !Array.isArray(message.content)
-      ) {
-        return [];
-      }
-
-      return message.content.flatMap((part: unknown) =>
-        typeof part === "object" &&
-        part !== null &&
-        "text" in part &&
-        typeof part.text === "string"
-          ? [part.text]
-          : [],
-      );
-    });
-}
-
-export function selectPortfolioDemoTool(
-  userText: string,
-  conversationContext: string | readonly string[] = userText,
-): PortfolioDemoToolCall {
-  const providedTexts =
-    typeof conversationContext === "string"
-      ? [conversationContext]
-      : [...conversationContext];
-  const userTexts =
-    providedTexts.at(-1) === userText
-      ? providedTexts
-      : [...providedTexts, userText];
-  const context = buildConversationBusinessContext(userTexts);
-  const countries = context.countryIso3s;
-  const applicationScope = context.applicationScope;
-  const powerKw = context.powerKw;
-  const asOf = context.asOf ?? currentUtcDate();
-  const productModelCode = context.productModelCode;
-  const metricCodes = metricCodesByTask(userTexts);
-
-  if (
-    context.activeTask === "sales_brief" &&
-    countries.length >= 2 &&
-    applicationScope !== null &&
-    powerKw !== null
-  ) {
-    return {
-      input: {
-        applicationScope,
-        asOf,
-        countryIso3s: countries.slice(0, 5),
-        powerKw,
-        targetCountryIso3: context.targetCountryIso3 ?? countries[0],
-        ...(metricCodes.sales_brief === undefined
-          ? {}
-          : { metricCodes: metricCodes.sales_brief }),
-        ...(productModelCode ? { productModelCode } : {}),
-      },
-      toolName: "generateSalesBrief",
-    };
-  }
-
-  if (
-    context.activeTask === "opportunity_score" &&
-    countries.length >= 2 &&
-    applicationScope !== null &&
-    powerKw !== null
-  ) {
-    return {
-      input: {
-        applicationScope,
-        asOf,
-        countryIso3s: countries.slice(0, 5),
-        powerKw,
-        ...(metricCodes.opportunity_score === undefined
-          ? {}
-          : { metricCodes: metricCodes.opportunity_score }),
-        ...(productModelCode ? { productModelCode } : {}),
-      },
-      toolName: "calculateOpportunityScore",
-    };
-  }
-
-  if (context.activeTask === "market_compare" && countries.length >= 2) {
-    return {
-      input: {
-        countryIso3s: countries.slice(0, 5),
-        ...(metricCodes.market_compare === undefined
-          ? {}
-          : { metricCodes: metricCodes.market_compare }),
-        ...(applicationScope ? { applicationScope } : {}),
-      },
-      toolName: "compareMarkets",
-    };
-  }
-
-  // Exact single-country applicability queries use the same tool as comparisons;
-  // the production evidence contract does not allow a broad profile substitute.
-  if (
-    (context.activeTask === "regulation_compare" ||
-      (context.activeTask === "country_profile" &&
-        context.profileTopics.includes("regulations") &&
-        countries.length === 1)) &&
-    countries.length >= 1 &&
-    applicationScope !== null &&
-    powerKw !== null
-  ) {
-    return {
-      input: {
-        applicationScope,
-        asOf,
-        countryIso3s: countries.slice(0, 5),
-        powerKw,
-      },
-      toolName: "compareRegulations",
-    };
-  }
-
-  if (
-    context.activeTask === "product_fit" &&
-    applicationScope !== null &&
-    powerKw !== null
-  ) {
-    return {
-      input: {
-        applicationScope,
-        asOf,
-        countryIso3: context.focusedCountryIso3 ?? countries[0] ?? null,
-        powerKw,
-        ...(productModelCode ? { productModelCode } : {}),
-      },
-      toolName: "findCompatibleProducts",
-    };
-  }
-
-  if (context.activeTask === "knowledge") {
-    return {
-      input: {
-        applicationScope,
-        asOf,
-        countryIso3: context.focusedCountryIso3 ?? countries[0] ?? null,
-        query: buildKnowledgeRequestContext(userTexts, context).query,
-      },
-      toolName: "searchKnowledgeBase",
-    };
-  }
-
-  const topics =
-    context.profileTopics.length > 0 ? context.profileTopics : ["country"];
-
-  return {
-    input: {
-      asOf,
-      countryIso3: context.focusedCountryIso3 ?? countries[0] ?? null,
-      topics,
-    },
-    toolName: "getCountryProfile",
-  };
-}
+type DemoAction =
+  | { type: "catalog"; query: { query: string } }
+  | { type: "evidence"; task: ConversationState["tasks"][number]; countryIso3: string | null; sourceQuery: string | null; marketPeriod: null;
+      marketScope?: ConversationState["applicationScope"]; sourceScope?: ConversationState["applicationScope"] }
+  | { type: "answer"; message: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function localeFromPrompt(prompt: unknown): Locale {
-  if (!Array.isArray(prompt)) {
-    return "en";
-  }
-  for (const message of prompt) {
-    if (!isRecord(message) || message.role !== "system") {
-      continue;
-    }
-    const texts = typeof message.content === "string"
-      ? [message.content]
-      : Array.isArray(message.content)
-        ? message.content.flatMap((part: unknown) =>
-            isRecord(part) && typeof part.text === "string" ? [part.text] : [],
-          )
-        : [];
-    const locale = texts.join("\n").match(
-      /<sales_chat_system_prompt\b[^>]*\blocale="(en|zh-CN)"/u,
-    )?.[1];
-    if (locale === "en" || locale === "zh-CN") {
-      return locale;
-    }
-  }
-  return "en";
+function textOf(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content.flatMap((part: unknown) => isRecord(part) && typeof part.text === "string" ? [part.text] : []).join("\n");
 }
 
-export function salesBriefSummaryFromPrompt(
-  prompt: unknown,
-  locale: Locale = "en",
-): string | null {
-  if (!Array.isArray(prompt)) {
-    return null;
+function userTextsFrom(prompt: readonly unknown[]): string[] {
+  return prompt.flatMap(message => isRecord(message) && message.role === "user" ? [textOf(message.content)] : []).filter(Boolean);
+}
+
+/** The harness system prompt embeds the working context and the current request. */
+function workingContextFrom(prompt: readonly unknown[]): { locale: Locale; state: ConversationState | null; currentRequest: string | null } {
+  const system = prompt.flatMap(message => isRecord(message) && message.role === "system" ? [textOf(message.content)] : []).join("\n");
+  const contextJson = /Working context \(intent, not facts\): (\{.*\})\./u.exec(system)?.[1];
+  const currentJson = /CURRENT USER REQUEST[^:]*: ("(?:[^"\\]|\\.)*")/u.exec(system)?.[1];
+  let locale: Locale = "en";
+  let state: ConversationState | null = null;
+  try {
+    const parsed = contextJson ? JSON.parse(contextJson) as { locale?: unknown; state?: ConversationState } : {};
+    if (parsed.locale === "zh-CN" || parsed.locale === "en") locale = parsed.locale;
+    state = parsed.state ?? null;
+  } catch { /* fall back to defaults */ }
+  let currentRequest: string | null = null;
+  try { currentRequest = currentJson ? JSON.parse(currentJson) as string : null; } catch { /* ignore */ }
+  return { locale, state, currentRequest };
+}
+
+function lastToolResult(prompt: readonly unknown[]): unknown {
+  for (let index = prompt.length - 1; index >= 0; index -= 1) {
+    const message = prompt[index];
+    if (!isRecord(message) || message.role !== "tool" || !Array.isArray(message.content)) continue;
+    const part = message.content.at(-1);
+    if (isRecord(part) && isRecord(part.output)) return part.output.value;
   }
+  return undefined;
+}
 
-  for (let messageIndex = prompt.length - 1; messageIndex >= 0; messageIndex -= 1) {
-    const message = prompt[messageIndex];
-    if (
-      !isRecord(message) ||
-      message.role !== "tool" ||
-      !Array.isArray(message.content)
-    ) {
-      continue;
+const catalogPattern = /\b(?:catalog(?:ue)?|DEMO-[A-Z]+\d*)\b|目录|型号库/iu;
+
+export function selectPortfolioDemoAction(userTexts: readonly string[]): { state: ConversationState; action: DemoAction } {
+  const latest = userTexts.at(-1) ?? "";
+  const context = buildConversationBusinessContext(userTexts);
+  const state: ConversationState = {
+    tasks: [], countryIso3s: context.countryIso3s.slice(0, 5), applicationScope: context.applicationScope,
+    powerKw: context.powerKw, asOf: context.asOf ?? null, productModelCode: context.productModelCode,
+  };
+  const country = context.focusedCountryIso3 ?? context.countryIso3s[0] ?? null;
+  const evidence = (task: ConversationState["tasks"][number], sourceQuery: string | null = null) => ({
+    state: { ...state, tasks: [task] },
+    // A market query keeps the user's scope so the harness can refuse an
+    // unsupported single-country filter instead of silently broadening it.
+    action: { type: "evidence" as const, task, sourceQuery, marketPeriod: null,
+      // Source search, product fit and the brief's target use the country the
+      // user focused on; the brief honours an explicitly named target market.
+      countryIso3: task === "knowledge" || task === "product_fit" ? country : task === "sales_brief" ? context.targetCountryIso3 ?? country : null,
+      ...(task === "knowledge" && context.applicationScope ? { sourceScope: context.applicationScope } : {}),
+      ...(task === "market" && context.applicationScope ? { marketScope: context.applicationScope } : {}) },
+  });
+
+  if (context.hasScopeConflict) {
+    return { state, action: { type: "answer", message: "scope_conflict" } };
+  }
+  if (context.activeTask === null && catalogPattern.test(latest)) {
+    const model = /\bDEMO-[A-Z0-9-]+/u.exec(latest)?.[0] ?? "";
+    return { state, action: { type: "catalog", query: { query: model } } };
+  }
+  switch (context.activeTask) {
+    case "sales_brief": return evidence("sales_brief");
+    case "opportunity_score": return evidence("opportunity_score");
+    case "market_compare": return evidence("market");
+    case "regulation_compare": return evidence("regulations");
+    case "product_fit": return evidence("product_fit");
+    case "knowledge": {
+      const knowledge = buildKnowledgeRequestContext(userTexts, context);
+      if (knowledge.requiresRestatement) return { state, action: { type: "answer", message: "restate_source" } };
+      return evidence("knowledge", knowledge.query);
     }
+    default:
+      if (context.profileTopics.includes("regulations")) return evidence("regulations");
+      if (context.profileTopics.includes("market")) return evidence("market");
+      if (country) return evidence("country_profile");
+      return { state, action: { type: "answer", message: "" } };
+  }
+}
 
-    for (
-      let partIndex = message.content.length - 1;
-      partIndex >= 0;
-      partIndex -= 1
-    ) {
-      const part = message.content[partIndex];
-      if (
-        !isRecord(part) ||
-        part.type !== "tool-result" ||
-        part.toolName !== "generateSalesBrief" ||
-        part.toolCallId !== "portfolio-demo-generateSalesBrief" ||
-        !isRecord(part.output) ||
-        part.output.type !== "json"
-      ) {
-        continue;
-      }
+type DemoTask = ConversationState["tasks"][number] | "catalog";
 
-      const parsed = salesBriefModelToolOutputSchema.safeParse(
-        part.output.value,
-      );
-      if (!parsed.success) {
-        return null;
-      }
+const taskSummaries: Record<DemoTask, { en: string; zh: string }> = {
+  product_fit: { en: "The product-fit-v2 deterministic match is complete. Review regulatory/certification fit, query-date availability, and commercial readiness in the structured card. The offline demo uses explicitly fictional product and certification fixtures.",
+    zh: "已运行 product-fit-v2 确定性匹配。法规/认证适配、查询日供应状态和商业准备度以结构化卡片为准；离线 Demo 只使用明确标记的虚构产品与认证数据。" },
+  regulations: { en: "The regulations were compared under the same application, power, and date. Review statuses, limits, and sources in the structured card. The offline demo uses explicitly fictional fixtures.",
+    zh: "已按同一场景、功率和日期完成法规比较。状态、限值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。" },
+  market: { en: "Structured market metrics were queried using aligned methodology. Review comparability, observations, and sources in the structured card. The offline demo uses explicitly fictional fixtures.",
+    zh: "已按一致口径查询结构化市场指标。可比性、观测值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。" },
+  opportunity_score: { en: "The opportunity-score-v2 deterministic calculation is complete. Product readiness includes both compliance fit and query-date availability. Review scores, weights, coverage, and gaps in the structured card; the offline demo uses explicitly fictional fixtures.",
+    zh: "已运行 opportunity-score-v2 确定性评分。产品准备度同时使用合规适配和查询日供应状态；分数、权重、数据覆盖率和缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。" },
+  sales_brief: { en: "The deterministic sales brief is complete. Review opportunities, risks, products, actions, and data gaps in the structured card. The offline demo uses explicitly fictional fixtures and cannot support quotes, certification claims, or sales commitments.",
+    zh: "已生成确定性的结构化销售简报。机会、风险、产品建议、下一步和数据缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据，不可用于报价、认证声明或销售承诺。" },
+  knowledge: { en: "Traceable document evidence was searched. Review matched text, page or section, validity, and source in the structured card. The offline demo uses explicitly fictional fixtures.",
+    zh: "已检索可追溯文档证据。命中内容、页码或章节、有效期和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。" },
+  country_profile: { en: "The country profile was queried. Review current effective rules, future adopted rules, verification time, and sources in the structured card. The offline demo uses explicitly fictional fixtures.",
+    zh: "已查询国家资料。当前有效法规、未来已采纳法规、核验时间和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。" },
+  catalog: { en: "The fictional demo catalogue was searched. Review the declared ratings and citations in the cards; declarations are not certification.",
+    zh: "已检索虚构 Demo 目录。声明的参数和法规编号以卡片为准；声明不等于认证。" },
+};
 
-      const { brief } = parsed.data;
-      if (
-        brief.marketScore.countryIso3 !== brief.query.targetCountryIso3
-      ) {
-        return null;
-      }
+function finishMessage(locale: Locale, outcome: "failed" | "scope_conflict" | "restate_source" | DemoTask): string {
+  const en = locale === "en";
+  if (outcome === "restate_source") {
+    return en
+      ? "Please restate the complete source query with its topic, OR branches and exclusions in one message. I cannot safely merge this new query wording with the retained topic or OR branches. No evidence has been accepted for this refinement."
+      : "请在同一条消息中重新写出完整来源查询，包含主题、OR 分支和排除条件。无法安全地将新增检索文字合并到原主题或 OR 分支中；本次追问尚未接受任何证据。";
+  }
+  if (outcome === "scope_conflict") {
+    return en
+      ? "Please specify one application scope, such as non-road or marine. The scopes in this request do not resolve to one supported filter; I cannot choose one or silently query all scopes."
+      : "请明确一个应用场景，例如非道路或船用。当前用途无法确定唯一支持的筛选范围，不能替你任选一个，也不能静默查询所有用途。";
+  }
+  if (outcome === "failed") {
+    return en
+      ? "Some conditions are still missing or could not be verified. Please add the missing conditions and ask again."
+      : "部分条件仍缺失或未能核验。请补充缺少的条件后再问。";
+  }
+  return en ? taskSummaries[outcome].en : taskSummaries[outcome].zh;
+}
 
-      const score =
-        brief.marketScore.overallScore === null
-          ? locale === "en"
-            ? `${brief.marketScore.countryIso3} cannot be scored with the current evidence`
-            : `${brief.marketScore.countryIso3} 当前证据下不可评分`
-          : locale === "en"
-            ? `${brief.marketScore.countryIso3} has an overall opportunity score of ${brief.marketScore.overallScore}/100`
-            : `${brief.marketScore.countryIso3} 总体机会分为 ${brief.marketScore.overallScore}/100`;
-      const risk = brief.risks[0]
-        ? locale === "en"
-          ? `The structured brief identifies ${brief.risks.length} risk(s); review the structured card for the original deterministic wording.`
-          : `结构化简报识别到 ${brief.risks.length} 项风险；原始确定性表述请查看结构化卡片。`
-        : locale === "en"
-          ? "The structured brief lists no risk."
-          : "结构化简报未列出风险。";
-      const action = brief.salesActions[0]
-        ? locale === "en"
-          ? `The structured brief provides ${brief.salesActions.length} rule-generated action(s); review priorities and rationale in the structured card.`
-          : `结构化简报提供 ${brief.salesActions.length} 项规则生成行动；请在结构化卡片中复核优先级与依据。`
-        : locale === "en"
-          ? "The structured brief lists no action."
-          : "结构化简报未列出行动。";
-
-      return locale === "en"
-        ? `${score} (data coverage ${brief.marketScore.dataCoveragePct}%). ${risk} ${action}\n\nThe offline demo uses explicitly fictional fixtures and cannot support quotes, certification claims, or sales commitments.\n\nFor information only; not a substitute for formal certification or legal advice.`
-        : `${score}（数据覆盖率 ${brief.marketScore.dataCoveragePct}%）。${risk}${action}\n\n离线 Demo 仅使用明确标记的虚构演示数据，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见`;
+/** The task of the demo's own earlier action in this turn. */
+function previousTask(prompt: readonly unknown[]): DemoTask | null {
+  for (let index = prompt.length - 1; index >= 0; index -= 1) {
+    const message = prompt[index];
+    if (!isRecord(message) || message.role !== "assistant" || !Array.isArray(message.content)) continue;
+    for (const part of message.content) {
+      if (!isRecord(part) || part.type !== "tool-call") continue;
+      const input = typeof part.input === "string" ? JSON.parse(part.input) as unknown : part.input;
+      const action = isRecord(input) && isRecord(input.action) ? input.action : null;
+      if (action?.type === "catalog") return "catalog";
+      if (action?.type === "evidence" && typeof action.task === "string") return action.task as DemoTask;
     }
   }
-
   return null;
 }
 
-function toolSummary(
-  toolName: PortfolioDemoToolCall["toolName"],
-  prompt: unknown,
-  locale: Locale,
-): string {
-  if (locale === "en") {
-    if (toolName === "findCompatibleProducts") {
-      return "The product-fit-v2 deterministic match is complete. Review regulatory/certification fit, query-date availability, and commercial readiness in the structured card. The offline demo uses explicitly fictional product and certification fixtures.\n\nFor information only; not a substitute for formal certification or legal advice.";
-    }
-    if (toolName === "compareRegulations") {
-      return "The regulations were compared under the same application, power, and date. Review statuses, limits, and sources in the structured card. The offline demo uses explicitly fictional fixtures.\n\nFor information only; not a substitute for formal certification or legal advice.";
-    }
-    if (toolName === "compareMarkets") {
-      return "Structured market metrics were queried using aligned methodology. Review comparability, observations, and sources in the structured card. The offline demo uses explicitly fictional fixtures.";
-    }
-    if (toolName === "calculateOpportunityScore") {
-      return "The opportunity-score-v2 deterministic calculation is complete. Product readiness includes both compliance fit and query-date availability. Review scores, weights, coverage, and gaps in the structured card; the offline demo uses explicitly fictional fixtures.";
-    }
-    if (toolName === "generateSalesBrief") {
-      return salesBriefSummaryFromPrompt(prompt, locale) ??
-        "The deterministic sales brief is complete. Review opportunities, risks, products, actions, and data gaps in the structured card. The offline demo uses explicitly fictional fixtures and cannot support quotes, certification claims, or sales commitments.\n\nFor information only; not a substitute for formal certification or legal advice.";
-    }
-    if (toolName === "searchKnowledgeBase") {
-      return "Traceable document evidence was searched. Review matched text, page or section, validity, and source in the structured card. The offline demo uses explicitly fictional fixtures.\n\nFor information only; not a substitute for formal certification or legal advice.";
-    }
-    return "The country profile was queried. Review current effective rules, future adopted rules, verification time, and sources in the structured card. The offline demo uses explicitly fictional fixtures.\n\nFor information only; not a substitute for formal certification or legal advice.";
-  }
-  if (toolName === "findCompatibleProducts") {
-    return "已运行 product-fit-v2 确定性匹配。法规/认证适配、查询日供应状态和商业准备度以结构化卡片为准；离线 Demo 只使用明确标记的虚构产品与认证数据。\n\n信息参考，不替代正式认证或法律意见";
-  }
-  if (toolName === "compareRegulations") {
-    return "已按同一场景、功率和日期完成法规比较。状态、限值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。\n\n信息参考，不替代正式认证或法律意见";
-  }
-  if (toolName === "compareMarkets") {
-    return "已按一致口径查询结构化市场指标。可比性、观测值和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。";
-  }
-  if (toolName === "calculateOpportunityScore") {
-    return "已运行 opportunity-score-v2 确定性评分。产品准备度同时使用合规适配和查询日供应状态；分数、权重、数据覆盖率和缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。";
-  }
-  if (toolName === "generateSalesBrief") {
-    return (
-      salesBriefSummaryFromPrompt(prompt, locale) ??
-      "已生成确定性的结构化销售简报。机会、风险、产品建议、下一步和数据缺口以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据，不可用于报价、认证声明或销售承诺。\n\n信息参考，不替代正式认证或法律意见"
-    );
-  }
-  if (toolName === "searchKnowledgeBase") {
-    return "已检索可追溯文档证据。命中内容、页码或章节、有效期和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。\n\n信息参考，不替代正式认证或法律意见";
-  }
-  return "已查询国家资料。当前有效法规、未来已采纳法规、核验时间和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。\n\n信息参考，不替代正式认证或法律意见";
-}
-
 export function createPortfolioDemoModel() {
-  let selectedTool: PortfolioDemoToolCall | null = null;
-  let step = 0;
-
-  return new MockLanguageModelV3({
-    modelId: "portfolio-demo-v1",
+  let call = 0;
+  return new MockLanguageModelV4({
+    modelId: "portfolio-demo-v2",
     provider: "portfolio-demo",
-    doStream: async (options) => {
-      step += 1;
+    doGenerate: async (options) => {
+      call += 1;
+      const prompt = options.prompt as readonly unknown[];
+      const { locale, state: workingState, currentRequest } = workingContextFrom(prompt);
+      const texts = userTextsFrom(prompt);
+      if (currentRequest && texts.at(-1) !== currentRequest) texts.push(currentRequest);
+      const previous = lastToolResult(prompt);
 
-      // The production loop can request more evidence after a successful tool
-      // result whose delivered locators do not satisfy the request. Respect
-      // that tool choice instead of emitting premature prose (newer SDKs
-      // correctly reject it). The shared five-step bound still ends the turn
-      // with a deterministic evidence gap when the fixture cannot satisfy it.
-      if (step === 1 || options.toolChoice?.type === "required" || options.toolChoice?.type === "tool") {
-        selectedTool = selectPortfolioDemoTool(
-          latestUserText(options.prompt),
-          userTexts(options.prompt),
-        );
-        if (!options.tools?.some(({ name }) => name === selectedTool?.toolName) ||
-          (options.toolChoice?.type === "tool" && options.toolChoice.toolName !== selectedTool.toolName)) {
-          throw new Error("Demo routing does not match the allowed production tools.");
-        }
-        return {
-          stream: simulateReadableStream({
-            chunks: [
-              { type: "stream-start" as const, warnings: [] },
-              {
-                input: JSON.stringify(selectedTool.input),
-                toolCallId: `portfolio-demo-${selectedTool.toolName}${step === 1 ? "" : `-${step}`}`,
-                toolName: selectedTool.toolName,
-                type: "tool-call" as const,
-              },
-              {
-                finishReason: {
-                  raw: undefined,
-                  unified: "tool-calls" as const,
-                },
-                type: "finish" as const,
-                usage: emptyUsage,
-              },
-            ],
-          }),
-        };
+      let input: { state: ConversationState; locale: Locale; action: DemoAction };
+      if (previous === undefined) {
+        const selected = selectPortfolioDemoAction(texts);
+        // A clarification keeps the conditions the user already gave.
+        const clarification = selected.action.type === "answer" ? selected.action.message : null;
+        input = clarification !== null
+          ? { state: selected.state, locale, action: { type: "answer",
+            message: finishMessage(locale, clarification === "scope_conflict" || clarification === "restate_source" ? clarification : "failed") } }
+          : { ...selected, locale };
+      } else {
+        const failed = isRecord(previous) && previous.error === "invalid_action";
+        input = { state: workingState ?? selectPortfolioDemoAction(texts).state, locale,
+          action: { type: "answer", message: finishMessage(locale, failed ? "failed" : previousTask(prompt) ?? "failed") } };
       }
-
-      const text = toolSummary(
-        selectedTool?.toolName ?? "getCountryProfile",
-        options.prompt,
-        localeFromPrompt(options.prompt),
-      );
       return {
-        stream: simulateReadableStream({
-          chunks: [
-            { type: "stream-start" as const, warnings: [] },
-            { id: "portfolio-demo-answer", type: "text-start" as const },
-            {
-              delta: text,
-              id: "portfolio-demo-answer",
-              type: "text-delta" as const,
-            },
-            { id: "portfolio-demo-answer", type: "text-end" as const },
-            {
-              finishReason: { raw: undefined, unified: "stop" as const },
-              type: "finish" as const,
-              usage: emptyUsage,
-            },
-          ],
-        }),
+        warnings: [], usage, finishReason: { unified: "tool-calls" as const, raw: undefined },
+        content: [{ type: "tool-call" as const, toolCallId: `portfolio-demo-act-${call}`, toolName: "act", input: JSON.stringify(input) }],
       };
     },
   });

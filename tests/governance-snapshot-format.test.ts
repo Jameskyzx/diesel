@@ -11,6 +11,7 @@ import {
 
 function emptySnapshot() {
   const tables = {
+    catalog_engines: [] as object[],
     countries: [] as object[],
     country_jurisdictions: [] as object[],
     data_change_logs: [] as object[],
@@ -24,7 +25,7 @@ function emptySnapshot() {
   };
   return {
     exportedAt: "2026-08-11T00:00:00.000Z",
-    formatVersion: 4,
+    formatVersion: 5,
     tableCounts: Object.fromEntries(
       Object.keys(tables).map((tableName) => [tableName, 0]),
     ),
@@ -325,8 +326,27 @@ describe("governance snapshot format", () => {
     expect(() => parseGovernanceSnapshot(snapshot)).toThrow();
   });
 
-  it("accepts the exact v4 table set and matching counts", () => {
-    expect(parseGovernanceSnapshot(emptySnapshot()).formatVersion).toBe(4);
+  it("accepts the exact v5 table set and matching counts", () => {
+    expect(parseGovernanceSnapshot(emptySnapshot()).formatVersion).toBe(5);
+  });
+
+  it("fails closed on a v4 file instead of restoring without the catalogue", () => {
+    expect(() => parseGovernanceSnapshot({ ...emptySnapshot(), formatVersion: 4 })).toThrow();
+  });
+
+  it("keeps catalogue engines inside the source closure", () => {
+    const snapshot = emptySnapshot();
+    snapshot.tables.catalog_engines.push({
+      aftertreatment: "SCR", applicationScopes: ["on-road-truck"], archivedAt: null,
+      category: "truck", createdAt: "2026-08-11T00:00:00.000Z", cylinders: 6,
+      dataSourceId: "00000000-0000-4000-8000-000000000099", declaredCitationCodes: [],
+      displacementL: 12, emissionLabel: "Stage", id: "00000000-0000-4000-8000-000000000031",
+      isDemo: true, modelCode: "DEMO-T-300", powerMaxKw: 320, powerMinKw: 280,
+      ratedPowerKw: 300, ratedSpeedRpm: 1900, series: "DEMO-T",
+      updatedAt: "2026-08-11T00:00:00.000Z", verifiedAt: "2026-08-11T00:00:00.000Z",
+    });
+    snapshot.tableCounts.catalog_engines = 1;
+    expect(() => parseGovernanceSnapshot(snapshot)).toThrow("outside the governance closure");
   });
 
   it("does not treat a non-document v1 draft_created audit as document provenance", () => {

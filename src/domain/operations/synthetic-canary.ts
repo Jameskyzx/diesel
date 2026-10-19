@@ -400,6 +400,8 @@ export function createCanaryChecks(input: {
     },
     {
       body: JSON.stringify({
+        // Same request shape as the browser: conversation v2 through the harness.
+        conversation: { version: 2 },
         locale: "en",
         messages: [
           {
@@ -423,6 +425,7 @@ export function createCanaryChecks(input: {
   if (input.includeProviderAi) {
     checks.push({
       body: JSON.stringify({
+        conversation: { version: 2 },
         locale: "zh-CN",
         messages: [
           {

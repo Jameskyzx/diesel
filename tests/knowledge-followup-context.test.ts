@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { searchKnowledgeBaseInputSchema } from "@/features/ai/schemas";
 import { buildSalesChatEvidenceContract, knowledgeTermsIn, knowledgeTermsMatch } from "@/server/ai/evidence-contract";
-import { selectPortfolioDemoTool } from "@/server/ai/portfolio-demo-model";
+import { knowledgeQuerySatisfies } from "@/server/ai/knowledge-request-context";
+import { selectPortfolioDemoTool } from "./helpers/portfolio-demo";
 import { buildConversationBusinessContext } from "@/server/ai/conversation-context";
 import { buildDirectChatResponse } from "@/server/ai/chat-turn-guidance";
 
@@ -289,7 +290,10 @@ describe("knowledge follow-ups retain the substantive request", () => {
     const query = tool.input.query;
     expect(typeof query).toBe("string");
     if (typeof query !== "string") throw new Error("Missing query");
-    expect(knowledgeTermsMatch(terms(turns), knowledgeTermsIn(query, ["CHN", "BRA"]))).toBe(true);
+    // The executed query carries every required business term; delivery cues
+    // ("original text", "source evidence") are enforced on the result instead.
+    expect(knowledgeQuerySatisfies(terms(turns), knowledgeTermsIn(query, ["CHN", "BRA"]),
+      contract(turns).requirements[0]?.query.knowledgeOptionalTerms)).toBe(true);
     expect(query).toMatch(/emissions/u);
     expect(query).not.toMatch(/again|continue|now/iu);
   });

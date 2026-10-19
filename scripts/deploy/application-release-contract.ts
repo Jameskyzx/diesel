@@ -21,9 +21,12 @@ export function isApplicationOnlyInput(path: string): boolean {
   // This read-only deployment verifier is maintenance code, not an ingestion
   // or schema input. Its fingerprint SQL, DB runtime and migrations stay denied.
   if (path === "scripts/db/verify-application-release.ts") return true;
-  // This source-reported catalogue is bundled read-only, never seeded into
+  // The fictional demo catalogue is bundled read-only, never seeded into
   // governed products/certifications. Do not allow the rest of src/data here.
-  if (path === "src/data/products/weichai-catalog.json") return true;
+  // The retired catalogue path stays listed so that its removal does not force
+  // a governance republish; drop it once no deployed release contains it.
+  if (path === "src/data/products/demo-engine-catalog.json" ||
+    path === "src/data/products/weichai-catalog.json") return true;
   // Enumerate existing browser-test configuration, not arbitrary root inputs.
   if (["playwright.config.ts", "playwright.demo.config.ts", "playwright.fde.config.ts",
     "playwright.live.config.ts", "playwright.production.config.ts"].includes(path)) return true;
@@ -63,7 +66,7 @@ export function compareApplicationInputs(previousValue: unknown, candidateValue:
 }
 
 export const applicationDataTables = [
-  "countries", "country_jurisdictions", "data_change_logs", "data_governance_drafts",
+  "catalog_engines", "countries", "country_jurisdictions", "data_change_logs", "data_governance_drafts",
   "data_sources", "jurisdictions", "market_import_batches", "market_metrics",
   "regulation_limits", "regulations", "products", "product_certifications",
   "documents", "document_chunks", "drizzle.__drizzle_migrations",

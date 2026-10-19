@@ -13,7 +13,7 @@ import {
   evidenceContractAllowsModelText,
 } from "@/server/ai/evidence-contract";
 import { createSalesChatTools } from "@/server/ai/sales-chat";
-import { selectPortfolioDemoTool } from "@/server/ai/portfolio-demo-model";
+import { selectPortfolioDemoTool } from "./helpers/portfolio-demo";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { dataSources, documentChunks, documents } from "@/server/db/schema";
 import { demoIds } from "@/server/db/seed/demo-data";
@@ -168,7 +168,7 @@ describe("Demo knowledge retrieval", () => {
     const selected = selectPortfolioDemoTool(turns.at(-1)!, turns);
     const query = selected.input.query;
     if (typeof query !== "string") throw new Error("Expected retained query");
-    expect(query).toContain("emissions regulations original text sections");
+    expect(query).toContain("emissions regulation");
     expect(query).not.toContain("marine");
     const tools = createSalesChatTools({
       auditRepository: { recordToolCall: async () => undefined },

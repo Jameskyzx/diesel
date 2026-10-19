@@ -1,7 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
 
-import { shouldForbidOnlyInPlaywrightRun } from "./scripts/portfolio/playwright-evidence";
-
 const baseURL =
   process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3100";
 
@@ -9,7 +7,7 @@ export default defineConfig({
   testDir: "./e2e",
   testIgnore: ["demo.spec.ts", "fde-demo.spec.ts"],
   fullyParallel: true,
-  forbidOnly: shouldForbidOnlyInPlaywrightRun(),
+  forbidOnly: Boolean(process.env.CI),
   globalTeardown: "./scripts/e2e/global-teardown.ts",
   retries: process.env.CI ? 2 : 0,
   // The full single-worker matrix exceeded 25 minutes on hosted Linux with no
@@ -21,17 +19,9 @@ export default defineConfig({
         ["github"],
         ["list"],
         ["html", { open: "never" }],
-        [
-          "./scripts/portfolio/playwright-run-reporter.ts",
-          { id: "public" },
-        ],
       ]
     : [
         ["list"],
-        [
-          "./scripts/portfolio/playwright-run-reporter.ts",
-          { id: "public" },
-        ],
       ],
   outputDir: "test-results/public",
   timeout: process.env.CI ? 60_000 : 30_000,

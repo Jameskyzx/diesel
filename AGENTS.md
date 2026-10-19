@@ -38,15 +38,13 @@ Use the full Playwright suite when the change spans public flows, not for every 
 
 - Run selected checks once on final relevant inputs. Re-run affected checks after
   a fix; do not repeat passing suites on unchanged inputs without a concrete reason.
-- Evidence capture already executes its underlying suite. Do not run the same
-  full suite separately just to collect another passing result.
-- In one checkout, run Next dev/build, screenshot capture and evidence captures
-  serially. During capture, do not edit files, install dependencies, or run another
-  test/formatter; even cache writes can invalidate the capture.
-- Paid AI evals and portfolio recapture are not default checks for cosmetic work.
+- In one checkout, run Next dev/build and Playwright serially; they share `.next`
+  and dev-server ports.
+- The paid live AI eval (`pnpm ai:eval:live`) is not a default check; run it only
+  when AI behavior changes and the user has authorized the provider cost.
 - CI and production gates still apply. If existing gates require a larger run,
-  explain that cost before starting it. Never bypass a gate, forge a report, edit
-  recorded fingerprints, or label interrupted/failed checks as passing.
+  explain that cost before starting it. Never bypass a gate, forge a report, or
+  label interrupted/failed checks as passing.
 
 ## Essential engineering contracts
 
@@ -75,8 +73,9 @@ Use the full Playwright suite when the change spans public flows, not for every 
   checklist, status file or audit report for an ordinary small edit.
 - Read `docs/ARCHITECTURE.md` or `docs/DATA_MODEL.md` for relevant design work,
   `docs/PUBLIC_UI.md` for public UI contracts, and `docs/DEPLOYMENT.md` for releases.
-- `docs/STATUS.md` is the sole current release/evidence index. Historical evidence
-  does not prove a new change passed; do not refresh unrelated historical claims.
+- `docs/STATUS.md` is the sole current release index; update its production-release
+  block after each deployment. Historical records do not prove a new change passed;
+  do not refresh unrelated historical claims.
 - Delivery: briefly state what changed, what was actually checked and any remaining
   blocker. Distinguish local completion, pushed code and verified production release.
   Stop at the requested outcome; do not automatically start another phase.

@@ -1874,7 +1874,7 @@ release 专属的 root-owned 0700 脚本；正常发布和 `finalize-committed` 
 环境中执行；保存的公开 validator 也不继承数据库/模型秘密或维护 token。需要复用 lifecycle
 锁的 host committed validator 使用专用 allowlist，只额外保留固定 FD 8 capability，避免父进程
 持锁时自我死锁。
-`recover-required` 使用发布前 snapshot 的 v4 十表深比较契约，不要求恢复后的旧状态满足
+`recover-required` 使用发布前 snapshot 的 v5 十一表深比较契约，不要求恢复后的旧状态满足
 post-publish 覆盖数。遇到 `RECOVERY_REQUIRED` 时先恢复并深比较数据库，再 durable 转为
 `HOST_ROLLBACK_REQUIRED`；遇到后者时先重新导出并深比较，证明数据库已经是旧快照。随后只能
 调用对应 release 的 versioned restore-only host rollback，把 `current`、环境、Nginx 与 PM2
@@ -1954,7 +1954,7 @@ command /usr/bin/env -i \
 若 controller / wrapper 被 `SIGKILL`、主机重启或 session heartbeat 失败而留下
 `RECOVERY_REQUIRED` 或 `HOST_ROLLBACK_REQUIRED`，先停止管理写入，
 在对应 release 目录执行下列恢复。恢复目标是发布前快照，不能套用发布后的 178 国/97 国
-`covered` 验收；同一新维护锁会话必须在 restore 后重新导出 v4 十表快照，并对原 snapshot 的
+`covered` 验收；同一新维护锁会话必须在 restore 后重新导出 v5 十一表快照，并对原 snapshot 的
 `tableCounts` 与 `tables` 做深比较。状态机随后必须读取持久化的 `previous-release`，调用失败
 release 自带的 versioned rollback，把 host 收敛到该旧 release，并以旧 release 的
 `verify-release.sh` 做安全读回。全部成功后才把 required marker 原子迁移为永久
@@ -2373,10 +2373,26 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
 优先使用 `durable-release.bundle.mjs start-auto <sha>`：先验证前后两份输入树，
 数据库代码、迁移、fixture、发布批准和依赖不变时自动选代码发布；聊天、比较和路由
 修改不再触发全库导出、恢复及数据重发布。无法读取或畸形的输入直接失败，不降级猜测。
-仅用于只读展示的 `src/data/products/weichai-catalog.json` 和五个现有根目录
-Playwright 配置也属于代码输入；不放行其他 `src/data` 文件、未知配置、导入脚本
-或产品发布批准。目录参数仍为来源报告而非认证证据，前后数据库指纹核验保持不变。
+已退役的两个只读目录路径（`src/data/products/*`，保留在清单中使其删除仍走代码发布；
+目录固定数据现位于受保护的 `src/server/db/seed/`）和五个现有根目录 Playwright 配置也属于代码输入；
+不放行其他 `src/data` 文件、未知配置、导入脚本或产品发布批准。目录声明不是认证证据，
+前后数据库指纹核验保持不变。
 `start <sha>` 显式执行完整发布；`start-application <sha>` 强制要求代码发布资格。
+
+### 4.4 受治理目录（Migration `0014`）
+
+Migration `0014_governed_catalog_engines.sql` 新增 `catalog_engines` 表、`catalog_engine` 治理实体和
+`market_import_batches.entity_type` 列，并新增依赖 `read-excel-file`，因此首次发布必须走完整发布。
+完整发布的 fixture 队列（`publish-governance-country-fixtures.sh`）在 97 国之后自动运行
+`scripts/db/ingest-demo-catalogue.ts`，无需另行操作。它与国家发布处在同一发布前快照、恢复 trap 和
+维护锁内：日志依次出现 `GOVERNANCE_CATALOGUE_START` / `GOVERNANCE_CATALOGUE_COMPLETE`；失败时打印
+`GOVERNANCE_CATALOGUE_FAILED status=N` 并恢复整份快照。脚本以独立的 editor/reviewer 自动化身份逐条
+草稿、审核、发布虚构目录来源与 24 个型号；已一致的记录跳过，重复执行安全，不删除任何数据。
+发布之外（例如本地 PostgreSQL）可手动执行 `pnpm db:ingest-demo-catalogue`。
+
+治理快照升级为 v5（ADR-274），加入 `catalog_engines`；代码发布的数据库指纹清单
+（`applicationDataTables`）同时包含该表。旧 v4 备份不能用新代码恢复，首次 v5 发布会在写入前导出
+新快照并完成恢复演练。
 
 ### CI 构建产物交付
 

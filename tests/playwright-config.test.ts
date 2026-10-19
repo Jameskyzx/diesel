@@ -104,7 +104,7 @@ describe("Playwright server contracts", () => {
     const result = spawnSync("/usr/bin/git", [
       "-c", "core.excludesFile=/dev/null", "check-ignore", "--no-index", "-v", "--",
       "playwright-demo-report/index.html", "playwright-report/index.html",
-      "e2e/demo.spec.ts", "scripts/portfolio/playwright-run-reporter.ts",
+      "e2e/demo.spec.ts", "scripts/e2e/server.ts",
     ], {
       cwd: process.cwd(),
       env: { NODE_ENV: "test", PATH: "/usr/bin:/bin", GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" },
@@ -118,7 +118,7 @@ describe("Playwright server contracts", () => {
     expect(result.stdout).toMatch(/\.gitignore:\d+:\/playwright-demo-report\t/u);
   });
 
-  it("forbids test.only in every evidence config even when capture removes CI", () => {
+  it("forbids test.only in every Playwright config on CI", () => {
     const configUrls = [
       "playwright.config.ts",
       "playwright.demo.config.ts",
@@ -149,8 +149,7 @@ describe("Playwright server contracts", () => {
         encoding: "utf8",
         env: {
           ...process.env,
-          CI: "",
-          DIESEL_PLAYWRIGHT_EVIDENCE_CAPTURE: "1",
+          CI: "true",
         },
       },
     );

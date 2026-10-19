@@ -1,20 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
-import { shouldForbidOnlyInPlaywrightRun } from "./scripts/portfolio/playwright-evidence";
-
 const baseURL =
   process.env.PLAYWRIGHT_PRODUCTION_BASE_URL ?? "http://127.0.0.1:3400";
 
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "security-policy.spec.ts",
-  forbidOnly: shouldForbidOnlyInPlaywrightRun(),
+  forbidOnly: Boolean(process.env.CI),
   reporter: [
     ["list"],
-    [
-      "./scripts/portfolio/playwright-run-reporter.ts",
-      { id: "production-csp" },
-    ],
   ],
   outputDir: "test-results/production-csp",
   timeout: 60_000,

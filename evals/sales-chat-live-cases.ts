@@ -24,7 +24,7 @@ const liveEvalToolNames = [
 const liveEvalLocales = ["en", "zh-CN"] as const satisfies readonly Locale[];
 const liveEvalToolNameSchema = z.enum(liveEvalToolNames);
 
-export const SALES_CHAT_LIVE_EVAL_VERSION = "sales-chat-live-v26";
+export const SALES_CHAT_LIVE_EVAL_VERSION = "sales-chat-live-v27";
 
 const queryTermGroupSchema = z
   .object({
@@ -192,6 +192,8 @@ const responseAnchors = {
   },
   decisionProductCompatible: {
     anyOf: [
+      "confirmed fit",
+      "明确匹配",
       "is compatible",
       "regulatory fit is confirmed",
       "is a regulatory fit",
@@ -200,6 +202,8 @@ const responseAnchors = {
     ],
     id: "decision:product-compatible",
     noneOf: [
+      "confirmed not fit",
+      "明确不匹配",
       "is not compatible",
       "isn't compatible",
       "not compatible",
@@ -225,6 +229,8 @@ const responseAnchors = {
   },
   decisionSupplyReady: {
     anyOf: [
+      "commercially ready",
+      "商业就绪",
       "is ready for supply",
       "is supply-ready",
       "supply status is ready",
@@ -236,6 +242,10 @@ const responseAnchors = {
     ],
     id: "decision:supply-ready",
     noneOf: [
+      "commercially not ready",
+      "commercial readiness unknown",
+      "商业未就绪",
+      "商业准备度未知",
       "is not ready for supply",
       "isn't ready for supply",
       "not ready for supply",
@@ -277,6 +287,8 @@ const responseAnchors = {
   },
   decisionSourceEvidence: {
     anyOf: [
+      "knowledge-base evidence",
+      "知识库证据",
       "source evidence",
       "source document",
       "original text",

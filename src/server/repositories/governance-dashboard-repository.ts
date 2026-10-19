@@ -17,6 +17,7 @@ import type {
 } from "@/features/admin/schemas";
 import { parseDocumentReprocessedAuditMarkerFor } from "@/features/admin/document-reprocessed-audit";
 import {
+  catalogEngines,
   countries,
   dataChangeLogs,
   dataGovernanceDrafts,
@@ -30,6 +31,7 @@ import {
 } from "@/server/db/schema";
 
 type GovernanceDashboardSchema = {
+  catalogEngines: typeof catalogEngines;
   countries: typeof countries;
   dataChangeLogs: typeof dataChangeLogs;
   dataGovernanceDrafts: typeof dataGovernanceDrafts;
@@ -255,6 +257,7 @@ export function createGovernanceDashboardRepository<
         targetValues("product_certification"),
       );
       const marketMetricIds = uniqueValues(targetValues("market_metric"));
+      const catalogEngineIds = uniqueValues(targetValues("catalog_engine"));
       const documentIds = uniqueValues(targetValues("document"));
 
       const identityPredicates = Array.from(
@@ -280,6 +283,7 @@ export function createGovernanceDashboardRepository<
         marketMetricRows,
         documentRows,
         reprocessedDocumentDraftRows,
+        catalogEngineRows,
       ] = await Promise.all([
         database
           .selectDistinctOn(
@@ -450,6 +454,17 @@ export function createGovernanceDashboardRepository<
                 ),
               )
           : Promise.resolve([]),
+        catalogEngineIds.length > 0
+          ? database
+              .select({
+                archivedAt: catalogEngines.archivedAt,
+                id: catalogEngines.id,
+                sourceArchivedAt: dataSources.archivedAt,
+              })
+              .from(catalogEngines)
+              .innerJoin(dataSources, eq(catalogEngines.dataSourceId, dataSources.id))
+              .where(inArray(catalogEngines.id, catalogEngineIds))
+          : Promise.resolve([]),
       ]);
 
       const documentDataSourceIdById = new Map(
@@ -596,6 +611,12 @@ export function createGovernanceDashboardRepository<
       for (const row of marketMetricRows) {
         rootStateByIdentity.set(
           governanceEntityIdentity("market_metric", row.id),
+          rowState(row.archivedAt, row.sourceArchivedAt),
+        );
+      }
+      for (const row of catalogEngineRows) {
+        rootStateByIdentity.set(
+          governanceEntityIdentity("catalog_engine", row.id),
           rowState(row.archivedAt, row.sourceArchivedAt),
         );
       }

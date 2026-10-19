@@ -139,24 +139,4 @@ describe("live eval bilingual case suite", () => {
 
     expect(runnerSource).toContain("locale: testCase.locale,");
   });
-
-  it("binds persisted result locales to canonical case IDs during verification", async () => {
-    const verifierSource = await readFile(
-      resolve(process.cwd(), "scripts/portfolio/verify-live-eval.ts"),
-      "utf8",
-    );
-
-    expect(verifierSource).toContain(
-      "assertEqual(result.locale, expected.locale, `${result.id} locale`);",
-    );
-    expect(verifierSource).toContain(
-      "`${result.id} response anchor coverage`",
-    );
-    expect(verifierSource).toContain(
-      "`${result.id} response grounding judgement`",
-    );
-    expect(verifierSource).toContain(
-      "`${result.id} response locale judgement`",
-    );
-  });
 });

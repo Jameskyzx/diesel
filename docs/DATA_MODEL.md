@@ -51,14 +51,14 @@ Migration `0004_admin_data_governance.sql` 新增三张表，并为可发布/可
 | 表/字段 | 约束与职责 |
 | --- | --- |
 | `data_governance_drafts` | `entity_type + entity_key + version` 唯一；保存 Zod 校验后的完整候选 payload、变更原因、创建/审核/发布人和时间，以及 `draft \| reviewed \| published` |
-| `market_import_batches` | 保存文件 hash、逐行预览、校验错误、统计与 `previewed \| committed \| rejected`；确认后只创建市场草稿 |
+| `market_import_batches` | 保存文件 hash、逐行预览、校验错误、统计与 `previewed \| committed \| rejected`；`entity_type`（Migration `0014`，默认 `market_metric`）区分市场 CSV 与目录 xlsx 批次；确认后只创建对应实体的草稿 |
 | `data_change_logs` | 追加记录实体、动作、操作者邮箱/角色、原因、draft/batch 关联和 before/after JSON 快照 |
 | `documents.governance_status` | `draft \| reviewed \| published`；正式检索还要求 `processing_status = ready` |
 | `documents.reviewed_at` / `governance_published_at` | 文档审核与治理发布时间，不替代原始文档发布日期 |
 | `*.archived_at` | 软归档标记；正式 Repository 必须过滤非 NULL 记录 |
 
 治理实体包括 `country`、`regulation`、`product`、`product_certification`、
-`market_metric`、`data_source`、`document` 和 `jurisdiction`。`data_change_action` 当前受控值为
+`market_metric`、`data_source`、`document`、`jurisdiction` 和 `catalog_engine`（Migration `0014`）。`data_change_action` 当前受控值为
 `draft_created`、`reviewed`、`published`、`archived`、`import_previewed`、
 `import_committed`、`document_reprocessed`、`source_verified`。
 
@@ -374,6 +374,32 @@ Migration `0011` 先拒绝已有负下界或 `max <= min` 的记录，再追加�
 | `verified_at` | timestamptz NOT NULL | |
 
 产品认证与产品支持场景分开。一个产品“可用于 construction”不代表满足目标国家当前法规。
+
+### 7.6 `catalog_engines`（目录声明，Migration `0014`）
+
+记录规格书“声明”的内容，与 `products`/`product_certifications` 的“已审批产品 + 认证”分开，
+从不作为认证。只经治理草稿发布写入：管理后台 xlsx 导入（预览批次 → 逐行草稿 → 审核 →
+发布），或 `pnpm db:ingest-demo-catalogue`（完整发布的 fixture 队列会自动运行）发布虚构 Demo
+目录固定数据（`src/server/db/seed/demo-engine-catalog.json`）。该表属于治理快照 v5（ADR-274）。
+
+| 字段 | 约束 | 说明 |
+| --- | --- | --- |
+| `model_code` | text NOT NULL；活跃记录唯一 | 发布时大写 |
+| `series`、`category` | text NOT NULL；category ∈ truck/bus/construction/agriculture/generator-set/marine | |
+| `application_scopes` | application_scope[] NOT NULL，非空 | 声明的适用场景 |
+| `rated_power_kw`、`rated_speed_rpm` | numeric NOT NULL | 额定点 |
+| `power_min_kw`/`power_max_kw` | numeric NOT NULL | 可标定功率带 `[min,max)`，额定功率必须在带内 |
+| `displacement_l`、`cylinders` | NOT NULL，> 0 | |
+| `aftertreatment`、`emission_label` | text NOT NULL | 原文展示 |
+| `declared_citation_codes` | text[] NOT NULL | 声称满足的法规编号，`catalog-fit-v1` 逐字比对 |
+| `data_source_id` | FK NOT NULL | 来源归档前须先归档其目录记录 |
+| `is_demo`、`verified_at`、`archived_at` | | 公开读取目前只返回 `is_demo = true` 且来源未归档的活跃记录 |
+
+xlsx 模板列（第一行表头，第一个工作表）：`model_code, series, category, application_scopes,
+rated_power_kw, rated_speed_rpm, power_min_kw, power_max_kw, displacement_l, cylinders,
+aftertreatment, emission_label, declared_citation_codes, data_source_id, verified_at, is_demo`。
+列表单元格用 `;` 分隔（法规编号本身可能含逗号）。缺列、未知列或重复列使整表失败；同一文件
+重复型号、功率带越界等逐行报错，有任何错误的批次确认时整体拒绝。
 
 ## 8. Product-fit 与营销评分
 

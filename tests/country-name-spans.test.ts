@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { countryIso3sIn, countryMentionsIn } from "@/server/ai/conversation-context";
 import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
-import { selectPortfolioDemoTool } from "@/server/ai/portfolio-demo-model";
+import { selectPortfolioDemoTool } from "./helpers/portfolio-demo";
 import { countryCatalog } from "@/server/db/seed/country-catalog";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 

@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { MockLanguageModelV4 } from "ai/test";
 import { catalogHarnessResponse, harnessEvidenceContract, harnessNarrativeMayPublish, resolveHarnessMarketPeriod, resolveHarnessMarketScope, validateHarnessState } from "@/server/ai/catalog-harness";
 import { getDemoDatabase } from "@/server/db/demo-client";
@@ -8,13 +8,21 @@ import { readConversationMetadata, type ConversationState } from "@/features/ai/
 import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
 import { searchProductCatalog } from "@/server/services/product-catalog";
 import { serializeChatHistory, parseChatHistory } from "@/features/ai/chat-history";
+import { demoEngineCatalogFixture } from "@/server/db/seed/demo-engine-catalog";
 import { compiledEvidenceToolCalls } from "@/server/ai/sales-chat-loop";
 
+const h10 = demoEngineCatalogFixture.records.find(record => record.model === "DEMO-H10-375")!.id;
 const empty: ConversationState = { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
 const usage = {inputTokens:{total:1,noCache:1,cacheRead:0,cacheWrite:0},outputTokens:{total:1,text:1,reasoning:0}};
 const sessionId = crypto.randomUUID();
 let demoDatabase: Awaited<ReturnType<typeof getDemoDatabase>> | undefined;
-afterAll(async()=>{await demoDatabase?.$client.close();});
+const fileDatabaseMode = process.env.DATABASE_MODE;
+// Catalogue lookups read the governed catalogue table from the demo database.
+beforeAll(() => { process.env.DATABASE_MODE = "pglite-demo"; });
+afterAll(async()=>{
+  await demoDatabase?.$client.close();
+  if (fileDatabaseMode === undefined) delete process.env.DATABASE_MODE; else process.env.DATABASE_MODE = fileDatabaseMode;
+});
 function modelFor(actions: unknown[]) { let index = 0; return new MockLanguageModelV4({doGenerate: async () => ({
   warnings:[],usage,finishReason:{unified:"tool-calls",raw:undefined},content:[{type:"reasoning",text:"PRIVATE_REASONING_MARKER"},
     {type:"tool-call",toolCallId:`action-${index}`,toolName:"act",input:JSON.stringify(actions[index++] ?? {state:empty,locale:"en",action:{type:"answer",message:"Which configuration would you like to inspect?"}})}],
@@ -49,11 +57,11 @@ describe("single typed multi-turn catalogue harness", () => {
     const original = process.env.DATABASE_MODE; process.env.DATABASE_MODE = "pglite-demo";
     try {
       demoDatabase = await getDemoDatabase();
-      const state: ConversationState = {...empty,tasks:["regulations","product_fit"],countryIso3s:["CHN"],applicationScope:"construction",powerKw:120,productModelCode:"WP10H375E62"};
+      const state: ConversationState = {...empty,tasks:["regulations","product_fit"],countryIso3s:["CHN"],applicationScope:"construction",powerKw:120,productModelCode:"DEMO-H10-375"};
       const evidence = (task: "regulations"|"product_fit")=>({state,locale:"en",action:{type:"evidence",task,countryIso3:null,sourceQuery:null,marketPeriod:null}});
       const finish = {state,locale:"en",action:{type:"answer",message:"Review the missing evidence before making a commitment."}};
       const model = modelFor([evidence("regulations"),finish,evidence("product_fit"),finish]);
-      const body = await request(model,"CHN construction 120 kW WP10H375E62: check both regulations and product fit").text();
+      const body = await request(model,"CHN construction 120 kW DEMO-H10-375: check both regulations and product fit").text();
       expect(model.doGenerateCalls).toHaveLength(4);
       expect(body).toContain('"toolName":"findCompatibleProducts"');
       expect(body).toContain('"toolName":"compareRegulations"');
@@ -63,10 +71,10 @@ describe("single typed multi-turn catalogue harness", () => {
     } finally { if(original === undefined) delete process.env.DATABASE_MODE; else process.env.DATABASE_MODE=original; }
   });
   it("retains grounded country edits after an incomplete tool call and asks only for the missing field", async () => {
-    const state: ConversationState = {...empty,tasks:["product_fit"],countryIso3s:["DEU"],applicationScope:"on-road-truck",productModelCode:"WP10H375E62"};
+    const state: ConversationState = {...empty,tasks:["product_fit"],countryIso3s:["DEU"],applicationScope:"on-road-truck",productModelCode:"DEMO-H10-375"};
     const model = modelFor([{state,locale:"en",action:{type:"evidence",task:"product_fit",countryIso3:null,sourceQuery:null,marketPeriod:null}},
       {state,locale:"en",action:{type:"answer",message:"Please confirm the rated power for this configuration."}}]);
-    const body = await request(model,"WP10H375E62 truck for Germany").text();
+    const body = await request(model,"DEMO-H10-375 truck for Germany").text();
     expect(metadata(body)?.conversation.state).toEqual(state);
     expect(body).toContain("Please confirm the rated power"); expect(body).not.toContain("tool-input-available");
   });
@@ -77,32 +85,32 @@ describe("single typed multi-turn catalogue harness", () => {
     expect(harnessNarrativeMayPublish("目前不能确认是否可销售；还需核验证据。")).toBe(true);
   });
   it("keeps market reporting periods separate and does not send unsupported asOf or product filters", () => {
-    const state = {...empty,countryIso3s:["CHN","BRA"],productModelCode:"WP10H375E62",powerKw:120};
+    const state = {...empty,countryIso3s:["CHN","BRA"],productModelCode:"DEMO-H10-375",powerKw:120};
     const contract = harnessEvidenceContract(state,{type:"evidence",task:"market",countryIso3:null,sourceQuery:null,marketPeriod:{start:"2022-01-01",end:"2023-01-01"}},"2026-10-16");
     expect(compiledEvidenceToolCalls(contract)[0]).toEqual({tool:"compareMarkets",input:{countryIso3s:["CHN","BRA"],marketPeriod:{start:"2022-01-01",end:"2023-01-01"}}});
     expect(()=>harnessEvidenceContract({...state,countryIso3s:["CHN"]},{type:"evidence",task:"market",countryIso3:null,sourceQuery:null,marketPeriod:null,marketScope:"construction"},"2026-10-16")).toThrow("cannot filter");
   });
   it("searches then clarifies in the same loop, without publishing reasoning or claiming certification", async () => {
-    const model = modelFor([{state:empty,locale:"en",action:{type:"catalog",query:{query:"WP11T480E62"}}},
+    const model = modelFor([{state:empty,locale:"en",action:{type:"catalog",query:{query:"DEMO-H10"}}},
       {state:empty,locale:"en",action:{type:"answer",message:"Which application do you intend to use? The source rows need to be kept separate."}}]);
-    const body = await request(model,"Show WP11T480E62 variants").text();
+    const body = await request(model,"Show DEMO-H10 variants").text();
     expect(model.doGenerateCalls).toHaveLength(2);
-    expect(body).toContain("data-productCatalog"); expect(body).toContain("source_reported_unverified");
+    expect(body).toContain("data-productCatalog"); expect(body).toContain("fictional_declaration");
     expect(body).toContain("not certification"); expect(body).not.toContain("PRIVATE_REASONING_MARKER");
     expect(body).toContain('"finishReason":"stop"');
   });
   it("retains signed product selection across follow-up turns and ignores browser-authored facts", async () => {
-    const firstText = "Look up weichai-row-2";
-    const first = await request(modelFor([{state:empty,locale:"en",action:{type:"catalog",query:{recordIds:["weichai-row-2"]}}},
+    const firstText = `Look up ${h10}`;
+    const first = await request(modelFor([{state:empty,locale:"en",action:{type:"catalog",query:{recordIds:[h10]}}},
       {state:empty,locale:"en",action:{type:"answer",message:"Which country is the target market?"}}]),firstText).text();
     const previous = verifyConversationReceipt(metadata(first)!.conversation.receipt,{sessionId,selectedCountryIso3:null,previousUserText:firstText});
-    expect(previous?.memory?.catalogRecordIds).toEqual(["weichai-row-2"]);
+    expect(previous?.memory?.catalogRecordIds).toEqual([h10]);
     const next = {...empty,countryIso3s:["DEU"]};
     const model = modelFor([{state:next,locale:"zh-CN",action:{type:"answer",message:"请确认实际用途和功率，目录参数尚不能作为认证证明。"}}]);
     const second = await request(model,"德国，用中文，先别查法规",previous).text();
     expect(metadata(second)?.conversation.state).toEqual(next);
     expect(second).not.toContain("tool-input-available");
-    expect(verifyConversationReceipt(metadata(second)!.conversation.receipt,{sessionId,selectedCountryIso3:null,previousUserText:"德国，用中文，先别查法规"})?.memory?.catalogRecordIds).toEqual(["weichai-row-2"]);
+    expect(verifyConversationReceipt(metadata(second)!.conversation.receipt,{sessionId,selectedCountryIso3:null,previousUserText:"德国，用中文，先别查法规"})?.memory?.catalogRecordIds).toEqual([h10]);
   });
   it("applies country removals and power resets without a second intent parser", () => {
     const prior = {...empty,countryIso3s:["DEU","FRA"],applicationScope:"construction" as const,powerKw:120,asOf:"2026-10-01"};
@@ -111,14 +119,14 @@ describe("single typed multi-turn catalogue harness", () => {
     expect(()=>validateHarnessState({...next,countryIso3s:["USA"]},prior,"只保留德国",null,[])).toThrow();
     expect(()=>validateHarnessState({...next,powerKw:999},prior,"只保留德国",null,[])).toThrow();
   });
-  it("does not derive certification scope or regulatory power from a catalogue record", () => {
-    const catalog = searchProductCatalog({recordIds:["weichai-row-2"]});
+  it("does not derive certification scope or regulatory power from a catalogue record", async () => {
+    const catalog = await searchProductCatalog({recordIds:[h10]});
     expect(()=>validateHarnessState({...empty,powerKw:276},empty,"用这个型号",null,[catalog])).toThrow();
     expect(()=>validateHarnessState({...empty,applicationScope:"on-road-truck"},empty,"用这个型号",null,[catalog])).toThrow();
-    expect(()=>validateHarnessState({...empty,productModelCode:"weichai-row-2"},empty,"选weichai-row-2",null,[])).toThrow("not a model code");
+    expect(()=>validateHarnessState({...empty,productModelCode:h10},empty,`选${h10}`,null,[])).toThrow("not a model code");
   });
   it("compiles selected evidence tasks exactly and independently", () => {
-    const state: ConversationState = {...empty,tasks:["product_fit"],countryIso3s:["DEU"],applicationScope:"construction",powerKw:120,productModelCode:"WP11T480E62"};
+    const state: ConversationState = {...empty,tasks:["product_fit"],countryIso3s:["DEU"],applicationScope:"construction",powerKw:120,productModelCode:"DEMO-H10"};
     const contract = harnessEvidenceContract(state,{type:"evidence",task:"product_fit",countryIso3:null,sourceQuery:null,marketPeriod:null},"2026-10-16");
     expect(compiledEvidenceToolCalls(contract).map(c=>c.tool)).toEqual(["findCompatibleProducts"]);
     const source = harnessEvidenceContract(state,{type:"evidence",task:"knowledge",countryIso3:null,sourceQuery:"EU 2016/1628 Annex II page 9 原文",marketPeriod:null},"2026-10-16");
@@ -141,10 +149,60 @@ describe("single typed multi-turn catalogue harness", () => {
     expect(body).toContain("does not establish compliance");
     expect(body).toContain('"finishReason":"stop"');
   });
-  it("retains catalogue provenance in browser history without converting it to verified evidence", () => {
-    const data = searchProductCatalog({recordIds:["weichai-row-2"]});
+  it("retains catalogue provenance in browser history without converting it to verified evidence", async () => {
+    const data = await searchProductCatalog({recordIds:[h10]});
     const serialized = serializeChatHistory({contextKey:"catalog",sessionId,messages:[{id:"u",role:"user",parts:[{type:"text",text:"Show row 2"}]},
-      {id:"a",role:"assistant",parts:[{type:"data-productCatalog",data},{type:"text",text:"Source-reported only"}]}]});
+      {id:"a",role:"assistant",parts:[{type:"data-productCatalog",data},{type:"text",text:"Fictional declaration only"}]}]});
     expect(parseChatHistory(serialized,"catalog")?.messages[1]?.parts[0]).toEqual({type:"data-productCatalog",data});
+  });
+  it("asks for an explicit source scope the user named, and returns status, not evidence, to the model", async () => {
+    demoDatabase ??= await getDemoDatabase();
+    const text = "Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations.";
+    const state: ConversationState = {...empty,tasks:["knowledge"],countryIso3s:["CHN"],applicationScope:"non-road"};
+    const knowledge = (scope: object) => ({state,locale:"en",action:{type:"evidence",task:"knowledge",countryIso3:"CHN",sourceQuery:"non-road emissions regulations",marketPeriod:null,...scope}});
+    // Scope only in engine context would search unscoped; the guard asks first.
+    const model = modelFor([knowledge({}),knowledge({sourceScope:"non-road"}),{state,locale:"en",action:{type:"answer",message:"Review the source evidence below."}}]);
+    const body = await request(model,text).text();
+    const searches = body.split("\n").filter(l=>l.startsWith("data: {")).map(l=>JSON.parse(l.slice(6))).filter(p=>p.type==="tool-input-available");
+    expect(searches).toHaveLength(1);
+    expect(searches[0].input).toMatchObject({countryIso3:"CHN",applicationScope:"non-road"});
+    expect(JSON.stringify(model.doGenerateCalls[1]?.prompt)).toContain("Set sourceScope explicitly");
+    // The verified card reaches the user; the model sees only the query status.
+    expect(body).toContain("DEMO ONLY");
+    const modelView = JSON.stringify(model.doGenerateCalls[2]?.prompt);
+    expect(modelView).toMatch(/answered\\*":true/u);
+    expect(modelView).not.toContain("DEMO ONLY");
+    expect(body).toContain('"finishReason":"stop"');
+  });
+  it.each(["非道路 排放法规 原文 章节", "China's non-road emission regulations", "GB 20891 non-road emission regulation", "non-road emission regulation text or sections"])(
+    "searches the user's own source terms whatever the model's wording (%s)", async (sourceQuery) => {
+    demoDatabase ??= await getDemoDatabase();
+    const text = "Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations.";
+    const state: ConversationState = {...empty,tasks:["knowledge"],countryIso3s:["CHN"]};
+    const model = modelFor([{state,locale:"en",action:{type:"evidence",task:"knowledge",countryIso3:"CHN",sourceQuery,sourceScope:"non-road",marketPeriod:null}},
+      {state,locale:"en",action:{type:"answer",message:"Review the source evidence below."}}]);
+    const parts = (await request(model,text).text()).split("\n").filter(l=>l.startsWith("data: {")).map(l=>JSON.parse(l.slice(6)));
+    expect(parts.find(p=>p.type==="tool-input-available")?.input.query).toBe("non road emissions regulation");
+    const output = parts.find(p=>p.type==="tool-output-available")?.output;
+    expect(output?.status).toBe("ok");
+    expect(output?.search.results[0]?.sectionLocator).toBe("DEMO-SECTION-1");
+  });
+  it("keeps the model's query when the user's own request has constructs a term list cannot preserve", () => {
+    const state = {...empty,tasks:["knowledge" as const],countryIso3s:["CHN"]};
+    const action = {type:"evidence" as const,task:"knowledge" as const,countryIso3:"CHN",sourceQuery:"非道路 法规",sourceScope:"non-road" as const,marketPeriod:null};
+    for (const userText of ["查 CHN 非道路法规原文。", "Search the CHN knowledge base for ZZZ_QUANTUM_BANANA_98765."]) {
+      expect(harnessEvidenceContract(state,action,"2026-10-18",[userText]).requirements[0]?.query.knowledgeQuery).toBe("非道路 法规");
+    }
+  });
+  it("finishes on the brief target it ran, whatever the working-country order", async () => {
+    demoDatabase ??= await getDemoDatabase();
+    const state: ConversationState = {...empty,tasks:["sales_brief"],countryIso3s:["BRA","CHN"],applicationScope:"non-road",powerKw:100,asOf:"2026-08-13"};
+    const model = modelFor([{state,locale:"en",action:{type:"evidence",task:"sales_brief",countryIso3:"CHN",sourceQuery:null,marketPeriod:null}},
+      {state,locale:"en",action:{type:"answer",message:"Review the brief below."}}]);
+    const body = await request(model,"Sales brief for CHN as target with BRA as comparison, non-road 100 kW, 2026-08-13.").text();
+    const briefs = body.split("\n").filter(l=>l.startsWith("data: {")).map(l=>JSON.parse(l.slice(6))).filter(p=>p.type==="tool-input-available");
+    expect(briefs.map(p=>[p.toolName,p.input.targetCountryIso3])).toEqual([["generateSalesBrief","CHN"]]);
+    expect(model.doGenerateCalls).toHaveLength(2);
+    expect(body).toContain('"finishReason":"stop"');
   });
 });

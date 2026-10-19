@@ -1,5 +1,4 @@
 import {
-  APICallError,
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -12,7 +11,6 @@ import {
   validateUIMessages,
 } from "ai";
 import { z, ZodError } from "zod";
-import { resolveConversationLocale } from "@/server/ai/conversation-presentation";
 
 import { captureChatRuntimeContext } from "@/domain/ai/chat-runtime-context";
 import { requestsSalesGuarantee } from "@/domain/ai/sales-guarantee-intent";
@@ -23,7 +21,6 @@ import {
 import { getAdmissionDatabaseErrorCode, getErrorCode } from "@/lib/api-error";
 import {
   createSalesChatTools,
-  streamSalesChat,
   type SalesChatTools,
 } from "@/server/ai/sales-chat";
 import {
@@ -63,18 +60,12 @@ import {
   trustedUserPartSchema,
 } from "@/server/ai/trusted-user-messages";
 import {
-  allowsToolFreeAttachmentResponse,
-  buildDirectChatResponse,
   buildSocialChatResponse,
   buildCapabilityChatResponse,
 } from "@/server/ai/chat-turn-guidance";
-import { planConversationTurn, conversationClarification, explicitRegulationResearchFallback, type PreparedConversationTurn } from "@/server/ai/conversation-plan";
-import { buildEvidenceRequestResponse } from "@/server/ai/conversation-answer";
-import { conversationResearchResponse } from "@/server/ai/conversation-research";
 import { catalogHarnessResponse } from "@/server/ai/catalog-harness";
 import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
 import type { conversationMetadataSchema } from "@/features/ai/conversation-state";
-import { buildSalesChatEvidenceContract } from "@/server/ai/evidence-contract";
 import { createPublicApiRequestObserver } from "@/server/http/public-api-response";
 import { localeFromRequest, type Locale } from "@/i18n/locale";
 
@@ -313,7 +304,7 @@ async function processChatRequest(
 ): Promise<Response> {
   let locale = fallbackLocale;
   let phaseStartedAtMs = performance.now();
-  const completedPhase = (phase: "input" | "attachments" | "admission" | "audit" | "planning") => {
+  const completedPhase = (phase: "input" | "attachments" | "admission" | "audit") => {
     const now = performance.now();
     console.info(JSON.stringify({ event: "ai.phase", requestId, phase,
       durationMs: Math.max(0, now - phaseStartedAtMs), elapsedMs: Math.max(0, now - requestStartedAtMs) }));
@@ -346,7 +337,7 @@ async function processChatRequest(
     const trustedUserMessages = z
       .array(trustedUserMessageSchema)
       .parse(selectedUserMessages);
-    const uiMessages = await validateUIMessages<SalesChatUiMessage>({
+    await validateUIMessages<SalesChatUiMessage>({
       messages: trustedUserMessages,
     });
     const latestUserMessage = trustedUserMessages.at(-1)!;
@@ -360,32 +351,26 @@ async function processChatRequest(
         .join(""),
     );
     const latestUserText = userTexts.at(-1)!;
-    const allowUnverifiedAttachmentResponse =
-      hasAttachments && allowsToolFreeAttachmentResponse(latestUserText);
     completedPhase("input");
     const previous = verifyConversationReceipt(body.conversation?.receipt, {
       sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
       previousUserText: userTexts.at(-2),
     });
-    const directResponse = hasAttachments
+    // Greetings, thanks and app-help questions get a deterministic reply without
+    // a model call. Everything else, including uploads, goes to the harness loop.
+    const directResponse = hasAttachments || requestsSalesGuarantee(latestUserText)
       ? null
-      : body.conversation && !requestsSalesGuarantee(latestUserText)
-        ? buildSocialChatResponse(latestUserText, locale) ?? buildCapabilityChatResponse({ locale, selectedCountryIso3: body.selectedCountryIso3, text: latestUserText })
-        : buildDirectChatResponse({
-          locale,
-          selectedCountryIso3: body.selectedCountryIso3,
-          text: latestUserText,
-          userTexts,
-        });
+      : buildSocialChatResponse(latestUserText, locale) ??
+        buildCapabilityChatResponse({ locale, selectedCountryIso3: body.selectedCountryIso3, text: latestUserText });
     if (directResponse) {
       throwIfChatRequestAborted(abortSignal);
       const state = previous?.state ?? { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
-      return directChatResponse(directResponse, body.conversation ? { conversation: {
+      return directChatResponse(directResponse, { conversation: {
         state, mode: "general", receipt: signConversationReceipt({
           sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
           userText: latestUserText, answer: directResponse, state, previous,
         }),
-      } } : undefined);
+      } });
     }
 
     try {
@@ -409,7 +394,7 @@ async function processChatRequest(
       (part) =>
         part.type === "file" && part.mediaType.startsWith("image/"),
     );
-    const { costProfile, model, modelId } = getConfiguredAiModel(undefined, {
+    const { model, modelId } = getConfiguredAiModel(undefined, {
       requiresMultimodalModel,
     });
     throwIfChatRequestAborted(abortSignal);
@@ -495,146 +480,11 @@ async function processChatRequest(
     });
     throwIfChatRequestAborted(abortSignal);
     completedPhase("audit");
-    if (body.conversation?.version === 2 && !hasAttachments) {
-      const tools = createSalesChatTools({ auditRepository, beginDeferredWork: deferredCleanup.begin,
-        runtimeContext, selectedCountryIso3: body.selectedCountryIso3, sessionId: body.sessionId, turnId: requestId });
-      return catalogHarnessResponse({ model, tools, signal: abortSignal, locale, today: runtimeContext.utcDate,
-        userText: latestUserText, messages: await convertToModelMessages(modelUiMessages), previous,
-        sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3, requestId });
-    }
-    let conversationTurn: PreparedConversationTurn | undefined;
-    if (body.conversation && !allowUnverifiedAttachmentResponse) {
-      // Resolve independent presentation before planning so a failed query edit
-      // cannot revert to the UI language or lose an explicit language change.
-      locale = resolveConversationLocale({ text: latestUserText, previous: previous?.memory?.responseLocale, ui: locale });
-      try {
-        conversationTurn = await planConversationTurn({ model, userTexts, previous,
-          selectedCountryIso3: body.selectedCountryIso3, runtimeContext, signal: abortSignal, locale,
-          onUsage: usage => console.info("AI conversation planning completed", {
-            requestId, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, totalTokens: usage.totalTokens,
-            authenticatedContext: previous !== null,
-          }),
-        });
-      } catch (error) {
-        throwIfChatRequestAborted(abortSignal);
-        const plannerTimedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
-        if (APICallError.isInstance(error) || plannerTimedOut) {
-          console.warn("AI conversation provider unavailable", { requestId, errorCode: getErrorCode(error),
-            statusCode: APICallError.isInstance(error) ? error.statusCode : undefined });
-          return errorResponse("INTERNAL_ERROR", plannerTimedOut
-            ? locale === "en" ? "The AI model did not respond in time. Your confirmed conditions are unchanged; please try again later."
-              : "AI 模型响应超时，已确认的条件未改变，请稍后重试。"
-            : locale === "en" ? "The AI model service is temporarily unavailable. Your confirmed conditions are unchanged; please try again later."
-              : "AI 模型服务暂时不可用，已确认的条件未改变，请稍后重试。",
-          plannerTimedOut ? 504 : 503);
-        }
-        conversationTurn = explicitRegulationResearchFallback({ userTexts, previous,
-          selectedCountryIso3: body.selectedCountryIso3, runtimeContext, locale }) ?? undefined;
-        console.warn("AI conversation planner failed", { requestId, errorCode: getErrorCode(error),
-          explicitResearchFallback: conversationTurn !== undefined });
-        if (!conversationTurn) {
-          const answer = locale === "en"
-            ? "I couldn't reliably resolve this request. The previously confirmed context is retained, but these unresolved changes have not been applied. Please restate the goal or changed conditions; I haven't queried using guessed filters."
-            : "这次没能可靠地理解你的任务。此前已确认的条件仍保留，本次未理解的修改尚未应用；请换个说法说明目标或变化，我没有用猜测的条件进行查询。";
-          const state = previous?.state ?? { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
-          return directChatResponse(answer, { conversation: { state, mode: "clarify",
-            receipt: signConversationReceipt({ sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
-              userText: latestUserText, answer, state, previous,
-              memory: previous?.memory ? { ...previous.memory, responseLocale: locale } : {
-                sourceRequest: null, sourceRefinements: [], marketScope: null, responseLocale: locale,
-                draftLength: "standard", outputKind: "evidence",
-              } }),
-          } });
-        }
-      }
-    }
-    if (body.conversation) completedPhase("planning");
-    const conversationMetadata = (answer: string) => conversationTurn ? { conversation: {
-      state: conversationTurn.state, mode: conversationTurn.mode,
-      receipt: signConversationReceipt({ sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
-        userText: latestUserText, answer, state: conversationTurn.state, memory: conversationTurn.memory, previous }),
-    } } : undefined;
-    // UI preference is only the initial default. Signed presentation state is
-    // independent of query facts and applies to gaps, cards' summaries and prose.
-    if (conversationTurn) locale = conversationTurn.memory.responseLocale;
-    if (conversationTurn) {
-      const requestResponse = buildEvidenceRequestResponse(conversationTurn);
-      if (requestResponse !== null) return directChatResponse(requestResponse, conversationMetadata(requestResponse));
-    }
-    if (conversationTurn && !conversationTurn.contract.blocksModelText &&
-      (conversationTurn.mode === "clarify" || conversationTurn.contract.missingRequiredParameters.length > 0)) {
-      const answer = conversationClarification(conversationTurn, locale);
-      return directChatResponse(answer, conversationMetadata(answer));
-    }
-    const evidenceContract = conversationTurn?.contract ?? buildSalesChatEvidenceContract({
-      runtimeContext,
-      selectedCountryIso3: body.selectedCountryIso3,
-      userTexts,
-    });
-    const tools = createSalesChatTools({
-      auditRepository,
-      beginDeferredWork: deferredCleanup.begin,
-      ...(evidenceContract.asOf ? { defaultAsOf: evidenceContract.asOf } : {}),
-      runtimeContext,
-      selectedCountryIso3: body.selectedCountryIso3,
-      sessionId: body.sessionId,
-      turnId: requestId,
-    });
-    if (conversationTurn?.mode === "research" && !hasAttachments) {
-      return conversationResearchResponse({ contract: evidenceContract, tools, signal: abortSignal, locale,
-        requestId, metadata: conversationMetadata });
-    }
-    const modelMessages = await convertToModelMessages(modelUiMessages, {
-      tools,
-    });
-    // Do not send a stack of historical user questions as if they were all
-    // unanswered. Only server-authenticated exchanges restore assistant roles;
-    // raw browser assistant messages remain excluded, and facts are re-queried.
-    const conversationMessages = conversationTurn ? [
-      ...(previous ? [...previous.history, { user: previous.userText, answer: previous.answer }].flatMap(exchange => [
-        { role: "user" as const, content: exchange.user },
-        { role: "assistant" as const, content: exchange.answer },
-      ]) : []),
-      ...modelMessages.slice(-1),
-    ] : modelMessages;
-    throwIfChatRequestAborted(abortSignal);
-    let completedMetadata: z.infer<typeof conversationMetadataSchema> | undefined;
-    const result = streamSalesChat({
-      conversationTurn,
-      // One planning call plus at most four executor calls stays within the
-      // existing five-call admission reservation; retries remain disabled.
-      ...(conversationTurn ? { maxSteps: 4 } : {}),
-      onPublicAnswer: (answer) => { completedMetadata = conversationMetadata(answer); },
-      abortSignal,
-      allowUnverifiedAttachmentResponse,
-      auditRepository,
-      beginDeferredWork: deferredCleanup.begin,
-      costProfile,
-      hasUnverifiedAttachments: hasAttachments,
-      messages: conversationMessages,
-      maxRetries: 0,
-      model,
-      modelId,
-      requestId,
-      requestStartedAtMs,
-      runtimeContext,
-      selectedCountryIso3: body.selectedCountryIso3,
-      sessionId: body.sessionId,
-      tools,
-      trustedUserTexts: userTexts,
-      turnId: requestId,
-      locale,
-    });
-
-    return result.toUIMessageStreamResponse({
-      messageMetadata: ({ part }) => part.type === "finish" ? completedMetadata : undefined,
-      originalMessages: uiMessages,
-      onError: () =>
-        locale === "en"
-          ? "The AI service could not complete this answer. Tool facts will not be guessed; please try again later."
-          : "AI 服务暂时无法完成回答。工具事实不会被猜测补全，请稍后重试。",
-      sendReasoning: false,
-    });
+    const tools = createSalesChatTools({ auditRepository, beginDeferredWork: deferredCleanup.begin,
+      runtimeContext, selectedCountryIso3: body.selectedCountryIso3, sessionId: body.sessionId, turnId: requestId });
+    return catalogHarnessResponse({ model, tools, signal: abortSignal, locale, today: runtimeContext.utcDate,
+      userText: latestUserText, messages: await convertToModelMessages(modelUiMessages), previous, hasAttachments,
+      sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3, requestId });
   } catch (error: unknown) {
     if (
       error instanceof RequestBodyAbortedError ||

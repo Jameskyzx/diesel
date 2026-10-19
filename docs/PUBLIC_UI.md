@@ -11,19 +11,48 @@ test scope and are not rewritten as current desktop-only evidence.
 
 ## Product catalogue and conversation v2
 
-`/products` adds a bilingual, read-only source-reported catalogue. Search model,
-application/category, family fuel and explicit-unit power; preserve source rows
-and keep conflicting configurations separate. Unknown power units are excluded
-from numeric filters, never guessed. Selecting a row prepares a chat question;
-it does not automatically send a paid request or establish legal applicability.
-Catalogue cards show public-display authorization separately from verification,
-and survive chat history reload and local analysis saving. Raw source text stays
-in its original language. Existing approved-product selection remains separate.
+`/products` is a bilingual product-selection page over the published, governed
+catalogue (`catalog_engines`). The public read returns demo rows only: today the
+**fictional** demo engine catalogue (every model prefixed `DEMO-`; it represents no
+manufacturer). Until records are published the page shows an explicit empty state, and
+a failed catalogue read renders an alert.
 
-Text chat now sends conversation version 2 and uses a single bounded tool loop.
-Validated query intent, source-reported catalogue parameters and verified
-regulatory/fit evidence remain distinct. No catalogue record is an approval or
-certificate. Attachments and legacy clients retain their previous guarded path.
+- Target-market selection: `?market=<ISO3>&scope=<scope>&power=<kW>&asOf=<date>`
+  is a shareable URL. `catalog-fit-v1` matches each model's declared citation
+  codes literally against the regulations in force for that country, scope,
+  power and date. Statuses are `declared_match` (every applicable regulation is
+  named; certification still unverified), `declaration_gap` (lists the missing
+  citations), `unknown` (no applicable regulation data) and `not_fit` (scope or
+  half-open rating band). No cross-jurisdiction equivalence is inferred, and a
+  declaration is never shown as certification. The applicable regulations, their
+  status, validity interval, source and verification date stay visible. When the
+  regulations are real and the products fictional, the page says the result
+  demonstrates the workflow and is not a sales conclusion. Invalid input and
+  unavailable regulation data render explicit alerts.
+- Customer brief: the selection results offer "Export customer brief" with a
+  language choice (English, Simplified Chinese, Spanish, Brazilian Portuguese,
+  Russian, Arabic). `/products/brief?market=&scope=&power=&asOf=&lang=` renders a
+  print-ready, shareable page built only from the deterministic selection:
+  applicable regulations with status, validity, source and verification date;
+  only `declared_match` models with their covered citations; documents to confirm
+  before ordering; and the fictional-catalogue, not-certification and source-language
+  notes. Arabic is laid out right to left. "Print / Save as PDF" uses the browser's
+  print dialog; the app header, footer and sidebar are hidden in print. Only the
+  template is translated (regulation names and source titles stay in their source
+  language), and translations should be reviewed by a native speaker before a brief
+  is sent. Invalid conditions or unavailable regulation data render an alert, not a
+  brief.
+- Browse: search model, series or declaration text, category and rated power.
+  Selecting a model prepares a chat question; it does not automatically send a
+  paid request or establish legal applicability. Catalogue cards survive chat
+  history reload and local analysis saving. Existing approved-product selection
+  remains separate.
+
+Every chat request, including uploads and the offline demo, sends conversation
+version 2 and runs the single bounded harness loop. Validated query intent,
+fictional catalogue declarations and verified regulatory/fit evidence remain
+distinct. No catalogue record is an approval or certificate. An upload summary is
+labelled as user-provided, unverified material and is never used as evidence.
 
 The public UI follows the structural patterns of Tabler's vertical dashboard:
 a fixed desktop sidebar, a separate utility toolbar, compact page headers,
@@ -41,7 +70,7 @@ Tabler is MIT licensed; the upstream notice is preserved below.
 - Home: the versioned published snapshot is the primary metric row: 97
   jurisdictions, 28 regulations, 651 limit records, 203 sources and zero approved
   real products. These values are checked against the signed publication closure
-  by unit tests and `portfolio:verify`; they are not live database counts. API-derived
+  by unit tests; they are not live database counts. API-derived
   catalog/review/freshness counts remain separate. Review counts are not numerical
   regulatory coverage, and the offline Demo retains its fictional counts.
 - Map: country selector and shortcuts in the map card's toolbar. At 1440 px and
@@ -292,7 +321,7 @@ remain distinct from missing data, and legal-sales guarantees are not offered.
 
 The browser tab icon reuses that same approved diesel-engine artwork. The
 phone home-screen icon has been removed with mobile support. Regenerate the
-favicon with `pnpm exec tsx scripts/portfolio/generate-brand-icons.ts`.
+favicon with `pnpm exec tsx scripts/assets/generate-brand-icons.ts`.
 `src/app/icon.svg` embeds its small PNG directly so it needs no external image
 fetch; Next's file-based metadata supplies a content-versioned favicon URL.
 The browser regression checks the icon actually selected by the page, not just

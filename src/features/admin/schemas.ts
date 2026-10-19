@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { findOverlappingMembershipIndexes } from "@/domain/admin/jurisdiction-membership";
+import { catalogCategorySchema } from "@/features/product-catalog/schemas";
 import {
   applicationScopeSchema,
   dataCoverageStatusSchema,
@@ -58,6 +59,7 @@ export const governedEntityTypes = [
   "data_source",
   "document",
   "jurisdiction",
+  "catalog_engine",
 ] as const;
 export const governedEntityTypeSchema = z.enum(governedEntityTypes);
 
@@ -69,6 +71,7 @@ const uuidGovernedEntityTypeSchema = z.enum([
   "data_source",
   "document",
   "jurisdiction",
+  "catalog_engine",
 ]);
 
 export const governedEntityReferenceSchema = z.union([
@@ -450,6 +453,51 @@ export const marketMetricDraftPayloadSchema =
     }
   });
 
+/** A catalogue engine records spec-sheet declarations, never certification. */
+const catalogEngineDraftPayloadObjectSchema = z
+  .object({
+    aftertreatment: z.string().trim().min(1).max(200),
+    applicationScopes: z.array(applicationScopeSchema).min(1).max(8),
+    category: catalogCategorySchema,
+    cylinders: positiveNumberInputSchema.pipe(z.number().int().max(64)),
+    dataSourceId: z.uuid(),
+    declaredCitationCodes: z.array(z.string().trim().min(1).max(200)).max(20)
+      .refine(codes => new Set(codes).size === codes.length, "declaredCitationCodes must be unique"),
+    displacementL: positiveNumberInputSchema.pipe(z.number().max(1_000)),
+    emissionLabel: z.string().trim().min(1).max(200),
+    id: entityIdSchema,
+    isDemo: z.boolean().default(false),
+    modelCode: z.string().trim().min(1).max(100).regex(/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/u)
+      .transform((value) => value.toUpperCase()),
+    powerMaxKw: positiveNumberInputSchema.pipe(z.number().max(100_000)),
+    powerMinKw: nonnegativeNumberInputSchema.pipe(z.number().max(100_000)),
+    ratedPowerKw: positiveNumberInputSchema.pipe(z.number().max(100_000)),
+    ratedSpeedRpm: positiveNumberInputSchema.pipe(z.number().max(100_000)),
+    series: z.string().trim().min(1).max(100),
+    verifiedAt: verifiedTimestampSchema,
+  })
+  .strict();
+
+function refineCatalogEngineBand(
+  payload: { powerMinKw: number; powerMaxKw: number; ratedPowerKw: number },
+  context: z.RefinementCtx,
+) {
+  if (payload.powerMaxKw <= payload.powerMinKw) {
+    context.addIssue({ code: "custom", message: "powerMaxKw must be greater than powerMinKw", path: ["powerMaxKw"] });
+  } else if (payload.ratedPowerKw < payload.powerMinKw || payload.ratedPowerKw >= payload.powerMaxKw) {
+    context.addIssue({ code: "custom", message: "ratedPowerKw must sit inside the half-open [powerMinKw, powerMaxKw) band", path: ["ratedPowerKw"] });
+  }
+}
+
+export const catalogEngineDraftPayloadSchema =
+  catalogEngineDraftPayloadObjectSchema.superRefine(refineCatalogEngineBand);
+
+/** One spreadsheet row; the entity id is assigned when the batch is confirmed. */
+export const catalogImportRowSchema = catalogEngineDraftPayloadObjectSchema
+  .omit({ id: true })
+  .superRefine(refineCatalogEngineBand);
+export type CatalogImportRow = z.infer<typeof catalogImportRowSchema>;
+
 const jurisdictionMembershipDraftPayloadSchema = z
   .object({
     countryIso3: iso3Schema,
@@ -591,6 +639,13 @@ export const governanceDraftCreateSchema = z.discriminatedUnion(
         payload: jurisdictionDraftPayloadSchema,
       })
       .strict(),
+    z
+      .object({
+        ...draftRequestBase,
+        entityType: z.literal("catalog_engine"),
+        payload: catalogEngineDraftPayloadSchema,
+      })
+      .strict(),
   ],
 );
 
@@ -640,6 +695,7 @@ const dashboardCountSchema = z
 const dashboardWorkflowStatusSchema = z.enum(["draft", "reviewed"]);
 
 const governanceDashboardPayloadSchemas = {
+  catalog_engine: catalogEngineDraftPayloadSchema,
   country: countryDraftPayloadSchema,
   data_source: dataSourceDraftPayloadSchema,
   document: documentDraftPayloadSchema,

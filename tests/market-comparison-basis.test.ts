@@ -1,29 +1,16 @@
-import { simulateReadableStream } from "ai";
-import { MockLanguageModelV3 } from "ai/test";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { z } from "zod";
 
-import { buildEvidenceGapResponse } from "@/domain/ai/evidence-gap-response";
+
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+
 import { marketComparisonMatchesDeterministicRules } from "@/domain/marketing/comparison-consistency";
 
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
-import {
-  marketComparisonModelToolOutputSchema,
-  marketComparisonResultToModelOutput,
-} from "@/features/ai/model-tool-output-comparisons";
-import {
-  opportunityScoreModelToolOutputSchema,
-  opportunityScoreResultToModelOutput,
-  salesBriefModelToolOutputSchema,
-  salesBriefResultToModelOutput,
-} from "@/features/ai/model-tool-output";
+import { marketComparisonModelToolOutputSchema, marketComparisonResultToModelOutput } from "@/features/ai/model-tool-output-comparisons";
+import { opportunityScoreModelToolOutputSchema, opportunityScoreResultToModelOutput, salesBriefModelToolOutputSchema, salesBriefResultToModelOutput } from "@/features/ai/model-tool-output";
 import { aiToolResultSchema } from "@/features/ai/schemas";
-import {
-  buildSalesChatEvidenceContract,
-  evidenceContractAllowsModelText,
-} from "@/server/ai/evidence-contract";
+import { buildSalesChatEvidenceContract, evidenceContractAllowsModelText } from "@/server/ai/evidence-contract";
 import { buildMarketComparisonResult, buildOpportunityScoreResult, buildSalesBriefResult } from "@/server/ai/tool-results";
-import { createSalesChatTools, streamSalesChat } from "@/server/ai/sales-chat";
+
 import { getDemoDatabase } from "@/server/db/demo-client";
 import * as marketRepository from "@/server/repositories/market-repository";
 import { calculateOpportunityScore, compareMarkets, generateSalesBrief } from "@/server/services/marketing-analysis-service";
@@ -68,27 +55,6 @@ async function marketResult() {
 }
 
 const contract = buildSalesChatEvidenceContract({ selectedCountryIso3: null, userTexts: ["Compare the CHN and BRA DEMO_ADDRESSABLE_UNITS market metric."] });
-
-function scriptedMarketModel(marker: string) {
-  const usage = {
-    inputTokens: { cacheRead: 0, cacheWrite: 0, noCache: 1, total: 1 },
-    outputTokens: { reasoning: 0, text: 1, total: 1 },
-  };
-  return new MockLanguageModelV3({ doStream: [
-    { stream: simulateReadableStream({ chunks: [
-      { type: "stream-start", warnings: [] },
-      { type: "tool-call", toolName: "compareMarkets", toolCallId: "basis-query", input: JSON.stringify(query) },
-      { type: "finish", finishReason: { unified: "tool-calls", raw: undefined }, usage },
-    ] }) },
-    { stream: simulateReadableStream({ chunks: [
-      { type: "stream-start", warnings: [] },
-      { type: "text-start", id: "answer" },
-      { type: "text-delta", id: "answer", delta: marker },
-      { type: "text-end", id: "answer" },
-      { type: "finish", finishReason: { unified: "stop", raw: undefined }, usage },
-    ] }) },
-  ] });
-}
 
 describe("required market comparison basis", () => {
   it.each(cases)("retains facts but denies comparison with $count missing $field values: [$blank]", async ({ field, issue, blank, count }) => {
@@ -206,38 +172,4 @@ describe("required market comparison basis", () => {
     });
   }
 
-  for (const locale of ["en", "zh-CN"] as const) {
-    it.each(fields)(`retains the missing $field card but blocks model prose in public ${locale} SSE`, async ({ field, issue }) => {
-      withRows(rows.map((row) => ({ ...row, [field]: " " })));
-      const request = locale === "en"
-        ? "Compare the CHN and BRA DEMO_ADDRESSABLE_UNITS market metric."
-        : "比较 CHN 和 BRA 的 DEMO_ADDRESSABLE_UNITS 市场指标。";
-      const marker = "UNSUPPORTED_MARKET_BASIS_MODEL_CLAIM";
-      const auditRepository = { recordToolCall: async () => undefined };
-      const sessionId = crypto.randomUUID();
-      const stream = streamSalesChat({
-        auditRepository, locale, selectedCountryIso3: null, sessionId,
-        messages: [{ role: "user", content: request }], trustedUserTexts: [request],
-        model: scriptedMarketModel(marker),
-        tools: createSalesChatTools({ auditRepository, defaultAsOf: scoreQuery.asOf, sessionId, selectedCountryIso3: null }),
-      });
-      const body = await stream.toUIMessageStreamResponse({ sendReasoning: false }).text();
-      const parts: unknown[] = body.split("\n").filter((line) => line.startsWith("data: {")).map((line) => JSON.parse(line.slice(6)) as unknown);
-      const outputPart = z.object({ type: z.literal("tool-output-available"), output: aiToolResultSchema });
-      const textPart = z.object({ type: z.literal("text-delta"), delta: z.string() });
-      const outputs = parts.flatMap((part) => {
-        const parsed = outputPart.safeParse(part);
-        return parsed.success ? [parsed.data.output] : [];
-      });
-      const text = parts.flatMap((part) => {
-        const parsed = textPart.safeParse(part);
-        return parsed.success ? [parsed.data.delta] : [];
-      }).join("");
-      expect(outputs).toHaveLength(1);
-      expect(outputs[0]).toMatchObject({ tool: "compareMarkets", status: "no_data", evidenceSufficient: false, comparison: { metrics: [{ comparisonStatus: "insufficient_data", issues: [issue] }] } });
-      expect(clientAiToolResultSchema.safeParse(outputs[0]).success).toBe(true);
-      expect(body).not.toContain(marker);
-      expect(text).toBe(buildEvidenceGapResponse(outputs, false, false, locale));
-    });
-  }
 });

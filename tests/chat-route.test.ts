@@ -634,7 +634,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
 
     // 普通问候走确定性引导，但仍在公共入口消耗一次配额。
     expect(first.status).toBe(200);
-    expect(await first.text()).toContain("structured facts and traceable sources");
+    expect(await first.text()).toContain("What are you working on");
 
     const second = await routeModule.POST(chatRequest());
 
@@ -753,7 +753,7 @@ describe("POST /api/chat rate limiting contract (ADR-041)", () => {
 
     // 信封通过校验，普通问候直接返回流式能力介绍，而不是进入模型配置。
     expect(response.status).toBe(200);
-    expect(await response.text()).toContain("structured facts and traceable sources");
+    expect(await response.text()).toContain("What are you working on");
   });
 
   it("rejects a body that exceeds the server byte limit even when Content-Length is understated", async () => {

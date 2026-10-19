@@ -11,16 +11,13 @@ day-to-day checks. This document is a reference for maintenance/release work,
 not a checklist to execute for every code, copy or icon edit. Historical incident
 notes do not authorize a new migration, cleanup or evidence-refresh task.
 
-Current limitation: CI still runs `portfolio:verify --release-evidence`, which
-binds browser and Vitest artifacts to their source inputs; the screenshot inputs
-currently include `src/app/icon.svg`. Local scoped checks do not remove that
-coupling. Changing it requires a separate reviewed implementation, not rewriting
-old report hashes, omitting a failing job or claiming this documentation changed
-the release gate. Existing protection, backups and rollback guarantees remain.
+The portfolio evidence tooling (source-fingerprinted Vitest/Playwright/screenshot
+artifacts, `portfolio:verify` and `history:verify`) was removed on 2026-10-17. CI
+now gates on the checks themselves through the `Required CI gate` job. Existing
+deployment protection, backups and rollback guarantees are unchanged.
 
 日常检查只按 `AGENTS.md` 分级选择；本文件按维护任务查阅，不作为每次修改的必跑清单。
-当前 CI 仍将发布与源码绑定的作品证据关联，截图输入也包含 favicon。本次规则整理没有
-解除这种程序级关联，也不允许伪造报告、跳过失败检查或删除恢复依据。
+作品证据工具已于 2026-10-17 移除，CI 直接以检查本身作为门禁；不允许伪造报告、跳过失败检查或删除恢复依据。
 
 ## 1. Durable release execution / 持久化发布
 
@@ -81,8 +78,10 @@ unknown roots and any persistence/dependency changes.
   enumerated application/domain/AI/repository/service, presentation, public asset,
   test, documentation and maintenance paths can differ. Database fingerprints
   remain mandatory even when the changed code can access the database.
-  The exact read-only `src/data/products/weichai-catalog.json` source-report
-  and five existing root Playwright configurations are application inputs too.
+  The two retired read-only catalogue paths under `src/data/products/` (listed so
+  their removal stays code-only; the governed fixture now lives under the protected
+  `src/server/db/seed/`) and five existing root Playwright configurations are
+  application inputs too.
   This does not approve catalogue specifications/certifications or allow other
   `src/data` files, future root configurations, seeds or ingestion changes.
   The single read-only `scripts/db/verify-application-release.ts` entry is also
@@ -206,7 +205,7 @@ Upgrade adaptations: check database URL controls before Zod normalization;
 report a model stream's first private error only once while continuing to drain
 usage; retain the Drizzle legacy-loader exclusion; bind the SDK's new undici
 edge to reviewed 7.29.1; regenerate same-origin MapLibre assets and all bundled
-licenses; update Playwright's execution-version contract and recapture evidence.
+licenses; update Playwright's execution-version contract.
 The real map tests use the canonical worker URL instead of a retired version.
 The offline Demo model also honors repeated required-tool choices and uses unique
 call IDs. Missing page/section evidence can consume the shared five-step bound

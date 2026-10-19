@@ -91,6 +91,7 @@ export const governedEntityTypeEnum = pgEnum("governed_entity_type", [
   "data_source",
   "document",
   "jurisdiction",
+  "catalog_engine",
 ]);
 export const adminRoleEnum = pgEnum("admin_role", [
   "editor",
@@ -547,6 +548,50 @@ export const products = pgTable(
   ],
 );
 
+/**
+ * Governed catalogue engines. A row records what a (fictional) spec sheet
+ * declares, including the regulation citation codes it claims to meet; it is
+ * never a certification. Rows are written only by publishing governance drafts.
+ */
+export const catalogEngines = pgTable(
+  "catalog_engines",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    modelCode: text("model_code").notNull(),
+    series: text("series").notNull(),
+    category: text("category").notNull(),
+    applicationScopes: applicationScopeEnum("application_scopes").array().notNull(),
+    ratedPowerKw: numeric("rated_power_kw", { mode: "number", precision: 12, scale: 3 }).notNull(),
+    ratedSpeedRpm: numeric("rated_speed_rpm", { mode: "number", precision: 12, scale: 3 }).notNull(),
+    powerMinKw: numeric("power_min_kw", { mode: "number", precision: 12, scale: 3 }).notNull(),
+    powerMaxKw: numeric("power_max_kw", { mode: "number", precision: 12, scale: 3 }).notNull(),
+    displacementL: numeric("displacement_l", { mode: "number", precision: 8, scale: 3 }).notNull(),
+    cylinders: integer("cylinders").notNull(),
+    aftertreatment: text("aftertreatment").notNull(),
+    emissionLabel: text("emission_label").notNull(),
+    declaredCitationCodes: text("declared_citation_codes").array().default(sql`'{}'::text[]`).notNull(),
+    dataSourceId: uuid("data_source_id")
+      .notNull()
+      .references(() => dataSources.id, { onDelete: "restrict" }),
+    verifiedAt: timestamp("verified_at", { mode: "date", withTimezone: true }).notNull(),
+    isDemo: boolean("is_demo").default(false).notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+    archivedAt: timestamp("archived_at", { mode: "date", withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("catalog_engines_active_model_idx").on(table.modelCode).where(sql`${table.archivedAt} IS NULL`),
+    index("catalog_engines_power_idx").on(table.powerMinKw, table.powerMaxKw),
+    index("catalog_engines_data_source_idx").on(table.dataSourceId),
+    check("catalog_engines_category_check",
+      sql`${table.category} IN ('truck', 'bus', 'construction', 'agriculture', 'generator-set', 'marine')`),
+    check("catalog_engines_power_check",
+      sql`${table.powerMinKw} >= 0 AND ${table.powerMaxKw} > ${table.powerMinKw} AND ${table.ratedPowerKw} >= ${table.powerMinKw} AND ${table.ratedPowerKw} < ${table.powerMaxKw} AND ${table.ratedSpeedRpm} > 0`),
+    check("catalog_engines_geometry_check", sql`${table.displacementL} > 0 AND ${table.cylinders} > 0`),
+    check("catalog_engines_application_scopes_check", sql`cardinality(${table.applicationScopes}) > 0`),
+  ],
+);
+
 export const productCertifications = pgTable(
   "product_certifications",
   {
@@ -969,6 +1014,8 @@ export const marketImportBatches = pgTable(
   "market_import_batches",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    // Historically market-only; also holds catalogue import batches.
+    entityType: governedEntityTypeEnum("entity_type").default("market_metric").notNull(),
     status: marketImportStatusEnum("status").default("previewed").notNull(),
     originalFilename: text("original_filename").notNull(),
     contentSha256: varchar("content_sha256", { length: 64 }).notNull(),

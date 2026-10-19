@@ -397,18 +397,21 @@ function supplyConfirmationContradicted(claims: readonly string[]): boolean {
   return claims.some((claim) => unavailableConfirmation.test(claim) || uncertainStatus.test(claim));
 }
 
-export function responseContainsLiveEvalAnchor(text: LiveEvalResponseText, anchor: LiveEvalResponseAnchor): boolean {
-  if (anchor.id === "decision:supply-ready" && supplyConfirmationContradicted(text.claims)) return false;
+/** `text` must contain the anchor; `visible` (default: the same text) is all
+ * text the user can read, where any contradiction vetoes it. */
+export function responseContainsLiveEvalAnchor(text: LiveEvalResponseText, anchor: LiveEvalResponseAnchor,
+  visible: LiveEvalResponseText = text): boolean {
+  if (anchor.id === "decision:supply-ready" && supplyConfirmationContradicted(visible.claims)) return false;
   const decision = anchor.id.startsWith("decision:");
   const polarized = ["decision:product-compatible", "decision:supply-ready", "decision:product-not-ready", "decision:evidence-denied"].includes(anchor.id);
-  const matches = (candidate: string, assertion: boolean) => {
-    const segments = decision ? assertion ? text.assertionClaims : text.claims : [text.facts];
+  const matches = (surface: LiveEvalResponseText, candidate: string, assertion: boolean) => {
+    const segments = decision ? assertion ? surface.assertionClaims : surface.claims : [surface.facts];
     return segments.some((segment) => containsCandidate(segment, candidate, anchor.id, assertion));
   };
   // Topical anchors (for example, "country overview") establish subject
   // coverage, not positive polarity; whole-request refusal is scored separately.
   // Explicit contradictions in the remaining prose are conservative vetoes,
   // including a second negative predicate after an earlier negative predicate.
-  return anchor.anyOf.some((candidate) => matches(candidate, polarized)) &&
-    !(anchor.noneOf?.some((candidate) => matches(candidate, false)) ?? false);
+  return anchor.anyOf.some((candidate) => matches(text, candidate, polarized)) &&
+    !(anchor.noneOf?.some((candidate) => matches(visible, candidate, false)) ?? false);
 }

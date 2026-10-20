@@ -55,13 +55,13 @@
     "ops:admission-benchmark": "node --conditions=react-server --import tsx scripts/ops/admission-benchmark.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "3.0.70",
+    "@ai-sdk/openai-compatible": "3.0.71",
     "@ai-sdk/react": "^4.0.146",
     "ai": "^7.0.142",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "drizzle-orm": "0.45.4",
-    "lucide-react": "1.57.0",
+    "lucide-react": "1.59.0",
     "maplibre-gl": "6.11.2",
     "next": "16.3.8",
     "postgres": "3.4.9",

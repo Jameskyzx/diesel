@@ -9,16 +9,22 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 ## Production / 线上
 
 - Public read-only demo: <https://diesel.jamesky.site>.
-- Last operator readback: 2026-10-15T04:33+00:00, `/api/health` `status=ok`, release
-  `99ddb305e8b653c1303977fc9f6c5d21620ce25e`. This is an operator observation, not a
+- Last operator readback: 2026-10-20T01:56+00:00, `/api/health` `status=ok`, release
+  `3d099aea4e9118c25f1ab4a476714d738a9af78a`. This is an operator observation, not a
   continuously verified claim.
-- Not yet deployed: the fictional catalogue and target-market selection (`catalog-fit-v1`),
-  the removal of the portfolio evidence tooling, and the single AI orchestration path (all chat
-  requests, uploads and the offline demo now use the harness loop), the multilingual customer
-  brief, and the governed catalogue (Migration `0014`, `read-excel-file` dependency). The next
-  release changes `package.json` and adds a migration, so it requires a full (governance)
-  release; its fixture queue publishes the demo catalogue and the governance snapshot is now
-  v5 with `catalog_engines` (see DEPLOYMENT.md §4.4, ADR-274).
+- Release 2026-10-19 (full governance release, durable operation `4f1c7650`, completed
+  19:32 UTC, exit 0, host `COMMITTED` / `PUBLISH_FINALIZED`): the fictional catalogue and
+  target-market selection (`catalog-fit-v1`), the single harness AI path, the multilingual
+  customer brief and the governed catalogue are live. Migration `0014` was applied beforehand
+  in the maintenance lock and production readback verified it (15 repository migrations plus one
+  recognized legacy entry). The release exported and rehearsed a v5 governance snapshot,
+  published the 97-country fixtures and the 24-model demo catalogue; `/api/product-catalog`
+  returns 24 fictional models and `/`, `/products`, `/products/brief`, `/map` return 200.
+- The first attempt, `16274fc`, rolled back automatically before any governance write because
+  `0014` had not been applied (DEPLOYMENT.md §4.4); that one-use candidate is kept for audit.
+  The pre-migration `pg_dump` from the VPS did not complete over the slow Supabase link; the
+  operator confirmed a recent Supabase-managed backup instead. Browser and live-AI acceptance
+  were not rerun against production after this release.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health`.
 
@@ -26,9 +32,9 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 ```json
 {
   "publicRuntime": {
-    "observedAt": "2026-10-15T04:33+00:00",
+    "observedAt": "2026-10-20T01:56+00:00",
     "status": "ok",
-    "version": "99ddb305e8b653c1303977fc9f6c5d21620ce25e"
+    "version": "3d099aea4e9118c25f1ab4a476714d738a9af78a"
   }
 }
 ```

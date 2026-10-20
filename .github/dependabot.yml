@@ -13,6 +13,10 @@ updates:
     ignore:
       - dependency-name: "@types/node"
         update-types: [version-update:semver-major]
+      # Same-origin worker assets and bundled-license notices are pinned to one
+      # reviewed MapLibre build (scripts/maplibre-worker-assets.ts). 6.14.0
+      # ships no shared-chunk source map, so upgrades are a deliberate task.
+      - dependency-name: "maplibre-gl"
     groups:
       production-dependencies:
         dependency-type: production

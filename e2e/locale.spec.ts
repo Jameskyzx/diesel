@@ -1307,7 +1307,13 @@ for (const scenario of [
     expect(browserCookie).toBe(expectedCookie);
     expect(localeFromBrowserCookie(() => browserCookie)).toBe(scenario.locale);
 
-    const serverHtml = await response.text();
+    // WebKit may evict a navigation body from its inspector cache, so request
+    // the same document again with the exact Cookie header asserted above.
+    const documentResponse = await page.request.get("/chat", {
+      headers: { cookie: expectedCookie },
+    });
+    expect(documentResponse.status()).toBe(200);
+    const serverHtml = await documentResponse.text();
     const serverLanguage = serverHtml.match(/<html\b[^>]*\blang="([^"]+)"/u)?.[1];
     expect.soft(serverLanguage).toBe(scenario.locale);
     await expect.soft(page.locator("html")).toHaveAttribute("lang", scenario.locale);

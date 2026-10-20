@@ -222,11 +222,11 @@ module (no static import, re-export or literal dynamic import), so its own map
 accounts for all of its code. Second, that map's 16 bundled packages must
 byte-match the installed notice sources, as before. The worker's only runtime
 import is the caller-supplied RTL plugin URL. The bundled geojson-vt matches
-published 6.1.2, not the 6.3.0 that `^6.1.2` resolves to, so a pnpm override
-scoped to `maplibre-gl@6.14.0` pins it. The override has no runtime effect
-because both modules bundle their sources. A later MapLibre version drops the
-override, and verification then fails until the match is reviewed again.
-earcut moves to 3.2.4. The notice texts are unchanged. The browser CSP test
+published 6.1.2, not 6.2.0 or 6.3.0. 6.1.2 satisfies `^6.1.2`, and the frozen
+lockfile pins it. No override is used, so the reviewed `pnpm-workspace.yaml`
+install boundary is unchanged. A fresh resolution or update that moves
+geojson-vt fails verification until the match is reviewed again. earcut moves
+to 3.2.4. The notice texts are unchanged. The browser CSP test
 requires the worker to be the only `/maplibre/` request. Removed 6.11.2 copies
 are recoverable from Git.
 

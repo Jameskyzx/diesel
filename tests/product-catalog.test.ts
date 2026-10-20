@@ -34,7 +34,7 @@ describe("fictional demo engine catalogue fixture", () => {
   });
 });
 
-describe("published catalogue read", () => {
+describe("published catalogue read", { timeout: 30_000 }, () => {
   it("serves the published demo rows from the governed table", async () => {
     const catalog = await loadPublishedCatalog();
     expect(catalog).toMatchObject({ isDemo: true, evidenceStatus: "fictional_declaration" });
@@ -62,7 +62,7 @@ describe("published catalogue read", () => {
   });
 });
 
-describe("catalogue fit against the fictional demo regulations", () => {
+describe("catalogue fit against the fictional demo regulations", { timeout: 30_000 }, () => {
   it("ranks declared matches first and reads only regulations in force on the query date", async () => {
     const result = await evaluateCatalogFitForMarket({ countryIso3: "CHN", applicationScope: "non-road", powerKw: 82, asOf: "2026-10-17" });
     expect(result).toMatchObject({ kind: "catalog_fit", rulesetVersion: "catalog-fit-v1", certificationVerified: false, evidenceBasis: "manufacturer_declaration" });

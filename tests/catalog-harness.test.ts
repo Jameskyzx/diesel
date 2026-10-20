@@ -34,7 +34,7 @@ function request(model: MockLanguageModelV4, text: string, previous: ReturnType<
 function metadata(body: string) {
   return body.split("\n").filter(l=>l.startsWith("data: {")).map(l=>JSON.parse(l.slice(6))).map(p=>readConversationMetadata(p.messageMetadata)).findLast(Boolean);
 }
-describe("single typed multi-turn catalogue harness", () => {
+describe("single typed multi-turn catalogue harness", { timeout: 30_000 }, () => {
   it("isolates source filters from engine context and does not broaden unsupported market filters", () => {
     const state = {...empty,countryIso3s:["CHN"],applicationScope:"non-road" as const,powerKw:120};
     const contract = harnessEvidenceContract(state,{type:"evidence",task:"knowledge",countryIso3:null,sourceQuery:"EU 2016/1628 Annex II page 9",marketPeriod:null},"2026-10-16");

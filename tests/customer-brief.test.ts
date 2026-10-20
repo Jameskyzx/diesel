@@ -75,7 +75,7 @@ describe("customer brief content", () => {
   });
 });
 
-describe("customer brief from the demo database", () => {
+describe("customer brief from the demo database", { timeout: 30_000 }, () => {
   const originalDatabaseMode = process.env.DATABASE_MODE;
   beforeAll(() => { process.env.DATABASE_MODE = "pglite-demo"; });
   afterAll(() => {

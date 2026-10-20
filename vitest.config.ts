@@ -64,5 +64,9 @@ export default defineConfig({
     // worker pool bounded avoids CPU starvation and hook timeouts on CI/VPS
     // runners without serializing the rest of the suite.
     maxWorkers: Math.max(1, Math.min(4, availableParallelism() - 1)),
+    // The first test in a PGlite suite also pays for migrating and seeding its
+    // database. Under coverage on CI that has exceeded Vitest's 5 s default in
+    // several suites, so use the 30 s those suites already set explicitly.
+    testTimeout: 30_000,
   },
 });

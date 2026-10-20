@@ -214,6 +214,22 @@ tool-choice error. Full-stream, SSE and bilingual desktop/mobile checks cover it
 Removed MapLibre 6.9.0 copies are recoverable from Git; replacement 6.11.2 assets
 retain their complete license/notice files.
 
+MapLibre 6.14.0 no longer splits the worker: `maplibre-gl-shared.mjs` ships empty
+and unmapped, and the worker and main modules do not import it. Only the worker,
+its LICENSE and the recomputed notices are served from `public/maplibre/6.14.0/`.
+Two checks replace the shared-chunk map. First, the worker must import no other
+module (no static import, re-export or literal dynamic import), so its own map
+accounts for all of its code. Second, that map's 16 bundled packages must
+byte-match the installed notice sources, as before. The worker's only runtime
+import is the caller-supplied RTL plugin URL. The bundled geojson-vt matches
+published 6.1.2, not the 6.3.0 that `^6.1.2` resolves to, so a pnpm override
+scoped to `maplibre-gl@6.14.0` pins it. The override has no runtime effect
+because both modules bundle their sources. A later MapLibre version drops the
+override, and verification then fails until the match is reviewed again.
+earcut moves to 3.2.4. The notice texts are unchanged. The browser CSP test
+requires the worker to be the only `/maplibre/` request. Removed 6.11.2 copies
+are recoverable from Git.
+
 The public deadline browser test also runs at normal and eightfold CPU slowdown.
 React development Strict Mode may expose an already-aborted first-mount country
 GET to interception. The test requires exactly one still-pending country GET and

@@ -1,4 +1,4 @@
-Third-party notices for MapLibre GL JS 6.11.2 worker/shared assets.
+Third-party notices for MapLibre GL JS 6.14.0 worker asset.
 Texts are reproduced from the current pinned installation. The versions below
 identify installed notice sources, not proof of upstream bundle build versions.
 MapLibre's own notices remain unchanged in the adjacent LICENSE.txt.
@@ -237,7 +237,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-===== earcut | installed notice source 3.2.3 | LICENSE =====
+===== earcut | installed notice source 3.2.4 | LICENSE =====
 ISC License
 
 Copyright (c) 2026, Mapbox
@@ -285,7 +285,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-===== @maplibre/geojson-vt | installed notice source 6.1.1 | LICENSE =====
+===== @maplibre/geojson-vt | installed notice source 6.1.2 | LICENSE =====
 The MIT License (MIT)
 
 Copyright (c) 2025 MapLibre contributors

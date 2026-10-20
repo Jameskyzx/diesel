@@ -4,7 +4,7 @@ import { expect, test, type ConsoleMessage, type Response } from "@playwright/te
 import { z } from "zod";
 
 import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
-import { MAPLIBRE_VERSION, MAPLIBRE_WORKER_URL } from "../src/lib/maplibre-assets";
+import { MAPLIBRE_WORKER_URL } from "../src/lib/maplibre-assets";
 
 type SecurityPolicyViolation = {
   blockedUri: string;
@@ -17,7 +17,8 @@ type SecurityPolicyViolation = {
 const securityPolicyViolationMarker = "__DIESEL_CSP_VIOLATION__";
 const workerMarker = "__DIESEL_MODULE_WORKER__";
 const workerPath = MAPLIBRE_WORKER_URL;
-const sharedPath = `/maplibre/${MAPLIBRE_VERSION}/maplibre-gl-shared.mjs`;
+// The self-contained worker must not load any sibling MapLibre module.
+const mapLibreAssetPrefix = "/maplibre/";
 const workerObservationSchema = z.object({
   event: z.enum(["created", "error"]),
   message: z.string().optional(),
@@ -85,7 +86,7 @@ test("enforces CSP while MapLibre workers and attachment previews remain usable"
     );
   };
   const onResponse = (response: Response) => {
-    if ([workerPath, sharedPath].includes(new URL(response.url()).pathname)) {
+    if (new URL(response.url()).pathname.startsWith(mapLibreAssetPrefix)) {
       workerResponses.push({
         url: response.url(), status: response.status(),
         contentType: response.headers()["content-type"] ?? "",
@@ -167,7 +168,8 @@ test("enforces CSP while MapLibre workers and attachment previews remain usable"
       const createdMapWorkers = workerObservations.filter(({ event, url }) => event === "created" && new URL(url).pathname === workerPath);
       expect(createdMapWorkers.length).toBeGreaterThan(0);
       expect(createdMapWorkers.every(({ type, url }) => type === "module" && new URL(url).origin === origin)).toBe(true);
-      await expect.poll(() => [workerPath, sharedPath].every((path) => workerResponses.some(({ url }) => new URL(url).pathname === path))).toBe(true);
+      await expect.poll(() => workerResponses.some(({ url }) => new URL(url).pathname === workerPath)).toBe(true);
+      expect(workerResponses.map(({ url }) => new URL(url).pathname).filter((path) => path !== workerPath)).toEqual([]);
       expect(workerResponses.every(({ url, status, contentType }) => new URL(url).origin === origin && status === 200 && /(?:text|application)\/(?:javascript|ecmascript)/i.test(contentType))).toBe(true);
       expect(workerObservations.filter(({ event }) => event === "error")).toEqual([]);
       await expect.poll(() => securityPolicyViolations).toEqual([]);

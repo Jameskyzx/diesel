@@ -13,6 +13,7 @@ overrides:
   "hono@4.12.32": 4.13.5
   "js-yaml@4.3.0": 4.3.2
   "js-yaml@4.3.1": 4.3.2
+  "maplibre-gl@6.14.0>@maplibre/geojson-vt": 6.1.2
   "nanoid@3.3.16": 3.3.18
   "postcss@8.4.31": 8.5.23
   "qs@6.15.3": 6.16.0

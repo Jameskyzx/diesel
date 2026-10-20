@@ -15,7 +15,6 @@ import { MAPLIBRE_VERSION } from "../src/lib/maplibre-assets";
 
 const assetFiles = [
   { source: "dist/maplibre-gl-worker.mjs", target: "maplibre-gl-worker.mjs" },
-  { source: "dist/maplibre-gl-shared.mjs", target: "maplibre-gl-shared.mjs" },
   { source: "LICENSE.txt", target: "LICENSE.txt" },
 ] as const;
 
@@ -33,7 +32,7 @@ type NoticeSource = {
 };
 
 // These versions identify the installed notice sources, not the upstream
-// bundler's build environment. Keep this bounded to the two shipped modules.
+// bundler's build environment. Keep this bounded to the shipped worker module.
 export const mapLibreWorkerNoticeSources: readonly NoticeSource[] = [
   { name: "@maplibre/maplibre-gl-style-spec", version: "26.4.4", file: "LICENSE.txt" },
   { name: "@mapbox/point-geometry", version: "1.1.0", file: "LICENSE" },
@@ -42,9 +41,9 @@ export const mapLibreWorkerNoticeSources: readonly NoticeSource[] = [
   { name: "quickselect", version: "3.0.0", file: "LICENSE", via: "@maplibre/maplibre-gl-style-spec" },
   { name: "tinyqueue", version: "3.0.0", file: "LICENSE" },
   { name: "murmurhash-js", version: "1.0.0", file: "README.md", readmeSection: true },
-  { name: "earcut", version: "3.2.3", file: "LICENSE" },
+  { name: "earcut", version: "3.2.4", file: "LICENSE" },
   { name: "@mapbox/vector-tile", version: "3.0.0", file: "LICENSE.txt" },
-  { name: "@maplibre/geojson-vt", version: "6.1.1", file: "LICENSE" },
+  { name: "@maplibre/geojson-vt", version: "6.1.2", file: "LICENSE" },
   { name: "bidi-js", version: "1.1.0", file: "LICENSE.txt" },
   { name: "pbf", version: "5.1.2", file: "LICENSE" },
   { name: "potpack", version: "2.1.0", file: "LICENSE" },
@@ -52,6 +51,21 @@ export const mapLibreWorkerNoticeSources: readonly NoticeSource[] = [
   { name: "@maplibre/mlt", version: "1.3.0", file: "LICENSE.txt" },
   { name: "kdbush", version: "4.1.0", file: "LICENSE", via: "@maplibre/geojson-vt" },
 ];
+
+// Since 6.14 the worker no longer imports a relative shared chunk; upstream
+// still ships an empty, unmapped dist/maplibre-gl-shared.mjs. The worker map
+// can account for every bundled source only while the worker loads no other
+// module, so any static import, re-export or literal dynamic import fails.
+// Its runtime plugin loader imports only a caller-supplied variable URL.
+const workerModuleDependency =
+  /(?:^|[^\w$.])(?:import\s*(?:["'`]|\(\s*["'`]|[\w$*{][^;"'`]*?\bfrom\s*["'`])|export\s*(?:\*|\{)[^;"'`]*?\bfrom\s*["'`])/u;
+
+export function assertSelfContainedMapLibreWorker(worker: Buffer): void {
+  const dependency = workerModuleDependency.exec(worker.toString("utf8"));
+  if (dependency) {
+    throw new Error(`MapLibre worker imports another module, so its source map no longer covers every shipped source: ${dependency[0].trim().slice(0, 80)}`);
+  }
+}
 
 const sourceMapSchema = z.object({
   version: z.literal(3),
@@ -78,7 +92,8 @@ function packageManifest(name: string, require: ReturnType<typeof createRequire>
   }
 }
 
-function thirdPartyNotices(maplibreManifest: string): Buffer {
+function thirdPartyNotices(maplibreManifest: string, worker: Buffer): Buffer {
+  assertSelfContainedMapLibreWorker(worker);
   const require = createRequire(maplibreManifest);
   const sources = new Map(mapLibreWorkerNoticeSources.map((source) => {
     const sourceRequire = source.via
@@ -92,7 +107,6 @@ function thirdPartyNotices(maplibreManifest: string): Buffer {
   const bundledPackages = new Set<string>();
   const maps = [
     [dirname(maplibreManifest), "dist/maplibre-gl-worker.mjs.map"],
-    [dirname(maplibreManifest), "dist/maplibre-gl-shared.mjs.map"],
     [sources.get("@maplibre/geojson-vt")!.root, "dist/geojson-vt.mjs.map"],
     [sources.get("@maplibre/vt-pbf")!.root, "dist/index.es.js.map"],
   ];
@@ -120,7 +134,7 @@ function thirdPartyNotices(maplibreManifest: string): Buffer {
     throw new Error("MapLibre bundled package set differs from the reviewed 16 notice sources.");
   }
   const contents: Buffer[] = [Buffer.from(
-    `Third-party notices for MapLibre GL JS ${MAPLIBRE_VERSION} worker/shared assets.\n` +
+    `Third-party notices for MapLibre GL JS ${MAPLIBRE_VERSION} worker asset.\n` +
     "Texts are reproduced from the current pinned installation. The versions below\n" +
     "identify installed notice sources, not proof of upstream bundle build versions.\n" +
     "MapLibre's own notices remain unchanged in the adjacent LICENSE.txt.\n",
@@ -178,7 +192,8 @@ function installedAssets(workspace: string) {
     bytes: readRegularFile(resolve(packageRoot, source)),
     target,
   }));
-  return [...assets, { bytes: thirdPartyNotices(manifestPath), target: "THIRD-PARTY-NOTICES.txt" }];
+  const worker = assets.find(({ target }) => target === "maplibre-gl-worker.mjs")!.bytes;
+  return [...assets, { bytes: thirdPartyNotices(manifestPath, worker), target: "THIRD-PARTY-NOTICES.txt" }];
 }
 
 function assetPaths(workspace: string) {
@@ -200,7 +215,7 @@ export function assertMapLibreWorkerAssets(workspace = process.cwd()): void {
   requireDirectory(paths.versionRoot);
   const expectedNames = assets.map(({ target }) => target).sort();
   if (JSON.stringify(readdirSync(paths.versionRoot).sort()) !== JSON.stringify(expectedNames)) {
-    throw new Error("MapLibre version directory must contain exactly worker, shared, LICENSE.txt, and THIRD-PARTY-NOTICES.txt.");
+    throw new Error("MapLibre version directory must contain exactly the worker, LICENSE.txt, and THIRD-PARTY-NOTICES.txt.");
   }
   for (const { bytes, target } of assets) {
     if (!readRegularFile(resolve(paths.versionRoot, target)).equals(bytes)) {
@@ -210,7 +225,7 @@ export function assertMapLibreWorkerAssets(workspace = process.cwd()): void {
 }
 
 /**
- * Explicit maintenance only: copy upstream ESM siblings and their complete
+ * Explicit maintenance only: copy the upstream ESM worker and its complete
  * license byte-for-byte, plus the deterministically collected dependency
  * notices. Never call this from Next config, build, or dev.
  * An existing version directory is not repaired or overwritten; review drift

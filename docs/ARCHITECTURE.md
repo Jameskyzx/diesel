@@ -372,11 +372,11 @@ descriptor 重建外围语法；知识文档、来源标题、原始实体名、
   formatter 保留原文。缺少同 ISO3 summary 时回到静态非 Demo 目录；名称后缀不参与分类。
 - MapLibre 通过 `next/dynamic` 在客户端按需加载；Tooltip 位置按实际地图容器宽高
   限界，窄屏指针 viewport 不会把内容推出可视区域。
-- MapLibre 6.9.0 使用 ESM 与 WebGL2；Next 两种 bundler 都不能仅通过 `new URL()`
-  自动带上 worker 的相对 shared 模块，因此两个原始模块、LICENSE 及依赖 notices 保存在
-  `public/maplibre/6.9.0/`。客户端显式设置同源、版本化 worker URL；Next 配置加载时
-  只读核对版本和三个原始文件与已安装包逐字节一致，并从固定 16 项许可来源重算
-  `THIRD-PARTY-NOTICES.txt`；相关 sourcemap 的内联来源集合/文本须匹配，缺失或漂移即失败。
+- MapLibre 6.14.0 使用 ESM 与 WebGL2；worker 是自包含模块（上游 shared 文件为空且
+  不被引用），原始 worker、LICENSE 及依赖 notices 保存在 `public/maplibre/6.14.0/`。
+  客户端显式设置同源、版本化 worker URL；Next 配置加载时只读核对版本和两个原始文件与
+  已安装包逐字节一致，并从固定 16 项许可来源重算 `THIRD-PARTY-NOTICES.txt`；worker
+  不得导入其他模块，相关 sourcemap 的内联来源集合/文本须匹配，缺失或漂移即失败。
   显式 `pnpm map:prepare-assets` 只准备尚不存在的新版本目录，正常 dev/build 不改写
   源资产，也不依赖 install lifecycle。原版 6.9.0 在 GL-null 时先回滚容器，再抛出公开
   `GPUInitializationError`；组件只捕获这个已知初始化错误，显示双语局部错误并保留国家

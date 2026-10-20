@@ -48,8 +48,8 @@ export const APPLICATION_SECURITY_HEADERS =
   createApplicationSecurityHeaders(false);
 
 export function createNextConfig(phase: string): NextConfig {
-  // Next emits the worker URL without its relative shared module. Both
-  // versioned, same-origin assets must match the installed package before use.
+  // The self-contained MapLibre worker is served as a versioned, same-origin
+  // asset; it must match the installed package before use.
   assertMapLibreWorkerAssets();
   const isDevelopmentServer = phase === PHASE_DEVELOPMENT_SERVER;
   const isPlaywrightE2e = process.env.PLAYWRIGHT_E2E === "true";

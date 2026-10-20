@@ -41,8 +41,8 @@ const TOOLTIP_ESTIMATED_HEIGHT = 128;
 const TOOLTIP_MIN_TOP = 64;
 const TOOLTIP_WIDTH = 224;
 
-// Serve the ESM worker and its relative shared module together. Next's URL
-// asset pipeline does not emit the shared sibling of MapLibre's worker.
+// Serve MapLibre's self-contained ESM worker as a versioned same-origin asset.
+// Next's bundle does not emit the worker beside the main module.
 setWorkerUrl(MAPLIBRE_WORKER_URL);
 
 const mapStyle: StyleSpecification = {

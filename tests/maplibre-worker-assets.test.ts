@@ -15,6 +15,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   assertMapLibreWorkerAssets,
+  assertSelfContainedMapLibreWorker,
   mapLibreWorkerNoticeSources,
   parseMapLibreWorkerAssetArgs,
   prepareMapLibreWorkerAssets,
@@ -23,8 +24,7 @@ import { MAPLIBRE_VERSION, MAPLIBRE_WORKER_URL } from "../src/lib/maplibre-asset
 
 const workspaces: string[] = [];
 const fixtureFiles = [
-  ["dist/maplibre-gl-worker.mjs", "maplibre-gl-worker.mjs", "import './maplibre-gl-shared.mjs';\n"],
-  ["dist/maplibre-gl-shared.mjs", "maplibre-gl-shared.mjs", "export const shared = 'fixture';\n"],
+  ["dist/maplibre-gl-worker.mjs", "maplibre-gl-worker.mjs", "async function plugin(e){await import(e)}export{plugin as default};\n"],
   ["LICENSE.txt", "LICENSE.txt", "Upstream license fixture\r\n\u00a9 preserved\n"],
 ] as const;
 const noticesFile = "THIRD-PARTY-NOTICES.txt";
@@ -60,8 +60,8 @@ function fixture(version: string = MAPLIBRE_VERSION) {
     writeFileSync(resolve(root, "bundled.js"), `// bundled ${source.name}\n`);
   }
   const topLevel = mapLibreWorkerNoticeSources.filter(({ name }) => name !== "kdbush" && name !== "quickselect");
-  const sharedSources = topLevel.map(({ name }) => `../node_modules/${name}/bundled.js`);
-  const sharedContent = topLevel.map(({ name }) => `// bundled ${name}\n`);
+  const workerSources = topLevel.map(({ name }) => `../node_modules/${name}/bundled.js`);
+  const workerContent = topLevel.map(({ name }) => `// bundled ${name}\n`);
   const styleRoot = noticeRoot(workspace, "@maplibre/maplibre-gl-style-spec");
   for (const name of ["@mapbox/unitbezier", "quickselect", "tinyqueue"]) {
     const relative = `dist/node_modules/${name}/bundled.mjs`;
@@ -69,12 +69,10 @@ function fixture(version: string = MAPLIBRE_VERSION) {
     const contents = `// nested ${name}\n`;
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, contents);
-    sharedSources.push(`../node_modules/@maplibre/maplibre-gl-style-spec/${relative}`);
-    sharedContent.push(contents);
+    workerSources.push(`../node_modules/@maplibre/maplibre-gl-style-spec/${relative}`);
+    workerContent.push(contents);
   }
-  writeSourceMap(resolve(packageRoot, "dist/maplibre-gl-worker.mjs.map"),
-    ["../node_modules/@maplibre/maplibre-gl-style-spec/bundled.js"], ["// bundled @maplibre/maplibre-gl-style-spec\n"]);
-  writeSourceMap(resolve(packageRoot, "dist/maplibre-gl-shared.mjs.map"), sharedSources, sharedContent);
+  writeSourceMap(resolve(packageRoot, "dist/maplibre-gl-worker.mjs.map"), workerSources, workerContent);
   writeSourceMap(resolve(noticeRoot(workspace, "@maplibre/geojson-vt"), "dist/geojson-vt.mjs.map"),
     ["../node_modules/kdbush/bundled.js"], ["// bundled kdbush\n"]);
   writeSourceMap(resolve(noticeRoot(workspace, "@maplibre/vt-pbf"), "dist/index.es.js.map"), [], []);
@@ -89,8 +87,8 @@ afterEach(() => {
 
 describe("versioned MapLibre worker assets", () => {
   it("pins the same-origin ESM worker and verifies the real installed assets", () => {
-    expect(MAPLIBRE_VERSION).toBe("6.11.2");
-    expect(MAPLIBRE_WORKER_URL).toBe("/maplibre/6.11.2/maplibre-gl-worker.mjs");
+    expect(MAPLIBRE_VERSION).toBe("6.14.0");
+    expect(MAPLIBRE_WORKER_URL).toBe("/maplibre/6.14.0/maplibre-gl-worker.mjs");
     expect(mapLibreWorkerNoticeSources).toHaveLength(16);
     expect(() => assertMapLibreWorkerAssets()).not.toThrow();
   });
@@ -104,7 +102,7 @@ describe("versioned MapLibre worker assets", () => {
     }
   });
 
-  it("copies both unmodified modules and the complete license only on explicit prepare", () => {
+  it("copies the unmodified worker and the complete license only on explicit prepare", () => {
     const { workspace, packageRoot, publicRoot, versionRoot } = fixture();
     expect(() => assertMapLibreWorkerAssets(workspace)).toThrow();
     expect(readdirSync(publicRoot)).toEqual([]);
@@ -177,7 +175,7 @@ describe("versioned MapLibre worker assets", () => {
 
   it("rejects a new nested bundled package without resolving its files", () => {
     const { workspace, packageRoot, publicRoot } = fixture();
-    writeSourceMap(resolve(packageRoot, "dist/maplibre-gl-shared.mjs.map"),
+    writeSourceMap(resolve(packageRoot, "dist/maplibre-gl-worker.mjs.map"),
       ["../node_modules/@maplibre/maplibre-gl-style-spec/dist/node_modules/unreviewed/index.mjs"], ["unreviewed"]);
     expect(() => prepareMapLibreWorkerAssets(workspace)).toThrow(/Unreviewed MapLibre bundled package/);
     expect(readdirSync(publicRoot)).toEqual([]);
@@ -188,6 +186,31 @@ describe("versioned MapLibre worker assets", () => {
     writeSourceMap(resolve(noticeRoot(workspace, "@maplibre/geojson-vt"), "dist/geojson-vt.mjs.map"), [], []);
     expect(() => prepareMapLibreWorkerAssets(workspace)).toThrow(/package set differs/);
     expect(readdirSync(publicRoot)).toEqual([]);
+  });
+
+  it.each([
+    ["a static named import", "import{a as b}from\"./maplibre-gl-shared.mjs\";self.worker=b;"],
+    ["a side-effect import", "/** banner */\nimport\"./maplibre-gl-shared.mjs\";"],
+    ["a namespace import", "import * as s from './maplibre-gl-shared.mjs';"],
+    ["a re-export", "export{a}from\"./maplibre-gl-shared.mjs\";"],
+    ["a star re-export", "export * from './chunk.mjs';"],
+    ["a literal dynamic import", "async function f(){await import(\"./chunk.mjs\")}"],
+  ])("rejects a worker that loads another module through %s", (_kind, worker) => {
+    expect(() => assertSelfContainedMapLibreWorker(Buffer.from(worker))).toThrow(/imports another module/);
+    const { workspace, packageRoot, publicRoot } = fixture();
+    writeFileSync(resolve(packageRoot, "dist/maplibre-gl-worker.mjs"), worker);
+    expect(() => prepareMapLibreWorkerAssets(workspace)).toThrow(/imports another module/);
+    expect(readdirSync(publicRoot)).toEqual([]);
+  });
+
+  it("accepts the worker's variable plugin import and import wording in strings", () => {
+    for (const worker of [
+      "async function LS(e){if(e.endsWith(`.mjs`)){await import(\n/* @vite-ignore */\ne);return}}",
+      "Error(`RTL Text Plugin failed to import scripts from ${n}`);/^[ \\t]*(import|export)\\s/m.test(n);",
+      "export{RS as default};\n//# sourceMappingURL=maplibre-gl-worker.mjs.map\n",
+    ]) {
+      expect(() => assertSelfContainedMapLibreWorker(Buffer.from(worker))).not.toThrow();
+    }
   });
 
   it("rejects embedded source content that differs from the installed source", () => {
@@ -243,14 +266,14 @@ describe("versioned MapLibre worker assets", () => {
   it("rejects missing, extra, and symlinked tracked assets", () => {
     const { workspace, packageRoot, versionRoot } = fixture();
     prepareMapLibreWorkerAssets(workspace);
-    const sharedPath = resolve(versionRoot, "maplibre-gl-shared.mjs");
-    rmSync(sharedPath);
+    const workerPath = resolve(versionRoot, "maplibre-gl-worker.mjs");
+    rmSync(workerPath);
     expect(() => assertMapLibreWorkerAssets(workspace)).toThrow(/exactly/);
-    symlinkSync(resolve(packageRoot, "dist/maplibre-gl-shared.mjs"), sharedPath);
+    symlinkSync(resolve(packageRoot, "dist/maplibre-gl-worker.mjs"), workerPath);
     expect(() => assertMapLibreWorkerAssets(workspace)).toThrow(/regular/);
-    rmSync(sharedPath);
-    writeFileSync(sharedPath, readFileSync(resolve(packageRoot, "dist/maplibre-gl-shared.mjs")));
-    writeFileSync(resolve(versionRoot, "unexpected.mjs"), "extra");
+    rmSync(workerPath);
+    writeFileSync(workerPath, readFileSync(resolve(packageRoot, "dist/maplibre-gl-worker.mjs")));
+    writeFileSync(resolve(versionRoot, "maplibre-gl-shared.mjs"), "");
     expect(() => assertMapLibreWorkerAssets(workspace)).toThrow(/exactly/);
   });
 });

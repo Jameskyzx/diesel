@@ -23,6 +23,7 @@ import {
   countries,
   countryJurisdictions,
   dataSources,
+  engineFeedback,
   jurisdictions,
   marketMetrics,
   regulationLimits,
@@ -1114,6 +1115,45 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
             },
           );
 
+          const engineFeedbackRows = await collectGovernanceSnapshotRowsInBatches(
+            async (cursor, limit) => {
+              const batch = await read("engine_feedback", async (transaction) => {
+                const db = transaction;
+                const rows = await db
+                  .select()
+                  .from(engineFeedback)
+                  .where(
+                    cursor === null ? undefined : gt(engineFeedback.id, cursor),
+                  )
+                  .orderBy(asc(engineFeedback.id))
+                  .limit(limit);
+                const timestamps = await db.execute(sql`
+                  select 'engine_feedback' as "tableName", id::text as "rowKey",
+                         jsonb_build_object(
+                           'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'updatedAt', to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                           'archivedAt', to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+                         ) as timestamps
+                    from engine_feedback
+                   where (${cursor}::uuid is null or id > ${cursor}::uuid)
+                   order by id
+                   limit ${limit}
+                `);
+                return { rows, timestamps };
+              });
+              const rows = governanceSnapshotBatchedRowSchema.array().parse(
+                batch.rows,
+              );
+              const timestamps = parseMatchingTimestampBatch(
+                rows.map((row) => row.id),
+                batch.timestamps,
+                "engine_feedback",
+              );
+              basePreciseTimestampRows.push(...timestamps);
+              return rows;
+            },
+          );
+
           const governanceDraftRows = await collectGovernanceSnapshotRowsInBatches(
             async (cursor, limit) =>
               read("data_governance_drafts", async (transaction) => {
@@ -1202,6 +1242,7 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
             data_change_logs: changeLogRows,
             data_governance_drafts: governanceDraftRows,
             data_sources: dataSourceBatch.rows,
+            engine_feedback: engineFeedbackRows,
             jurisdictions: jurisdictionBatch.rows,
             market_import_batches: marketImportBatchRows,
             market_metrics: marketMetricRows,
@@ -1292,7 +1333,7 @@ function prepareGovernanceSnapshot(acquired: AcquiredGovernanceSnapshotRows) {
     parseRawGovernanceJsonRows(acquired.rawJsonResult),
   );
   const snapshot = parseGovernanceSnapshot({
-    formatVersion: 5,
+    formatVersion: 6,
     exportedAt: new Date().toISOString(),
     tableCounts: createGovernanceTableCounts(tables),
     tables,

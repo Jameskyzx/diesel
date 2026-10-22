@@ -25,6 +25,11 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   The pre-migration `pg_dump` from the VPS did not complete over the slow Supabase link; the
   operator confirmed a recent Supabase-managed backup instead. Browser and live-AI acceptance
   were not rerun against production after this release.
+- Not yet deployed: customer feedback capture (AI-drafted, human-confirmed `engine_feedback`,
+  Migration `0015`, `postal-mime` and `@napi-rs/canvas`), the model page `/products/<model>`,
+  the feedback comparison page, CSV/JSON export and the chat feedback lookup (ADR-276). The next
+  release needs `0015` applied and read back in the maintenance lock first, then a full release
+  (DEPLOYMENT.md §4.5); the governance snapshot is now v6.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health`.
 
@@ -57,6 +62,9 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   typecheck, coverage-gated Vitest, migrations, build, Playwright public/demo/FDE/CSP,
   secret scan, supply-chain audit, deployment contracts, Linux release handoff).
 - Offline AI eval: `pnpm ai:eval` (deterministic, no paid model).
+- Paid live AI eval: the chat prompt is now `sales-chat-system-v14` (feedback lookup); the
+  recorded runs below used `v13` or earlier and are not evidence for `v14`. No paid run has
+  been made on `v14`.
 - Paid live AI eval: `pnpm ai:eval:live` writes `docs/evals/ai-live-eval-latest.json`;
   see [evals/README.md](evals/README.md). Last recorded run, 2026-10-18 16:17 UTC, local
   uncommitted worktree (contract `sales-chat-live-v27`, `deepseek-flash`, prompt

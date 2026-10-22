@@ -1,3 +1,4 @@
+import { engineFeedbackDraftPayloadSchema } from "@/features/feedback/schemas";
 import {
   and,
   asc,
@@ -53,6 +54,7 @@ import {
   documents,
   jurisdictions,
   catalogEngines,
+  engineFeedback,
   marketImportBatches,
   marketMetrics,
   productCertifications,
@@ -110,7 +112,7 @@ function assertDocumentReprocessingDraftAccess(input: {
   );
 }
 
-type ImportEntityType = "market_metric" | "catalog_engine";
+type ImportEntityType = "market_metric" | "catalog_engine" | "engine_feedback";
 
 function requiredId(id: string | undefined, entityType: string): string {
   if (!id) {
@@ -991,6 +993,28 @@ export function createGovernanceRepository<
                 isNull(marketMetrics.archivedAt),
               ),
             );
+        } else if (input.entityType === "engine_feedback") {
+          const [before] = await transaction
+            .select()
+            .from(engineFeedback)
+            .where(
+              and(
+                eq(engineFeedback.id, input.entityKey),
+                isNull(engineFeedback.archivedAt),
+              ),
+            )
+            .limit(1)
+            .for("update");
+          beforeData = before ?? null;
+          await transaction
+            .update(engineFeedback)
+            .set({ archivedAt: now, updatedAt: now })
+            .where(
+              and(
+                eq(engineFeedback.id, input.entityKey),
+                isNull(engineFeedback.archivedAt),
+              ),
+            );
         } else if (input.entityType === "catalog_engine") {
           const [before] = await transaction
             .select()
@@ -1191,6 +1215,11 @@ export function createGovernanceRepository<
       batchId: string;
       /** Defaults to market metrics; catalogue batches pass catalog_engine. */
       entityType?: ImportEntityType;
+      /**
+       * Feedback batches only: the items a person checked and edited, which
+       * replace the AI preview rows. Other batch types confirm their preview.
+       */
+      confirmedRows?: readonly unknown[];
       reason: string;
     }) {
       const entityType = input.entityType ?? "market_metric";
@@ -1215,10 +1244,21 @@ export function createGovernanceRepository<
             "Import batch is missing or is no longer previewable.",
           );
         }
+        if (entityType === "engine_feedback" && !input.confirmedRows?.length) {
+          throw new GovernanceConflictError(
+            "A feedback batch needs at least one confirmed item.",
+          );
+        }
+        if (entityType !== "engine_feedback" && input.confirmedRows) {
+          throw new GovernanceConflictError(
+            "Only feedback batches accept edited items at confirmation.",
+          );
+        }
         if (
-          batch.invalidRows > 0 ||
-          batch.previewRows.length === 0 ||
-          batch.validationErrors.length > 0
+          entityType !== "engine_feedback" &&
+          (batch.invalidRows > 0 ||
+            batch.previewRows.length === 0 ||
+            batch.validationErrors.length > 0)
         ) {
           await transaction
             .update(marketImportBatches)
@@ -1236,7 +1276,10 @@ export function createGovernanceRepository<
           return { createdDrafts: 0, status: "rejected" as const };
         }
 
-        const parsedRows = batch.previewRows.map((row) => {
+        const parsedRows = entityType === "engine_feedback"
+          ? (input.confirmedRows ?? []).map((row) =>
+            engineFeedbackDraftPayloadSchema.parse({ ...(row as object), id: crypto.randomUUID(), sourceBatchId: input.batchId }))
+          : batch.previewRows.map((row) => {
           if (!row.parsed) {
             throw new GovernanceConflictError(
               "A valid preview batch contained an empty parsed row.",
@@ -1245,13 +1288,13 @@ export function createGovernanceRepository<
           return entityType === "catalog_engine"
             ? catalogEngineDraftPayloadSchema.parse(row.parsed)
             : marketMetricDraftPayloadSchema.parse(row.parsed);
-        });
+          });
         const now = new Date();
         const drafts = await transaction
           .insert(dataGovernanceDrafts)
           .values(
             parsedRows.map((payload) => {
-              const id = crypto.randomUUID();
+              const id = "id" in payload && typeof payload.id === "string" ? payload.id : crypto.randomUUID();
               return {
                 changeReason: input.reason,
                 createdBy: input.actor.email,
@@ -1315,6 +1358,8 @@ export function createGovernanceRepository<
         return {
           createdDrafts: drafts.length,
           status: "committed" as const,
+          // Feedback can be published right after confirmation by the same person.
+          ...(entityType === "engine_feedback" ? { draftIds: drafts.map(({ id }) => id) } : {}),
         };
       });
     },
@@ -1827,7 +1872,9 @@ export function createGovernanceRepository<
           importBatchId: batch.id,
           reason: input.entityType === "catalog_engine"
             ? "Spreadsheet preview created; no catalogue records were written."
-            : "CSV preview created; no market facts were written.",
+            : input.entityType === "engine_feedback"
+              ? "Feedback extraction preview created; no feedback was written."
+              : "CSV preview created; no market facts were written.",
         });
 
         return batch;
@@ -1905,7 +1952,9 @@ export function createGovernanceRepository<
         }
         if (
           draft.createdBy === input.actor.email &&
-          input.actor.role !== "admin"
+          input.actor.role !== "admin" &&
+          // Feedback is a field report one person may enter and publish.
+          draft.entityType !== "engine_feedback"
         ) {
           throw new GovernanceConflictError(
             "A draft creator cannot publish their own draft.",
@@ -1994,6 +2043,14 @@ export function createGovernanceRepository<
               eq(marketMetrics.dataSourceId, dataSources.id),
             )
             .where(eq(marketMetrics.id, draft.entityKey))
+            .limit(1)
+            .for("update");
+          formalEntityState = rowState(row);
+        } else if (draft.entityType === "engine_feedback") {
+          const [row] = await transaction
+            .select({ archivedAt: engineFeedback.archivedAt })
+            .from(engineFeedback)
+            .where(eq(engineFeedback.id, draft.entityKey))
             .limit(1)
             .for("update");
           formalEntityState = rowState(row);
@@ -2909,6 +2966,57 @@ export function createGovernanceRepository<
             throw error;
           }
           afterData = { ...payload, id };
+        } else if (draft.entityType === "engine_feedback") {
+          const payload = engineFeedbackDraftPayloadSchema.parse(draft.payload);
+          const id = requiredId(payload.id, draft.entityType);
+          const [engine] = await transaction
+            .select({ archivedAt: catalogEngines.archivedAt, modelCode: catalogEngines.modelCode })
+            .from(catalogEngines)
+            .where(eq(catalogEngines.id, payload.catalogEngineId))
+            .limit(1);
+          if (!engine || engine.archivedAt) {
+            throw new GovernanceConflictError(
+              "Feedback must reference an active catalogue engine.",
+            );
+          }
+          const [before] = await transaction
+            .select()
+            .from(engineFeedback)
+            .where(eq(engineFeedback.id, id))
+            .limit(1)
+            .for("update");
+          beforeData = before ?? null;
+          const values = {
+            archivedAt: null,
+            catalogEngineId: payload.catalogEngineId,
+            category: payload.category,
+            component: payload.component,
+            countryIso3: payload.countryIso3,
+            customerRef: payload.customerRef,
+            customerRequest: payload.customerRequest,
+            evidenceQuote: payload.evidenceQuote,
+            evidenceVerified: payload.evidenceVerified,
+            isDemo: payload.isDemo,
+            modelCode: engine.modelCode,
+            occurredOn: payload.occurredOn,
+            quantityAffected: payload.quantityAffected,
+            receivedOn: payload.receivedOn,
+            requestedPowerKw: payload.requestedPowerKw,
+            requestedPowerUnit: payload.requestedPowerUnit,
+            requestedPowerValue: payload.requestedPowerValue,
+            severity: payload.severity,
+            sourceBatchId: payload.sourceBatchId,
+            sourceKind: payload.sourceKind,
+            sourceLanguage: payload.sourceLanguage,
+            symptom: payload.symptom,
+            system: payload.system,
+            tags: payload.tags,
+          };
+          await transaction
+            .insert(engineFeedback)
+            .values({ ...values, id })
+            .onConflictDoUpdate({ set: { ...values, updatedAt: now }, target: engineFeedback.id });
+          afterData = { ...payload, id, modelCode: engine.modelCode };
         } else if (draft.entityType === "catalog_engine") {
           const payload = catalogEngineDraftPayloadSchema.parse(draft.payload);
           await requirePublishableSources([
@@ -3788,7 +3896,8 @@ export function createGovernanceRepository<
         }
         if (
           draft.createdBy === input.actor.email &&
-          input.actor.role !== "admin"
+          input.actor.role !== "admin" &&
+          draft.entityType !== "engine_feedback"
         ) {
           throw new GovernanceConflictError(
             "A reviewer cannot review their own draft.",

@@ -380,7 +380,7 @@ Migration `0011` 先拒绝已有负下界或 `max <= min` 的记录，再追加�
 记录规格书“声明”的内容，与 `products`/`product_certifications` 的“已审批产品 + 认证”分开，
 从不作为认证。只经治理草稿发布写入：管理后台 xlsx 导入（预览批次 → 逐行草稿 → 审核 →
 发布），或 `pnpm db:ingest-demo-catalogue`（完整发布的 fixture 队列会自动运行）发布虚构 Demo
-目录固定数据（`src/server/db/seed/demo-engine-catalog.json`）。该表属于治理快照 v5（ADR-274）。
+目录固定数据（`src/server/db/seed/demo-engine-catalog.json`）。该表属于治理快照（v5 起，ADR-274）。
 
 | 字段 | 约束 | 说明 |
 | --- | --- | --- |
@@ -400,6 +400,34 @@ rated_power_kw, rated_speed_rpm, power_min_kw, power_max_kw, displacement_l, cyl
 aftertreatment, emission_label, declared_citation_codes, data_source_id, verified_at, is_demo`。
 列表单元格用 `;` 分隔（法规编号本身可能含逗号）。缺列、未知列或重复列使整表失败；同一文件
 重复型号、功率带越界等逐行报错，有任何错误的批次确认时整体拒绝。
+
+### 7.7 `engine_feedback` 与 `feedback_source_files`（客户反馈，Migration `0015`）
+
+客户对某个目录机型的反馈（故障、性能需求、服务、商务、资料等），是一线报告，不是对发动机的已核实事实。
+只经治理草稿发布写入（实体 `engine_feedback`）：编辑在后台上传聊天截图、纸质单据照片、PDF（含扫描件）、
+`.eml` 邮件或粘贴文字，模型通过 `record_feedback` 工具只输出转写与反馈草稿（`engine-feedback-v1`），
+服务端再做原文依据核对、数字核对、联系方式隐去、型号精确匹配、国家匹配和 hp/PS → kW 换算；预览存为
+`market_import_batches`（`entity_type = engine_feedback`），确认时以人工核对后的条目整体创建草稿。
+与其他实体不同，同一个 reviewer/admin 可以录入并发布自己的反馈（ADR-276）。
+
+| 字段 | 约束 | 说明 |
+| --- | --- | --- |
+| `catalog_engine_id` | FK `catalog_engines` NOT NULL | 发布时目录机型必须有效；`model_code` 记录发布时的型号 |
+| `country_iso3` | FK `countries`，可空 | 未注明国家时为空 |
+| `occurred_on` / `received_on` | date；发生日不晚于收到日 | 趋势按发生月，无发生日时按收到月 |
+| `category`、`system`、`severity` | CHECK 枚举 | 模型建议、人工确认 |
+| `component`、`symptom`、`customer_request`、`tags[]` | text | 原文语言；标签最多 5 个 |
+| `requested_power_value/unit/kw` | 三者同空或同填，unit ∈ kW/hp/PS | 原值与原单位保留，kW 由服务端换算 |
+| `evidence_quote`、`evidence_verified` | NOT NULL | 已隐去联系方式的原文摘录；只有未改动且在原文中找到的摘录为 true |
+| `source_kind`、`source_language` | | 聊天截图 / 纸质照片 / PDF / 邮件 / 文字 |
+| `source_batch_id` | FK `market_import_batches`，可空 | 指向识别批次；演示数据为空 |
+| `customer_ref` | text，可空 | 客户内部编号，不记客户名；只在后台可见 |
+| `is_demo` | | 公开读取（机型页、对比页、导出、对话）只返回 `is_demo = true` 且机型为演示机型的记录 |
+
+`feedback_source_files` 记录批次的原始上传（文件名、类型、大小、SHA-256、存储路径），文件按内容哈希
+存于私有存储 `.data/<KNOWLEDGE_STORAGE_ROOT>/feedback/<sha256>/content`，只有后台编辑可读。`batch_id`
+有意不设外键，使治理恢复删除批次时文件记录仍保留。`engine_feedback` 属于治理快照 v6，
+`feedback_source_files` 不在快照内，但两表都在代码发布的数据库指纹清单中。
 
 ## 8. Product-fit 与营销评分
 

@@ -19,6 +19,8 @@ import {
 } from "@/server/auth/admin-auth";
 import { GovernanceMaintenanceError } from "@/server/db/governance-maintenance-lock";
 import { GovernanceConflictError } from "@/server/repositories/governance-repository";
+import { AiConfigurationError } from "@/server/ai/model";
+import { FeedbackExtractionError, FeedbackInputError } from "@/server/services/feedback-errors";
 import { GovernancePermissionError } from "@/server/services/governance-service";
 import {
   readFormDataRequest,
@@ -228,6 +230,15 @@ export async function handleAdminRoute(
         error.message,
         error.code === "FILE_TOO_LARGE" ? 413 : 400,
       );
+    } else if (error instanceof FeedbackInputError) {
+      errorCode = error.code;
+      response = errorResponse(error.code, error.message, error.code === "FILE_TOO_LARGE" ? 413 : 400);
+    } else if (error instanceof FeedbackExtractionError) {
+      errorCode = "AI_EXTRACTION_FAILED";
+      response = errorResponse("AI_EXTRACTION_FAILED", error.message, 502);
+    } else if (error instanceof AiConfigurationError) {
+      errorCode = "AI_NOT_CONFIGURED";
+      response = errorResponse("AI_NOT_CONFIGURED", error.message, 503);
     } else if (error instanceof RequestBodyTooLargeError) {
       errorCode = "PAYLOAD_TOO_LARGE";
       response = errorResponse(

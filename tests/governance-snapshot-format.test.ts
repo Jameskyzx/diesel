@@ -17,6 +17,7 @@ function emptySnapshot() {
     data_change_logs: [] as object[],
     data_governance_drafts: [] as object[],
     data_sources: [] as object[],
+    engine_feedback: [] as object[],
     jurisdictions: [] as object[],
     market_import_batches: [] as object[],
     market_metrics: [] as object[],
@@ -25,7 +26,7 @@ function emptySnapshot() {
   };
   return {
     exportedAt: "2026-08-11T00:00:00.000Z",
-    formatVersion: 5,
+    formatVersion: 6,
     tableCounts: Object.fromEntries(
       Object.keys(tables).map((tableName) => [tableName, 0]),
     ),
@@ -326,12 +327,13 @@ describe("governance snapshot format", () => {
     expect(() => parseGovernanceSnapshot(snapshot)).toThrow();
   });
 
-  it("accepts the exact v5 table set and matching counts", () => {
-    expect(parseGovernanceSnapshot(emptySnapshot()).formatVersion).toBe(5);
+  it("accepts the exact v6 table set and matching counts", () => {
+    expect(parseGovernanceSnapshot(emptySnapshot()).formatVersion).toBe(6);
   });
 
-  it("fails closed on a v4 file instead of restoring without the catalogue", () => {
+  it("fails closed on v4 and v5 files instead of restoring without newer tables", () => {
     expect(() => parseGovernanceSnapshot({ ...emptySnapshot(), formatVersion: 4 })).toThrow();
+    expect(() => parseGovernanceSnapshot({ ...emptySnapshot(), formatVersion: 5 })).toThrow();
   });
 
   it("keeps catalogue engines inside the source closure", () => {

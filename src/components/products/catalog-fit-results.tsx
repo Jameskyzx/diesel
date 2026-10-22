@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CatalogRecordSpecs, catalogCategoryLabel, catalogFictionalNotice } from "@/components/products/catalog-results";
 import type { CatalogFitEvaluation, CatalogFitResult, CatalogFitStatus } from "@/features/product-catalog/schemas";
 import { formatUtcDate } from "@/i18n/date";
@@ -26,7 +27,7 @@ function FitCard({ evaluation, result, locale }: { evaluation: CatalogFitEvaluat
   const zh = locale === "zh-CN";
   const missing = result.applicableRegulations.filter(regulation => evaluation.undeclaredRegulationIds.includes(regulation.regulationId));
   return <article className={`rounded-lg border-2 ${statusCopy[evaluation.status].tone} bg-card p-4 space-y-2`} data-testid="catalog-fit-card" data-status={evaluation.status}>
-    <h3 className="font-semibold">{evaluation.record.model}</h3>
+    <h3 className="font-semibold"><Link className="hover:underline" href={`/products/${encodeURIComponent(evaluation.record.model)}`}>{evaluation.record.model}</Link></h3>
     <p className="text-sm">{evaluation.record.series} · {catalogCategoryLabel(evaluation.record.category, locale)}</p>
     <p className="text-sm font-medium">{zh ? statusCopy[evaluation.status].zh : statusCopy[evaluation.status].en}</p>
     <p className="text-sm">{zh ? reasonCopy[evaluation.reason].zh : reasonCopy[evaluation.reason].en}</p>

@@ -83,6 +83,8 @@ describe("database migration and demo seed", () => {
       "data_sources",
       "document_chunks",
       "documents",
+      "engine_feedback",
+      "feedback_source_files",
       "jurisdictions",
       "market_import_batches",
       "market_metrics",

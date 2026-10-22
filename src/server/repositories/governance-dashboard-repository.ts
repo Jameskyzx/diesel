@@ -20,6 +20,7 @@ import {
   catalogEngines,
   countries,
   dataChangeLogs,
+  engineFeedback,
   dataGovernanceDrafts,
   dataSources,
   documents,
@@ -33,6 +34,7 @@ import {
 type GovernanceDashboardSchema = {
   catalogEngines: typeof catalogEngines;
   countries: typeof countries;
+  engineFeedback: typeof engineFeedback;
   dataChangeLogs: typeof dataChangeLogs;
   dataGovernanceDrafts: typeof dataGovernanceDrafts;
   dataSources: typeof dataSources;
@@ -258,6 +260,7 @@ export function createGovernanceDashboardRepository<
       );
       const marketMetricIds = uniqueValues(targetValues("market_metric"));
       const catalogEngineIds = uniqueValues(targetValues("catalog_engine"));
+      const feedbackIds = uniqueValues(targetValues("engine_feedback"));
       const documentIds = uniqueValues(targetValues("document"));
 
       const identityPredicates = Array.from(
@@ -284,6 +287,7 @@ export function createGovernanceDashboardRepository<
         documentRows,
         reprocessedDocumentDraftRows,
         catalogEngineRows,
+        feedbackRows,
       ] = await Promise.all([
         database
           .selectDistinctOn(
@@ -465,6 +469,12 @@ export function createGovernanceDashboardRepository<
               .innerJoin(dataSources, eq(catalogEngines.dataSourceId, dataSources.id))
               .where(inArray(catalogEngines.id, catalogEngineIds))
           : Promise.resolve([]),
+        feedbackIds.length > 0
+          ? database
+              .select({ archivedAt: engineFeedback.archivedAt, id: engineFeedback.id })
+              .from(engineFeedback)
+              .where(inArray(engineFeedback.id, feedbackIds))
+          : Promise.resolve([]),
       ]);
 
       const documentDataSourceIdById = new Map(
@@ -618,6 +628,12 @@ export function createGovernanceDashboardRepository<
         rootStateByIdentity.set(
           governanceEntityIdentity("catalog_engine", row.id),
           rowState(row.archivedAt, row.sourceArchivedAt),
+        );
+      }
+      for (const row of feedbackRows) {
+        rootStateByIdentity.set(
+          governanceEntityIdentity("engine_feedback", row.id),
+          rowState(row.archivedAt, null),
         );
       }
       for (const row of documentRows) {

@@ -21,6 +21,7 @@ const usage = {
 
 type DemoAction =
   | { type: "catalog"; query: { query: string } }
+  | { type: "feedback"; query: { modelCode: string } }
   | { type: "evidence"; task: ConversationState["tasks"][number]; countryIso3: string | null; sourceQuery: string | null; marketPeriod: null;
       marketScope?: ConversationState["applicationScope"]; sourceScope?: ConversationState["applicationScope"] }
   | { type: "answer"; message: string };
@@ -66,6 +67,7 @@ function lastToolResult(prompt: readonly unknown[]): unknown {
   return undefined;
 }
 
+const feedbackPattern = /反馈|投诉|客户问题|常见问题|feedback|complaint/iu;
 const catalogPattern = /\b(?:catalog(?:ue)?|DEMO-[A-Z]+\d*)\b|目录|型号库/iu;
 
 export function selectPortfolioDemoAction(userTexts: readonly string[]): { state: ConversationState; action: DemoAction } {
@@ -91,6 +93,10 @@ export function selectPortfolioDemoAction(userTexts: readonly string[]): { state
   if (context.hasScopeConflict) {
     return { state, action: { type: "answer", message: "scope_conflict" } };
   }
+  const feedbackModel = /\bDEMO-[A-Z0-9]+(?:-[A-Z0-9]+)*/u.exec(latest)?.[0];
+  if (context.activeTask === null && feedbackModel && feedbackPattern.test(latest)) {
+    return { state, action: { type: "feedback", query: { modelCode: feedbackModel } } };
+  }
   if (context.activeTask === null && catalogPattern.test(latest)) {
     const model = /\bDEMO-[A-Z0-9-]+/u.exec(latest)?.[0] ?? "";
     return { state, action: { type: "catalog", query: { query: model } } };
@@ -114,7 +120,7 @@ export function selectPortfolioDemoAction(userTexts: readonly string[]): { state
   }
 }
 
-type DemoTask = ConversationState["tasks"][number] | "catalog";
+type DemoTask = ConversationState["tasks"][number] | "catalog" | "feedback";
 
 const taskSummaries: Record<DemoTask, { en: string; zh: string }> = {
   product_fit: { en: "The product-fit-v2 deterministic match is complete. Review regulatory/certification fit, query-date availability, and commercial readiness in the structured card. The offline demo uses explicitly fictional product and certification fixtures.",
@@ -131,6 +137,8 @@ const taskSummaries: Record<DemoTask, { en: string; zh: string }> = {
     zh: "已检索可追溯文档证据。命中内容、页码或章节、有效期和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。" },
   country_profile: { en: "The country profile was queried. Review current effective rules, future adopted rules, verification time, and sources in the structured card. The offline demo uses explicitly fictional fixtures.",
     zh: "已查询国家资料。当前有效法规、未来已采纳法规、核验时间和来源以结构化卡片为准；离线 Demo 只使用明确标记的虚构演示数据。" },
+  feedback: { en: "Published feedback for this model was looked up. The counts and records below come from the server; all demo feedback is fictional.",
+    zh: "已查询该型号已发布的客户反馈。下方计数和记录由服务端生成；演示反馈均为虚构示例。" },
   catalog: { en: "The fictional demo catalogue was searched. Review the declared ratings and citations in the cards; declarations are not certification.",
     zh: "已检索虚构 Demo 目录。声明的参数和法规编号以卡片为准；声明不等于认证。" },
 };
@@ -165,6 +173,7 @@ function previousTask(prompt: readonly unknown[]): DemoTask | null {
       const input = typeof part.input === "string" ? JSON.parse(part.input) as unknown : part.input;
       const action = isRecord(input) && isRecord(input.action) ? input.action : null;
       if (action?.type === "catalog") return "catalog";
+      if (action?.type === "feedback") return "feedback";
       if (action?.type === "evidence" && typeof action.task === "string") return action.task as DemoTask;
     }
   }

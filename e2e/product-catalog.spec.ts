@@ -92,3 +92,38 @@ test("refuses a brief without valid selection conditions", async ({ page, contex
   await expect(page.getByRole("alert").filter({ hasText: "简报条件无效" })).toBeVisible();
   await expect(page.getByTestId("customer-brief")).toHaveCount(0);
 });
+
+for (const locale of ["en", "zh-CN"] as const) {
+  test(`${locale} model page shows fictional feedback with trend, filters and export`, async ({page,context,baseURL}) => {
+    const zh = locale === "zh-CN";
+    await context.addCookies([{name:"diesel_locale",value:locale,url:baseURL!}]);
+    await page.goto("/products?query=DEMO-H13-460E");
+    await page.getByTestId("catalog-record").getByRole("link",{name:zh ? "参数与客户反馈" : "Specs and customer feedback"}).click();
+    await expect(page).toHaveURL(/\/products\/DEMO-H13-460E$/u);
+    await page.goto("/products/DEMO-H13-460");
+    await expect(page.getByRole("heading",{name:"DEMO-H13-460",level:1})).toBeVisible();
+    await expect(page.getByTestId("feedback-record")).toHaveCount(3);
+    await expect(page.getByRole("img",{name:zh ? /每月反馈数/u : /Feedback per month/u})).toBeVisible();
+    await expect(page.getByTestId("feedback-record").first()).toContainText(zh ? "虚构示例" : "Fictional example");
+    await page.getByRole("combobox",{name:zh ? "类别" : "Category"}).selectOption("failure");
+    await page.getByRole("button",{name:zh ? "筛选" : "Filter"}).click();
+    await expect(page).toHaveURL(/category=failure/u);
+    await expect(page.getByTestId("feedback-record")).toHaveCount(2);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+    const csv = await page.request.get("/api/product-feedback?modelCode=DEMO-H13-460&format=csv");
+    expect(csv.headers()["content-type"]).toContain("text/csv");
+    const body = await csv.text();
+    expect(body.startsWith("﻿modelCode,")).toBe(true);
+    expect(body.trim().split("\r\n")).toHaveLength(4);
+
+    await page.goto("/products/feedback");
+    const row = page.getByRole("row").filter({hasText:"DEMO-H13-460"}).first();
+    await expect(row).toContainText("3");
+    await row.getByRole("link",{name:"DEMO-H13-460"}).click();
+    await expect(page).toHaveURL(/\/products\/DEMO-H13-460$/u);
+    // The root loading boundary streams pages, so an unknown model renders the 404 screen.
+    await page.goto("/products/DEMO-NOT-A-MODEL");
+    await expect(page.getByRole("heading",{name:"404",level:1})).toBeVisible();
+  });
+}

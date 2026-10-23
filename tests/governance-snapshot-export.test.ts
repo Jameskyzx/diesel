@@ -44,6 +44,7 @@ const emptyTableCounts = {
   data_change_logs: 0,
   data_governance_drafts: 0,
   data_sources: 0,
+  engine_feedback: 0,
   jurisdictions: 0,
   market_import_batches: 0,
   market_metrics: 0,
@@ -53,7 +54,7 @@ const emptyTableCounts = {
 
 const emptySnapshot = {
   exportedAt: "2026-08-11T00:00:00.000Z",
-  formatVersion: 5,
+  formatVersion: 6,
   tableCounts: emptyTableCounts,
   tables: {
     catalog_engines: [],
@@ -62,6 +63,7 @@ const emptySnapshot = {
     data_change_logs: [],
     data_governance_drafts: [],
     data_sources: [],
+    engine_feedback: [],
     jurisdictions: [],
     market_import_batches: [],
     market_metrics: [],

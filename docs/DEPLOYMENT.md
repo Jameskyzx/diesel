@@ -2402,6 +2402,22 @@ Migration `0014_governed_catalog_engines.sql` 新增 `catalog_engines` 表、`ca
 （`applicationDataTables`）同时包含该表。旧 v4 备份不能用新代码恢复，首次 v5 发布会在写入前导出
 新快照并完成恢复演练。
 
+### 4.5 客户反馈（Migration `0015`）
+
+Migration `0015_engine_feedback.sql` 新增 `engine_feedback`、`feedback_source_files` 表和
+`engine_feedback` 治理实体值，新增依赖 `postal-mime`（读 .eml）与 `@napi-rs/canvas`（把扫描版 PDF
+渲染成图片），因此首次发布必须走完整发布，且**必须先按 §4.4 的顺序在维护锁内应用 `0015` 并读回**：
+新代码导出的治理快照 v6 读取 `engine_feedback`，表不存在时发布会在写入前回滚。`0015` 只新增表和枚举值，
+旧 release 可在迁移后继续运行。
+
+- 发布的 fixture 队列运行的 `ingest-demo-catalogue.ts` 会在目录之后经治理发布 14 条虚构演示反馈
+  （日志 `demo feedback: N published, M kept`）；已存在的演示反馈保持不动，不覆盖后台修改。
+- 反馈识别使用已配置的 `AI_MULTIMODAL_MODEL`（读图）；`deepseek-flash` 已于 2026-10-23 实测能读图。
+  识别失败返回 502 且不写入任何内容；`pnpm demo`/`demo:fde` 用离线规则模型，只识别文字。
+- 原始上传按内容哈希保存在私有存储 `.data/<KNOWLEDGE_STORAGE_ROOT>/feedback/`，与知识库文档同一持久化
+  与备份范围；知识库孤儿文件扫描只看顶层哈希目录，不会把反馈原件当作孤儿。
+- 上传请求上限 9 MiB（Nginx `client_max_body_size 10m` 之内），单文件 5 MiB、最多 8 个文件。
+
 ### CI 构建产物交付
 
 Linux handoff 在与 VPS 一致的 Ubuntu 22.04 / x64 / Node 22.22.3 上完成真实构建、

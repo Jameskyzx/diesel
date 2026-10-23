@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { z } from "zod";
 
+import { FeedbackCapturePanel, type AdminJsonRequest } from "@/components/admin/feedback-capture-panel";
 import { Button } from "@/components/ui/button";
 import {
   appendDocumentMetadata,
@@ -102,6 +103,7 @@ const documentReprocessResponseSchema = z
 
 const entityLabels = {
   catalog_engine: "目录发动机",
+  engine_feedback: "客户反馈",
   country: "国家数据",
   data_source: "数据来源",
   document: "文档",
@@ -354,6 +356,9 @@ function adminActionFetch(
   );
   return fetch(input, { ...init, headers });
 }
+
+const adminJsonRequest: AdminJsonRequest = async (principal, url, init, schema) =>
+  responseJsonAs(await adminActionFetch(principal, url, init), schema, principal);
 
 class AdminResponseError extends Error {
   readonly code: string | null;
@@ -1134,6 +1139,12 @@ export function AdminDashboard({
           </div>
 
           <CatalogImportForm busy={busy} runAction={runAction} />
+          <FeedbackCapturePanel
+            busy={busy}
+            canPublish={currentPrincipal?.role === "reviewer" || currentPrincipal?.role === "admin"}
+            request={adminJsonRequest}
+            runAction={runAction}
+          />
           <DocumentAdminForms busy={busy} runAction={runAction} />
           <SourceVerificationForm
             busy={busy}

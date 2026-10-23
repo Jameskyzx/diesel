@@ -1,5 +1,6 @@
 /**
- * Publishes the fictional demo engine catalogue through governance:
+ * Publishes the fictional demo engine catalogue and its fictional customer
+ * feedback through governance:
  *
  *   pnpm db:ingest-demo-catalogue
  *
@@ -19,6 +20,7 @@ import {
   demoCatalogSource,
   demoCatalogVerifiedAt,
 } from "../../src/server/db/seed/demo-engine-catalog";
+import { demoFeedbackDraftPayloads } from "../../src/server/db/seed/demo-engine-feedback";
 import { createGovernanceRepository } from "../../src/server/repositories/governance-repository";
 
 const editor = { email: "catalogue-ingest-editor@automation.local", role: "editor" as const };
@@ -42,7 +44,7 @@ async function main() {
   const client = postgres(getDatabaseUrl(), { max: 1, prepare: false });
   const database = drizzle(client, { schema });
   const governance = createGovernanceRepository(database);
-  const publish = async (entityType: "data_source" | "catalog_engine", entityKey: string, payload: Record<string, unknown>) => {
+  const publish = async (entityType: "data_source" | "catalog_engine" | "engine_feedback", entityKey: string, payload: Record<string, unknown>) => {
     const draft = await governance.createDraft({ actor: editor, changeReason: reason, entityKey, entityType, payload });
     await governance.reviewDraft({ actor: reviewer, draftId: draft.id, reason });
     await governance.publishDraft({ actor: reviewer, draftId: draft.id, reason });
@@ -72,6 +74,22 @@ async function main() {
       process.stdout.write(`catalog_engine ${payload.modelCode}: published\n`);
     }
     process.stdout.write(`catalogue: ${published} published, ${unchanged} unchanged\n`);
+
+    // Demo feedback is published once per fixture id; an existing active row is
+    // kept as is, so a later edit in the admin is never overwritten here.
+    let feedbackPublished = 0;
+    let feedbackKept = 0;
+    for (const payload of demoFeedbackDraftPayloads()) {
+      const [row] = await database.select({ id: schema.engineFeedback.id }).from(schema.engineFeedback)
+        .where(and(eq(schema.engineFeedback.id, payload.id), isNull(schema.engineFeedback.archivedAt))).limit(1);
+      if (row) {
+        feedbackKept += 1;
+        continue;
+      }
+      await publish("engine_feedback", payload.id, payload);
+      feedbackPublished += 1;
+    }
+    process.stdout.write(`demo feedback: ${feedbackPublished} published, ${feedbackKept} kept\n`);
   } finally {
     await client.end();
   }

@@ -43,10 +43,11 @@ export function CatalogResults({ result, locale }: { result: CatalogResult; loca
     {result.records.length === 0 && <p>{zh ? "没有匹配记录。可尝试只输入型号前缀，或取消筛选。" : "No matching records. Try a model prefix or fewer filters."}</p>}
     <div className="grid gap-3 md:grid-cols-2">
       {result.records.map(record => <article key={record.id} className="rounded-lg border bg-card p-4 space-y-2" data-testid="catalog-record">
-        <h2 className="font-semibold">{record.model}</h2>
+        <h2 className="font-semibold"><Link className="hover:underline" href={`/products/${encodeURIComponent(record.model)}`}>{record.model}</Link></h2>
         <p className="text-sm">{record.series} · {catalogCategoryLabel(record.category, locale)} · <span className="font-mono text-xs">{record.id}</span></p>
         <CatalogRecordSpecs record={record} locale={locale} />
         <div className="flex flex-wrap gap-4 text-sm text-primary">
+          <Link href={`/products/${encodeURIComponent(record.model)}`}>{zh ? "参数与客户反馈" : "Specs and customer feedback"}</Link>
           <Link href={`/chat?prompt=${encodeURIComponent(zh ? `请查看产品资料记录 ${record.id}（${record.model}），再帮我逐步核对目标市场适配。不要将目录排放声明当成认证。` : `Review catalogue record ${record.id} (${record.model}), then help assess target-market fit. Do not treat catalogue emission declarations as certification.`)}`}>{zh ? "用此型号开始分析" : "Analyze this model"}</Link></div>
       </article>)}
     </div>

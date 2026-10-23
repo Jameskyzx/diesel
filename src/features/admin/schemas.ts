@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { findOverlappingMembershipIndexes } from "@/domain/admin/jurisdiction-membership";
+import { engineFeedbackDraftPayloadSchema } from "@/features/feedback/schemas";
 import { catalogCategorySchema } from "@/features/product-catalog/schemas";
 import {
   applicationScopeSchema,
@@ -60,6 +61,7 @@ export const governedEntityTypes = [
   "document",
   "jurisdiction",
   "catalog_engine",
+  "engine_feedback",
 ] as const;
 export const governedEntityTypeSchema = z.enum(governedEntityTypes);
 
@@ -72,6 +74,7 @@ const uuidGovernedEntityTypeSchema = z.enum([
   "document",
   "jurisdiction",
   "catalog_engine",
+  "engine_feedback",
 ]);
 
 export const governedEntityReferenceSchema = z.union([
@@ -646,6 +649,13 @@ export const governanceDraftCreateSchema = z.discriminatedUnion(
         payload: catalogEngineDraftPayloadSchema,
       })
       .strict(),
+    z
+      .object({
+        ...draftRequestBase,
+        entityType: z.literal("engine_feedback"),
+        payload: engineFeedbackDraftPayloadSchema,
+      })
+      .strict(),
   ],
 );
 
@@ -697,6 +707,7 @@ const dashboardWorkflowStatusSchema = z.enum(["draft", "reviewed"]);
 const governanceDashboardPayloadSchemas = {
   catalog_engine: catalogEngineDraftPayloadSchema,
   country: countryDraftPayloadSchema,
+  engine_feedback: engineFeedbackDraftPayloadSchema,
   data_source: dataSourceDraftPayloadSchema,
   document: documentDraftPayloadSchema,
   jurisdiction: jurisdictionDraftPayloadSchema,

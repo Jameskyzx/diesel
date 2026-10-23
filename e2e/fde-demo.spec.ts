@@ -94,3 +94,36 @@ test("runs the fictional CSV governance lifecycle and restores the query", async
   await page.goto(queryUrl);
   await expect(page.getByText("DEMO ONLY — FDE pipeline index")).toHaveCount(0);
 });
+
+test("drafts customer feedback with AI, publishes it and lists it internally", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "fde-demo-desktop");
+  test.setTimeout(120_000);
+
+  await page.goto("/__fde/persona?role=reviewer");
+  await expect(page.getByText("角色：reviewer", { exact: true })).toBeVisible();
+  const panel = page.getByTestId("feedback-capture");
+  await panel.getByLabel("或粘贴文字").fill("巴西客户：DEMO-N6-220 挖机油底壳那里一直渗油，电话 13800138000");
+  await panel.getByRole("button", { name: "AI 识别反馈" }).click();
+  await expect(page.getByText(/AI 识别出 1 条反馈/u)).toBeVisible();
+  const item = panel.getByTestId("feedback-item");
+  await expect(item).toContainText("依据已核对");
+  await expect(item).toContainText("摘录中的电话、邮箱或社交账号已隐去。");
+  await expect(item.getByLabel("机型")).toHaveValue("00000000-0000-4000-8000-000000000813");
+  await expect(item.getByLabel("国家")).toHaveValue("BRA");
+
+  await panel.getByLabel("客户内部编号（可选，不填客户名）").fill("BR-FDE-01");
+  await panel.getByRole("button", { name: "保存并发布" }).click();
+  await expect(page.getByText("已发布 1 条客户反馈。")).toBeVisible();
+
+  await panel.getByLabel("按型号筛选").fill("DEMO-N6-220");
+  await panel.getByRole("button", { name: "查询" }).click();
+  await expect(panel.getByText(/客户编号 BR-FDE-01/u)).toBeVisible();
+  await expect(panel.getByText("挖机油底壳那里一直渗油").first()).toBeVisible();
+
+  // Real feedback stays internal: the public model page shows only fictional examples.
+  await page.goto("/products/DEMO-N6-220");
+  await expect(page.getByTestId("feedback-record")).toHaveCount(2);
+  await expect(page.getByText(/BR-FDE-01/u)).toHaveCount(0);
+});

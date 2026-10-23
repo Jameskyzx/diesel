@@ -70,6 +70,19 @@ describe("single typed multi-turn catalogue harness", { timeout: 30_000 }, () =>
       expect(body).not.toContain('"status":"fit"');
     } finally { if(original === undefined) delete process.env.DATABASE_MODE; else process.env.DATABASE_MODE=original; }
   });
+  it("renders published feedback for a named model and refuses a model the user never named", async () => {
+    const finish = {state:empty,locale:"en",action:{type:"answer",message:"Review the records with the dealer before replying."}};
+    const lookup = {state:empty,locale:"en",action:{type:"feedback",query:{modelCode:"DEMO-H13-460"}}};
+    const body = await request(modelFor([lookup,finish]),"What customer feedback do we have for DEMO-H13-460?").text();
+    expect(body).toContain("DEMO-H13-460 has 3 published feedback records");
+    expect(body).toContain("fictional and comes from no real customer");
+    expect(body).toContain('"finishReason":"stop"');
+
+    const invented = {state:empty,locale:"en",action:{type:"feedback",query:{modelCode:"DEMO-N6-220"}}};
+    const refused = await request(modelFor([invented,{...finish,action:{type:"answer",message:"Which model should I look up?"}}]),"Any complaints about the truck engines?").text();
+    expect(refused).not.toContain("published feedback records");
+    expect(refused).toContain("Which model should I look up?");
+  });
   it("retains grounded country edits after an incomplete tool call and asks only for the missing field", async () => {
     const state: ConversationState = {...empty,tasks:["product_fit"],countryIso3s:["DEU"],applicationScope:"on-road-truck",productModelCode:"DEMO-H10-375"};
     const model = modelFor([{state,locale:"en",action:{type:"evidence",task:"product_fit",countryIso3:null,sourceQuery:null,marketPeriod:null}},

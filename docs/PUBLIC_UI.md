@@ -42,6 +42,23 @@ a failed catalogue read renders an alert.
   language), and translations should be reviewed by a native speaker before a brief
   is sent. Invalid conditions or unavailable regulation data render an alert, not a
   brief.
+- Model page and customer feedback: every catalogue card and selection result links to
+  `/products/<model>`, which shows the model's ratings and declaration, then its published
+  feedback: total and per-category counts, a high/safety count, a monthly bar chart (by
+  problem date, or received date; empty months stay visible), filters by category, country
+  and severity in the URL, and the record list with symptom, request, country, dates, units,
+  requested power (original unit and kW), tags, source kind and the evidence quote.
+  `/products/feedback` compares models (counts by category and high/safety) and links to each
+  model page. `/api/product-feedback?modelCode=&category=&countryIso3=&severity=&format=csv|json`
+  exports the same records; CSV is UTF-8 with a byte-order mark and neutralises formula
+  cells. Public reads return only fictional demo feedback, labelled "Fictional example";
+  real customer feedback is visible only in the admin workspace. An unknown model renders
+  the 404 page; unavailable feedback renders an alert.
+- Feedback in chat: a request naming one model (for example "What feedback do we have for
+  DEMO-H13-460?") runs the harness `feedback` action. The server renders the counts, the
+  most affected systems and up to five recent records plus the fictional-data note; the
+  model may not write those facts, and a model code the user did not write (and no
+  catalogue result returned) is refused.
 - Browse: search model, series or declaration text, category and rated power.
   Selecting a model prepares a chat question; it does not automatically send a
   paid request or establish legal applicability. Catalogue cards survive chat

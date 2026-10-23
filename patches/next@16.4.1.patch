@@ -1,18 +1,14 @@
 diff --git a/dist/esm/server/serve-static.js b/dist/esm/server/serve-static.js
-index a7d5d1c789035321f1d5a8d771b3a52a5d29151f..c5c02518c9e05205063fc1f6228984998fc99c09 100644
+index a4b340aeced2fdb68283ad39737cb950b3b94902..96a991ad966282ada89e0a54eed57f026a0bf293 100644
 --- a/dist/esm/server/serve-static.js
 +++ b/dist/esm/server/serve-static.js
-@@ -17,16 +17,44 @@ send.mime.define({
+@@ -17,12 +17,40 @@ send.mime.define({
  });
  export function serveStatic(req, res, path, opts) {
      return new Promise((resolve, reject)=>{
 -        send(req, path, opts).on('directory', ()=>{
 -            // We don't allow directories to be read.
--            const err = Object.defineProperty(new Error('No directory access'), "__NEXT_ERROR_CODE", {
--                value: "E340",
--                enumerable: false,
--                configurable: true
--            });
+-            const err = new Error('No directory access');
 -            err.code = 'ENOENT';
 -            reject(err);
 -        }).on('error', reject).pipe(res).on('finish', resolve);
@@ -43,11 +39,7 @@ index a7d5d1c789035321f1d5a8d771b3a52a5d29151f..c5c02518c9e05205063fc1f622898499
 +            // cannot become an unhandled event or change the first outcome.
 +            send(req, path, opts).on('directory', ()=>{
 +                // We don't allow directories to be read.
-+                const err = Object.defineProperty(new Error('No directory access'), "__NEXT_ERROR_CODE", {
-+                    value: "E340",
-+                    enumerable: false,
-+                    configurable: true
-+                });
++                const err = new Error('No directory access');
 +                err.code = 'ENOENT';
 +                onError(err);
 +            }).on('error', onError).pipe(res);
@@ -58,20 +50,16 @@ index a7d5d1c789035321f1d5a8d771b3a52a5d29151f..c5c02518c9e05205063fc1f622898499
  }
  export const getContentType = 'getType' in send.mime ? (extWithoutDot)=>send.mime.getType(extWithoutDot) : (extWithoutDot)=>send.mime.lookup(extWithoutDot);
 diff --git a/dist/server/serve-static.js b/dist/server/serve-static.js
-index 198a2c9ac6d6852a4e7cb308e0f1c7c0eaabf901..14c16ccdef925e5f36f13ce6add21cba078aa8a7 100644
+index 6ddb9fd8a8e94e0289c7d3cef6f8956b9d989779..14dc72e1935e6e27bae55700ad51db1959645e20 100644
 --- a/dist/server/serve-static.js
 +++ b/dist/server/serve-static.js
-@@ -48,16 +48,44 @@ _send.default.mime.define({
+@@ -48,12 +48,40 @@ _send.default.mime.define({
  });
  function serveStatic(req, res, path, opts) {
      return new Promise((resolve, reject)=>{
 -        (0, _send.default)(req, path, opts).on('directory', ()=>{
 -            // We don't allow directories to be read.
--            const err = Object.defineProperty(new Error('No directory access'), "__NEXT_ERROR_CODE", {
--                value: "E340",
--                enumerable: false,
--                configurable: true
--            });
+-            const err = new Error('No directory access');
 -            err.code = 'ENOENT';
 -            reject(err);
 -        }).on('error', reject).pipe(res).on('finish', resolve);
@@ -102,11 +90,7 @@ index 198a2c9ac6d6852a4e7cb308e0f1c7c0eaabf901..14c16ccdef925e5f36f13ce6add21cba
 +            // cannot become an unhandled event or change the first outcome.
 +            (0, _send.default)(req, path, opts).on('directory', ()=>{
 +                // We don't allow directories to be read.
-+                const err = Object.defineProperty(new Error('No directory access'), "__NEXT_ERROR_CODE", {
-+                    value: "E340",
-+                    enumerable: false,
-+                    configurable: true
-+                });
++                const err = new Error('No directory access');
 +                err.code = 'ENOENT';
 +                onError(err);
 +            }).on('error', onError).pipe(res);

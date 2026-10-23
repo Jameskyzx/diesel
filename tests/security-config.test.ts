@@ -7,6 +7,8 @@ import {
   PHASE_DEVELOPMENT_SERVER,
   PHASE_PRODUCTION_BUILD,
 } from "next/constants";
+import { ImageOptimizerCache } from "next/dist/server/image-optimizer";
+import { imageConfigDefault } from "next/dist/shared/lib/image-config";
 
 import {
   APPLICATION_SECURITY_HEADERS,
@@ -113,6 +115,35 @@ describe("security and immutable asset configuration", () => {
         "@electric-sql/pglite-pgvector",
         "@napi-rs/canvas",
       ]);
+  });
+
+  it("lets the image optimizer decode only the repository brand assets", () => {
+    const images = {
+      ...imageConfigDefault,
+      ...createNextConfig(PHASE_PRODUCTION_BUILD).images,
+    };
+    // Next's own request validation runs before any fetch or decode.
+    const validate = (url: string) => ImageOptimizerCache.validateParams(
+      { headers: {} } as Parameters<typeof ImageOptimizerCache.validateParams>[0],
+      { url, w: "96", q: "75" },
+      { images } as Parameters<typeof ImageOptimizerCache.validateParams>[2],
+      false,
+    );
+
+    expect(validate("/brand/diesel-chibi.png")).not.toHaveProperty("errorMessage");
+    for (const url of [
+      "/og.jpg",
+      "/portfolio/example.png",
+      "/api/admin/documents/1/file",
+      "/brand/diesel-chibi.png?variant=1",
+      "/brand/../api/health",
+      "https://example.com/brand/diesel-chibi.png",
+    ]) {
+      expect(validate(url), url).toHaveProperty("errorMessage");
+    }
+    expect(images.remotePatterns).toEqual([]);
+    expect(images.dangerouslyAllowSVG).toBe(false);
+    expect(images.unoptimized).toBe(false);
   });
 
   it("redirects geometry to a versioned immutable URL", async () => {

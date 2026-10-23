@@ -70,6 +70,11 @@ export function createNextConfig(phase: string): NextConfig {
     typescript: {
       tsconfigPath: isPlaywrightE2e ? "tsconfig.e2e.json" : "tsconfig.json",
     },
+    // The optimizer only resizes the repository-owned brand icon. Other
+    // same-origin routes and remote hosts never reach the image decoder.
+    images: {
+      localPatterns: [{ pathname: "/brand/**", search: "" }],
+    },
     async headers() {
       return [
         {

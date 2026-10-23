@@ -17,6 +17,7 @@ overrides:
   "postcss@8.4.31": 8.5.23
   "qs@6.15.3": 6.16.0
   "undici@7.29.0": 7.29.1
+  "vite@8.1.5": 8.1.6
   sharp: 0.35.5
 packageExtensions:
   "@next/eslint-plugin-next@16.3.6":
@@ -24,8 +25,8 @@ packageExtensions:
       tinyglobby: 0.2.17
 patchedDependencies:
   '@next/eslint-plugin-next@16.3.6': patches/@next__eslint-plugin-next@16.3.6.patch
-  "@vitest/runner@4.1.11": patches/@vitest__runner@4.1.11.patch
-  next@16.3.8: patches/next@16.3.8.patch
+  "@vitest/runner@4.1.12": patches/@vitest__runner@4.1.12.patch
+  next@16.4.1: patches/next@16.4.1.patch
   postgres@3.4.9: patches/postgres@3.4.9.patch
   vaul@1.1.2: patches/vaul@1.1.2.patch
 verifyDepsBeforeRun: false

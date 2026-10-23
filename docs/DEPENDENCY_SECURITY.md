@@ -67,7 +67,7 @@ when their locked versions or the workspace hash changes.
 
 ### Pinned Next static-file cancellation correction
 
-`patches/next@16.3.8.patch` changes only the installed CJS and ESM
+`patches/next@16.4.1.patch` changes only the installed CJS and ESM
 `serve-static.js` handlers. The original implementation settled on `finish`
 but could wait indefinitely when the client disconnected before delivery.
 The correction registers finish/close/error listeners before file I/O and
@@ -80,7 +80,11 @@ The patch is registered through pnpm and the lockfile. It was originally applied
 to 16.3.3 without changing the package version, dependency, lifecycle hook or
 cleanup deadline. The 2026-09-30 security update retargets the byte-identical
 patch to 16.3.6; the two installed patched handlers are byte-identical across
-these versions. The pre-install CI
+these versions. The 2026-10-23 security update ports it to 16.4.1: upstream
+still resolves only on `finish`, and the only upstream change in these two
+handlers is a plain `Error` for directory rejection instead of the
+`__NEXT_ERROR_CODE` wrapper; the port keeps that upstream line and is otherwise
+identical. The pre-install CI
 guard binds both the workspace configuration and the exact patch bytes, and
 its digest remains pinned by every relevant workflow job. Missing, changed or
 symlinked patch files fail before pnpm setup. The 30 installed-runtime
@@ -99,7 +103,7 @@ pnpm 配置、锁文件和安装前 CI 校验共同绑定补丁字节；缺失�
 
 ### Pinned Vitest task-event timer correction
 
-`patches/@vitest__runner@4.1.11.patch` clears the expired throttle timer handle
+`patches/@vitest__runner@4.1.12.patch` clears the expired throttle timer handle
 before invoking its callback. In the installed runner, a callback firing at or
 just before the 100ms boundary retained that handle, so queued task events could
 remain undelivered until another event arrived. A deterministic clock regression
@@ -134,6 +138,63 @@ This closure does not hash package bytes or recursively attest the store, so it
 must not be described as package provenance or signature verification. pnpm's
 offline flag also does not prove that arbitrary test subprocesses cannot use
 the network.
+
+## 2026-10-23 Next.js and Vitest toolchain advisory remediation
+
+`pnpm audit:security` failed on master after advisories published 2026-10-22/23:
+critical [GHSA-2464-fhr4-w9xw](https://github.com/advisories/GHSA-2464-fhr4-w9xw)
+(image-optimizer RCE through an upstream decoder memory bug on glibc Linux) and
+[GHSA-673q-mjm6-r5xr](https://github.com/advisories/GHSA-673q-mjm6-r5xr)
+(`use cache` functions returning typed arrays), high
+[GHSA-p3m5-59mp-jv5r](https://github.com/advisories/GHSA-p3m5-59mp-jv5r)
+(App Router Server Action CPU exhaustion), all `next >=16.0.0 <=16.4.0`, fixed
+in `16.4.1`; plus development-only `vite <=8.1.5` (high GHSA-587h-7wmj-h5pm and
+three moderate rows) and `@vitest/mocker <4.1.12` (two moderate rows). The
+pre-update observation was 2 critical, 2 high, 5 moderate and 1 low rows.
+
+`next` moves to `16.4.1`, the lowest fixed release (published
+2026-10-14T17:43Z; no 16.3.x backport exists). `vitest` and
+`@vitest/coverage-v8` move to `4.1.12` (published 2026-10-15), which resolves
+`@vitest/mocker` and `@vitest/runner` `4.1.12`. Vitest's `vite ^8` range would
+otherwise keep the locked `8.1.5`, so the exact override `vite@8.1.5: 8.1.6`
+selects the lowest fixed vite release (published 2026-10-06) in the same
+minor line. `eslint-config-next` and its reviewed glob patch stay at `16.3.6`:
+no advisory names them. The lockfile changes only Next and its `@next/env` /
+SWC packages, the Vitest family, vite, and vite's `picomatch` deduplicating
+from `4.0.5` to the already-locked `4.0.7` within its declared `^4.0.5` range.
+The `next`, `@vitest/runner` and `vite` tarballs used for the patch review
+matched their registry integrity values.
+The post-update audit reports zero advisory rows at every severity; the
+exception register stays empty.
+
+The static-file patch is ported to `patches/next@16.4.1.patch` (see above) and
+its 30 installed-runtime regressions pass on 16.4.1. The runner's shipped
+`dist` is byte-identical between `4.1.11` and `4.1.12` apart from
+`package.json` versions, so `patches/@vitest__runner@4.1.12.patch` is the
+byte-identical runner patch under its new name; the installed file contains the
+corrected timer line. The workspace and patch hashes in the install-boundary
+guard, and the guard digest in every CI job, follow the new files.
+
+Reachability, recorded for the release decision and not as a reason to skip the
+upgrade: the deployed release already locks `sharp@0.35.5`, which the image
+advisory names as its workaround; application source has no `use server` or
+`use cache` directive. The image optimizer is still used: the header renders
+the 1.26 MB, 1254 px brand PNG at 44 px through `next/image`; chat previews are
+already `unoptimized`. Setting `images.unoptimized` globally would remove the
+`/_next/image` endpoint but send the full PNG on every page. Instead
+`images.localPatterns` now admits only `/brand/**` without a query string, so
+Next rejects every other same-origin route (including API routes) and every
+remote URL with 400 before fetching or decoding. Remote patterns stay empty and
+SVG stays disallowed. A regression drives Next's own parameter validation and
+fails without the restriction. This change alone is not evidence of a passing
+release or production deployment.
+
+2026-10-23：Next 图片优化与 `use cache` 两项严重漏洞、Server Actions 拒绝服务高危
+漏洞要求升级至 16.4.1；开发依赖 vite 与 Vitest mocker 同时升级至最低修复版本
+8.1.6 / 4.1.12。静态文件补丁移植到 16.4.1（仅保留上游目录错误写法），Vitest
+runner 补丁原样沿用。生产已锁定 sharp 0.35.5、源码无 `use server` / `use cache`，
+但这不替代升级。图片优化仍用于品牌图标，因此不全局关闭，而是只允许 `/brand/**`
+进入解码器。升级后审计零告警，不登记豁免；尚未发布。
 
 ## 2026-10-08 Next.js image-optimization advisory remediation
 

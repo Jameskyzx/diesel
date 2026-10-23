@@ -66,6 +66,8 @@ export function createNextConfig(phase: string): NextConfig {
     serverExternalPackages: [
       "@electric-sql/pglite",
       "@electric-sql/pglite-pgvector",
+      // Native renderer for scanned PDF pages in feedback extraction.
+      "@napi-rs/canvas",
     ],
     typescript: {
       tsconfigPath: isPlaywrightE2e ? "tsconfig.e2e.json" : "tsconfig.json",

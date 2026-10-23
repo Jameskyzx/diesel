@@ -20,6 +20,7 @@ export const governanceTableNames = [
   "data_change_logs",
   "data_governance_drafts",
   "data_sources",
+  "engine_feedback",
   "jurisdictions",
   "market_import_batches",
   "market_metrics",
@@ -127,6 +128,10 @@ const preciseTimestampConfig: Record<
       "updatedAt",
       "archivedAt",
     ]),
+  },
+  engine_feedback: {
+    key: (row) => String(row.id),
+    properties: new Set(["createdAt", "updatedAt", "archivedAt"]),
   },
   jurisdictions: {
     key: (row) => String(row.id),
@@ -464,8 +469,47 @@ const catalogEngineRowSchema = z
     "Catalogue rated power must lie inside its half-open power band",
   );
 
+const engineFeedbackRowSchema = z
+  .object({
+    archivedAt: nullableTimestampSchema,
+    catalogEngineId: uuidSchema,
+    category: z.enum(["failure", "quality", "performance_request", "service_parts", "commercial", "documentation", "other"]),
+    component: z.string().nullable(),
+    countryIso3: iso3Schema.nullable(),
+    createdAt: timestampSchema,
+    customerRef: z.string().nullable(),
+    customerRequest: z.string().nullable(),
+    evidenceQuote: z.string(),
+    evidenceVerified: z.boolean(),
+    id: uuidSchema,
+    isDemo: z.boolean(),
+    modelCode: z.string(),
+    occurredOn: nullableDateSchema,
+    quantityAffected: z.number().int().positive().nullable(),
+    receivedOn: dateSchema,
+    requestedPowerKw: z.number().positive().nullable(),
+    requestedPowerUnit: z.enum(["kW", "hp", "PS"]).nullable(),
+    requestedPowerValue: z.number().positive().nullable(),
+    severity: z.enum(["low", "medium", "high", "safety"]),
+    sourceBatchId: nullableUuidSchema,
+    sourceKind: z.enum(["chat_screenshot", "paper_photo", "pdf", "email", "text"]),
+    sourceLanguage: z.string().nullable(),
+    symptom: z.string(),
+    system: z.enum(["intake", "exhaust", "aftertreatment", "fuel", "cooling", "lubrication", "electronics", "power_output", "structure", "other"]),
+    tags: z.array(z.string()),
+    updatedAt: timestampSchema,
+  })
+  .strict()
+  .refine(
+    (row) =>
+      (row.requestedPowerValue === null) === (row.requestedPowerUnit === null) &&
+      (row.requestedPowerValue === null) === (row.requestedPowerKw === null),
+    "Requested power value, unit and kW must be set together",
+  );
+
 const governedEntityTypeSchema = z.enum([
   "catalog_engine",
+  "engine_feedback",
   "country",
   "regulation",
   "product",
@@ -517,7 +561,7 @@ const marketImportBatchRowSchema = z
     contentSha256: z.string().regex(/^[0-9a-f]{64}$/),
     createdAt: timestampSchema,
     createdBy: z.string(),
-    entityType: z.enum(["market_metric", "catalog_engine"]),
+    entityType: z.enum(["market_metric", "catalog_engine", "engine_feedback"]),
     id: uuidSchema,
     invalidRows: z.number().int().nonnegative(),
     originalFilename: z.string(),
@@ -630,6 +674,7 @@ const tablesSchema = z
     data_change_logs: z.array(changeLogRowSchema),
     data_governance_drafts: z.array(governanceDraftRowSchema),
     data_sources: z.array(sourceRowSchema),
+    engine_feedback: z.array(engineFeedbackRowSchema),
     jurisdictions: z.array(jurisdictionRowSchema),
     market_import_batches: z.array(marketImportBatchRowSchema),
     market_metrics: z.array(marketMetricRowSchema),
@@ -661,7 +706,7 @@ function reportDuplicateKeys(
 const governanceSnapshotSchema = z
   .object({
     exportedAt: timestampSchema,
-    formatVersion: z.literal(5),
+    formatVersion: z.literal(6),
     tableCounts: tableCountsSchema,
     tables: tablesSchema,
   })
@@ -716,6 +761,7 @@ const governanceSnapshotSchema = z
     );
     for (const tableName of [
       "catalog_engines",
+      "engine_feedback",
       "regulations",
       "regulation_limits",
       "market_metrics",
@@ -879,6 +925,33 @@ const governanceSnapshotSchema = z
         "dataSourceId",
       ),
     );
+    const catalogEngineIds = new Set(
+      snapshot.tables.catalog_engines.map((row) => row.id),
+    );
+    snapshot.tables.engine_feedback.forEach((row, index) => {
+      requireReference(
+        catalogEngineIds.has(row.catalogEngineId),
+        "engine_feedback",
+        index,
+        "catalogEngineId",
+      );
+      if (row.countryIso3 !== null) {
+        requireReference(
+          countryIds.has(row.countryIso3),
+          "engine_feedback",
+          index,
+          "countryIso3",
+        );
+      }
+      if (row.sourceBatchId !== null) {
+        requireReference(
+          batchIds.has(row.sourceBatchId),
+          "engine_feedback",
+          index,
+          "sourceBatchId",
+        );
+      }
+    });
     snapshot.tables.market_metrics.forEach((row, index) => {
       requireReference(
         countryIds.has(row.countryIso3),
@@ -986,7 +1059,7 @@ const governanceSnapshotSchema = z
             ? draftPayload.documentId
             : null;
 
-        // Documents are intentionally outside the v5 snapshot closure. Bind
+        // Documents are intentionally outside the v6 snapshot closure. Bind
         // the marker to its exported document draft and source here; runtime
         // publication additionally binds sourceId to documents.dataSourceId.
         requireReference(

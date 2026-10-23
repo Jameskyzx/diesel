@@ -113,6 +113,7 @@ describe("security and immutable asset configuration", () => {
       .toEqual([
         "@electric-sql/pglite",
         "@electric-sql/pglite-pgvector",
+        "@napi-rs/canvas",
       ]);
   });
 

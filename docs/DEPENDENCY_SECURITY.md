@@ -19,6 +19,12 @@ gate also recomputes every `info`/`low`/`moderate`/`high`/`critical` count from
 the advisory rows and rejects metadata drift. Informational, low, and moderate
 rows remain visible but do not require a high-severity exception.
 
+Runtime dependencies added for product features, each pinned exactly and released at
+least two weeks before adoption: `read-excel-file` 9.3.x (MIT; catalogue .xlsx import),
+`postal-mime` 4.0.5 (MIT-0, no dependencies; reads uploaded .eml feedback) and
+`@napi-rs/canvas` 1.0.10 (MIT, prebuilt native binaries per platform; renders scanned PDF
+pages for feedback recognition, kept in `serverExternalPackages`).
+
 Dependabot opens weekly pnpm/npm and GitHub Actions updates. A dependency update
 must pass lint, typecheck, application coverage, the independent Linux
 deployment-script contracts, the empty PostgreSQL + pgvector migration smoke,

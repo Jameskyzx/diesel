@@ -67,7 +67,7 @@ export function compareApplicationInputs(previousValue: unknown, candidateValue:
 
 export const applicationDataTables = [
   "catalog_engines", "countries", "country_jurisdictions", "data_change_logs", "data_governance_drafts",
-  "data_sources", "jurisdictions", "market_import_batches", "market_metrics",
+  "data_sources", "engine_feedback", "feedback_source_files", "jurisdictions", "market_import_batches", "market_metrics",
   "regulation_limits", "regulations", "products", "product_certifications",
   "documents", "document_chunks", "drizzle.__drizzle_migrations",
 ] as const;

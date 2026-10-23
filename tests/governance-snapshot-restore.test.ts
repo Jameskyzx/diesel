@@ -22,6 +22,7 @@ import { governanceMaintenanceTokenEnvironmentVariable } from "@/server/db/gover
 const ids = {
   batch: "00000000-0000-4000-8000-000000000008",
   catalogEngine: "00000000-0000-4000-8000-000000000010",
+  feedback: "00000000-0000-4000-8000-000000000011",
   draft: "00000000-0000-4000-8000-000000000007",
   extraBatch: "00000000-0000-4000-8000-000000000098",
   extraCatalogEngine: "00000000-0000-4000-8000-000000000087",
@@ -151,6 +152,37 @@ function buildSnapshot(): GovernanceSnapshot {
         verifiedAt: timestamp,
       },
     ],
+    engine_feedback: [
+      {
+        archivedAt: null,
+        catalogEngineId: ids.catalogEngine,
+        category: "failure",
+        component: "intake pipe",
+        countryIso3: "ZZZ",
+        createdAt: timestamp,
+        customerRef: "C-001",
+        customerRequest: "Reinforced pipe",
+        evidenceQuote: "intake pipe cracked after 800 hours",
+        evidenceVerified: true,
+        id: ids.feedback,
+        isDemo: false,
+        modelCode: "SNAPSHOT-120",
+        occurredOn: "2026-07-01",
+        quantityAffected: 2,
+        receivedOn: "2026-07-03",
+        requestedPowerKw: 372.85,
+        requestedPowerUnit: "hp",
+        requestedPowerValue: 500,
+        severity: "high",
+        sourceBatchId: ids.batch,
+        sourceKind: "text",
+        sourceLanguage: "en",
+        symptom: "Intake pipe cracked",
+        system: "intake",
+        tags: ["crack", "intake"],
+        updatedAt: timestamp,
+      },
+    ],
     jurisdictions: [
       {
         archivedAt: null,
@@ -254,7 +286,7 @@ function buildSnapshot(): GovernanceSnapshot {
   };
   return parseGovernanceSnapshot({
     exportedAt: timestamp,
-    formatVersion: 5,
+    formatVersion: 6,
     tableCounts: Object.fromEntries(
       Object.entries(tables).map(([tableName, rows]) => [
         tableName,
@@ -958,6 +990,7 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
         },
       ],
       data_sources: [],
+      engine_feedback: [],
       jurisdictions: [],
       market_import_batches: [],
       market_metrics: [],
@@ -979,7 +1012,7 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     ]);
     const snapshot = parseGovernanceSnapshot({
       exportedAt: timestamp,
-      formatVersion: 5,
+      formatVersion: 6,
       tableCounts: createGovernanceTableCounts(exportedTables),
       tables: exportedTables,
     });

@@ -93,6 +93,11 @@ async function readBoundedDocumentFile(target: string): Promise<Buffer> {
 export async function saveDocumentFile(input: {
   bytes: Uint8Array;
   contentSha256: string;
+  /**
+   * A sub-folder for files that are not knowledge documents (feedback
+   * originals). The orphan scan only walks top-level hash folders.
+   */
+  namespace?: "feedback";
 }): Promise<SavedDocumentFile> {
   assertDocumentByteLimit(input.bytes.byteLength);
   if (sha256(input.bytes) !== input.contentSha256) {
@@ -100,7 +105,9 @@ export async function saveDocumentFile(input: {
   }
 
   const root = resolveStorageRoot();
-  const storagePath = `${input.contentSha256}/content`;
+  const storagePath = input.namespace
+    ? `${input.namespace}/${input.contentSha256}/content`
+    : `${input.contentSha256}/content`;
   const target = resolve(root, storagePath);
   assertInsideStorageRoot(root, target);
   await mkdir(dirname(target), { recursive: true });

@@ -92,6 +92,7 @@ export const governedEntityTypeEnum = pgEnum("governed_entity_type", [
   "document",
   "jurisdiction",
   "catalog_engine",
+  "engine_feedback",
 ]);
 export const adminRoleEnum = pgEnum("admin_role", [
   "editor",
@@ -589,6 +590,83 @@ export const catalogEngines = pgTable(
       sql`${table.powerMinKw} >= 0 AND ${table.powerMaxKw} > ${table.powerMinKw} AND ${table.ratedPowerKw} >= ${table.powerMinKw} AND ${table.ratedPowerKw} < ${table.powerMaxKw} AND ${table.ratedSpeedRpm} > 0`),
     check("catalog_engines_geometry_check", sql`${table.displacementL} > 0 AND ${table.cylinders} > 0`),
     check("catalog_engines_application_scopes_check", sql`cardinality(${table.applicationScopes}) > 0`),
+  ],
+);
+
+/**
+ * Customer feedback about one catalogue engine, published only through
+ * governance after a person checked an AI-drafted extraction. Feedback is a
+ * field report, not a verified fact about the engine.
+ */
+export const engineFeedback = pgTable(
+  "engine_feedback",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    catalogEngineId: uuid("catalog_engine_id")
+      .notNull()
+      .references(() => catalogEngines.id, { onDelete: "restrict" }),
+    // The model code at publication time, kept for a readable audit trail.
+    modelCode: text("model_code").notNull(),
+    countryIso3: varchar("country_iso3", { length: 3 }).references(() => countries.iso3, { onDelete: "restrict" }),
+    occurredOn: date("occurred_on", { mode: "string" }),
+    receivedOn: date("received_on", { mode: "string" }).notNull(),
+    category: text("category").notNull(),
+    system: text("system").notNull(),
+    component: text("component"),
+    symptom: text("symptom").notNull(),
+    customerRequest: text("customer_request"),
+    tags: text("tags").array().default(sql`'{}'::text[]`).notNull(),
+    requestedPowerValue: numeric("requested_power_value", { mode: "number", precision: 12, scale: 3 }),
+    requestedPowerUnit: text("requested_power_unit"),
+    requestedPowerKw: numeric("requested_power_kw", { mode: "number", precision: 12, scale: 3 }),
+    quantityAffected: integer("quantity_affected"),
+    severity: text("severity").notNull(),
+    evidenceQuote: text("evidence_quote").notNull(),
+    evidenceVerified: boolean("evidence_verified").notNull(),
+    sourceKind: text("source_kind").notNull(),
+    sourceLanguage: text("source_language"),
+    sourceBatchId: uuid("source_batch_id").references(() => marketImportBatches.id, { onDelete: "restrict" }),
+    customerRef: text("customer_ref"),
+    isDemo: boolean("is_demo").default(false).notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+    archivedAt: timestamp("archived_at", { mode: "date", withTimezone: true }),
+  },
+  (table) => [
+    index("engine_feedback_engine_idx").on(table.catalogEngineId),
+    index("engine_feedback_country_idx").on(table.countryIso3),
+    check("engine_feedback_category_check", sql`${table.category} IN ('failure', 'quality', 'performance_request', 'service_parts', 'commercial', 'documentation', 'other')`),
+    check("engine_feedback_system_check", sql`${table.system} IN ('intake', 'exhaust', 'aftertreatment', 'fuel', 'cooling', 'lubrication', 'electronics', 'power_output', 'structure', 'other')`),
+    check("engine_feedback_severity_check", sql`${table.severity} IN ('low', 'medium', 'high', 'safety')`),
+    check("engine_feedback_source_kind_check", sql`${table.sourceKind} IN ('chat_screenshot', 'paper_photo', 'pdf', 'email', 'text')`),
+    check("engine_feedback_power_check", sql`(${table.requestedPowerValue} IS NULL AND ${table.requestedPowerUnit} IS NULL AND ${table.requestedPowerKw} IS NULL) OR (${table.requestedPowerValue} > 0 AND ${table.requestedPowerUnit} IN ('kW', 'hp', 'PS') AND ${table.requestedPowerKw} > 0)`),
+    check("engine_feedback_quantity_check", sql`${table.quantityAffected} IS NULL OR ${table.quantityAffected} > 0`),
+  ],
+);
+
+/**
+ * Original uploads behind a feedback extraction batch, kept for internal
+ * review only. The bytes live in private content-addressed storage; rows are
+ * not part of the governance snapshot and never reach a public read.
+ */
+export const feedbackSourceFiles = pgTable(
+  "feedback_source_files",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    // Deliberately not a foreign key: a governance restore may remove a batch
+    // while the private file record stays for audit.
+    batchId: uuid("batch_id").notNull(),
+    contentSha256: varchar("content_sha256", { length: 64 }).notNull(),
+    mediaType: text("media_type").notNull(),
+    originalFilename: text("original_filename").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    storagePath: text("storage_path").notNull(),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("feedback_source_files_batch_idx").on(table.batchId),
+    check("feedback_source_files_size_check", sql`${table.byteSize} > 0`),
   ],
 );
 

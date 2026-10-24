@@ -9,27 +9,26 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 ## Production / 线上
 
 - Public read-only demo: <https://diesel.jamesky.site>.
-- Last operator readback: 2026-10-20T01:56+00:00, `/api/health` `status=ok`, release
-  `3d099aea4e9118c25f1ab4a476714d738a9af78a`. This is an operator observation, not a
+- Last operator readback: 2026-10-24T12:42+00:00, `/api/health` `status=ok`, release
+  `066d44b6905ffed21ea50c563077691b1393b8dc`. This is an operator observation, not a
   continuously verified claim.
-- Release 2026-10-19 (full governance release, durable operation `4f1c7650`, completed
-  19:32 UTC, exit 0, host `COMMITTED` / `PUBLISH_FINALIZED`): the fictional catalogue and
-  target-market selection (`catalog-fit-v1`), the single harness AI path, the multilingual
-  customer brief and the governed catalogue are live. Migration `0014` was applied beforehand
-  in the maintenance lock and production readback verified it (15 repository migrations plus one
-  recognized legacy entry). The release exported and rehearsed a v5 governance snapshot,
-  published the 97-country fixtures and the 24-model demo catalogue; `/api/product-catalog`
-  returns 24 fictional models and `/`, `/products`, `/products/brief`, `/map` return 200.
-- The first attempt, `16274fc`, rolled back automatically before any governance write because
-  `0014` had not been applied (DEPLOYMENT.md §4.4); that one-use candidate is kept for audit.
-  The pre-migration `pg_dump` from the VPS did not complete over the slow Supabase link; the
-  operator confirmed a recent Supabase-managed backup instead. Browser and live-AI acceptance
-  were not rerun against production after this release.
-- Not yet deployed: customer feedback capture (AI-drafted, human-confirmed `engine_feedback`,
-  Migration `0015`, `postal-mime` and `@napi-rs/canvas`), the model page `/products/<model>`,
-  the feedback comparison page, CSV/JSON export and the chat feedback lookup (ADR-276). The next
-  release needs `0015` applied and read back in the maintenance lock first, then a full release
-  (DEPLOYMENT.md §4.5); the governance snapshot is now v6.
+- Release 2026-10-24 (full governance release, durable operation `11a8fcdb`, completed
+  12:40 UTC, exit 0, host `COMMITTED` / `PUBLISH_FINALIZED`): customer feedback capture
+  (AI-drafted, human-confirmed `engine_feedback`), the model page `/products/<model>`, the
+  feedback comparison page, CSV/JSON export, the chat feedback lookup (ADR-276) and the Next.js
+  16.4.1 / Vite 8.1.6 security upgrade are live. Migration `0015` was applied beforehand in the
+  maintenance lock and production readback verified it (16 repository migrations plus one
+  recognized legacy entry). The release exported and rehearsed a v6 governance snapshot,
+  republished the 97-country fixtures, kept the 24 catalogue models unchanged and published 14
+  fictional demo feedback records; `/api/product-feedback` returns 14 demo records and `/`,
+  `/products`, `/products/DEMO-H13-460`, `/products/feedback`, `/products/brief`, `/map` return
+  200.
+- Before `0015` only a schema-only `pg_dump` was taken (the migration adds tables and an enum
+  value and changes no existing rows; a full dump does not complete over the slow Supabase link).
+  Browser and live-AI acceptance were not rerun against production.
+- Not yet deployed: the 2026-10-24 dependency advisory fixes (`postal-mime` 4.0.8, `undici`
+  7.30.1; see DEPENDENCY_SECURITY.md). Production still runs `postal-mime` 4.0.5 for admin
+  `.eml` uploads until the next release.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health`.
 
@@ -37,9 +36,9 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 ```json
 {
   "publicRuntime": {
-    "observedAt": "2026-10-20T01:56+00:00",
+    "observedAt": "2026-10-24T12:42+00:00",
     "status": "ok",
-    "version": "3d099aea4e9118c25f1ab4a476714d738a9af78a"
+    "version": "066d44b6905ffed21ea50c563077691b1393b8dc"
   }
 }
 ```

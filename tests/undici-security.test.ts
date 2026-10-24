@@ -22,10 +22,10 @@ describe("removed undici consumer security boundary", () => {
       /^  '?(?:shadcn|@dotenvx\/dotenvx)@/mu,
     )).toBeNull();
     const packageNodes = lockfile.split("\npackages:\n")[1]!.split("\nsnapshots:\n")[0]!;
-    expect([...packageNodes.matchAll(/^  undici@([^:]+):/gmu)].map((match) => match[1])).toEqual(["7.29.1"]);
+    expect([...packageNodes.matchAll(/^  undici@([^:]+):/gmu)].map((match) => match[1])).toEqual(["7.30.1"]);
     const fromAi = createRequire(fromRepository.resolve("ai"));
     const fromProvider = createRequire(fromAi.resolve("@ai-sdk/provider-utils"));
     const manifest: unknown = JSON.parse(readFileSync(fromProvider.resolve("undici/package.json"), "utf8"));
-    expect(manifest).toMatchObject({ name: "undici", version: "7.29.1" });
+    expect(manifest).toMatchObject({ name: "undici", version: "7.30.1" });
   });
 });

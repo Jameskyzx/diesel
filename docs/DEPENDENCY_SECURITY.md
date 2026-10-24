@@ -21,7 +21,7 @@ rows remain visible but do not require a high-severity exception.
 
 Runtime dependencies added for product features, each pinned exactly and released at
 least two weeks before adoption: `read-excel-file` 9.3.x (MIT; catalogue .xlsx import),
-`postal-mime` 4.0.5 (MIT-0, no dependencies; reads uploaded .eml feedback) and
+`postal-mime` 4.0.8 (MIT-0, no dependencies; reads uploaded .eml feedback) and
 `@napi-rs/canvas` 1.0.10 (MIT, prebuilt native binaries per platform; renders scanned PDF
 pages for feedback recognition, kept in `serverExternalPackages`).
 
@@ -138,6 +138,29 @@ This closure does not hash package bytes or recursively attest the store, so it
 must not be described as package provenance or signature verification. pnpm's
 offline flag also does not prove that arbitrary test subprocesses cannot use
 the network.
+
+## 2026-10-24 postal-mime and undici advisory remediation
+
+`pnpm audit:security` failed on PR #119 after two high advisories published
+2026-10-23: [GHSA-f2hq-32vh-53cc](https://github.com/advisories/GHSA-f2hq-32vh-53cc)
+(`postal-mime >=3.0.0 <4.0.8`, quadratic CPU when decoding a header of many
+RFC 2047 encoded words) and [GHSA-xjj6-f33q-929c](https://github.com/advisories/GHSA-xjj6-f33q-929c)
+(`undici >=7.18.0 <7.30.1`, unhandled error on excessive content-encodings).
+`postal-mime` moves to `4.0.8` (published 2026-10-17), the lowest fixed release;
+it parses `.eml` files that a signed-in admin uploads for feedback capture, so
+the advisory was reachable by that role. The existing exact override for the
+AI SDK's `undici` edge moves from `7.29.1` to `7.30.1` (published 2026-10-15),
+the lowest fix in the same major line. Regenerating the lockfile also records
+the platform `optionalDependencies` of the already-locked `lightningcss@1.33.0`
+(Vite 8.1.6), which the previous lockfile omitted; no other package changes.
+The workspace hash in the install-boundary guard and the guard digest in every
+CI job follow the new workspace file. The post-update audit reports no high or
+critical rows; the exception register stays empty. This is not evidence of a
+production deployment.
+
+2026-10-24：postal-mime（邮件头解码 CPU 消耗）与 undici（过多 content-encoding
+未处理错误）两项高危，分别升级至最低修复版本 4.0.8 / 7.30.1，同步安装边界与 CI
+摘要链，不新增风险豁免；尚未发布到生产。
 
 ## 2026-10-23 Next.js and Vitest toolchain advisory remediation
 

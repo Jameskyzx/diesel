@@ -26,6 +26,9 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 - Before `0015` only a schema-only `pg_dump` was taken (the migration adds tables and an enum
   value and changes no existing rows; a full dump does not complete over the slow Supabase link).
   Browser and live-AI acceptance were not rerun against production.
+- Not yet deployed: the 2026-10-24 dependency advisory fixes (`postal-mime` 4.0.8, `undici`
+  7.30.1; see DEPENDENCY_SECURITY.md). Production still runs `postal-mime` 4.0.5 for admin
+  `.eml` uploads until the next release.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health`.
 

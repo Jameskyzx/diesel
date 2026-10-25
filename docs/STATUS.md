@@ -9,8 +9,8 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 ## Production / 线上
 
 - Public read-only demo: <https://diesel.jamesky.site>.
-- Last operator readback: 2026-10-24T12:42+00:00, `/api/health` `status=ok`, release
-  `066d44b6905ffed21ea50c563077691b1393b8dc`. This is an operator observation, not a
+- Last operator readback: 2026-10-24T19:35+00:00, `/api/health` `status=ok`, release
+  `ff65c21eb438958121e01067a3a2b7cc41b0146e`. This is an operator observation, not a
   continuously verified claim.
 - Release 2026-10-24 (full governance release, durable operation `11a8fcdb`, completed
   12:40 UTC, exit 0, host `COMMITTED` / `PUBLISH_FINALIZED`): customer feedback capture
@@ -26,9 +26,11 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 - Before `0015` only a schema-only `pg_dump` was taken (the migration adds tables and an enum
   value and changes no existing rows; a full dump does not complete over the slow Supabase link).
   Browser and live-AI acceptance were not rerun against production.
-- Not yet deployed: the 2026-10-24 dependency advisory fixes (`postal-mime` 4.0.8, `undici`
-  7.30.1; see DEPENDENCY_SECURITY.md). Production still runs `postal-mime` 4.0.5 for admin
-  `.eml` uploads until the next release.
+- Release 2026-10-24 (full governance release, durable operation `19264c12`, completed
+  19:33 UTC, exit 0, host `COMMITTED` / `PUBLISH_FINALIZED`): the dependency advisory fixes
+  `postal-mime` 4.0.8 and `undici` 7.30.1 (DEPENDENCY_SECURITY.md) are live and installed in the
+  release tree. No migration; the catalogue (24) and the 14 demo feedback records were kept
+  unchanged, and the public routes above return 200.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health`.
 
@@ -36,9 +38,9 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 ```json
 {
   "publicRuntime": {
-    "observedAt": "2026-10-24T12:42+00:00",
+    "observedAt": "2026-10-24T19:35+00:00",
     "status": "ok",
-    "version": "066d44b6905ffed21ea50c563077691b1393b8dc"
+    "version": "ff65c21eb438958121e01067a3a2b7cc41b0146e"
   }
 }
 ```

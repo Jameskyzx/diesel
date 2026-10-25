@@ -55,7 +55,7 @@ importers:
         version: 2.1.1
       drizzle-orm:
         specifier: 0.45.4
-        version: 0.45.4(@electric-sql/pglite@0.5.10)(postgres@3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb))
+        version: 0.45.4(@electric-sql/pglite@0.5.11)(postgres@3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb))
       lucide-react:
         specifier: 1.59.0
         version: 1.59.0(@types/react@19.3.0)(react@19.3.1)
@@ -112,11 +112,11 @@ importers:
         specifier: 4.14.0
         version: 4.14.0(playwright-core@1.64.1)
       '@electric-sql/pglite':
-        specifier: 0.5.10
-        version: 0.5.10
+        specifier: 0.5.11
+        version: 0.5.11
       '@electric-sql/pglite-pgvector':
-        specifier: ^0.0.11
-        version: 0.0.11(@electric-sql/pglite@0.5.10)
+        specifier: ^0.0.12
+        version: 0.0.12(@electric-sql/pglite@0.5.11)
       '@playwright/test':
         specifier: 1.64.1
         version: 1.64.1
@@ -277,13 +277,13 @@ packages:
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
 
-  '@electric-sql/pglite-pgvector@0.0.11':
-    resolution: {integrity: sha512-pUukU2iqI5TLBv/0D5Bk9R9zVyms+7Do6yscl4WRKW5pD2wNl8FlzGWDXphXj/Q42SsVIJHbP4+oqwjQC9fasg==}
+  '@electric-sql/pglite-pgvector@0.0.12':
+    resolution: {integrity: sha512-n3TJqjWI9FXwFrGhuTVMghef8SL3E6nb4lxZnxYFW3UTg/7/hMUWfz7v2y0+idWzEsQ/raRpMNCsw9zvSdC/SA==}
     peerDependencies:
-      '@electric-sql/pglite': 0.5.10
+      '@electric-sql/pglite': 0.5.11
 
-  '@electric-sql/pglite@0.5.10':
-    resolution: {integrity: sha512-tXc/25U3ulOkiRQuTFdwIv+JhBqtMdAF7Gvo6CfZZWtSB4+hgC4Wr2vwK5ngvvN5PJfAAEGIsfyCVy1JhCOBYw==}
+  '@electric-sql/pglite@0.5.11':
+    resolution: {integrity: sha512-SWuqsTjA4DDWqgZ05PC1RJaq8e00p5KACxbqaikDFQ8dIGA0SLRzuPniky7IW+q/c5RDNMdEXwv7mFBWIx9Hxw==}
 
   '@emnapi/core@1.10.0':
     resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
@@ -969,6 +969,13 @@ packages:
     peerDependencies:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
+
+  '@napi-rs/wasm-runtime@1.2.5':
+    resolution: {integrity: sha512-HshSvXzmBxNzqejd3k/KemgQ3hdREUYFRRrgxOZ+gPljDIsO2SDZrVZMd4Z/HsxudQbE62OVyVFE8z9BCurfjA==}
+    engines: {node: ^20.19.0 || ^22.13.0 || >=23.5.0}
+    peerDependencies:
+      '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
+      '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
 
   '@next/env@16.4.1':
     resolution: {integrity: sha512-5sUUrrSvs/2/2LnLoesybMGx12EtPB46fdZ6RhAw0XDGSPxU2LFyQBB7yuEiOFFJPKmBY6+q2jTr1/AMbnp0/g==}
@@ -3142,8 +3149,8 @@ packages:
     resolution: {integrity: sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.30:
-    resolution: {integrity: sha512-zkd+e9S1AQHhmaBKye9zlFHWjOwVgqXl1q3ECYy8561K7qxR2cREf/STLskulBFd78k6AOFeA+ff1TtEzk9bAA==}
+  postcss@8.5.31:
+    resolution: {integrity: sha512-YUbWYCgErwnMAVkjUnYa+KlMBzGpHwiIt/DE7f0G33AuX2LH9UcTk6KgWxd3zRU+pN3u/C+Xl3EnMLM4Hea7Sg==}
     engines: {node: ^10 || ^12 || >=14}
 
   postgres@3.4.9:
@@ -3916,11 +3923,11 @@ snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
 
-  '@electric-sql/pglite-pgvector@0.0.11(@electric-sql/pglite@0.5.10)':
+  '@electric-sql/pglite-pgvector@0.0.12(@electric-sql/pglite@0.5.11)':
     dependencies:
-      '@electric-sql/pglite': 0.5.10
+      '@electric-sql/pglite': 0.5.11
 
-  '@electric-sql/pglite@0.5.10': {}
+  '@electric-sql/pglite@0.5.11': {}
 
   '@emnapi/core@1.10.0':
     dependencies:
@@ -4398,7 +4405,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
-  '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
+  '@napi-rs/wasm-runtime@1.2.5(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:
       '@emnapi/core': 1.11.1
       '@emnapi/runtime': 1.11.1
@@ -4623,7 +4630,7 @@ snapshots:
     dependencies:
       '@emnapi/core': 1.11.1
       '@emnapi/runtime': 1.11.1
-      '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)
+      '@napi-rs/wasm-runtime': 1.2.5(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)
     optional: true
 
   '@rolldown/binding-win32-arm64-msvc@1.1.5':
@@ -5269,9 +5276,9 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.1
 
-  drizzle-orm@0.45.4(@electric-sql/pglite@0.5.10)(postgres@3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb)):
+  drizzle-orm@0.45.4(@electric-sql/pglite@0.5.11)(postgres@3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb)):
     optionalDependencies:
-      '@electric-sql/pglite': 0.5.10
+      '@electric-sql/pglite': 0.5.11
       postgres: 3.4.9(patch_hash=cca9fba040b69ac3e3aee8aadea6685104d741626f17b2c5ca86130d78d1dceb)
 
   dunder-proto@1.0.1:
@@ -6747,7 +6754,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.2
 
-  postcss@8.5.30:
+  postcss@8.5.31:
     dependencies:
       nanoid: 3.3.20
       picocolors: 1.1.1
@@ -7384,7 +7391,7 @@ snapshots:
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
-      postcss: 8.5.30
+      postcss: 8.5.31
       rolldown: 1.1.5
       tinyglobby: 0.2.17
     optionalDependencies:

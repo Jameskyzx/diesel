@@ -45,6 +45,9 @@ jobs:
           # One real starter, at most five provider steps, four scheduled runs/day.
           # No automatic retry; paid failures remain failures in the saved report.
           CANARY_CHECK_AI: ${{ github.event_name == 'schedule' || inputs.include_ai == true }}
+          # Production may already run this checked-out commit before its
+          # STATUS.md record merges; the canary accepts either exact SHA.
+          CANARY_MASTER_VERSION: ${{ github.sha }}
           CANARY_REPORT_PATH: artifacts/production-canary.json
           CANARY_STATUS_PATH: docs/STATUS.md
           CANARY_TIMEOUT_MS: "45000"

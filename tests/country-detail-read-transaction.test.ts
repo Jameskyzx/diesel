@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   createCountryRepository: vi.fn(),
   createRegulationRepository: vi.fn(),
   findByIso3: vi.fn(),
-  findDetailsByIso3: vi.fn(),
+  findDetailRowsByIso3: vi.fn(),
   findForComparison: vi.fn(),
   transaction: vi.fn(),
   transactionObject: { marker: "country-detail-snapshot" },
@@ -52,13 +52,13 @@ describe("country detail read transaction", () => {
     mocks.createCountryRepository.mockReset();
     mocks.createRegulationRepository.mockReset();
     mocks.findByIso3.mockReset();
-    mocks.findDetailsByIso3.mockReset();
+    mocks.findDetailRowsByIso3.mockReset();
     mocks.findForComparison.mockReset().mockResolvedValue([]);
     mocks.transaction.mockReset();
 
     mocks.createCountryRepository.mockReturnValue({
       findByIso3: mocks.findByIso3,
-      findDetailsByIso3: mocks.findDetailsByIso3,
+      findDetailRowsByIso3: mocks.findDetailRowsByIso3,
     });
     mocks.createRegulationRepository.mockReturnValue({
       findForComparison: mocks.findForComparison,
@@ -115,7 +115,7 @@ describe("country detail read transaction", () => {
     ).rejects.toMatchObject({ name: "AbortError" });
 
     expect(mocks.callbackRejected).toBe(true);
-    expect(mocks.findDetailsByIso3).not.toHaveBeenCalled();
+    expect(mocks.findDetailRowsByIso3).not.toHaveBeenCalled();
     expect(mocks.compareRegulationsFromRepositories).not.toHaveBeenCalled();
   });
 
@@ -143,8 +143,7 @@ describe("country detail read transaction", () => {
       verifiedAt,
     };
     mocks.findByIso3.mockResolvedValue(profile);
-    mocks.findDetailsByIso3.mockResolvedValue({
-      ...profile,
+    mocks.findDetailRowsByIso3.mockResolvedValue({
       jurisdictions: [],
       marketMetrics: [],
       regulations: [],
@@ -169,8 +168,6 @@ describe("country detail read transaction", () => {
       }),
     ).rejects.toBe(comparisonFailure);
 
-    const countryRepository =
-      mocks.createCountryRepository.mock.results[0]?.value;
     expect(mocks.compareRegulationsFromRepositories).toHaveBeenCalledWith(
       {
         applicationScope: "non-road",
@@ -179,7 +176,7 @@ describe("country detail read transaction", () => {
         powerKw: 100,
       },
       {
-        countryRepository,
+        countryRepository: { findByIso3: expect.any(Function) },
         regulationRepository: { findForComparison: expect.any(Function) },
       },
       {},
@@ -194,6 +191,67 @@ describe("country detail read transaction", () => {
       {},
     );
     expect(mocks.callbackRejected).toBe(true);
+  });
+
+  it("reads the profile once and starts detail rows and applicability in one wave", async () => {
+    const verifiedAt = new Date("2026-08-30T00:00:00.000Z");
+    const source = {
+      id: "10000000-0000-4000-8000-000000000001",
+      isDemo: false,
+      publishedOn: "2026-08-30",
+      publisher: "Fixture publisher",
+      title: "Fixture source",
+      url: "https://example.test/source",
+      verifiedAt,
+    };
+    const profile = {
+      dataCoverageStatus: "covered",
+      isDemo: false,
+      iso2: "CN",
+      iso3: "CHN",
+      nameEn: "China",
+      nameLocal: "中国",
+      regionCode: "AS",
+      source,
+      subregionCode: "EAS",
+      verifiedAt,
+    };
+    mocks.findByIso3.mockResolvedValue(profile);
+    const started: string[] = [];
+    let releaseDetails: () => void = () => undefined;
+    mocks.findDetailRowsByIso3.mockImplementation(() => {
+      started.push("details");
+      return new Promise((resolve) => {
+        releaseDetails = () => resolve({ jurisdictions: [], marketMetrics: [], regulations: [] });
+      });
+    });
+    let reusedProfile: unknown;
+    mocks.compareRegulationsFromRepositories.mockImplementation(
+      async (_input: unknown, repositories: RegulationComparisonRepositories) => {
+        started.push("applicability");
+        // Both reads are in flight before either finishes: one pipelined wave.
+        expect(started).toEqual(["details", "applicability"]);
+        reusedProfile = await repositories.countryRepository.findByIso3({ iso3: "CHN" });
+        releaseDetails();
+        throw new Error("stop after the wave");
+      },
+    );
+
+    await expect(
+      getCountryDetails({
+        applicationScope: "non-road",
+        asOf: "2026-08-30",
+        iso3: "CHN",
+        powerKw: 100,
+      }),
+    ).rejects.toThrow("stop after the wave");
+
+    expect(reusedProfile).toBe(profile);
+    expect(mocks.findByIso3).toHaveBeenCalledOnce();
+    expect(mocks.findDetailRowsByIso3).toHaveBeenCalledExactlyOnceWith(
+      { asOf: "2026-08-30", iso3: "CHN" },
+      {},
+    );
   });
 
   it("validates external input before opening a transaction", async () => {

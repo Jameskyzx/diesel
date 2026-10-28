@@ -38,7 +38,8 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   filtered lookup, ARCHITECTURE.md). The canary's `CHN` non-road lookup returned 200 in 1.7–2.7 s
   end to end after the switch.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
-  the block below; the production canary compares it with `/api/health`.
+  the block below; the production canary compares it with `/api/health` and also accepts the
+  exact master commit it checked out, so the window before this record merges does not fail.
 
 <!-- production-release:start -->
 ```json
@@ -77,7 +78,9 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   uncommitted worktree (contract `sales-chat-live-v27`, `deepseek-flash`, prompt
   `sales-chat-system-v13`, ADR-275): **18/18 passed**, 152,633 tokens of the 180,000 budget,
   and all 5 safety-critical cases failed closed. This is one run on one model, not proof
-  of stability, and the code is not yet committed or deployed. Earlier runs that day:
+  of stability. The harness and prompt `v13` were committed afterwards (`8753751`) and are
+  in the deployed releases; the run itself was not repeated on the committed code. Earlier
+  runs that day:
   - 06:44 UTC, prompt `v12`: 16/18. `sales-brief` ran a second brief with the comparison
     country BRA as its target. `source-document-retrieval` sent the model's wording
     verbatim to full-text search, which missed the requested section. Both are fixed for

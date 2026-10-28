@@ -38,7 +38,7 @@ function validateHealthJson(
     shape,
     value,
     undefined,
-    expectedVersion,
+    expectedVersion === undefined ? undefined : [expectedVersion],
     undefined,
     healthTimeWindow,
   );
@@ -365,6 +365,7 @@ describe("synthetic canary", () => {
     expect(workflow).toContain("github.event_name == 'schedule' || inputs.include_ai == true");
     expect(workflow).not.toContain("continue-on-error");
     expect(workflow).toContain("CANARY_STATUS_PATH: docs/STATUS.md");
+    expect(workflow).toContain("CANARY_MASTER_VERSION: ${{ github.sha }}");
     expect(workflow).toContain("if: ${{ always() }}");
     expect(workflow).toContain("if-no-files-found: error");
     expect(workflow).toContain("retention-days: 35");
@@ -408,7 +409,7 @@ describe("synthetic canary", () => {
           stage: "base_url",
         },
         targetOrigin: null,
-        version: "synthetic-canary-v5",
+        version: "synthetic-canary-v6",
       });
       expect(serialized).not.toContain("super-secret");
       expect((await readdir(directory)).filter((name) => name.endsWith(".tmp")))
@@ -416,6 +417,54 @@ describe("synthetic canary", () => {
     } finally {
       await rm(directory, { force: true, recursive: true });
     }
+  });
+
+  it("accepts the checked-out release before its STATUS record merges", () => {
+    const recorded = "a".repeat(40);
+    const released = "b".repeat(40);
+    const baseHealth = {
+      service: "global-diesel-regulations",
+      status: "ok",
+      timestamp: "2026-08-15T00:00:00.000Z",
+    };
+    const [liveness, readiness] = createCanaryChecks({
+      alternateVersion: released,
+      asOf: "2026-08-15",
+      expectedVersion: recorded,
+      includeProviderAi: false,
+    });
+
+    expect(liveness?.expectedVersions).toEqual([recorded, released]);
+    expect(readiness?.expectedVersions).toEqual([recorded, released]);
+    for (const version of [recorded, released]) {
+      expect(validateCanaryJson(
+        "liveness",
+        { ...baseHealth, version },
+        undefined,
+        liveness?.expectedVersions,
+        undefined,
+        healthTimeWindow,
+      )).toBe(true);
+    }
+    expect(validateCanaryJson(
+      "liveness",
+      { ...baseHealth, version: "c".repeat(40) },
+      undefined,
+      liveness?.expectedVersions,
+      undefined,
+      healthTimeWindow,
+    )).toBe(false);
+    expect(createCanaryChecks({
+      alternateVersion: recorded,
+      asOf: "2026-08-15",
+      expectedVersion: recorded,
+      includeProviderAi: false,
+    })[0]?.expectedVersions).toEqual([recorded]);
+    expect(createCanaryChecks({
+      alternateVersion: released,
+      asOf: "2026-08-15",
+      includeProviderAi: false,
+    })[0]).not.toHaveProperty("expectedVersions");
   });
 
   it("normalizes an HTTP target without preserving credentials or paths", () => {
@@ -460,8 +509,8 @@ describe("synthetic canary", () => {
     expect(publicChecks.every(({ requireRequestId }) => requireRequestId))
       .toBe(true);
     expect(publicChecks.slice(0, 2)).toEqual([
-      expect.objectContaining({ expectedVersion, id: "liveness" }),
-      expect.objectContaining({ expectedVersion, id: "readiness" }),
+      expect.objectContaining({ expectedVersions: [expectedVersion], id: "liveness" }),
+      expect.objectContaining({ expectedVersions: [expectedVersion], id: "readiness" }),
     ]);
     const directCheck = publicChecks.find(({ id }) => id === "chat-direct-sse");
     expect(directCheck).toMatchObject({

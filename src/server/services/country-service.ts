@@ -212,6 +212,41 @@ export async function getCountryDetails(
   return result;
 }
 
+async function readApplicabilitySummary(
+  {
+    applicationScope,
+    asOf,
+    iso3,
+    powerKw,
+  }: Required<Pick<CountryDetailReadQuery, "applicationScope" | "asOf" | "iso3" | "powerKw">>,
+  repositories: RegulationComparisonRepositories,
+  options: RequestSignalOptions,
+) {
+  const comparison = await compareRegulationsFromRepositories(
+    { applicationScope, asOf, countryIso3s: [iso3], powerKw },
+    repositories,
+    options,
+  );
+  throwIfRequestAborted(options.signal);
+  const countryComparison = comparison.countries[0];
+  if (!countryComparison) {
+    throw new Error("Single-country applicability result was not produced.");
+  }
+  const verificationDates = comparison.sources.map(
+    ({ verifiedAt }) => verifiedAt,
+  );
+  return {
+    country: countryComparison,
+    lastVerifiedAt:
+      verificationDates.length > 0
+        ? latestTimestamp(verificationDates)
+        : null,
+    missingData: comparison.missingData,
+    query: comparison.query,
+    sources: comparison.sources,
+  };
+}
+
 async function getCountryDetailsFromRepositories(
   { applicationScope, asOf, iso3, powerKw, marketPeriod }: CountryDetailReadQuery,
   repositories: CountryDetailReadRepositories,
@@ -236,18 +271,42 @@ async function getCountryDetailsFromRepositories(
     });
   }
 
-  const country = await countryRepository.findDetailsByIso3(
-    { asOf, iso3 },
-    options,
-  );
-  throwIfRequestAborted(options.signal);
-
-  if (!country) {
-    return countryDetailResponseSchema.parse({
-      iso3,
-      status: "no_data",
-    });
+  // Every sequential statement is a round-trip to the remote database, so the
+  // detail rows and the applicability comparison start in one pipelined wave.
+  // The comparison reuses the profile read above (same repeatable-read
+  // snapshot) instead of reading it again.
+  const [detailResult, applicabilityResult] = await Promise.allSettled([
+    countryRepository.findDetailRowsByIso3({ asOf, iso3 }, options),
+    applicationScope !== undefined && powerKw !== undefined
+      ? readApplicabilitySummary(
+          { applicationScope, asOf, iso3, powerKw },
+          {
+            countryRepository: { findByIso3: async () => profile },
+            regulationRepository: {
+              async findForComparison(queryInput, queryOptions) {
+                const rows = await repositories.regulationRepository
+                  .findForComparison(queryInput, queryOptions);
+                return includeDemoData
+                  ? rows
+                  : rows.filter((row) => !isDemoRegulationComparisonRow(row));
+              },
+            },
+          },
+          options,
+        )
+      : Promise.resolve(null),
+  ]);
+  // Wait for both branches before surfacing a failure (see the repository);
+  // check in start order to keep failure selection deterministic.
+  if (detailResult.status === "rejected") {
+    throw detailResult.reason;
   }
+  if (applicabilityResult.status === "rejected") {
+    throw applicabilityResult.reason;
+  }
+  throwIfRequestAborted(options.signal);
+  const country = { ...profile, ...detailResult.value };
+  const applicabilitySummary = applicabilityResult.value;
 
   const {
     regulations: countryRegulationRows,
@@ -385,51 +444,6 @@ async function getCountryDetailsFromRepositories(
     ...marketMetrics.map(({ verifiedAt }) => verifiedAt),
     ...sources.map(({ verifiedAt }) => verifiedAt),
   ]);
-  const applicabilitySummary =
-    applicationScope !== undefined && powerKw !== undefined
-      ? await compareRegulationsFromRepositories(
-          {
-            applicationScope,
-            asOf,
-            countryIso3s: [iso3],
-            powerKw,
-          },
-          {
-            countryRepository,
-            regulationRepository: {
-              async findForComparison(queryInput, queryOptions) {
-                const rows = await repositories.regulationRepository
-                  .findForComparison(queryInput, queryOptions);
-                return includeDemoData
-                  ? rows
-                  : rows.filter((row) => !isDemoRegulationComparisonRow(row));
-              },
-            },
-          },
-          options,
-        ).then((comparison) => {
-          throwIfRequestAborted(options.signal);
-          const countryComparison = comparison.countries[0];
-          if (!countryComparison) {
-            throw new Error("Single-country applicability result was not produced.");
-          }
-          const verificationDates = comparison.sources.map(
-            ({ verifiedAt }) => verifiedAt,
-          );
-          return {
-            country: countryComparison,
-            lastVerifiedAt:
-              verificationDates.length > 0
-                ? latestTimestamp(verificationDates)
-                : null,
-            missingData: comparison.missingData,
-            query: comparison.query,
-            sources: comparison.sources,
-          };
-        })
-      : null;
-  throwIfRequestAborted(options.signal);
-
   return countryDetailResponseSchema.parse({
     applicabilitySummary,
     asOf,

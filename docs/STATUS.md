@@ -9,8 +9,8 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 ## Production / 线上
 
 - Public read-only demo: <https://diesel.jamesky.site>.
-- Last operator readback: 2026-10-24T19:35+00:00, `/api/health` `status=ok`, release
-  `ff65c21eb438958121e01067a3a2b7cc41b0146e`. This is an operator observation, not a
+- Last operator readback: 2026-10-28T05:05+00:00, `/api/health` `status=ok`, release
+  `7462e6ca5856a8f76ef8f4f500601f1ac3816213`. This is an operator observation, not a
   continuously verified claim.
 - Release 2026-10-24 (full governance release, durable operation `11a8fcdb`, completed
   12:40 UTC, exit 0, host `COMMITTED` / `PUBLISH_FINALIZED`): customer feedback capture
@@ -31,6 +31,12 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   `postal-mime` 4.0.8 and `undici` 7.30.1 (DEPENDENCY_SECURITY.md) are live and installed in the
   release tree. No migration; the catalogue (24) and the 14 demo feedback records were kept
   unchanged, and the public routes above return 200.
+- Release 2026-10-28 (application release, durable operation `2fe3721b`, completed 05:04 UTC,
+  exit 0, host `COMMITTED` / `APPLICATION_VERIFIED_V2`; the 18 data-table fingerprints are
+  identical before and after): country details now read the detail rows and the applicability
+  comparison in one pipelined wave after the coverage gate (7 → 5 database round-trips for a
+  filtered lookup, ARCHITECTURE.md). The canary's `CHN` non-road lookup returned 200 in 1.7–2.7 s
+  end to end after the switch.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health`.
 
@@ -38,9 +44,9 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 ```json
 {
   "publicRuntime": {
-    "observedAt": "2026-10-24T19:35+00:00",
+    "observedAt": "2026-10-28T05:05+00:00",
     "status": "ok",
-    "version": "ff65c21eb438958121e01067a3a2b7cc41b0146e"
+    "version": "7462e6ca5856a8f76ef8f4f500601f1ac3816213"
   }
 }
 ```

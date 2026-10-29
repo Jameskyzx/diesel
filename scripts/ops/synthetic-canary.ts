@@ -54,6 +54,7 @@ async function main(): Promise<void> {
   const includeProviderAi = process.env.CANARY_CHECK_AI === "true";
   const results = [];
   let expectedVersion: string | null = null;
+  let acceptedVersions: readonly string[] | null = null;
   let stage: CanaryRunError["stage"] = "base_url";
   let targetOrigin: string | null = null;
 
@@ -89,16 +90,28 @@ async function main(): Promise<void> {
             )
           )
         : null;
+    // A release is live before its STATUS.md record merges. The scheduled
+    // workflow passes the master commit it checked out, so production running
+    // exactly that commit is accepted too. An explicit override stays exact.
+    const masterVersion =
+      expectedVersionOverride === undefined &&
+      process.env.CANARY_MASTER_VERSION !== undefined
+        ? parseProductionVersion(process.env.CANARY_MASTER_VERSION)
+        : null;
 
     stage = "checks";
-    for (const check of createCanaryChecks({
+    const checks = createCanaryChecks({
       asOf: utcDate(),
+      ...(masterVersion !== null ? { alternateVersion: masterVersion } : {}),
       ...(expectedVersion !== null ? { expectedVersion } : {}),
       includeProviderAi,
-    })) {
+    });
+    acceptedVersions = checks[0]?.expectedVersions ?? null;
+    for (const check of checks) {
       results.push(await runCanaryCheck({ baseUrl, check, timeoutMs }));
     }
     const report = {
+      acceptedVersions,
       checkedAt: new Date().toISOString(),
       expectedVersion,
       includeProviderAi,
@@ -106,7 +119,7 @@ async function main(): Promise<void> {
       results,
       runError: null,
       targetOrigin,
-      version: "synthetic-canary-v5",
+      version: "synthetic-canary-v6",
     };
     const serialized = serializeReport(report);
 
@@ -124,6 +137,7 @@ async function main(): Promise<void> {
       stage,
     };
     const report = {
+      acceptedVersions,
       checkedAt: new Date().toISOString(),
       expectedVersion,
       includeProviderAi,
@@ -131,7 +145,7 @@ async function main(): Promise<void> {
       results,
       runError,
       targetOrigin,
-      version: "synthetic-canary-v5",
+      version: "synthetic-canary-v6",
     };
     const serialized = serializeReport(report);
     if (reportPath) {

@@ -34,7 +34,7 @@ export type CanaryCheck = {
   body?: string;
   expectedContentType?: string;
   expectedStatus: number;
-  expectedVersion?: string;
+  expectedVersions?: readonly string[];
   id: string;
   jsonExpectation?: {
     applicationScope: ApplicationScope;
@@ -74,7 +74,7 @@ export function validateCanaryJson(
   shape: NonNullable<CanaryCheck["jsonShape"]>,
   value: unknown,
   expectation?: CanaryCheck["jsonExpectation"],
-  expectedVersion?: string,
+  expectedVersions?: readonly string[],
   productExpectation?: CanaryCheck["productExpectation"],
   healthTimeWindow?: CanaryHealthTimeWindow,
 ): boolean {
@@ -89,8 +89,8 @@ export function validateCanaryJson(
         parsed.data.timestamp,
         healthTimeWindow,
       ) &&
-      (expectedVersion === undefined ||
-        parsed.data.version === expectedVersion);
+      (expectedVersions === undefined ||
+        expectedVersions.includes(parsed.data.version));
   }
   if (shape === "readiness") {
     const parsed = readinessResponseSchema.safeParse(value);
@@ -104,8 +104,8 @@ export function validateCanaryJson(
         parsed.data.timestamp,
         healthTimeWindow,
       ) &&
-      (expectedVersion === undefined ||
-        parsed.data.version === expectedVersion);
+      (expectedVersions === undefined ||
+        expectedVersions.includes(parsed.data.version));
   }
   if (shape === "country-summary") {
     const parsed = countryDetailResponseSchema.safeParse(value);
@@ -325,16 +325,20 @@ export function validateCanaryBaseUrl(value: string): URL {
 
 export function createCanaryChecks(input: {
   asOf: string;
+  // A newer release that is also acceptable, such as the master commit that
+  // was deployed before its STATUS.md record merged.
+  alternateVersion?: string;
   expectedVersion?: string;
   includeProviderAi: boolean;
 }): CanaryCheck[] {
+  const expectedVersions = input.expectedVersion
+    ? [...new Set([input.expectedVersion, input.alternateVersion ?? input.expectedVersion])]
+    : undefined;
   const checks: CanaryCheck[] = [
     {
       expectedContentType: "application/json",
       expectedStatus: 200,
-      ...(input.expectedVersion
-        ? { expectedVersion: input.expectedVersion }
-        : {}),
+      ...(expectedVersions ? { expectedVersions } : {}),
       id: "liveness",
       jsonShape: "liveness",
       method: "GET",
@@ -344,9 +348,7 @@ export function createCanaryChecks(input: {
     {
       expectedContentType: "application/json",
       expectedStatus: 200,
-      ...(input.expectedVersion
-        ? { expectedVersion: input.expectedVersion }
-        : {}),
+      ...(expectedVersions ? { expectedVersions } : {}),
       id: "readiness",
       jsonShape: "readiness",
       method: "GET",
@@ -563,7 +565,7 @@ export async function runCanaryCheck(input: {
             input.check.jsonShape,
             responseJson,
             input.check.jsonExpectation,
-            input.check.expectedVersion,
+            input.check.expectedVersions,
             input.check.productExpectation,
             {
               maxClockSkewMs: CANARY_HEALTH_MAX_CLOCK_SKEW_MS,

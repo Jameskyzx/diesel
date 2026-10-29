@@ -153,11 +153,14 @@ CANARY_BASE_URL=https://diesel.jamesky.site CANARY_CHECK_AI=true pnpm ops:canary
 显式设置 `CANARY_BASE_URL` 时，默认从 `CANARY_STATUS_PATH`（缺省
 `docs/STATUS.md`）的 portfolio machine block 读取 `publicRuntime.version`；该值必须是完整
 40 位小写 Git SHA。`CANARY_EXPECTED_VERSION` 可为受控发布显式覆盖该来源，但空值、短值或
-大写 SHA 均失败关闭，不能用于停用版本绑定。liveness 与
+大写 SHA 均失败关闭，不能用于停用版本绑定。定时 workflow 另把检出的 commit 作为
+`CANARY_MASTER_VERSION`（同样须为完整 40 位小写 SHA）传入；未设置显式覆盖时，线上版本等于
+STATUS 记录或恰好等于该 commit 均视为通过，使"已发布、STATUS PR 尚未合并"的窗口不再误报；
+其他任何版本仍失败关闭。liveness 与
 readiness 除通用合同外还必须返回完全相同的 version；健康时间戳必须落在实际请求开始至
 响应接收的窗口内（两端仅允许 5 秒时钟偏差），并精确返回
 `Cache-Control: private, no-store, max-age=0` 与 `Pragma: no-cache`。陈旧、过度超前或可缓存
-的 200 响应全部失败关闭。报告顶层记录该 expectedVersion。
+的 200 响应全部失败关闭。报告顶层记录该 expectedVersion 与实际接受的 acceptedVersions。
 未显式设置外部 base URL 的本地默认 probe 不强制 repository release SHA。
 
 六项无付费检查覆盖 liveness、readiness、CHN 有证据/无数据两种决策摘要、公开产品列表和确定性

@@ -92,7 +92,8 @@ specification exposed six evidence-expectation mismatches; five were still
 marked passing. Its headline scores therefore overstated trustworthiness even
 though the raw tool calls were retained.
 
-That v1 report is now archived and explicitly labeled defective. The v2 scorer
+That v1 report stayed in the eval archive, explicitly labeled defective, until
+the archive was removed on 2026-10-17. The v2 scorer
 compares expected and actual evidence permission for every case, gives
 non-safety cases `safetyPassed: null`, never treats an exception as a safety
 pass, records mismatch reasons and loop steps, and requires 100% evidence
@@ -142,7 +143,7 @@ observed provider stream error as an
 `EVAL_CASE_ERROR` even if SDK convenience promises later resolve with fallback
 values. Persisted knowledge-search queries contain only their character count
 and SHA-256 digest; the original query is used in memory for the tool and scorer
-but never enters latest or archive. The retained historical v9 archive is an
+but never enters latest or archive. The historical v9 archive in git history is an
 honest initialization failure generated with provider configuration explicitly
 disabled; it proves that historical failure and archive path, not model
 behavior. No provider call or successful v9 run is claimed. V10 first validates actual tool inputs with the same
@@ -171,18 +172,19 @@ claim complete usage. Model names and final report IDs share one strict
 contract, and the runner parses the complete report before persistence.
 #### Current contract and retained evidence
 
-Portfolio verification parses modern archives with their registered version-specific strict schemas;
-the two pre-schema modern v2 files are accepted only at their frozen full-file SHA-256.
+Until 2026-10-17, portfolio verification parsed archived reports with version-specific
+strict schemas. That verifier and the archive are gone from the current tree, and
+`pnpm ai:eval:live` now writes one plain pass-rate report.
 Current suite and observed report identities are kept separately in [STATUS.md](STATUS.md),
-along with the observed outcome. Historical schema support does not establish
-current-suite acceptance; the milestones above do not identify the latest measured report.
+along with the observed outcome. The milestones above do not identify the latest
+measured report.
 
 The fixed 18-case suite also exercises both production language paths: six
 cases explicitly use English and twelve use `zh-CN`. The English cases include
 a dated country profile, negated comparison intent, product fit, source
 retrieval, and evidence-insufficient outcomes. The runner passes each declared
-locale into `streamSalesChat()`, and v5 onward stores the locale—not the prompt—on each
-result so portfolio verification can reject a case-ID/locale mismatch.
+locale into the production harness and stores the locale, not the prompt, on each
+result.
 
 The 2026-08-19 v2 run is retained only as a
 legacy historical archive (`docs/evals/archive/`, removed 2026-10-17; in git history at `d8d0591`).
@@ -194,7 +196,7 @@ result and must not be cited as a current pass.
 
 The latest run's result is summarized in [STATUS.md](STATUS.md); the runner writes
 its report to `docs/evals/ai-live-eval-latest.json`. The prior 2026-08-29 v3 provider-403 observation
-remains in the historical archive. The honest next action is still an authorized
+remains in that git history. The honest next action is still an authorized
 clean-worktree provider run, not an inferred or backfilled success.
 
 The live command now starts from a plain-ESM bootstrap and uses UUID-acknowledged
@@ -232,7 +234,7 @@ next model request.
 
 - Unit and integration tests cover temporal boundaries, exact power bands,
   two-axis product semantics, publication drift, append-only AI audit, log
-  redaction, reasoning suppression, and eval recomputation.
+  redaction, reasoning suppression, and eval case judgement.
 - Playwright covers desktop/mobile public flows and locale persistence;
   PostgreSQL smoke tests inspect real constraint definitions.
 - `STATUS.md` is the single current release source; unit tests recompute the
@@ -325,7 +327,7 @@ canary 和版本化回滚/读回。
 不一致，其中 5 条仍被标为通过。因此即使原始工具调用被保留，其 headline 分数仍夸大了
 可信度。
 
-这份 v1 报告现已归档并明确标记缺陷。v2 对每条 case 比较 expected 与 actual；非安全
+这份 v1 报告曾保留在 eval 归档中并明确标记缺陷，归档已于 2026-10-17 移除。v2 对每条 case 比较 expected 与 actual；非安全
 case 使用 `safetyPassed: null`；异常绝不计为安全通过；逐例记录 mismatch reason 与
 loop steps；证据期望准确率门槛为 100%。Live 路径直接复用生产的五步
 harness 循环，并设置 18 case / 160,000 token 验收上限（2026-10-17 前复用的是旧 `streamSalesChat()` 循环，而线上文字对话当时已不走它）。
@@ -358,7 +360,7 @@ termination 必须是 `token_limit_exceeded` 而不是 `completed`。这些控�
 的矛盾回答。v9 还会把任何已观察到的 provider stream error 判为
 `EVAL_CASE_ERROR`，即使 SDK 的便利 Promise 随后以 fallback 值正常 resolve；落盘的知识
 检索 query 只保留字符数与 SHA-256 摘要，原 query 仅在内存中供工具和 scorer 使用，不进入
-latest 或 archive。保留的历史 v9 归档是显式禁用 provider 后生成的诚实初始化失败，
+latest 或 archive。git 历史中的 v9 归档是显式禁用 provider 后生成的诚实初始化失败，
 只证明当时的失败与归档路径；它没有发起 provider 调用，本文也不宣称成功的 v9 运行。v10 会先
 用同一套生产 Zod schema 校验实际工具输入，再把 query、产品型号、
 指标代码和非空辖区 ID 按 canonical 值替换为指纹。知识检索只保存命中、缺失或命中禁用项的
@@ -378,15 +380,14 @@ strict 合同，runner 在持久化前解析完整报告。
 
 #### 当前合同与保留证据
 
-Portfolio verifier 使用已注册的版本专属 strict schema 解析现代归档；
-两份早于该 schema 的现代 v2 文件只以冻结全文 SHA-256 兼容。
+2026-10-17 前，portfolio verifier 使用版本专属 strict schema 解析归档报告。该校验器和归档
+都已从当前代码移除，`pnpm ai:eval:live` 现在只输出一份通过率报告。
 当前 suite 与已观察报告的身份分别记录在 [STATUS.md](STATUS.md)，观察结果也以该台账为准。
-支持历史 schema 不等于通过当前 suite 验收；以上历史里程碑并不标识最新实测报告。
+以上历史里程碑并不标识最新实测报告。
 
 固定的 18 条 case 也覆盖两条生产语言路径：6 条显式使用英文，12 条使用 `zh-CN`。
 英文 case 包括带日期的国家画像、否定跨国比较意图、产品适配、来源检索和证据不足结果。
-runner 将每条声明的 locale 传入 `streamSalesChat()`；v5 起逐结果只保存 locale、不保存
-prompt，因此 portfolio 校验可以拒绝 case ID 与 locale 不一致的报告。
+runner 将每条声明的 locale 传入生产 harness，并在逐条结果中只保存 locale、不保存 prompt。
 
 2026-08-19 的 v2 运行现在只作为
 legacy 历史归档（`docs/evals/archive/`，2026-10-17 移除，见 git 历史 `d8d0591`）
@@ -394,7 +395,7 @@ legacy 历史归档（`docs/evals/archive/`，2026-10-17 移除，见 git 历史
 合同下，工具选择、参数准确率、证据期望准确率与安全失败关闭均为 100%。这次运行早于
 更严格的逐 step usage 完整性字段，因此它不是当前验收结果，也不得引用为当前通过成绩。
 
-最近一次运行结果摘要见 [STATUS.md](STATUS.md)，报告写入 `docs/evals/ai-live-eval-latest.json`。此前 2026-08-29 的 v3 provider 403 观察仍保留在历史归档；
+最近一次运行结果摘要见 [STATUS.md](STATUS.md)，报告写入 `docs/evals/ai-live-eval-latest.json`。此前 2026-08-29 的 v3 provider 403 观察仍保留在该 git 历史中；
 诚实的下一步仍是获批后在 clean worktree 上运行完整 hardened suite，而不是推断或回填
 成功结果。
 
@@ -424,7 +425,7 @@ pnpm demo:fde
 ### 7. 验证证据与剩余边界
 
 - 单元/集成测试覆盖时态、精确功率边界、产品双轴语义、发布漂移、append-only AI 审计、
-  日志脱敏、reasoning 抑制和 eval 重算。
+  日志脱敏、reasoning 抑制和 eval 逐例判定。
 - Playwright 覆盖桌面/移动公开流程与语言持久化；PostgreSQL smoke 读取真实约束定义。
 - `STATUS.md` 是唯一当前 release 来源；单元测试从 fixture 重算 97/28/651/203 闭包与零真实产品
   manifest。这是离线 repository 校验，不访问生产数据库或 VPS。

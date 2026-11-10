@@ -2,7 +2,10 @@ import "server-only";
 
 import { z } from "zod";
 
-import { marketComparisonIssues, marketComparisonStatus } from "@/domain/marketing/comparison-consistency";
+import {
+  marketComparisonIssues,
+  marketComparisonStatus,
+} from "@/domain/marketing/comparison-consistency";
 
 import {
   compareMarketsResultSchema,
@@ -86,7 +89,10 @@ const regulationCountryProjectionSchema = z
   .object({
     country: z
       .object({
-        countryIso2: z.string().length(2).regex(/^[A-Z]{2}$/u),
+        countryIso2: z
+          .string()
+          .length(2)
+          .regex(/^[A-Z]{2}$/u),
         countryNameLocal: z.string().nullable(),
         isDemo: z.boolean(),
         sourceId: z.uuid(),
@@ -160,7 +166,8 @@ function regulationCitationMatchesFact(
       if (
         citation.entityId === regulation.applicability.jurisdiction.id &&
         ((citation.entityType === "jurisdiction" &&
-          citation.sourceId === regulation.applicability.jurisdiction.sourceId) ||
+          citation.sourceId ===
+            regulation.applicability.jurisdiction.sourceId) ||
           (citation.entityType === "country_jurisdiction" &&
             citation.sourceId === regulation.applicability.membership.sourceId))
       ) {
@@ -205,7 +212,12 @@ function refineRegulationProjection(
     evidenceCountries >= Math.min(2, query.countryIso3s.length);
   if (
     output.evidenceSufficient !== evidenceExpected ||
-    output.status !== (evidenceExpected ? "ok" : output.status === "error" ? "error" : "no_data")
+    output.status !==
+      (evidenceExpected
+        ? "ok"
+        : output.status === "error"
+          ? "error"
+          : "no_data")
   ) {
     context.addIssue({
       code: "custom",
@@ -380,7 +392,12 @@ function refineMarketProjection(
     );
   if (
     output.evidenceSufficient !== evidenceExpected ||
-    output.status !== (evidenceExpected ? "ok" : output.status === "error" ? "error" : "no_data")
+    output.status !==
+      (evidenceExpected
+        ? "ok"
+        : output.status === "error"
+          ? "error"
+          : "no_data")
   ) {
     context.addIssue({
       code: "custom",
@@ -402,14 +419,18 @@ function refineMarketProjection(
     });
   }
   for (const [metricIndex, metric] of output.comparison.metrics.entries()) {
-    const issues = marketComparisonIssues(metric.observations, output.comparison.query.countryIso3s);
+    const issues = marketComparisonIssues(
+      metric.observations,
+      output.comparison.query.countryIso3s,
+    );
     if (
       !exactModelToolOutputSequence(metric.issues, issues) ||
       metric.comparisonStatus !== marketComparisonStatus(issues)
     ) {
       context.addIssue({
         code: "custom",
-        message: "Market projection comparability must match its observation basis",
+        message:
+          "Market projection comparability must match its observation basis",
         path: ["comparison", "metrics", metricIndex, "issues"],
       });
     }
@@ -530,9 +551,8 @@ export function regulationComparisonResultToModelOutput(output: unknown) {
         countryIsDemo: country.countryIsDemo,
         countryIso3: country.countryIso3,
         countryName: country.countryName,
-        currentEffective: country.currentEffectiveRegulations.map(
-          projectRegulation,
-        ),
+        currentEffective:
+          country.currentEffectiveRegulations.map(projectRegulation),
         futureAdopted: country.futureAdoptedRegulations.map(projectRegulation),
         status: country.status,
       })),

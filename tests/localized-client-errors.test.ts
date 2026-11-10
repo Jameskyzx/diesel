@@ -67,8 +67,8 @@ describe("retained client errors follow the active locale", () => {
     expect(productFitErrorMessage(null, chinese)).toBe(
       chinese.productFit.errorFallback,
     );
-    expect(
-      chatErrorMessage(new Error("<html>unsafe</html>"), chinese),
-    ).toBe(chinese.chat.chatError);
+    expect(chatErrorMessage(new Error("<html>unsafe</html>"), chinese)).toBe(
+      chinese.chat.chatError,
+    );
   });
 });

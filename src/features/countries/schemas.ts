@@ -163,7 +163,10 @@ const marketMetricSchema = z
     currencyCode: z
       .string()
       .length(3)
-      .regex(/^[A-Z]{3}$/, "Currency code must contain three uppercase ASCII letters")
+      .regex(
+        /^[A-Z]{3}$/,
+        "Currency code must contain three uppercase ASCII letters",
+      )
       .nullable(),
     definition: z.string(),
     id: z.uuid(),

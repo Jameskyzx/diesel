@@ -58,23 +58,42 @@ const positiveIntegerSchema = z
 // Reuse the dependency-free, versioned bootstrap bundle for CI runtime input
 // validation on hosts where node_modules has deliberately not been installed.
 export const ciRuntimeMetadataSchema = z.strictObject({
-  format: z.literal("diesel-ci-runtime-v1"), release: commitSchema,
-  platform: z.literal("linux"), arch: z.literal("x64"),
-  node: z.literal("v22.22.3"), ubuntu: z.literal("22.04"),
+  format: z.literal("diesel-ci-runtime-v1"),
+  release: commitSchema,
+  platform: z.literal("linux"),
+  arch: z.literal("x64"),
+  node: z.literal("v22.22.3"),
+  ubuntu: z.literal("22.04"),
   inputDigest: z.string().regex(/^[0-9a-f]{64}$/u),
   artifactDigest: z.string().regex(/^[0-9a-f]{64}$/u),
   archiveSha256: z.string().regex(/^[0-9a-f]{64}$/u),
   archiveBytes: positiveIntegerSchema.max(2 * 1024 ** 3),
 });
-export const ciRuntimeArtifactListSchema = z.object({
-  total_count: z.number().int().nonnegative().max(100),
-  artifacts: z.array(z.object({
-    id: positiveIntegerSchema, name: z.string(), expired: z.boolean(),
-    size_in_bytes: positiveIntegerSchema.max(2 * 1024 ** 3),
-    digest: z.string().regex(/^sha256:[0-9a-f]{64}$/u),
-    workflow_run: z.object({ id: positiveIntegerSchema, head_sha: commitSchema, head_branch: z.string() }).passthrough(),
-  }).passthrough()).max(100),
-}).passthrough();
+export const ciRuntimeArtifactListSchema = z
+  .object({
+    total_count: z.number().int().nonnegative().max(100),
+    artifacts: z
+      .array(
+        z
+          .object({
+            id: positiveIntegerSchema,
+            name: z.string(),
+            expired: z.boolean(),
+            size_in_bytes: positiveIntegerSchema.max(2 * 1024 ** 3),
+            digest: z.string().regex(/^sha256:[0-9a-f]{64}$/u),
+            workflow_run: z
+              .object({
+                id: positiveIntegerSchema,
+                head_sha: commitSchema,
+                head_branch: z.string(),
+              })
+              .passthrough(),
+          })
+          .passthrough(),
+      )
+      .max(100),
+  })
+  .passthrough();
 
 const githubRefSchema = z
   .object({
@@ -130,7 +149,10 @@ const workflowRunSchema = z
     event: z.string(),
     head_branch: z.string().nullable(),
     head_commit: z.object({ id: commitSchema }).passthrough(),
-    head_repository: z.object({ full_name: z.string() }).passthrough().nullable(),
+    head_repository: z
+      .object({ full_name: z.string() })
+      .passthrough()
+      .nullable(),
     head_sha: commitSchema,
     html_url: z.url(),
     id: positiveIntegerSchema,
@@ -247,7 +269,9 @@ export function parseReleaseAuthorizationOutput(
   }
   const parsed = releaseAuthorizationSchema.safeParse(json);
   if (!parsed.success) {
-    throw new Error("Release authorization output does not match its v1 schema");
+    throw new Error(
+      "Release authorization output does not match its v1 schema",
+    );
   }
   const authorization = parsed.data;
   if (
@@ -390,7 +414,11 @@ function requireCommandSuccess(
   return result.stdout.trim();
 }
 
-function parseGithubJson(schema: z.ZodType, value: string, label: string): unknown {
+function parseGithubJson(
+  schema: z.ZodType,
+  value: string,
+  label: string,
+): unknown {
   let json: unknown;
   try {
     json = JSON.parse(value);
@@ -430,15 +458,24 @@ function readGithubJson<T>(
   return parseGithubJson(schema, stdout, label) as T;
 }
 
-function requireOneCanonicalUrl(value: string, label: string): AllowedOriginUrl {
+function requireOneCanonicalUrl(
+  value: string,
+  label: string,
+): AllowedOriginUrl {
   const urls = value.split("\n").filter((url) => url.length > 0);
   if (urls.length !== 1 || !allowedOriginUrls.has(urls[0]!)) {
-    throw new Error(`${label} must contain exactly one canonical repository URL`);
+    throw new Error(
+      `${label} must contain exactly one canonical repository URL`,
+    );
   }
   return urls[0] as AllowedOriginUrl;
 }
 
-function requireExactCommit(value: string, expected: string, label: string): void {
+function requireExactCommit(
+  value: string,
+  expected: string,
+  label: string,
+): void {
   if (value !== expected) {
     throw new Error(`${label} does not equal the requested release commit`);
   }
@@ -454,7 +491,9 @@ function requireCompletePage<T extends { id: number }>(
     items.length > MAX_API_ITEMS ||
     totalCount !== items.length
   ) {
-    throw new Error(`${label} was truncated or has an inconsistent total_count`);
+    throw new Error(
+      `${label} was truncated or has an inconsistent total_count`,
+    );
   }
   if (new Set(items.map((item) => item.id)).size !== items.length) {
     throw new Error(`${label} contains duplicate IDs`);
@@ -468,7 +507,9 @@ function newestWorkflowRun(
     (left, right) => Date.parse(right.created_at) - Date.parse(left.created_at),
   )[0];
   if (!newest) {
-    throw new Error("No push CI workflow run exists for the requested release commit");
+    throw new Error(
+      "No push CI workflow run exists for the requested release commit",
+    );
   }
   if (
     runs.some(
@@ -489,7 +530,9 @@ function workflowRunsFingerprint(
 ): string {
   return JSON.stringify(
     [...runs]
-      .sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0))
+      .sort((left, right) =>
+        left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
+      )
       .map((run) => ({
         conclusion: run.conclusion,
         createdAt: run.created_at,
@@ -515,7 +558,9 @@ function workflowRunsFingerprint(
 function requireValidTimestamp(now: () => Date): string {
   const timestamp = now();
   if (Number.isNaN(timestamp.getTime())) {
-    throw new Error("Release authorization clock returned an invalid timestamp");
+    throw new Error(
+      "Release authorization clock returned an invalid timestamp",
+    );
   }
   return timestamp.toISOString();
 }
@@ -543,7 +588,9 @@ export function verifyReleaseAuthorizationWithRunner(input: {
     "Repository root readback",
   );
   if (realpathSync(actualRoot) !== root) {
-    throw new Error("Release authorization is not running in the expected repository");
+    throw new Error(
+      "Release authorization is not running in the expected repository",
+    );
   }
 
   const status = requireCommandSuccess(
@@ -558,7 +605,9 @@ export function verifyReleaseAuthorizationWithRunner(input: {
     "Repository cleanliness readback",
   );
   if (status.length > 0) {
-    throw new Error("Release authorization requires a completely clean worktree");
+    throw new Error(
+      "Release authorization requires a completely clean worktree",
+    );
   }
 
   const branchRef = requireCommandSuccess(
@@ -582,11 +631,7 @@ export function verifyReleaseAuthorizationWithRunner(input: {
   const committedAuthorizationBlob = requireCommandSuccess(
     runCommand,
     "git",
-    [
-      "rev-parse",
-      "--verify",
-      `HEAD:${RELEASE_AUTHORIZATION_SCRIPT}`,
-    ],
+    ["rev-parse", "--verify", `HEAD:${RELEASE_AUTHORIZATION_SCRIPT}`],
     "Committed release authorization verifier readback",
   );
   const worktreeAuthorizationBlob = requireCommandSuccess(
@@ -642,10 +687,14 @@ export function verifyReleaseAuthorizationWithRunner(input: {
     "Fresh origin/master readback",
     "isolated",
   );
-  const remoteLines = remoteReadback.split("\n").filter((line) => line.length > 0);
+  const remoteLines = remoteReadback
+    .split("\n")
+    .filter((line) => line.length > 0);
   const expectedRemoteLine = `${expectedCommit}\t${RELEASE_BRANCH_REF}`;
   if (remoteLines.length !== 1 || remoteLines[0] !== expectedRemoteLine) {
-    throw new Error("Fresh origin/master readback was not one exact release ref");
+    throw new Error(
+      "Fresh origin/master readback was not one exact release ref",
+    );
   }
 
   const githubRef = readGithubJson(
@@ -699,7 +748,9 @@ export function verifyReleaseAuthorizationWithRunner(input: {
     protection.allow_force_pushes.enabled ||
     protection.allow_deletions.enabled
   ) {
-    throw new Error("GitHub master branch protection drifted from the release contract");
+    throw new Error(
+      "GitHub master branch protection drifted from the release contract",
+    );
   }
 
   const workflowRunsEndpoint =
@@ -731,12 +782,19 @@ export function verifyReleaseAuthorizationWithRunner(input: {
       run.url !== `${GITHUB_API_ROOT}/actions/runs/${run.id}` ||
       run.html_url !== `${GITHUB_WEB_ROOT}/actions/runs/${run.id}`
     ) {
-      throw new Error("A GitHub CI workflow run has invalid release provenance");
+      throw new Error(
+        "A GitHub CI workflow run has invalid release provenance",
+      );
     }
   }
   const selectedRun = newestWorkflowRun(workflowRuns.workflow_runs);
-  if (selectedRun.status !== "completed" || selectedRun.conclusion !== "success") {
-    throw new Error("The newest GitHub CI workflow run is not successfully completed");
+  if (
+    selectedRun.status !== "completed" ||
+    selectedRun.conclusion !== "success"
+  ) {
+    throw new Error(
+      "The newest GitHub CI workflow run is not successfully completed",
+    );
   }
 
   const workflowJobs = readGithubJson(
@@ -761,14 +819,18 @@ export function verifyReleaseAuthorizationWithRunner(input: {
       job.html_url !==
         `${GITHUB_WEB_ROOT}/actions/runs/${selectedRun.id}/job/${job.id}`
     ) {
-      throw new Error("A GitHub CI workflow job has invalid release provenance");
+      throw new Error(
+        "A GitHub CI workflow job has invalid release provenance",
+      );
     }
   }
   const gateJobs = workflowJobs.jobs.filter(
     (job) => job.name === REQUIRED_GATE_NAME,
   );
   if (gateJobs.length !== 1) {
-    throw new Error("The selected CI attempt must contain exactly one Required CI gate job");
+    throw new Error(
+      "The selected CI attempt must contain exactly one Required CI gate job",
+    );
   }
   const gateJob = gateJobs[0]!;
   if (gateJob.status !== "completed" || gateJob.conclusion !== "success") {
@@ -810,9 +872,7 @@ export function verifyReleaseAuthorizationWithRunner(input: {
     finalGithubRef.object.url !==
       `${GITHUB_API_ROOT}/git/commits/${expectedCommit}`
   ) {
-    throw new Error(
-      "GitHub master ref changed during release authorization",
-    );
+    throw new Error("GitHub master ref changed during release authorization");
   }
 
   const finalWorkflow = readGithubJson(
@@ -826,7 +886,8 @@ export function verifyReleaseAuthorizationWithRunner(input: {
     finalWorkflow.name !== RELEASE_WORKFLOW_NAME ||
     finalWorkflow.path !== RELEASE_WORKFLOW_PATH ||
     finalWorkflow.state !== "active" ||
-    finalWorkflow.url !== `${GITHUB_API_ROOT}/actions/workflows/${workflow.id}` ||
+    finalWorkflow.url !==
+      `${GITHUB_API_ROOT}/actions/workflows/${workflow.id}` ||
     finalWorkflow.html_url !==
       `${GITHUB_WEB_ROOT}/blob/${RELEASE_BRANCH}/${RELEASE_WORKFLOW_PATH}`
   ) {
@@ -928,9 +989,7 @@ export function verifyReleaseAuthorizationWithRunner(input: {
     finalRemoteReadback !== expectedRemoteLine ||
     finalWorktreeAuthorizationBlob !== committedAuthorizationBlob
   ) {
-    throw new Error(
-      "Local release state changed during release authorization",
-    );
+    throw new Error("Local release state changed during release authorization");
   }
 
   return {

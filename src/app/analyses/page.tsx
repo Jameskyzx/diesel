@@ -10,8 +10,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AnalysesPage() {
-  return <main className="page-shell space-y-5 py-6">
-    <LocaleRenderReceipt locale={await getRequestLocale()} />
-    <AnalysisLibrary countryIso2ByIso3={Object.fromEntries(getCountryDirectory().map(country => [country.iso3, country.iso2]))} />
-  </main>;
+  return (
+    <main className="page-shell space-y-5 py-6">
+      <LocaleRenderReceipt locale={await getRequestLocale()} />
+      <AnalysisLibrary
+        countryIso2ByIso3={Object.fromEntries(
+          getCountryDirectory().map((country) => [country.iso3, country.iso2]),
+        )}
+      />
+    </main>
+  );
 }

@@ -55,9 +55,7 @@ describe("accepted fixture source-refresh signoff policy", () => {
       expect(findSourceRefreshSignoffVerifiedAt(countryIso3)).toBe(
         LATAM_SOURCE_REFRESH_SIGNOFF_ISO,
       );
-      expect(LATAM_SOURCE_REFRESH_SIGNOFF_ISO).toBe(
-        "2026-08-10T20:09:01.000Z",
-      );
+      expect(LATAM_SOURCE_REFRESH_SIGNOFF_ISO).toBe("2026-08-10T20:09:01.000Z");
     },
   );
 

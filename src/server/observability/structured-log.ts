@@ -19,7 +19,12 @@ const apiRequestLogSchema = z
     errorCode: errorCodeSchema,
     event: z.literal("api.request"),
     requestId: requestIdSchema,
-    route: z.string().trim().min(1).max(160).regex(/^\/api\//u),
+    route: z
+      .string()
+      .trim()
+      .min(1)
+      .max(160)
+      .regex(/^\/api\//u),
     status: z.number().int().min(100).max(599),
     timestamp: z.iso.datetime({ offset: true }),
   })
@@ -29,12 +34,7 @@ const aiCompletionLogSchema = z
   .object({
     cacheHitRatePct: z.number().finite().min(0).max(100).nullable(),
     cacheReadTokens: z.number().int().nonnegative().nullable(),
-    cacheStatus: z.enum([
-      "reported",
-      "partial",
-      "unavailable",
-      "inconsistent",
-    ]),
+    cacheStatus: z.enum(["reported", "partial", "unavailable", "inconsistent"]),
     cacheWriteTokens: z.number().int().nonnegative().nullable(),
     costProfileAsOf: z.iso.date().nullable(),
     costProfileValidThrough: z.iso.date().nullable(),
@@ -113,9 +113,7 @@ const aiCompletionLogSchema = z
         path: ["costProfileValidThrough"],
       });
     }
-    const eventUtcDate = new Date(value.timestamp)
-      .toISOString()
-      .slice(0, 10);
+    const eventUtcDate = new Date(value.timestamp).toISOString().slice(0, 10);
     if (
       value.costProfileAsOf !== null &&
       value.costProfileAsOf > eventUtcDate
@@ -163,8 +161,7 @@ const aiCompletionLogSchema = z
     }
     if (
       ["estimated", "arithmetic_overflow"].includes(value.costStatus) &&
-      (!value.tokenUsageComplete ||
-        !value.modelCallAttemptCoverageComplete)
+      (!value.tokenUsageComplete || !value.modelCallAttemptCoverageComplete)
     ) {
       addConsistencyIssue(
         "A completed cost calculation requires complete token and model-call coverage.",
@@ -211,10 +208,7 @@ const aiCompletionLogSchema = z
       value.modelCallAttemptCount > 0 &&
       value.modelCallCompletedCount === value.modelCallAttemptCount &&
       value.modelCallCompletedCount === value.loopSteps;
-    if (
-      value.modelCallAttemptCoverageComplete &&
-      !attemptCountsCoverLoop
-    ) {
+    if (value.modelCallAttemptCoverageComplete && !attemptCountsCoverLoop) {
       addConsistencyIssue(
         "Complete model-call coverage requires every loop step and attempt to complete.",
         "modelCallAttemptCoverageComplete",
@@ -240,7 +234,10 @@ const aiCompletionLogSchema = z
       value.outputTokens,
       value.totalTokens,
     ];
-    if (value.tokenUsageComplete && baseTokens.some((tokens) => tokens === null)) {
+    if (
+      value.tokenUsageComplete &&
+      baseTokens.some((tokens) => tokens === null)
+    ) {
       addConsistencyIssue(
         "Complete token usage requires input, output and total tokens.",
         "tokenUsageComplete",
@@ -307,7 +304,9 @@ const aiCompletionLogSchema = z
       value.cacheWriteTokens,
       value.noCacheTokens,
     ];
-    const cacheValueCount = cacheValues.filter((tokens) => tokens !== null).length;
+    const cacheValueCount = cacheValues.filter(
+      (tokens) => tokens !== null,
+    ).length;
     if (
       (value.cacheStatus === "unavailable" && cacheValueCount !== 0) ||
       (value.cacheStatus === "partial" &&
@@ -341,9 +340,7 @@ const aiCompletionLogSchema = z
       value.cacheWriteTokens !== null &&
       value.noCacheTokens !== null &&
       value.inputTokens !== null &&
-      value.cacheReadTokens +
-          value.cacheWriteTokens +
-          value.noCacheTokens !==
+      value.cacheReadTokens + value.cacheWriteTokens + value.noCacheTokens !==
         value.inputTokens
     ) {
       addConsistencyIssue(

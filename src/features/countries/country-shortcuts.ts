@@ -15,9 +15,7 @@ export function selectCountryShortcuts(
   limit = MAX_COUNTRY_SHORTCUTS,
 ): CountryMapSummary[] {
   return countries
-    .filter((country) =>
-      hasDetailedCountryCoverage(country.dataCoverageStatus),
-    )
+    .filter((country) => hasDetailedCountryCoverage(country.dataCoverageStatus))
     .toSorted((a, b) => {
       const priorityDifference =
         (shortcutPriority.get(a.iso3) ?? 100) -

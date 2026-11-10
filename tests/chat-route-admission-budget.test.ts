@@ -21,15 +21,18 @@ const mocks = vi.hoisted(() => {
     getAiAuditRepository: vi.fn(),
     getConfiguredAiModel: vi.fn(),
     prepareTrustedUserMessagesForModel: vi.fn(
-      async (messages: Array<{ parts: Array<{ mediaType?: string; type: string }> }>) => ({
+      async (
+        messages: Array<{ parts: Array<{ mediaType?: string; type: string }> }>,
+      ) => ({
         messages,
-        requiresMultimodalModel: messages
-          .at(-1)
-          ?.parts.some(
-            (part) =>
-              part.type === "file" &&
-              part.mediaType?.startsWith("image/") === true,
-          ) ?? false,
+        requiresMultimodalModel:
+          messages
+            .at(-1)
+            ?.parts.some(
+              (part) =>
+                part.type === "file" &&
+                part.mediaType?.startsWith("image/") === true,
+            ) ?? false,
       }),
     ),
     streamSalesChat: vi.fn(),
@@ -48,8 +51,7 @@ vi.mock("@/server/ai/sales-chat", () => ({
 
 vi.mock("@/server/ai/attachment-content", () => ({
   ChatAttachmentProcessingError: mocks.ChatAttachmentProcessingError,
-  prepareTrustedUserMessagesForModel:
-    mocks.prepareTrustedUserMessagesForModel,
+  prepareTrustedUserMessagesForModel: mocks.prepareTrustedUserMessagesForModel,
 }));
 
 vi.mock("@/server/services/ai-audit-service", () => ({
@@ -157,8 +159,7 @@ describe("POST /api/chat application-side admission budget", () => {
             id: "fact-message",
             parts: [
               {
-                text:
-                  "Compare CHN and BRA non-road regulations at 100 kW on 2026-09-05.",
+                text: "Compare CHN and BRA non-road regulations at 100 kW on 2026-09-05.",
                 type: "text",
               },
             ],
@@ -196,7 +197,9 @@ describe("POST /api/chat application-side admission budget", () => {
     const secretMarker = "203.0.113.93 postgres://budget-secret";
     runtime.__aiChatAdmissionBudget = {
       reserve: vi.fn(async () => {
-        throw new Error(secretMarker, { cause: { code: "57014", detail: secretMarker } });
+        throw new Error(secretMarker, {
+          cause: { code: "57014", detail: secretMarker },
+        });
       }),
       reset: vi.fn(),
     };
@@ -219,7 +222,11 @@ describe("POST /api/chat application-side admission budget", () => {
       expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain(secretMarker);
       expect(consoleSpy).toHaveBeenCalledWith(
         "AI chat admission budget unavailable",
-        { errorCode: "Error", databaseErrorCode: "57014", requestId: response.headers.get("X-Request-Id") },
+        {
+          errorCode: "Error",
+          databaseErrorCode: "57014",
+          requestId: response.headers.get("X-Request-Id"),
+        },
       );
       expect(mocks.getConfiguredAiModel).toHaveBeenCalledOnce();
       expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();

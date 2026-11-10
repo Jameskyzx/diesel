@@ -41,8 +41,7 @@ function exactDecimalToScaledInteger(value: string): bigint {
     );
   }
   const magnitude =
-    BigInt(match[2]!) * 1_000_000n +
-    BigInt((match[3] ?? "").padEnd(6, "0"));
+    BigInt(match[2]!) * 1_000_000n + BigInt((match[3] ?? "").padEnd(6, "0"));
   return match[1] === "-" ? -magnitude : magnitude;
 }
 
@@ -80,9 +79,7 @@ export function normalizeComparableMetric(
     exactValues.map(({ countryIso3, value }) => {
       if (maximum === minimum) return [countryIso3, 50];
       const numerator =
-        direction === "higher_is_better"
-          ? value - minimum
-          : maximum - value;
+        direction === "higher_is_better" ? value - minimum : maximum - value;
       return [countryIso3, roundedPercentage(numerator, maximum - minimum)];
     }),
   );
@@ -151,7 +148,9 @@ export function combineOpportunityScore(input: {
       key: component.key,
       score: component.score,
       status:
-        component.score === null ? ("missing" as const) : ("available" as const),
+        component.score === null
+          ? ("missing" as const)
+          : ("available" as const),
     };
   });
   const overallScore =
@@ -183,8 +182,7 @@ function hasValidOpportunityScoreWeights(
     values.every(
       (value) => Number.isFinite(value) && value >= 0 && value <= 1,
     ) &&
-    Math.abs(values.reduce((sum, value) => sum + value, 0) - 1) <=
-      0.000_001
+    Math.abs(values.reduce((sum, value) => sum + value, 0) - 1) <= 0.000_001
   );
 }
 

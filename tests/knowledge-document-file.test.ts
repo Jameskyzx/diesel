@@ -48,28 +48,37 @@ describe("knowledge document UTF-8 source extraction", () => {
   );
 
   it("still rejects malformed UTF-8 before it can become source evidence", () => {
-    expect(() => extractUtf8Text({
-      bytes: new Uint8Array([0xc3, 0x28]),
-      fileName: "demo-source.md",
-      mimeType: "text/markdown",
-    })).toThrow(expect.objectContaining({ code: "INVALID_UTF8" }));
+    expect(() =>
+      extractUtf8Text({
+        bytes: new Uint8Array([0xc3, 0x28]),
+        fileName: "demo-source.md",
+        mimeType: "text/markdown",
+      }),
+    ).toThrow(expect.objectContaining({ code: "INVALID_UTF8" }));
   });
 
-  it.each(["\0", "\0body", "before\0after", "body\0", "# scope\0heading\n\nbody"])(
-    "rejects valid UTF-8 containing NUL before chunking: %j",
-    (source) => {
-      expect(() => extract(source)).toThrow(expect.objectContaining({ code: "UNSUPPORTED_TEXT" }));
-      expect(() => extract(source)).toThrow("U+0000");
-    },
-  );
+  it.each([
+    "\0",
+    "\0body",
+    "before\0after",
+    "body\0",
+    "# scope\0heading\n\nbody",
+  ])("rejects valid UTF-8 containing NUL before chunking: %j", (source) => {
+    expect(() => extract(source)).toThrow(
+      expect.objectContaining({ code: "UNSUPPORTED_TEXT" }),
+    );
+    expect(() => extract(source)).toThrow("U+0000");
+  });
 
   it.each([
     { fileName: "demo-source.pdf", mimeType: "text/plain" },
     { fileName: "demo-source.txt", mimeType: "application/pdf" },
   ])("does not loosen file admission for $fileName / $mimeType", (metadata) => {
-    expect(() => extractUtf8Text({
-      ...metadata,
-      bytes: new TextEncoder().encode("# Scope\nBody."),
-    })).toThrow(expect.objectContaining({ code: "UNSUPPORTED_FILE" }));
+    expect(() =>
+      extractUtf8Text({
+        ...metadata,
+        bytes: new TextEncoder().encode("# Scope\nBody."),
+      }),
+    ).toThrow(expect.objectContaining({ code: "UNSUPPORTED_FILE" }));
   });
 });

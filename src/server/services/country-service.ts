@@ -143,10 +143,7 @@ export async function listCountryMapSummaries(
   return countryMapResponseSchema.parse({
     countries: rows.map((country) => {
       const verifiedAt = serializeDate(country.verifiedAt);
-      const classification = publicMapClassification(
-        country,
-        includeDemoData,
-      );
+      const classification = publicMapClassification(country, includeDemoData);
       return {
         ...country,
         ...classification,
@@ -218,7 +215,12 @@ async function readApplicabilitySummary(
     asOf,
     iso3,
     powerKw,
-  }: Required<Pick<CountryDetailReadQuery, "applicationScope" | "asOf" | "iso3" | "powerKw">>,
+  }: Required<
+    Pick<
+      CountryDetailReadQuery,
+      "applicationScope" | "asOf" | "iso3" | "powerKw"
+    >
+  >,
   repositories: RegulationComparisonRepositories,
   options: RequestSignalOptions,
 ) {
@@ -238,9 +240,7 @@ async function readApplicabilitySummary(
   return {
     country: countryComparison,
     lastVerifiedAt:
-      verificationDates.length > 0
-        ? latestTimestamp(verificationDates)
-        : null,
+      verificationDates.length > 0 ? latestTimestamp(verificationDates) : null,
     missingData: comparison.missingData,
     query: comparison.query,
     sources: comparison.sources,
@@ -248,7 +248,13 @@ async function readApplicabilitySummary(
 }
 
 async function getCountryDetailsFromRepositories(
-  { applicationScope, asOf, iso3, powerKw, marketPeriod }: CountryDetailReadQuery,
+  {
+    applicationScope,
+    asOf,
+    iso3,
+    powerKw,
+    marketPeriod,
+  }: CountryDetailReadQuery,
   repositories: CountryDetailReadRepositories,
   includeDemoData: boolean,
   options: RequestSignalOptions,
@@ -284,8 +290,11 @@ async function getCountryDetailsFromRepositories(
             countryRepository: { findByIso3: async () => profile },
             regulationRepository: {
               async findForComparison(queryInput, queryOptions) {
-                const rows = await repositories.regulationRepository
-                  .findForComparison(queryInput, queryOptions);
+                const rows =
+                  await repositories.regulationRepository.findForComparison(
+                    queryInput,
+                    queryOptions,
+                  );
                 return includeDemoData
                   ? rows
                   : rows.filter((row) => !isDemoRegulationComparisonRow(row));
@@ -308,10 +317,8 @@ async function getCountryDetailsFromRepositories(
   const country = { ...profile, ...detailResult.value };
   const applicabilitySummary = applicabilityResult.value;
 
-  const {
-    regulations: countryRegulationRows,
-    ...countryWithoutRegulations
-  } = country;
+  const { regulations: countryRegulationRows, ...countryWithoutRegulations } =
+    country;
   const visibleCountryRegulationRows = includeDemoData
     ? countryRegulationRows
     : countryRegulationRows.filter(
@@ -329,8 +336,7 @@ async function getCountryDetailsFromRepositories(
         source: {
           id: regulation.applicability.jurisdictionSourceId,
           isDemo: regulation.applicability.jurisdictionSourceIsDemo,
-          publishedOn:
-            regulation.applicability.jurisdictionSourcePublishedOn,
+          publishedOn: regulation.applicability.jurisdictionSourcePublishedOn,
           publisher: regulation.applicability.jurisdictionSourcePublisher,
           title: regulation.applicability.jurisdictionSourceTitle,
           url: regulation.applicability.jurisdictionSourceUrl,
@@ -370,17 +376,17 @@ async function getCountryDetailsFromRepositories(
   }));
   const visibleMarketMetricRows = includeDemoData
     ? country.marketMetrics
-    : country.marketMetrics.filter(
-        (metric) => !isDemoMarketMetric(metric),
-      );
-  const marketMetrics = visibleMarketMetricRows.filter(metric => observationInReportingPeriod(metric, marketPeriod)).map((metric) => ({
-    ...metric,
-    source: {
-      ...metric.source,
-      verifiedAt: serializeDate(metric.source.verifiedAt),
-    },
-    verifiedAt: serializeDate(metric.verifiedAt),
-  }));
+    : country.marketMetrics.filter((metric) => !isDemoMarketMetric(metric));
+  const marketMetrics = visibleMarketMetricRows
+    .filter((metric) => observationInReportingPeriod(metric, marketPeriod))
+    .map((metric) => ({
+      ...metric,
+      source: {
+        ...metric.source,
+        verifiedAt: serializeDate(metric.source.verifiedAt),
+      },
+      verifiedAt: serializeDate(metric.verifiedAt),
+    }));
   const visibleJurisdictionRows = includeDemoData
     ? country.jurisdictions
     : country.jurisdictions.filter(
@@ -388,9 +394,7 @@ async function getCountryDetailsFromRepositories(
       );
   const jurisdictions = visibleJurisdictionRows.map((jurisdiction) => ({
     ...jurisdiction,
-    jurisdictionVerifiedAt: serializeDate(
-      jurisdiction.jurisdictionVerifiedAt,
-    ),
+    jurisdictionVerifiedAt: serializeDate(jurisdiction.jurisdictionVerifiedAt),
     membershipSource: {
       ...jurisdiction.membershipSource,
       verifiedAt: serializeDate(jurisdiction.membershipSource.verifiedAt),

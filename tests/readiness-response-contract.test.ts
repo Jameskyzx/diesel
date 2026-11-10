@@ -16,9 +16,8 @@ type ReadinessResponseContract = Readonly<{
 }>;
 
 const require = createRequire(import.meta.url);
-const contract = require(
-  "../scripts/deploy/readiness-response-contract.cjs",
-) as ReadinessResponseContract;
+const contract =
+  require("../scripts/deploy/readiness-response-contract.cjs") as ReadinessResponseContract;
 
 const expectedVersion = "a".repeat(40);
 const requestStartedAtMs = Date.parse("2026-09-05T00:00:10.000Z");
@@ -43,9 +42,11 @@ const validHeaders = [
   "",
 ].join("\r\n");
 
-function validate(overrides: Partial<Parameters<
-  ReadinessResponseContract["validateReadinessResponseV1"]
->[0]> = {}): void {
+function validate(
+  overrides: Partial<
+    Parameters<ReadinessResponseContract["validateReadinessResponseV1"]>[0]
+  > = {},
+): void {
   contract.validateReadinessResponseV1({
     bodyText: JSON.stringify(validBody),
     contractVersion: contract.READINESS_RESPONSE_CONTRACT_VERSION,
@@ -69,19 +70,19 @@ describe("versioned readiness response contract", () => {
     );
   });
 
-  it.each([
-    requestStartedAtMs - 5_000,
-    responseReceivedAtMs + 5_000,
-  ])("accepts the inclusive timestamp boundary %i", (timestampMs) => {
-    expect(() =>
-      validate({
-        bodyText: JSON.stringify({
-          ...validBody,
-          timestamp: new Date(timestampMs).toISOString(),
+  it.each([requestStartedAtMs - 5_000, responseReceivedAtMs + 5_000])(
+    "accepts the inclusive timestamp boundary %i",
+    (timestampMs) => {
+      expect(() =>
+        validate({
+          bodyText: JSON.stringify({
+            ...validBody,
+            timestamp: new Date(timestampMs).toISOString(),
+          }),
         }),
-      }),
-    ).not.toThrow();
-  });
+      ).not.toThrow();
+    },
+  );
 
   it.each([
     {
@@ -172,7 +173,10 @@ describe("versioned readiness response contract", () => {
       label: "a duplicate cache-control header",
     },
     {
-      headers: validHeaders.replace("HTTP/1.1 200 OK", "HTTP/1.1 204 No Content"),
+      headers: validHeaders.replace(
+        "HTTP/1.1 200 OK",
+        "HTTP/1.1 204 No Content",
+      ),
       label: "a non-200 status",
     },
   ])("rejects $label", ({ headers }) => {

@@ -1,4 +1,8 @@
-export type KnowledgeQuotedSpan = { start: number; end: number; closed: boolean };
+export type KnowledgeQuotedSpan = {
+  start: number;
+  end: number;
+  closed: boolean;
+};
 
 /**
  * Text-preservation ranges, not a parser for PostgreSQL Boolean operators.
@@ -9,13 +13,17 @@ export type KnowledgeQuotedSpan = { start: number; end: number; closed: boolean 
 export function knowledgeQuotedSpans(text: string): KnowledgeQuotedSpan[] {
   // Scan independently: a curly quote must not conceal an ASCII quote whose
   // native phrase continues beyond the closing curly quote (or vice versa).
-  const ranges = [/"[^"]*(?:"|$)/gu, /“[^”]*(?:”|$)/gu].flatMap((pattern) =>
-    Array.from(text.matchAll(pattern), (match) => ({
-      start: match.index,
-      end: match.index + match[0].length,
-      closed: match[0].length > 1 && match[0].endsWith(match[0][0] === '"' ? '"' : "”"),
-    })),
-  ).sort((left, right) => left.start - right.start);
+  const ranges = [/"[^"]*(?:"|$)/gu, /“[^”]*(?:”|$)/gu]
+    .flatMap((pattern) =>
+      Array.from(text.matchAll(pattern), (match) => ({
+        start: match.index,
+        end: match.index + match[0].length,
+        closed:
+          match[0].length > 1 &&
+          match[0].endsWith(match[0][0] === '"' ? '"' : "”"),
+      })),
+    )
+    .sort((left, right) => left.start - right.start);
   const merged: KnowledgeQuotedSpan[] = [];
   for (const range of ranges) {
     const previous = merged.at(-1);
@@ -31,7 +39,10 @@ export function knowledgeQuotedSpans(text: string): KnowledgeQuotedSpan[] {
 export function maskKnowledgeQuotedText(text: string): string {
   let masked = text;
   for (const span of knowledgeQuotedSpans(text)) {
-    masked = masked.slice(0, span.start) + " ".repeat(span.end - span.start) + masked.slice(span.end);
+    masked =
+      masked.slice(0, span.start) +
+      " ".repeat(span.end - span.start) +
+      masked.slice(span.end);
   }
   return masked;
 }

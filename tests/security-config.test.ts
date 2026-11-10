@@ -39,7 +39,9 @@ describe("security and immutable asset configuration", () => {
     // Diesel owns one TLS server; the independently managed blog is not part
     // of this release's template or redirect policy.
     expect(nginx.match(/Strict-Transport-Security/g)).toHaveLength(1);
-    for (const server of nginx.split("server {").filter((block) => block.includes("listen 443 ssl;"))) {
+    for (const server of nginx
+      .split("server {")
+      .filter((block) => block.includes("listen 443 ssl;"))) {
       expect(server.match(/Strict-Transport-Security/g)).toHaveLength(1);
     }
     expect(nginx.indexOf("Strict-Transport-Security")).toBeLessThan(
@@ -55,9 +57,7 @@ describe("security and immutable asset configuration", () => {
     expect(contentSecurityPolicy?.value).toContain(
       "img-src 'self' data: blob:",
     );
-    expect(contentSecurityPolicy?.value).toContain(
-      "worker-src 'self'",
-    );
+    expect(contentSecurityPolicy?.value).toContain("worker-src 'self'");
     expect(contentSecurityPolicy?.value).toContain("default-src 'self'");
     expect(contentSecurityPolicy?.value).toContain("object-src 'none'");
     expect(contentSecurityPolicy?.value).not.toMatch(
@@ -95,13 +95,9 @@ describe("security and immutable asset configuration", () => {
     expect(developmentPolicy).not.toMatch(/worker-src[^;]*blob:/u);
     expect(productionPolicy).toContain("worker-src 'self'");
     expect(productionPolicy).not.toMatch(/worker-src[^;]*blob:/u);
-    expect(productionPolicy).toContain(
-      "script-src 'self' 'unsafe-inline'",
-    );
+    expect(productionPolicy).toContain("script-src 'self' 'unsafe-inline'");
     expect(productionPolicy).toContain("connect-src 'self';");
-    expect(productionPolicy).not.toMatch(
-      /connect-src[^;]*(?:https:|wss?:)/u,
-    );
+    expect(productionPolicy).not.toMatch(/connect-src[^;]*(?:https:|wss?:)/u);
     expect(productionPolicy).not.toContain("'unsafe-eval'");
     expect(developmentConfigHeaders?.[0]?.headers[4]?.value).toBe(
       developmentPolicy,
@@ -109,12 +105,13 @@ describe("security and immutable asset configuration", () => {
     expect(productionConfigHeaders?.[0]?.headers[4]?.value).toBe(
       productionPolicy,
     );
-    expect(createNextConfig(PHASE_DEVELOPMENT_SERVER).serverExternalPackages)
-      .toEqual([
-        "@electric-sql/pglite",
-        "@electric-sql/pglite-pgvector",
-        "@napi-rs/canvas",
-      ]);
+    expect(
+      createNextConfig(PHASE_DEVELOPMENT_SERVER).serverExternalPackages,
+    ).toEqual([
+      "@electric-sql/pglite",
+      "@electric-sql/pglite-pgvector",
+      "@napi-rs/canvas",
+    ]);
   });
 
   it("lets the image optimizer decode only the repository brand assets", () => {
@@ -123,14 +120,19 @@ describe("security and immutable asset configuration", () => {
       ...createNextConfig(PHASE_PRODUCTION_BUILD).images,
     };
     // Next's own request validation runs before any fetch or decode.
-    const validate = (url: string) => ImageOptimizerCache.validateParams(
-      { headers: {} } as Parameters<typeof ImageOptimizerCache.validateParams>[0],
-      { url, w: "96", q: "75" },
-      { images } as Parameters<typeof ImageOptimizerCache.validateParams>[2],
-      false,
-    );
+    const validate = (url: string) =>
+      ImageOptimizerCache.validateParams(
+        { headers: {} } as Parameters<
+          typeof ImageOptimizerCache.validateParams
+        >[0],
+        { url, w: "96", q: "75" },
+        { images } as Parameters<typeof ImageOptimizerCache.validateParams>[2],
+        false,
+      );
 
-    expect(validate("/brand/diesel-chibi.png")).not.toHaveProperty("errorMessage");
+    expect(validate("/brand/diesel-chibi.png")).not.toHaveProperty(
+      "errorMessage",
+    );
     for (const url of [
       "/og.jpg",
       "/portfolio/example.png",
@@ -204,20 +206,26 @@ describe("security and immutable asset configuration", () => {
       resolve(process.cwd(), ".gitleaks.toml"),
       "utf8",
     );
-    const patterns = [...configuration.matchAll(/'''([^\n]+)'''/g)]
-      .map((match) => new RegExp(match[1]));
-    const allowed = (line: string) => patterns.some((pattern) => pattern.test(line));
+    const patterns = [...configuration.matchAll(/'''([^\n]+)'''/g)].map(
+      (match) => new RegExp(match[1]),
+    );
+    const allowed = (line: string) =>
+      patterns.some((pattern) => pattern.test(line));
     const fixture = "123e4567-e89b-42d3-a456-426614174000";
     expect(allowed(`    token: "${fixture}",`)).toBe(true);
     expect(allowed(`const OWNER_TOKEN = "${fixture}";`)).toBe(true);
     expect(allowed(`      receipt.token = "${fixture}";`)).toBe(true);
     expect(allowed(`        '  "token": "${fixture}",\\n' +`)).toBe(true);
     for (const suffix of ["1", "2"]) {
-      expect(allowed(`const token = "${fixture.slice(0, -1)}${suffix}";`)).toBe(true);
+      expect(allowed(`const token = "${fixture.slice(0, -1)}${suffix}";`)).toBe(
+        true,
+      );
     }
     expect(allowed(`const token = "${fixture.slice(0, -1)}9";`)).toBe(false);
     expect(allowed(`AI_API_KEY="${fixture}"`)).toBe(false);
-    expect(allowed(`const token = "${fixture}"; const key = "another-value";`)).toBe(false);
+    expect(
+      allowed(`const token = "${fixture}"; const key = "another-value";`),
+    ).toBe(false);
     expect(allowed(`const token = "unrelated-private-value";`)).toBe(false);
   });
 });

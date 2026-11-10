@@ -35,8 +35,15 @@ import {
 } from "@/server/db/schema";
 import { assertGovernanceWriteAllowed } from "@/server/db/governance-maintenance-lock";
 import { documentChunkInsertBatches } from "@/server/repositories/document-chunk-batches";
-import { resolveKnowledgeCandidateConstraint, resolveKnowledgeConstraintKey, resolveKnowledgeTextQuery } from "@/server/repositories/knowledge-text-query";
-import { projectKnowledgeRankingQuery, type KnowledgeRankingOptions } from "@/domain/knowledge/delivery-query";
+import {
+  resolveKnowledgeCandidateConstraint,
+  resolveKnowledgeConstraintKey,
+  resolveKnowledgeTextQuery,
+} from "@/server/repositories/knowledge-text-query";
+import {
+  projectKnowledgeRankingQuery,
+  type KnowledgeRankingOptions,
+} from "@/domain/knowledge/delivery-query";
 import { createLocalHashEmbedding } from "@/domain/knowledge/embedding";
 import {
   throwIfRequestAborted,
@@ -146,11 +153,16 @@ function nullableString(value: string | null): string | null {
 export function createKnowledgeRepository<
   TQueryResult extends PgQueryResultHKT,
 >(database: PgDatabase<TQueryResult, typeof schema>) {
-  const parseNativeConstraints = (queries: readonly string[]) => database.select({
-    index: sql<number>`(ordinality - 1)::integer`,
-    query: sql<string>`websearch_to_tsquery('simple', value)::text`,
-  }).from(sql`jsonb_array_elements_text(${JSON.stringify(queries)}::jsonb) with ordinality as native_query_constraints(value, ordinality)`)
-    .orderBy(sql`ordinality`);
+  const parseNativeConstraints = (queries: readonly string[]) =>
+    database
+      .select({
+        index: sql<number>`(ordinality - 1)::integer`,
+        query: sql<string>`websearch_to_tsquery('simple', value)::text`,
+      })
+      .from(
+        sql`jsonb_array_elements_text(${JSON.stringify(queries)}::jsonb) with ordinality as native_query_constraints(value, ordinality)`,
+      )
+      .orderBy(sql`ordinality`);
 
   async function getDocumentSummary(documentId: string) {
     const rows = await database
@@ -185,11 +197,27 @@ export function createKnowledgeRepository<
   }
 
   return {
-    async knowledgeQueryConstraintsMatch(expected: string, actual: string, options: RequestSignalOptions = {}) {
-      const readCanonical = (expression: SQL) => database.select({ query: sql<string>`(${expression})::text` })
-        .from(sql`(values (1)) as knowledge_constraint_key(value)`);
-      const expectedKey = await resolveKnowledgeConstraintKey(expected, parseNativeConstraints, readCanonical, options);
-      const actualKey = await resolveKnowledgeConstraintKey(actual, parseNativeConstraints, readCanonical, options);
+    async knowledgeQueryConstraintsMatch(
+      expected: string,
+      actual: string,
+      options: RequestSignalOptions = {},
+    ) {
+      const readCanonical = (expression: SQL) =>
+        database
+          .select({ query: sql<string>`(${expression})::text` })
+          .from(sql`(values (1)) as knowledge_constraint_key(value)`);
+      const expectedKey = await resolveKnowledgeConstraintKey(
+        expected,
+        parseNativeConstraints,
+        readCanonical,
+        options,
+      );
+      const actualKey = await resolveKnowledgeConstraintKey(
+        actual,
+        parseNativeConstraints,
+        readCanonical,
+        options,
+      );
       return expectedKey === actualKey;
     },
     async completeDocument(
@@ -227,9 +255,7 @@ export function createKnowledgeRepository<
           document.governanceStatus !== "draft" ||
           document.processingStatus !== "processing"
         ) {
-          throw new Error(
-            "Only a draft processing document can be completed.",
-          );
+          throw new Error("Only a draft processing document can be completed.");
         }
 
         if (governanceStatus === "published") {
@@ -495,16 +521,10 @@ export function createKnowledgeRepository<
           and(
             eq(dataGovernanceDrafts.entityType, "document"),
             eq(dataGovernanceDrafts.entityKey, input.documentId),
-            inArray(dataGovernanceDrafts.workflowStatus, [
-              "draft",
-              "reviewed",
-            ]),
+            inArray(dataGovernanceDrafts.workflowStatus, ["draft", "reviewed"]),
             isNull(dataGovernanceDrafts.archivedAt),
             input.accessScope.kind === "creator"
-              ? eq(
-                  dataGovernanceDrafts.createdBy,
-                  input.accessScope.createdBy,
-                )
+              ? eq(dataGovernanceDrafts.createdBy, input.accessScope.createdBy)
               : undefined,
           ),
         )
@@ -564,10 +584,7 @@ export function createKnowledgeRepository<
         .from(documents)
         .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
         .where(
-          and(
-            eq(documents.id, input.documentId),
-            isNull(documents.archivedAt),
-          ),
+          and(eq(documents.id, input.documentId), isNull(documents.archivedAt)),
         )
         .limit(1);
 
@@ -821,17 +838,42 @@ export function createKnowledgeRepository<
         );
       }
 
-      const rankingQuery = projectKnowledgeRankingQuery(query.query, options.deliveryCueRanking);
-      const resolveTextQuery = (text: string) => resolveKnowledgeTextQuery(text, async (maskedQuery) =>
-        database.select({ query: sql<string>`websearch_to_tsquery('simple', ${maskedQuery})::text` })
-          .from(sql`(values (1)) as knowledge_spelling_parse(value)`), options);
+      const rankingQuery = projectKnowledgeRankingQuery(
+        query.query,
+        options.deliveryCueRanking,
+      );
+      const resolveTextQuery = (text: string) =>
+        resolveKnowledgeTextQuery(
+          text,
+          async (maskedQuery) =>
+            database
+              .select({
+                query: sql<string>`websearch_to_tsquery('simple', ${maskedQuery})::text`,
+              })
+              .from(sql`(values (1)) as knowledge_spelling_parse(value)`),
+          options,
+        );
       // Ranking-only projection never changes the original native predicate.
-      const candidateConstraint = await resolveKnowledgeCandidateConstraint(query.query, parseNativeConstraints, options);
-      if (candidateConstraint) conditions.push(sql`${documentChunks.searchVector} @@ ${candidateConstraint}`);
+      const candidateConstraint = await resolveKnowledgeCandidateConstraint(
+        query.query,
+        parseNativeConstraints,
+        options,
+      );
+      if (candidateConstraint)
+        conditions.push(
+          sql`${documentChunks.searchVector} @@ ${candidateConstraint}`,
+        );
       throwIfRequestAborted(options.signal);
-      const candidateQuery = (textQuery: SQL, embedding: number[], rankingPath: 0 | 1) => {
+      const candidateQuery = (
+        textQuery: SQL,
+        embedding: number[],
+        rankingPath: 0 | 1,
+      ) => {
         const keywordScore = sql<number>`ts_rank_cd(${documentChunks.searchVector}, ${textQuery})`;
-        const vectorDistance = cosineDistance(documentChunks.embedding, embedding);
+        const vectorDistance = cosineDistance(
+          documentChunks.embedding,
+          embedding,
+        );
         return database
           .select({
             applicationScope: documentChunks.applicationScope,
@@ -874,12 +916,23 @@ export function createKnowledgeRepository<
           .orderBy(desc(keywordScore), asc(vectorDistance))
           .limit(100);
       };
-      const original = candidateQuery(await resolveTextQuery(query.query), queryEmbedding, 0);
+      const original = candidateQuery(
+        await resolveTextQuery(query.query),
+        queryEmbedding,
+        0,
+      );
       // Two bounded candidate views share one SQL statement and governance
       // snapshot. Every row carries its own complete keyword/vector score pair.
-      const combined = rankingQuery === query.query ? original : original.unionAll(
-        candidateQuery(await resolveTextQuery(rankingQuery), createLocalHashEmbedding(rankingQuery), 1),
-      );
+      const combined =
+        rankingQuery === query.query
+          ? original
+          : original.unionAll(
+              candidateQuery(
+                await resolveTextQuery(rankingQuery),
+                createLocalHashEmbedding(rankingQuery),
+                1,
+              ),
+            );
       throwIfRequestAborted(options.signal);
       const rows = await combined;
       throwIfRequestAborted(options.signal);

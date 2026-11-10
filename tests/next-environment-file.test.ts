@@ -52,9 +52,7 @@ function nextEnvironment(
 async function createFixture(
   original = nextEnvironment("./.next/dev/types/routes.d.ts"),
 ): Promise<Readonly<{ directory: string; path: string }>> {
-  const directory = await mkdtemp(
-    join(tmpdir(), "diesel-next-environment-"),
-  );
+  const directory = await mkdtemp(join(tmpdir(), "diesel-next-environment-"));
   temporaryDirectories.push(directory);
   const path = join(directory, "next-env.d.ts");
   await writeFile(path, original, { mode: 0o640 });
@@ -63,9 +61,9 @@ async function createFixture(
 
 afterEach(async () => {
   await Promise.all(
-    temporaryDirectories.splice(0).map((directory) =>
-      rm(directory, { force: true, recursive: true }),
-    ),
+    temporaryDirectories
+      .splice(0)
+      .map((directory) => rm(directory, { force: true, recursive: true })),
   );
 });
 
@@ -75,22 +73,28 @@ describe("Next environment file recognition", () => {
     "./.next/types/routes.d.ts",
     "./.next/dev/types/routes.d.ts",
     "./.next-e2e/dev/types/routes.d.ts",
-  ])("accepts the repository's canonical route declaration %s", (routeImport) => {
-    expect(isCanonicalNextEnvironmentFile(nextEnvironment(routeImport))).toBe(
-      true,
-    );
-  });
+  ])(
+    "accepts the repository's canonical route declaration %s",
+    (routeImport) => {
+      expect(isCanonicalNextEnvironmentFile(nextEnvironment(routeImport))).toBe(
+        true,
+      );
+    },
+  );
 
-  it.each([
-    "./.next/types/",
-    "./.next/dev/types/",
-    "./.next-e2e/dev/types/",
-  ])("accepts an exact routes/root-params pair in %s", (directory) => {
-    expect(isCanonicalNextEnvironmentFile(nextEnvironment(
-      `${directory}routes.d.ts`,
-      `${directory}root-params.d.ts`,
-    ))).toBe(true);
-  });
+  it.each(["./.next/types/", "./.next/dev/types/", "./.next-e2e/dev/types/"])(
+    "accepts an exact routes/root-params pair in %s",
+    (directory) => {
+      expect(
+        isCanonicalNextEnvironmentFile(
+          nextEnvironment(
+            `${directory}routes.d.ts`,
+            `${directory}root-params.d.ts`,
+          ),
+        ),
+      ).toBe(true);
+    },
+  );
 
   it.each([
     {
@@ -137,10 +141,12 @@ describe("Next environment file recognition", () => {
       bytes: nextEnvironment(
         "./.next/types/routes.d.ts",
         "./.next/types/root-params.d.ts",
-      ).toString("utf8").replace(
-        'import "./.next/types/root-params.d.ts";',
-        'import "./.next/types/root-params.d.ts";\nimport "./.next/types/root-params.d.ts";',
-      ),
+      )
+        .toString("utf8")
+        .replace(
+          'import "./.next/types/root-params.d.ts";',
+          'import "./.next/types/root-params.d.ts";\nimport "./.next/types/root-params.d.ts";',
+        ),
     },
     {
       label: "an extra trailing blank line",
@@ -206,10 +212,9 @@ describe("installed Next type-declaration generator", () => {
         typedRoutes: false,
       });
 
-      expect(await readFile(fixture.path)).toEqual(nextEnvironment(
-        routeImport,
-        `./${distDir}/types/root-params.d.ts`,
-      ));
+      expect(await readFile(fixture.path)).toEqual(
+        nextEnvironment(routeImport, `./${distDir}/types/root-params.d.ts`),
+      );
       await chmod(fixture.path, 0o600);
       await guard.recordGeneratedState();
       await guard.restore();
@@ -234,7 +239,9 @@ describe("installed Next type-declaration generator", () => {
       typedRoutes: true,
     });
     const generated = await readFile(fixture.path);
-    expect(generated.toString("utf8")).toContain('import "./.next/types/cache-life.d.ts";');
+    expect(generated.toString("utf8")).toContain(
+      'import "./.next/types/cache-life.d.ts";',
+    );
     expect(isCanonicalNextEnvironmentFile(generated)).toBe(false);
     await expect(guard.recordGeneratedState()).rejects.toThrow(
       "outside this operation's allowlist",
@@ -309,10 +316,7 @@ describe("Next environment file restoration", () => {
       path: fixture.path,
     });
 
-    await writeFile(
-      fixture.path,
-      nextEnvironment("./.next/types/routes.d.ts"),
-    );
+    await writeFile(fixture.path, nextEnvironment("./.next/types/routes.d.ts"));
     await chmod(fixture.path, 0o600);
     await guard.recordGeneratedState();
     await guard.restore();
@@ -332,10 +336,7 @@ describe("Next environment file restoration", () => {
       allowedGeneratedRouteImports: ["./.next/types/routes.d.ts"],
       path: fixture.path,
     });
-    await writeFile(
-      fixture.path,
-      nextEnvironment("./.next/types/routes.d.ts"),
-    );
+    await writeFile(fixture.path, nextEnvironment("./.next/types/routes.d.ts"));
     await guard.recordGeneratedState();
 
     await expect(
@@ -581,9 +582,9 @@ describe("guarded Next build process lifecycle", () => {
     expect(errorHandler).toBeGreaterThanOrEqual(0);
     expect(closeHandler).toBeGreaterThan(errorHandler);
     expect(detach).toBeGreaterThan(closeHandler);
-    expect(
-      source.slice(errorHandler, closeHandler),
-    ).not.toContain("signalController.attachChild(null)");
+    expect(source.slice(errorHandler, closeHandler)).not.toContain(
+      "signalController.attachChild(null)",
+    );
   });
 });
 
@@ -612,7 +613,9 @@ describe("guarded Next development server lifecycle", () => {
       );
 
       expect(source).toContain('process.on("SIGINT", handleTerminationSignal)');
-      expect(source).toContain('process.on("SIGTERM", handleTerminationSignal)');
+      expect(source).toContain(
+        'process.on("SIGTERM", handleTerminationSignal)',
+      );
       expect(source).not.toContain(
         'process.once("SIGINT", handleTerminationSignal)',
       );

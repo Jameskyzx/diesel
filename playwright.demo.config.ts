@@ -1,7 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL =
-  process.env.PLAYWRIGHT_DEMO_BASE_URL ?? "http://127.0.0.1:3200";
+const baseURL = process.env.PLAYWRIGHT_DEMO_BASE_URL ?? "http://127.0.0.1:3200";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -14,9 +13,7 @@ export default defineConfig({
         ["github"],
         ["html", { open: "never", outputFolder: "playwright-demo-report" }],
       ]
-    : [
-        ["list"],
-      ],
+    : [["list"]],
   outputDir: "test-results/demo",
   timeout: process.env.CI ? 60_000 : 30_000,
   use: {

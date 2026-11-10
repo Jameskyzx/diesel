@@ -1,22 +1,7 @@
 import { randomUUID } from "node:crypto";
-import {
-  constants,
-  type BigIntStats,
-} from "node:fs";
-import {
-  lstat,
-  open,
-  realpath,
-  rename,
-  rm,
-} from "node:fs/promises";
-import {
-  basename,
-  dirname,
-  isAbsolute,
-  normalize,
-  resolve,
-} from "node:path";
+import { constants, type BigIntStats } from "node:fs";
+import { lstat, open, realpath, rename, rm } from "node:fs/promises";
+import { basename, dirname, isAbsolute, normalize, resolve } from "node:path";
 
 const NEXT_ENVIRONMENT_MAX_BYTES = 16 * 1024;
 const canonicalNextEnvironmentPattern = new RegExp(
@@ -65,13 +50,15 @@ function sameFileObservation(
   left: NextEnvironmentFileState,
   right: NextEnvironmentFileState,
 ): boolean {
-  return left.dev === right.dev &&
+  return (
+    left.dev === right.dev &&
     left.ino === right.ino &&
     left.mode === right.mode &&
     left.mtimeNs === right.mtimeNs &&
     left.nlink === right.nlink &&
     left.size === right.size &&
-    left.bytes.equals(right.bytes);
+    left.bytes.equals(right.bytes)
+  );
 }
 
 function sameRestorableState(
@@ -293,7 +280,7 @@ export async function createNextEnvironmentFileGuard(
       }
       if (
         !generatedStates.some((candidate) =>
-          sameRestorableState(candidate, generated)
+          sameRestorableState(candidate, generated),
         )
       ) {
         generatedStates.push(generated);
@@ -309,7 +296,7 @@ export async function createNextEnvironmentFileGuard(
         }
         if (
           !generatedStates.some((candidate) =>
-            sameRestorableState(candidate, current)
+            sameRestorableState(candidate, current),
           )
         ) {
           throw new Error(

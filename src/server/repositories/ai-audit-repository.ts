@@ -1,15 +1,8 @@
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
-import type {
-  AiCitation,
-  AiToolName,
-} from "@/features/ai/schemas";
+import type { AiCitation, AiToolName } from "@/features/ai/schemas";
 import * as schema from "@/server/db/schema";
-import {
-  aiChatSessions,
-  aiCitations,
-  aiToolCalls,
-} from "@/server/db/schema";
+import { aiChatSessions, aiCitations, aiToolCalls } from "@/server/db/schema";
 import {
   throwIfRequestAborted,
   type RequestSignalOptions,
@@ -31,9 +24,9 @@ export type AiToolCallAuditInput = {
   toolName: AiToolName;
 };
 
-export function createAiAuditRepository<
-  TQueryResult extends PgQueryResultHKT,
->(database: PgDatabase<TQueryResult, typeof schema>) {
+export function createAiAuditRepository<TQueryResult extends PgQueryResultHKT>(
+  database: PgDatabase<TQueryResult, typeof schema>,
+) {
   return {
     async ensureSession(
       input: {

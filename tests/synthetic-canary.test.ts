@@ -291,17 +291,19 @@ function createCountryDecisionSummary(asOf = "2026-08-15") {
 }
 
 function validUiMessageSse(finishReason: string | null = "stop"): string {
-  return [
-    { type: "start" },
-    { id: "answer", type: "text-start" },
-    { delta: "Evidence-backed answer.", id: "answer", type: "text-delta" },
-    { id: "answer", type: "text-end" },
-    finishReason === null
-      ? { type: "finish" }
-      : { finishReason, type: "finish" },
-  ]
-    .map((event) => `data: ${JSON.stringify(event)}\n\n`)
-    .join("") + "data: [DONE]\n\n";
+  return (
+    [
+      { type: "start" },
+      { id: "answer", type: "text-start" },
+      { delta: "Evidence-backed answer.", id: "answer", type: "text-delta" },
+      { id: "answer", type: "text-end" },
+      finishReason === null
+        ? { type: "finish" }
+        : { finishReason, type: "finish" },
+    ]
+      .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+      .join("") + "data: [DONE]\n\n"
+  );
 }
 
 function createCountryNoDataSummary() {
@@ -324,29 +326,27 @@ function createCountryNoDataSummary() {
 
 function createPublicDemoProducts() {
   return {
-    products: ["DEMO-ENG-100", "DEMO-ENG-200"].map(
-      (modelCode, index) => ({
-        applicationScopes: ["non-road"],
-        availableFrom: "2025-01-01",
-        availableTo: "2030-01-01",
-        id: `00000000-0000-4000-8000-00000000010${index}`,
+    products: ["DEMO-ENG-100", "DEMO-ENG-200"].map((modelCode, index) => ({
+      applicationScopes: ["non-road"],
+      availableFrom: "2025-01-01",
+      availableTo: "2030-01-01",
+      id: `00000000-0000-4000-8000-00000000010${index}`,
+      isDemo: true,
+      modelCode,
+      name: `Demo engine ${index + 1}`,
+      powerMaxKw: 150,
+      powerMinKw: 50,
+      source: {
+        id: `00000000-0000-4000-8000-00000000020${index}`,
         isDemo: true,
-        modelCode,
-        name: `Demo engine ${index + 1}`,
-        powerMaxKw: 150,
-        powerMinKw: 50,
-        source: {
-          id: `00000000-0000-4000-8000-00000000020${index}`,
-          isDemo: true,
-          publishedOn: "2026-01-01",
-          title: "Demo product source",
-          url: null,
-          verifiedAt,
-        },
-        specificationVersion: "demo-v1",
+        publishedOn: "2026-01-01",
+        title: "Demo product source",
+        url: null,
         verifiedAt,
-      }),
-    ),
+      },
+      specificationVersion: "demo-v1",
+      verifiedAt,
+    })),
     status: "ok",
   };
 }
@@ -362,7 +362,9 @@ describe("synthetic canary", () => {
     expect(workflow).toContain("CANARY_BASE_URL: https://diesel.jamesky.site");
     expect(workflow).toContain("inputs.include_ai");
     expect(workflow).toContain("default: true");
-    expect(workflow).toContain("github.event_name == 'schedule' || inputs.include_ai == true");
+    expect(workflow).toContain(
+      "github.event_name == 'schedule' || inputs.include_ai == true",
+    );
     expect(workflow).not.toContain("continue-on-error");
     expect(workflow).toContain("CANARY_STATUS_PATH: docs/STATUS.md");
     expect(workflow).toContain("CANARY_MASTER_VERSION: ${{ github.sha }}");
@@ -412,8 +414,9 @@ describe("synthetic canary", () => {
         version: "synthetic-canary-v6",
       });
       expect(serialized).not.toContain("super-secret");
-      expect((await readdir(directory)).filter((name) => name.endsWith(".tmp")))
-        .toEqual([]);
+      expect(
+        (await readdir(directory)).filter((name) => name.endsWith(".tmp")),
+      ).toEqual([]);
     } finally {
       await rm(directory, { force: true, recursive: true });
     }
@@ -437,43 +440,54 @@ describe("synthetic canary", () => {
     expect(liveness?.expectedVersions).toEqual([recorded, released]);
     expect(readiness?.expectedVersions).toEqual([recorded, released]);
     for (const version of [recorded, released]) {
-      expect(validateCanaryJson(
+      expect(
+        validateCanaryJson(
+          "liveness",
+          { ...baseHealth, version },
+          undefined,
+          liveness?.expectedVersions,
+          undefined,
+          healthTimeWindow,
+        ),
+      ).toBe(true);
+    }
+    expect(
+      validateCanaryJson(
         "liveness",
-        { ...baseHealth, version },
+        { ...baseHealth, version: "c".repeat(40) },
         undefined,
         liveness?.expectedVersions,
         undefined,
         healthTimeWindow,
-      )).toBe(true);
-    }
-    expect(validateCanaryJson(
-      "liveness",
-      { ...baseHealth, version: "c".repeat(40) },
-      undefined,
-      liveness?.expectedVersions,
-      undefined,
-      healthTimeWindow,
-    )).toBe(false);
-    expect(createCanaryChecks({
-      alternateVersion: recorded,
-      asOf: "2026-08-15",
-      expectedVersion: recorded,
-      includeProviderAi: false,
-    })[0]?.expectedVersions).toEqual([recorded]);
-    expect(createCanaryChecks({
-      alternateVersion: released,
-      asOf: "2026-08-15",
-      includeProviderAi: false,
-    })[0]).not.toHaveProperty("expectedVersions");
+      ),
+    ).toBe(false);
+    expect(
+      createCanaryChecks({
+        alternateVersion: recorded,
+        asOf: "2026-08-15",
+        expectedVersion: recorded,
+        includeProviderAi: false,
+      })[0]?.expectedVersions,
+    ).toEqual([recorded]);
+    expect(
+      createCanaryChecks({
+        alternateVersion: released,
+        asOf: "2026-08-15",
+        includeProviderAi: false,
+      })[0],
+    ).not.toHaveProperty("expectedVersions");
   });
 
   it("normalizes an HTTP target without preserving credentials or paths", () => {
-    expect(validateCanaryBaseUrl("https://jamesky.site/deploy?secret=no").href)
-      .toBe("https://jamesky.site/");
-    expect(() => validateCanaryBaseUrl("https://user:pass@example.com"))
-      .toThrow(/without credentials/);
-    expect(() => validateCanaryBaseUrl("file:///tmp/report"))
-      .toThrow(/HTTP\(S\)/);
+    expect(
+      validateCanaryBaseUrl("https://jamesky.site/deploy?secret=no").href,
+    ).toBe("https://jamesky.site/");
+    expect(() =>
+      validateCanaryBaseUrl("https://user:pass@example.com"),
+    ).toThrow(/without credentials/);
+    expect(() => validateCanaryBaseUrl("file:///tmp/report")).toThrow(
+      /HTTP\(S\)/,
+    );
   });
 
   it("always checks deterministic chat SSE and keeps provider AI opt-in", () => {
@@ -490,27 +504,36 @@ describe("synthetic canary", () => {
 
     expect(publicChecks).toHaveLength(6);
     expect(paidChecks).toHaveLength(7);
-    expect(publicChecks.find(({ id }) => id === "country-decision-summary"))
-      .toMatchObject({
-        jsonExpectation: {
-          applicationScope: "construction",
-          summaryStatus: "available",
-        },
-        path: "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-08-15",
-      });
-    expect(publicChecks.find(({ id }) => id === "country-decision-no-data"))
-      .toMatchObject({
-        jsonExpectation: {
-          applicationScope: "non-road",
-          summaryStatus: "no_data",
-        },
-        path: "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-15",
-      });
-    expect(publicChecks.every(({ requireRequestId }) => requireRequestId))
-      .toBe(true);
+    expect(
+      publicChecks.find(({ id }) => id === "country-decision-summary"),
+    ).toMatchObject({
+      jsonExpectation: {
+        applicationScope: "construction",
+        summaryStatus: "available",
+      },
+      path: "/api/countries/CHN?applicationScope=construction&powerKw=100&asOf=2026-08-15",
+    });
+    expect(
+      publicChecks.find(({ id }) => id === "country-decision-no-data"),
+    ).toMatchObject({
+      jsonExpectation: {
+        applicationScope: "non-road",
+        summaryStatus: "no_data",
+      },
+      path: "/api/countries/CHN?applicationScope=non-road&powerKw=100&asOf=2026-08-15",
+    });
+    expect(publicChecks.every(({ requireRequestId }) => requireRequestId)).toBe(
+      true,
+    );
     expect(publicChecks.slice(0, 2)).toEqual([
-      expect.objectContaining({ expectedVersions: [expectedVersion], id: "liveness" }),
-      expect.objectContaining({ expectedVersions: [expectedVersion], id: "readiness" }),
+      expect.objectContaining({
+        expectedVersions: [expectedVersion],
+        id: "liveness",
+      }),
+      expect.objectContaining({
+        expectedVersions: [expectedVersion],
+        id: "readiness",
+      }),
     ]);
     const directCheck = publicChecks.find(({ id }) => id === "chat-direct-sse");
     expect(directCheck).toMatchObject({
@@ -542,13 +565,14 @@ describe("synthetic canary", () => {
         }),
       ],
     });
-    expect(publicChecks.find(({ id }) => id === "public-products"))
-      .toMatchObject({
-        productExpectation: {
-          demoModelCodes: ["DEMO-ENG-100", "DEMO-ENG-200"],
-          realProductCount: 0,
-        },
-      });
+    expect(
+      publicChecks.find(({ id }) => id === "public-products"),
+    ).toMatchObject({
+      productExpectation: {
+        demoModelCodes: ["DEMO-ENG-100", "DEMO-ENG-200"],
+        realProductCount: 0,
+      },
+    });
   });
 
   it("validates each expected public JSON shape", () => {
@@ -560,73 +584,89 @@ describe("synthetic canary", () => {
     };
     expect(validateCanaryJson("liveness", baseHealth)).toBe(false);
     expect(validateHealthJson("liveness", baseHealth)).toBe(true);
-    expect(validateHealthJson("liveness", {
-      ...baseHealth,
-      timestamp: new Date(
-        healthRequestStartedAtMs - CANARY_HEALTH_MAX_CLOCK_SKEW_MS,
-      ).toISOString(),
-    })).toBe(true);
-    expect(validateHealthJson("readiness", {
-      ...baseHealth,
-      checks: {
-        aiChatAdmission: "ok",
-        aiChatRateLimit: "ok",
-        database: "ok",
-      },
-      timestamp: new Date(
-        healthResponseReceivedAtMs + CANARY_HEALTH_MAX_CLOCK_SKEW_MS,
-      ).toISOString(),
-    })).toBe(true);
-    const expectedVersion = "a".repeat(40);
-    expect(validateHealthJson(
-      "liveness",
-      { ...baseHealth, version: expectedVersion },
-      expectedVersion,
-    )).toBe(true);
-    expect(validateHealthJson(
-      "liveness",
-      { ...baseHealth, version: "unexpected-old-release" },
-      expectedVersion,
-    )).toBe(false);
-    expect(validateHealthJson("readiness", {
-      ...baseHealth,
-      checks: {
-        aiChatAdmission: "ok",
-        aiChatRateLimit: "ok",
-        database: "ok",
-      },
-    })).toBe(true);
-    expect(validateHealthJson(
-      "readiness",
-      {
+    expect(
+      validateHealthJson("liveness", {
+        ...baseHealth,
+        timestamp: new Date(
+          healthRequestStartedAtMs - CANARY_HEALTH_MAX_CLOCK_SKEW_MS,
+        ).toISOString(),
+      }),
+    ).toBe(true);
+    expect(
+      validateHealthJson("readiness", {
         ...baseHealth,
         checks: {
           aiChatAdmission: "ok",
           aiChatRateLimit: "ok",
           database: "ok",
         },
-        version: "unexpected-old-release",
-      },
-      expectedVersion,
-    )).toBe(false);
-    expect(validateHealthJson("readiness", {
-      ...baseHealth,
-      checks: {
-        aiChatAdmission: "ok",
-        aiChatRateLimit: "ok",
-        database: "unavailable",
-      },
-      status: "unavailable",
-    })).toBe(false);
-    expect(validateHealthJson("readiness", {
-      ...baseHealth,
-      checks: {
-        aiChatAdmission: "unavailable",
-        aiChatRateLimit: "ok",
-        database: "ok",
-      },
-      status: "unavailable",
-    })).toBe(false);
+        timestamp: new Date(
+          healthResponseReceivedAtMs + CANARY_HEALTH_MAX_CLOCK_SKEW_MS,
+        ).toISOString(),
+      }),
+    ).toBe(true);
+    const expectedVersion = "a".repeat(40);
+    expect(
+      validateHealthJson(
+        "liveness",
+        { ...baseHealth, version: expectedVersion },
+        expectedVersion,
+      ),
+    ).toBe(true);
+    expect(
+      validateHealthJson(
+        "liveness",
+        { ...baseHealth, version: "unexpected-old-release" },
+        expectedVersion,
+      ),
+    ).toBe(false);
+    expect(
+      validateHealthJson("readiness", {
+        ...baseHealth,
+        checks: {
+          aiChatAdmission: "ok",
+          aiChatRateLimit: "ok",
+          database: "ok",
+        },
+      }),
+    ).toBe(true);
+    expect(
+      validateHealthJson(
+        "readiness",
+        {
+          ...baseHealth,
+          checks: {
+            aiChatAdmission: "ok",
+            aiChatRateLimit: "ok",
+            database: "ok",
+          },
+          version: "unexpected-old-release",
+        },
+        expectedVersion,
+      ),
+    ).toBe(false);
+    expect(
+      validateHealthJson("readiness", {
+        ...baseHealth,
+        checks: {
+          aiChatAdmission: "ok",
+          aiChatRateLimit: "ok",
+          database: "unavailable",
+        },
+        status: "unavailable",
+      }),
+    ).toBe(false);
+    expect(
+      validateHealthJson("readiness", {
+        ...baseHealth,
+        checks: {
+          aiChatAdmission: "unavailable",
+          aiChatRateLimit: "ok",
+          database: "ok",
+        },
+        status: "unavailable",
+      }),
+    ).toBe(false);
     expect(validateHealthJson("liveness", { status: "live" })).toBe(false);
     const expectation = {
       applicationScope: "non-road" as const,
@@ -635,65 +675,82 @@ describe("synthetic canary", () => {
       powerKw: 100,
       summaryStatus: "available" as const,
     };
-    expect(validateCanaryJson(
-      "country-summary",
-      createCountryDecisionSummary(),
-      expectation,
-    )).toBe(true);
-    expect(validateCanaryJson(
-      "country-summary",
-      createCountryDecisionSummary("2026-08-14"),
-      expectation,
-    )).toBe(false);
+    expect(
+      validateCanaryJson(
+        "country-summary",
+        createCountryDecisionSummary(),
+        expectation,
+      ),
+    ).toBe(true);
+    expect(
+      validateCanaryJson(
+        "country-summary",
+        createCountryDecisionSummary("2026-08-14"),
+        expectation,
+      ),
+    ).toBe(false);
     const staleSummary = createCountryDecisionSummary();
-    expect(validateCanaryJson(
-      "country-summary",
-      {
-        ...staleSummary,
-        country: { ...staleSummary.country, isStale: true },
-      },
-      expectation,
-    )).toBe(false);
-    expect(validateCanaryJson("country-summary", {
-      applicabilitySummary: {},
-      status: "available",
-    })).toBe(false);
-    expect(validateCanaryJson("products", { products: [], status: "ok" }))
-      .toBe(true);
+    expect(
+      validateCanaryJson(
+        "country-summary",
+        {
+          ...staleSummary,
+          country: { ...staleSummary.country, isStale: true },
+        },
+        expectation,
+      ),
+    ).toBe(false);
+    expect(
+      validateCanaryJson("country-summary", {
+        applicabilitySummary: {},
+        status: "available",
+      }),
+    ).toBe(false);
+    expect(validateCanaryJson("products", { products: [], status: "ok" })).toBe(
+      true,
+    );
     const productExpectation = {
       demoModelCodes: ["DEMO-ENG-100", "DEMO-ENG-200"],
       realProductCount: 0,
     };
-    expect(validateCanaryJson(
-      "products",
-      createPublicDemoProducts(),
-      undefined,
-      undefined,
-      productExpectation,
-    )).toBe(true);
-    expect(validateCanaryJson(
-      "products",
-      {
-        ...createPublicDemoProducts(),
-        products: createPublicDemoProducts().products.map((product, index) =>
-          index === 0 ? { ...product, isDemo: false } : product,
-        ),
-      },
-      undefined,
-      undefined,
-      productExpectation,
-    )).toBe(false);
-    expect(validateCanaryJson(
-      "products",
-      { products: [], status: "ok" },
-      undefined,
-      undefined,
-      productExpectation,
-    )).toBe(false);
-    expect(validateCanaryJson("products", {
-      products: [{}],
-      status: "ok",
-    })).toBe(false);
+    expect(
+      validateCanaryJson(
+        "products",
+        createPublicDemoProducts(),
+        undefined,
+        undefined,
+        productExpectation,
+      ),
+    ).toBe(true);
+    expect(
+      validateCanaryJson(
+        "products",
+        {
+          ...createPublicDemoProducts(),
+          products: createPublicDemoProducts().products.map((product, index) =>
+            index === 0 ? { ...product, isDemo: false } : product,
+          ),
+        },
+        undefined,
+        undefined,
+        productExpectation,
+      ),
+    ).toBe(false);
+    expect(
+      validateCanaryJson(
+        "products",
+        { products: [], status: "ok" },
+        undefined,
+        undefined,
+        productExpectation,
+      ),
+    ).toBe(false);
+    expect(
+      validateCanaryJson("products", {
+        products: [{}],
+        status: "ok",
+      }),
+    ).toBe(false);
     expect(validateCanaryJson("products", null)).toBe(false);
   });
 
@@ -706,14 +763,22 @@ describe("synthetic canary", () => {
       powerKw: 100,
       summaryStatus: "no_data" as const,
     };
-    expect(validateCanaryJson("country-summary", noData, expectation)).toBe(true);
-    expect(validateCanaryJson("country-summary", noData, {
-      ...expectation,
-      summaryStatus: "available",
-    })).toBe(false);
-    expect(validateCanaryJson(
-      "country-summary", createCountryDecisionSummary(), expectation,
-    )).toBe(false);
+    expect(validateCanaryJson("country-summary", noData, expectation)).toBe(
+      true,
+    );
+    expect(
+      validateCanaryJson("country-summary", noData, {
+        ...expectation,
+        summaryStatus: "available",
+      }),
+    ).toBe(false);
+    expect(
+      validateCanaryJson(
+        "country-summary",
+        createCountryDecisionSummary(),
+        expectation,
+      ),
+    ).toBe(false);
   });
 
   it.each([
@@ -722,37 +787,54 @@ describe("synthetic canary", () => {
     ["country", { countryIso3: "USA" }],
     ["power", { powerKw: 101 }],
   ])("rejects a no-data response for the wrong %s", (_label, override) => {
-    expect(validateCanaryJson("country-summary", createCountryNoDataSummary(), {
-      applicationScope: "non-road",
-      asOf: "2026-08-15",
-      countryIso3: "CHN",
-      powerKw: 100,
-      summaryStatus: "no_data",
-      ...override,
-    })).toBe(false);
+    expect(
+      validateCanaryJson("country-summary", createCountryNoDataSummary(), {
+        applicationScope: "non-road",
+        asOf: "2026-08-15",
+        countryIso3: "CHN",
+        powerKw: 100,
+        summaryStatus: "no_data",
+        ...override,
+      }),
+    ).toBe(false);
   });
 
   it.each([
     ["invented freshness", { lastVerifiedAt: verifiedAt }],
     ["missing gap", { missingData: [] }],
-    ["unexpected sources", {
-      sources: createCountryDecisionSummary().applicabilitySummary.sources,
-    }],
-    ["unexpected regulations", {
-      country: createCountryDecisionSummary().applicabilitySummary.country,
-    }],
+    [
+      "unexpected sources",
+      {
+        sources: createCountryDecisionSummary().applicabilitySummary.sources,
+      },
+    ],
+    [
+      "unexpected regulations",
+      {
+        country: createCountryDecisionSummary().applicabilitySummary.country,
+      },
+    ],
   ])("rejects no-data with %s", (_label, override) => {
     const response = createCountryNoDataSummary();
-    expect(validateCanaryJson("country-summary", {
-      ...response,
-      applicabilitySummary: { ...response.applicabilitySummary, ...override },
-    }, {
-      applicationScope: "non-road",
-      asOf: "2026-08-15",
-      countryIso3: "CHN",
-      powerKw: 100,
-      summaryStatus: "no_data",
-    })).toBe(false);
+    expect(
+      validateCanaryJson(
+        "country-summary",
+        {
+          ...response,
+          applicabilitySummary: {
+            ...response.applicabilitySummary,
+            ...override,
+          },
+        },
+        {
+          applicationScope: "non-road",
+          asOf: "2026-08-15",
+          countryIso3: "CHN",
+          powerKw: 100,
+          summaryStatus: "no_data",
+        },
+      ),
+    ).toBe(false);
   });
 
   it("accepts a fresh health response with the public no-store policy", async () => {
@@ -780,13 +862,15 @@ describe("synthetic canary", () => {
     }).find(({ id }) => id === "liveness")!;
     const timestamps = [healthRequestStartedAtMs, healthResponseReceivedAtMs];
 
-    await expect(runCanaryCheck({
-      baseUrl: new URL("https://jamesky.site"),
-      check,
-      fetchImpl,
-      now: () => timestamps.shift() ?? healthResponseReceivedAtMs,
-      timeoutMs: 1_000,
-    })).resolves.toMatchObject({
+    await expect(
+      runCanaryCheck({
+        baseUrl: new URL("https://jamesky.site"),
+        check,
+        fetchImpl,
+        now: () => timestamps.shift() ?? healthResponseReceivedAtMs,
+        timeoutMs: 1_000,
+      }),
+    ).resolves.toMatchObject({
       errorCode: null,
       pass: true,
     });
@@ -859,13 +943,15 @@ describe("synthetic canary", () => {
       }).find(({ id }) => id === shape)!;
       const timestamps = [healthRequestStartedAtMs, healthResponseReceivedAtMs];
 
-      await expect(runCanaryCheck({
-        baseUrl: new URL("https://jamesky.site"),
-        check,
-        fetchImpl,
-        now: () => timestamps.shift() ?? healthResponseReceivedAtMs,
-        timeoutMs: 1_000,
-      })).resolves.toMatchObject({
+      await expect(
+        runCanaryCheck({
+          baseUrl: new URL("https://jamesky.site"),
+          check,
+          fetchImpl,
+          now: () => timestamps.shift() ?? healthResponseReceivedAtMs,
+          timeoutMs: 1_000,
+        }),
+      ).resolves.toMatchObject({
         errorCode: "INVALID_RESPONSE",
         pass: false,
       });
@@ -900,26 +986,47 @@ describe("synthetic canary", () => {
   });
 
   it("does not count a text-only refusal as a successful provider starter", async () => {
-    await expect(validateUiMessageSse(validUiMessageSse(), {
-      name: "getCountryProfile", evidenceSufficient: true,
-    })).resolves.toBe(false);
+    await expect(
+      validateUiMessageSse(validUiMessageSse(), {
+        name: "getCountryProfile",
+        evidenceSufficient: true,
+      }),
+    ).resolves.toBe(false);
   });
 
   it("requires matching, schema-valid, sourced tool evidence", async () => {
     const output = buildCountryProfileResult({
       informationAsOf: "2026-08-15",
-      profile: countryDetailResponseSchema.parse(createCountryDecisionSummary()),
+      profile: countryDetailResponseSchema.parse(
+        createCountryDecisionSummary(),
+      ),
       requestedTopics: ["regulations"],
       resolvedCountryIso3: "CHN",
     });
-    const inputEvent = { type: "tool-input-available", toolCallId: "call-1", toolName: "getCountryProfile", input: { countryIso3: "CHN" } };
-    const outputEvent = { type: "tool-output-available", toolCallId: "call-1", output };
-    const stream = (events: unknown[]) => validUiMessageSse().replace(
-      'data: {"type":"start"}\n\n',
-      'data: {"type":"start"}\n\n' + events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""),
-    );
-    const expectation = { name: "getCountryProfile", evidenceSufficient: true } as const;
-    await expect(validateUiMessageSse(stream([inputEvent, outputEvent]), expectation)).resolves.toBe(true);
+    const inputEvent = {
+      type: "tool-input-available",
+      toolCallId: "call-1",
+      toolName: "getCountryProfile",
+      input: { countryIso3: "CHN" },
+    };
+    const outputEvent = {
+      type: "tool-output-available",
+      toolCallId: "call-1",
+      output,
+    };
+    const stream = (events: unknown[]) =>
+      validUiMessageSse().replace(
+        'data: {"type":"start"}\n\n',
+        'data: {"type":"start"}\n\n' +
+          events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""),
+      );
+    const expectation = {
+      name: "getCountryProfile",
+      evidenceSufficient: true,
+    } as const;
+    await expect(
+      validateUiMessageSse(stream([inputEvent, outputEvent]), expectation),
+    ).resolves.toBe(true);
     for (const events of [
       [inputEvent],
       [outputEvent],
@@ -927,31 +1034,39 @@ describe("synthetic canary", () => {
       [inputEvent, { ...outputEvent, toolCallId: "unmatched" }],
       [{ ...inputEvent, toolName: "compareRegulations" }, outputEvent],
       [inputEvent, { ...outputEvent, output: { ...output, citations: [] } }],
-      [inputEvent, { ...outputEvent, output: { ...output, evidenceSufficient: false } }],
-      [inputEvent, { type: "tool-output-error", toolCallId: "call-1", errorText: "Failed" }],
+      [
+        inputEvent,
+        { ...outputEvent, output: { ...output, evidenceSufficient: false } },
+      ],
+      [
+        inputEvent,
+        {
+          type: "tool-output-error",
+          toolCallId: "call-1",
+          errorText: "Failed",
+        },
+      ],
     ]) {
-      await expect(validateUiMessageSse(stream(events), expectation)).resolves.toBe(false);
+      await expect(
+        validateUiMessageSse(stream(events), expectation),
+      ).resolves.toBe(false);
     }
   });
 
-  it.each([
-    "length",
-    "content-filter",
-    "tool-calls",
-    "error",
-    "other",
-    null,
-  ])("rejects the non-success finish reason %s", async (finishReason) => {
-    await expect(validateUiMessageSse(validUiMessageSse(finishReason)))
-      .resolves.toBe(false);
-  });
+  it.each(["length", "content-filter", "tool-calls", "error", "other", null])(
+    "rejects the non-success finish reason %s",
+    async (finishReason) => {
+      await expect(
+        validateUiMessageSse(validUiMessageSse(finishReason)),
+      ).resolves.toBe(false);
+    },
+  );
 
   it("returns only sanitized metadata for a passing check", async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
-      Response.json(
-        createPublicDemoProducts(),
-        { headers: { "X-Request-Id": "request-1" } },
-      ),
+      Response.json(createPublicDemoProducts(), {
+        headers: { "X-Request-Id": "request-1" },
+      }),
     );
     const check = createCanaryChecks({
       asOf: "2026-08-15",
@@ -976,43 +1091,49 @@ describe("synthetic canary", () => {
   });
 
   it("fails closed on an invalid successful response", async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
-      Response.json(
-        { status: "ok" },
-        { headers: { "X-Request-Id": "request-1" } },
-      ),
-    );
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        Response.json(
+          { status: "ok" },
+          { headers: { "X-Request-Id": "request-1" } },
+        ),
+      );
     const check = createCanaryChecks({
       asOf: "2026-08-15",
       includeProviderAi: false,
     }).find(({ id }) => id === "public-products")!;
 
-    await expect(runCanaryCheck({
-      baseUrl: new URL("https://jamesky.site"),
-      check,
-      fetchImpl,
-      timeoutMs: 1_000,
-    })).resolves.toMatchObject({
+    await expect(
+      runCanaryCheck({
+        baseUrl: new URL("https://jamesky.site"),
+        check,
+        fetchImpl,
+        timeoutMs: 1_000,
+      }),
+    ).resolves.toMatchObject({
       errorCode: "INVALID_RESPONSE",
       pass: false,
     });
   });
 
   it("fails closed when an otherwise valid response lacks a request ID", async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
-      Response.json({ products: [], status: "ok" }),
-    );
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json({ products: [], status: "ok" }));
     const check = createCanaryChecks({
       asOf: "2026-08-15",
       includeProviderAi: false,
     }).find(({ id }) => id === "public-products")!;
 
-    await expect(runCanaryCheck({
-      baseUrl: new URL("https://jamesky.site"),
-      check,
-      fetchImpl,
-      timeoutMs: 1_000,
-    })).resolves.toMatchObject({
+    await expect(
+      runCanaryCheck({
+        baseUrl: new URL("https://jamesky.site"),
+        check,
+        fetchImpl,
+        timeoutMs: 1_000,
+      }),
+    ).resolves.toMatchObject({
       errorCode: "MISSING_REQUEST_ID",
       pass: false,
     });
@@ -1033,32 +1154,36 @@ describe("synthetic canary", () => {
       includeProviderAi: true,
     }).find(({ id }) => id === "chat-provider-sse")!;
 
-    await expect(runCanaryCheck({
-      baseUrl: new URL("https://jamesky.site"),
-      check,
-      fetchImpl,
-      timeoutMs: 1_000,
-    })).resolves.toMatchObject({
+    await expect(
+      runCanaryCheck({
+        baseUrl: new URL("https://jamesky.site"),
+        check,
+        fetchImpl,
+        timeoutMs: 1_000,
+      }),
+    ).resolves.toMatchObject({
       errorCode: "INVALID_RESPONSE",
       pass: false,
     });
   });
 
   it("reports network failures without response data", async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockRejectedValue(
-      new Error("secret upstream failure"),
-    );
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockRejectedValue(new Error("secret upstream failure"));
     const check = createCanaryChecks({
       asOf: "2026-08-15",
       includeProviderAi: false,
     })[0]!;
 
-    await expect(runCanaryCheck({
-      baseUrl: new URL("https://jamesky.site"),
-      check,
-      fetchImpl,
-      timeoutMs: 1_000,
-    })).resolves.toMatchObject({
+    await expect(
+      runCanaryCheck({
+        baseUrl: new URL("https://jamesky.site"),
+        check,
+        fetchImpl,
+        timeoutMs: 1_000,
+      }),
+    ).resolves.toMatchObject({
       errorCode: "NETWORK_ERROR",
       pass: false,
       requestId: null,
@@ -1066,11 +1191,39 @@ describe("synthetic canary", () => {
     });
   });
   it("retains received response identity when an SSE body times out, without passing the check", async () => {
-    const check = createCanaryChecks({ asOf: "2026-08-15", includeProviderAi: true }).find(item => item.id === "chat-provider-sse")!;
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(new Response(new ReadableStream({
-      pull(controller) { controller.error(new DOMException("Timeout", "TimeoutError")); },
-    }), { status: 200, headers: { "content-type": "text/event-stream", "x-vercel-ai-ui-message-stream": "v1", "x-request-id": "timed-out-request" } }));
-    await expect(runCanaryCheck({ baseUrl: new URL("https://jamesky.site"), check, fetchImpl, timeoutMs: 15_000 }))
-      .resolves.toMatchObject({ pass: false, errorCode: "TIMEOUT", requestId: "timed-out-request", status: 200 });
+    const check = createCanaryChecks({
+      asOf: "2026-08-15",
+      includeProviderAi: true,
+    }).find((item) => item.id === "chat-provider-sse")!;
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        new ReadableStream({
+          pull(controller) {
+            controller.error(new DOMException("Timeout", "TimeoutError"));
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "text/event-stream",
+            "x-vercel-ai-ui-message-stream": "v1",
+            "x-request-id": "timed-out-request",
+          },
+        },
+      ),
+    );
+    await expect(
+      runCanaryCheck({
+        baseUrl: new URL("https://jamesky.site"),
+        check,
+        fetchImpl,
+        timeoutMs: 15_000,
+      }),
+    ).resolves.toMatchObject({
+      pass: false,
+      errorCode: "TIMEOUT",
+      requestId: "timed-out-request",
+      status: 200,
+    });
   });
 });

@@ -1,7 +1,6 @@
 "use strict";
 
-const READINESS_RESPONSE_CONTRACT_VERSION =
-  "diesel-readiness-response-v1";
+const READINESS_RESPONSE_CONTRACT_VERSION = "diesel-readiness-response-v1";
 const HEALTH_CLOCK_TOLERANCE_MS = 5_000;
 const MAX_READINESS_BODY_BYTES = 65_536;
 const MAX_READINESS_HEADER_BYTES = 65_536;
@@ -29,8 +28,10 @@ function isPlainRecord(value) {
 function hasExactKeys(value, expectedKeys) {
   if (!isPlainRecord(value)) return false;
   const actualKeys = Object.keys(value).sort();
-  return actualKeys.length === expectedKeys.length &&
-    actualKeys.every((key, index) => key === expectedKeys[index]);
+  return (
+    actualKeys.length === expectedKeys.length &&
+    actualKeys.every((key, index) => key === expectedKeys[index])
+  );
 }
 
 function parseFinalHeaders(rawHeaders) {

@@ -29,13 +29,17 @@ describe("production PostgreSQL backup command", () => {
   });
 
   it("rejects incomplete and non-PostgreSQL URLs", () => {
-    expect(() => createPostgresBackupConnection(
-      "https://example.com/database",
-      "/secure/release.dump",
-    )).toThrow(/postgres/);
-    expect(() => createPostgresBackupConnection(
-      "postgresql://example.com",
-      "/secure/release.dump",
-    )).toThrow(/host, database and user/);
+    expect(() =>
+      createPostgresBackupConnection(
+        "https://example.com/database",
+        "/secure/release.dump",
+      ),
+    ).toThrow(/postgres/);
+    expect(() =>
+      createPostgresBackupConnection(
+        "postgresql://example.com",
+        "/secure/release.dump",
+      ),
+    ).toThrow(/host, database and user/);
   });
 });

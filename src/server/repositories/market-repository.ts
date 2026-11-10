@@ -16,20 +16,16 @@ import {
   throwIfRequestAborted,
   type RequestSignalOptions,
 } from "@/server/http/request-signal";
-import {
-  countries,
-  dataSources,
-  marketMetrics,
-} from "@/server/db/schema";
+import { countries, dataSources, marketMetrics } from "@/server/db/schema";
 
 const countryDataSources = aliasedTable(
   dataSources,
   "market_country_data_sources",
 );
 
-export function createMarketRepository<
-  TQueryResult extends PgQueryResultHKT,
->(database: PgDatabase<TQueryResult, typeof schema>) {
+export function createMarketRepository<TQueryResult extends PgQueryResultHKT>(
+  database: PgDatabase<TQueryResult, typeof schema>,
+) {
   return {
     async findForComparison(
       input: unknown,
@@ -90,10 +86,7 @@ export function createMarketRepository<
           countryDataSources,
           eq(countries.dataSourceId, countryDataSources.id),
         )
-        .innerJoin(
-          dataSources,
-          eq(marketMetrics.dataSourceId, dataSources.id),
-        )
+        .innerJoin(dataSources, eq(marketMetrics.dataSourceId, dataSources.id))
         .where(and(...filters))
         .orderBy(
           asc(marketMetrics.metricCode),

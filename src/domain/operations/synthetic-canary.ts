@@ -3,10 +3,7 @@ import { uiMessageChunkSchema } from "ai";
 import { aiToolResultSchema, type AiToolName } from "@/features/ai/schemas";
 import { getDictionary } from "@/i18n/dictionaries";
 
-import {
-  healthResponseSchema,
-  readinessResponseSchema,
-} from "@/lib/health";
+import { healthResponseSchema, readinessResponseSchema } from "@/lib/health";
 import { countryDetailResponseSchema } from "@/features/countries/schemas";
 import type { ApplicationScope } from "@/features/database/schemas";
 import { productListResponseSchema } from "@/features/product-fit/schemas";
@@ -83,18 +80,21 @@ export function validateCanaryJson(
   }
   if (shape === "liveness") {
     const parsed = healthResponseSchema.safeParse(value);
-    return parsed.success &&
+    return (
+      parsed.success &&
       healthTimeWindow !== undefined &&
       healthTimestampIsWithinRequestWindow(
         parsed.data.timestamp,
         healthTimeWindow,
       ) &&
       (expectedVersions === undefined ||
-        expectedVersions.includes(parsed.data.version));
+        expectedVersions.includes(parsed.data.version))
+    );
   }
   if (shape === "readiness") {
     const parsed = readinessResponseSchema.safeParse(value);
-    return parsed.success &&
+    return (
+      parsed.success &&
       parsed.data.status === "ok" &&
       parsed.data.checks.aiChatAdmission === "ok" &&
       parsed.data.checks.aiChatRateLimit === "ok" &&
@@ -105,7 +105,8 @@ export function validateCanaryJson(
         healthTimeWindow,
       ) &&
       (expectedVersions === undefined ||
-        expectedVersions.includes(parsed.data.version));
+        expectedVersions.includes(parsed.data.version))
+    );
   }
   if (shape === "country-summary") {
     const parsed = countryDetailResponseSchema.safeParse(value);
@@ -120,14 +121,17 @@ export function validateCanaryJson(
       return true;
     }
     const summary = parsed.data.applicabilitySummary;
-    const matchesEvidenceState = expectation.summaryStatus === "available"
-      ? summary.country.status === "available" &&
-        summary.lastVerifiedAt !== null && summary.sources.length > 0
-      : summary.country.status === "no_data" &&
-        summary.country.currentEffectiveRegulations.length === 0 &&
-        summary.country.futureAdoptedRegulations.length === 0 &&
-        summary.lastVerifiedAt === null && summary.sources.length === 0 &&
-        summary.missingData.length > 0;
+    const matchesEvidenceState =
+      expectation.summaryStatus === "available"
+        ? summary.country.status === "available" &&
+          summary.lastVerifiedAt !== null &&
+          summary.sources.length > 0
+        : summary.country.status === "no_data" &&
+          summary.country.currentEffectiveRegulations.length === 0 &&
+          summary.country.futureAdoptedRegulations.length === 0 &&
+          summary.lastVerifiedAt === null &&
+          summary.sources.length === 0 &&
+          summary.missingData.length > 0;
     return (
       parsed.data.asOf === expectation.asOf &&
       parsed.data.country.iso3 === expectation.countryIso3 &&
@@ -152,11 +156,13 @@ export function validateCanaryJson(
     .filter((product) => product.isDemo && product.source.isDemo)
     .map(({ modelCode }) => modelCode)
     .toSorted();
-  const realOrMismatchedCount = parsed.data.products.length -
-    demoModelCodes.length;
-  return realOrMismatchedCount === productExpectation.realProductCount &&
+  const realOrMismatchedCount =
+    parsed.data.products.length - demoModelCodes.length;
+  return (
+    realOrMismatchedCount === productExpectation.realProductCount &&
     JSON.stringify(demoModelCodes) ===
-      JSON.stringify([...productExpectation.demoModelCodes].toSorted());
+      JSON.stringify([...productExpectation.demoModelCodes].toSorted())
+  );
 }
 
 function healthTimestampIsWithinRequestWindow(
@@ -174,13 +180,17 @@ function healthTimestampIsWithinRequestWindow(
   ) {
     return false;
   }
-  return timestampMs >= window.requestStartedAtMs - window.maxClockSkewMs &&
-    timestampMs <= window.responseReceivedAtMs + window.maxClockSkewMs;
+  return (
+    timestampMs >= window.requestStartedAtMs - window.maxClockSkewMs &&
+    timestampMs <= window.responseReceivedAtMs + window.maxClockSkewMs
+  );
 }
 
 function hasExpectedHealthCachePolicy(headers: Headers): boolean {
-  return headers.get("cache-control") === CANARY_HEALTH_CACHE_CONTROL &&
-    headers.get("pragma") === CANARY_HEALTH_PRAGMA;
+  return (
+    headers.get("cache-control") === CANARY_HEALTH_CACHE_CONTROL &&
+    headers.get("pragma") === CANARY_HEALTH_PRAGMA
+  );
 }
 
 export async function validateUiMessageSse(
@@ -254,11 +264,17 @@ export async function validateUiMessageSse(
       completedTools.add(event.toolCallId);
       if (toolExpectation) {
         const result = aiToolResultSchema.safeParse(event.output);
-        if (!result.success || name !== toolExpectation.name ||
+        if (
+          !result.success ||
+          name !== toolExpectation.name ||
           result.data.tool !== name ||
-          result.data.evidenceSufficient !== toolExpectation.evidenceSufficient ||
-          result.data.status !== (toolExpectation.evidenceSufficient ? "ok" : "no_data") ||
-          (toolExpectation.evidenceSufficient && result.data.citations.length === 0)) {
+          result.data.evidenceSufficient !==
+            toolExpectation.evidenceSufficient ||
+          result.data.status !==
+            (toolExpectation.evidenceSufficient ? "ok" : "no_data") ||
+          (toolExpectation.evidenceSufficient &&
+            result.data.citations.length === 0)
+        ) {
           return false;
         }
       }
@@ -303,9 +319,14 @@ export async function validateUiMessageSse(
     }
   }
 
-  return sawStart && sawTextDelta && sawFinish && sawDone &&
+  return (
+    sawStart &&
+    sawTextDelta &&
+    sawFinish &&
+    sawDone &&
     toolCalls.size === completedTools.size &&
-    (!toolExpectation || toolCalls.size === 1);
+    (!toolExpectation || toolCalls.size === 1)
+  );
 }
 
 export function validateCanaryBaseUrl(value: string): URL {
@@ -315,7 +336,9 @@ export function validateCanaryBaseUrl(value: string): URL {
     url.username ||
     url.password
   ) {
-    throw new Error("CANARY_BASE_URL must be an HTTP(S) URL without credentials.");
+    throw new Error(
+      "CANARY_BASE_URL must be an HTTP(S) URL without credentials.",
+    );
   }
   url.pathname = "/";
   url.search = "";
@@ -332,7 +355,12 @@ export function createCanaryChecks(input: {
   includeProviderAi: boolean;
 }): CanaryCheck[] {
   const expectedVersions = input.expectedVersion
-    ? [...new Set([input.expectedVersion, input.alternateVersion ?? input.expectedVersion])]
+    ? [
+        ...new Set([
+          input.expectedVersion,
+          input.alternateVersion ?? input.expectedVersion,
+        ]),
+      ]
     : undefined;
   const checks: CanaryCheck[] = [
     {
@@ -432,7 +460,12 @@ export function createCanaryChecks(input: {
         messages: [
           {
             id: crypto.randomUUID(),
-            parts: [{ text: getDictionary("zh-CN").chatPage.starterCurrent, type: "text" }],
+            parts: [
+              {
+                text: getDictionary("zh-CN").chatPage.starterCurrent,
+                type: "text",
+              },
+            ],
             role: "user",
           },
         ],
@@ -529,9 +562,9 @@ export async function runCanaryCheck(input: {
       errorCode = "STATUS_MISMATCH";
     } else if (
       input.check.expectedContentType &&
-      !response.headers.get("content-type")?.includes(
-        input.check.expectedContentType,
-      )
+      !response.headers
+        .get("content-type")
+        ?.includes(input.check.expectedContentType)
     ) {
       errorCode = "CONTENT_TYPE_MISMATCH";
     } else if (input.check.requireRequestId && !requestId) {

@@ -74,7 +74,9 @@ function normalizePdfText(value: string): string {
   );
 }
 
-function attachmentTimeoutError(filename: string): ChatAttachmentProcessingError {
+function attachmentTimeoutError(
+  filename: string,
+): ChatAttachmentProcessingError {
   return new ChatAttachmentProcessingError(
     `${filename} 处理超过 ${Math.ceil(CHAT_ATTACHMENT_PROCESSING_TIMEOUT_MS / 1_000)} 秒限制。请拆分或转换文件后重试。`,
   );
@@ -92,7 +94,9 @@ function throwIfAttachmentProcessingAborted(signal?: AbortSignal): void {
   }
 }
 
-function expectedSharpFormat(mediaType: string): "jpeg" | "png" | "webp" | null {
+function expectedSharpFormat(
+  mediaType: string,
+): "jpeg" | "png" | "webp" | null {
   if (mediaType === "image/png") {
     return "png";
   }
@@ -424,8 +428,7 @@ async function extractPdfPageText(input: {
       operation: () => input.pdf.getPage(input.pageNumber),
       signal: input.signal,
     });
-    const textStream =
-      page.streamTextContent() as ReadableStream<unknown>;
+    const textStream = page.streamTextContent() as ReadableStream<unknown>;
     const pageReader = textStream.getReader();
     reader = pageReader;
 
@@ -675,8 +678,7 @@ export async function prepareTrustedUserMessagesForModel(
         text: wrapUntrustedAttachmentText({
           filename: part.filename,
           mediaType: part.mediaType,
-          pageCount:
-            "pageCount" in extracted ? extracted.pageCount : undefined,
+          pageCount: "pageCount" in extracted ? extracted.pageCount : undefined,
           text: extracted.text,
         }),
         type: "text",

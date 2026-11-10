@@ -40,10 +40,9 @@ const registeredPolicy = auditPolicySchema.parse({
 
 function pnpmAuditOutput(
   advisories: Record<string, Record<string, unknown>> = {},
-  vulnerabilityOverrides: Partial<Record<
-    "critical" | "high" | "info" | "low" | "moderate",
-    number
-  >> = {},
+  vulnerabilityOverrides: Partial<
+    Record<"critical" | "high" | "info" | "low" | "moderate", number>
+  > = {},
 ): string {
   const vulnerabilities = {
     critical: 0,
@@ -149,18 +148,14 @@ describe("dependency advisory policy", () => {
         report: report("GHSA-dddd-eeee-ffff", "high"),
         today: "2026-08-15",
       }),
-    ).toEqual([
-      "GHSA-dddd-eeee-ffff is high and has no registered exception",
-    ]);
+    ).toEqual(["GHSA-dddd-eeee-ffff is high and has no registered exception"]);
     expect(
       evaluateAuditPolicy({
         policy: registeredPolicy,
         report: report("GHSA-aaaa-bbbb-cccc", "high"),
         today: "2026-08-23",
       }),
-    ).toEqual([
-      "GHSA-aaaa-bbbb-cccc exception expired on 2026-08-22",
-    ]);
+    ).toEqual(["GHSA-aaaa-bbbb-cccc exception expired on 2026-08-22"]);
   });
 
   it("blocks every expired exception even after its advisory disappears", () => {
@@ -170,9 +165,7 @@ describe("dependency advisory policy", () => {
         report: { advisories: {} },
         today: "2026-08-23",
       }),
-    ).toEqual([
-      "GHSA-aaaa-bbbb-cccc exception expired on 2026-08-22",
-    ]);
+    ).toEqual(["GHSA-aaaa-bbbb-cccc exception expired on 2026-08-22"]);
   });
 
   it("always blocks critical advisories", () => {
@@ -182,9 +175,7 @@ describe("dependency advisory policy", () => {
         report: report("GHSA-aaaa-bbbb-cccc", "critical"),
         today: "2026-08-15",
       }),
-    ).toEqual([
-      "GHSA-aaaa-bbbb-cccc is critical and cannot be allowlisted",
-    ]);
+    ).toEqual(["GHSA-aaaa-bbbb-cccc is critical and cannot be allowlisted"]);
   });
 
   it("does not escalate informational advisories into the high-severity policy", () => {
@@ -217,7 +208,11 @@ describe("remediated braces tooling exception", () => {
 
   it("rejects a reintroduced braces finding even before the old expiry", () => {
     expect(
-      evaluateAuditPolicy({ policy, report: report(id, "high"), today: "2026-10-09" }),
+      evaluateAuditPolicy({
+        policy,
+        report: report(id, "high"),
+        today: "2026-10-09",
+      }),
     ).toEqual([`${id} is high and has no registered exception`]);
   });
 
@@ -230,14 +225,29 @@ describe("remediated braces tooling exception", () => {
       }),
     ).toEqual(["GHSA-aaaa-bbbb-cccc is high and has no registered exception"]);
     expect(
-      evaluateAuditPolicy({ policy, report: report(id, "critical"), today: "2026-10-03" }),
+      evaluateAuditPolicy({
+        policy,
+        report: report(id, "critical"),
+        today: "2026-10-03",
+      }),
     ).toEqual([`${id} is critical and cannot be allowlisted`]);
   });
 
   it("does not retain an expired exception for a removed dependency", () => {
-    expect(evaluateAuditPolicy({ policy, report: { advisories: {} }, today: "2026-10-10" })).toEqual([]);
-    expect(evaluateAuditPolicy({ policy, report: report(id, "high"), today: "2026-10-10" }))
-      .toEqual([`${id} is high and has no registered exception`]);
+    expect(
+      evaluateAuditPolicy({
+        policy,
+        report: { advisories: {} },
+        today: "2026-10-10",
+      }),
+    ).toEqual([]);
+    expect(
+      evaluateAuditPolicy({
+        policy,
+        report: report(id, "high"),
+        today: "2026-10-10",
+      }),
+    ).toEqual([`${id} is high and has no registered exception`]);
   });
 });
 
@@ -347,10 +357,7 @@ describe("pnpm audit subprocess contract", () => {
       label: "a status 1 advisory with a missing severity count",
       result: processResult({
         status: 1,
-        stdout: pnpmAuditOutput(
-          { "1": pnpmAdvisory() },
-          { high: 0 },
-        ),
+        stdout: pnpmAuditOutput({ "1": pnpmAdvisory() }, { high: 0 }),
       }),
     },
     {
@@ -425,7 +432,7 @@ describe("pnpm audit subprocess contract", () => {
           status: 2,
           stderr: "registry credential marker",
         }),
-      )
+      ),
     ).toThrowError(/exit status 2/u);
     try {
       interpretPnpmAuditProcessResult(

@@ -79,16 +79,12 @@ test("imports, deduplicates, traces, filters, and reports failed documents", asy
     name: "demo-e2e-regulation.md",
   });
 
-  await importSection
-    .getByRole("button", { name: "保存并处理文档" })
-    .click();
+  await importSection.getByRole("button", { name: "保存并处理文档" }).click();
   await expect(page.getByTestId("document-import-ready")).toBeVisible();
   await expect(page.getByText("可检索").first()).toBeVisible();
   expect(knowledgePageNavigations).toBe(stableNavigationCount);
 
-  await importSection
-    .getByRole("button", { name: "保存并处理文档" })
-    .click();
+  await importSection.getByRole("button", { name: "保存并处理文档" }).click();
   await expect(page.getByTestId("document-import-duplicate")).toBeVisible();
   await expect(page.getByText("检测到重复文档")).toBeVisible();
   expect(knowledgePageNavigations).toBe(stableNavigationCount);
@@ -112,20 +108,26 @@ test("imports, deduplicates, traces, filters, and reports failed documents", asy
   await expect(results.getByText("最终排序").first()).toBeVisible();
   await expect(results.getByText(/DEMO Emissions/).first()).toBeVisible();
   const sourceResult = results.getByRole("article").filter({
-    hasText: "Non-road emissions certification applies to this fictional engine.",
+    hasText:
+      "Non-road emissions certification applies to this fictional engine.",
   });
   await expect(sourceResult).toHaveCount(1);
-  await expect(sourceResult.getByText(
-    "DEMO ONLY — E2E regulation > DEMO Emissions · paragraph 1",
-    { exact: true },
-  )).toBeVisible();
-  await expect(sourceResult.locator("dl > div").filter({
-    has: page.getByText("页码", { exact: true }),
-  }).locator("dd")).toHaveText("3");
   await expect(
-    results
-      .getByText("文档来源：DEMO ONLY — Developer upload source")
-      .first(),
+    sourceResult.getByText(
+      "DEMO ONLY — E2E regulation > DEMO Emissions · paragraph 1",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    sourceResult
+      .locator("dl > div")
+      .filter({
+        has: page.getByText("页码", { exact: true }),
+      })
+      .locator("dd"),
+  ).toHaveText("3");
+  await expect(
+    results.getByText("文档来源：DEMO ONLY — Developer upload source").first(),
   ).toBeVisible();
 
   const originalFileLink = results
@@ -154,9 +156,7 @@ test("imports, deduplicates, traces, filters, and reports failed documents", asy
     mimeType: "application/pdf",
     name: "unsupported-demo.pdf",
   });
-  await importSection
-    .getByRole("button", { name: "保存并处理文档" })
-    .click();
+  await importSection.getByRole("button", { name: "保存并处理文档" }).click();
   const failedImport = page.getByTestId("document-import-failed");
   await expect(failedImport).toBeVisible();
   await expect(
@@ -166,29 +166,38 @@ test("imports, deduplicates, traces, filters, and reports failed documents", asy
   ).toBeVisible();
 
   const oversizedHeadingSource = `# ${"H".repeat(3000)}\n\nDEMO ONLY — bounded output failure.`;
-  await importSection.getByLabel("文档标题").fill("DEMO ONLY — Oversized heading");
+  await importSection
+    .getByLabel("文档标题")
+    .fill("DEMO ONLY — Oversized heading");
   await importSection.getByLabel("原始文件").setInputFiles({
     buffer: Buffer.from(oversizedHeadingSource),
     mimeType: "text/markdown",
     name: "oversized-heading-demo.md",
   });
   const [limitResponse] = await Promise.all([
-    page.waitForResponse((response) =>
-      response.request().method() === "POST" &&
-      new URL(response.url()).pathname === "/api/dev/knowledge/documents"
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/api/dev/knowledge/documents",
     ),
     importSection.getByRole("button", { name: "保存并处理文档" }).click(),
   ]);
   expect(limitResponse.ok()).toBe(true);
-  const limitedImport = documentImportResponseSchema.parse(await limitResponse.json());
+  const limitedImport = documentImportResponseSchema.parse(
+    await limitResponse.json(),
+  );
   expect(limitedImport.status).toBe("failed");
   expect(limitedImport.document.processingStatus).toBe("failed");
   expect(limitedImport.document.chunkCount).toBe(0);
-  await expect(failedImport.getByText(
-    "文档标题路径超过 2048 个 UTF-16 单元的处理上限，请缩短标题或拆分文档。",
-  )).toBeVisible();
+  await expect(
+    failedImport.getByText(
+      "文档标题路径超过 2048 个 UTF-16 单元的处理上限，请缩短标题或拆分文档。",
+    ),
+  ).toBeVisible();
   expect(limitedImport.document.downloadUrl).not.toBeNull();
-  const preservedOriginal = await request.get(limitedImport.document.downloadUrl ?? "");
+  const preservedOriginal = await request.get(
+    limitedImport.document.downloadUrl ?? "",
+  );
   expect(preservedOriginal.ok()).toBe(true);
   expect(await preservedOriginal.text()).toBe(oversizedHeadingSource);
   expect(knowledgePageNavigations).toBe(stableNavigationCount);
@@ -196,16 +205,31 @@ test("imports, deduplicates, traces, filters, and reports failed documents", asy
   const nulSource = "DEMO ONLY — original before\0after\n";
   await importSection.getByLabel("文档标题").fill("DEMO ONLY — NUL text");
   await importSection.getByLabel("原始文件").setInputFiles({
-    buffer: Buffer.from(nulSource), mimeType: "text/plain", name: "nul-source-demo.txt",
+    buffer: Buffer.from(nulSource),
+    mimeType: "text/plain",
+    name: "nul-source-demo.txt",
   });
   const [nulResponse] = await Promise.all([
-    page.waitForResponse((response) => response.request().method() === "POST" && new URL(response.url()).pathname === "/api/dev/knowledge/documents"),
+    page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/api/dev/knowledge/documents",
+    ),
     importSection.getByRole("button", { name: "保存并处理文档" }).click(),
   ]);
   expect(nulResponse.ok()).toBe(true);
-  const nulImport = documentImportResponseSchema.parse(await nulResponse.json());
-  expect(nulImport).toMatchObject({ status: "failed", document: { processingStatus: "failed", chunkCount: 0 } });
-  await expect(failedImport.getByText("UTF-8 文本包含空字符（U+0000），无法保存为文档正文；请核对源文件。")).toBeVisible();
+  const nulImport = documentImportResponseSchema.parse(
+    await nulResponse.json(),
+  );
+  expect(nulImport).toMatchObject({
+    status: "failed",
+    document: { processingStatus: "failed", chunkCount: 0 },
+  });
+  await expect(
+    failedImport.getByText(
+      "UTF-8 文本包含空字符（U+0000），无法保存为文档正文；请核对源文件。",
+    ),
+  ).toBeVisible();
   expect(nulImport.document.downloadUrl).not.toBeNull();
   const nulOriginal = await request.get(nulImport.document.downloadUrl ?? "");
   expect(nulOriginal.ok()).toBe(true);
@@ -214,12 +238,22 @@ test("imports, deduplicates, traces, filters, and reports failed documents", asy
 
   const invalidMetadata = await request.post("/api/dev/knowledge/documents", {
     multipart: {
-      file: { buffer: Buffer.from("DEMO ONLY — rejected metadata before storage."), mimeType: "text/plain", name: "metadata-demo.txt" },
-      title: "DEMO ONLY — invalid\0metadata", documentType: "other", languageCode: "en",
-      sourceTitle: "DEMO ONLY — metadata source", sourceType: "demo", isDemo: "true",
+      file: {
+        buffer: Buffer.from("DEMO ONLY — rejected metadata before storage."),
+        mimeType: "text/plain",
+        name: "metadata-demo.txt",
+      },
+      title: "DEMO ONLY — invalid\0metadata",
+      documentType: "other",
+      languageCode: "en",
+      sourceTitle: "DEMO ONLY — metadata source",
+      sourceType: "demo",
+      isDemo: "true",
       demoNotice: "FICTIONAL DEMO DATA — NOT FOR PRODUCTION.",
     },
   });
   expect(invalidMetadata.status()).toBe(400);
-  expect(await invalidMetadata.json()).toMatchObject({ error: { code: "INVALID_INPUT" } });
+  expect(await invalidMetadata.json()).toMatchObject({
+    error: { code: "INVALID_INPUT" },
+  });
 });

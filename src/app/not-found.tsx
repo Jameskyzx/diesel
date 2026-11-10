@@ -28,9 +28,7 @@ export default async function NotFound() {
     <main className="grid min-h-[70vh] place-items-center px-6 py-16">
       <LocaleRenderReceipt locale={locale} />
       <section className="surface-panel w-full max-w-xl rounded-md p-8 text-center">
-        <p className="text-sm font-semibold tracking-wide text-primary">
-          404
-        </p>
+        <p className="text-sm font-semibold tracking-wide text-primary">404</p>
         <h1 className="mt-3 text-5xl font-semibold tracking-tight">404</h1>
         <p className="mt-3 text-xl font-medium">{copy.notFoundHeading}</p>
         <p className="mt-4 text-sm leading-6 text-muted-foreground">

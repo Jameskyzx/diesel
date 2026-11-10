@@ -17,9 +17,7 @@ async function startServer() {
   const port = 3100;
   const [nextEnvironmentGuard, sourceTsconfig] = await Promise.all([
     createNextEnvironmentFileGuard({
-      allowedGeneratedRouteImports: [
-        "./.next-e2e/dev/types/routes.d.ts",
-      ],
+      allowedGeneratedRouteImports: ["./.next-e2e/dev/types/routes.d.ts"],
     }),
     readFile("tsconfig.json", "utf8"),
   ]);
@@ -31,9 +29,7 @@ async function startServer() {
   };
   process.on("SIGINT", handleTerminationSignal);
   process.on("SIGTERM", handleTerminationSignal);
-  const e2eTsconfig = createE2eTsconfig(
-    JSON.parse(sourceTsconfig) as unknown,
-  );
+  const e2eTsconfig = createE2eTsconfig(JSON.parse(sourceTsconfig) as unknown);
 
   await writeFile(
     "tsconfig.e2e.json",
@@ -147,9 +143,7 @@ async function startServer() {
           closeError,
         );
       }
-      await restoreRecordedNextEnvironmentAfterOperation(
-        nextEnvironmentGuard,
-      );
+      await restoreRecordedNextEnvironmentAfterOperation(nextEnvironmentGuard);
     })();
     return shutdownPromise;
   };

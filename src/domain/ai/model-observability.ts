@@ -71,8 +71,7 @@ type NormalizedModelStepTokenUsage =
   NormalizedModelStepObservation["tokenUsage"];
 
 type ExplicitRawCachedTokens =
-  | { present: false }
-  | { present: true; value: unknown };
+  { present: false } | { present: true; value: unknown };
 
 type ExplicitRawBaseTokens =
   | { required: false }
@@ -255,8 +254,10 @@ export function deriveNormalizedModelStepTokenUsageComplete(
   }
 
   const recomputedTotal = inputTokens.value + outputTokens.value;
-  return Number.isSafeInteger(recomputedTotal) &&
-    recomputedTotal === totalTokens.value;
+  return (
+    Number.isSafeInteger(recomputedTotal) &&
+    recomputedTotal === totalTokens.value
+  );
 }
 
 /**
@@ -269,12 +270,8 @@ export function normalizedModelStepCacheStatusMatchesMetrics(input: {
   cacheStatus: ModelCacheObservationStatus;
   tokenUsage: NormalizedModelStepTokenUsage;
 }): boolean {
-  const {
-    cacheReadTokens,
-    cacheWriteTokens,
-    inputTokens,
-    noCacheTokens,
-  } = input.tokenUsage;
+  const { cacheReadTokens, cacheWriteTokens, inputTokens, noCacheTokens } =
+    input.tokenUsage;
   const cacheMetrics = [
     cacheReadTokens,
     cacheWriteTokens,
@@ -290,7 +287,7 @@ export function normalizedModelStepCacheStatusMatchesMetrics(input: {
   }
 
   const knownCacheValues = cacheMetrics.flatMap((metric) =>
-    metric.value === null ? [] : [metric.value]
+    metric.value === null ? [] : [metric.value],
   );
   const invalidReportedCacheMetric = cacheMetrics.some(
     (metric) => metric.reported && metric.value === null,
@@ -328,11 +325,14 @@ export function normalizedModelStepCacheStatusMatchesMetrics(input: {
     return false;
   }
 
-  return input.cacheStatus === cacheMetricCoverage({
-    cacheReadTokens,
-    cacheWriteTokens,
-    noCacheTokens,
-  });
+  return (
+    input.cacheStatus ===
+    cacheMetricCoverage({
+      cacheReadTokens,
+      cacheWriteTokens,
+      noCacheTokens,
+    })
+  );
 }
 
 function cacheFieldsAreInconsistent(input: {
@@ -357,8 +357,10 @@ function cacheFieldsAreInconsistent(input: {
   }
 
   if (!input.explicitRawCacheRead) {
-    return cacheWriteTokens !== null &&
-      (inputTokens === null || cacheWriteTokens > inputTokens);
+    return (
+      cacheWriteTokens !== null &&
+      (inputTokens === null || cacheWriteTokens > inputTokens)
+    );
   }
 
   if (
@@ -506,8 +508,7 @@ function sumKnownPerformanceMetrics(
     reported:
       metrics.length > 0 &&
       metrics.every((metric) => metric.reported && metric.value !== null),
-    value:
-      values.length > 0 && Number.isFinite(sum) && sum >= 0 ? sum : null,
+    value: values.length > 0 && Number.isFinite(sum) && sum >= 0 ? sum : null,
   };
 }
 
@@ -517,7 +518,10 @@ function aggregateCacheStatus(
   if (steps.some((step) => step.cacheStatus === "inconsistent")) {
     return "inconsistent";
   }
-  if (steps.length === 0 || steps.every((step) => step.cacheStatus === "unavailable")) {
+  if (
+    steps.length === 0 ||
+    steps.every((step) => step.cacheStatus === "unavailable")
+  ) {
     return "unavailable";
   }
   return steps.every((step) => step.cacheStatus === "reported")
@@ -570,7 +574,8 @@ export function aggregateModelStepObservability(input: {
   steps: readonly NormalizedModelStepObservation[];
 }): ModelObservabilityAggregate {
   const expectedStepCount =
-    Number.isSafeInteger(input.expectedStepCount) && input.expectedStepCount >= 0
+    Number.isSafeInteger(input.expectedStepCount) &&
+    input.expectedStepCount >= 0
       ? input.expectedStepCount
       : null;
   const tokenUsage = {

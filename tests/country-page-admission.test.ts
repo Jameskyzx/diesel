@@ -94,7 +94,9 @@ describe("country page public-data admission", () => {
       throw new Error("unexpected redirect");
     });
     resetPublicDataAdmissionForTests();
-    consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -104,15 +106,17 @@ describe("country page public-data admission", () => {
   });
 
   it("defensively normalizes direct page calls before headers or data admission", async () => {
-    await expect(CountryPage({
-      params: Promise.resolve({ iso3: "chn" }),
-      searchParams: Promise.resolve({
-        applicationScope: "non-road",
-        asOf: "invalid",
-        powerKw: ["300.0", "100"],
-        utm_term: ["engine", "export"],
+    await expect(
+      CountryPage({
+        params: Promise.resolve({ iso3: "chn" }),
+        searchParams: Promise.resolve({
+          applicationScope: "non-road",
+          asOf: "invalid",
+          powerKw: ["300.0", "100"],
+          utm_term: ["engine", "export"],
+        }),
       }),
-    })).rejects.toThrow("unexpected redirect");
+    ).rejects.toThrow("unexpected redirect");
     expect(mocks.redirect).toHaveBeenCalledExactlyOnceWith(
       "/countries/CHN?applicationScope=non-road&powerKw=300&utm_term=engine&utm_term=export",
     );
@@ -124,10 +128,12 @@ describe("country page public-data admission", () => {
 
   it("keeps unknown countries at the page 404 boundary before filter normalization", async () => {
     mocks.isKnownCountryIso3.mockReturnValue(false);
-    await expect(CountryPage({
-      params: Promise.resolve({ iso3: "zzz" }),
-      searchParams: Promise.resolve({ powerKw: "invalid" }),
-    })).rejects.toThrow("unexpected notFound");
+    await expect(
+      CountryPage({
+        params: Promise.resolve({ iso3: "zzz" }),
+        searchParams: Promise.resolve({ powerKw: "invalid" }),
+      }),
+    ).rejects.toThrow("unexpected notFound");
     expect(mocks.isKnownCountryIso3).toHaveBeenCalledExactlyOnceWith("ZZZ");
     expect(mocks.notFound).toHaveBeenCalledOnce();
     expect(mocks.redirect).not.toHaveBeenCalled();
@@ -139,18 +145,25 @@ describe("country page public-data admission", () => {
   it("passes the canonical scope, power and date into the country service", async () => {
     mocks.listCountryMapSummaries.mockResolvedValue(mapResponse);
     mocks.getCountryDetails.mockResolvedValue(countryDetail);
-    await expect(CountryPage({
-      params: Promise.resolve({ iso3: "CHN" }),
-      searchParams: Promise.resolve({
-        applicationScope: "non-road",
-        asOf: "2026-01-20",
-        powerKw: "300",
-        productModelCode: "DEMO-ENG-300",
+    await expect(
+      CountryPage({
+        params: Promise.resolve({ iso3: "CHN" }),
+        searchParams: Promise.resolve({
+          applicationScope: "non-road",
+          asOf: "2026-01-20",
+          powerKw: "300",
+          productModelCode: "DEMO-ENG-300",
+        }),
       }),
-    })).resolves.toBeTruthy();
+    ).resolves.toBeTruthy();
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(mocks.getCountryDetails).toHaveBeenCalledExactlyOnceWith(
-      { applicationScope: "non-road", asOf: "2026-01-20", iso3: "CHN", powerKw: 300 },
+      {
+        applicationScope: "non-road",
+        asOf: "2026-01-20",
+        iso3: "CHN",
+        powerKw: 300,
+      },
       { signal: expect.any(AbortSignal) },
     );
   });
@@ -342,7 +355,9 @@ describe("country page public-data admission", () => {
       new URL("../src/app/countries/[iso3]/page.tsx", import.meta.url),
       "utf8",
     );
-    expect(pageSource.match(/runPublicDataRenderOperation\(\{/g)).toHaveLength(1);
+    expect(pageSource.match(/runPublicDataRenderOperation\(\{/g)).toHaveLength(
+      1,
+    );
     expect(pageSource).toContain("Promise.allSettled([");
     expect(pageSource).toContain("listCountryMapSummaries({ signal })");
     expect(pageSource).toContain("getCountryDetails(input, { signal })");

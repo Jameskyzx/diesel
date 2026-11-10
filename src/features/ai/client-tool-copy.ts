@@ -50,8 +50,7 @@ const englishProductFitReasonCopy = {
   PRODUCT_AVAILABILITY_UNKNOWN:
     "The product availability period is incomplete, so availability on the query date remains unknown.",
   PRODUCT_AVAILABLE: "The product is available on the query date.",
-  PRODUCT_NOT_FOUND:
-    "No structured record was found for this product model.",
+  PRODUCT_NOT_FOUND: "No structured record was found for this product model.",
   PRODUCT_NOT_YET_AVAILABLE:
     "The product is not yet available on the query date.",
   PRODUCT_NO_LONGER_AVAILABLE:
@@ -76,8 +75,7 @@ const chineseProductFitReasonCopy = {
   CERTIFICATION_POWER_RANGE_UNKNOWN:
     "认证功率范围信息不完整，因此无法确认覆盖情况。",
   CERTIFICATION_SCOPE_MISMATCH: "认证不覆盖请求的应用场景。",
-  CERTIFICATION_STATUS_UNKNOWN:
-    "认证状态未知，因此无法确认当前有效性。",
+  CERTIFICATION_STATUS_UNKNOWN: "认证状态未知，因此无法确认当前有效性。",
   CERTIFICATION_VALIDITY_UNKNOWN:
     "认证有效期信息不完整，因此无法确认日期覆盖情况。",
   NO_APPLICABLE_REGULATION_DATA:
@@ -108,8 +106,7 @@ type ClientSalesBrief = Extract<
 >["brief"];
 
 type ClientSalesBriefItem =
-  | ClientSalesBrief["opportunities"][number]
-  | ClientSalesBrief["risks"][number];
+  ClientSalesBrief["opportunities"][number] | ClientSalesBrief["risks"][number];
 type ClientSalesAction = ClientSalesBrief["salesActions"][number];
 
 type ClientRegulationComparisonCountry = Extract<
@@ -328,13 +325,10 @@ export function localizedSalesBriefItem(
       : "regulationIds" in item
         ? item.regulationIds.length
         : item.productIds.length;
-  return interpolate(
-    kind === "risk" ? copy.briefRisk : copy.briefOpportunity,
-    {
-      count,
-      index: index + 1,
-    },
-  );
+  return interpolate(kind === "risk" ? copy.briefRisk : copy.briefOpportunity, {
+    count,
+    index: index + 1,
+  });
 }
 
 export function localizedSalesBriefAction(
@@ -394,7 +388,10 @@ function requiredFieldsForReasonCode(
 }
 
 const passingReasons = new Set<ProductFitReasonCode>([
-  "APPLICATION_SCOPE_MATCH", "CERTIFICATION_MATCH", "PRODUCT_AVAILABLE", "PRODUCT_POWER_MATCH",
+  "APPLICATION_SCOPE_MATCH",
+  "CERTIFICATION_MATCH",
+  "PRODUCT_AVAILABLE",
+  "PRODUCT_POWER_MATCH",
 ]);
 
 export function productFitNextSteps(
@@ -402,31 +399,53 @@ export function productFitNextSteps(
   dictionary: Dictionary,
 ): string[] {
   const copy = dictionary.queryEditor;
-  const steps = reasons.filter(({ code }) => !passingReasons.has(code)).map(({ code }) => {
-    const category = requiredFieldsCopyKeyByReasonCode[code];
-    if (category === "requiredCertificationFields") return copy.certificationEvidence;
-    if (category === "requiredRegulationFields") return copy.regulationEvidence;
-    return copy.productEvidence;
-  });
+  const steps = reasons
+    .filter(({ code }) => !passingReasons.has(code))
+    .map(({ code }) => {
+      const category = requiredFieldsCopyKeyByReasonCode[code];
+      if (category === "requiredCertificationFields")
+        return copy.certificationEvidence;
+      if (category === "requiredRegulationFields")
+        return copy.regulationEvidence;
+      return copy.productEvidence;
+    });
   return [...new Set(steps)];
 }
 
-export function toolEvidenceNextSteps(result: ClientAiToolResult, dictionary: Dictionary): string[] {
+export function toolEvidenceNextSteps(
+  result: ClientAiToolResult,
+  dictionary: Dictionary,
+): string[] {
   if (result.status !== "no_data") return [];
   const copy = dictionary.queryEditor;
   if (result.tool === "findCompatibleProducts") {
-    const steps = productFitNextSteps(result.evaluations.flatMap(({ reasons }) => reasons), dictionary);
-    return [copy.checkQuery, ...(steps.length ? steps : [copy.productEvidence])];
+    const steps = productFitNextSteps(
+      result.evaluations.flatMap(({ reasons }) => reasons),
+      dictionary,
+    );
+    return [
+      copy.checkQuery,
+      ...(steps.length ? steps : [copy.productEvidence]),
+    ];
   }
   if (result.tool === "searchKnowledgeBase") return [copy.knowledgeEvidence];
   if (result.tool === "compareMarkets") return [copy.marketEvidence];
-  if (result.tool === "getCountryProfile") return [
-    copy.checkQuery,
-    ...(result.requestedTopics.includes("regulations") ? [copy.regulationEvidence] : []),
-    ...(result.requestedTopics.includes("market") ? [copy.marketEvidence] : []),
-    ...(result.requestedTopics.length === 1 && result.requestedTopics[0] === "country" ? [copy.reviewEvidence] : []),
-  ];
-  if (result.tool === "compareRegulations") return [copy.checkQuery, copy.regulationEvidence];
+  if (result.tool === "getCountryProfile")
+    return [
+      copy.checkQuery,
+      ...(result.requestedTopics.includes("regulations")
+        ? [copy.regulationEvidence]
+        : []),
+      ...(result.requestedTopics.includes("market")
+        ? [copy.marketEvidence]
+        : []),
+      ...(result.requestedTopics.length === 1 &&
+      result.requestedTopics[0] === "country"
+        ? [copy.reviewEvidence]
+        : []),
+    ];
+  if (result.tool === "compareRegulations")
+    return [copy.checkQuery, copy.regulationEvidence];
   return [copy.checkQuery, copy.reviewEvidence];
 }
 
@@ -444,9 +463,9 @@ export function buildProductFitDataGapSummary({
   const copy = dictionary.productFit;
   const requiredFields = Array.from(
     new Set(
-      evaluation.reasons.filter(({ code }) => !passingReasons.has(code)).map(({ code }) =>
-        requiredFieldsForReasonCode(code, copy),
-      ),
+      evaluation.reasons
+        .filter(({ code }) => !passingReasons.has(code))
+        .map(({ code }) => requiredFieldsForReasonCode(code, copy)),
     ),
   );
   const product = evaluation.product
@@ -501,9 +520,8 @@ function structuredGapCounts(result: ClientAiToolResult): {
     const emptyComparisonGap = result.comparison.metrics.length === 0 ? 1 : 0;
     return {
       display:
-        new Set(
-          result.comparison.metrics.flatMap(({ issues }) => issues),
-        ).size + emptyComparisonGap,
+        new Set(result.comparison.metrics.flatMap(({ issues }) => issues))
+          .size + emptyComparisonGap,
       rawWarnings: nonComparableMetricCount + emptyComparisonGap,
     };
   }

@@ -102,10 +102,7 @@ export function parseSalesChatModelToolOutput(output: unknown): unknown {
 }
 
 export type SalesChatModelToolOutputBudgetExceededReason =
-  | "invalid_projection"
-  | "result_count"
-  | "step_bytes"
-  | "turn_bytes";
+  "invalid_projection" | "result_count" | "step_bytes" | "turn_bytes";
 
 export type SalesChatModelToolOutputBudgetState =
   | { status: "open" }

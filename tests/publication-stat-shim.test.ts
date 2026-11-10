@@ -32,7 +32,9 @@ async function createFixture() {
   const releaseRoot = join(root, "releases ' [literal]");
   const sharedRoot = join(root, "shared $HOME");
   const faultRoot = join(root, "faults `touch injected`");
-  await Promise.all([releaseRoot, sharedRoot, faultRoot].map((path) => mkdir(path)));
+  await Promise.all(
+    [releaseRoot, sharedRoot, faultRoot].map((path) => mkdir(path)),
+  );
   return { root, releaseRoot, sharedRoot, faultRoot };
 }
 
@@ -43,14 +45,20 @@ async function writeExecutable(path: string, source: string): Promise<void> {
   await chmod(path, 0o755);
 }
 
-async function writeShim(fixture: Fixture, statExecutable?: string): Promise<string> {
+async function writeShim(
+  fixture: Fixture,
+  statExecutable?: string,
+): Promise<string> {
   const shim = join(fixture.root, "stat-shim");
-  await writeExecutable(shim, createPublicationStatShim({
-    releaseRoot: fixture.releaseRoot,
-    sharedRoot: fixture.sharedRoot,
-    faultRoot: fixture.faultRoot,
-    ...(statExecutable === undefined ? {} : { statExecutable }),
-  }));
+  await writeExecutable(
+    shim,
+    createPublicationStatShim({
+      releaseRoot: fixture.releaseRoot,
+      sharedRoot: fixture.sharedRoot,
+      faultRoot: fixture.faultRoot,
+      ...(statExecutable === undefined ? {} : { statExecutable }),
+    }),
+  );
   return shim;
 }
 
@@ -124,19 +132,27 @@ process.exit(${options.status ?? 0});
 async function readInvocations(logPath: string): Promise<string[][]> {
   const text = await readFile(logPath, "utf8");
   if (text === "") return [];
-  return text.trimEnd().split("\n").map((line) => {
-    const value: unknown = JSON.parse(line);
-    if (!Array.isArray(value) || !value.every((item: unknown) => typeof item === "string")) {
-      throw new Error("Invalid stat fixture invocation record.");
-    }
-    return value as string[];
-  });
+  return text
+    .trimEnd()
+    .split("\n")
+    .map((line) => {
+      const value: unknown = JSON.parse(line);
+      if (
+        !Array.isArray(value) ||
+        !value.every((item: unknown) => typeof item === "string")
+      ) {
+        throw new Error("Invalid stat fixture invocation record.");
+      }
+      return value as string[];
+    });
 }
 
 afterEach(async () => {
-  await Promise.all(directories.splice(0).map((directory) =>
-    rm(directory, { recursive: true, force: true }),
-  ));
+  await Promise.all(
+    directories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
+  );
 });
 
 describe("publication stat fixture preserves host lstat semantics", () => {
@@ -234,7 +250,12 @@ describe("publication stat fixture preserves host lstat semantics", () => {
     const fixture = await createFixture();
     const shim = await writeShim(fixture);
 
-    const result = execute(shim, "%U:%G:%a", join(fixture.root, "missing"), fixture.root);
+    const result = execute(
+      shim,
+      "%U:%G:%a",
+      join(fixture.root, "missing"),
+      fixture.root,
+    );
 
     expect(result.code).not.toBe(0);
     expect(result.stdout).toBe("");
@@ -250,25 +271,28 @@ describe("publication stat fixture owner, faults, and format compatibility", () 
     { location: "release prefix sibling", owner: "root:root" },
     { location: "shared prefix sibling", owner: "root:root" },
     { location: "unrelated", owner: "root:root" },
-  ])("keeps the existing owner projection for $location", async ({ location, owner }) => {
-    const fixture = await createFixture();
-    const shim = await writeShim(fixture);
-    const paths: Record<string, string> = {
-      "release root": fixture.releaseRoot,
-      "release child": join(fixture.releaseRoot, "child"),
-      "shared root": fixture.sharedRoot,
-      "shared child": join(fixture.sharedRoot, "child"),
-      "release prefix sibling": `${fixture.releaseRoot}-sibling`,
-      "shared prefix sibling": `${fixture.sharedRoot}-sibling`,
-      unrelated: join(fixture.root, "other"),
-    };
-    const path = paths[location];
-    if (location !== "release root" && location !== "shared root") {
-      await writeFile(path, "owner fixture");
-    }
+  ])(
+    "keeps the existing owner projection for $location",
+    async ({ location, owner }) => {
+      const fixture = await createFixture();
+      const shim = await writeShim(fixture);
+      const paths: Record<string, string> = {
+        "release root": fixture.releaseRoot,
+        "release child": join(fixture.releaseRoot, "child"),
+        "shared root": fixture.sharedRoot,
+        "shared child": join(fixture.sharedRoot, "child"),
+        "release prefix sibling": `${fixture.releaseRoot}-sibling`,
+        "shared prefix sibling": `${fixture.sharedRoot}-sibling`,
+        unrelated: join(fixture.root, "other"),
+      };
+      const path = paths[location];
+      if (location !== "release root" && location !== "shared root") {
+        await writeFile(path, "owner fixture");
+      }
 
-    await expectHostProjection(fixture, shim, path, owner);
-  });
+      await expectHostProjection(fixture, shim, path, owner);
+    },
+  );
 
   it.each(["owner", "mode", "both"])(
     "applies and removes the %s fault flags without changing other fields",
@@ -283,16 +307,26 @@ describe("publication stat fixture owner, faults, and format compatibility", () 
         ...(fault === "mode" || fault === "both" ? ["bad-marker-mode"] : []),
       ];
       await expectHostProjection(fixture, shim, path, "root:diesel");
-      for (const flag of flags) await writeFile(join(fixture.faultRoot, flag), "");
+      for (const flag of flags)
+        await writeFile(join(fixture.faultRoot, flag), "");
       const owner = fault === "mode" ? "root:diesel" : "diesel:diesel";
       const mode = fault === "owner" ? "4750" : "640";
       expect(execute(shim, "%U:%G:%a", path, fixture.root)).toMatchObject({
         code: 0,
         stdout: `${owner}:${mode}\n`,
       });
-      expect(execute(shim, "%a", path, fixture.root)).toMatchObject({ code: 0, stdout: `${mode}\n` });
-      expect(execute(shim, "%s", path, fixture.root)).toMatchObject({ code: 0, stdout: `${(await lstat(path)).size}\n` });
-      expect(execute(shim, "%h", path, fixture.root)).toMatchObject({ code: 0, stdout: `${(await lstat(path)).nlink}\n` });
+      expect(execute(shim, "%a", path, fixture.root)).toMatchObject({
+        code: 0,
+        stdout: `${mode}\n`,
+      });
+      expect(execute(shim, "%s", path, fixture.root)).toMatchObject({
+        code: 0,
+        stdout: `${(await lstat(path)).size}\n`,
+      });
+      expect(execute(shim, "%h", path, fixture.root)).toMatchObject({
+        code: 0,
+        stdout: `${(await lstat(path)).nlink}\n`,
+      });
       for (const flag of flags) await rm(join(fixture.faultRoot, flag));
       await expectHostProjection(fixture, shim, path, "root:diesel");
     },
@@ -303,26 +337,29 @@ describe("publication stat fixture owner, faults, and format compatibility", () 
     { format: "%h:%s:%a", field: "size" },
     { format: "%a:%h", field: "links" },
     { format: "prefix:%a:suffix", field: "mode" },
-  ])("preserves wildcard format precedence for $format", async ({ format, field }) => {
-    const fixture = await createFixture();
-    const shim = await writeShim(fixture);
-    const path = join(fixture.sharedRoot, "file");
-    await writeFile(path, "format fixture");
-    await chmod(path, 0o4750);
-    const metadata = await lstat(path);
-    const expected: Record<string, string> = {
-      owner: "root:diesel:4750",
-      size: String(metadata.size),
-      links: String(metadata.nlink),
-      mode: "4750",
-    };
+  ])(
+    "preserves wildcard format precedence for $format",
+    async ({ format, field }) => {
+      const fixture = await createFixture();
+      const shim = await writeShim(fixture);
+      const path = join(fixture.sharedRoot, "file");
+      await writeFile(path, "format fixture");
+      await chmod(path, 0o4750);
+      const metadata = await lstat(path);
+      const expected: Record<string, string> = {
+        owner: "root:diesel:4750",
+        size: String(metadata.size),
+        links: String(metadata.nlink),
+        mode: "4750",
+      };
 
-    expect(execute(shim, format, path, fixture.root)).toEqual({
-      code: 0,
-      stdout: `${expected[field]}\n`,
-      stderr: "",
-    });
-  });
+      expect(execute(shim, format, path, fixture.root)).toEqual({
+        code: 0,
+        stdout: `${expected[field]}\n`,
+        stderr: "",
+      });
+    },
+  );
 
   it("retains exit 64 for an unsupported format", async () => {
     const fixture = await createFixture();
@@ -330,7 +367,10 @@ describe("publication stat fixture owner, faults, and format compatibility", () 
     const path = join(fixture.root, "file");
     await writeFile(path, "fixture");
 
-    expect(execute(shim, "%n", path, fixture.root)).toMatchObject({ code: 64, stdout: "" });
+    expect(execute(shim, "%n", path, fixture.root)).toMatchObject({
+      code: 64,
+      stdout: "",
+    });
   });
 });
 
@@ -359,9 +399,13 @@ describe("publication stat fixture tuple query contract", () => {
         if (dialect === "bsd") {
           expectedInvocations.push(["-f", "%OMp%03OLp:%l:%z", "--", path]);
         }
-        expect(await readInvocations(backend.logPath)).toEqual(expectedInvocations);
+        expect(await readInvocations(backend.logPath)).toEqual(
+          expectedInvocations,
+        );
       }
-      await expect(lstat(join(fixture.root, "injected"))).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(lstat(join(fixture.root, "injected"))).rejects.toMatchObject(
+        { code: "ENOENT" },
+      );
     },
   );
 
@@ -378,10 +422,16 @@ describe("publication stat fixture tuple query contract", () => {
     const fixture = await createFixture();
     const path = join(fixture.root, "file");
     await writeFile(path, "fixture");
-    const backend = await createBackend(fixture, path, { dialect: "gnu", output });
+    const backend = await createBackend(fixture, path, {
+      dialect: "gnu",
+      output,
+    });
     const shim = await writeShim(fixture, backend.executable);
 
-    expect(execute(shim, "%s", path, fixture.root)).toMatchObject({ code: 65, stdout: "" });
+    expect(execute(shim, "%s", path, fixture.root)).toMatchObject({
+      code: 65,
+      stdout: "",
+    });
     expect(await readInvocations(backend.logPath)).toEqual([
       ["-c", "%a:%h:%s", "--", path],
     ]);
@@ -391,7 +441,10 @@ describe("publication stat fixture tuple query contract", () => {
     const fixture = await createFixture();
     const path = join(fixture.root, "file");
     await writeFile(path, "fixture");
-    const backend = await createBackend(fixture, path, { dialect: "gnu", status: 73 });
+    const backend = await createBackend(fixture, path, {
+      dialect: "gnu",
+      status: 73,
+    });
     const shim = await writeShim(fixture, backend.executable);
 
     const result = execute(shim, "%U:%G:%a", path, fixture.root);

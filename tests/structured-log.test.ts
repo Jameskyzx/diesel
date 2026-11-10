@@ -8,16 +8,17 @@ import {
 
 describe("structured observability logs", () => {
   it("emits a request correlation header and allowlisted JSON fields", () => {
-    const consoleInfo = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const consoleInfo = vi
+      .spyOn(console, "info")
+      .mockImplementation(() => undefined);
     try {
       const observer = createApiRequestObserver("/api/products");
       const response = observer.finish(Response.json({ status: "ok" }));
 
       expect(response.headers.get("x-request-id")).toBe(observer.requestId);
-      const parsed = JSON.parse(String(consoleInfo.mock.calls[0]?.[0])) as Record<
-        string,
-        unknown
-      >;
+      const parsed = JSON.parse(
+        String(consoleInfo.mock.calls[0]?.[0]),
+      ) as Record<string, unknown>;
       expect(Object.keys(parsed).sort()).toEqual([
         "durationMs",
         "errorCode",
@@ -51,7 +52,9 @@ describe("structured observability logs", () => {
   });
 
   it("keeps AI completion logs to counts, evidence state and token usage", () => {
-    const consoleInfo = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const consoleInfo = vi
+      .spyOn(console, "info")
+      .mockImplementation(() => undefined);
     try {
       emitAiCompletionLog({
         cacheHitRatePct: 25,

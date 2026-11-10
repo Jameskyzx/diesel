@@ -26,9 +26,7 @@ const nullableTextSchema = z.string().trim().min(1).nullable().optional();
 const entityIdSchema = z.uuid().optional();
 const numberInputSchema = z
   .union([z.number(), decimalNumberStringSchema])
-  .transform((value) =>
-    typeof value === "number" ? value : Number(value),
-  );
+  .transform((value) => (typeof value === "number" ? value : Number(value)));
 const nonnegativeNumberInputSchema = numberInputSchema.pipe(
   z.number().finite().nonnegative(),
 );
@@ -207,10 +205,7 @@ export const regulationLimitDraftPayloadSchema = z
         path: ["powerMaxKw"],
       });
     }
-    if (
-      payload.validTo &&
-      payload.validTo <= payload.validFrom
-    ) {
+    if (payload.validTo && payload.validTo <= payload.validFrom) {
       context.addIssue({
         code: "custom",
         message: "validTo must be after validFrom",
@@ -261,8 +256,7 @@ export const regulationDraftPayloadSchema = z
     ) {
       context.addIssue({
         code: "custom",
-        message:
-          "A summary explaining the unavailable limits is required",
+        message: "A summary explaining the unavailable limits is required",
         path: ["summary"],
       });
     }
@@ -318,7 +312,12 @@ export const productDraftPayloadSchema = z
     description: nullableTextSchema,
     id: entityIdSchema,
     isDemo: z.boolean().default(false),
-    modelCode: z.string().trim().min(1).max(100).transform((value) => value.toUpperCase()),
+    modelCode: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .transform((value) => value.toUpperCase()),
     name: z.string().trim().min(1).max(300),
     parameters: z
       .record(
@@ -371,13 +370,7 @@ export const productCertificationDraftPayloadSchema = z
     powerMinKw: nonnegativeNumberInputSchema.nullable().optional(),
     productId: z.uuid(),
     regulationId: z.uuid(),
-    status: z.enum([
-      "pending",
-      "active",
-      "expired",
-      "withdrawn",
-      "unknown",
-    ]),
+    status: z.enum(["pending", "active", "expired", "withdrawn", "unknown"]),
     validFrom: isoDateSchema.nullable().optional(),
     validTo: isoDateSchema.nullable().optional(),
     verifiedAt: verifiedTimestampSchema,
@@ -433,7 +426,12 @@ const marketMetricDraftPayloadObjectSchema = z
     id: entityIdSchema,
     isDemo: z.boolean().default(false),
     methodologyVersion: z.string().trim().min(1).max(100),
-    metricCode: z.string().trim().min(1).max(80).transform((value) => value.toUpperCase()),
+    metricCode: z
+      .string()
+      .trim()
+      .min(1)
+      .max(80)
+      .transform((value) => value.toUpperCase()),
     metricName: z.string().trim().min(1).max(300),
     periodEnd: isoDateSchema,
     periodStart: isoDateSchema,
@@ -445,8 +443,7 @@ const marketMetricDraftPayloadObjectSchema = z
   .strict();
 
 export const marketMetricDraftPayloadSchema =
-  marketMetricDraftPayloadObjectSchema
-  .superRefine((payload, context) => {
+  marketMetricDraftPayloadObjectSchema.superRefine((payload, context) => {
     if (payload.periodEnd <= payload.periodStart) {
       context.addIssue({
         code: "custom",
@@ -464,13 +461,23 @@ const catalogEngineDraftPayloadObjectSchema = z
     category: catalogCategorySchema,
     cylinders: positiveNumberInputSchema.pipe(z.number().int().max(64)),
     dataSourceId: z.uuid(),
-    declaredCitationCodes: z.array(z.string().trim().min(1).max(200)).max(20)
-      .refine(codes => new Set(codes).size === codes.length, "declaredCitationCodes must be unique"),
+    declaredCitationCodes: z
+      .array(z.string().trim().min(1).max(200))
+      .max(20)
+      .refine(
+        (codes) => new Set(codes).size === codes.length,
+        "declaredCitationCodes must be unique",
+      ),
     displacementL: positiveNumberInputSchema.pipe(z.number().max(1_000)),
     emissionLabel: z.string().trim().min(1).max(200),
     id: entityIdSchema,
     isDemo: z.boolean().default(false),
-    modelCode: z.string().trim().min(1).max(100).regex(/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/u)
+    modelCode: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .regex(/^[A-Za-z0-9][A-Za-z0-9._\/-]*$/u)
       .transform((value) => value.toUpperCase()),
     powerMaxKw: positiveNumberInputSchema.pipe(z.number().max(100_000)),
     powerMinKw: nonnegativeNumberInputSchema.pipe(z.number().max(100_000)),
@@ -486,9 +493,21 @@ function refineCatalogEngineBand(
   context: z.RefinementCtx,
 ) {
   if (payload.powerMaxKw <= payload.powerMinKw) {
-    context.addIssue({ code: "custom", message: "powerMaxKw must be greater than powerMinKw", path: ["powerMaxKw"] });
-  } else if (payload.ratedPowerKw < payload.powerMinKw || payload.ratedPowerKw >= payload.powerMaxKw) {
-    context.addIssue({ code: "custom", message: "ratedPowerKw must sit inside the half-open [powerMinKw, powerMaxKw) band", path: ["ratedPowerKw"] });
+    context.addIssue({
+      code: "custom",
+      message: "powerMaxKw must be greater than powerMinKw",
+      path: ["powerMaxKw"],
+    });
+  } else if (
+    payload.ratedPowerKw < payload.powerMinKw ||
+    payload.ratedPowerKw >= payload.powerMaxKw
+  ) {
+    context.addIssue({
+      code: "custom",
+      message:
+        "ratedPowerKw must sit inside the half-open [powerMinKw, powerMaxKw) band",
+      path: ["ratedPowerKw"],
+    });
   }
 }
 
@@ -590,74 +609,71 @@ const draftRequestBase = {
   changeReason: z.string().trim().min(3).max(1_000),
 };
 
-export const governanceDraftCreateSchema = z.discriminatedUnion(
-  "entityType",
-  [
-    z
-      .object({
-        ...draftRequestBase,
-        entityType: z.literal("country"),
-        payload: countryDraftPayloadSchema,
-      })
-      .strict(),
-    z
-      .object({
-        ...draftRequestBase,
-        entityType: z.literal("regulation"),
-        payload: regulationDraftPayloadSchema,
-      })
-      .strict(),
-    z
-      .object({
-        ...draftRequestBase,
-        entityType: z.literal("product"),
-        payload: productDraftPayloadSchema,
-      })
-      .strict(),
-    z
-      .object({
-        ...draftRequestBase,
-        entityType: z.literal("product_certification"),
-        payload: productCertificationDraftPayloadSchema,
-      })
-      .strict(),
-    z
-      .object({
-        ...draftRequestBase,
-        entityType: z.literal("market_metric"),
-        payload: marketMetricDraftPayloadSchema,
-      })
-      .strict(),
-    z
-      .object({
-        ...draftRequestBase,
-        entityType: z.literal("data_source"),
-        payload: dataSourceDraftPayloadSchema,
-      })
-      .strict(),
-    z
-      .object({
-        ...draftRequestBase,
-        entityType: z.literal("jurisdiction"),
-        payload: jurisdictionDraftPayloadSchema,
-      })
-      .strict(),
-    z
-      .object({
-        ...draftRequestBase,
-        entityType: z.literal("catalog_engine"),
-        payload: catalogEngineDraftPayloadSchema,
-      })
-      .strict(),
-    z
-      .object({
-        ...draftRequestBase,
-        entityType: z.literal("engine_feedback"),
-        payload: engineFeedbackDraftPayloadSchema,
-      })
-      .strict(),
-  ],
-);
+export const governanceDraftCreateSchema = z.discriminatedUnion("entityType", [
+  z
+    .object({
+      ...draftRequestBase,
+      entityType: z.literal("country"),
+      payload: countryDraftPayloadSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...draftRequestBase,
+      entityType: z.literal("regulation"),
+      payload: regulationDraftPayloadSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...draftRequestBase,
+      entityType: z.literal("product"),
+      payload: productDraftPayloadSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...draftRequestBase,
+      entityType: z.literal("product_certification"),
+      payload: productCertificationDraftPayloadSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...draftRequestBase,
+      entityType: z.literal("market_metric"),
+      payload: marketMetricDraftPayloadSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...draftRequestBase,
+      entityType: z.literal("data_source"),
+      payload: dataSourceDraftPayloadSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...draftRequestBase,
+      entityType: z.literal("jurisdiction"),
+      payload: jurisdictionDraftPayloadSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...draftRequestBase,
+      entityType: z.literal("catalog_engine"),
+      payload: catalogEngineDraftPayloadSchema,
+    })
+    .strict(),
+  z
+    .object({
+      ...draftRequestBase,
+      entityType: z.literal("engine_feedback"),
+      payload: engineFeedbackDraftPayloadSchema,
+    })
+    .strict(),
+]);
 
 export const governanceActionInputSchema = z
   .object({
@@ -678,17 +694,19 @@ export const marketCsvPreviewInputSchema = z
   })
   .strict();
 
-export const marketCsvRowSchema = marketMetricDraftPayloadObjectSchema.omit({
-  id: true,
-}).superRefine((payload, context) => {
-  if (payload.periodEnd <= payload.periodStart) {
-    context.addIssue({
-      code: "custom",
-      message: "periodEnd must be after periodStart",
-      path: ["periodEnd"],
-    });
-  }
-});
+export const marketCsvRowSchema = marketMetricDraftPayloadObjectSchema
+  .omit({
+    id: true,
+  })
+  .superRefine((payload, context) => {
+    if (payload.periodEnd <= payload.periodStart) {
+      context.addIssue({
+        code: "custom",
+        message: "periodEnd must be after periodStart",
+        path: ["periodEnd"],
+      });
+    }
+  });
 
 const dashboardEmailSchema = z.email().max(320);
 const dashboardStringSchema = z.string().trim().min(1).max(1_000);
@@ -715,10 +733,7 @@ const governanceDashboardPayloadSchemas = {
   product: productDraftPayloadSchema,
   product_certification: productCertificationDraftPayloadSchema,
   regulation: regulationDraftPayloadSchema,
-} as const satisfies Record<
-  (typeof governedEntityTypes)[number],
-  z.ZodType
->;
+} as const satisfies Record<(typeof governedEntityTypes)[number], z.ZodType>;
 
 type GovernanceDashboardPayloadIssue = {
   message: string;
@@ -736,19 +751,16 @@ function governanceDashboardPayloadIssues(input: {
     entityKey: input.entityKey,
     entityType: input.entityType,
   });
-  if (
-    !reference.success ||
-    reference.data.entityKey !== input.entityKey
-  ) {
+  if (!reference.success || reference.data.entityKey !== input.entityKey) {
     issues.push({
       message: "entityKey must be a canonical key for entityType",
       path: ["entityKey"],
     });
   }
 
-  const payload = governanceDashboardPayloadSchemas[
-    input.entityType
-  ].safeParse(input.payload);
+  const payload = governanceDashboardPayloadSchemas[input.entityType].safeParse(
+    input.payload,
+  );
   if (!payload.success) {
     for (const issue of payload.error.issues) {
       issues.push({
@@ -844,12 +856,7 @@ export const governanceReviewDependencySchema = z
 
 export const governanceDraftReviewContextSchema = z
   .object({
-    baselineStatus: z.enum([
-      "active",
-      "archived",
-      "first_revision",
-      "missing",
-    ]),
+    baselineStatus: z.enum(["active", "archived", "first_revision", "missing"]),
     blockingReasons: z.array(dashboardStringSchema).max(8),
     dependencies: z.array(governanceReviewDependencySchema).max(256),
     publishedBaseline: governancePublishedBaselineSchema.nullable(),
@@ -950,9 +957,7 @@ export type AdminDashboardResponse = z.infer<
 >;
 export type AdminRole = z.infer<typeof adminRoleSchema>;
 export type GovernedEntityType = z.infer<typeof governedEntityTypeSchema>;
-export type GovernanceDraftCreate = z.infer<
-  typeof governanceDraftCreateSchema
->;
+export type GovernanceDraftCreate = z.infer<typeof governanceDraftCreateSchema>;
 export type GovernanceWorkflowStatus = z.infer<
   typeof governanceWorkflowStatusSchema
 >;

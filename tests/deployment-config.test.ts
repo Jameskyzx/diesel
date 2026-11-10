@@ -9,23 +9,22 @@ describe("diesel.jamesky.site Nginx boundary", () => {
   it("proxies the public app while blocking privileged routes", async () => {
     const configurations = await Promise.all(
       ["jamesky.site.conf", "diesel-demo.conf"].map((filename) =>
-        readFile(
-          resolve(process.cwd(), "deploy/nginx", filename),
-          "utf8",
-        ),
+        readFile(resolve(process.cwd(), "deploy/nginx", filename), "utf8"),
       ),
     );
     const [configuration, alternateConfiguration] = configurations;
 
-    expect(configuration).toContain(
-      "server_name diesel.jamesky.site;",
-    );
+    expect(configuration).toContain("server_name diesel.jamesky.site;");
     // This release owns only Diesel's origin. The independently deployed blog
     // must never be captured by a Diesel template or rollback.
-    expect([...configuration.matchAll(/^[ \t]*server_name\s+([^;]+);/gmu)].map(
-      (match) => match[1],
-    )).toEqual(["diesel.jamesky.site", "diesel.jamesky.site"]);
-    expect(configuration).toContain("ssl_certificate /etc/letsencrypt/live/diesel.jamesky.site/fullchain.pem;");
+    expect(
+      [...configuration.matchAll(/^[ \t]*server_name\s+([^;]+);/gmu)].map(
+        (match) => match[1],
+      ),
+    ).toEqual(["diesel.jamesky.site", "diesel.jamesky.site"]);
+    expect(configuration).toContain(
+      "ssl_certificate /etc/letsencrypt/live/diesel.jamesky.site/fullchain.pem;",
+    );
     expect(configuration).not.toContain("www.jamesky.site");
     expect(configuration).not.toContain("/etc/letsencrypt/live/jamesky.site/");
     expect(configuration).not.toContain("/var/www/jamesky-blog");
@@ -71,9 +70,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(localeLocation).not.toContain("client_max_body_size 10m;");
     expect(localeLocation).not.toContain("limit_conn chat_per_client");
     expect(localeLocation).not.toContain("limit_conn chat_global");
-    const catchAllLocation = configuration.slice(
-      catchAllLocationStart,
-    );
+    const catchAllLocation = configuration.slice(catchAllLocationStart);
     expect(catchAllLocation).not.toContain("client_max_body_size 10m;");
     expect(catchAllLocation).not.toContain("proxy_request_buffering off;");
     expect(catchAllLocation).not.toContain("limit_conn chat_per_client");
@@ -112,9 +109,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       expect(configuration.indexOf(block)).toBeLessThan(catchAllLocationStart);
     }
 
-    expect(alternateConfiguration).toContain(
-      "server_name 111.228.50.85;",
-    );
+    expect(alternateConfiguration).toContain("server_name 111.228.50.85;");
     expect(alternateConfiguration).toContain(
       "return 301 https://diesel.jamesky.site$request_uri;",
     );
@@ -134,7 +129,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       '"PATH=/opt/node-v22.22.3-linux-x64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"',
     );
     expect(ecosystem).toContain('"NODE_ENV=production"');
-    expect(ecosystem).toContain('`APP_VERSION=${appVersion}`');
+    expect(ecosystem).toContain("`APP_VERSION=${appVersion}`");
     expect(ecosystem).toContain(
       'const nodeInterpreter = "/opt/node-v22.22.3-linux-x64/bin/node"',
     );
@@ -149,12 +144,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "utf8",
     );
     const stageRelease = await readFile(
-      resolve(
-        process.cwd(),
-        "scripts",
-        "deploy",
-        "stage-release.sh",
-      ),
+      resolve(process.cwd(), "scripts", "deploy", "stage-release.sh"),
       "utf8",
     );
     const publicGovernanceValidator = await readFile(
@@ -185,30 +175,15 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "utf8",
     );
     const hostActivationLedger = await readFile(
-      resolve(
-        process.cwd(),
-        "scripts",
-        "deploy",
-        "host-activation-ledger.sh",
-      ),
+      resolve(process.cwd(), "scripts", "deploy", "host-activation-ledger.sh"),
       "utf8",
     );
     const runtimePreparer = await readFile(
-      resolve(
-        process.cwd(),
-        "scripts",
-        "deploy",
-        "prepare-release-runtime.sh",
-      ),
+      resolve(process.cwd(), "scripts", "deploy", "prepare-release-runtime.sh"),
       "utf8",
     );
     const hostActivator = await readFile(
-      resolve(
-        process.cwd(),
-        "scripts",
-        "deploy",
-        "activate-host-release.sh",
-      ),
+      resolve(process.cwd(), "scripts", "deploy", "activate-host-release.sh"),
       "utf8",
     );
     const releasePublicationController = await readFile(
@@ -248,12 +223,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "utf8",
     );
     const rollbackHostRelease = await readFile(
-      resolve(
-        process.cwd(),
-        "scripts",
-        "deploy",
-        "rollback-host-release.sh",
-      ),
+      resolve(process.cwd(), "scripts", "deploy", "rollback-host-release.sh"),
       "utf8",
     );
     const artifactManifest = await readFile(
@@ -277,7 +247,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       'status="$(run_git status --porcelain=v1 --untracked-files=all --ignore-submodules=none)"',
     );
     expect(stageRelease).toContain(
-      'head="$(run_git rev-parse --verify \'HEAD^{commit}\')"',
+      "head=\"$(run_git rev-parse --verify 'HEAD^{commit}')\"",
     );
     expect(stageRelease).toContain(
       'if [[ "$#" -ne 1 || ! "$1" =~ ^[0-9a-f]{40}$ ]]',
@@ -291,11 +261,10 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     const releaseAuthorizationIndex = stageRelease.indexOf(
       '"${committed_authorization_bundle}" "${release_id}"',
     );
-    const releaseAuthorizationOutputValidationIndex =
-      stageRelease.indexOf(
-        'validate-output "${release_id}"',
-        releaseAuthorizationIndex,
-      );
+    const releaseAuthorizationOutputValidationIndex = stageRelease.indexOf(
+      'validate-output "${release_id}"',
+      releaseAuthorizationIndex,
+    );
     const firstRemoteMutationIndex = stageRelease.indexOf(
       '"${ssh_environment[@]}" "${ssh_bin}" "${ssh_options[@]}"',
       releaseAuthorizationOutputValidationIndex,
@@ -316,18 +285,14 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(firstRemoteMutationIndex).toBeGreaterThan(
       releaseAuthorizationOutputValidationIndex,
     );
-    expect(stageRelease).not.toContain(
-      'release_id="$(date -u +%Y%m%d%H%M%S)"',
-    );
+    expect(stageRelease).not.toContain('release_id="$(date -u +%Y%m%d%H%M%S)"');
     expect(stageRelease).toContain(
       'readonly remote_release_dir="${releases_root}/${release_id}"',
     );
     expect(stageRelease).not.toContain('mkdir -p "${release_dir}"');
     const remotePreflightStart = stageRelease.indexOf("<<'REMOTE_PREFLIGHT'");
-    const remotePreflightBodyStart = stageRelease.indexOf(
-      "\n",
-      remotePreflightStart,
-    ) + 1;
+    const remotePreflightBodyStart =
+      stageRelease.indexOf("\n", remotePreflightStart) + 1;
     const remotePreflightEnd = stageRelease.indexOf(
       "\nREMOTE_PREFLIGHT\n",
       remotePreflightBodyStart,
@@ -389,7 +354,9 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(releasePermissionProbeIndex).toBeGreaterThan(releaseModeIndex);
     expect(trackedRsyncIndex).toBeGreaterThan(releasePermissionProbeIndex);
     expect(remotePostcheckIndex).toBeGreaterThan(trackedRsyncIndex);
-    expect(postTransferPermissionProbeIndex).toBeGreaterThan(remotePostcheckIndex);
+    expect(postTransferPermissionProbeIndex).toBeGreaterThan(
+      remotePostcheckIndex,
+    );
     expect(
       stageRelease.match(
         /"\$\{remote_target\}" \/usr\/bin\/env -i \\\n  HOME=\/root LANG=C LC_ALL=C PATH=\/usr\/sbin:\/usr\/bin:\/sbin:\/bin \\\n  \/bin\/bash --noprofile --norc -s --/gu,
@@ -400,20 +367,18 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     );
     expect(stageRelease).toContain("--timeout=60");
     expect(stageRelease).toContain(
-      'if ! run_bounded_command 60000 5000 512 8192',
+      "if ! run_bounded_command 60000 5000 512 8192",
     );
     expect(stageRelease).toContain(
-      'if ! run_bounded_command 900000 5000 65536 65536',
+      "if ! run_bounded_command 900000 5000 65536 65536",
     );
     expect(stageRelease).toContain(
-      'if ! run_bounded_command 300000 5000 128 8192',
+      "if ! run_bounded_command 300000 5000 128 8192",
     );
     expect(stageRelease).toContain(
       'remote_identity_expected_bytes="$(( ${#remote_candidate_identity} + 1 ))"',
     );
-    expect(
-      stageRelease.split('^[A-Za-z0-9_./+@-]+$'),
-    ).toHaveLength(3);
+    expect(stageRelease.split("^[A-Za-z0-9_./+@-]+$")).toHaveLength(3);
     expect(stageRelease).not.toContain("+@:-");
     expect(
       stageRelease.split(
@@ -443,9 +408,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(remoteManifestExecutionIndex).toBeGreaterThan(
       helperVerificationIndex,
     );
-    expect(stageRelease).toContain(
-      '"0:0:644:1:${expected_helper_size}"',
-    );
+    expect(stageRelease).toContain('"0:0:644:1:${expected_helper_size}"');
     expect(stageRelease).toContain(
       '"${expected_helper_sha256}  ${manifest_helper}"',
     );
@@ -461,16 +424,14 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(stageRelease).toContain(
       '! -L "${release_dir}/${forbidden_runtime_path}" ]] || return 1',
     );
-    expect(stageRelease).toContain('^0:${diesel_gid}:750:');
+    expect(stageRelease).toContain("^0:${diesel_gid}:750:");
     expect(deploymentRunbook).toContain(
       'stage_script_path="scripts/deploy/stage-release.sh"',
     );
     expect(deploymentRunbook).toContain(
       '"${bootstrap_git[@]}" archive --format=tar --output="${stage_archive_path}"',
     );
-    expect(deploymentRunbook).toContain(
-      'bootstrap_git=(\n  /usr/bin/env -i',
-    );
+    expect(deploymentRunbook).toContain("bootstrap_git=(\n  /usr/bin/env -i");
     expect(deploymentRunbook).toContain("GIT_CONFIG_GLOBAL=/dev/null");
     expect(deploymentRunbook).toContain("GIT_NO_REPLACE_OBJECTS=1");
     expect(deploymentRunbook).toContain("-c core.fsmonitor=false");
@@ -479,9 +440,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(deploymentRunbook).toContain(
       'repo_root="$("${bootstrap_git[@]}" rev-parse --show-toplevel)" || return 1',
     );
-    expect(deploymentRunbook).toContain(
-      'test "$(pwd -P)" = "${repo_root}"',
-    );
+    expect(deploymentRunbook).toContain('test "$(pwd -P)" = "${repo_root}"');
     expect(deploymentRunbook).toContain(
       'test "${branch_ref}" = "refs/heads/master"',
     );
@@ -503,9 +462,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(deploymentRunbook).toContain(
       'test "${current_identity}" = "${stage_tmp_dir_identity}"',
     );
-    expect(deploymentRunbook).toContain(
-      'stage_env=(\n  /usr/bin/env -i',
-    );
+    expect(deploymentRunbook).toContain("stage_env=(\n  /usr/bin/env -i");
     expect(deploymentRunbook).toContain(
       '"${stage_env[@]}" \\\n    /bin/bash --noprofile --norc "${committed_stage_script}" "${release_id}"',
     );
@@ -515,9 +472,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(deploymentRunbook).toContain(
       '"${bootstrap_git[@]}" hash-object --no-filters "${stage_script_path}"',
     );
-    expect(deploymentRunbook).toContain(
-      'test -x "${committed_stage_script}"',
-    );
+    expect(deploymentRunbook).toContain('test -x "${committed_stage_script}"');
     expect(deploymentRunbook).not.toContain('authorization_json="$(');
     expect(deploymentRunbook).not.toContain("release_export_dir=");
     expect(deploymentRunbook).not.toMatch(
@@ -595,9 +550,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(runtimePreparer).toContain(
       'runuser -u diesel -- test -w "${release_dir}/.data"',
     );
-    expect(runtimePreparer).toContain(
-      'mktemp "$1/.write-probe.XXXXXX"',
-    );
+    expect(runtimePreparer).toContain('mktemp "$1/.write-probe.XXXXXX"');
     expect(runtimePreparer).toContain('runtime_uid="$(id -u diesel)"');
     expect(runtimePreparer).toContain('runtime_gid="$(id -g diesel)"');
     expect(runtimePreparer).toContain(
@@ -647,9 +600,8 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "  /usr/bin/bash --noprofile --norc -- \\",
       '    "${orchestrator_path}" "${release_id}" "${candidate_path}"',
     ].join("\n");
-    const orchestratorLauncherIndex = deploymentRunbook.indexOf(
-      orchestratorLauncher,
-    );
+    const orchestratorLauncherIndex =
+      deploymentRunbook.indexOf(orchestratorLauncher);
     const normalPathFenceStart = deploymentRunbook.lastIndexOf(
       "```bash\n",
       orchestratorLauncherIndex,
@@ -716,9 +668,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(freezeIndex).toBeGreaterThan(quiescenceIndex);
     expect(runtimeEnvironmentLinkIndex).toBeGreaterThan(buildScriptIndex);
     expect(deploymentRunbook).toContain("groupadd --system diesel-build");
-    expect(deploymentRunbook).toContain(
-      "useradd --system --gid diesel-build",
-    );
+    expect(deploymentRunbook).toContain("useradd --system --gid diesel-build");
     expect(deploymentRunbook).not.toContain(
       'chown -R diesel-build:diesel "${release_dir}"',
     );
@@ -762,11 +712,9 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       'if ! sync -f -- "${release_dir}" "${release_root}" "${deploy_root}"; then',
     );
     expect(runtimePreparer).toContain(
-      'const rootDevice = lstatSync(root, { bigint: true }).dev;',
+      "const rootDevice = lstatSync(root, { bigint: true }).dev;",
     );
-    expect(runtimePreparer).toContain(
-      'if (metadata.dev !== rootDevice)',
-    );
+    expect(runtimePreparer).toContain("if (metadata.dev !== rootDevice)");
     expect(runtimePreparer).toContain(
       [
         '    "${build_marker}" \\',
@@ -831,15 +779,11 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(runtimePreparer).toContain(
       'export PATH="/usr/sbin:/usr/bin:/sbin:/bin"',
     );
-    expect(runtimePreparer).toContain(
-      'HOME="${build_home}"',
-    );
-    expect(runtimePreparer).toContain(
-      'BUILD_HOME="${build_home}"',
-    );
+    expect(runtimePreparer).toContain('HOME="${build_home}"');
+    expect(runtimePreparer).toContain('BUILD_HOME="${build_home}"');
     expect(runtimePreparer).toContain("COREPACK_ENABLE_DOWNLOAD_PROMPT=0");
     expect(runtimePreparer).toContain(
-      'trap \'prepare_release_cleanup_on_exit "$?"\' EXIT',
+      "trap 'prepare_release_cleanup_on_exit \"$?\"' EXIT",
     );
     expect(runtimePreparer).toContain(
       'install -d -m 0710 -o root -g diesel-build "${build_workspace_root}"',
@@ -900,7 +844,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     );
     expect(runtimePreparer).toContain(
       [
-        'cp -P --preserve=mode --reflink=never -- \\',
+        "cp -P --preserve=mode --reflink=never -- \\",
         '    "${next_environment}" "${build_workspace}/next-env.d.ts"',
       ].join("\n"),
     );
@@ -913,9 +857,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       ),
     );
     expect(rootNextEnvironmentRestoreIndex).toBeLessThan(
-      runtimePreparer.indexOf(
-        '"${node_binary}" "${input_manifest_script}"',
-      ),
+      runtimePreparer.indexOf('"${node_binary}" "${input_manifest_script}"'),
     );
     expect(runtimePreparer).toContain(
       [
@@ -948,7 +890,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       'fail("Deploy-ready verification must run as the immutable release owner.")',
     );
     expect(artifactManifest).toContain(
-      'const CONTROLLER_DIRECTORY_MODE = 0o755n',
+      "const CONTROLLER_DIRECTORY_MODE = 0o755n",
     );
     expect(artifactManifest).toContain(
       'fail("Production check-ready must run as the root controller identity.")',
@@ -1013,7 +955,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     );
     expect(deploymentRunbook).toContain("governance_env=(\n  /usr/bin/env -i");
     expect(deploymentRunbook).toContain(
-      "  DATABASE_MODE=postgres\n  DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8\n  release_id=\"${release_id}\"",
+      '  DATABASE_MODE=postgres\n  DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8\n  release_id="${release_id}"',
     );
     expect(governancePublicationStateMachine).toContain(
       "-name RECOVERY_REQUIRED -o \\\n      -name HOST_ROLLBACK_REQUIRED -o -name PUBLISH_COMMITTED",
@@ -1031,7 +973,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       'governance_run_isolated_saved_public_validator \\\n    "${public_validation_script}" "${expected_release_id}"',
     );
     expect(governancePublicationStateMachine).toContain(
-      "env -i HOME=/var/lib/diesel PATH=\"${PATH}\" bash -s -- \"$@\"",
+      'env -i HOME=/var/lib/diesel PATH="${PATH}" bash -s -- "$@"',
     );
     expect(governancePublicationStateMachine).toContain(
       "scripts/db/assert-governance-maintenance-lock.ts",
@@ -1055,9 +997,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(publicGovernanceValidator).toContain(
       '"${public_origin}/api/countries/${iso3}?asOf=2026-08-11"',
     );
-    expect(publicGovernanceValidator).toContain(
-      'body.asOf !== "2026-08-11"',
-    );
+    expect(publicGovernanceValidator).toContain('body.asOf !== "2026-08-11"');
     expect(publicGovernanceValidator).toContain(
       'response_status="$(curl "${curl_common[@]}" --output /dev/null',
     );
@@ -1067,9 +1007,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(publicGovernanceValidator).toContain(
       'assert_country_detail URY 1 "Vehicle-emission homologation procedure V5" 2023-05-14 2025-11-13 UY-NATIONAL 10000000-0000-4000-8000-000000000561 10000000-0000-4000-8000-000000000562',
     );
-    expect(publicGovernanceValidator).toContain(
-      "curl_common=(\n  --disable",
-    );
+    expect(publicGovernanceValidator).toContain("curl_common=(\n  --disable");
     expect(publicGovernanceValidator).toContain("--max-filesize 4194304");
     expect(publicGovernanceValidator).toContain("--noproxy '*'");
     expect(publicGovernanceValidator).toContain("--proto '=https'");
@@ -1084,7 +1022,10 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "\nhost_release_orchestrator_run_main() {",
       reconcileStart,
     );
-    const reconcile = hostReleaseOrchestrator.slice(reconcileStart, reconcileEnd);
+    const reconcile = hostReleaseOrchestrator.slice(
+      reconcileStart,
+      reconcileEnd,
+    );
     const acquireIndex = reconcile.indexOf(
       "host_release_orchestrator_acquire_lock",
     );
@@ -1167,9 +1108,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(deploymentRunbook).not.toContain(
       "mv -Tf /opt/diesel/current.next /opt/diesel/current",
     );
-    expect(deploymentRunbook).not.toContain(
-      "if pm2 describe diesel-demo 8>&-",
-    );
+    expect(deploymentRunbook).not.toContain("if pm2 describe diesel-demo 8>&-");
     expect(deploymentRunbook).not.toMatch(
       /^\s*pm2 start \/opt\/diesel\/current\/deploy\/ecosystem\.config\.cjs 8>&-$/gmu,
     );
@@ -1367,9 +1306,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       ].join("\n"),
     );
     expect(hostActivator).toContain('if [[ "$#" -ne 1 ]]');
-    expect(hostActivator).toContain(
-      'if [[ "$#" -ne 9 && "$#" -ne 12 ]]',
-    );
+    expect(hostActivator).toContain('if [[ "$#" -ne 9 && "$#" -ne 12 ]]');
     expect(hostActivator).toContain(
       ['    "/opt/diesel" \\', '    "/etc/nginx/sites-available" \\'].join(
         "\n",
@@ -1385,7 +1322,8 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       '"host activation CLI must execute the target release entry"',
     );
     expect(
-      hostActivator.match(/host_activation_ledger_require_pending/g)?.length ?? 0,
+      hostActivator.match(/host_activation_ledger_require_pending/g)?.length ??
+        0,
     ).toBeGreaterThanOrEqual(5);
     expect(hostActivator).not.toContain("host_activation_ledger_transition");
     expect(hostActivator).not.toContain("host_activation_ledger_begin");
@@ -1561,9 +1499,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(runtimePreparer).toContain(
       'const { parseEnv } = require("node:util");',
     );
-    expect(runtimePreparer).toContain(
-      "backupDatabaseUrl !== liveDatabaseUrl",
-    );
+    expect(runtimePreparer).toContain("backupDatabaseUrl !== liveDatabaseUrl");
     expect(runtimePreparer).toContain(runtimeRollbackBasisBlock);
     expect(runtimePreparer).toContain(
       'process.stderr.write("rollback basis durability proof failed\\n");',
@@ -1590,9 +1526,10 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "\n}\n",
       abortFunctionStart,
     );
-    const abortFunctionEnd = abortFunctionClosingBrace < 0
-      ? -1
-      : abortFunctionClosingBrace + "\n}\n".length;
+    const abortFunctionEnd =
+      abortFunctionClosingBrace < 0
+        ? -1
+        : abortFunctionClosingBrace + "\n}\n".length;
     const abortFunction = hostReleaseOrchestrator.slice(
       abortFunctionStart,
       abortFunctionEnd,
@@ -1629,7 +1566,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "host_activation_ledger_require_lifecycle_lock()",
     );
     expect(hostActivationLedger).toContain(
-      'if ! command -v flock >/dev/null 2>&1 || ! flock -n 8 2>/dev/null; then',
+      "if ! command -v flock >/dev/null 2>&1 || ! flock -n 8 2>/dev/null; then",
     );
     expect(hostActivationLedger).toContain(
       '"release lifecycle lock descriptor 8 is not exclusively locked"',
@@ -1645,7 +1582,9 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     );
     const rollbackPm2Lines = rollbackHostRelease
       .split("\n")
-      .filter((line) => /\bpm2 (?:delete|describe|jlist|save|start)\b/u.test(line));
+      .filter((line) =>
+        /\bpm2 (?:delete|describe|jlist|save|start)\b/u.test(line),
+      );
     expect(rollbackPm2Lines.length).toBeGreaterThan(0);
     expect(rollbackPm2Lines.every((line) => line.includes("8>&-"))).toBe(true);
     expect(deploymentRunbook).toContain(
@@ -1692,9 +1631,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     ]) {
       expect(hostReleaseOrchestrator).toContain(trustedReleaseInput);
     }
-    expect(
-      releaseInputGuard.match(/release-executable/gu),
-    ).toHaveLength(1);
+    expect(releaseInputGuard.match(/release-executable/gu)).toHaveLength(1);
     expect(releaseInputGuard).toContain(
       '"${HOST_RELEASE_ORCHESTRATOR_MAINTENANCE_WRAPPER}" release-file',
     );
@@ -1943,9 +1880,10 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       finalizeFunctionStart,
       finalizeFunctionEnd,
     );
-    const committedReconcileFunctionStart = releasePublicationController.indexOf(
-      "release_publication_controller_reconcile_committed() (",
-    );
+    const committedReconcileFunctionStart =
+      releasePublicationController.indexOf(
+        "release_publication_controller_reconcile_committed() (",
+      );
     const committedReconcileFunctionEnd = releasePublicationController.indexOf(
       "\n# Pure orchestration entry point.",
       committedReconcileFunctionStart,
@@ -2166,9 +2104,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     );
     expect(deploymentRunbook).toContain('chown root:root "${pm2_state_root}"');
     expect(deploymentRunbook).toContain('chmod 700 "${pm2_state_root}"');
-    expect(deploymentRunbook).toContain(
-      '\' -- "${pm2_state_root}" /root 8>&-',
-    );
+    expect(deploymentRunbook).toContain('\' -- "${pm2_state_root}" /root 8>&-');
     expect(pm2PersistenceHelper).toContain(
       'const FIXED_PM2_ROOT = "/root/.pm2";',
     );
@@ -2253,9 +2189,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
     expect(manualRecoveryBlock).toContain(
       '"${release_dir}/scripts/db/with-governance-maintenance-lock.ts" \\\n  --database-env-file="${governance_database_environment}" -- \\',
     );
-    expect(manualRecoveryBlock).toContain(
-      'recover-required "${release_id}"',
-    );
+    expect(manualRecoveryBlock).toContain('recover-required "${release_id}"');
     expect(manualRecoveryBlock).toContain(
       'exec 8<>"${release_lifecycle_lock_path}"\nflock -n 8\nexport DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8',
     );
@@ -2301,9 +2235,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "exec 8>&-\nunset DIESEL_RELEASE_LIFECYCLE_LOCK_FD",
     );
     expect(committedCleanupBlock).not.toContain("flock -u");
-    expect(committedCleanupBlock).not.toContain(
-      "rollback-host-release.sh",
-    );
+    expect(committedCleanupBlock).not.toContain("rollback-host-release.sh");
     expect(committedCleanupBlock).not.toContain(
       "restore-governance-snapshot.ts",
     );
@@ -2315,10 +2247,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
 describe("parallel CI test partition", () => {
   it("keeps app coverage and deployment contracts complete and independently blocking", async () => {
     const [workflow, packageText] = await Promise.all([
-      readFile(
-        resolve(process.cwd(), ".github/workflows/ci.yml"),
-        "utf8",
-      ),
+      readFile(resolve(process.cwd(), ".github/workflows/ci.yml"), "utf8"),
       readFile(resolve(process.cwd(), "package.json"), "utf8"),
     ]);
     const packageManifest = JSON.parse(packageText) as {
@@ -2361,18 +2290,12 @@ describe("parallel CI test partition", () => {
     expect(deployContractsJob).toContain(
       "name: Linux deployment script contracts",
     );
-    expect(deployContractsJob).toContain(
-      "if: github.event_name != 'schedule'",
-    );
+    expect(deployContractsJob).toContain("if: github.event_name != 'schedule'");
     expect(deployContractsJob).toContain("runs-on: ubuntu-latest");
     expect(deployContractsJob).toContain("timeout-minutes: 45");
     expect(deployContractsJob).toContain("fetch-depth: 0");
-    expect(deployContractsJob).toContain(
-      "run: pnpm install --frozen-lockfile",
-    );
-    expect(deployContractsJob).toContain(
-      "run: pnpm test:deploy:contracts",
-    );
+    expect(deployContractsJob).toContain("run: pnpm install --frozen-lockfile");
+    expect(deployContractsJob).toContain("run: pnpm test:deploy:contracts");
     expect(deployContractsJob).not.toContain("needs: quality");
     expect(deployContractsJob).not.toContain("--coverage");
     expect(deployContractsJob).not.toContain("name: coverage-report");
@@ -2384,10 +2307,7 @@ describe("merge-blocking Linux release handoff", () => {
     const [workflow, smokeScript] = await Promise.all([
       readFile(resolve(process.cwd(), ".github/workflows/ci.yml"), "utf8"),
       readFile(
-        resolve(
-          process.cwd(),
-          "scripts/ci/linux-release-handoff-smoke.sh",
-        ),
+        resolve(process.cwd(), "scripts/ci/linux-release-handoff-smoke.sh"),
         "utf8",
       ),
     ]);
@@ -2399,32 +2319,49 @@ describe("merge-blocking Linux release handoff", () => {
     expect(jobEnd).toBeGreaterThan(jobStart);
     expect(job).not.toContain("needs: quality");
     expect(job).toContain("runs-on: ubuntu-22.04");
-    expect(job).toContain("name: diesel-runtime-${{ github.sha }}-${{ github.run_attempt }}");
+    expect(job).toContain(
+      "name: diesel-runtime-${{ github.sha }}-${{ github.run_attempt }}",
+    );
     expect(job).toContain("if-no-files-found: error");
-    expect(smokeScript).toContain("scripts/deploy/ci-runtime-artifact.mjs pack");
+    expect(smokeScript).toContain(
+      "scripts/deploy/ci-runtime-artifact.mjs pack",
+    );
     expect(job).toContain("timeout-minutes: 60");
     expect(job).toContain("fetch-depth: 0");
     expect(job).toContain("persist-credentials: false");
     expect(job).toContain("RUNNER_ENVIRONMENT: ${{ runner.environment }}");
-    expect(job).toContain(
-      'test "${RUNNER_ENVIRONMENT}" = "github-hosted"',
-    );
+    expect(job).toContain('test "${RUNNER_ENVIRONMENT}" = "github-hosted"');
     expect(job).toContain("sudo -n true");
-    expect(job).toContain('handoff_temp="$(mktemp -d /tmp/diesel-handoff-runner.XXXXXX)"');
-    expect(job).toContain('chmod 0755 "${handoff_temp}"');
-    expect(job).not.toContain('${RUNNER_TEMP}');
-    expect(smokeScript).toContain('runuser -u diesel-build -- /usr/bin/test -x "${canary_workspace}"');
-    expect(smokeScript).toContain('"${node_binary}" /opt/node-v22.22.3-linux-x64');
-    expect(smokeScript).toContain('node_binary=/opt/node-v22.22.3-linux-x64/bin/node');
-    expect(smokeScript).toContain('prepare_release_require_fixed_root_command_boundary "${fixed_path}" "${node_binary}"');
-    expect(smokeScript.indexOf('prepare_release_require_fixed_root_command_boundary "${fixed_path}" "${node_binary}"'))
-      .toBeLessThan(smokeScript.indexOf('groupadd --system'));
-    expect(smokeScript).not.toContain("prepare_release_require_fixed_root_command_boundary()");
-    expect(smokeScript).toContain("linux_release_handoff_wait_systemd_ready\n    prepare_release_require_systemd_host /proc");
-    expect(smokeScript).not.toContain("prepare_release_require_systemd_host()");
     expect(job).toContain(
-      "node scripts/deploy/release-input-manifest.mjs",
+      'handoff_temp="$(mktemp -d /tmp/diesel-handoff-runner.XXXXXX)"',
     );
+    expect(job).toContain('chmod 0755 "${handoff_temp}"');
+    expect(job).not.toContain("${RUNNER_TEMP}");
+    expect(smokeScript).toContain(
+      'runuser -u diesel-build -- /usr/bin/test -x "${canary_workspace}"',
+    );
+    expect(smokeScript).toContain(
+      '"${node_binary}" /opt/node-v22.22.3-linux-x64',
+    );
+    expect(smokeScript).toContain(
+      "node_binary=/opt/node-v22.22.3-linux-x64/bin/node",
+    );
+    expect(smokeScript).toContain(
+      'prepare_release_require_fixed_root_command_boundary "${fixed_path}" "${node_binary}"',
+    );
+    expect(
+      smokeScript.indexOf(
+        'prepare_release_require_fixed_root_command_boundary "${fixed_path}" "${node_binary}"',
+      ),
+    ).toBeLessThan(smokeScript.indexOf("groupadd --system"));
+    expect(smokeScript).not.toContain(
+      "prepare_release_require_fixed_root_command_boundary()",
+    );
+    expect(smokeScript).toContain(
+      "linux_release_handoff_wait_systemd_ready\n    prepare_release_require_systemd_host /proc",
+    );
+    expect(smokeScript).not.toContain("prepare_release_require_systemd_host()");
+    expect(job).toContain("node scripts/deploy/release-input-manifest.mjs");
     expect(job).toContain("sudo -n /usr/bin/env -i");
     expect(job).toContain(
       '/bin/bash "${release_export}/scripts/ci/linux-release-handoff-smoke.sh"',
@@ -2452,9 +2389,7 @@ describe("merge-blocking Linux release handoff", () => {
     expect(smokeScript).toContain(
       "AI_CHAT_ADMISSION_CLIENT_PROVIDER_CALL_UNITS_PER_DAY=500",
     );
-    expect(smokeScript).toContain(
-      "AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR=300",
-    );
+    expect(smokeScript).toContain("AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR=300");
     expect(smokeScript).toContain("AI_CHAT_RATE_LIMIT_PER_HOUR=30");
     expect(smokeScript).toContain("AI_CHAT_RATE_LIMIT_BACKEND=postgres");
   });
@@ -2483,9 +2418,9 @@ describe("merge-blocking Linux release handoff", () => {
       "utf8",
     );
     const jobsStart = workflow.indexOf("\njobs:\n");
-    const workflowJobIds = [...workflow.slice(jobsStart).matchAll(
-      /^  ([a-z][a-z0-9-]*):\n/gmu,
-    )].map((match) => match[1]);
+    const workflowJobIds = [
+      ...workflow.slice(jobsStart).matchAll(/^  ([a-z][a-z0-9-]*):\n/gmu),
+    ].map((match) => match[1]);
     const requiredStart = workflow.indexOf("\n  required:\n");
     const required = workflow.slice(requiredStart);
     const needsBlock = required.match(
@@ -2518,8 +2453,7 @@ describe("merge-blocking Linux release handoff", () => {
       "deploy-contracts": "${{ needs['deploy-contracts'].result }}",
       e2e: "${{ needs.e2e.result }}",
       "fde-demo-e2e": "${{ needs.fde-demo-e2e.result }}",
-      "linux-release-handoff":
-        "${{ needs['linux-release-handoff'].result }}",
+      "linux-release-handoff": "${{ needs['linux-release-handoff'].result }}",
       "portfolio-demo-e2e": "${{ needs.portfolio-demo-e2e.result }}",
       "postgres-migrations": "${{ needs.postgres-migrations.result }}",
       quality: "${{ needs.quality.result }}",
@@ -2570,10 +2504,11 @@ describe("country detail PostgreSQL snapshot smoke", () => {
     const collisionCheck = smoke.indexOf(
       "await assertFixturesAbsent(writerClient)",
     );
-    const fixtureCreation = smoke.indexOf(
-      "await createFixtures(writerClient)",
+    const fixtureCreation = smoke.indexOf("await createFixtures(writerClient)");
+    const ownershipClaim = smoke.indexOf(
+      "ownsFixtures = true",
+      fixtureCreation,
     );
-    const ownershipClaim = smoke.indexOf("ownsFixtures = true", fixtureCreation);
     const ownershipGuard = smoke.indexOf("if (ownsFixtures)", ownershipClaim);
     const ownedCleanup = smoke.indexOf(
       "await cleanupOwnedFixtures(writerClient)",
@@ -2675,9 +2610,7 @@ describe("release authorization wiring", () => {
     expect(stageRelease).toContain(
       '"${committed_authorization_bundle}" validate-output "${release_id}"',
     );
-    expect(stageRelease).toContain(
-      '< "${authorization_output}" > /dev/null',
-    );
+    expect(stageRelease).toContain('< "${authorization_output}" > /dev/null');
     expect(stageRelease).not.toContain(
       "node --import tsx scripts/deploy/verify-release-authorization.ts",
     );
@@ -2696,9 +2629,7 @@ describe("release authorization wiring", () => {
     expect(verifier).toContain(
       'cwd: scope === "isolated" ? ISOLATED_GIT_CWD : root',
     );
-    expect(verifier).toContain(
-      "GIT_SSH_COMMAND: ISOLATED_GIT_SSH_COMMAND",
-    );
+    expect(verifier).toContain("GIT_SSH_COMMAND: ISOLATED_GIT_SSH_COMMAND");
     expect(verifier).toContain(
       '["ls-remote", "--exit-code", "--refs", fetchUrl, RELEASE_BRANCH_REF]',
     );

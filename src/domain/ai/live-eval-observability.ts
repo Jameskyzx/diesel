@@ -144,8 +144,8 @@ function summarizeMetric(values: readonly number[]): LiveEvalMetricSummary {
 
 function metricValue(metric: ReportedModelMetric): number[] {
   return metric.value !== null &&
-      Number.isFinite(metric.value) &&
-      metric.value >= 0
+    Number.isFinite(metric.value) &&
+    metric.value >= 0
     ? [metric.value]
     : [];
 }

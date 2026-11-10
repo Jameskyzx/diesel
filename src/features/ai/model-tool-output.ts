@@ -2,7 +2,10 @@ import "server-only";
 
 import { z } from "zod";
 
-import { marketComparisonIssues, marketComparisonStatus } from "@/domain/marketing/comparison-consistency";
+import {
+  marketComparisonIssues,
+  marketComparisonStatus,
+} from "@/domain/marketing/comparison-consistency";
 
 import {
   KNOWLEDGE_DEMO_WARNING,
@@ -82,10 +85,14 @@ const compactCitationSchema = z
         path: ["entityId"],
       });
     }
-    if (citation.title === undefined && citation.titleDescriptor === undefined) {
+    if (
+      citation.title === undefined &&
+      citation.titleDescriptor === undefined
+    ) {
       context.addIssue({
         code: "custom",
-        message: "Citation requires an original title or typed title descriptor",
+        message:
+          "Citation requires an original title or typed title descriptor",
         path: ["title"],
       });
     }
@@ -159,22 +166,23 @@ const compactSalesBriefSchema = salesBriefSchema
   })
   .strict();
 
-const compactMarketObservationSchema = marketMetricComparisonSchema.shape
-  .observations.element.pick({
-    applicationScope: true,
-    countryIso3: true,
-    currencyCode: true,
-    definition: true,
-    id: true,
-    isDemo: true,
-    methodologyVersion: true,
-    periodEnd: true,
-    periodStart: true,
-    unitCode: true,
-    valueNumeric: true,
-  })
-  .extend({ sourceId: z.uuid() })
-  .strict();
+const compactMarketObservationSchema =
+  marketMetricComparisonSchema.shape.observations.element
+    .pick({
+      applicationScope: true,
+      countryIso3: true,
+      currencyCode: true,
+      definition: true,
+      id: true,
+      isDemo: true,
+      methodologyVersion: true,
+      periodEnd: true,
+      periodStart: true,
+      unitCode: true,
+      valueNumeric: true,
+    })
+    .extend({ sourceId: z.uuid() })
+    .strict();
 
 const compactMarketMetricSchema = marketMetricComparisonSchema
   .pick({
@@ -332,10 +340,7 @@ function boundedDigestCollectionSchema<TItem extends z.ZodType>(
 
 const modelEvidenceDigestSchema = z
   .object({
-    marketMetrics: boundedDigestCollectionSchema(
-      compactMarketMetricSchema,
-      8,
-    ),
+    marketMetrics: boundedDigestCollectionSchema(compactMarketMetricSchema, 8),
     productEvaluations: boundedDigestCollectionSchema(
       compactProductEvaluationSchema,
       125,
@@ -887,7 +892,10 @@ function refineModelEvidenceDigest(
 ): void {
   const query = output.scorecard?.query ?? output.brief?.query;
   if (!query) {
-    context.addIssue({ code: "custom", message: "Projection query is missing" });
+    context.addIssue({
+      code: "custom",
+      message: "Projection query is missing",
+    });
     return;
   }
   if (output.informationAsOf !== query.asOf) {
@@ -917,11 +925,13 @@ function refineModelEvidenceDigest(
     ) {
       context.addIssue({
         code: "custom",
-        message: "Failed tool projections must use the canonical no-facts envelope",
+        message:
+          "Failed tool projections must use the canonical no-facts envelope",
         path: ["evidenceDigest"],
       });
     }
-    const errorWeights = output.scorecard?.weights ??
+    const errorWeights =
+      output.scorecard?.weights ??
       (output.brief ? weightsFromScore(output.brief.marketScore) : null);
     if (errorWeights === null) {
       context.addIssue({
@@ -943,10 +953,7 @@ function refineModelEvidenceDigest(
       });
     if (
       output.scorecard &&
-      !exactJson(
-        output.scorecard.scores,
-        query.countryIso3s.map(failedScore),
-      )
+      !exactJson(output.scorecard.scores, query.countryIso3s.map(failedScore))
     ) {
       context.addIssue({
         code: "custom",
@@ -960,9 +967,7 @@ function refineModelEvidenceDigest(
         output.brief.marketScore,
         failedScore(output.brief.query.targetCountryIso3),
       ) ||
-        !exactJson(output.brief.gaps, [
-          { code: "TOOL_EXECUTION_FAILED" },
-        ]) ||
+        !exactJson(output.brief.gaps, [{ code: "TOOL_EXECUTION_FAILED" }]) ||
         output.brief.recommendedProducts.length !== 0 ||
         output.brief.opportunities.length !== 0 ||
         output.brief.risks.length !== 0 ||
@@ -979,7 +984,8 @@ function refineModelEvidenceDigest(
   if (!digestIsComplete(output.evidenceDigest)) {
     context.addIssue({
       code: "custom",
-      message: "Model projections require a complete replayable evidence digest",
+      message:
+        "Model projections require a complete replayable evidence digest",
       path: ["evidenceDigest"],
     });
     return;
@@ -1044,10 +1050,7 @@ function refineModelEvidenceDigest(
         ),
       )
     : (output.brief?.gaps ?? []).map((gap) =>
-        opportunityScoreGapWarning(
-          gap,
-          output.brief!.marketScore.countryIso3,
-        ),
+        opportunityScoreGapWarning(gap, output.brief!.marketScore.countryIso3),
       );
   const expectedWarnings = [
     ...(expectedEvidenceSufficient
@@ -1073,7 +1076,9 @@ function refineModelEvidenceDigest(
   const duplicateKeys = (keys: readonly string[]) =>
     new Set(keys).size !== keys.length;
   if (
-    duplicateKeys(output.citations.map((citation) => JSON.stringify(citation))) ||
+    duplicateKeys(
+      output.citations.map((citation) => JSON.stringify(citation)),
+    ) ||
     duplicateKeys(
       output.citations.map((citation) =>
         [
@@ -1092,9 +1097,7 @@ function refineModelEvidenceDigest(
     ) ||
     duplicateKeys(
       metricItems.flatMap(({ metricCode, observations }) =>
-        observations.map(
-          ({ countryIso3 }) => `${metricCode}:${countryIso3}`,
-        ),
+        observations.map(({ countryIso3 }) => `${metricCode}:${countryIso3}`),
       ),
     ) ||
     duplicateKeys(
@@ -1128,7 +1131,10 @@ function refineModelEvidenceDigest(
     });
   }
   for (const [metricIndex, metric] of metricItems.entries()) {
-    const issues = marketComparisonIssues(metric.observations, query.countryIso3s);
+    const issues = marketComparisonIssues(
+      metric.observations,
+      query.countryIso3s,
+    );
     if (
       !exactSequence(metric.issues, issues) ||
       metric.comparisonStatus !== marketComparisonStatus(issues)
@@ -1159,7 +1165,10 @@ function refineModelEvidenceDigest(
         path: ["evidenceDigest", "marketMetrics", metricIndex, "observations"],
       });
     }
-    for (const [observationIndex, observation] of metric.observations.entries()) {
+    for (const [
+      observationIndex,
+      observation,
+    ] of metric.observations.entries()) {
       if (
         !queryCountries.has(observation.countryIso3) ||
         (observation.applicationScope !== null &&
@@ -1191,7 +1200,12 @@ function refineModelEvidenceDigest(
       context.addIssue({
         code: "custom",
         message: "Product digest evaluation does not match the query",
-        path: ["evidenceDigest", "productEvaluations", evaluationIndex, "countryIso3"],
+        path: [
+          "evidenceDigest",
+          "productEvaluations",
+          evaluationIndex,
+          "countryIso3",
+        ],
       });
     }
     if (
@@ -1206,10 +1220,18 @@ function refineModelEvidenceDigest(
       context.addIssue({
         code: "custom",
         message: "Product digest entity is uncited",
-        path: ["evidenceDigest", "productEvaluations", evaluationIndex, "product"],
+        path: [
+          "evidenceDigest",
+          "productEvaluations",
+          evaluationIndex,
+          "product",
+        ],
       });
     }
-    for (const [regulationIndex, regulation] of evaluation.regulationChecks.entries()) {
+    for (const [
+      regulationIndex,
+      regulation,
+    ] of evaluation.regulationChecks.entries()) {
       if (
         evaluation.regulationChecks.findIndex(
           ({ regulationId }) => regulationId === regulation.regulationId,
@@ -1222,8 +1244,16 @@ function refineModelEvidenceDigest(
       ) {
         context.addIssue({
           code: "custom",
-          message: "Product digest contains duplicate regulation or certification identities",
-          path: ["evidenceDigest", "productEvaluations", "items", evaluationIndex, "regulationChecks", regulationIndex],
+          message:
+            "Product digest contains duplicate regulation or certification identities",
+          path: [
+            "evidenceDigest",
+            "productEvaluations",
+            "items",
+            evaluationIndex,
+            "regulationChecks",
+            regulationIndex,
+          ],
         });
       }
       if (
@@ -1237,10 +1267,19 @@ function refineModelEvidenceDigest(
         context.addIssue({
           code: "custom",
           message: "Product regulation digest entity is uncited",
-          path: ["evidenceDigest", "productEvaluations", evaluationIndex, "regulationChecks", regulationIndex],
+          path: [
+            "evidenceDigest",
+            "productEvaluations",
+            evaluationIndex,
+            "regulationChecks",
+            regulationIndex,
+          ],
         });
       }
-      for (const [certificationIndex, certification] of regulation.certifications.entries()) {
+      for (const [
+        certificationIndex,
+        certification,
+      ] of regulation.certifications.entries()) {
         if (
           !citationCoversEntity(
             output.citations,
@@ -1252,7 +1291,15 @@ function refineModelEvidenceDigest(
           context.addIssue({
             code: "custom",
             message: "Product certification digest entity is uncited",
-            path: ["evidenceDigest", "productEvaluations", evaluationIndex, "regulationChecks", regulationIndex, "certifications", certificationIndex],
+            path: [
+              "evidenceDigest",
+              "productEvaluations",
+              evaluationIndex,
+              "regulationChecks",
+              regulationIndex,
+              "certifications",
+              certificationIndex,
+            ],
           });
         }
       }
@@ -1278,21 +1325,36 @@ function refineModelEvidenceDigest(
     }
     const requiredCitationCounts = [
       output.citations.filter(
-        ({ countryIso3: citationCountry, entityId, entityType, regulationId }) =>
+        ({
+          countryIso3: citationCountry,
+          entityId,
+          entityType,
+          regulationId,
+        }) =>
           citationCountry === countryIso3 &&
           entityType === "regulation" &&
           entityId === regulation.id &&
           regulationId === regulation.id,
       ).length,
       output.citations.filter(
-        ({ countryIso3: citationCountry, entityId, entityType, regulationId }) =>
+        ({
+          countryIso3: citationCountry,
+          entityId,
+          entityType,
+          regulationId,
+        }) =>
           citationCountry === countryIso3 &&
           entityType === "jurisdiction" &&
           entityId === regulation.applicability.jurisdiction.id &&
           regulationId === regulation.id,
       ).length,
       output.citations.filter(
-        ({ countryIso3: citationCountry, entityId, entityType, regulationId }) =>
+        ({
+          countryIso3: citationCountry,
+          entityId,
+          entityType,
+          regulationId,
+        }) =>
           citationCountry === countryIso3 &&
           entityType === "country_jurisdiction" &&
           entityId === regulation.applicability.jurisdiction.id &&
@@ -1338,7 +1400,8 @@ function refineModelEvidenceDigest(
     ) {
       context.addIssue({
         code: "custom",
-        message: "Product regulation checks must match current digest regulations",
+        message:
+          "Product regulation checks must match current digest regulations",
         path: ["evidenceDigest", "productEvaluations", evaluationIndex],
       });
     }
@@ -1353,10 +1416,7 @@ function refineModelEvidenceDigest(
         weights: output.scorecard.weights,
       });
       if (
-        !countryOpportunityScoreMatchesMath(
-          score,
-          output.scorecard.weights,
-        ) ||
+        !countryOpportunityScoreMatchesMath(score, output.scorecard.weights) ||
         !exactJson(score, expectedScore)
       ) {
         context.addIssue({
@@ -1368,7 +1428,10 @@ function refineModelEvidenceDigest(
     }
   }
 
-  if (output.brief && !briefMatchesDigest(output.brief, output.evidenceDigest)) {
+  if (
+    output.brief &&
+    !briefMatchesDigest(output.brief, output.evidenceDigest)
+  ) {
     context.addIssue({
       code: "custom",
       message: "Sales brief does not replay from the evidence digest",
@@ -1415,7 +1478,9 @@ function refineModelToolOutputSize(
   output: unknown,
   context: z.RefinementCtx,
 ): void {
-  const byteLength = new TextEncoder().encode(JSON.stringify(output)).byteLength;
+  const byteLength = new TextEncoder().encode(
+    JSON.stringify(output),
+  ).byteLength;
   if (byteLength > SALES_CHAT_MODEL_TOOL_OUTPUT_MAX_UTF8_BYTES) {
     context.addIssue({
       code: "custom",
@@ -1479,18 +1544,17 @@ function refineBriefProjection(
  * standalone JSON. Production output is authorized only when constructed by
  * the full-result factories below.
  */
-export const opportunityScoreModelToolOutputSchema =
-  modelToolOutputBaseSchema
-    .extend({
-      evidenceDigest: modelEvidenceDigestSchema,
-      scorecard: compactScorecardSchema,
-      tool: z.literal("calculateOpportunityScore"),
-    })
-    .strict()
-    .superRefine(refineModelToolOutputEnvelope)
-    .superRefine(refineScoreProjection)
-    .superRefine(refineModelEvidenceDigest)
-    .superRefine(refineModelToolOutputSize);
+export const opportunityScoreModelToolOutputSchema = modelToolOutputBaseSchema
+  .extend({
+    evidenceDigest: modelEvidenceDigestSchema,
+    scorecard: compactScorecardSchema,
+    tool: z.literal("calculateOpportunityScore"),
+  })
+  .strict()
+  .superRefine(refineModelToolOutputEnvelope)
+  .superRefine(refineScoreProjection)
+  .superRefine(refineModelEvidenceDigest)
+  .superRefine(refineModelToolOutputSize);
 
 /** See the trust-boundary note on {@link opportunityScoreModelToolOutputSchema}. */
 export const salesBriefModelToolOutputSchema = modelToolOutputBaseSchema
@@ -1525,29 +1589,28 @@ function modelVisibleCitations(citations: ScoreResultCitations) {
 }
 
 function compactCitations(citations: ScoreResultCitations) {
-  return modelVisibleCitations(citations)
-    .map((citation) => ({
-      ...(citation.countryIso3 === null
-        ? {}
-        : { countryIso3: citation.countryIso3 }),
-      ...(citation.entityId == null || citation.entityType == null
-        ? {}
-        : { entityId: citation.entityId, entityType: citation.entityType }),
-      ...(citation.locator === null || citation.locatorDescriptor != null
-        ? {}
-        : { locator: citation.locator }),
-      ...(citation.locatorDescriptor == null
-        ? {}
-        : { locatorDescriptor: citation.locatorDescriptor }),
-      ...(citation.regulationId === null
-        ? {}
-        : { regulationId: citation.regulationId }),
-      sourceId: citation.sourceId,
-      ...(citation.titleDescriptor == null ? { title: citation.title } : {}),
-      ...(citation.titleDescriptor == null
-        ? {}
-        : { titleDescriptor: citation.titleDescriptor }),
-    }));
+  return modelVisibleCitations(citations).map((citation) => ({
+    ...(citation.countryIso3 === null
+      ? {}
+      : { countryIso3: citation.countryIso3 }),
+    ...(citation.entityId == null || citation.entityType == null
+      ? {}
+      : { entityId: citation.entityId, entityType: citation.entityType }),
+    ...(citation.locator === null || citation.locatorDescriptor != null
+      ? {}
+      : { locator: citation.locator }),
+    ...(citation.locatorDescriptor == null
+      ? {}
+      : { locatorDescriptor: citation.locatorDescriptor }),
+    ...(citation.regulationId === null
+      ? {}
+      : { regulationId: citation.regulationId }),
+    sourceId: citation.sourceId,
+    ...(citation.titleDescriptor == null ? { title: citation.title } : {}),
+    ...(citation.titleDescriptor == null
+      ? {}
+      : { titleDescriptor: citation.titleDescriptor }),
+  }));
 }
 
 function compactSources(citations: ScoreResultCitations) {
@@ -1593,82 +1656,82 @@ function compactEvidenceDigest(
   provenance: z.infer<typeof opportunityScorecardSchema>["provenance"],
 ) {
   const marketMetrics = provenance.marketComparison.metrics.map((metric) => ({
-      comparisonStatus: metric.comparisonStatus,
-      issues: metric.issues,
-      metricCode: metric.metricCode,
-      metricName: metric.metricName,
-      observations: metric.observations.map((observation) => ({
-        applicationScope: observation.applicationScope,
-        countryIso3: observation.countryIso3,
-        currencyCode: observation.currencyCode,
-        definition: observation.definition,
-        id: observation.id,
-        isDemo: observation.isDemo,
-        methodologyVersion: observation.methodologyVersion,
-        periodEnd: observation.periodEnd,
-        periodStart: observation.periodStart,
-        sourceId: observation.source.sourceId,
-        unitCode: observation.unitCode,
-        valueNumeric: observation.valueNumeric,
-      })),
-    }));
+    comparisonStatus: metric.comparisonStatus,
+    issues: metric.issues,
+    metricCode: metric.metricCode,
+    metricName: metric.metricName,
+    observations: metric.observations.map((observation) => ({
+      applicationScope: observation.applicationScope,
+      countryIso3: observation.countryIso3,
+      currencyCode: observation.currencyCode,
+      definition: observation.definition,
+      id: observation.id,
+      isDemo: observation.isDemo,
+      methodologyVersion: observation.methodologyVersion,
+      periodEnd: observation.periodEnd,
+      periodStart: observation.periodStart,
+      sourceId: observation.source.sourceId,
+      unitCode: observation.unitCode,
+      valueNumeric: observation.valueNumeric,
+    })),
+  }));
   const productEvaluations = provenance.productEvaluations.flatMap(
-      ({ countryIso3, evaluations }) =>
-        evaluations.map((evaluation) => ({
-          applicationScope: evaluation.input.applicationScope,
-          asOf: evaluation.asOf,
-          commercialReadiness: evaluation.commercialReadiness,
-          countryIso3,
-          productModelCode: evaluation.input.productModelCode,
-          powerKw: evaluation.input.powerKw,
-          product: evaluation.product
-            ? {
-                availableFrom: evaluation.product.availableFrom,
-                availableTo: evaluation.product.availableTo,
-                id: evaluation.product.id,
-                modelCode: evaluation.product.modelCode,
-                name: evaluation.product.name,
-                sourceId: evaluation.product.source.id,
-                specificationVersion: evaluation.product.specificationVersion,
-              }
-            : null,
-          productChecks: {
-            applicationScope: {
-              code: evaluation.productChecks.applicationScope.code,
-              status: evaluation.productChecks.applicationScope.status,
-            },
-            availability: {
-              code: evaluation.productChecks.availability.code,
-              status: evaluation.productChecks.availability.status,
-            },
-            power: {
-              code: evaluation.productChecks.power.code,
-              status: evaluation.productChecks.power.status,
-            },
+    ({ countryIso3, evaluations }) =>
+      evaluations.map((evaluation) => ({
+        applicationScope: evaluation.input.applicationScope,
+        asOf: evaluation.asOf,
+        commercialReadiness: evaluation.commercialReadiness,
+        countryIso3,
+        productModelCode: evaluation.input.productModelCode,
+        powerKw: evaluation.input.powerKw,
+        product: evaluation.product
+          ? {
+              availableFrom: evaluation.product.availableFrom,
+              availableTo: evaluation.product.availableTo,
+              id: evaluation.product.id,
+              modelCode: evaluation.product.modelCode,
+              name: evaluation.product.name,
+              sourceId: evaluation.product.source.id,
+              specificationVersion: evaluation.product.specificationVersion,
+            }
+          : null,
+        productChecks: {
+          applicationScope: {
+            code: evaluation.productChecks.applicationScope.code,
+            status: evaluation.productChecks.applicationScope.status,
           },
-          reasonCodes: Array.from(
-            new Set(evaluation.reasons.map(({ code }) => code)),
-          ),
-          regulationChecks: evaluation.regulationChecks.map((check) => ({
-            certifications: check.certifications.map((certification) => ({
-              certificateNumber:
-                certification.certification.certificateNumber,
-              certificationId: certification.certification.id,
-              certificationStatus: certification.certification.status,
-              reasonCodes: Array.from(
-                new Set(certification.reasons.map(({ code }) => code)),
-              ),
-              sourceId: certification.certification.source.id,
-              status: certification.status,
-            })),
-            code: check.code,
-            regulationId: check.regulation.regulationId,
-            status: check.status,
+          availability: {
+            code: evaluation.productChecks.availability.code,
+            status: evaluation.productChecks.availability.status,
+          },
+          power: {
+            code: evaluation.productChecks.power.code,
+            status: evaluation.productChecks.power.status,
+          },
+        },
+        reasonCodes: Array.from(
+          new Set(evaluation.reasons.map(({ code }) => code)),
+        ),
+        regulationChecks: evaluation.regulationChecks.map((check) => ({
+          certifications: check.certifications.map((certification) => ({
+            certificateNumber: certification.certification.certificateNumber,
+            certificationId: certification.certification.id,
+            certificationStatus: certification.certification.status,
+            reasonCodes: Array.from(
+              new Set(certification.reasons.map(({ code }) => code)),
+            ),
+            sourceId: certification.certification.source.id,
+            status: certification.status,
           })),
-          status: evaluation.status,
+          code: check.code,
+          regulationId: check.regulation.regulationId,
+          status: check.status,
         })),
-    );
-  const regulations = provenance.regulationComparison.countries.flatMap((country) =>
+        status: evaluation.status,
+      })),
+  );
+  const regulations = provenance.regulationComparison.countries.flatMap(
+    (country) =>
       [
         ...country.currentEffectiveRegulations.map((regulation) => ({
           bucket: "current_effective" as const,
@@ -1685,8 +1748,7 @@ function compactEvidenceDigest(
             code: regulation.applicability.jurisdiction.code,
             id: regulation.applicability.jurisdiction.id,
             name: regulation.applicability.jurisdiction.name,
-            sourceId:
-              regulation.applicability.jurisdiction.source.sourceId,
+            sourceId: regulation.applicability.jurisdiction.source.sourceId,
           },
           membership: {
             sourceId: regulation.applicability.membership.source.sourceId,
@@ -1704,7 +1766,7 @@ function compactEvidenceDigest(
         sourceId: regulation.source.sourceId,
         status: regulation.status,
       })),
-    );
+  );
   return {
     marketMetrics: boundedDigestCollection(marketMetrics, 8),
     productEvaluations: boundedDigestCollection(productEvaluations, 125),

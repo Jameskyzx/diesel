@@ -1,7 +1,4 @@
-import {
-  dataSources,
-  marketMetrics,
-} from "@/server/db/schema";
+import { dataSources, marketMetrics } from "@/server/db/schema";
 import { marketMetricDecimalSchema } from "@/features/database/schemas";
 
 const marketReadbackTimestamp = new Date("2026-08-03T00:00:00.000Z");
@@ -72,7 +69,8 @@ export const fixtureMarketSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: null,
     publisher: "U.S. Federal Highway Administration",
     sourceType: "other",
-    title: "Highway Statistics 2022 Table MV-1 State Motor-Vehicle Registrations",
+    title:
+      "Highway Statistics 2022 Table MV-1 State Motor-Vehicle Registrations",
     url: "https://www.fhwa.dot.gov/policyinformation/statistics/2022/mv1.cfm",
   },
   {
@@ -82,7 +80,8 @@ export const fixtureMarketSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: null,
     publisher: "U.S. Federal Highway Administration",
     sourceType: "other",
-    title: "Highway Statistics 2023 Table MV-1 State Motor-Vehicle Registrations",
+    title:
+      "Highway Statistics 2023 Table MV-1 State Motor-Vehicle Registrations",
     url: "https://www.fhwa.dot.gov/policyinformation/statistics/2023/mv1.cfm",
   },
   {
@@ -166,9 +165,7 @@ function formatScaledMarketDecimal(value: bigint): string {
   const negative = value < 0n;
   const magnitude = negative ? -value : value;
   const integer = magnitude / marketDecimalScale;
-  const fraction = (magnitude % marketDecimalScale)
-    .toString()
-    .padStart(6, "0");
+  const fraction = (magnitude % marketDecimalScale).toString().padStart(6, "0");
   return `${negative ? "-" : ""}${integer}.${fraction}`;
 }
 
@@ -226,7 +223,9 @@ function yoyObservation(input: {
     input.current.periodStart !== "2023-01-01" ||
     input.prior.periodStart !== "2022-01-01"
   ) {
-    throw new Error("YoY fixtures require consecutive, method-compatible observations.");
+    throw new Error(
+      "YoY fixtures require consecutive, method-compatible observations.",
+    );
   }
 
   const currentValue = scaledMarketDecimal(input.current.valueNumeric);
@@ -235,9 +234,7 @@ function yoyObservation(input: {
     throw new Error("YoY fixtures require a positive prior value.");
   }
   const percentageScaled = divideAndRound(
-    (currentValue.scaled - priorValue.scaled) *
-      100n *
-      marketDecimalScale,
+    (currentValue.scaled - priorValue.scaled) * 100n * marketDecimalScale,
     priorValue.scaled,
   );
 
@@ -268,7 +265,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-truck",
     countryIso3: "CHN",
     dataSourceId: acceptedMarketFixtureIds.source.chnNbs2024,
-    definition: "国家统计局《中国统计年鉴 2024》表 16-20：载货汽车合计；原表单位万辆，乘以 10,000 转为 vehicle。",
+    definition:
+      "国家统计局《中国统计年鉴 2024》表 16-20：载货汽车合计；原表单位万辆，乘以 10,000 转为 vehicle。",
     id: acceptedMarketFixtureIds.observation.chnTruck2022,
     methodologyVersion: "official-register-stock-chn-nbs-v1",
     value: "33176500",
@@ -278,7 +276,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-truck",
     countryIso3: "CHN",
     dataSourceId: acceptedMarketFixtureIds.source.chnNbs2024,
-    definition: "国家统计局《中国统计年鉴 2024》表 16-20：载货汽车合计；原表单位万辆，乘以 10,000 转为 vehicle。",
+    definition:
+      "国家统计局《中国统计年鉴 2024》表 16-20：载货汽车合计；原表单位万辆，乘以 10,000 转为 vehicle。",
     id: acceptedMarketFixtureIds.observation.chnTruck2023,
     methodologyVersion: "official-register-stock-chn-nbs-v1",
     value: "33589400",
@@ -288,7 +287,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-bus",
     countryIso3: "CHN",
     dataSourceId: acceptedMarketFixtureIds.source.chnNbs2024,
-    definition: "国家统计局《中国统计年鉴 2024》表 16-20：大型载客汽车 + 中型载客汽车；原表单位万辆，求和后乘以 10,000 转为 vehicle。",
+    definition:
+      "国家统计局《中国统计年鉴 2024》表 16-20：大型载客汽车 + 中型载客汽车；原表单位万辆，求和后乘以 10,000 转为 vehicle。",
     id: acceptedMarketFixtureIds.observation.chnBus2022,
     methodologyVersion: "official-register-stock-chn-nbs-v1",
     value: "2094800",
@@ -298,7 +298,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-bus",
     countryIso3: "CHN",
     dataSourceId: acceptedMarketFixtureIds.source.chnNbs2024,
-    definition: "国家统计局《中国统计年鉴 2024》表 16-20：大型载客汽车 + 中型载客汽车；原表单位万辆，求和后乘以 10,000 转为 vehicle。",
+    definition:
+      "国家统计局《中国统计年鉴 2024》表 16-20：大型载客汽车 + 中型载客汽车；原表单位万辆，求和后乘以 10,000 转为 vehicle。",
     id: acceptedMarketFixtureIds.observation.chnBus2023,
     methodologyVersion: "official-register-stock-chn-nbs-v1",
     value: "2010900",
@@ -308,7 +309,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-truck",
     countryIso3: "USA",
     dataSourceId: acceptedMarketFixtureIds.source.usaFhwaMv1x2022,
-    definition: "FHWA Highway Statistics 2022 Table MV-1：Trucks total（private/commercial + publicly owned）；该宽口径包含轻型卡车类。",
+    definition:
+      "FHWA Highway Statistics 2022 Table MV-1：Trucks total（private/commercial + publicly owned）；该宽口径包含轻型卡车类。",
     id: acceptedMarketFixtureIds.observation.usaTruck2022,
     methodologyVersion: "official-register-stock-usa-fhwa-v1",
     value: "172364078",
@@ -318,7 +320,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-truck",
     countryIso3: "USA",
     dataSourceId: acceptedMarketFixtureIds.source.usaFhwaMv1x2023,
-    definition: "FHWA Highway Statistics 2023 Table MV-1：Trucks total（private/commercial + publicly owned）；该宽口径包含轻型卡车类。",
+    definition:
+      "FHWA Highway Statistics 2023 Table MV-1：Trucks total（private/commercial + publicly owned）；该宽口径包含轻型卡车类。",
     id: acceptedMarketFixtureIds.observation.usaTruck2023,
     methodologyVersion: "official-register-stock-usa-fhwa-v1",
     value: "177228271",
@@ -328,7 +331,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-bus",
     countryIso3: "USA",
     dataSourceId: acceptedMarketFixtureIds.source.usaFhwaMv10x2022,
-    definition: "FHWA Highway Statistics 2022 Table MV-10：Grand total buses（private/commercial + publicly owned + federal）。",
+    definition:
+      "FHWA Highway Statistics 2022 Table MV-10：Grand total buses（private/commercial + publicly owned + federal）。",
     id: acceptedMarketFixtureIds.observation.usaBus2022,
     methodologyVersion: "official-register-stock-usa-fhwa-v1",
     value: "958055",
@@ -338,7 +342,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-bus",
     countryIso3: "USA",
     dataSourceId: acceptedMarketFixtureIds.source.usaFhwaMv10x2023,
-    definition: "FHWA Highway Statistics 2023 Table MV-10：Grand total buses（private/commercial + publicly owned + federal）。",
+    definition:
+      "FHWA Highway Statistics 2023 Table MV-10：Grand total buses（private/commercial + publicly owned + federal）。",
     id: acceptedMarketFixtureIds.observation.usaBus2023,
     methodologyVersion: "official-register-stock-usa-fhwa-v1",
     value: "967525",
@@ -348,7 +353,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-truck",
     countryIso3: "DEU",
     dataSourceId: acceptedMarketFixtureIds.source.deuEurostatTruck,
-    definition: "Eurostat ROAD_EQS_LORROA：LOR_GT3P5/TOTAL + TRC/TOTAL；排除 VG_LE3P5。",
+    definition:
+      "Eurostat ROAD_EQS_LORROA：LOR_GT3P5/TOTAL + TRC/TOTAL；排除 VG_LE3P5。",
     id: acceptedMarketFixtureIds.observation.deuTruck2022,
     methodologyVersion: "official-register-stock-deu-eurostat-v1",
     value: "757813",
@@ -358,7 +364,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-truck",
     countryIso3: "DEU",
     dataSourceId: acceptedMarketFixtureIds.source.deuEurostatTruck,
-    definition: "Eurostat ROAD_EQS_LORROA：LOR_GT3P5/TOTAL + TRC/TOTAL；排除 VG_LE3P5。",
+    definition:
+      "Eurostat ROAD_EQS_LORROA：LOR_GT3P5/TOTAL + TRC/TOTAL；排除 VG_LE3P5。",
     id: acceptedMarketFixtureIds.observation.deuTruck2023,
     methodologyVersion: "official-register-stock-deu-eurostat-v1",
     value: "757491",
@@ -368,7 +375,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-bus",
     countryIso3: "DEU",
     dataSourceId: acceptedMarketFixtureIds.source.deuEurostatBus,
-    definition: "Eurostat ROAD_EQS_BUSMOT：BUSMOT / TOTAL（客车、长途客车与无轨电车，全部动力）。",
+    definition:
+      "Eurostat ROAD_EQS_BUSMOT：BUSMOT / TOTAL（客车、长途客车与无轨电车，全部动力）。",
     id: acceptedMarketFixtureIds.observation.deuBus2022,
     methodologyVersion: "official-register-stock-deu-eurostat-v1",
     value: "82932",
@@ -378,7 +386,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-bus",
     countryIso3: "DEU",
     dataSourceId: acceptedMarketFixtureIds.source.deuEurostatBus,
-    definition: "Eurostat ROAD_EQS_BUSMOT：BUSMOT / TOTAL（客车、长途客车与无轨电车，全部动力）。",
+    definition:
+      "Eurostat ROAD_EQS_BUSMOT：BUSMOT / TOTAL（客车、长途客车与无轨电车，全部动力）。",
     id: acceptedMarketFixtureIds.observation.deuBus2023,
     methodologyVersion: "official-register-stock-deu-eurostat-v1",
     value: "84628",
@@ -388,7 +397,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-truck",
     countryIso3: "BRA",
     dataSourceId: acceptedMarketFixtureIds.source.braSenatran2022,
-    definition: "SENATRAN Frota Nacional Dezembro 2022：CAMINHÃO + CAMINHÃO TRATOR；排除 CAMINHONETE/CAMIONETA。",
+    definition:
+      "SENATRAN Frota Nacional Dezembro 2022：CAMINHÃO + CAMINHÃO TRATOR；排除 CAMINHONETE/CAMIONETA。",
     id: acceptedMarketFixtureIds.observation.braTruck2022,
     methodologyVersion: "official-register-stock-bra-senatran-v1",
     value: "3871687",
@@ -398,7 +408,8 @@ const yearEndFixtures: MarketFixture[] = [
     applicationScope: "on-road-truck",
     countryIso3: "BRA",
     dataSourceId: acceptedMarketFixtureIds.source.braSenatran2023,
-    definition: "SENATRAN Frota Nacional Dezembro 2023：CAMINHÃO + CAMINHÃO TRATOR；排除 CAMINHONETE/CAMIONETA。",
+    definition:
+      "SENATRAN Frota Nacional Dezembro 2023：CAMINHÃO + CAMINHÃO TRATOR；排除 CAMINHONETE/CAMIONETA。",
     id: acceptedMarketFixtureIds.observation.braTruck2023,
     methodologyVersion: "official-register-stock-bra-senatran-v1",
     value: "3980714",
@@ -426,7 +437,9 @@ const yearEndFixtures: MarketFixture[] = [
   }),
 ];
 
-const yearEndById = new Map(yearEndFixtures.map((fixture) => [fixture.id, fixture]));
+const yearEndById = new Map(
+  yearEndFixtures.map((fixture) => [fixture.id, fixture]),
+);
 
 function requiredYearEnd(idValue: string): MarketFixture {
   const fixture = yearEndById.get(idValue);
@@ -437,14 +450,46 @@ function requiredYearEnd(idValue: string): MarketFixture {
 }
 
 const yoySpecs = [
-  [acceptedMarketFixtureIds.observation.chnTruckYoy2023, acceptedMarketFixtureIds.observation.chnTruck2022, acceptedMarketFixtureIds.observation.chnTruck2023],
-  [acceptedMarketFixtureIds.observation.chnBusYoy2023, acceptedMarketFixtureIds.observation.chnBus2022, acceptedMarketFixtureIds.observation.chnBus2023],
-  [acceptedMarketFixtureIds.observation.usaTruckYoy2023, acceptedMarketFixtureIds.observation.usaTruck2022, acceptedMarketFixtureIds.observation.usaTruck2023],
-  [acceptedMarketFixtureIds.observation.usaBusYoy2023, acceptedMarketFixtureIds.observation.usaBus2022, acceptedMarketFixtureIds.observation.usaBus2023],
-  [acceptedMarketFixtureIds.observation.deuTruckYoy2023, acceptedMarketFixtureIds.observation.deuTruck2022, acceptedMarketFixtureIds.observation.deuTruck2023],
-  [acceptedMarketFixtureIds.observation.deuBusYoy2023, acceptedMarketFixtureIds.observation.deuBus2022, acceptedMarketFixtureIds.observation.deuBus2023],
-  [acceptedMarketFixtureIds.observation.braTruckYoy2023, acceptedMarketFixtureIds.observation.braTruck2022, acceptedMarketFixtureIds.observation.braTruck2023],
-  [acceptedMarketFixtureIds.observation.braBusYoy2023, acceptedMarketFixtureIds.observation.braBus2022, acceptedMarketFixtureIds.observation.braBus2023],
+  [
+    acceptedMarketFixtureIds.observation.chnTruckYoy2023,
+    acceptedMarketFixtureIds.observation.chnTruck2022,
+    acceptedMarketFixtureIds.observation.chnTruck2023,
+  ],
+  [
+    acceptedMarketFixtureIds.observation.chnBusYoy2023,
+    acceptedMarketFixtureIds.observation.chnBus2022,
+    acceptedMarketFixtureIds.observation.chnBus2023,
+  ],
+  [
+    acceptedMarketFixtureIds.observation.usaTruckYoy2023,
+    acceptedMarketFixtureIds.observation.usaTruck2022,
+    acceptedMarketFixtureIds.observation.usaTruck2023,
+  ],
+  [
+    acceptedMarketFixtureIds.observation.usaBusYoy2023,
+    acceptedMarketFixtureIds.observation.usaBus2022,
+    acceptedMarketFixtureIds.observation.usaBus2023,
+  ],
+  [
+    acceptedMarketFixtureIds.observation.deuTruckYoy2023,
+    acceptedMarketFixtureIds.observation.deuTruck2022,
+    acceptedMarketFixtureIds.observation.deuTruck2023,
+  ],
+  [
+    acceptedMarketFixtureIds.observation.deuBusYoy2023,
+    acceptedMarketFixtureIds.observation.deuBus2022,
+    acceptedMarketFixtureIds.observation.deuBus2023,
+  ],
+  [
+    acceptedMarketFixtureIds.observation.braTruckYoy2023,
+    acceptedMarketFixtureIds.observation.braTruck2022,
+    acceptedMarketFixtureIds.observation.braTruck2023,
+  ],
+  [
+    acceptedMarketFixtureIds.observation.braBusYoy2023,
+    acceptedMarketFixtureIds.observation.braBus2022,
+    acceptedMarketFixtureIds.observation.braBus2023,
+  ],
 ] as const;
 
 export const fixtureMarketMetrics: MarketFixture[] = [

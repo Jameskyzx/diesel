@@ -77,19 +77,20 @@ async function main(): Promise<void> {
 
     stage = "expected_version";
     const expectedVersionOverride = process.env.CANARY_EXPECTED_VERSION;
-    expectedVersion = expectedVersionOverride !== undefined
-      ? parseProductionVersion(expectedVersionOverride)
-      : configuredBaseUrl
-        ? productionVersionFromStatus(
-            await readFile(
-              resolve(
-                process.cwd(),
-                process.env.CANARY_STATUS_PATH ?? "docs/STATUS.md",
+    expectedVersion =
+      expectedVersionOverride !== undefined
+        ? parseProductionVersion(expectedVersionOverride)
+        : configuredBaseUrl
+          ? productionVersionFromStatus(
+              await readFile(
+                resolve(
+                  process.cwd(),
+                  process.env.CANARY_STATUS_PATH ?? "docs/STATUS.md",
+                ),
+                "utf8",
               ),
-              "utf8",
             )
-          )
-        : null;
+          : null;
     // A release is live before its STATUS.md record merges. The scheduled
     // workflow passes the master commit it checked out, so production running
     // exactly that commit is accepted too. An explicit override stays exact.

@@ -62,7 +62,7 @@ describe("live eval bilingual case suite", () => {
 
   it("requires a unique bounded query contract only for knowledge searches", () => {
     const searchCases = salesChatLiveCases.filter(({ expectedTools }) =>
-      expectedTools.includes("searchKnowledgeBase")
+      expectedTools.includes("searchKnowledgeBase"),
     );
     expect(searchCases).toHaveLength(3);
     for (const testCase of searchCases) {
@@ -94,8 +94,9 @@ describe("live eval bilingual case suite", () => {
       string,
       unknown
     >;
-    unrelatedContract.knowledgeQueryContract =
-      structuredClone(sourceCase.knowledgeQueryContract);
+    unrelatedContract.knowledgeQueryContract = structuredClone(
+      sourceCase.knowledgeQueryContract,
+    );
     expect(salesChatLiveCaseSchema.safeParse(unrelatedContract).success).toBe(
       false,
     );

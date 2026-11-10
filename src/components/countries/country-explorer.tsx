@@ -48,8 +48,7 @@ type CountryExplorerProps = {
 };
 
 const emptyCountrySummaries: CountryMapSummary[] = [];
-const restoreCountrySelectFocusKey =
-  "diesel:restore-country-select-focus";
+const restoreCountrySelectFocusKey = "diesel:restore-country-select-focus";
 const countryFocusTargetKey = "diesel:country-focus-target";
 const restoreCountryDrawerSelectFocusKey =
   "diesel:restore-country-drawer-select-focus";
@@ -158,9 +157,8 @@ function CountryDrawerLoading() {
 
 const CountryDetailDrawer = dynamic(
   async () => {
-    const drawerModule = await import(
-      "@/components/countries/country-detail-drawer"
-    );
+    const drawerModule =
+      await import("@/components/countries/country-detail-drawer");
     return drawerModule.CountryDetailDrawer;
   },
   { loading: CountryDrawerLoading },
@@ -204,9 +202,7 @@ export function CountryExplorer({
   );
 
   const consumeCountryDrawerSelectFocusRequest = useCallback(() => {
-    if (
-      getCountryFocusIntent(restoreCountryDrawerSelectFocusKey) !== "true"
-    ) {
+    if (getCountryFocusIntent(restoreCountryDrawerSelectFocusKey) !== "true") {
       return false;
     }
 
@@ -354,131 +350,149 @@ export function CountryExplorer({
   }, [data.status, selectedIso3]);
 
   return (
-    <main className={cn("page-shell py-6", selectedIso3 && "country-workspace-selected")}>
-      <PageHeader kicker={copy.kicker} title={copy.heading} description={copy.description} />
+    <main
+      className={cn(
+        "page-shell py-6",
+        selectedIso3 && "country-workspace-selected",
+      )}
+    >
+      <PageHeader
+        kicker={copy.kicker}
+        title={copy.heading}
+        description={copy.description}
+      />
 
-      <div className="surface-panel overflow-hidden rounded-md" data-testid="map-workspace">
-      <aside className="flex min-w-0 flex-col gap-4 border-b bg-card p-4" data-testid="map-country-toolbar">
-        <div className="grid min-w-0 gap-2 sm:max-w-sm">
-          <label
-            className="text-xs font-semibold text-foreground"
-            htmlFor="country-select"
-          >
-            {copy.quickSelect}
-          </label>
-          <select
-            aria-label={copy.countrySelect}
-            className="h-10 w-full min-w-0 rounded-md border bg-card px-3 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
-            disabled={data.status !== "ready"}
-            id="country-select"
-            onChange={(event) => {
-              if (event.target.value) {
-                selectCountry(event.target.value);
-              }
-            }}
-            value={selectedIso3 ?? ""}
-          >
-            <option value="">{copy.optionPlaceholder}</option>
-            {countryIndex.map((country) => (
-              <option key={country.iso3} value={country.iso3}>
-                {formatCountryDisplayName(
-                  countryDirectoryDisplayIdentity(
-                    country,
-                    countrySummariesByIso3.get(country.iso3),
-                  ),
-                  locale,
-                )} · {country.iso3}
-                {country.hasGeometry ? "" : ` · ${copy.boundaryMissingOption}`}
-              </option>
-            ))}
-          </select>
-        </div>
-      <section
-        aria-label={copy.featuredAria}
-        className="flex min-w-0 flex-wrap items-center gap-2"
+      <div
+        className="surface-panel overflow-hidden rounded-md"
+        data-testid="map-workspace"
       >
-        <span className="mr-1 inline-flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground">
-          <Database aria-hidden="true" className="size-3.5" />
-          {copy.featuredLabel}
-        </span>
-        {countryShortcuts.map((country) => (
-            <Button
-              aria-pressed={selectedIso3 === country.iso3}
-              id={`country-shortcut-${country.iso3}`}
-              key={country.iso3}
-              onClick={() => selectCountry(country.iso3)}
-              size="sm"
-              variant={selectedIso3 === country.iso3 ? "default" : "outline"}
-              className={
-                selectedIso3 === country.iso3
-                  ? "h-auto min-h-9 justify-start rounded-md bg-primary px-3 py-2 text-left whitespace-normal text-white"
-                  : "h-auto min-h-9 justify-start rounded-md bg-card px-3 py-2 text-left whitespace-normal text-foreground hover:bg-muted"
-              }
+        <aside
+          className="flex min-w-0 flex-col gap-4 border-b bg-card p-4"
+          data-testid="map-country-toolbar"
+        >
+          <div className="grid min-w-0 gap-2 sm:max-w-sm">
+            <label
+              className="text-xs font-semibold text-foreground"
+              htmlFor="country-select"
             >
-              {formatCountryDisplayName(country, locale)} · {country.iso3}
-            </Button>
-          ))}
-        {countries.length > 0 && countryShortcuts.length === 0 ? (
-          <span className="text-xs text-muted-foreground">
-            {copy.noDetailedCountries}
-          </span>
-        ) : null}
-      </section>
-      </aside>
-
-      <section className="min-h-[30rem] min-w-0 lg:h-[calc(100dvh-23rem)] lg:min-h-[34rem]">
-        {data.status === "loading" ? (
-          <div
-            aria-busy="true"
-            className="grid h-full min-h-[30rem] place-items-center rounded-md border bg-card"
-            role="status"
-          >
-            <div className="text-center">
-              <LoaderCircle
-                aria-hidden="true"
-                className="mx-auto size-8 animate-spin text-primary"
-              />
-              <p className="mt-3 text-sm text-muted-foreground">
-                {copy.loading}
-              </p>
-            </div>
+              {copy.quickSelect}
+            </label>
+            <select
+              aria-label={copy.countrySelect}
+              className="h-10 w-full min-w-0 rounded-md border bg-card px-3 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
+              disabled={data.status !== "ready"}
+              id="country-select"
+              onChange={(event) => {
+                if (event.target.value) {
+                  selectCountry(event.target.value);
+                }
+              }}
+              value={selectedIso3 ?? ""}
+            >
+              <option value="">{copy.optionPlaceholder}</option>
+              {countryIndex.map((country) => (
+                <option key={country.iso3} value={country.iso3}>
+                  {formatCountryDisplayName(
+                    countryDirectoryDisplayIdentity(
+                      country,
+                      countrySummariesByIso3.get(country.iso3),
+                    ),
+                    locale,
+                  )}{" "}
+                  · {country.iso3}
+                  {country.hasGeometry
+                    ? ""
+                    : ` · ${copy.boundaryMissingOption}`}
+                </option>
+              ))}
+            </select>
           </div>
-        ) : null}
-
-        {data.status === "error" ? (
-          <div
-            className="grid h-full min-h-[30rem] place-items-center rounded-md border border-destructive/25 bg-card p-6 text-center"
-            role="alert"
+          <section
+            aria-label={copy.featuredAria}
+            className="flex min-w-0 flex-wrap items-center gap-2"
           >
-            <div>
-              <p className="font-semibold">{copy.loadErrorTitle}</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {countryMapErrorMessage(data.code, dictionary)}
-              </p>
+            <span className="mr-1 inline-flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Database aria-hidden="true" className="size-3.5" />
+              {copy.featuredLabel}
+            </span>
+            {countryShortcuts.map((country) => (
               <Button
-                className="mt-4"
-                onClick={() => {
-                  setData({ status: "loading" });
-                  setReloadKey((key) => key + 1);
-                }}
-                variant="outline"
+                aria-pressed={selectedIso3 === country.iso3}
+                id={`country-shortcut-${country.iso3}`}
+                key={country.iso3}
+                onClick={() => selectCountry(country.iso3)}
+                size="sm"
+                variant={selectedIso3 === country.iso3 ? "default" : "outline"}
+                className={
+                  selectedIso3 === country.iso3
+                    ? "h-auto min-h-9 justify-start rounded-md bg-primary px-3 py-2 text-left whitespace-normal text-white"
+                    : "h-auto min-h-9 justify-start rounded-md bg-card px-3 py-2 text-left whitespace-normal text-foreground hover:bg-muted"
+                }
               >
-                <RotateCcw aria-hidden="true" className="size-4" />
-                {copy.retryMap}
+                {formatCountryDisplayName(country, locale)} · {country.iso3}
               </Button>
-            </div>
-          </div>
-        ) : null}
+            ))}
+            {countries.length > 0 && countryShortcuts.length === 0 ? (
+              <span className="text-xs text-muted-foreground">
+                {copy.noDetailedCountries}
+              </span>
+            ) : null}
+          </section>
+        </aside>
 
-        {data.status === "ready" ? (
-          <WorldMap
-            countries={data.countries}
-            countryIndex={countryIndex}
-            onSelectCountry={selectCountry}
-            selectedIso3={selectedIso3}
-          />
-        ) : null}
-      </section>
+        <section className="min-h-[30rem] min-w-0 lg:h-[calc(100dvh-23rem)] lg:min-h-[34rem]">
+          {data.status === "loading" ? (
+            <div
+              aria-busy="true"
+              className="grid h-full min-h-[30rem] place-items-center rounded-md border bg-card"
+              role="status"
+            >
+              <div className="text-center">
+                <LoaderCircle
+                  aria-hidden="true"
+                  className="mx-auto size-8 animate-spin text-primary"
+                />
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {copy.loading}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          {data.status === "error" ? (
+            <div
+              className="grid h-full min-h-[30rem] place-items-center rounded-md border border-destructive/25 bg-card p-6 text-center"
+              role="alert"
+            >
+              <div>
+                <p className="font-semibold">{copy.loadErrorTitle}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {countryMapErrorMessage(data.code, dictionary)}
+                </p>
+                <Button
+                  className="mt-4"
+                  onClick={() => {
+                    setData({ status: "loading" });
+                    setReloadKey((key) => key + 1);
+                  }}
+                  variant="outline"
+                >
+                  <RotateCcw aria-hidden="true" className="size-4" />
+                  {copy.retryMap}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {data.status === "ready" ? (
+            <WorldMap
+              countries={data.countries}
+              countryIndex={countryIndex}
+              onSelectCountry={selectCountry}
+              selectedIso3={selectedIso3}
+            />
+          ) : null}
+        </section>
       </div>
 
       <p className="mt-4 px-1 text-[11px] text-muted-foreground">
@@ -505,9 +519,7 @@ export function CountryExplorer({
           key={`${selectedIso3}:${countryDetailContextAsOf}`}
           onClose={closeCountry}
           onSelectCountry={selectCountry}
-          registerProductFitNavigationGuard={
-            registerProductFitNavigationGuard
-          }
+          registerProductFitNavigationGuard={registerProductFitNavigationGuard}
         />
       ) : null}
 

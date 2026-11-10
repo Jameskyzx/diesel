@@ -50,9 +50,7 @@ describe("structured public labels", () => {
     const chinese = getDictionary("zh-CN");
 
     expect(
-      applicationScopes.map((scope) =>
-        applicationScopeLabel(scope, english),
-      ),
+      applicationScopes.map((scope) => applicationScopeLabel(scope, english)),
     ).toEqual([
       "On-road",
       "Non-road",
@@ -64,9 +62,7 @@ describe("structured public labels", () => {
       "Bus power",
     ]);
     expect(
-      applicationScopes.map((scope) =>
-        applicationScopeLabel(scope, chinese),
-      ),
+      applicationScopes.map((scope) => applicationScopeLabel(scope, chinese)),
     ).toEqual([
       "道路",
       "非道路",
@@ -84,9 +80,7 @@ describe("structured public labels", () => {
         "zh-CN",
       ),
     ).toBe("非道路、发电机组");
-    expect(applicationScopeLabel("future-scope", english)).toBe(
-      "Not recorded",
-    );
+    expect(applicationScopeLabel("future-scope", english)).toBe("Not recorded");
   });
 
   it.each([
@@ -112,7 +106,11 @@ describe("structured public labels", () => {
 
   it.each([
     ["ANTARCTICA", "Antarctica", "南极洲"],
-    ["AUSTRALIA_AND_NEW_ZEALAND", "Australia and New Zealand", "澳大利亚和新西兰"],
+    [
+      "AUSTRALIA_AND_NEW_ZEALAND",
+      "Australia and New Zealand",
+      "澳大利亚和新西兰",
+    ],
     ["CARIBBEAN", "Caribbean", "加勒比地区"],
     ["CENTRAL_AMERICA", "Central America", "中美洲"],
     ["CENTRAL_ASIA", "Central Asia", "中亚"],
@@ -360,11 +358,7 @@ describe("structured public labels", () => {
     "formats a $locale market definition only for an exact known Demo fixture",
     ({ expected, input, locale }) => {
       expect(
-        marketMetricDisplayDefinition(
-          input,
-          getDictionary(locale),
-          locale,
-        ),
+        marketMetricDisplayDefinition(input, getDictionary(locale), locale),
       ).toBe(expected);
     },
   );
@@ -400,8 +394,7 @@ describe("structured public labels", () => {
     {
       expected: "仅限 Demo — 虚构中国非道路阶段 B（拟议）",
       input: {
-        canonicalName:
-          "DEMO ONLY — Fictional China Non-road Stage B Proposal",
+        canonicalName: "DEMO ONLY — Fictional China Non-road Stage B Proposal",
         id: "00000000-0000-4000-8000-000000000202",
         isDemo: true,
       },
@@ -419,8 +412,7 @@ describe("structured public labels", () => {
     {
       expected: "仅限 Demo — 虚构中国非道路阶段 C（已采纳）",
       input: {
-        canonicalName:
-          "DEMO ONLY — Fictional China Non-road Stage C Adopted",
+        canonicalName: "DEMO ONLY — Fictional China Non-road Stage C Adopted",
         id: "00000000-0000-4000-8000-000000000205",
         isDemo: true,
       },
@@ -447,8 +439,7 @@ describe("structured public labels", () => {
     {
       expected: "DEMO ONLY — Fictional China Non-road Stage A revised",
       input: {
-        canonicalName:
-          "DEMO ONLY — Fictional China Non-road Stage A revised",
+        canonicalName: "DEMO ONLY — Fictional China Non-road Stage A revised",
         id: "00000000-0000-4000-8000-000000000201",
         isDemo: true,
       },
@@ -457,9 +448,9 @@ describe("structured public labels", () => {
   ] as const)(
     "formats a $locale regulation name only for an exact known Demo fixture",
     ({ expected, input, locale }) => {
-      expect(
-        regulationDisplayName(input, getDictionary(locale), locale),
-      ).toBe(expected);
+      expect(regulationDisplayName(input, getDictionary(locale), locale)).toBe(
+        expected,
+      );
     },
   );
 
@@ -569,7 +560,8 @@ describe("structured public labels", () => {
 
   it.each([
     {
-      expected: "CHN has no comparable regulation record for the selected application, power, and date.",
+      expected:
+        "CHN has no comparable regulation record for the selected application, power, and date.",
       locale: "en",
     },
     {

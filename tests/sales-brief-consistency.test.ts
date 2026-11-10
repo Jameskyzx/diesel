@@ -313,9 +313,7 @@ describe("sales-brief replayable typed provenance", () => {
         if (!risk || risk.ruleCode !== "FUTURE_ADOPTED_REGULATION") {
           throw new Error("Expected a future-regulation risk.");
         }
-        risk.regulationIds = [
-          "00000000-0000-4000-8000-000000009903",
-        ];
+        risk.regulationIds = ["00000000-0000-4000-8000-000000009903"];
       },
     },
     {

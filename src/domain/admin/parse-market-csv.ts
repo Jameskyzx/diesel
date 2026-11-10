@@ -63,10 +63,7 @@ function parseCsvGrid(content: string): CsvGridRow[] {
     const character = content[index]!;
 
     if (character === "\0") {
-      throw new CsvSyntaxError(
-        "CSV 不能包含 NUL 字符。",
-        physicalLine,
-      );
+      throw new CsvSyntaxError("CSV 不能包含 NUL 字符。", physicalLine);
     }
 
     if (quoted) {
@@ -291,55 +288,56 @@ export function parseMarketCsv(content: string): {
 
   const errors: MarketCsvValidationError[] = [];
   const observationRows = new Map<string, number>();
-  const rows = dataRows.map(({ cells: values, rowNumber }): MarketCsvPreviewRow => {
-
-    if (values.length !== headers.length) {
-      errors.push({
-        field: null,
-        message: `列数应为 ${headers.length}，实际为 ${values.length}。`,
-        rowNumber,
-      });
-      return { parsed: null, rowNumber };
-    }
-
-    try {
-      const parsed = marketCsvRowSchema.parse(rowInput(headers, values));
-      const key = observationKey(parsed);
-      const firstRowNumber = observationRows.get(key);
-      if (firstRowNumber !== undefined) {
+  const rows = dataRows.map(
+    ({ cells: values, rowNumber }): MarketCsvPreviewRow => {
+      if (values.length !== headers.length) {
         errors.push({
           field: null,
-          message: `与第 ${firstRowNumber} 行的市场观测重复。`,
+          message: `列数应为 ${headers.length}，实际为 ${values.length}。`,
           rowNumber,
         });
         return { parsed: null, rowNumber };
       }
-      observationRows.set(key, rowNumber);
 
-      return {
-        parsed,
-        rowNumber,
-      };
-    } catch (error: unknown) {
-      if (error instanceof ZodError) {
-        for (const issue of error.issues) {
+      try {
+        const parsed = marketCsvRowSchema.parse(rowInput(headers, values));
+        const key = observationKey(parsed);
+        const firstRowNumber = observationRows.get(key);
+        if (firstRowNumber !== undefined) {
           errors.push({
-            field: issue.path.length > 0 ? issue.path.join(".") : null,
-            message: issue.message,
+            field: null,
+            message: `与第 ${firstRowNumber} 行的市场观测重复。`,
+            rowNumber,
+          });
+          return { parsed: null, rowNumber };
+        }
+        observationRows.set(key, rowNumber);
+
+        return {
+          parsed,
+          rowNumber,
+        };
+      } catch (error: unknown) {
+        if (error instanceof ZodError) {
+          for (const issue of error.issues) {
+            errors.push({
+              field: issue.path.length > 0 ? issue.path.join(".") : null,
+              message: issue.message,
+              rowNumber,
+            });
+          }
+        } else {
+          errors.push({
+            field: null,
+            message: "无法解析该行。",
             rowNumber,
           });
         }
-      } else {
-        errors.push({
-          field: null,
-          message: "无法解析该行。",
-          rowNumber,
-        });
-      }
 
-      return { parsed: null, rowNumber };
-    }
-  });
+        return { parsed: null, rowNumber };
+      }
+    },
+  );
 
   return { errors, rows };
 }

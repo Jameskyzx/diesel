@@ -36,10 +36,7 @@ const HISTORICAL_RELEASE_ID = "d".repeat(40);
 const LEGACY_RELEASE_ID = "20260812031745";
 const SNAPSHOT = '{"tableCounts":{"countries":1},"tables":{"countries":[]}}\n';
 
-type PublicationMode =
-  | "finalize-committed"
-  | "publish"
-  | "recover-required";
+type PublicationMode = "finalize-committed" | "publish" | "recover-required";
 
 type CommandResult = {
   exitCode: number;
@@ -107,8 +104,7 @@ async function execute(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -132,10 +128,7 @@ async function createPublicationFixture(): Promise<PublicationFixture> {
     stateDir,
     "HOST_ACTIVATION_ROLLED_BACK",
   );
-  const hostActivationCommitted = join(
-    stateDir,
-    "HOST_ACTIVATION_COMMITTED",
-  );
+  const hostActivationCommitted = join(stateDir, "HOST_ACTIVATION_COMMITTED");
   const fakeBin = join(root, "fake-bin");
   const fakeFindProgram = join(root, "fake-find.mjs");
   const lifecycleLock = join(deployRoot, ".release-lifecycle.lock");
@@ -144,16 +137,10 @@ async function createPublicationFixture(): Promise<PublicationFixture> {
   const snapshotPath = join(stateDir, "governance-before.json");
   const sharedRoot = join(deployRoot, "shared");
   const liveEnvironment = join(sharedRoot, ".env.production.local");
-  const environmentBackup = join(
-    stateDir,
-    "env.production.local.pre-switch",
-  );
+  const environmentBackup = join(stateDir, "env.production.local.pre-switch");
   const recoveryMarker = join(stateDir, "RECOVERY_REQUIRED");
   const hostRollbackMarker = join(stateDir, "HOST_ROLLBACK_REQUIRED");
-  const completedHostRollbackMarker = join(
-    stateDir,
-    "HOST_ROLLBACK_COMPLETED",
-  );
+  const completedHostRollbackMarker = join(stateDir, "HOST_ROLLBACK_COMPLETED");
   const commitMarker = join(stateDir, "PUBLISH_COMMITTED");
   const finalizedMarker = join(stateDir, "PUBLISH_FINALIZED");
   const currentLink = join(deployRoot, "current");
@@ -181,9 +168,11 @@ async function createPublicationFixture(): Promise<PublicationFixture> {
     writeFile(lifecycleLock, "", "utf8").then(() =>
       chmod(lifecycleLock, 0o600),
     ),
-    writeFile(join(stateDir, "previous-release"), `${previousRelease}\n`, "utf8").then(
-      () => chmod(join(stateDir, "previous-release"), 0o600),
-    ),
+    writeFile(
+      join(stateDir, "previous-release"),
+      `${previousRelease}\n`,
+      "utf8",
+    ).then(() => chmod(join(stateDir, "previous-release"), 0o600)),
     writeFile(
       environmentBackup,
       "DATABASE_URL=postgresql://fixture:fixture@database.invalid/diesel\n",
@@ -199,8 +188,8 @@ async function createPublicationFixture(): Promise<PublicationFixture> {
         chmod(join(stateDir, filename), 0o600),
       ),
     ),
-    writeFile(join(releaseDir, ".deploy-ready"), "ready\n", "utf8").then(
-      () => chmod(join(releaseDir, ".deploy-ready"), 0o640),
+    writeFile(join(releaseDir, ".deploy-ready"), "ready\n", "utf8").then(() =>
+      chmod(join(releaseDir, ".deploy-ready"), 0o640),
     ),
     writeFile(
       join(
@@ -258,7 +247,9 @@ async function createPublicationFixture(): Promise<PublicationFixture> {
   await copyFile(hostActivationLedgerScript, versionedHostActivationLedger);
   await chmod(versionedHostActivationLedger, 0o750);
   const hashPath = async (path: string): Promise<string> =>
-    createHash("sha256").update(await readFile(path)).digest("hex");
+    createHash("sha256")
+      .update(await readFile(path))
+      .digest("hex");
   const previousReleaseState = join(stateDir, "previous-release");
   const nginxPrimaryBackup = join(stateDir, "jamesky.site.pre-switch");
   const nginxAlternateBackup = join(stateDir, "diesel-demo.pre-switch");
@@ -292,7 +283,12 @@ async function createPublicationFixture(): Promise<PublicationFixture> {
   const quotedNode = quoteShell(process.execPath);
 
   await writeExecutable(
-    join(releaseDir, "scripts", "deploy", "publish-governance-country-fixtures.sh"),
+    join(
+      releaseDir,
+      "scripts",
+      "deploy",
+      "publish-governance-country-fixtures.sh",
+    ),
     `#!/usr/bin/env bash
 if [[ "\${BASH_SOURCE[0]}" == "$0" ]]; then exit 64; fi
 publish_governance_country_fixtures_for_root() {
@@ -831,8 +827,7 @@ async function executeStateMachine(
       cwd: fixture.releaseDir,
       env: {
         ...process.env,
-        DATABASE_URL:
-          "postgresql://fixture:fixture@database.invalid/diesel",
+        DATABASE_URL: "postgresql://fixture:fixture@database.invalid/diesel",
         DATABASE_MODE: "postgres",
         DIESEL_GOVERNANCE_MAINTENANCE_TOKEN: "b".repeat(64),
         NODE_ENV: "production",
@@ -876,15 +871,16 @@ async function writeMarker(
   await writeFile(fixture.snapshotPath, SNAPSHOT, "utf8");
   await chmod(fixture.snapshotPath, 0o600);
   const digest = createHash("sha256").update(SNAPSHOT).digest("hex");
-  const marker = kind === "commit"
-    ? fixture.commitMarker
-    : kind === "completed-host"
-      ? fixture.completedHostRollbackMarker
-    : kind === "finalized"
-      ? fixture.finalizedMarker
-      : kind === "host"
-        ? fixture.hostRollbackMarker
-      : fixture.recoveryMarker;
+  const marker =
+    kind === "commit"
+      ? fixture.commitMarker
+      : kind === "completed-host"
+        ? fixture.completedHostRollbackMarker
+        : kind === "finalized"
+          ? fixture.finalizedMarker
+          : kind === "host"
+            ? fixture.hostRollbackMarker
+            : fixture.recoveryMarker;
   await writeFile(marker, `${digest}\t${fixture.snapshotPath}\n`, "utf8");
   await chmod(marker, 0o600);
 
@@ -922,19 +918,13 @@ async function writeHistoricalMarker(
   fixture: PublicationFixture,
   markerName: "HOST_ROLLBACK_COMPLETED" | "PUBLISH_FINALIZED",
 ): Promise<string> {
-  const historicalDirectory = join(
-    fixture.backupRoot,
-    HISTORICAL_RELEASE_ID,
-  );
+  const historicalDirectory = join(fixture.backupRoot, HISTORICAL_RELEASE_ID);
   const historicalSnapshot = join(
     historicalDirectory,
     "governance-before.json",
   );
   const historicalMarker = join(historicalDirectory, markerName);
-  const historicalAnchor = join(
-    historicalDirectory,
-    "HOST_ACTIVATION_V1",
-  );
+  const historicalAnchor = join(historicalDirectory, "HOST_ACTIVATION_V1");
   const hostStateMarker = join(
     historicalDirectory,
     markerName === "HOST_ROLLBACK_COMPLETED"
@@ -965,7 +955,9 @@ async function writeHistoricalMarker(
   await chmod(historicalMarker, 0o600);
 
   const hashFile = async (path: string): Promise<string> =>
-    createHash("sha256").update(await readFile(path)).digest("hex");
+    createHash("sha256")
+      .update(await readFile(path))
+      .digest("hex");
   const previousReleaseState = join(historicalDirectory, "previous-release");
   const environmentBackup = join(
     historicalDirectory,
@@ -1040,14 +1032,14 @@ async function installSavedValidator(
 async function createLegacyRelease(
   fixture: PublicationFixture,
 ): Promise<string> {
-  const legacyRelease = join(
-    fixture.deployRoot,
-    "releases",
-    LEGACY_RELEASE_ID,
-  );
+  const legacyRelease = join(fixture.deployRoot, "releases", LEGACY_RELEASE_ID);
   const legacyDeployScripts = join(legacyRelease, "scripts", "deploy");
   await mkdir(legacyDeployScripts, { recursive: true });
-  await writeFile(join(legacyRelease, ".deploy-ready"), "legacy-ready\n", "utf8");
+  await writeFile(
+    join(legacyRelease, ".deploy-ready"),
+    "legacy-ready\n",
+    "utf8",
+  );
   await chmod(join(legacyRelease, ".deploy-ready"), 0o640);
   await copyFile(
     join(fixture.releaseDir, "scripts", "deploy", "verify-release.sh"),
@@ -1126,11 +1118,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
     );
     await Promise.all([
       copyFile(publicationStateMachineScript, copiedStateMachine),
-      writeFile(
-        join(root, "host-activation-ledger.sh"),
-        "return 23\n",
-        "utf8",
-      ),
+      writeFile(join(root, "host-activation-ledger.sh"), "return 23\n", "utf8"),
     ]);
 
     const result = await execute("/bin/bash", [
@@ -1300,11 +1288,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
     });
   });
 
-  it.each([
-    "publish",
-    "recover-required",
-    "finalize-committed",
-  ] as const)(
+  it.each(["publish", "recover-required", "finalize-committed"] as const)(
     "rejects runtime database identity drift before %s mutation",
     async (mode) => {
       const fixture = await createPublicationFixture();
@@ -1338,11 +1322,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
     },
   );
 
-  it.each([
-    "publish",
-    "recover-required",
-    "finalize-committed",
-  ] as const)(
+  it.each(["publish", "recover-required", "finalize-committed"] as const)(
     "rejects a mismatched maintenance DATABASE_URL before any %s database or terminal mutation",
     async (mode) => {
       const fixture = await createPublicationFixture();
@@ -1359,8 +1339,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
 
       const result = await executeStateMachine(fixture, mode, {
         environment: {
-          DATABASE_URL:
-            `postgresql://fixture:${secret}@database.invalid/diesel`,
+          DATABASE_URL: `postgresql://fixture:${secret}@database.invalid/diesel`,
         },
       });
 
@@ -1380,17 +1359,11 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
     },
   );
 
-  it.each([
-    "HOST_ROLLBACK_COMPLETED",
-    "PUBLISH_FINALIZED",
-  ] as const)(
+  it.each(["HOST_ROLLBACK_COMPLETED", "PUBLISH_FINALIZED"] as const)(
     "allows a strict historical %s tombstone during the stale-state scan",
     async (markerName) => {
       const fixture = await createPublicationFixture();
-      const historicalMarker = await writeHistoricalMarker(
-        fixture,
-        markerName,
-      );
+      const historicalMarker = await writeHistoricalMarker(fixture, markerName);
 
       const result = await executeStateMachine(fixture, "publish");
 
@@ -1402,10 +1375,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
 
   it("rejects a historical symlinked finalized tombstone before publication work", async () => {
     const fixture = await createPublicationFixture();
-    const historicalDirectory = join(
-      fixture.backupRoot,
-      HISTORICAL_RELEASE_ID,
-    );
+    const historicalDirectory = join(fixture.backupRoot, HISTORICAL_RELEASE_ID);
     await mkdir(historicalDirectory);
     await chmod(historicalDirectory, 0o700);
     await symlink(
@@ -1429,11 +1399,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
     },
     {
       corrupt: async (fixture: PublicationFixture) => {
-        await writeFile(
-          join(fixture.root, "bad-marker-owner"),
-          "",
-          "utf8",
-        );
+        await writeFile(join(fixture.root, "bad-marker-owner"), "", "utf8");
       },
       name: "an untrusted marker owner",
     },
@@ -1457,7 +1423,11 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
     {
       corrupt: async (fixture: PublicationFixture) => {
         const valid = await readFile(fixture.recoveryMarker, "utf8");
-        await writeFile(fixture.recoveryMarker, `${valid}second-line\n`, "utf8");
+        await writeFile(
+          fixture.recoveryMarker,
+          `${valid}second-line\n`,
+          "utf8",
+        );
       },
       name: "multiple marker records",
     },
@@ -1485,10 +1455,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
       await writeMarker(fixture, "recovery");
       await corrupt(fixture);
 
-      const result = await executeMarkerParser(
-        fixture,
-        fixture.recoveryMarker,
-      );
+      const result = await executeMarkerParser(fixture, fixture.recoveryMarker);
 
       expect(result.exitCode).toBe(70);
       await expect(operationLog(fixture)).resolves.toEqual([]);
@@ -1514,7 +1481,9 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
       expect(result.exitCode).toBe(status);
       const log = await operationLog(fixture);
       expect(log.filter((entry) => entry === "restore:apply")).toHaveLength(2);
-      expect(log.filter((entry) => entry === "restore:dry-run")).toHaveLength(1);
+      expect(log.filter((entry) => entry === "restore:dry-run")).toHaveLength(
+        1,
+      );
       await expect(lstat(fixture.recoveryMarker)).rejects.toMatchObject({
         code: "ENOENT",
       });
@@ -1624,9 +1593,11 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
     expect(result).toMatchObject({ exitCode: 0, stderr: "" });
     const log = await nonFsyncOperationLog(fixture);
     expect(log[0]).toBe("restore:apply");
-    expect(log[1]?.startsWith(
-      `export:${fixture.deployRoot}/.governance-recovery-${RELEASE_ID}.fixture-`,
-    )).toBe(true);
+    expect(
+      log[1]?.startsWith(
+        `export:${fixture.deployRoot}/.governance-recovery-${RELEASE_ID}.fixture-`,
+      ),
+    ).toBe(true);
     expect(log[1]?.endsWith("/after.json")).toBe(true);
     expect(log.slice(2)).toEqual([
       "node-compare",
@@ -1647,10 +1618,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
       fixture.previousRelease,
     );
     const lifecycle = await lifecycleLog(fixture);
-    expect(lifecycle.slice(0, 2)).toEqual([
-      "flock:-n:8",
-      "readlink-fd8",
-    ]);
+    expect(lifecycle.slice(0, 2)).toEqual(["flock:-n:8", "readlink-fd8"]);
     expect(lifecycle.slice(2)).toEqual([
       "realpath-fd8",
       "flock:-n:8",
@@ -1673,9 +1641,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
     const log = await nonFsyncOperationLog(fixture);
     expect(log).not.toContain("restore:apply");
     expect(log.filter((entry) => entry.startsWith("export:"))).toHaveLength(2);
-    expect(log).toContain(
-      `rollback:${RELEASE_ID}:--restore-governance-host`,
-    );
+    expect(log).toContain(`rollback:${RELEASE_ID}:--restore-governance-host`);
     expect(await pathExists(fixture.hostRollbackMarker)).toBe(false);
     expect(await pathExists(fixture.completedHostRollbackMarker)).toBe(true);
     await expect(realpath(fixture.currentLink)).resolves.toBe(
@@ -1693,9 +1659,7 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
     expect(result).toMatchObject({ exitCode: 0, stderr: "" });
     const log = await nonFsyncOperationLog(fixture);
     expect(log).not.toContain("restore:apply");
-    expect(log).toContain(
-      `rollback:${RELEASE_ID}:--restore-governance-host`,
-    );
+    expect(log).toContain(`rollback:${RELEASE_ID}:--restore-governance-host`);
     expect(log.filter((entry) => entry.startsWith("export:"))).toHaveLength(2);
     expect(await pathExists(fixture.hostRollbackMarker)).toBe(false);
     expect(await pathExists(fixture.completedHostRollbackMarker)).toBe(true);
@@ -1893,10 +1857,20 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
       `validator:${RELEASE_ID}`,
       "lock-proof:3",
     ]);
-    expect(log.filter((entry) => entry === `finalize:${fixture.finalizedMarker}`)).toHaveLength(1);
-    expect(log.filter((entry) => entry === `rollback:${RELEASE_ID}:--validate-committed`)).toHaveLength(4);
-    expect(log.filter((entry) => entry === `validator:${RELEASE_ID}`)).toHaveLength(4);
-    expect(log.filter((entry) => entry.startsWith("lock-proof:"))).toHaveLength(6);
+    expect(
+      log.filter((entry) => entry === `finalize:${fixture.finalizedMarker}`),
+    ).toHaveLength(1);
+    expect(
+      log.filter(
+        (entry) => entry === `rollback:${RELEASE_ID}:--validate-committed`,
+      ),
+    ).toHaveLength(4);
+    expect(
+      log.filter((entry) => entry === `validator:${RELEASE_ID}`),
+    ).toHaveLength(4);
+    expect(log.filter((entry) => entry.startsWith("lock-proof:"))).toHaveLength(
+      6,
+    );
     expect(await pathExists(fixture.hostActivationCommitted)).toBe(true);
   }, 50_000);
 
@@ -2109,9 +2083,11 @@ describe("governance publication state machine", { timeout: 60_000 }, () => {
       expect(await pathExists(fixture.commitMarker)).toBe(false);
       expect((await lstat(fixture.finalizedMarker)).isFile()).toBe(true);
       expect(await pathExists(fixture.hostActivationPending)).toBe(true);
-      expect((await operationLog(fixture)).some((entry) => entry.startsWith("restore:"))).toBe(
-        false,
-      );
+      expect(
+        (await operationLog(fixture)).some((entry) =>
+          entry.startsWith("restore:"),
+        ),
+      ).toBe(false);
     },
   );
 

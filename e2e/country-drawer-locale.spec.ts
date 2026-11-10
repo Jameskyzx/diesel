@@ -35,7 +35,8 @@ test("switches locale from an open country drawer and preserves its shared URL",
   // compilation can consume most of the POST budget before refresh starts;
   // a single default assertion timeout must not combine those two phases.
   const localeResponse = page.waitForResponse(
-    response => new URL(response.url()).pathname === "/api/preferences/locale" &&
+    (response) =>
+      new URL(response.url()).pathname === "/api/preferences/locale" &&
       response.request().method() === "POST",
     { timeout: PUBLIC_API_REQUEST_TIMEOUT_MS },
   );
@@ -135,13 +136,9 @@ test("keeps the header locale control usable after a stale request and drawer ro
   const drawerToggle = page.getByTestId("country-drawer-locale-toggle");
   await expect(drawerToggle).toBeVisible();
 
-  await drawerToggle
-    .getByRole("button", { exact: true, name: "中文" })
-    .click();
+  await drawerToggle.getByRole("button", { exact: true, name: "中文" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
-  await drawerToggle
-    .getByRole("button", { exact: true, name: "EN" })
-    .click();
+  await drawerToggle.getByRole("button", { exact: true, name: "EN" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
   releaseFirstRequest();

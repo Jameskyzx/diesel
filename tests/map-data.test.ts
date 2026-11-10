@@ -54,15 +54,7 @@ describe("world country map assets", () => {
     expect(new Set(indexIso3s).size).toBe(indexIso3s.length);
     expect(new Set(indexIso3s)).toEqual(new Set(featureIso3s));
     expect(featureIso3s).toEqual(
-      expect.arrayContaining([
-        "BRA",
-        "CHN",
-        "DEU",
-        "LIE",
-        "MLT",
-        "SGP",
-        "USA",
-      ]),
+      expect.arrayContaining(["BRA", "CHN", "DEU", "LIE", "MLT", "SGP", "USA"]),
     );
     const liechtenstein = geoJson.features.find(
       ({ properties }) => properties.ISO3 === "LIE",

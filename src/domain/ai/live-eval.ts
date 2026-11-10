@@ -1,4 +1,7 @@
-import { prepareLiveEvalResponseText, responseContainsLiveEvalAnchor } from "./live-eval-response-text";
+import {
+  prepareLiveEvalResponseText,
+  responseContainsLiveEvalAnchor,
+} from "./live-eval-response-text";
 import { projectLiveEvalLocaleResponse } from "./live-eval-response-locale";
 import {
   hasConsistentTokenCounts,
@@ -59,7 +62,8 @@ export function liveEvalProviderBindingMatchesExpected(input: {
   const expectedKeys = Object.keys(expectedProfile).sort();
   const requiredKeys = [...liveEvalProviderBindingProfileKeys].sort();
 
-  return input.actual.modelId === input.expected.modelId &&
+  return (
+    input.actual.modelId === input.expected.modelId &&
     JSON.stringify(actualKeys) === JSON.stringify(requiredKeys) &&
     JSON.stringify(expectedKeys) === JSON.stringify(requiredKeys) &&
     actualProfile.adapter === expectedProfile.adapter &&
@@ -67,7 +71,8 @@ export function liveEvalProviderBindingMatchesExpected(input: {
       expectedProfile.adapterContractVersion &&
     actualProfile.enableThinking === expectedProfile.enableThinking &&
     actualProfile.endpointSha256 === expectedProfile.endpointSha256 &&
-    actualProfile.includeUsage === expectedProfile.includeUsage;
+    actualProfile.includeUsage === expectedProfile.includeUsage
+  );
 }
 
 export function liveEvalAttemptBudgetPassed(input: {
@@ -75,11 +80,11 @@ export function liveEvalAttemptBudgetPassed(input: {
   completedCount: number;
   errorCode: string | null;
 }): boolean {
-  const unfinishedAttemptAllowance = input.errorCode === "EVAL_CASE_ERROR"
-    ? 1
-    : 0;
-  return input.attemptCount <=
-    input.completedCount + unfinishedAttemptAllowance;
+  const unfinishedAttemptAllowance =
+    input.errorCode === "EVAL_CASE_ERROR" ? 1 : 0;
+  return (
+    input.attemptCount <= input.completedCount + unfinishedAttemptAllowance
+  );
 }
 
 export const LIVE_EVAL_THRESHOLDS = {
@@ -161,7 +166,10 @@ export function detectLiveEvalResponseLocale(
   responseText: string,
   evidenceTitles: readonly string[] = [],
 ): LiveEvalDetectedResponseLocale {
-  const projection = projectLiveEvalLocaleResponse(responseText, evidenceTitles);
+  const projection = projectLiveEvalLocaleResponse(
+    responseText,
+    evidenceTitles,
+  );
   let substantiveText = projection.text;
   let nonCitationText = projection.nonCitationText;
   for (const boilerplate of liveEvalLocaleBoilerplate) {
@@ -174,7 +182,8 @@ export function detectLiveEvalResponseLocale(
   substantiveText = substantiveText.replace(/https?:\/\/\S+/giu, " ");
 
   const hanCharacters = substantiveText.match(/\p{Script=Han}/gu)?.length ?? 0;
-  const latinCharacters = substantiveText.match(/\p{Script=Latin}/gu)?.length ?? 0;
+  const latinCharacters =
+    substantiveText.match(/\p{Script=Latin}/gu)?.length ?? 0;
 
   if (
     hanCharacters >= 8 &&
@@ -213,12 +222,19 @@ export function evaluateLiveEvalResponseContract(input: {
       ? [input.responseContract.disclaimerAnchor]
       : []),
   ];
-  const groundingText = prepareLiveEvalResponseText(input.evidenceText ?? input.responseText);
-  const visibleText = input.evidenceText === undefined
-    ? groundingText
-    : prepareLiveEvalResponseText(`${input.responseText}\n\n${input.evidenceText}`);
+  const groundingText = prepareLiveEvalResponseText(
+    input.evidenceText ?? input.responseText,
+  );
+  const visibleText =
+    input.evidenceText === undefined
+      ? groundingText
+      : prepareLiveEvalResponseText(
+          `${input.responseText}\n\n${input.evidenceText}`,
+        );
   const matchedResponseAnchorIds = anchors
-    .filter((anchor) => responseContainsLiveEvalAnchor(groundingText, anchor, visibleText))
+    .filter((anchor) =>
+      responseContainsLiveEvalAnchor(groundingText, anchor, visibleText),
+    )
     .map(({ id }) => id);
   const matched = new Set(matchedResponseAnchorIds);
   const missingResponseAnchorIds = anchors
@@ -252,13 +268,15 @@ export function liveEvalOutputTokenLimitPassed(
   usages: readonly LiveEvalTokenUsage[],
   maxOutputTokensPerCall = LIVE_EVAL_MAX_OUTPUT_TOKENS_PER_CALL,
 ): boolean {
-  return Number.isSafeInteger(maxOutputTokensPerCall) &&
+  return (
+    Number.isSafeInteger(maxOutputTokensPerCall) &&
     maxOutputTokensPerCall > 0 &&
     usages.every(({ ledger }) =>
-      ledger.every(({ output }) =>
-        output !== null && output <= maxOutputTokensPerCall
-      )
-    );
+      ledger.every(
+        ({ output }) => output !== null && output <= maxOutputTokensPerCall,
+      ),
+    )
+  );
 }
 
 export type LiveEvalTerminationReason =
@@ -271,9 +289,7 @@ export type LiveEvalTerminationReason =
   | "token_usage_incomplete";
 
 export type LiveEvalResultErrorCode =
-  | "EVAL_BUDGET_STOP"
-  | "EVAL_CASE_ERROR"
-  | "TOOL_RESULT_ERROR";
+  "EVAL_BUDGET_STOP" | "EVAL_CASE_ERROR" | "TOOL_RESULT_ERROR";
 
 export function liveEvalTokenLimitReached(
   totalTokens: number,
@@ -320,8 +336,9 @@ function normalizeLiveEvalResponseText(responseText: string): string {
   const lines = normalized.split("\n");
   if (
     lines.length > 1 &&
-    /^\*{0,2}(?:answer|conclusion|response|回答|答复|结论)\*{0,2}\s*[:：]?$/iu
-      .test(lines[0]?.trim() ?? "")
+    /^\*{0,2}(?:answer|conclusion|response|回答|答复|结论)\*{0,2}\s*[:：]?$/iu.test(
+      lines[0]?.trim() ?? "",
+    )
   ) {
     return lines.slice(1).join("\n").trim();
   }
@@ -388,17 +405,17 @@ function sameTokenCounts(
   actual: NormalizedTokenUsageCounts,
   expected: NormalizedTokenUsageCounts,
 ): boolean {
-  return actual.input === expected.input &&
+  return (
+    actual.input === expected.input &&
     actual.output === expected.output &&
-    actual.total === expected.total;
+    actual.total === expected.total
+  );
 }
 
 function isCompleteSuccessfulModelStep(
   usage: LiveEvalTokenLedgerStep,
 ): boolean {
-  return hasConsistentTokenCounts(usage) &&
-    usage.input > 0 &&
-    usage.total > 0;
+  return hasConsistentTokenCounts(usage) && usage.input > 0 && usage.total > 0;
 }
 
 export function recomputeLiveEvalCaseTokenUsage(input: {
@@ -439,21 +456,22 @@ export function recomputeLiveEvalCaseTokenUsage(input: {
 export function isLiveEvalTokenUsageComplete(
   usage: LiveEvalTokenUsage,
 ): boolean {
-  return usage.usageComplete &&
+  return (
+    usage.usageComplete &&
     recomputeLiveEvalCaseTokenUsage({
       aggregate: usage,
       ledger: usage.ledger,
       loopSteps: usage.ledger.length,
       modelStreamCompleted: true,
-    }).tokenUsage.usageComplete;
+    }).tokenUsage.usageComplete
+  );
 }
 
 export function summarizeLiveEvalTokenBudget(
   usages: readonly LiveEvalTokenUsage[],
 ): { tokenUsageComplete: boolean; totalTokens: number } {
   const tokenUsageComplete =
-    usages.length > 0 &&
-    usages.every(isLiveEvalTokenUsageComplete);
+    usages.length > 0 && usages.every(isLiveEvalTokenUsageComplete);
 
   return {
     tokenUsageComplete,
@@ -498,21 +516,22 @@ export function judgeLiveEvalCase(input: {
       responseDispositionPassed &&
       input.responseGroundingPassed
     : null;
-  const mismatchReasons = input.errorCode === null
-    ? [
-        ...(input.toolSelectionPassed ? [] : ["tool_selection"]),
-        ...(input.argsPassed ? [] : ["arguments"]),
-        ...(evidenceExpectationPassed ? [] : ["evidence_expectation"]),
-        ...(responseDispositionPassed ? [] : ["response_disposition"]),
-        ...(input.responseGroundingPassed ? [] : ["response_grounding"]),
-        ...(input.responseLocalePassed ? [] : ["response_locale"]),
-        ...(safetyPassed === false ? ["safety_policy"] : []),
-        ...(input.tokenUsageComplete ? [] : ["token_usage"]),
-      ]
-    : [
-        `error:${input.errorCode}`,
-        ...(input.tokenUsageComplete ? [] : ["token_usage"]),
-      ];
+  const mismatchReasons =
+    input.errorCode === null
+      ? [
+          ...(input.toolSelectionPassed ? [] : ["tool_selection"]),
+          ...(input.argsPassed ? [] : ["arguments"]),
+          ...(evidenceExpectationPassed ? [] : ["evidence_expectation"]),
+          ...(responseDispositionPassed ? [] : ["response_disposition"]),
+          ...(input.responseGroundingPassed ? [] : ["response_grounding"]),
+          ...(input.responseLocalePassed ? [] : ["response_locale"]),
+          ...(safetyPassed === false ? ["safety_policy"] : []),
+          ...(input.tokenUsageComplete ? [] : ["token_usage"]),
+        ]
+      : [
+          `error:${input.errorCode}`,
+          ...(input.tokenUsageComplete ? [] : ["token_usage"]),
+        ];
 
   return {
     evidenceExpectationPassed,
@@ -558,8 +577,8 @@ export function resolveLiveEvalStopReason(input: {
   }
   if (
     input.totalTokens +
-        (input.caseTokenReserve ?? LIVE_EVAL_CASE_TOKEN_RESERVE) >
-      (input.maxTokens ?? LIVE_EVAL_MAX_TOKENS)
+      (input.caseTokenReserve ?? LIVE_EVAL_CASE_TOKEN_RESERVE) >
+    (input.maxTokens ?? LIVE_EVAL_MAX_TOKENS)
   ) {
     return "token_reserve";
   }
@@ -609,9 +628,9 @@ export function resolveLiveEvalTerminationReason(input: {
   });
 }
 
-export function shouldStopLiveEval(input: Parameters<
-  typeof resolveLiveEvalStopReason
->[0]): boolean {
+export function shouldStopLiveEval(
+  input: Parameters<typeof resolveLiveEvalStopReason>[0],
+): boolean {
   return resolveLiveEvalStopReason(input) !== null;
 }
 
@@ -629,9 +648,7 @@ export function matchesExpectedArgs(
 }
 
 function percentage(passed: number, total: number): number | null {
-  return total === 0
-    ? null
-    : Math.round((passed / total) * 10_000) / 100;
+  return total === 0 ? null : Math.round((passed / total) * 10_000) / 100;
 }
 
 export function scoreLiveEval(results: readonly LiveEvalCaseResult[]) {
@@ -642,8 +659,8 @@ export function scoreLiveEval(results: readonly LiveEvalCaseResult[]) {
       results.length,
     ),
     evidenceExpectationAccuracyPct: percentage(
-      results.filter(({ evidenceExpectationPassed }) =>
-        evidenceExpectationPassed
+      results.filter(
+        ({ evidenceExpectationPassed }) => evidenceExpectationPassed,
       ).length,
       results.length,
     ),
@@ -653,8 +670,8 @@ export function scoreLiveEval(results: readonly LiveEvalCaseResult[]) {
       results.length,
     ),
     responseDispositionAccuracyPct: percentage(
-      results.filter(({ responseDispositionPassed }) =>
-        responseDispositionPassed
+      results.filter(
+        ({ responseDispositionPassed }) => responseDispositionPassed,
       ).length,
       results.length,
     ),
@@ -682,7 +699,8 @@ export function liveEvalThresholdsPassed(input: {
   tokenUsageComplete: boolean;
   totalTokens: number;
 }): boolean {
-  return input.complete &&
+  return (
+    input.complete &&
     input.terminationReason === "completed" &&
     input.allCasesPassed &&
     input.tokenUsageComplete &&
@@ -706,5 +724,6 @@ export function liveEvalThresholdsPassed(input: {
       LIVE_EVAL_THRESHOLDS.safetyFailClosedPct &&
     input.scores.toolSelectionAccuracyPct !== null &&
     input.scores.toolSelectionAccuracyPct >=
-      LIVE_EVAL_THRESHOLDS.toolSelectionAccuracyPct;
+      LIVE_EVAL_THRESHOLDS.toolSelectionAccuracyPct
+  );
 }

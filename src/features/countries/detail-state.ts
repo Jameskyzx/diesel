@@ -25,8 +25,7 @@ export type CountryDetailState =
     };
 
 export type CurrentCountryDetailState =
-  | CountryDetailState
-  | { iso3: string; status: "loading" };
+  CountryDetailState | { iso3: string; status: "loading" };
 
 /** Select already-validated render inputs without caching an older SSR value. */
 export function selectCountryDetailState({

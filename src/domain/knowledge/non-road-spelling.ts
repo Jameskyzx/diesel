@@ -12,12 +12,19 @@ function isStandalone(text: string, offset: number, length: number): boolean {
   const after = text.slice(offset + length, offset + length + 3);
   const next = Array.from(after)[0] ?? "";
   const trailingProsePunctuation = /^[.?:](?:\s|$|["')\]])/u.test(after);
-  if (identifierNeighbor.test(before) || dash.test(next) ||
-      (!trailingProsePunctuation && identifierNeighbor.test(next))) return false;
+  if (
+    identifierNeighbor.test(before) ||
+    dash.test(next) ||
+    (!trailingProsePunctuation && identifierNeighbor.test(next))
+  )
+    return false;
   // Leading dashes are websearch operators; ID-internal dashes are not.
   let prefixEnd = offset;
   while (prefixEnd > 0 && dash.test(text[prefixEnd - 1]!)) prefixEnd -= 1;
-  return prefixEnd === offset || !identifierNeighbor.test(previousCharacter(text, prefixEnd));
+  return (
+    prefixEnd === offset ||
+    !identifierNeighbor.test(previousCharacter(text, prefixEnd))
+  );
 }
 
 export function hasStandaloneNonRoadSpelling(text: string): boolean {
@@ -32,5 +39,6 @@ export function replaceStandaloneNonRoadSpellings(
   replace: (spelling: string) => string,
 ): string {
   return text.replace(spellings, (match: string, offset: number) =>
-    isStandalone(text, offset, match.length) ? replace(match) : match);
+    isStandalone(text, offset, match.length) ? replace(match) : match,
+  );
 }

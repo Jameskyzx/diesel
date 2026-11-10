@@ -107,9 +107,9 @@ const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
   await Promise.all(
-    temporaryDirectories.splice(0).map((directory) =>
-      rm(directory, { force: true, recursive: true }),
-    ),
+    temporaryDirectories
+      .splice(0)
+      .map((directory) => rm(directory, { force: true, recursive: true })),
   );
 });
 
@@ -325,8 +325,7 @@ function runnerFor(state: RunnerState): ReleaseCommandRunner {
         );
       }
       if (
-        joined ===
-        "rev-parse\0--verify\0refs/remotes/origin/master^{commit}"
+        joined === "rev-parse\0--verify\0refs/remotes/origin/master^{commit}"
       ) {
         remoteTrackingReads += 1;
         return commandResult(
@@ -566,14 +565,15 @@ describe("release authorization", () => {
     expect(state.calls).toContainEqual(
       expect.stringContaining(`/runs/${RUN_ID}/attempts/1/jobs?per_page=100`),
     );
-    for (const call of state.calls.filter((value) => value.startsWith("gh api"))) {
+    for (const call of state.calls.filter((value) =>
+      value.startsWith("gh api"),
+    )) {
       expect(call).toContain("Accept: application/vnd.github+json");
       expect(call).toContain("X-GitHub-Api-Version: 2022-11-28");
     }
     expect(
       state.commandScopes.filter(
-        ({ args, command }) =>
-          command === "git" && args[0] === "ls-remote",
+        ({ args, command }) => command === "git" && args[0] === "ls-remote",
       ),
     ).toEqual([
       {
@@ -602,124 +602,190 @@ describe("release authorization", () => {
   });
 
   it.each([
-    ["dirty worktree", (state: RunnerState) => (state.dirtyStatus = "?? rogue"), /clean worktree/u],
-    ["wrong branch", (state: RunnerState) => (state.branchRef = "refs/heads/release"), /requires refs\/heads\/master/u],
-    ["wrong HEAD", (state: RunnerState) => (state.head = OTHER_SHA), /HEAD does not equal/u],
-    ["stale tracking ref", (state: RunnerState) => (state.remoteTracking = OTHER_SHA), /Local origin\/master/u],
-    ["modified verifier", (state: RunnerState) => (state.worktreeScriptBlob = OTHER_SHA), /verifier differs/u],
-    ["multiple fetch URLs", (state: RunnerState) => (state.fetchUrls += "\nhttps://github.com/Jameskyzx/diesel.git"), /exactly one canonical/u],
-    ["different push URL", (state: RunnerState) => (state.pushUrls = "https://github.com/Jameskyzx/diesel.git"), /must be identical/u],
-    ["wrong fresh remote", (state: RunnerState) => (state.lsRemote = `${OTHER_SHA}\trefs/heads/master`), /not one exact release ref/u],
+    [
+      "dirty worktree",
+      (state: RunnerState) => (state.dirtyStatus = "?? rogue"),
+      /clean worktree/u,
+    ],
+    [
+      "wrong branch",
+      (state: RunnerState) => (state.branchRef = "refs/heads/release"),
+      /requires refs\/heads\/master/u,
+    ],
+    [
+      "wrong HEAD",
+      (state: RunnerState) => (state.head = OTHER_SHA),
+      /HEAD does not equal/u,
+    ],
+    [
+      "stale tracking ref",
+      (state: RunnerState) => (state.remoteTracking = OTHER_SHA),
+      /Local origin\/master/u,
+    ],
+    [
+      "modified verifier",
+      (state: RunnerState) => (state.worktreeScriptBlob = OTHER_SHA),
+      /verifier differs/u,
+    ],
+    [
+      "multiple fetch URLs",
+      (state: RunnerState) =>
+        (state.fetchUrls += "\nhttps://github.com/Jameskyzx/diesel.git"),
+      /exactly one canonical/u,
+    ],
+    [
+      "different push URL",
+      (state: RunnerState) =>
+        (state.pushUrls = "https://github.com/Jameskyzx/diesel.git"),
+      /must be identical/u,
+    ],
+    [
+      "wrong fresh remote",
+      (state: RunnerState) =>
+        (state.lsRemote = `${OTHER_SHA}\trefs/heads/master`),
+      /not one exact release ref/u,
+    ],
   ])("rejects %s", (_label, mutate, message) => {
     expectRejected(mutate, message);
   });
 
   it.each([
-    ["ref commit drift", (state: RunnerState) => (state.githubRef = githubRef(OTHER_SHA)), /GitHub master ref/u],
-    ["inactive workflow", (state: RunnerState) => ((state.workflow.state as string) = "disabled_manually"), /workflow identity or state/u],
-    ["workflow path drift", (state: RunnerState) => ((state.workflow.path as string) = ".github/workflows/other.yml"), /workflow identity or state/u],
-    ["non-strict checks", (state: RunnerState) => (((state.protection.required_status_checks as JsonRecord).strict as boolean) = false), /branch protection drifted/u],
-    ["extra context", (state: RunnerState) => (((state.protection.required_status_checks as JsonRecord).contexts as unknown[]) = ["Required CI gate", "legacy"]), /branch protection drifted/u],
-    ["admins bypass", (state: RunnerState) => (((state.protection.enforce_admins as JsonRecord).enabled as boolean) = false), /branch protection drifted/u],
-    ["force pushes", (state: RunnerState) => (((state.protection.allow_force_pushes as JsonRecord).enabled as boolean) = true), /branch protection drifted/u],
-    ["deletions", (state: RunnerState) => (((state.protection.allow_deletions as JsonRecord).enabled as boolean) = true), /branch protection drifted/u],
-    ["unexpected app binding", (state: RunnerState) => ((((state.protection.required_status_checks as JsonRecord).checks as JsonRecord[])[0]!.app_id as number | null) = 123), /branch protection drifted/u],
+    [
+      "ref commit drift",
+      (state: RunnerState) => (state.githubRef = githubRef(OTHER_SHA)),
+      /GitHub master ref/u,
+    ],
+    [
+      "inactive workflow",
+      (state: RunnerState) =>
+        ((state.workflow.state as string) = "disabled_manually"),
+      /workflow identity or state/u,
+    ],
+    [
+      "workflow path drift",
+      (state: RunnerState) =>
+        ((state.workflow.path as string) = ".github/workflows/other.yml"),
+      /workflow identity or state/u,
+    ],
+    [
+      "non-strict checks",
+      (state: RunnerState) =>
+        (((state.protection.required_status_checks as JsonRecord)
+          .strict as boolean) = false),
+      /branch protection drifted/u,
+    ],
+    [
+      "extra context",
+      (state: RunnerState) =>
+        (((state.protection.required_status_checks as JsonRecord)
+          .contexts as unknown[]) = ["Required CI gate", "legacy"]),
+      /branch protection drifted/u,
+    ],
+    [
+      "admins bypass",
+      (state: RunnerState) =>
+        (((state.protection.enforce_admins as JsonRecord).enabled as boolean) =
+          false),
+      /branch protection drifted/u,
+    ],
+    [
+      "force pushes",
+      (state: RunnerState) =>
+        (((state.protection.allow_force_pushes as JsonRecord)
+          .enabled as boolean) = true),
+      /branch protection drifted/u,
+    ],
+    [
+      "deletions",
+      (state: RunnerState) =>
+        (((state.protection.allow_deletions as JsonRecord).enabled as boolean) =
+          true),
+      /branch protection drifted/u,
+    ],
+    [
+      "unexpected app binding",
+      (state: RunnerState) =>
+        (((
+          (state.protection.required_status_checks as JsonRecord)
+            .checks as JsonRecord[]
+        )[0]!.app_id as number | null) = 123),
+      /branch protection drifted/u,
+    ],
   ])("rejects GitHub configuration drift: %s", (_label, mutate, message) => {
     expectRejected(mutate, message);
   });
 
   it("rejects a truncated run page", () => {
-    expectRejected(
-      (state) => {
-        state.runs.total_count = 2;
-      },
-      /truncated or has an inconsistent total_count/u,
-    );
+    expectRejected((state) => {
+      state.runs.total_count = 2;
+    }, /truncated or has an inconsistent total_count/u);
   });
 
   it("rejects duplicate run IDs", () => {
-    expectRejected(
-      (state) => {
-        state.runs = runs([
-          run(),
-          run({ created_at: "2026-08-31T23:00:00Z" }),
-        ]);
-      },
-      /duplicate IDs/u,
-    );
+    expectRejected((state) => {
+      state.runs = runs([run(), run({ created_at: "2026-08-31T23:00:00Z" })]);
+    }, /duplicate IDs/u);
   });
 
   it("rejects every returned run when any provenance field drifts", () => {
-    expectRejected(
-      (state) => {
-        state.runs = runs([run({ repository: "attacker/fork" })]);
-      },
-      /invalid release provenance/u,
-    );
+    expectRejected((state) => {
+      state.runs = runs([run({ repository: "attacker/fork" })]);
+    }, /invalid release provenance/u);
   });
 
   it("rejects no exact-SHA push run", () => {
-    expectRejected((state) => (state.runs = runs([])), /No push CI workflow run/u);
+    expectRejected(
+      (state) => (state.runs = runs([])),
+      /No push CI workflow run/u,
+    );
   });
 
   it("does not hide a newer failed run behind an older successful rerun", () => {
-    expectRejected(
-      (state) => {
-        state.runs = runs([
-          run({
-            created_at: "2026-09-01T01:00:00Z",
-            id: RUN_ID,
-            updated_at: "2026-09-01T03:00:00Z",
-          }),
-          run({
-            conclusion: "failure",
-            created_at: "2026-09-01T02:00:00Z",
-            id: RUN_ID + 1,
-            status: "completed",
-            updated_at: "2026-09-01T02:20:00Z",
-          }),
-        ]);
-      },
-      /newest GitHub CI workflow run is not successfully completed/u,
-    );
+    expectRejected((state) => {
+      state.runs = runs([
+        run({
+          created_at: "2026-09-01T01:00:00Z",
+          id: RUN_ID,
+          updated_at: "2026-09-01T03:00:00Z",
+        }),
+        run({
+          conclusion: "failure",
+          created_at: "2026-09-01T02:00:00Z",
+          id: RUN_ID + 1,
+          status: "completed",
+          updated_at: "2026-09-01T02:20:00Z",
+        }),
+      ]);
+    }, /newest GitHub CI workflow run is not successfully completed/u);
   });
 
   it("rejects a newer in-progress run", () => {
-    expectRejected(
-      (state) => {
-        state.runs = runs([
-          run(),
-          run({
-            conclusion: null,
-            created_at: "2026-09-01T02:00:00Z",
-            id: RUN_ID + 1,
-            status: "in_progress",
-          }),
-        ]);
-      },
-      /not successfully completed/u,
-    );
+    expectRejected((state) => {
+      state.runs = runs([
+        run(),
+        run({
+          conclusion: null,
+          created_at: "2026-09-01T02:00:00Z",
+          id: RUN_ID + 1,
+          status: "in_progress",
+        }),
+      ]);
+    }, /not successfully completed/u);
   });
 
   it("rejects ambiguous newest-run timestamps instead of guessing by ID", () => {
-    expectRejected(
-      (state) => {
-        state.runs = runs([run(), run({ id: RUN_ID + 1 })]);
-      },
-      /created_at is tied/u,
-    );
+    expectRejected((state) => {
+      state.runs = runs([run(), run({ id: RUN_ID + 1 })]);
+    }, /created_at is tied/u);
   });
 
   it("treats equivalent RFC3339 instants as an ambiguous newest-run tie", () => {
-    expectRejected(
-      (state) => {
-        state.runs = runs([
-          run({ created_at: "2026-09-01T01:00:00Z" }),
-          run({ created_at: "2026-09-01T09:00:00+08:00", id: RUN_ID + 1 }),
-        ]);
-      },
-      /created_at is tied/u,
-    );
+    expectRejected((state) => {
+      state.runs = runs([
+        run({ created_at: "2026-09-01T01:00:00Z" }),
+        run({ created_at: "2026-09-01T09:00:00+08:00", id: RUN_ID + 1 }),
+      ]);
+    }, /created_at is tied/u);
   });
 
   it("accepts the newer success after an older failed run", () => {
@@ -736,51 +802,62 @@ describe("release authorization", () => {
   });
 
   it.each([
-    ["missing gate", [job({ id: GATE_JOB_ID - 1, name: "Lint" })], /exactly one Required CI gate/u],
-    ["duplicate gate", [job(), job({ id: GATE_JOB_ID + 1 })], /exactly one Required CI gate/u],
+    [
+      "missing gate",
+      [job({ id: GATE_JOB_ID - 1, name: "Lint" })],
+      /exactly one Required CI gate/u,
+    ],
+    [
+      "duplicate gate",
+      [job(), job({ id: GATE_JOB_ID + 1 })],
+      /exactly one Required CI gate/u,
+    ],
     ["wrong attempt", [job({ run_attempt: 2 })], /invalid release provenance/u],
-    ["wrong SHA", [job({ head_sha: OTHER_SHA })], /invalid release provenance/u],
-    ["failed gate", [job({ conclusion: "failure" })], /gate job is not successfully completed/u],
-    ["running gate", [job({ conclusion: null, status: "in_progress" })], /gate job is not successfully completed/u],
+    [
+      "wrong SHA",
+      [job({ head_sha: OTHER_SHA })],
+      /invalid release provenance/u,
+    ],
+    [
+      "failed gate",
+      [job({ conclusion: "failure" })],
+      /gate job is not successfully completed/u,
+    ],
+    [
+      "running gate",
+      [job({ conclusion: null, status: "in_progress" })],
+      /gate job is not successfully completed/u,
+    ],
   ])("rejects attempt job evidence: %s", (_label, jobItems, message) => {
     expectRejected((state) => (state.jobs = jobs(jobItems)), message);
   });
 
   it("rejects the live legacy shape: successful workflow with no gate job", () => {
-    expectRejected(
-      (state) => {
-        state.jobs = jobs([
-          job({ id: GATE_JOB_ID - 2, name: "Quality" }),
-          job({ id: GATE_JOB_ID - 1, name: "Playwright" }),
-        ]);
-      },
-      /exactly one Required CI gate/u,
-    );
+    expectRejected((state) => {
+      state.jobs = jobs([
+        job({ id: GATE_JOB_ID - 2, name: "Quality" }),
+        job({ id: GATE_JOB_ID - 1, name: "Playwright" }),
+      ]);
+    }, /exactly one Required CI gate/u);
   });
 
   it("rejects an attempt rerun race after reading jobs", () => {
-    expectRejected(
-      (state) => {
-        state.finalRuns = runs([run({ run_attempt: 2 })]);
-      },
-      /run state changed during release authorization/u,
-    );
+    expectRejected((state) => {
+      state.finalRuns = runs([run({ run_attempt: 2 })]);
+    }, /run state changed during release authorization/u);
   });
 
   it("rejects a newly indexed run after reading jobs", () => {
-    expectRejected(
-      (state) => {
-        state.finalRuns = runs([
-          run(),
-          run({
-            conclusion: "failure",
-            created_at: "2026-09-01T02:00:00Z",
-            id: RUN_ID + 1,
-          }),
-        ]);
-      },
-      /run state changed during release authorization/u,
-    );
+    expectRejected((state) => {
+      state.finalRuns = runs([
+        run(),
+        run({
+          conclusion: "failure",
+          created_at: "2026-09-01T02:00:00Z",
+          id: RUN_ID + 1,
+        }),
+      ]);
+    }, /run state changed during release authorization/u);
   });
 
   it("rejects a GitHub master ref race", () => {
@@ -791,32 +868,43 @@ describe("release authorization", () => {
   });
 
   it("rejects a workflow identity race", () => {
-    expectRejected(
-      (state) => {
-        state.finalWorkflow = { ...workflow(), state: "disabled_manually" };
-      },
-      /workflow identity changed/u,
-    );
+    expectRejected((state) => {
+      state.finalWorkflow = { ...workflow(), state: "disabled_manually" };
+    }, /workflow identity changed/u);
   });
 
   it("rejects a branch-protection race", () => {
-    expectRejected(
-      (state) => {
-        const changed = protection();
-        (changed.enforce_admins as JsonRecord).enabled = false;
-        state.finalProtection = changed;
-      },
-      /branch protection changed/u,
-    );
+    expectRejected((state) => {
+      const changed = protection();
+      (changed.enforce_admins as JsonRecord).enabled = false;
+      state.finalProtection = changed;
+    }, /branch protection changed/u);
   });
 
   it.each([
-    ["worktree", (state: RunnerState) => (state.finalDirtyStatus = " M package.json")],
+    [
+      "worktree",
+      (state: RunnerState) => (state.finalDirtyStatus = " M package.json"),
+    ],
     ["HEAD", (state: RunnerState) => (state.finalHead = OTHER_SHA)],
-    ["remote", (state: RunnerState) => (state.finalLsRemote = `${OTHER_SHA}\trefs/heads/master`)],
-    ["tracking ref", (state: RunnerState) => (state.finalRemoteTracking = OTHER_SHA)],
-    ["origin config", (state: RunnerState) => (state.finalFetchUrls = "https://github.com/Jameskyzx/diesel.git")],
-    ["verifier bytes", (state: RunnerState) => (state.finalWorktreeScriptBlob = OTHER_SHA)],
+    [
+      "remote",
+      (state: RunnerState) =>
+        (state.finalLsRemote = `${OTHER_SHA}\trefs/heads/master`),
+    ],
+    [
+      "tracking ref",
+      (state: RunnerState) => (state.finalRemoteTracking = OTHER_SHA),
+    ],
+    [
+      "origin config",
+      (state: RunnerState) =>
+        (state.finalFetchUrls = "https://github.com/Jameskyzx/diesel.git"),
+    ],
+    [
+      "verifier bytes",
+      (state: RunnerState) => (state.finalWorktreeScriptBlob = OTHER_SHA),
+    ],
   ])("rejects a local %s race", (_label, mutate) => {
     expectRejected(mutate, /Local release state changed/u);
   });
@@ -845,12 +933,9 @@ describe("release authorization", () => {
   });
 
   it("rejects unsafe numeric GitHub IDs", () => {
-    expectRejected(
-      (state) => {
-        state.workflow.id = Number.MAX_SAFE_INTEGER + 1;
-      },
-      /required GitHub API schema/u,
-    );
+    expectRejected((state) => {
+      state.workflow.id = Number.MAX_SAFE_INTEGER + 1;
+    }, /required GitHub API schema/u);
   });
 
   it.each([
@@ -877,23 +962,37 @@ describe("release authorization", () => {
       }),
       /not bound to the requested release commit/u,
     ],
-  ])("rejects release authorization output with %s", (_label, contents, message, expected = RELEASE_SHA) => {
-    expect(() => parseReleaseAuthorizationOutput(contents, expected)).toThrow(
-      message,
-    );
-  });
+  ])(
+    "rejects release authorization output with %s",
+    (_label, contents, message, expected = RELEASE_SHA) => {
+      expect(() => parseReleaseAuthorizationOutput(contents, expected)).toThrow(
+        message,
+      );
+    },
+  );
 });
 
 describe("release authorization CLI", () => {
   it("keeps the committed bundle byte-for-byte generated from the TypeScript source", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "diesel-release-auth-build-"));
+    const directory = await mkdtemp(
+      join(tmpdir(), "diesel-release-auth-build-"),
+    );
     temporaryDirectories.push(directory);
-    const generatedBundle = join(directory, "verify-release-authorization.bundle.mjs");
-    const generatedMetafile = join(directory, "verify-release-authorization.meta.json");
+    const generatedBundle = join(
+      directory,
+      "verify-release-authorization.bundle.mjs",
+    );
+    const generatedMetafile = join(
+      directory,
+      "verify-release-authorization.meta.json",
+    );
     const result = spawnSync(
       process.execPath,
       [
-        resolve(process.cwd(), "scripts/deploy/build-release-authorization.mjs"),
+        resolve(
+          process.cwd(),
+          "scripts/deploy/build-release-authorization.mjs",
+        ),
         `--metafile=${generatedMetafile}`,
         `--outfile=${generatedBundle}`,
       ],
@@ -950,13 +1049,18 @@ describe("release authorization CLI", () => {
   });
 
   it("rejects an inherited esbuild binary override before creating output", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "diesel-release-auth-esbuild-"));
+    const directory = await mkdtemp(
+      join(tmpdir(), "diesel-release-auth-esbuild-"),
+    );
     temporaryDirectories.push(directory);
     const generatedBundle = join(directory, "authorization.mjs");
     const result = spawnSync(
       process.execPath,
       [
-        resolve(process.cwd(), "scripts/deploy/build-release-authorization.mjs"),
+        resolve(
+          process.cwd(),
+          "scripts/deploy/build-release-authorization.mjs",
+        ),
         `--outfile=${generatedBundle}`,
       ],
       {
@@ -993,7 +1097,10 @@ describe("release authorization CLI", () => {
     const result = spawnSync(
       process.execPath,
       [
-        resolve(process.cwd(), "scripts/deploy/build-release-authorization.mjs"),
+        resolve(
+          process.cwd(),
+          "scripts/deploy/build-release-authorization.mjs",
+        ),
         ...arguments_,
       ],
       {
@@ -1055,8 +1162,7 @@ describe("release authorization CLI", () => {
           cwd: process.cwd(),
           env: {
             ...process.env,
-            NODE_OPTIONS:
-              "--import=data:text/javascript,process.exit%280%29",
+            NODE_OPTIONS: "--import=data:text/javascript,process.exit%280%29",
           },
         },
       ),
@@ -1099,10 +1205,7 @@ describe("release authorization CLI", () => {
       "scripts/deploy/verify-release-authorization.bundle.mjs",
     );
     const serialized = JSON.stringify(verify());
-    const input = serialized.padEnd(
-      MAX_AUTHORIZATION_OUTPUT_BYTES,
-      " ",
-    );
+    const input = serialized.padEnd(MAX_AUTHORIZATION_OUTPUT_BYTES, " ");
     const environment = { ...process.env };
     delete environment.NODE_OPTIONS;
 
@@ -1165,7 +1268,9 @@ describe("release authorization CLI", () => {
   });
 
   it("runs the validator from an archive-shaped committed bundle without node_modules", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "diesel-release-auth-archive-"));
+    const directory = await mkdtemp(
+      join(tmpdir(), "diesel-release-auth-archive-"),
+    );
     temporaryDirectories.push(directory);
     const sourceBundle = resolve(
       process.cwd(),
@@ -1182,11 +1287,7 @@ describe("release authorization CLI", () => {
     delete environment.NODE_OPTIONS;
     const result = spawnSync(
       process.execPath,
-      authorizationNodeArgs(
-        committedBundle,
-        "validate-output",
-        RELEASE_SHA,
-      ),
+      authorizationNodeArgs(committedBundle, "validate-output", RELEASE_SHA),
       {
         cwd: process.cwd(),
         encoding: "utf8",
@@ -1201,7 +1302,9 @@ describe("release authorization CLI", () => {
   });
 
   it("does not load a malicious archive-local zod package before validation", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "diesel-release-auth-hostile-"));
+    const directory = await mkdtemp(
+      join(tmpdir(), "diesel-release-auth-hostile-"),
+    );
     temporaryDirectories.push(directory);
     const committedBundle = join(
       directory,
@@ -1231,11 +1334,7 @@ describe("release authorization CLI", () => {
     delete environment.NODE_OPTIONS;
     const result = spawnSync(
       process.execPath,
-      authorizationNodeArgs(
-        committedBundle,
-        "validate-output",
-        RELEASE_SHA,
-      ),
+      authorizationNodeArgs(committedBundle, "validate-output", RELEASE_SHA),
       {
         cwd: directory,
         encoding: "utf8",

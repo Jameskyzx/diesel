@@ -7,7 +7,11 @@ export type PgTsQuery =
   | { kind: "and" | "or"; left: PgTsQuery; right: PgTsQuery }
   | { kind: "phrase"; left: PgTsQuery; right: PgTsQuery; distance: number };
 
-export const tsQueryLimits = { characters: 32_768, nodes: 4_096, depth: 128 } as const;
+export const tsQueryLimits = {
+  characters: 32_768,
+  nodes: 4_096,
+  depth: 128,
+} as const;
 
 class UnsupportedTsQuery extends Error {}
 
@@ -16,12 +20,21 @@ export function parsePgTsQuery(text: string): PgTsQuery | null {
   let offset = 0;
   let nodes = 0;
   const heights = new WeakMap<PgTsQuery, number>();
-  const skip = () => { while (/\s/u.test(text[offset] ?? "")) offset += 1; };
+  const skip = () => {
+    while (/\s/u.test(text[offset] ?? "")) offset += 1;
+  };
   const node = <T extends PgTsQuery>(value: T): T => {
     if (++nodes > tsQueryLimits.nodes) throw new UnsupportedTsQuery();
-    const height = value.kind === "lexeme" ? 1 : value.kind === "not"
-      ? 1 + (heights.get(value.child) ?? 0)
-      : 1 + Math.max(heights.get(value.left) ?? 0, heights.get(value.right) ?? 0);
+    const height =
+      value.kind === "lexeme"
+        ? 1
+        : value.kind === "not"
+          ? 1 + (heights.get(value.child) ?? 0)
+          : 1 +
+            Math.max(
+              heights.get(value.left) ?? 0,
+              heights.get(value.right) ?? 0,
+            );
     if (height > tsQueryLimits.depth) throw new UnsupportedTsQuery();
     heights.set(value, height);
     return value;
@@ -45,8 +58,10 @@ export function parsePgTsQuery(text: string): PgTsQuery | null {
     while (offset < text.length) {
       const character = text[offset++];
       if (character === "'") {
-        if (text[offset] === "'") { value += "'"; offset += 1; }
-        else {
+        if (text[offset] === "'") {
+          value += "'";
+          offset += 1;
+        } else {
           if (!value || value.includes("\0")) throw new UnsupportedTsQuery();
           return node({ kind: "lexeme", value });
         }
@@ -71,7 +86,8 @@ export function parsePgTsQuery(text: string): PgTsQuery | null {
         left = node({ kind: token === "|" ? "or" : "and", left, right });
       } else {
         const distance = token === "<->" ? 1 : Number(token.slice(1, -1));
-        if (!Number.isSafeInteger(distance) || distance > 16_384) throw new UnsupportedTsQuery();
+        if (!Number.isSafeInteger(distance) || distance > 16_384)
+          throw new UnsupportedTsQuery();
         left = node({ kind: "phrase", left, right, distance });
       }
     }
@@ -102,12 +118,28 @@ export function printPgTsQuery(root: PgTsQuery): string | null {
     }
     if (++nodes > tsQueryLimits.nodes) return null;
     if (item.kind === "lexeme") {
-      if (!item.value || item.value.includes("\0") || item.value.length > tsQueryLimits.characters) return null;
+      if (
+        !item.value ||
+        item.value.includes("\0") ||
+        item.value.length > tsQueryLimits.characters
+      )
+        return null;
       work.push(`'${item.value.replace(/\\/gu, "\\\\").replace(/'/gu, "''")}'`);
     } else if (item.kind === "not") work.push(")", item.child, "!(");
     else {
-      if (item.kind === "phrase" && (!Number.isSafeInteger(item.distance) || item.distance < 0 || item.distance > 16_384)) return null;
-      const operator = item.kind === "phrase" ? `<${item.distance}>` : item.kind === "and" ? "&" : "|";
+      if (
+        item.kind === "phrase" &&
+        (!Number.isSafeInteger(item.distance) ||
+          item.distance < 0 ||
+          item.distance > 16_384)
+      )
+        return null;
+      const operator =
+        item.kind === "phrase"
+          ? `<${item.distance}>`
+          : item.kind === "and"
+            ? "&"
+            : "|";
       work.push(")", item.right, ` ${operator} `, item.left, "(");
     }
   }

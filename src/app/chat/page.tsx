@@ -7,9 +7,7 @@ import { SalesChat } from "@/components/ai/sales-chat";
 import { QueryContextForm } from "@/components/countries/query-context-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { LocaleRenderReceipt } from "@/components/i18n/locale-controller";
-import {
-  parseChatUrlContext,
-} from "@/features/ai/chat-url-context";
+import { parseChatUrlContext } from "@/features/ai/chat-url-context";
 import { initialPromptForContext } from "@/features/ai/chat-context-prompt";
 import {
   isServerAiConfigured,
@@ -42,10 +40,12 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   const copy = dictionary.chatPage;
   const demoMode = isPortfolioDemoMode();
   const params = await searchParams;
-  const preparedPrompt = typeof params.prompt === "string" && params.prompt.length <= 2_000 ? params.prompt : "";
-  const { canonicalQuery, context, needsRedirect } = parseChatUrlContext(
-    params,
-  );
+  const preparedPrompt =
+    typeof params.prompt === "string" && params.prompt.length <= 2_000
+      ? params.prompt
+      : "";
+  const { canonicalQuery, context, needsRedirect } =
+    parseChatUrlContext(params);
   if (needsRedirect) {
     redirect(canonicalQuery ? `/chat?${canonicalQuery}` : "/chat");
   }
@@ -58,25 +58,81 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   return (
     <main className="page-shell py-6">
       <LocaleRenderReceipt locale={locale} />
-      <PageHeader kicker={copy.kicker} title={copy.heading} description={copy.description} actions={<>
-          <Link className={cn(buttonVariants({ variant: "outline" }), "h-10 gap-2 bg-card")} href="/map"><Map aria-hidden="true" className="size-4" />{copy.mapFirst}</Link>
-          <Link className={cn(buttonVariants(), "h-10 gap-2")} href="/countries/CHN"><FileCheck2 aria-hidden="true" className="size-4" />{copy.exampleCountry}</Link>
-      </>} />
+      <PageHeader
+        kicker={copy.kicker}
+        title={copy.heading}
+        description={copy.description}
+        actions={
+          <>
+            <Link
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-10 gap-2 bg-card",
+              )}
+              href="/map"
+            >
+              <Map aria-hidden="true" className="size-4" />
+              {copy.mapFirst}
+            </Link>
+            <Link
+              className={cn(buttonVariants(), "h-10 gap-2")}
+              href="/countries/CHN"
+            >
+              <FileCheck2 aria-hidden="true" className="size-4" />
+              {copy.exampleCountry}
+            </Link>
+          </>
+        }
+      />
 
-      <section className="chat-workbench grid min-h-0 gap-5 xl:grid-cols-[17rem_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)]" data-testid="chat-workbench">
-        <aside className="surface-panel min-h-0 self-start overflow-hidden rounded-md xl:max-h-full xl:overflow-y-auto" data-testid="chat-query-context">
-          <div className="workspace-card-header"><h2 className="flex items-center gap-2 text-sm font-semibold"><SlidersHorizontal aria-hidden="true" className="size-4 text-primary" />{dictionary.workspace.queryContext}</h2></div>
+      <section
+        className="chat-workbench grid min-h-0 gap-5 xl:grid-cols-[17rem_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)]"
+        data-testid="chat-workbench"
+      >
+        <aside
+          className="surface-panel min-h-0 self-start overflow-hidden rounded-md xl:max-h-full xl:overflow-y-auto"
+          data-testid="chat-query-context"
+        >
+          <div className="workspace-card-header">
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <SlidersHorizontal
+                aria-hidden="true"
+                className="size-4 text-primary"
+              />
+              {dictionary.workspace.queryContext}
+            </h2>
+          </div>
           <div className="p-5">
             <p className="text-xs leading-5 text-muted-foreground">
-              {[context.countryIso3, context.applicationScope ? applicationScopeLabel(context.applicationScope, dictionary) : null, context.powerKw !== undefined ? `${context.powerKw} kW` : null, context.asOf ? formatUtcDate(context.asOf, locale) : null, context.productModelCode].filter(Boolean).join(" · ") || dictionary.workspace.noContext}
+              {[
+                context.countryIso3,
+                context.applicationScope
+                  ? applicationScopeLabel(context.applicationScope, dictionary)
+                  : null,
+                context.powerKw !== undefined ? `${context.powerKw} kW` : null,
+                context.asOf ? formatUtcDate(context.asOf, locale) : null,
+                context.productModelCode,
+              ]
+                .filter(Boolean)
+                .join(" · ") || dictionary.workspace.noContext}
             </p>
             <details className="mt-3" key={canonicalQuery}>
-              <summary className="cursor-pointer text-sm font-semibold text-primary">{dictionary.queryEditor.editConditions}</summary>
-              <div className="mt-3"><QueryContextForm context={context} countries={getCountryDirectory()} mode="chat" /></div>
+              <summary className="cursor-pointer text-sm font-semibold text-primary">
+                {dictionary.queryEditor.editConditions}
+              </summary>
+              <div className="mt-3">
+                <QueryContextForm
+                  context={context}
+                  countries={getCountryDirectory()}
+                  mode="chat"
+                />
+              </div>
             </details>
           </div>
           <div className="border-t bg-muted/30 p-5">
-            <p className="text-xs leading-5 text-muted-foreground">{copy.sidebarFoot}</p>
+            <p className="text-xs leading-5 text-muted-foreground">
+              {copy.sidebarFoot}
+            </p>
           </div>
         </aside>
         <SalesChat
@@ -86,7 +142,9 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
           countryIso2ByIso3={countryIso2ByIso3}
           demoMode={demoMode}
           imageUploadsEnabled={isServerMultimodalAiConfigured()}
-          initialPrompt={preparedPrompt || initialPromptForContext(context, locale)}
+          initialPrompt={
+            preparedPrompt || initialPromptForContext(context, locale)
+          }
           selectedCountryIso3={context.countryIso3 ?? null}
           suggestedPrompts={conversationStarters}
         />

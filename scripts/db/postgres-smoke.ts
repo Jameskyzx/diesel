@@ -44,7 +44,10 @@ const definitionRowsSchema = z
 async function main(): Promise<void> {
   const journal = journalSchema.parse(
     JSON.parse(
-      await readFile(resolve(process.cwd(), "drizzle/meta/_journal.json"), "utf8"),
+      await readFile(
+        resolve(process.cwd(), "drizzle/meta/_journal.json"),
+        "utf8",
+      ),
     ),
   );
   const client = postgres(getDatabaseUrl(), { max: 1, prepare: false });
@@ -66,7 +69,9 @@ async function main(): Promise<void> {
       `,
     );
     const actualTables = new Set(tableRows.map(({ name }) => name));
-    const missingTables = expectedTables.filter((name) => !actualTables.has(name));
+    const missingTables = expectedTables.filter(
+      (name) => !actualTables.has(name),
+    );
     if (missingTables.length > 0) {
       throw new Error(`missing migrated tables: ${missingTables.join(", ")}`);
     }
@@ -80,16 +85,16 @@ async function main(): Promise<void> {
       );
     }
 
-    const [{ definition: productPowerConstraint }] =
-      definitionRowsSchema.parse(
-        await client`
+    const [{ definition: productPowerConstraint }] = definitionRowsSchema.parse(
+      await client`
           select pg_get_constraintdef(oid) as definition
           from pg_constraint
           where conname = 'products_power_check'
         `,
-      );
-    const normalizedProductConstraint =
-      normalizePostgresConstraintDefinition(productPowerConstraint);
+    );
+    const normalizedProductConstraint = normalizePostgresConstraintDefinition(
+      productPowerConstraint,
+    );
     if (
       !normalizedProductConstraint.includes("archived_atisnotnull") ||
       !normalizedProductConstraint.includes("power_min_kw>=0") ||
@@ -99,14 +104,13 @@ async function main(): Promise<void> {
       throw new Error("latest product power constraint was not applied");
     }
 
-    const [{ definition: membershipPrimaryKey }] =
-      definitionRowsSchema.parse(
-        await client`
+    const [{ definition: membershipPrimaryKey }] = definitionRowsSchema.parse(
+      await client`
           select pg_get_constraintdef(oid) as definition
           from pg_constraint
           where conname = 'country_jurisdictions_pk'
         `,
-      );
+    );
     const normalizedMembershipPrimaryKey =
       normalizePostgresConstraintDefinition(membershipPrimaryKey);
     if (
@@ -116,14 +120,13 @@ async function main(): Promise<void> {
       throw new Error("latest temporal membership primary key was not applied");
     }
 
-    const [{ definition: membershipExclusion }] =
-      definitionRowsSchema.parse(
-        await client`
+    const [{ definition: membershipExclusion }] = definitionRowsSchema.parse(
+      await client`
           select pg_get_constraintdef(oid) as definition
           from pg_constraint
           where conname = 'country_jurisdictions_no_active_overlap'
         `,
-      );
+    );
     const normalizedMembershipExclusion =
       normalizePostgresConstraintDefinition(membershipExclusion);
     if (
@@ -186,7 +189,9 @@ async function main(): Promise<void> {
       }
     }
     if (!overlapRejected) {
-      throw new Error("active membership overlap exclusion accepted a conflict");
+      throw new Error(
+        "active membership overlap exclusion accepted a conflict",
+      );
     }
 
     process.stdout.write(

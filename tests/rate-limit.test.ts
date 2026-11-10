@@ -99,10 +99,7 @@ describe("createRateLimiter fixed-window decisions", () => {
     const windowStart = Math.floor(t0 / windowMs) * windowMs;
 
     await limiter.check("client-a", windowStart + 45_000);
-    const rejected = await limiter.check(
-      "client-a",
-      windowStart + 45_000,
-    );
+    const rejected = await limiter.check("client-a", windowStart + 45_000);
 
     expect(rejected.allowed).toBe(false);
     expect(rejected.retryAfterSeconds).toBe(15);
@@ -130,16 +127,17 @@ describe("extractClientIdentifier", () => {
 
   it("falls back to a shared bucket without the header", () => {
     expect(extractClientIdentifier(new Headers())).toBe("unknown-client");
-    expect(extractClientIdentifier(new Headers({ "x-forwarded-for": "  " })))
-      .toBe("unknown-client");
+    expect(
+      extractClientIdentifier(new Headers({ "x-forwarded-for": "  " })),
+    ).toBe("unknown-client");
   });
 });
 
 describe("resolveAiChatRateLimitBackend", () => {
   it("uses shared PostgreSQL in production even when the setting is omitted", () => {
-    expect(
-      resolveAiChatRateLimitBackend({ nodeEnv: "production" }),
-    ).toBe("postgres");
+    expect(resolveAiChatRateLimitBackend({ nodeEnv: "production" })).toBe(
+      "postgres",
+    );
   });
 
   it("rejects an explicit in-memory production backend", () => {
@@ -152,23 +150,21 @@ describe("resolveAiChatRateLimitBackend", () => {
   });
 
   it("keeps memory available for local development and tests", () => {
-    expect(
-      resolveAiChatRateLimitBackend({ nodeEnv: "development" }),
-    ).toBe("memory");
-    expect(resolveAiChatRateLimitBackend({ nodeEnv: "test" })).toBe(
+    expect(resolveAiChatRateLimitBackend({ nodeEnv: "development" })).toBe(
       "memory",
     );
+    expect(resolveAiChatRateLimitBackend({ nodeEnv: "test" })).toBe("memory");
   });
 });
 
 describe("resolveAiChatRateLimitConfig", () => {
   it("uses the compatibility global ceiling when it is omitted", () => {
-    expect(
-      resolveAiChatRateLimitConfig({ perClientLimitPerHour: 30 }),
-    ).toEqual({
-      globalLimitPerHour: AI_CHAT_RATE_LIMIT_GLOBAL_DEFAULT_PER_HOUR,
-      perClientLimitPerHour: 30,
-    });
+    expect(resolveAiChatRateLimitConfig({ perClientLimitPerHour: 30 })).toEqual(
+      {
+        globalLimitPerHour: AI_CHAT_RATE_LIMIT_GLOBAL_DEFAULT_PER_HOUR,
+        perClientLimitPerHour: 30,
+      },
+    );
   });
 
   it("rejects a per-client limit above the global limit", () => {
@@ -235,13 +231,17 @@ describe("PostgreSQL rate-limit retention scheduling", () => {
     const firstLimiter = createPostgresRateLimiter(limiterOptions);
     const secondLimiter = createPostgresRateLimiter(limiterOptions);
 
-    await expect(firstLimiter.check("client-a", 1_700_000_000_000)).resolves
-      .toMatchObject({ allowed: true, remaining: 29 });
-    await vi.waitFor(() => expect(cleanupExpiredBuckets).toHaveBeenCalledTimes(1));
+    await expect(
+      firstLimiter.check("client-a", 1_700_000_000_000),
+    ).resolves.toMatchObject({ allowed: true, remaining: 29 });
+    await vi.waitFor(() =>
+      expect(cleanupExpiredBuckets).toHaveBeenCalledTimes(1),
+    );
 
     // An unresolved cleanup cannot retain or change either request decision.
-    await expect(secondLimiter.check("client-b", 1_700_000_000_001)).resolves
-      .toMatchObject({ allowed: true, remaining: 29 });
+    await expect(
+      secondLimiter.check("client-b", 1_700_000_000_001),
+    ).resolves.toMatchObject({ allowed: true, remaining: 29 });
     expect(cleanupExpiredBuckets).toHaveBeenCalledTimes(1);
 
     firstCleanup.resolve();
@@ -287,8 +287,9 @@ describe("PostgreSQL rate-limit retention scheduling", () => {
     });
 
     try {
-      await expect(limiter.check("client-a", 1_700_000_000_000)).resolves
-        .toMatchObject({ allowed: true, remaining: 29 });
+      await expect(
+        limiter.check("client-a", 1_700_000_000_000),
+      ).resolves.toMatchObject({ allowed: true, remaining: 29 });
       await vi.waitFor(() =>
         expect(consoleError).toHaveBeenCalledWith(
           "Shared rate-limit bucket cleanup failed",
@@ -332,8 +333,9 @@ describe("PostgreSQL rate-limit retention scheduling", () => {
     });
 
     try {
-      await expect(limiter.check("client-a", 1_700_000_000_000)).resolves
-        .toMatchObject({ allowed: true, remaining: 29 });
+      await expect(
+        limiter.check("client-a", 1_700_000_000_000),
+      ).resolves.toMatchObject({ allowed: true, remaining: 29 });
       expect(consoleError).toHaveBeenCalledWith(
         "Shared rate-limit bucket cleanup failed",
         { errorCode: "Error" },

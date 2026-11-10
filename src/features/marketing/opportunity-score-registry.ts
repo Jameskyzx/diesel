@@ -1,9 +1,6 @@
 export const opportunityMetricDirections = {
   DEMO_ADDRESSABLE_UNITS: "higher_is_better",
-} as const satisfies Record<
-  string,
-  "higher_is_better" | "lower_is_better"
->;
+} as const satisfies Record<string, "higher_is_better" | "lower_is_better">;
 
 export function opportunityMetricDirection(
   metricCode: string,

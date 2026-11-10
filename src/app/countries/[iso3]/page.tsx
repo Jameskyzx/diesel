@@ -132,12 +132,16 @@ export default async function CountryPage({
   const operation = await runPublicDataRenderOperation({
     headers: await headers(),
     route: COUNTRY_PAGE_DATA_ROUTE,
-    work: (signal) => loadCountryPageData({
-      applicationScope: filters.applicationScope,
-      asOf: filters.asOf,
-      iso3: parsed.data,
-      powerKw: filters.powerKw,
-    }, signal),
+    work: (signal) =>
+      loadCountryPageData(
+        {
+          applicationScope: filters.applicationScope,
+          asOf: filters.asOf,
+          iso3: parsed.data,
+          powerKw: filters.powerKw,
+        },
+        signal,
+      ),
   });
   if (operation.status !== "fulfilled") {
     console.error("Country page data request failed", {

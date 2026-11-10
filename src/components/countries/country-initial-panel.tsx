@@ -10,10 +10,7 @@ import type { Dictionary } from "@/i18n/dictionaries";
 import { formatCountryDisplayName } from "@/i18n/country-name";
 import { formatOptionalUtcDate, formatUtcDate } from "@/i18n/date";
 import type { Locale } from "@/i18n/locale";
-import {
-  nameWithCode,
-  regulationDisplayName,
-} from "@/i18n/structured-labels";
+import { nameWithCode, regulationDisplayName } from "@/i18n/structured-labels";
 
 export function CountryInitialPanel({
   countryDirectoryEntry,
@@ -57,13 +54,12 @@ export function CountryInitialPanel({
             ),
             detail.iso3,
             locale,
-          )}{dictionary.common.wordSeparator}
+          )}
+          {dictionary.common.wordSeparator}
           {copy.noDataSuffix}
         </h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          {hasGeometry
-            ? copy.geometryNoData
-            : copy.missingGeometryNoData}
+          {hasGeometry ? copy.geometryNoData : copy.missingGeometryNoData}
         </p>
       </div>
     );
@@ -109,26 +105,32 @@ export function CountryInitialPanel({
       <section>
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <FileCheck2 aria-hidden="true" className="size-4 text-primary" />
-          {copy.currentRegulations} ({country.currentEffectiveRegulations.length})
+          {copy.currentRegulations} (
+          {country.currentEffectiveRegulations.length})
         </h3>
         {country.currentEffectiveRegulations.length > 0 ? (
           <ul className="mt-2 space-y-2">
-            {country.currentEffectiveRegulations.slice(0, 4).map((regulation) => (
-              <li className="rounded-xl border p-3 text-sm" key={regulation.id}>
-                <p className="font-semibold">
-                  {regulationDisplayName(regulation, dictionary, locale)}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {regulation.citationCode ?? copy.citationMissing} ·{" "}
-                  {copy.effectiveDate}{" "}
-                  {formatOptionalUtcDate(
-                    regulation.effectiveFrom,
-                    locale,
-                    dictionary.common.notRecorded,
-                  )}
-                </p>
-              </li>
-            ))}
+            {country.currentEffectiveRegulations
+              .slice(0, 4)
+              .map((regulation) => (
+                <li
+                  className="rounded-xl border p-3 text-sm"
+                  key={regulation.id}
+                >
+                  <p className="font-semibold">
+                    {regulationDisplayName(regulation, dictionary, locale)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {regulation.citationCode ?? copy.citationMissing} ·{" "}
+                    {copy.effectiveDate}{" "}
+                    {formatOptionalUtcDate(
+                      regulation.effectiveFrom,
+                      locale,
+                      dictionary.common.notRecorded,
+                    )}
+                  </p>
+                </li>
+              ))}
           </ul>
         ) : (
           <p className="mt-2 rounded-xl border border-dashed p-3 text-sm text-muted-foreground">

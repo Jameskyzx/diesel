@@ -105,9 +105,7 @@ describe("POST /api/dev/knowledge/documents", () => {
       new Request("http://localhost/api/dev/knowledge/documents", {
         body: "x",
         headers: {
-          "content-length": String(
-            MAX_KNOWLEDGE_IMPORT_REQUEST_BYTES + 1,
-          ),
+          "content-length": String(MAX_KNOWLEDGE_IMPORT_REQUEST_BYTES + 1),
           "content-type": "multipart/form-data; boundary=oversized",
         },
         method: "POST",

@@ -4,7 +4,8 @@ import { applicationDataTables } from "../deploy/application-release-contract";
 /** Only fixed governed tables; raw row/document values never leave PostgreSQL. */
 export function applicationFingerprintQuery(tableValue: unknown): string {
   const table = z.enum(applicationDataTables).parse(tableValue);
-  const qualified = table === "drizzle.__drizzle_migrations" ? table : `public.${table}`;
+  const qualified =
+    table === "drizzle.__drizzle_migrations" ? table : `public.${table}`;
   // The 100001st row is retained so the report schema rejects an oversized
   // relation, rather than certifying a truncated 100000-row fingerprint.
   return `select count(*)::integer as count,

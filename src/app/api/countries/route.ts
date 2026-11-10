@@ -38,9 +38,7 @@ export async function GET(request: Request) {
       );
     }
 
-    return observer.finish(
-      NextResponse.json(operation.value),
-    );
+    return observer.finish(NextResponse.json(operation.value));
   } catch (error) {
     console.error("Country summary request failed", {
       errorCode: getErrorCode(error),

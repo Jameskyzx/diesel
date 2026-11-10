@@ -73,7 +73,9 @@ async function withScenario(
   );
   const binary = join(workspace, "fake-gitleaks");
   const fixture: Fixture = {
-    binary: scenario.missingBinary ? join(workspace, "missing-gitleaks") : binary,
+    binary: scenario.missingBinary
+      ? join(workspace, "missing-gitleaks")
+      : binary,
     callsPath: join(workspace, "calls.jsonl"),
     workspace,
   };
@@ -84,20 +86,23 @@ async function withScenario(
         join(workspace, ".gitleaks.toml"),
         "[extend]\nuseDefault = true\n",
       ),
-      writeFile(join(workspace, "scenario.json"), JSON.stringify({
-        history: {
-          exitCode: 0,
-          reportText: "[]\n",
-          stderr: cleanHistoryLog,
-          ...scenario.history,
-        },
-        canary: {
-          exitCode: 97,
-          reportText: JSON.stringify([canaryFinding]),
-          stderr: `${completedLog}12:00PM WRN leaks found: 1\n`,
-          ...scenario.canary,
-        },
-      })),
+      writeFile(
+        join(workspace, "scenario.json"),
+        JSON.stringify({
+          history: {
+            exitCode: 0,
+            reportText: "[]\n",
+            stderr: cleanHistoryLog,
+            ...scenario.history,
+          },
+          canary: {
+            exitCode: 97,
+            reportText: JSON.stringify([canaryFinding]),
+            stderr: `${completedLog}12:00PM WRN leaks found: 1\n`,
+            ...scenario.canary,
+          },
+        }),
+      ),
     ]);
     await run(fixture);
   } finally {
@@ -142,14 +147,18 @@ describe("CI gitleaks scan completion and canary evidence", () => {
         .split("\n")
         .map((line) => JSON.parse(line) as unknown);
       expect(calls).toHaveLength(2);
-      expect(calls).toEqual(expect.arrayContaining([
-        expect.objectContaining({ kind: "history" }),
-        expect.objectContaining({ kind: "canary" }),
-      ]));
+      expect(calls).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ kind: "history" }),
+          expect.objectContaining({ kind: "canary" }),
+        ]),
+      );
       for (const call of calls) {
         if (
-          typeof call !== "object" || call === null ||
-          !("args" in call) || !Array.isArray(call.args) ||
+          typeof call !== "object" ||
+          call === null ||
+          !("args" in call) ||
+          !Array.isArray(call.args) ||
           !call.args.every((arg: unknown) => typeof arg === "string") ||
           !("kind" in call)
         ) {
@@ -157,8 +166,9 @@ describe("CI gitleaks scan completion and canary evidence", () => {
         }
         const args = call.args as string[];
         expect(args[args.indexOf("--exit-code") + 1]).toBe("97");
-        expect(basename(args[args.indexOf("--config") + 1] ?? ""))
-          .toBe(".gitleaks.toml");
+        expect(basename(args[args.indexOf("--config") + 1] ?? "")).toBe(
+          ".gitleaks.toml",
+        );
         expect(args[args.indexOf("--report-format") + 1]).toBe("json");
         expect(args).toContain("--no-color");
         expect(args).toContain("--no-banner");
@@ -234,10 +244,12 @@ describe("CI gitleaks scan completion and canary evidence", () => {
     {
       name: "nonempty findings despite exit zero",
       history: {
-        reportText: JSON.stringify([{
-          ...canaryFinding,
-          Secret: privateOutputMarker,
-        }]),
+        reportText: JSON.stringify([
+          {
+            ...canaryFinding,
+            Secret: privateOutputMarker,
+          },
+        ]),
       },
     },
     {
@@ -262,7 +274,9 @@ describe("CI gitleaks scan completion and canary evidence", () => {
     {
       name: "the wrong rule",
       canary: {
-        reportText: JSON.stringify([{ ...canaryFinding, RuleID: "other-rule" }]),
+        reportText: JSON.stringify([
+          { ...canaryFinding, RuleID: "other-rule" },
+        ]),
       },
     },
     {
@@ -284,10 +298,12 @@ describe("CI gitleaks scan completion and canary evidence", () => {
     {
       name: "an unredacted token",
       canary: {
-        reportText: JSON.stringify([{
-          ...canaryFinding,
-          Secret: privateOutputMarker,
-        }]),
+        reportText: JSON.stringify([
+          {
+            ...canaryFinding,
+            Secret: privateOutputMarker,
+          },
+        ]),
       },
     },
   ])("rejects canary evidence with $name", async ({ canary }) => {
@@ -314,12 +330,10 @@ describe("CI gitleaks scan completion and canary evidence", () => {
   it.each([
     { canary: false, label: "history", timeout: 450 },
     { canary: true, label: "canary", timeout: 30 },
-  ])("handles the fixed $label timeout without exposing partial output", ({
-    canary,
-    label,
-    timeout,
-  }) => {
-    const probe = `
+  ])(
+    "handles the fixed $label timeout without exposing partial output",
+    ({ canary, label, timeout }) => {
+      const probe = `
 from pathlib import Path
 import runpy
 import subprocess
@@ -348,23 +362,38 @@ with mock.patch("subprocess.run", side_effect=failure) as child:
     else:
         raise AssertionError("Scanner timeout did not fail closed")
 `;
-    const result = spawnSync(
-      "/usr/bin/python3",
-      ["-I", "-S", "-c", probe, wrapperPath, privateOutputMarker,
-        String(canary), String(timeout), label],
-      {
-        encoding: "utf8",
-        env: { NODE_ENV: "test", LANG: "C", LC_ALL: "C", PATH: "/usr/bin:/bin" },
-        maxBuffer: 64 * 1024,
-        timeout: 5_000,
-      },
-    );
-    expect(result.error).toBeUndefined();
-    expect(result.signal).toBeNull();
-    expect(result.status).toBe(0);
-    expect(result.stdout.trim()).toBe(`${label} scan timed out`);
-    expect(result.stderr).not.toContain(privateOutputMarker);
-    expect(result.stderr).not.toContain("Traceback (most recent call last)");
-    expect(result.stdout).not.toContain(privateOutputMarker);
-  });
+      const result = spawnSync(
+        "/usr/bin/python3",
+        [
+          "-I",
+          "-S",
+          "-c",
+          probe,
+          wrapperPath,
+          privateOutputMarker,
+          String(canary),
+          String(timeout),
+          label,
+        ],
+        {
+          encoding: "utf8",
+          env: {
+            NODE_ENV: "test",
+            LANG: "C",
+            LC_ALL: "C",
+            PATH: "/usr/bin:/bin",
+          },
+          maxBuffer: 64 * 1024,
+          timeout: 5_000,
+        },
+      );
+      expect(result.error).toBeUndefined();
+      expect(result.signal).toBeNull();
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe(`${label} scan timed out`);
+      expect(result.stderr).not.toContain(privateOutputMarker);
+      expect(result.stderr).not.toContain("Traceback (most recent call last)");
+      expect(result.stdout).not.toContain(privateOutputMarker);
+    },
+  );
 });

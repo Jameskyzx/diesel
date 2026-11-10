@@ -319,9 +319,7 @@ const recordTimestamps = {
   updatedAt: signoffTimestamp,
   verifiedAt: signoffTimestamp,
 } as const;
-const chinaNonroadVerificationTimestamp = new Date(
-  "2026-08-11T04:38:07.000Z",
-);
+const chinaNonroadVerificationTimestamp = new Date("2026-08-11T04:38:07.000Z");
 const chinaNonroadRecordTimestamps = {
   ...recordTimestamps,
   updatedAt: chinaNonroadVerificationTimestamp,
@@ -334,9 +332,7 @@ const p8RecordTimestamps = {
   updatedAt: p8VerificationTimestamp,
   verifiedAt: p8VerificationTimestamp,
 } as const;
-const euMembershipVerificationTimestamp = new Date(
-  "2026-08-11T04:27:59.000Z",
-);
+const euMembershipVerificationTimestamp = new Date("2026-08-11T04:27:59.000Z");
 const euMembershipRecordTimestamps = {
   createdAt: euMembershipVerificationTimestamp,
   updatedAt: euMembershipVerificationTimestamp,
@@ -378,9 +374,7 @@ const canadaRecordTimestamps = {
   updatedAt: canadaVerificationTimestamp,
   verifiedAt: canadaVerificationTimestamp,
 } as const;
-const unitedStatesVerificationTimestamp = new Date(
-  "2026-08-11T05:21:45.000Z",
-);
+const unitedStatesVerificationTimestamp = new Date("2026-08-11T05:21:45.000Z");
 const unitedStatesRecordTimestamps = {
   createdAt: unitedStatesVerificationTimestamp,
   updatedAt: unitedStatesVerificationTimestamp,
@@ -434,9 +428,7 @@ const malaysiaRecordTimestamps = {
   updatedAt: malaysiaVerificationTimestamp,
   verifiedAt: malaysiaVerificationTimestamp,
 } as const;
-const saudiArabiaVerificationTimestamp = new Date(
-  "2026-08-10T16:12:30.000Z",
-);
+const saudiArabiaVerificationTimestamp = new Date("2026-08-10T16:12:30.000Z");
 const saudiArabiaRecordTimestamps = {
   createdAt: saudiArabiaVerificationTimestamp,
   updatedAt: saudiArabiaVerificationTimestamp,
@@ -591,9 +583,7 @@ const georgiaRecordTimestamps = {
   updatedAt: georgiaVerificationTimestamp,
   verifiedAt: georgiaVerificationTimestamp,
 } as const;
-const centralAsiaVerificationTimestamp = new Date(
-  "2026-08-10T13:40:00.000Z",
-);
+const centralAsiaVerificationTimestamp = new Date("2026-08-10T13:40:00.000Z");
 const centralAsiaRecordTimestamps = {
   createdAt: centralAsiaVerificationTimestamp,
   updatedAt: centralAsiaVerificationTimestamp,
@@ -712,7 +702,8 @@ const nigeriaRecordTimestamps = {
   updatedAt: nigeriaVerificationTimestamp,
   verifiedAt: nigeriaVerificationTimestamp,
 } as const;
-const nigeriaRegulationVerificationTimestamp = africaDeepReviewVerificationTimestamp;
+const nigeriaRegulationVerificationTimestamp =
+  africaDeepReviewVerificationTimestamp;
 const nigeriaRegulationRecordTimestamps = {
   createdAt: nigeriaRegulationVerificationTimestamp,
   updatedAt: nigeriaRegulationVerificationTimestamp,
@@ -941,22 +932,34 @@ const lesothoRecordTimestamps = {
   verifiedAt: lesothoVerificationTimestamp,
 } as const;
 const madagascarVerificationTimestamp = mozLsoMdgMusFjiSourceRefreshTimestamp;
-const madagascarRecordTimestamps = { createdAt: madagascarVerificationTimestamp, updatedAt: madagascarVerificationTimestamp, verifiedAt: madagascarVerificationTimestamp } as const;
+const madagascarRecordTimestamps = {
+  createdAt: madagascarVerificationTimestamp,
+  updatedAt: madagascarVerificationTimestamp,
+  verifiedAt: madagascarVerificationTimestamp,
+} as const;
 const mauritiusVerificationTimestamp = mozLsoMdgMusFjiSourceRefreshTimestamp;
-const mauritiusRecordTimestamps = { createdAt: mauritiusVerificationTimestamp, updatedAt: mauritiusVerificationTimestamp, verifiedAt: mauritiusVerificationTimestamp } as const;
+const mauritiusRecordTimestamps = {
+  createdAt: mauritiusVerificationTimestamp,
+  updatedAt: mauritiusVerificationTimestamp,
+  verifiedAt: mauritiusVerificationTimestamp,
+} as const;
 const twelveCountrySourceOnlyRefreshTimestamp = new Date(
   "2026-08-10T23:08:11.000Z",
 );
 const malawiVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const malawiRecordTimestamps = { createdAt: malawiVerificationTimestamp, updatedAt: malawiVerificationTimestamp, verifiedAt: malawiVerificationTimestamp } as const;
+const malawiRecordTimestamps = {
+  createdAt: malawiVerificationTimestamp,
+  updatedAt: malawiVerificationTimestamp,
+  verifiedAt: malawiVerificationTimestamp,
+} as const;
 const fijiVerificationTimestamp = mozLsoMdgMusFjiSourceRefreshTimestamp;
-const fijiRecordTimestamps = { createdAt: fijiVerificationTimestamp, updatedAt: fijiVerificationTimestamp, verifiedAt: fijiVerificationTimestamp } as const;
-const caribbeanSourceRefreshTimestamp = new Date(
-  "2026-08-10T19:36:45.000Z",
-);
-const africaSourceRefreshTimestamp = new Date(
-  "2026-08-10T19:46:12.000Z",
-);
+const fijiRecordTimestamps = {
+  createdAt: fijiVerificationTimestamp,
+  updatedAt: fijiVerificationTimestamp,
+  verifiedAt: fijiVerificationTimestamp,
+} as const;
+const caribbeanSourceRefreshTimestamp = new Date("2026-08-10T19:36:45.000Z");
+const africaSourceRefreshTimestamp = new Date("2026-08-10T19:46:12.000Z");
 const prkPseSdnPriNclSourceRefreshTimestamp = new Date(
   "2026-08-10T20:20:37.000Z",
 );
@@ -967,113 +970,342 @@ const cafCodCogGinDjiSourceRefreshTimestamp = new Date(
   "2026-08-10T21:00:43.000Z",
 );
 const belizeVerificationTimestamp = caribbeanSourceRefreshTimestamp;
-const belizeRecordTimestamps = { createdAt: belizeVerificationTimestamp, updatedAt: belizeVerificationTimestamp, verifiedAt: belizeVerificationTimestamp } as const;
+const belizeRecordTimestamps = {
+  createdAt: belizeVerificationTimestamp,
+  updatedAt: belizeVerificationTimestamp,
+  verifiedAt: belizeVerificationTimestamp,
+} as const;
 const bruneiVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const bruneiRecordTimestamps = { createdAt: bruneiVerificationTimestamp, updatedAt: bruneiVerificationTimestamp, verifiedAt: bruneiVerificationTimestamp } as const;
+const bruneiRecordTimestamps = {
+  createdAt: bruneiVerificationTimestamp,
+  updatedAt: bruneiVerificationTimestamp,
+  verifiedAt: bruneiVerificationTimestamp,
+} as const;
 const bhutanVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const bhutanRecordTimestamps = { createdAt: bhutanVerificationTimestamp, updatedAt: bhutanVerificationTimestamp, verifiedAt: bhutanVerificationTimestamp } as const;
-const centralAfricanRepublicVerificationTimestamp = cafCodCogGinDjiSourceRefreshTimestamp;
-const centralAfricanRepublicRecordTimestamps = { createdAt: centralAfricanRepublicVerificationTimestamp, updatedAt: centralAfricanRepublicVerificationTimestamp, verifiedAt: centralAfricanRepublicVerificationTimestamp } as const;
-const democraticRepublicOfCongoVerificationTimestamp = cafCodCogGinDjiSourceRefreshTimestamp;
-const democraticRepublicOfCongoRecordTimestamps = { createdAt: democraticRepublicOfCongoVerificationTimestamp, updatedAt: democraticRepublicOfCongoVerificationTimestamp, verifiedAt: democraticRepublicOfCongoVerificationTimestamp } as const;
-const republicOfCongoVerificationTimestamp = cafCodCogGinDjiSourceRefreshTimestamp;
-const republicOfCongoRecordTimestamps = { createdAt: republicOfCongoVerificationTimestamp, updatedAt: republicOfCongoVerificationTimestamp, verifiedAt: republicOfCongoVerificationTimestamp } as const;
+const bhutanRecordTimestamps = {
+  createdAt: bhutanVerificationTimestamp,
+  updatedAt: bhutanVerificationTimestamp,
+  verifiedAt: bhutanVerificationTimestamp,
+} as const;
+const centralAfricanRepublicVerificationTimestamp =
+  cafCodCogGinDjiSourceRefreshTimestamp;
+const centralAfricanRepublicRecordTimestamps = {
+  createdAt: centralAfricanRepublicVerificationTimestamp,
+  updatedAt: centralAfricanRepublicVerificationTimestamp,
+  verifiedAt: centralAfricanRepublicVerificationTimestamp,
+} as const;
+const democraticRepublicOfCongoVerificationTimestamp =
+  cafCodCogGinDjiSourceRefreshTimestamp;
+const democraticRepublicOfCongoRecordTimestamps = {
+  createdAt: democraticRepublicOfCongoVerificationTimestamp,
+  updatedAt: democraticRepublicOfCongoVerificationTimestamp,
+  verifiedAt: democraticRepublicOfCongoVerificationTimestamp,
+} as const;
+const republicOfCongoVerificationTimestamp =
+  cafCodCogGinDjiSourceRefreshTimestamp;
+const republicOfCongoRecordTimestamps = {
+  createdAt: republicOfCongoVerificationTimestamp,
+  updatedAt: republicOfCongoVerificationTimestamp,
+  verifiedAt: republicOfCongoVerificationTimestamp,
+} as const;
 const cubaVerificationTimestamp = caribbeanSourceRefreshTimestamp;
-const cubaRecordTimestamps = { createdAt: cubaVerificationTimestamp, updatedAt: cubaVerificationTimestamp, verifiedAt: cubaVerificationTimestamp } as const;
+const cubaRecordTimestamps = {
+  createdAt: cubaVerificationTimestamp,
+  updatedAt: cubaVerificationTimestamp,
+  verifiedAt: cubaVerificationTimestamp,
+} as const;
 const djiboutiVerificationTimestamp = cafCodCogGinDjiSourceRefreshTimestamp;
-const djiboutiRecordTimestamps = { createdAt: djiboutiVerificationTimestamp, updatedAt: djiboutiVerificationTimestamp, verifiedAt: djiboutiVerificationTimestamp } as const;
+const djiboutiRecordTimestamps = {
+  createdAt: djiboutiVerificationTimestamp,
+  updatedAt: djiboutiVerificationTimestamp,
+  verifiedAt: djiboutiVerificationTimestamp,
+} as const;
 const eritreaVerificationTimestamp = eriGabGmbGnbGnqSourceRefreshTimestamp;
-const eritreaRecordTimestamps = { createdAt: eritreaVerificationTimestamp, updatedAt: eritreaVerificationTimestamp, verifiedAt: eritreaVerificationTimestamp } as const;
+const eritreaRecordTimestamps = {
+  createdAt: eritreaVerificationTimestamp,
+  updatedAt: eritreaVerificationTimestamp,
+  verifiedAt: eritreaVerificationTimestamp,
+} as const;
 const gabonVerificationTimestamp = eriGabGmbGnbGnqSourceRefreshTimestamp;
-const gabonRecordTimestamps = { createdAt: gabonVerificationTimestamp, updatedAt: gabonVerificationTimestamp, verifiedAt: gabonVerificationTimestamp } as const;
+const gabonRecordTimestamps = {
+  createdAt: gabonVerificationTimestamp,
+  updatedAt: gabonVerificationTimestamp,
+  verifiedAt: gabonVerificationTimestamp,
+} as const;
 const guineaVerificationTimestamp = cafCodCogGinDjiSourceRefreshTimestamp;
-const guineaRecordTimestamps = { createdAt: guineaVerificationTimestamp, updatedAt: guineaVerificationTimestamp, verifiedAt: guineaVerificationTimestamp } as const;
+const guineaRecordTimestamps = {
+  createdAt: guineaVerificationTimestamp,
+  updatedAt: guineaVerificationTimestamp,
+  verifiedAt: guineaVerificationTimestamp,
+} as const;
 const gambiaVerificationTimestamp = eriGabGmbGnbGnqSourceRefreshTimestamp;
-const gambiaRecordTimestamps = { createdAt: gambiaVerificationTimestamp, updatedAt: gambiaVerificationTimestamp, verifiedAt: gambiaVerificationTimestamp } as const;
+const gambiaRecordTimestamps = {
+  createdAt: gambiaVerificationTimestamp,
+  updatedAt: gambiaVerificationTimestamp,
+  verifiedAt: gambiaVerificationTimestamp,
+} as const;
 const guineaBissauVerificationTimestamp = eriGabGmbGnbGnqSourceRefreshTimestamp;
-const guineaBissauRecordTimestamps = { createdAt: guineaBissauVerificationTimestamp, updatedAt: guineaBissauVerificationTimestamp, verifiedAt: guineaBissauVerificationTimestamp } as const;
-const equatorialGuineaVerificationTimestamp = eriGabGmbGnbGnqSourceRefreshTimestamp;
-const equatorialGuineaRecordTimestamps = { createdAt: equatorialGuineaVerificationTimestamp, updatedAt: equatorialGuineaVerificationTimestamp, verifiedAt: equatorialGuineaVerificationTimestamp } as const;
+const guineaBissauRecordTimestamps = {
+  createdAt: guineaBissauVerificationTimestamp,
+  updatedAt: guineaBissauVerificationTimestamp,
+  verifiedAt: guineaBissauVerificationTimestamp,
+} as const;
+const equatorialGuineaVerificationTimestamp =
+  eriGabGmbGnbGnqSourceRefreshTimestamp;
+const equatorialGuineaRecordTimestamps = {
+  createdAt: equatorialGuineaVerificationTimestamp,
+  updatedAt: equatorialGuineaVerificationTimestamp,
+  verifiedAt: equatorialGuineaVerificationTimestamp,
+} as const;
 const greenlandVerificationTimestamp = new Date("2026-08-10T06:44:56.000Z");
-const greenlandRecordTimestamps = { createdAt: greenlandVerificationTimestamp, updatedAt: greenlandVerificationTimestamp, verifiedAt: greenlandVerificationTimestamp } as const;
+const greenlandRecordTimestamps = {
+  createdAt: greenlandVerificationTimestamp,
+  updatedAt: greenlandVerificationTimestamp,
+  verifiedAt: greenlandVerificationTimestamp,
+} as const;
 const guyanaVerificationTimestamp = caribbeanSourceRefreshTimestamp;
-const guyanaRecordTimestamps = { createdAt: guyanaVerificationTimestamp, updatedAt: guyanaVerificationTimestamp, verifiedAt: guyanaVerificationTimestamp } as const;
+const guyanaRecordTimestamps = {
+  createdAt: guyanaVerificationTimestamp,
+  updatedAt: guyanaVerificationTimestamp,
+  verifiedAt: guyanaVerificationTimestamp,
+} as const;
 const haitiVerificationTimestamp = caribbeanSourceRefreshTimestamp;
-const haitiRecordTimestamps = { createdAt: haitiVerificationTimestamp, updatedAt: haitiVerificationTimestamp, verifiedAt: haitiVerificationTimestamp } as const;
+const haitiRecordTimestamps = {
+  createdAt: haitiVerificationTimestamp,
+  updatedAt: haitiVerificationTimestamp,
+  verifiedAt: haitiVerificationTimestamp,
+} as const;
 const iranVerificationTimestamp = new Date("2026-08-10T18:55:45.000Z");
-const iranRecordTimestamps = { createdAt: iranVerificationTimestamp, updatedAt: iranVerificationTimestamp, verifiedAt: iranVerificationTimestamp } as const;
+const iranRecordTimestamps = {
+  createdAt: iranVerificationTimestamp,
+  updatedAt: iranVerificationTimestamp,
+  verifiedAt: iranVerificationTimestamp,
+} as const;
 const iraqVerificationTimestamp = new Date("2026-08-10T18:55:45.000Z");
-const iraqRecordTimestamps = { createdAt: iraqVerificationTimestamp, updatedAt: iraqVerificationTimestamp, verifiedAt: iraqVerificationTimestamp } as const;
+const iraqRecordTimestamps = {
+  createdAt: iraqVerificationTimestamp,
+  updatedAt: iraqVerificationTimestamp,
+  verifiedAt: iraqVerificationTimestamp,
+} as const;
 const jamaicaVerificationTimestamp = caribbeanSourceRefreshTimestamp;
-const jamaicaRecordTimestamps = { createdAt: jamaicaVerificationTimestamp, updatedAt: jamaicaVerificationTimestamp, verifiedAt: jamaicaVerificationTimestamp } as const;
+const jamaicaRecordTimestamps = {
+  createdAt: jamaicaVerificationTimestamp,
+  updatedAt: jamaicaVerificationTimestamp,
+  verifiedAt: jamaicaVerificationTimestamp,
+} as const;
 const lebanonVerificationTimestamp = new Date("2026-08-10T18:55:45.000Z");
-const lebanonRecordTimestamps = { createdAt: lebanonVerificationTimestamp, updatedAt: lebanonVerificationTimestamp, verifiedAt: lebanonVerificationTimestamp } as const;
+const lebanonRecordTimestamps = {
+  createdAt: lebanonVerificationTimestamp,
+  updatedAt: lebanonVerificationTimestamp,
+  verifiedAt: lebanonVerificationTimestamp,
+} as const;
 const liberiaVerificationTimestamp = africaSourceRefreshTimestamp;
-const liberiaRecordTimestamps = { createdAt: liberiaVerificationTimestamp, updatedAt: liberiaVerificationTimestamp, verifiedAt: liberiaVerificationTimestamp } as const;
+const liberiaRecordTimestamps = {
+  createdAt: liberiaVerificationTimestamp,
+  updatedAt: liberiaVerificationTimestamp,
+  verifiedAt: liberiaVerificationTimestamp,
+} as const;
 const libyaVerificationTimestamp = africaSourceRefreshTimestamp;
-const libyaRecordTimestamps = { createdAt: libyaVerificationTimestamp, updatedAt: libyaVerificationTimestamp, verifiedAt: libyaVerificationTimestamp } as const;
+const libyaRecordTimestamps = {
+  createdAt: libyaVerificationTimestamp,
+  updatedAt: libyaVerificationTimestamp,
+  verifiedAt: libyaVerificationTimestamp,
+} as const;
 const maliVerificationTimestamp = africaSourceRefreshTimestamp;
-const maliRecordTimestamps = { createdAt: maliVerificationTimestamp, updatedAt: maliVerificationTimestamp, verifiedAt: maliVerificationTimestamp } as const;
+const maliRecordTimestamps = {
+  createdAt: maliVerificationTimestamp,
+  updatedAt: maliVerificationTimestamp,
+  verifiedAt: maliVerificationTimestamp,
+} as const;
 const myanmarVerificationTimestamp = new Date("2026-08-10T17:38:18.000Z");
-const myanmarRecordTimestamps = { createdAt: myanmarVerificationTimestamp, updatedAt: myanmarVerificationTimestamp, verifiedAt: myanmarVerificationTimestamp } as const;
+const myanmarRecordTimestamps = {
+  createdAt: myanmarVerificationTimestamp,
+  updatedAt: myanmarVerificationTimestamp,
+  verifiedAt: myanmarVerificationTimestamp,
+} as const;
 const mauritaniaVerificationTimestamp = africaSourceRefreshTimestamp;
-const mauritaniaRecordTimestamps = { createdAt: mauritaniaVerificationTimestamp, updatedAt: mauritaniaVerificationTimestamp, verifiedAt: mauritaniaVerificationTimestamp } as const;
+const mauritaniaRecordTimestamps = {
+  createdAt: mauritaniaVerificationTimestamp,
+  updatedAt: mauritaniaVerificationTimestamp,
+  verifiedAt: mauritaniaVerificationTimestamp,
+} as const;
 const newCaledoniaVerificationTimestamp = prkPseSdnPriNclSourceRefreshTimestamp;
-const newCaledoniaRecordTimestamps = { createdAt: newCaledoniaVerificationTimestamp, updatedAt: newCaledoniaVerificationTimestamp, verifiedAt: newCaledoniaVerificationTimestamp } as const;
+const newCaledoniaRecordTimestamps = {
+  createdAt: newCaledoniaVerificationTimestamp,
+  updatedAt: newCaledoniaVerificationTimestamp,
+  verifiedAt: newCaledoniaVerificationTimestamp,
+} as const;
 const nigerVerificationTimestamp = africaSourceRefreshTimestamp;
-const nigerRecordTimestamps = { createdAt: nigerVerificationTimestamp, updatedAt: nigerVerificationTimestamp, verifiedAt: nigerVerificationTimestamp } as const;
+const nigerRecordTimestamps = {
+  createdAt: nigerVerificationTimestamp,
+  updatedAt: nigerVerificationTimestamp,
+  verifiedAt: nigerVerificationTimestamp,
+} as const;
 const nicaraguaVerificationTimestamp = latinAmericaFiveGateReviewTimestamp;
-const nicaraguaRecordTimestamps = { createdAt: nicaraguaVerificationTimestamp, updatedAt: nicaraguaVerificationTimestamp, verifiedAt: nicaraguaVerificationTimestamp } as const;
-const papuaNewGuineaVerificationTimestamp = new Date("2026-08-10T23:00:23.000Z");
-const papuaNewGuineaRecordTimestamps = { createdAt: papuaNewGuineaVerificationTimestamp, updatedAt: papuaNewGuineaVerificationTimestamp, verifiedAt: papuaNewGuineaVerificationTimestamp } as const;
+const nicaraguaRecordTimestamps = {
+  createdAt: nicaraguaVerificationTimestamp,
+  updatedAt: nicaraguaVerificationTimestamp,
+  verifiedAt: nicaraguaVerificationTimestamp,
+} as const;
+const papuaNewGuineaVerificationTimestamp = new Date(
+  "2026-08-10T23:00:23.000Z",
+);
+const papuaNewGuineaRecordTimestamps = {
+  createdAt: papuaNewGuineaVerificationTimestamp,
+  updatedAt: papuaNewGuineaVerificationTimestamp,
+  verifiedAt: papuaNewGuineaVerificationTimestamp,
+} as const;
 const puertoRicoVerificationTimestamp = prkPseSdnPriNclSourceRefreshTimestamp;
-const puertoRicoRecordTimestamps = { createdAt: puertoRicoVerificationTimestamp, updatedAt: puertoRicoVerificationTimestamp, verifiedAt: puertoRicoVerificationTimestamp } as const;
+const puertoRicoRecordTimestamps = {
+  createdAt: puertoRicoVerificationTimestamp,
+  updatedAt: puertoRicoVerificationTimestamp,
+  verifiedAt: puertoRicoVerificationTimestamp,
+} as const;
 const northKoreaVerificationTimestamp = prkPseSdnPriNclSourceRefreshTimestamp;
-const northKoreaRecordTimestamps = { createdAt: northKoreaVerificationTimestamp, updatedAt: northKoreaVerificationTimestamp, verifiedAt: northKoreaVerificationTimestamp } as const;
+const northKoreaRecordTimestamps = {
+  createdAt: northKoreaVerificationTimestamp,
+  updatedAt: northKoreaVerificationTimestamp,
+  verifiedAt: northKoreaVerificationTimestamp,
+} as const;
 const paraguayVerificationTimestamp = latinAmericaFiveGateReviewTimestamp;
-const paraguayRecordTimestamps = { createdAt: paraguayVerificationTimestamp, updatedAt: paraguayVerificationTimestamp, verifiedAt: paraguayVerificationTimestamp } as const;
+const paraguayRecordTimestamps = {
+  createdAt: paraguayVerificationTimestamp,
+  updatedAt: paraguayVerificationTimestamp,
+  verifiedAt: paraguayVerificationTimestamp,
+} as const;
 const palestineVerificationTimestamp = prkPseSdnPriNclSourceRefreshTimestamp;
-const palestineRecordTimestamps = { createdAt: palestineVerificationTimestamp, updatedAt: palestineVerificationTimestamp, verifiedAt: palestineVerificationTimestamp } as const;
+const palestineRecordTimestamps = {
+  createdAt: palestineVerificationTimestamp,
+  updatedAt: palestineVerificationTimestamp,
+  verifiedAt: palestineVerificationTimestamp,
+} as const;
 const sudanVerificationTimestamp = prkPseSdnPriNclSourceRefreshTimestamp;
-const sudanRecordTimestamps = { createdAt: sudanVerificationTimestamp, updatedAt: sudanVerificationTimestamp, verifiedAt: sudanVerificationTimestamp } as const;
-const solomonIslandsVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const solomonIslandsRecordTimestamps = { createdAt: solomonIslandsVerificationTimestamp, updatedAt: solomonIslandsVerificationTimestamp, verifiedAt: solomonIslandsVerificationTimestamp } as const;
-const sierraLeoneVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const sierraLeoneRecordTimestamps = { createdAt: sierraLeoneVerificationTimestamp, updatedAt: sierraLeoneVerificationTimestamp, verifiedAt: sierraLeoneVerificationTimestamp } as const;
+const sudanRecordTimestamps = {
+  createdAt: sudanVerificationTimestamp,
+  updatedAt: sudanVerificationTimestamp,
+  verifiedAt: sudanVerificationTimestamp,
+} as const;
+const solomonIslandsVerificationTimestamp =
+  twelveCountrySourceOnlyRefreshTimestamp;
+const solomonIslandsRecordTimestamps = {
+  createdAt: solomonIslandsVerificationTimestamp,
+  updatedAt: solomonIslandsVerificationTimestamp,
+  verifiedAt: solomonIslandsVerificationTimestamp,
+} as const;
+const sierraLeoneVerificationTimestamp =
+  twelveCountrySourceOnlyRefreshTimestamp;
+const sierraLeoneRecordTimestamps = {
+  createdAt: sierraLeoneVerificationTimestamp,
+  updatedAt: sierraLeoneVerificationTimestamp,
+  verifiedAt: sierraLeoneVerificationTimestamp,
+} as const;
 const elSalvadorVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const elSalvadorRecordTimestamps = { createdAt: elSalvadorVerificationTimestamp, updatedAt: elSalvadorVerificationTimestamp, verifiedAt: elSalvadorVerificationTimestamp } as const;
+const elSalvadorRecordTimestamps = {
+  createdAt: elSalvadorVerificationTimestamp,
+  updatedAt: elSalvadorVerificationTimestamp,
+  verifiedAt: elSalvadorVerificationTimestamp,
+} as const;
 const somaliaVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const somaliaRecordTimestamps = { createdAt: somaliaVerificationTimestamp, updatedAt: somaliaVerificationTimestamp, verifiedAt: somaliaVerificationTimestamp } as const;
+const somaliaRecordTimestamps = {
+  createdAt: somaliaVerificationTimestamp,
+  updatedAt: somaliaVerificationTimestamp,
+  verifiedAt: somaliaVerificationTimestamp,
+} as const;
 const southSudanVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const southSudanRecordTimestamps = { createdAt: southSudanVerificationTimestamp, updatedAt: southSudanVerificationTimestamp, verifiedAt: southSudanVerificationTimestamp } as const;
+const southSudanRecordTimestamps = {
+  createdAt: southSudanVerificationTimestamp,
+  updatedAt: southSudanVerificationTimestamp,
+  verifiedAt: southSudanVerificationTimestamp,
+} as const;
 const surinameVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const surinameRecordTimestamps = { createdAt: surinameVerificationTimestamp, updatedAt: surinameVerificationTimestamp, verifiedAt: surinameVerificationTimestamp } as const;
+const surinameRecordTimestamps = {
+  createdAt: surinameVerificationTimestamp,
+  updatedAt: surinameVerificationTimestamp,
+  verifiedAt: surinameVerificationTimestamp,
+} as const;
 const syriaVerificationTimestamp = new Date("2026-08-10T18:55:45.000Z");
-const syriaRecordTimestamps = { createdAt: syriaVerificationTimestamp, updatedAt: syriaVerificationTimestamp, verifiedAt: syriaVerificationTimestamp } as const;
+const syriaRecordTimestamps = {
+  createdAt: syriaVerificationTimestamp,
+  updatedAt: syriaVerificationTimestamp,
+  verifiedAt: syriaVerificationTimestamp,
+} as const;
 const chadVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const chadRecordTimestamps = { createdAt: chadVerificationTimestamp, updatedAt: chadVerificationTimestamp, verifiedAt: chadVerificationTimestamp } as const;
+const chadRecordTimestamps = {
+  createdAt: chadVerificationTimestamp,
+  updatedAt: chadVerificationTimestamp,
+  verifiedAt: chadVerificationTimestamp,
+} as const;
 const togoVerificationTimestamp = new Date("2026-08-10T11:21:32.000Z");
-const togoRecordTimestamps = { createdAt: togoVerificationTimestamp, updatedAt: togoVerificationTimestamp, verifiedAt: togoVerificationTimestamp } as const;
+const togoRecordTimestamps = {
+  createdAt: togoVerificationTimestamp,
+  updatedAt: togoVerificationTimestamp,
+  verifiedAt: togoVerificationTimestamp,
+} as const;
 const timorLesteVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const timorLesteRecordTimestamps = { createdAt: timorLesteVerificationTimestamp, updatedAt: timorLesteVerificationTimestamp, verifiedAt: timorLesteVerificationTimestamp } as const;
-const trinidadTobagoVerificationTimestamp = twelveCountrySourceOnlyRefreshTimestamp;
-const trinidadTobagoRecordTimestamps = { createdAt: trinidadTobagoVerificationTimestamp, updatedAt: trinidadTobagoVerificationTimestamp, verifiedAt: trinidadTobagoVerificationTimestamp } as const;
+const timorLesteRecordTimestamps = {
+  createdAt: timorLesteVerificationTimestamp,
+  updatedAt: timorLesteVerificationTimestamp,
+  verifiedAt: timorLesteVerificationTimestamp,
+} as const;
+const trinidadTobagoVerificationTimestamp =
+  twelveCountrySourceOnlyRefreshTimestamp;
+const trinidadTobagoRecordTimestamps = {
+  createdAt: trinidadTobagoVerificationTimestamp,
+  updatedAt: trinidadTobagoVerificationTimestamp,
+  verifiedAt: trinidadTobagoVerificationTimestamp,
+} as const;
 const taiwanVerificationTimestamp = new Date("2026-08-10T11:21:32.000Z");
-const taiwanRecordTimestamps = { createdAt: taiwanVerificationTimestamp, updatedAt: taiwanVerificationTimestamp, verifiedAt: taiwanVerificationTimestamp } as const;
+const taiwanRecordTimestamps = {
+  createdAt: taiwanVerificationTimestamp,
+  updatedAt: taiwanVerificationTimestamp,
+  verifiedAt: taiwanVerificationTimestamp,
+} as const;
 const venezuelaVerificationTimestamp = new Date("2026-08-10T11:58:54.000Z");
-const venezuelaRecordTimestamps = { createdAt: venezuelaVerificationTimestamp, updatedAt: venezuelaVerificationTimestamp, verifiedAt: venezuelaVerificationTimestamp } as const;
+const venezuelaRecordTimestamps = {
+  createdAt: venezuelaVerificationTimestamp,
+  updatedAt: venezuelaVerificationTimestamp,
+  verifiedAt: venezuelaVerificationTimestamp,
+} as const;
 const vanuatuVerificationTimestamp = new Date("2026-08-10T11:58:54.000Z");
-const vanuatuRecordTimestamps = { createdAt: vanuatuVerificationTimestamp, updatedAt: vanuatuVerificationTimestamp, verifiedAt: vanuatuVerificationTimestamp } as const;
+const vanuatuRecordTimestamps = {
+  createdAt: vanuatuVerificationTimestamp,
+  updatedAt: vanuatuVerificationTimestamp,
+  verifiedAt: vanuatuVerificationTimestamp,
+} as const;
 const yemenVerificationTimestamp = new Date("2026-08-10T11:58:54.000Z");
-const yemenRecordTimestamps = { createdAt: yemenVerificationTimestamp, updatedAt: yemenVerificationTimestamp, verifiedAt: yemenVerificationTimestamp } as const;
+const yemenRecordTimestamps = {
+  createdAt: yemenVerificationTimestamp,
+  updatedAt: yemenVerificationTimestamp,
+  verifiedAt: yemenVerificationTimestamp,
+} as const;
 const antarcticaVerificationTimestamp = new Date("2026-08-10T11:58:54.000Z");
-const antarcticaRecordTimestamps = { createdAt: antarcticaVerificationTimestamp, updatedAt: antarcticaVerificationTimestamp, verifiedAt: antarcticaVerificationTimestamp } as const;
-const frenchSouthernLandsVerificationTimestamp = new Date("2026-08-10T11:58:54.000Z");
-const frenchSouthernLandsRecordTimestamps = { createdAt: frenchSouthernLandsVerificationTimestamp, updatedAt: frenchSouthernLandsVerificationTimestamp, verifiedAt: frenchSouthernLandsVerificationTimestamp } as const;
+const antarcticaRecordTimestamps = {
+  createdAt: antarcticaVerificationTimestamp,
+  updatedAt: antarcticaVerificationTimestamp,
+  verifiedAt: antarcticaVerificationTimestamp,
+} as const;
+const frenchSouthernLandsVerificationTimestamp = new Date(
+  "2026-08-10T11:58:54.000Z",
+);
+const frenchSouthernLandsRecordTimestamps = {
+  createdAt: frenchSouthernLandsVerificationTimestamp,
+  updatedAt: frenchSouthernLandsVerificationTimestamp,
+  verifiedAt: frenchSouthernLandsVerificationTimestamp,
+} as const;
 const westernSaharaVerificationTimestamp = new Date("2026-08-10T11:58:54.000Z");
-const westernSaharaRecordTimestamps = { createdAt: westernSaharaVerificationTimestamp, updatedAt: westernSaharaVerificationTimestamp, verifiedAt: westernSaharaVerificationTimestamp } as const;
-const falklandIslandsVerificationTimestamp = new Date("2026-08-10T11:58:54.000Z");
-const falklandIslandsRecordTimestamps = { createdAt: falklandIslandsVerificationTimestamp, updatedAt: falklandIslandsVerificationTimestamp, verifiedAt: falklandIslandsVerificationTimestamp } as const;
+const westernSaharaRecordTimestamps = {
+  createdAt: westernSaharaVerificationTimestamp,
+  updatedAt: westernSaharaVerificationTimestamp,
+  verifiedAt: westernSaharaVerificationTimestamp,
+} as const;
+const falklandIslandsVerificationTimestamp = new Date(
+  "2026-08-10T11:58:54.000Z",
+);
+const falklandIslandsRecordTimestamps = {
+  createdAt: falklandIslandsVerificationTimestamp,
+  updatedAt: falklandIslandsVerificationTimestamp,
+  verifiedAt: falklandIslandsVerificationTimestamp,
+} as const;
 
 export const euOfficialMemberCountryMemberships = [
   { countryIso3: "AUT", validFrom: "1995-01-01" },
@@ -1333,67 +1565,118 @@ export const acceptanceFixtureIds = {
     eswatiniTransport: id("0600"),
     lesothoGovernment: id("0601"),
     lesothoTransport: id("0602"),
-    madagascarEnvironment: id("0606"), madagascarTransport: id("0607"),
-    mauritiusEnvironment: id("0608"), mauritiusTransport: id("0609"),
-    malawiGovernment: id("0610"), malawiTransport: id("0611"),
-    fijiEnvironment: id("0612"), fijiTransport: id("0613"),
-    belizeEnvironment: id("0618"), belizeTransport: id("0619"),
-    bruneiEnvironment: id("0620"), bruneiTransport: id("0621"),
-    bhutanEnvironment: id("0622"), bhutanTransport: id("0623"),
-    centralAfricanRepublicEnvironment: id("0624"), centralAfricanRepublicTransport: id("0625"),
-    democraticRepublicOfCongoEnvironment: id("0626"), democraticRepublicOfCongoTransport: id("0627"),
-    republicOfCongoEnvironment: id("0628"), republicOfCongoTransport: id("0629"),
-    cubaEnvironment: id("0630"), cubaTransport: id("0631"),
-    djiboutiEnvironment: id("0632"), djiboutiTransport: id("0633"),
+    madagascarEnvironment: id("0606"),
+    madagascarTransport: id("0607"),
+    mauritiusEnvironment: id("0608"),
+    mauritiusTransport: id("0609"),
+    malawiGovernment: id("0610"),
+    malawiTransport: id("0611"),
+    fijiEnvironment: id("0612"),
+    fijiTransport: id("0613"),
+    belizeEnvironment: id("0618"),
+    belizeTransport: id("0619"),
+    bruneiEnvironment: id("0620"),
+    bruneiTransport: id("0621"),
+    bhutanEnvironment: id("0622"),
+    bhutanTransport: id("0623"),
+    centralAfricanRepublicEnvironment: id("0624"),
+    centralAfricanRepublicTransport: id("0625"),
+    democraticRepublicOfCongoEnvironment: id("0626"),
+    democraticRepublicOfCongoTransport: id("0627"),
+    republicOfCongoEnvironment: id("0628"),
+    republicOfCongoTransport: id("0629"),
+    cubaEnvironment: id("0630"),
+    cubaTransport: id("0631"),
+    djiboutiEnvironment: id("0632"),
+    djiboutiTransport: id("0633"),
     eritreaEnvironmentalProtectionManagementRegulations127_2017: id("0634"),
     eritreaVehicleTechnicalStandardsRegulations61_2002: id("0635"),
     gabonEnvironmentalProtectionLaw007_2014: id("0636"),
     gabonHeavyVehicleHomologationOrder00097_2017: id("0637"),
-    guineaEnvironment: id("0638"), guineaTransport: id("0639"),
+    guineaEnvironment: id("0638"),
+    guineaTransport: id("0639"),
     gambiaEnvironmentalQualityStandardsRegulations1999: id("0640"),
     gambiaMotorTrafficAmendmentAct2013: id("0641"),
     guineaBissauBasicEnvironmentLaw1_2011: id("0642"),
     guineaBissauTransportMinistryDirectory: id("0643"),
     equatorialGuineaEnvironmentalLaw7_2003: id("0644"),
     equatorialGuineaGeneralRoadTransportLaw4_2018: id("0645"),
-    greenlandEnvironment: id("0646"), greenlandTransport: id("0647"),
-    guyanaEnvironment: id("0648"), guyanaTransport: id("0649"),
-    haitiEnvironment: id("0650"), haitiTransport: id("0651"),
-    iranTechnicalPollutionRegulation: id("0652"), iranArticle4Amendment2024: id("0653"),
-    iraqTr167AmendmentDecision2024: id("0654"), iraqTr167ImplementationNotice2025: id("0655"),
-    jamaicaEnvironment: id("0656"), jamaicaTransport: id("0657"),
-    lebanonEnvironmentalProtectionLaw444: id("0658"), lebanonThirdBur2019: id("0659"),
-    liberiaEnvironmentalProtectionManagementLaw: id("0660"), liberiaVehicleAdministrativeRegulation2011: id("0661"),
-    libyaEnvironmentalProtectionLaw15: id("0662"), libyaEnvironmentalExecutiveRegulation448: id("0663"),
-    maliTechnicalInspectionOrder2020: id("0664"), maliRoadUseVehicleCirculationDecree2023: id("0665"),
-    myanmarEnvironment: id("0666"), myanmarTransport: id("0667"),
-    mauritaniaAirPollutionLaw2018: id("0668"), mauritaniaEnvironmentCode2000: id("0669"),
-    newCaledoniaEnvironment: id("0670"), newCaledoniaTransport: id("0671"),
-    nigerEnvironmentalFrameworkLaw9856: id("0672"), nigerMotorVehicleHomologationEServices: id("0673"),
-    nicaraguaEnvironment: id("0674"), nicaraguaTransport: id("0675"),
-    papuaNewGuineaEnvironment: id("0676"), papuaNewGuineaTransport: id("0677"),
-    puertoRicoEnvironment: id("0678"), puertoRicoTransport: id("0679"),
-    northKoreaEnvironment: id("0680"), northKoreaTransport: id("0681"),
-    paraguayEnvironment: id("0682"), paraguayTransport: id("0683"),
-    palestineEnvironment: id("0684"), palestineTransport: id("0685"),
-    sudanEnvironment: id("0686"), sudanTransport: id("0687"),
-    solomonIslandsEnvironment: id("0688"), solomonIslandsTransport: id("0689"),
-    sierraLeoneEnvironment: id("0690"), sierraLeoneTransport: id("0691"),
-    elSalvadorEnvironment: id("0692"), elSalvadorTransport: id("0693"),
-    somaliaEnvironment: id("0694"), somaliaTransport: id("0695"),
-    southSudanEnvironment: id("0696"), southSudanTransport: id("0697"),
-    surinameEnvironment: id("0698"), surinameTransport: id("0699"),
-    syriaEnvironmentLaw12: id("0700"), syriaVehicleImportNotice2025: id("0701"),
-    chadEnvironment: id("0702"), chadTransport: id("0703"),
-    togoEnvironment: id("0704"), togoTransport: id("0705"),
-    timorLesteEnvironment: id("0706"), timorLesteTransport: id("0707"),
-    trinidadTobagoEnvironment: id("0708"), trinidadTobagoTransport: id("0709"),
-    taiwanEnvironment: id("0710"), taiwanTransport: id("0711"),
-    venezuelaEnvironment: id("0712"), venezuelaTransport: id("0713"),
-    vanuatuEnvironment: id("0714"), vanuatuTransport: id("0715"),
-    yemenEnvironment: id("0716"), yemenTransport: id("0717"),
-    antarcticaBoundary: id("0718"), frenchSouthernLandsBoundary: id("0719"),
-    westernSaharaBoundary: id("0720"), falklandIslandsBoundary: id("0721"),
+    greenlandEnvironment: id("0646"),
+    greenlandTransport: id("0647"),
+    guyanaEnvironment: id("0648"),
+    guyanaTransport: id("0649"),
+    haitiEnvironment: id("0650"),
+    haitiTransport: id("0651"),
+    iranTechnicalPollutionRegulation: id("0652"),
+    iranArticle4Amendment2024: id("0653"),
+    iraqTr167AmendmentDecision2024: id("0654"),
+    iraqTr167ImplementationNotice2025: id("0655"),
+    jamaicaEnvironment: id("0656"),
+    jamaicaTransport: id("0657"),
+    lebanonEnvironmentalProtectionLaw444: id("0658"),
+    lebanonThirdBur2019: id("0659"),
+    liberiaEnvironmentalProtectionManagementLaw: id("0660"),
+    liberiaVehicleAdministrativeRegulation2011: id("0661"),
+    libyaEnvironmentalProtectionLaw15: id("0662"),
+    libyaEnvironmentalExecutiveRegulation448: id("0663"),
+    maliTechnicalInspectionOrder2020: id("0664"),
+    maliRoadUseVehicleCirculationDecree2023: id("0665"),
+    myanmarEnvironment: id("0666"),
+    myanmarTransport: id("0667"),
+    mauritaniaAirPollutionLaw2018: id("0668"),
+    mauritaniaEnvironmentCode2000: id("0669"),
+    newCaledoniaEnvironment: id("0670"),
+    newCaledoniaTransport: id("0671"),
+    nigerEnvironmentalFrameworkLaw9856: id("0672"),
+    nigerMotorVehicleHomologationEServices: id("0673"),
+    nicaraguaEnvironment: id("0674"),
+    nicaraguaTransport: id("0675"),
+    papuaNewGuineaEnvironment: id("0676"),
+    papuaNewGuineaTransport: id("0677"),
+    puertoRicoEnvironment: id("0678"),
+    puertoRicoTransport: id("0679"),
+    northKoreaEnvironment: id("0680"),
+    northKoreaTransport: id("0681"),
+    paraguayEnvironment: id("0682"),
+    paraguayTransport: id("0683"),
+    palestineEnvironment: id("0684"),
+    palestineTransport: id("0685"),
+    sudanEnvironment: id("0686"),
+    sudanTransport: id("0687"),
+    solomonIslandsEnvironment: id("0688"),
+    solomonIslandsTransport: id("0689"),
+    sierraLeoneEnvironment: id("0690"),
+    sierraLeoneTransport: id("0691"),
+    elSalvadorEnvironment: id("0692"),
+    elSalvadorTransport: id("0693"),
+    somaliaEnvironment: id("0694"),
+    somaliaTransport: id("0695"),
+    southSudanEnvironment: id("0696"),
+    southSudanTransport: id("0697"),
+    surinameEnvironment: id("0698"),
+    surinameTransport: id("0699"),
+    syriaEnvironmentLaw12: id("0700"),
+    syriaVehicleImportNotice2025: id("0701"),
+    chadEnvironment: id("0702"),
+    chadTransport: id("0703"),
+    togoEnvironment: id("0704"),
+    togoTransport: id("0705"),
+    timorLesteEnvironment: id("0706"),
+    timorLesteTransport: id("0707"),
+    trinidadTobagoEnvironment: id("0708"),
+    trinidadTobagoTransport: id("0709"),
+    taiwanEnvironment: id("0710"),
+    taiwanTransport: id("0711"),
+    venezuelaEnvironment: id("0712"),
+    venezuelaTransport: id("0713"),
+    vanuatuEnvironment: id("0714"),
+    vanuatuTransport: id("0715"),
+    yemenEnvironment: id("0716"),
+    yemenTransport: id("0717"),
+    antarcticaBoundary: id("0718"),
+    frenchSouthernLandsBoundary: id("0719"),
+    westernSaharaBoundary: id("0720"),
+    falklandIslandsBoundary: id("0721"),
     usEcfr1036: id("0203"),
     usEcfr1039: id("0210"),
     usEcfr86: id("0204"),
@@ -1494,20 +1777,63 @@ export const acceptanceFixtureIds = {
     mozambique: id("0603"),
     eswatini: id("0604"),
     lesotho: id("0605"),
-    madagascar: id("0614"), mauritius: id("0615"), malawi: id("0616"), fiji: id("0617"),
-    belize: id("0618"), brunei: id("0619"), bhutan: id("0620"), centralAfricanRepublic: id("0621"),
-    democraticRepublicOfCongo: id("0622"), republicOfCongo: id("0623"), cuba: id("0624"), djibouti: id("0625"),
-    eritrea: id("0626"), gabon: id("0627"), guinea: id("0628"), gambia: id("0629"),
-    guineaBissau: id("0630"), equatorialGuinea: id("0631"), greenland: id("0632"), guyana: id("0633"),
-    haiti: id("0634"), iran: id("0635"), iraq: id("0636"), jamaica: id("0637"),
-    lebanon: id("0638"), liberia: id("0639"), libya: id("0640"), mali: id("0641"), myanmar: id("0642"), mauritania: id("0643"),
-    newCaledonia: id("0644"), niger: id("0645"), nicaragua: id("0646"), papuaNewGuinea: id("0647"),
-    puertoRico: id("0648"), northKorea: id("0649"), paraguay: id("0650"), palestine: id("0651"),
-    sudan: id("0652"), solomonIslands: id("0653"), sierraLeone: id("0654"), elSalvador: id("0655"), somalia: id("0656"), southSudan: id("0657"),
-    suriname: id("0658"), syria: id("0659"), chad: id("0660"), togo: id("0661"),
-    timorLeste: id("0662"), trinidadTobago: id("0663"), taiwan: id("0664"),
-    venezuela: id("0665"), vanuatu: id("0666"), yemen: id("0667"),
-    antarctica: id("0668"), frenchSouthernLands: id("0669"), westernSahara: id("0670"),
+    madagascar: id("0614"),
+    mauritius: id("0615"),
+    malawi: id("0616"),
+    fiji: id("0617"),
+    belize: id("0618"),
+    brunei: id("0619"),
+    bhutan: id("0620"),
+    centralAfricanRepublic: id("0621"),
+    democraticRepublicOfCongo: id("0622"),
+    republicOfCongo: id("0623"),
+    cuba: id("0624"),
+    djibouti: id("0625"),
+    eritrea: id("0626"),
+    gabon: id("0627"),
+    guinea: id("0628"),
+    gambia: id("0629"),
+    guineaBissau: id("0630"),
+    equatorialGuinea: id("0631"),
+    greenland: id("0632"),
+    guyana: id("0633"),
+    haiti: id("0634"),
+    iran: id("0635"),
+    iraq: id("0636"),
+    jamaica: id("0637"),
+    lebanon: id("0638"),
+    liberia: id("0639"),
+    libya: id("0640"),
+    mali: id("0641"),
+    myanmar: id("0642"),
+    mauritania: id("0643"),
+    newCaledonia: id("0644"),
+    niger: id("0645"),
+    nicaragua: id("0646"),
+    papuaNewGuinea: id("0647"),
+    puertoRico: id("0648"),
+    northKorea: id("0649"),
+    paraguay: id("0650"),
+    palestine: id("0651"),
+    sudan: id("0652"),
+    solomonIslands: id("0653"),
+    sierraLeone: id("0654"),
+    elSalvador: id("0655"),
+    somalia: id("0656"),
+    southSudan: id("0657"),
+    suriname: id("0658"),
+    syria: id("0659"),
+    chad: id("0660"),
+    togo: id("0661"),
+    timorLeste: id("0662"),
+    trinidadTobago: id("0663"),
+    taiwan: id("0664"),
+    venezuela: id("0665"),
+    vanuatu: id("0666"),
+    yemen: id("0667"),
+    antarctica: id("0668"),
+    frenchSouthernLands: id("0669"),
+    westernSahara: id("0670"),
     falklandIslands: id("0671"),
     usEpa: id("0302"),
   },
@@ -1736,7 +2062,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: null,
     publisher: "European Union",
     sourceType: "other",
-    title: "EU countries: official country profiles and accession dates (27 Member States)",
+    title:
+      "EU countries: official country profiles and accession dates (27 Member States)",
     url: "https://european-union.europa.eu/principles-countries-history/eu-countries_en",
   },
   {
@@ -1756,8 +2083,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: null,
     publisher: "国土交通省 / e-Gov 法令検索",
     sourceType: "official-regulation",
-    title:
-      "道路運送車両の保安基準（昭和二十六年運輸省令第六十七号）第三十一条",
+    title: "道路運送車両の保安基準（昭和二十六年運輸省令第六十七号）第三十一条",
     url: "https://elaws.e-gov.go.jp/document?lawid=326M50000800067",
   },
   {
@@ -1789,8 +2115,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publisher: "대한민국 기후에너지환경부 / 국가법령정보센터",
     sourceType: "official-regulation",
     title: "대기환경보전법 시행규칙 (현행, 제62조 및 별표 17 근거 조문)",
-    url:
-      "https://www.law.go.kr/lsSc.do?section=&menuId=1&subMenuId=15&tabMenuId=81&eventGubun=060101&query=%EB%8C%80%EA%B8%B0%ED%99%98%EA%B2%BD%EB%B3%B4%EC%A0%84%EB%B2%95+%EC%8B%9C%ED%96%89%EA%B7%9C%EC%B9%99",
+    url: "https://www.law.go.kr/lsSc.do?section=&menuId=1&subMenuId=15&tabMenuId=81&eventGubun=060101&query=%EB%8C%80%EA%B8%B0%ED%99%98%EA%B2%BD%EB%B3%B4%EC%A0%84%EB%B2%95+%EC%8B%9C%ED%96%89%EA%B7%9C%EC%B9%99",
   },
   {
     ...koreaRecordTimestamps,
@@ -1799,16 +2124,17 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: "2026-06-26",
     publisher: "대한민국 기후에너지환경부 / 국가법령정보센터",
     sourceType: "official-regulation",
-    title: "대기환경보전법 시행규칙 별표 17 제작차배출허용기준 (2026.6.26 개정)",
-    url:
-      "https://www.law.go.kr/flDownload.do?gubun=&flSeq=167031783&bylClsCd=110201",
+    title:
+      "대기환경보전법 시행규칙 별표 17 제작차배출허용기준 (2026.6.26 개정)",
+    url: "https://www.law.go.kr/flDownload.do?gubun=&flSeq=167031783&bylClsCd=110201",
   },
   {
     ...mexicoRecordTimestamps,
     id: acceptanceFixtureIds.source.mexicoNom044,
     isDemo: false,
     publishedOn: "2018-02-19",
-    publisher: "Secretaría de Medio Ambiente y Recursos Naturales / Diario Oficial de la Federación",
+    publisher:
+      "Secretaría de Medio Ambiente y Recursos Naturales / Diario Oficial de la Federación",
     sourceType: "official-regulation",
     title:
       "NOM-044-SEMARNAT-2017（DOF 2018-02-19）：新柴油发动机和 GVW > 3,857 kg 新车辆排放限值",
@@ -1819,7 +2145,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.mexicoNom044Amend2020,
     isDemo: false,
     publishedOn: "2020-11-11",
-    publisher: "Secretaría de Medio Ambiente y Recursos Naturales / Diario Oficial de la Federación",
+    publisher:
+      "Secretaría de Medio Ambiente y Recursos Naturales / Diario Oficial de la Federación",
     sourceType: "government-notice",
     title:
       "NOM-044-SEMARNAT-2017 标准 AA 期限修订（DOF 2020-11-11，延至 2021-12-31）",
@@ -1830,7 +2157,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.mexicoNom044Amend2021,
     isDemo: false,
     publishedOn: "2021-11-26",
-    publisher: "Secretaría de Medio Ambiente y Recursos Naturales / Diario Oficial de la Federación",
+    publisher:
+      "Secretaría de Medio Ambiente y Recursos Naturales / Diario Oficial de la Federación",
     sourceType: "government-notice",
     title:
       "NOM-044-SEMARNAT-2017 标准 AA 期限修订（DOF 2021-11-26，延至 2024-12-31）",
@@ -1841,7 +2169,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.turkeyRoadRegulation,
     isDemo: false,
     publishedOn: "2013-09-25",
-    publisher: "Türkiye Cumhuriyeti Resmî Gazete / Bilim, Sanayi ve Teknoloji Bakanlığı",
+    publisher:
+      "Türkiye Cumhuriyeti Resmî Gazete / Bilim, Sanayi ve Teknoloji Bakanlığı",
     sourceType: "official-regulation",
     title:
       "Ağır Hizmet Araçlarından Çıkan Emisyonlar (Euro 6) Yönetmeliği değişikliği ((AT) 595/2009)",
@@ -1862,7 +2191,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.turkeyNonroadRegulation,
     isDemo: false,
     publishedOn: "2020-09-11",
-    publisher: "Türkiye Cumhuriyeti Resmî Gazete / Sanayi ve Teknoloji Bakanlığı",
+    publisher:
+      "Türkiye Cumhuriyeti Resmî Gazete / Sanayi ve Teknoloji Bakanlığı",
     sourceType: "official-regulation",
     title:
       "Karayolu Dışında Kullanılan Hareketli Makinalara Takılan İçten Yanmalı Motorlar için Emisyon Sınırları ve Tip Onayı Yönetmeliği (2016/1628/AB)",
@@ -1885,7 +2215,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: null,
     publisher: "Tarım ve Orman Bakanlığı",
     sourceType: "other",
-    title: "Tarım ve Orman Traktörleri AB Tip Onay Deneyleri（农业拖拉机 AB 型式批准入口）",
+    title:
+      "Tarım ve Orman Traktörleri AB Tip Onay Deneyleri（农业拖拉机 AB 型式批准入口）",
     url: "https://www.tarimorman.gov.tr/TRGM/tamtest/Menu/98/Tarim-Ve-Orman-Traktorleri-Ab-Tip-Onay-Deneyleri",
   },
   {
@@ -1897,8 +2228,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
       "Australian Government Department of Infrastructure, Transport, Regional Development, Communications, Sport and the Arts",
     sourceType: "other",
     title: "Current Australian Design Rules（ADR 官方目录）",
-    url:
-      "https://www.infrastructure.gov.au/infrastructure-transport-vehicles/vehicles/vehicle-design-regulation/australian-design-rules/third-edition",
+    url: "https://www.infrastructure.gov.au/infrastructure-transport-vehicles/vehicles/vehicle-design-regulation/australian-design-rules/third-edition",
   },
   {
     ...australiaRecordTimestamps,
@@ -1930,9 +2260,9 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publisher:
       "Australian Government Department of Infrastructure, Transport, Regional Development, Communications, Sport and the Arts",
     sourceType: "government-notice",
-    title: "Questions and answers on the new ADR 80/04（Euro VI 重型车辆官方问答）",
-    url:
-      "https://www.infrastructure.gov.au/infrastructure-transport-vehicles/vehicles/vehicle-safety-environment/questions-and-answers-new-adr-8004",
+    title:
+      "Questions and answers on the new ADR 80/04（Euro VI 重型车辆官方问答）",
+    url: "https://www.infrastructure.gov.au/infrastructure-transport-vehicles/vehicles/vehicle-safety-environment/questions-and-answers-new-adr-8004",
   },
   {
     ...australiaRecordTimestamps,
@@ -1942,9 +2272,9 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publisher:
       "Australian Government Department of Climate Change, Energy, the Environment and Water",
     sourceType: "government-notice",
-    title: "Noxious Emissions from Non-Road Diesel Engines（非道路柴油发动机官方评估）",
-    url:
-      "https://www.dcceew.gov.au/environment/protection/air-quality/national-clean-air-agreement/evaluation-non-road-diesel-engine-emissions",
+    title:
+      "Noxious Emissions from Non-Road Diesel Engines（非道路柴油发动机官方评估）",
+    url: "https://www.dcceew.gov.au/environment/protection/air-quality/national-clean-air-agreement/evaluation-non-road-diesel-engine-emissions",
   },
   {
     ...australiaRecordTimestamps,
@@ -1954,16 +2284,17 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publisher:
       "Australian Government Department of Infrastructure, Transport, Regional Development, Communications, Sport and the Arts",
     sourceType: "official-regulation",
-    title: "Standards for Diesel Heavy Duty Vehicles（澳大利亚官方柴油重型车辆标准汇总）",
-    url:
-      "https://www.infrastructure.gov.au/sites/default/files/documents/Standards_for_Diesel_HDVs.pdf",
+    title:
+      "Standards for Diesel Heavy Duty Vehicles（澳大利亚官方柴油重型车辆标准汇总）",
+    url: "https://www.infrastructure.gov.au/sites/default/files/documents/Standards_for_Diesel_HDVs.pdf",
   },
   {
     ...canadaRecordTimestamps,
     id: acceptanceFixtureIds.source.canadaRoadRegulation,
     isDemo: false,
     publishedOn: "2003-01-01",
-    publisher: "Department of Justice Canada / Environment and Climate Change Canada",
+    publisher:
+      "Department of Justice Canada / Environment and Climate Change Canada",
     sourceType: "official-regulation",
     title: "On-Road Vehicle and Engine Emission Regulations (SOR/2003-2)",
     url: "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2003-2/index.html",
@@ -1973,7 +2304,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.canadaOffroadRegulation,
     isDemo: false,
     publishedOn: "2020-12-23",
-    publisher: "Department of Justice Canada / Environment and Climate Change Canada",
+    publisher:
+      "Department of Justice Canada / Environment and Climate Change Canada",
     sourceType: "official-regulation",
     title:
       "Off-road Compression-Ignition (Mobile and Stationary) and Large Spark-Ignition Engine Emission Regulations (SOR/2020-258)",
@@ -1986,7 +2318,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: "2023-05-11",
     publisher: "UK Vehicle Certification Agency / GOV.UK",
     sourceType: "official-regulation",
-    title: "Non-road mobile machinery rules on type approval and engine markings (Stage V / provisional GB type approval)",
+    title:
+      "Non-road mobile machinery rules on type approval and engine markings (Stage V / provisional GB type approval)",
     url: "https://www.gov.uk/government/publications/non-road-mobile-machinery-rules-on-type-approval-and-engine-markings/non-road-mobile-machinery-rules-on-type-approval-and-engine-markings",
   },
   {
@@ -1996,7 +2329,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: null,
     publisher: "UK Vehicle Certification Agency",
     sourceType: "other",
-    title: "Type approval for agricultural vehicles (GB provisional type approval; EU 167/2013 and 2018/985 framework)",
+    title:
+      "Type approval for agricultural vehicles (GB provisional type approval; EU 167/2013 and 2018/985 framework)",
     url: "https://www.vehicle-certification-agency.gov.uk/vehicle-type-approval/what-is-vehicle-type-approval/type-approval-for-agricultural-vehicles/",
   },
   {
@@ -2006,8 +2340,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: "2016-09-16",
     publisher: "India Ministry of Road Transport and Highways",
     sourceType: "official-regulation",
-    title:
-      "G.S.R. 889(E) mass emission standards for Bharat Stage VI vehicles",
+    title: "G.S.R. 889(E) mass emission standards for Bharat Stage VI vehicles",
     url: "https://morth.nic.in/backend/old_files/notifications_document/Notification_no_G_S_R_889_E_dated_16_09_2016_regarding_Mass_Emission_Standards_for_BS_VI.pdf",
   },
   {
@@ -2156,7 +2489,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.vietnamDecision49,
     isDemo: false,
     publishedOn: "2011-09-01",
-    publisher: "Prime Minister of Viet Nam / Government Electronic Information Portal",
+    publisher:
+      "Prime Minister of Viet Nam / Government Electronic Information Portal",
     sourceType: "official-regulation",
     title:
       "Decision 49/2011/QD-TTg on the emission-standard roadmap for newly manufactured, assembled and imported motor vehicles",
@@ -2167,7 +2501,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.vietnamQcvn109,
     isDemo: false,
     publishedOn: "2021-04-06",
-    publisher: "Viet Nam Ministry of Transport / Government Electronic Information Portal",
+    publisher:
+      "Viet Nam Ministry of Transport / Government Electronic Information Portal",
     sourceType: "official-regulation",
     title:
       "Circular 06/2021/TT-BGTVT issuing QCVN 109:2021/BGTVT Level 5 emission requirements for new automobiles",
@@ -2189,7 +2524,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.malaysiaVtaGuideline,
     isDemo: false,
     publishedOn: "2018-03-22",
-    publisher: "Malaysia Department of Environment Vehicle Type Approval System",
+    publisher:
+      "Malaysia Department of Environment Vehicle Type Approval System",
     sourceType: "government-notice",
     title:
       "Motor Vehicle VTA Guidelines and User Manual - gaseous pollutant and noise emission limits",
@@ -2244,7 +2580,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.uaeMandatoryStandards2018,
     isDemo: false,
     publishedOn: "2018-04-03",
-    publisher: "United Arab Emirates Ministry of Cabinet Affairs / UAE Legislation",
+    publisher:
+      "United Arab Emirates Ministry of Cabinet Affairs / UAE Legislation",
     sourceType: "official-regulation",
     title:
       "Cabinet Resolution No. (13) of 2018 Regarding Mandatory Standards for the United Arab Emirates (UAE.S 5016:2018 and UAE.S 5019:2018)",
@@ -2255,9 +2592,11 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.uaeVehicleEmissionGuide,
     isDemo: false,
     publishedOn: null,
-    publisher: "United Arab Emirates Ministry of Industry and Advanced Technology",
+    publisher:
+      "United Arab Emirates Ministry of Industry and Advanced Technology",
     sourceType: "government-notice",
-    title: "Implementation guideline for new vehicle emission limits in the UAE",
+    title:
+      "Implementation guideline for new vehicle emission limits in the UAE",
     url: "https://www.gso.org.sa/wp-content/uploads/2025/04/Implementation-guideline-for-new-vehicle-emission-limits-in-the-UAE.pdf",
   },
   {
@@ -2300,7 +2639,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.argentinaResolution1464,
     isDemo: false,
     publishedOn: null,
-    publisher: "Argentina Secretaría de Ambiente y Desarrollo Sustentable / Infoleg",
+    publisher:
+      "Argentina Secretaría de Ambiente y Desarrollo Sustentable / Infoleg",
     sourceType: "official-regulation",
     title:
       "Resolución 1464/2014: heavy-duty vehicle emission implementation under Decreto 779/95",
@@ -2311,7 +2651,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.argentinaResolution128Exception,
     isDemo: false,
     publishedOn: "2018-03-26",
-    publisher: "Argentina Secretaría de Ambiente y Desarrollo Sustentable / Infoleg",
+    publisher:
+      "Argentina Secretaría de Ambiente y Desarrollo Sustentable / Infoleg",
     sourceType: "official-regulation",
     title:
       "Resolución 128/2018: temporary Euro III exception for special Ejército Argentino vehicles",
@@ -2344,7 +2685,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.chileMobileMachineryDecree39,
     isDemo: false,
     publishedOn: "2021-10-21",
-    publisher: "Chile Ministerio del Medio Ambiente / Biblioteca del Congreso Nacional",
+    publisher:
+      "Chile Ministerio del Medio Ambiente / Biblioteca del Congreso Nacional",
     sourceType: "official-regulation",
     title:
       "Decreto Supremo 39/2020: Norma de Emisión para Maquinarias Móviles (consolidated through Decreto 33/2024)",
@@ -2355,7 +2697,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.chileTractorAmendmentDecree33,
     isDemo: false,
     publishedOn: "2024-10-21",
-    publisher: "Chile Ministerio del Medio Ambiente / Biblioteca del Congreso Nacional",
+    publisher:
+      "Chile Ministerio del Medio Ambiente / Biblioteca del Congreso Nacional",
     sourceType: "official-regulation",
     title:
       "Decreto Supremo 33/2024: tractor mobile-machinery emissions extension to 2030",
@@ -2366,7 +2709,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.chileHeavyVehicleDecree50,
     isDemo: false,
     publishedOn: "2024-07-05",
-    publisher: "Chile Ministerio del Medio Ambiente / Biblioteca del Congreso Nacional",
+    publisher:
+      "Chile Ministerio del Medio Ambiente / Biblioteca del Congreso Nacional",
     sourceType: "official-regulation",
     title:
       "Decreto Supremo 50/2023: heavy-duty vehicle emission limits added as D.S. 55/1994 article 8 quater",
@@ -2568,8 +2912,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     sourceType: "official-regulation",
     title:
       "Pravilnik o homologaciji (consolidated homologation rulebook: SG RS 129/21, 110/22, 23/23 and 59/24)",
-    url:
-      "https://www.mgsi.gov.rs/sites/default/files/pravilnik_o_homologaciji_0.pdf",
+    url: "https://www.mgsi.gov.rs/sites/default/files/pravilnik_o_homologaciji_0.pdf",
   },
   {
     ...serbiaRecordTimestamps,
@@ -2581,15 +2924,15 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     sourceType: "official-regulation",
     title:
       "Pravilnik o podeli motornih i priključnih vozila i tehničkim uslovima za vozila u saobraćaju na putevima (consolidated through SG RS 54/26)",
-    url:
-      "https://www.mgsi.gov.rs/sites/default/files/pravilnik_o_podeli_motornih_i_prikljucnih_vozila_i_tehnickim_uslovima_za_vozila_u_saobracaju_na_putevima.pdf",
+    url: "https://www.mgsi.gov.rs/sites/default/files/pravilnik_o_podeli_motornih_i_prikljucnih_vozila_i_tehnickim_uslovima_za_vozila_u_saobracaju_na_putevima.pdf",
   },
   {
     ...bosniaRecordTimestamps,
     id: acceptanceFixtureIds.source.bosniaMinimumRequirements,
     isDemo: false,
     publishedOn: "2019-03-26",
-    publisher: "Ministry of Communications and Transport of Bosnia and Herzegovina",
+    publisher:
+      "Ministry of Communications and Transport of Bosnia and Herzegovina",
     sourceType: "official-regulation",
     title:
       "Odluka o najnižim tehničkim zahtjevima za novoproizvedena i korištena vozila pri homologaciji tipa vozila i homologaciji pojedinačnog vozila, te za dijelove, uređaje i opremu vozila pri homologaciji tipa",
@@ -2600,7 +2943,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.bosniaR49Orders,
     isDemo: false,
     publishedOn: "2010-10-28",
-    publisher: "Ministry of Communications and Transport of Bosnia and Herzegovina",
+    publisher:
+      "Ministry of Communications and Transport of Bosnia and Herzegovina",
     sourceType: "official-regulation",
     title:
       "Naredbe o homologaciji — order implementing UNECE Regulation No. 49 for gaseous and particulate pollutants from compression-ignition engines",
@@ -2615,8 +2959,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     sourceType: "official-regulation",
     title:
       "UN Regulation No. 49 Revision 6 — emissions of gaseous and particulate pollutants from compression-ignition engines",
-    url:
-      "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:42013X0624(01)",
+    url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:42013X0624(01)",
   },
   {
     ...centralAsiaRecordTimestamps,
@@ -2627,8 +2970,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     sourceType: "official-regulation",
     title:
       "UN Regulation No. 49, Revision 4 — Uniform provisions concerning measures against gaseous and particulate pollutants from compression-ignition engines and positive ignition engines for use in vehicles",
-    url:
-      "https://digitallibrary.un.org/record/640040/files/E_ECE_324_Rev.1_Add.48_Rev.4_E_ECE_TRANS_505_Rev.1_Add.48_Rev.4-EN.pdf",
+    url: "https://digitallibrary.un.org/record/640040/files/E_ECE_324_Rev.1_Add.48_Rev.4_E_ECE_TRANS_505_Rev.1_Add.48_Rev.4-EN.pdf",
   },
   {
     ...northMacedoniaRecordTimestamps,
@@ -2650,8 +2992,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publisher:
       "Ministry of Economy / Official Gazette of the Republic of Macedonia",
     sourceType: "official-regulation",
-    title:
-      "Правилник за одобрување на земјоделски и шумски трактори",
+    title: "Правилник за одобрување на земјоделски и шумски трактори",
     url: "https://slvesnik.com.mk/Issues/93BA570BCB131F4B93814D076C9003A0.pdf",
   },
   {
@@ -2808,8 +3149,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.azerbaijanEuro4Decision,
     isDemo: false,
     publishedOn: "2014-01-14",
-    publisher:
-      "Cabinet of Ministers of the Republic of Azerbaijan / AZSTAND",
+    publisher: "Cabinet of Ministers of the Republic of Azerbaijan / AZSTAND",
     sourceType: "official-regulation",
     title:
       "Cabinet Decision No. 2 of 14 January 2014 — Euro 4 environmental requirements for motor vehicles imported into and circulated in Azerbaijan",
@@ -2824,8 +3164,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     sourceType: "other",
     title:
       "AZS 636:2025 Road transport — environmental classes (official metadata; M/N scope, non-reference standard, numeric pages not publicly readable)",
-    url:
-      "https://e-standart.gov.az/Standard/Details/838c95ea-0693-4ec2-afe5-808234f0748a",
+    url: "https://e-standart.gov.az/Standard/Details/838c95ea-0693-4ec2-afe5-808234f0748a",
   },
   {
     ...georgiaRecordTimestamps,
@@ -2836,15 +3175,15 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     sourceType: "official-regulation",
     title:
       "Government Resolution No. 238 of 28 June 2023 — Technical Regulation on vehicle emission standards, current publication 12",
-    url:
-      "https://www.matsne.gov.ge/ka/document/view/5845990?publication=12",
+    url: "https://www.matsne.gov.ge/ka/document/view/5845990?publication=12",
   },
   {
     ...georgiaRecordTimestamps,
     id: acceptanceFixtureIds.source.georgiaResolution238Mepa,
     isDemo: false,
     publishedOn: "2023-06-28",
-    publisher: "Ministry of Environmental Protection and Agriculture of Georgia",
+    publisher:
+      "Ministry of Environmental Protection and Agriculture of Georgia",
     sourceType: "official-regulation",
     title:
       "Government Resolution No. 238 — Technical Regulation on vehicle emission standards (MEPA official document mirror)",
@@ -2855,8 +3194,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.uzbekistanAgricultureRegulation,
     isDemo: false,
     publishedOn: "2025-01-13",
-    publisher:
-      "Cabinet of Ministers of the Republic of Uzbekistan / LEX.UZ",
+    publisher: "Cabinet of Ministers of the Republic of Uzbekistan / LEX.UZ",
     sourceType: "official-regulation",
     title:
       "Cabinet Decision No. 10 of 11 January 2025 — UzTR.10-006:2025 Safety of agricultural and forestry vehicles and machinery",
@@ -2867,8 +3205,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.uzbekistanRoadRegulation,
     isDemo: false,
     publishedOn: "2017-04-25",
-    publisher:
-      "Cabinet of Ministers of the Republic of Uzbekistan / LEX.UZ",
+    publisher: "Cabinet of Ministers of the Republic of Uzbekistan / LEX.UZ",
     sourceType: "official-regulation",
     title:
       "Cabinet Decision No. 237 of 25 April 2017 — UzTR.237-016:2017 General Technical Regulation on Safety of Wheeled Vehicles, Annex 8 environmental-class boundary",
@@ -2915,7 +3252,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.tajikistanEngineTermsDraft,
     isDemo: false,
     publishedOn: null,
-    publisher: "Agency for Standardization, Metrology, Certification and Trade Inspection under the Government of the Republic of Tajikistan",
+    publisher:
+      "Agency for Standardization, Metrology, Certification and Trade Inspection under the Government of the Republic of Tajikistan",
     sourceType: "government-notice",
     title:
       "Draft ST JT ____-2024 — Engine emissions: terms and definitions (blank approval and effective-date fields)",
@@ -3006,7 +3344,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: "2020-04-13",
     publisher: "President of the Republic / Diário da República de Angola",
     sourceType: "government-notice",
-    title: "Decreto Presidencial n.º 99/20 — Programa Nacional de Normalização Ambiental",
+    title:
+      "Decreto Presidencial n.º 99/20 — Programa Nacional de Normalização Ambiental",
     url: "https://files.lex.ao/presidente-da-republica/2020/decreto-presidencial-n-o-99-20-de-13-de-abril/download/decreto-presidencial-n-o-99-20-de-13-de-abril_presidente-da-republica_lex-ao.pdf",
   },
   {
@@ -3014,7 +3353,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.burundiRoadTrafficCode2012,
     isDemo: false,
     publishedOn: "2012-11-23",
-    publisher: "Bulletin Officiel du Burundi / Amategeko government legal database",
+    publisher:
+      "Bulletin Officiel du Burundi / Amategeko government legal database",
     sourceType: "official-regulation",
     title: "BOB N°11/2012 — Loi N°1/26 portant Code de la circulation routière",
     url: "https://amategeko.gov.bi/wp-content/uploads/2019/12/BOB_No11-2012.pdf",
@@ -3035,9 +3375,11 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.beninAirQualityDecree2001,
     isDemo: false,
     publishedOn: "2001-04-04",
-    publisher: "Presidency of the Republic / General Secretariat of the Government of Benin",
+    publisher:
+      "Presidency of the Republic / General Secretariat of the Government of Benin",
     sourceType: "official-regulation",
-    title: "Décret N° 2001-110 du 04 avril 2001 fixant les normes de qualité de l’air",
+    title:
+      "Décret N° 2001-110 du 04 avril 2001 fixant les normes de qualité de l’air",
     url: "https://sgg.gouv.bj/doc/decret-2001-110/download",
   },
   {
@@ -3055,7 +3397,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.burkinaFasoAirQualityDecree2001,
     isDemo: false,
     publishedOn: "2001-05-07",
-    publisher: "President of Burkina Faso / Journal Officiel (FAOLEX facsimile)",
+    publisher:
+      "President of Burkina Faso / Journal Officiel (FAOLEX facsimile)",
     sourceType: "official-regulation",
     title:
       "Décret n°2001-185/PRES/PM/MEE fixant les normes de rejets de polluants dans l’air, l’eau et le sol",
@@ -3090,7 +3433,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.bangladeshGazetteIndex2022,
     isDemo: false,
     publishedOn: "2022-07-26",
-    publisher: "Bangladesh Department of Printing and Publications / Government Press",
+    publisher:
+      "Bangladesh Department of Printing and Publications / Government Press",
     sourceType: "government-notice",
     title: "Extraordinary Gazette of July 2022 — S.R.O. No. 255-Law/2022",
     url: "https://www.dpp.gov.bd/bgpress/index.php/document/get_extraordinary/45501",
@@ -3126,8 +3470,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     sourceType: "official-regulation",
     title:
       "TR CU 018/2011 On safety of wheeled vehicles — current official regulation page and consolidated text",
-    url:
-      "https://eec.eaeunion.org/comission/department/deptexreg/realizatsiya-soglasheniya-o-vvedenii-edinykh-form-pts/normativnaya-baza/tr-ts-018-2011.php",
+    url: "https://eec.eaeunion.org/comission/department/deptexreg/realizatsiya-soglasheniya-o-vvedenii-edinykh-form-pts/normativnaya-baza/tr-ts-018-2011.php",
   },
   {
     ...belarusRecordTimestamps,
@@ -3138,8 +3481,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     sourceType: "official-regulation",
     title:
       "TR CU 031/2012 On safety of agricultural and forestry tractors and trailers — current official regulation page and consolidated text",
-    url:
-      "https://eec.eaeunion.org/comission/department/deptexreg/realizatsiya-soglasheniya-o-vvedenii-edinykh-form-pts/normativnaya-baza/tr-ts-031-2.php",
+    url: "https://eec.eaeunion.org/comission/department/deptexreg/realizatsiya-soglasheniya-o-vvedenii-edinykh-form-pts/normativnaya-baza/tr-ts-031-2.php",
   },
   {
     ...boliviaRecordTimestamps,
@@ -3211,7 +3553,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.nigeriaNesrea,
     isDemo: false,
     publishedOn: null,
-    publisher: "National Environmental Standards and Regulations Enforcement Agency",
+    publisher:
+      "National Environmental Standards and Regulations Enforcement Agency",
     sourceType: "government-notice",
     title: "Nigeria NESREA laws and regulations portal",
     url: "https://nesrea.gov.ng/laws-regulations/",
@@ -3413,8 +3756,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publisher:
       "Cambodia Ministry of Industry and Handicraft / Institute of Standards of Cambodia",
     sourceType: "official-regulation",
-    title:
-      "Prakas No. 150 MIH/2016 on 19 Automotive Technical Regulations",
+    title: "Prakas No. 150 MIH/2016 on 19 Automotive Technical Regulations",
     url: "https://res.cloudinary.com/dgvyfitu8/image/upload/v1733987381/Prakas_No_150_MIH_2016_on_19_Automotives_Technical_Regulations_bdb6d255a4.pdf",
   },
   {
@@ -3706,8 +4048,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.panamaTransport,
     isDemo: false,
     publishedOn: "2022-04-25",
-    publisher:
-      "Asamblea Nacional / Gaceta Oficial de la República de Panamá",
+    publisher: "Asamblea Nacional / Gaceta Oficial de la República de Panamá",
     sourceType: "official-regulation",
     title:
       "Ley 295 de 25 de abril de 2022 — Que incentiva la movilidad eléctrica en el transporte terrestre",
@@ -3769,7 +4110,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.namibiaTransport,
     isDemo: false,
     publishedOn: "2013-09-20",
-    publisher: "Ministry of Trade and Industry / Namibian Standards Institution",
+    publisher:
+      "Ministry of Trade and Industry / Namibian Standards Institution",
     sourceType: "official-regulation",
     title: "Government Notice Nos. 248–249 of 2013 — Standards Regulations",
     url: "https://nsi.com.na/wp-content/uploads/2026/03/5290-Gov-N248-249-Standard-Regulations.pdf",
@@ -3862,7 +4204,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.rwandaEnvironment,
     isDemo: false,
     publishedOn: "2018-09-24",
-    publisher: "Official Gazette of the Republic of Rwanda / Ministry of Environment",
+    publisher:
+      "Official Gazette of the Republic of Rwanda / Ministry of Environment",
     sourceType: "official-regulation",
     title:
       "Ministerial Order No. 02/2018 of 17/09/2018 Relating to Air Pollutants Emission",
@@ -3907,7 +4250,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: null,
     publisher: "Comité Ivoirien de Normalisation (CODINORM)",
     sourceType: "government-notice",
-    title: "PNI 15004 : Février 2025 — Véhicules N2 et N3 (Projet de Norme Ivoirienne)",
+    title:
+      "PNI 15004 : Février 2025 — Véhicules N2 et N3 (Projet de Norme Ivoirienne)",
     url: "https://www.codinorm.ci/doc/enquete/vehicules/PNI%2015004%20Vehic%20N2%20et%20N3%20janv%202025%20V01.pdf",
   },
   {
@@ -3995,7 +4339,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: null,
     publisher: "Government of Eswatini — Road Transportation Department",
     sourceType: "government-notice",
-    title: "Road Transportation Department — roadworthiness testing and statutory mandate",
+    title:
+      "Road Transportation Department — roadworthiness testing and statutory mandate",
     url: "https://www.gov.sz/index.php/ministry-department/road-transportation-department",
   },
   {
@@ -4036,7 +4381,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.madagascarTransport,
     isDemo: false,
     publishedOn: null,
-    publisher: "Direction de la Législation et du Contentieux / CNLEGIS, Madagascar",
+    publisher:
+      "Direction de la Législation et du Contentieux / CNLEGIS, Madagascar",
     sourceType: "government-notice",
     title: "CNLEGIS — Recherche directe par numéros",
     url: "https://cnlegis.gov.mg/page_cherche_dir_numeros/",
@@ -4084,116 +4430,213 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     url: "https://portal.trade.gov.mw/en-gb/site/display/101",
   },
   {
-    ...fijiRecordTimestamps, id: acceptanceFixtureIds.source.fijiEnvironment, isDemo: false, publishedOn: "2025-01-28",
-    publisher: "Fiji Revenue and Customs Service", sourceType: "government-notice",
-    title: "Standard Interpretation Guideline 2025-04 — Customs (Prohibited Imports and Exports) Regulations 1986 – Importation of Motor Vehicles",
+    ...fijiRecordTimestamps,
+    id: acceptanceFixtureIds.source.fijiEnvironment,
+    isDemo: false,
+    publishedOn: "2025-01-28",
+    publisher: "Fiji Revenue and Customs Service",
+    sourceType: "government-notice",
+    title:
+      "Standard Interpretation Guideline 2025-04 — Customs (Prohibited Imports and Exports) Regulations 1986 – Importation of Motor Vehicles",
     url: "https://frcs.org.fj/wp-content/uploads/2025/01/SIG-2025-04-Importation-of-Motor-Vehicles-Customs-Prohibited-Imports-and-Exports-Regulations-1986.pdf",
   },
   {
-    ...fijiRecordTimestamps, id: acceptanceFixtureIds.source.fijiTransport, isDemo: false, publishedOn: null,
-    publisher: "Fiji Revenue and Customs Service", sourceType: "government-notice",
+    ...fijiRecordTimestamps,
+    id: acceptanceFixtureIds.source.fijiTransport,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "Fiji Revenue and Customs Service",
+    sourceType: "government-notice",
     title: "Importation of Used or Reconditioned Motor Vehicles in 2026",
     url: "https://frcs.org.fj/public-notice/importation-of-used-or-reconditioned-motor-vehicles-in-2026/",
   },
   {
-    ...belizeRecordTimestamps, id: acceptanceFixtureIds.source.belizeEnvironment, isDemo: false, publishedOn: "1996-04-20",
-    publisher: "Belize Department of the Environment / Government of Belize", sourceType: "official-regulation",
-    title: "Pollution Regulations (S.I. No. 56 of 1996), Chapter 328, Revised Edition 2020 — regulations 25–26 (PDF pp. 25–26)",
+    ...belizeRecordTimestamps,
+    id: acceptanceFixtureIds.source.belizeEnvironment,
+    isDemo: false,
+    publishedOn: "1996-04-20",
+    publisher: "Belize Department of the Environment / Government of Belize",
+    sourceType: "official-regulation",
+    title:
+      "Pollution Regulations (S.I. No. 56 of 1996), Chapter 328, Revised Edition 2020 — regulations 25–26 (PDF pp. 25–26)",
     url: "https://doe.gov.bz/wp-content/uploads/2024/02/Pollution-Regulations.pdf",
   },
   {
-    ...belizeRecordTimestamps, id: acceptanceFixtureIds.source.belizeTransport, isDemo: false, publishedOn: null,
-    publisher: "Government of Belize / Department of the Environment", sourceType: "official-regulation",
-    title: "Environmental Protection Act, Chapter 328, Revised Edition 2020 — sections 6 and 45 (PDF pp. 21 and 45)",
+    ...belizeRecordTimestamps,
+    id: acceptanceFixtureIds.source.belizeTransport,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "Government of Belize / Department of the Environment",
+    sourceType: "official-regulation",
+    title:
+      "Environmental Protection Act, Chapter 328, Revised Edition 2020 — sections 6 and 45 (PDF pp. 21 and 45)",
     url: "https://doe.gov.bz/download/environmental-protection-act-chapter-328-re-2020/?wpdmdl=17080",
   },
   {
-    ...bruneiRecordTimestamps, id: acceptanceFixtureIds.source.bruneiEnvironment, isDemo: false, publishedOn: null,
-    publisher: "Attorney General’s Chambers, Brunei Darussalam", sourceType: "official-regulation",
+    ...bruneiRecordTimestamps,
+    id: acceptanceFixtureIds.source.bruneiEnvironment,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "Attorney General’s Chambers, Brunei Darussalam",
+    sourceType: "official-regulation",
     title: "Road Traffic Regulations (Chapter 68), Revised Edition 2022",
     url: "https://www.agc.gov.bn/AGC%20Images/LAWS/ACT_PDF/R/CHAPTER%20068%20RG1%20%282022%29.pdf",
   },
   {
-    ...bruneiRecordTimestamps, id: acceptanceFixtureIds.source.bruneiTransport, isDemo: false, publishedOn: null,
-    publisher: "Ministry of Communications & Land Transport Department, in collaboration with Brunei National Road Safety Council", sourceType: "government-notice",
+    ...bruneiRecordTimestamps,
+    id: acceptanceFixtureIds.source.bruneiTransport,
+    isDemo: false,
+    publishedOn: null,
+    publisher:
+      "Ministry of Communications & Land Transport Department, in collaboration with Brunei National Road Safety Council",
+    sourceType: "government-notice",
     title: "Safe and Smart Driving in Brunei Darussalam",
     url: "https://www.jpd.gov.bn/SiteAssets/SitePages/Land%20Transport%20Department/Adverts/Safe%20and%20Smart%20Driving%20In%20Brunei%20Darussalam/Safe%20and%20Smart%20Driving%20in%20Brunei%20Darussalam%201st%20edition.pdf",
   },
   {
-    ...bhutanRecordTimestamps, id: acceptanceFixtureIds.source.bhutanEnvironment, isDemo: false, publishedOn: null,
-    publisher: "National Environment Commission, Royal Government of Bhutan", sourceType: "government-notice",
+    ...bhutanRecordTimestamps,
+    id: acceptanceFixtureIds.source.bhutanEnvironment,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "National Environment Commission, Royal Government of Bhutan",
+    sourceType: "government-notice",
     title: "Environmental Standards, 2020",
     url: "https://www.nec.gov.bt/publications/download/environment-standards-2020",
   },
   {
-    ...bhutanRecordTimestamps, id: acceptanceFixtureIds.source.bhutanTransport, isDemo: false, publishedOn: "2026-07-03",
-    publisher: "Bhutan Construction and Transport Authority", sourceType: "government-notice",
-    title: "Public Notification – Implementation of the Road Safety and Transport Rules and Regulations (RSTRR) 2026",
+    ...bhutanRecordTimestamps,
+    id: acceptanceFixtureIds.source.bhutanTransport,
+    isDemo: false,
+    publishedOn: "2026-07-03",
+    publisher: "Bhutan Construction and Transport Authority",
+    sourceType: "government-notice",
+    title:
+      "Public Notification – Implementation of the Road Safety and Transport Rules and Regulations (RSTRR) 2026",
     url: "https://bcta.gov.bt/public-notification-implementation-of-the-road-safety-and-transport-rules-and-regulations-rstrr-2026/",
   },
   {
-    ...centralAfricanRepublicRecordTimestamps, id: acceptanceFixtureIds.source.centralAfricanRepublicEnvironment, isDemo: false, publishedOn: "2007-12-28",
-    publisher: "Présidence de la République / Journal officiel de la République centrafricaine", sourceType: "official-regulation",
-    title: "Loi n° 07.018 du 28 décembre 2007 portant Code de l’environnement de la République centrafricaine",
+    ...centralAfricanRepublicRecordTimestamps,
+    id: acceptanceFixtureIds.source.centralAfricanRepublicEnvironment,
+    isDemo: false,
+    publishedOn: "2007-12-28",
+    publisher:
+      "Présidence de la République / Journal officiel de la République centrafricaine",
+    sourceType: "official-regulation",
+    title:
+      "Loi n° 07.018 du 28 décembre 2007 portant Code de l’environnement de la République centrafricaine",
     url: "https://faolex.fao.org/docs/pdf/caf105925.pdf",
   },
   {
-    ...centralAfricanRepublicRecordTimestamps, id: acceptanceFixtureIds.source.centralAfricanRepublicTransport, isDemo: false, publishedOn: "2026-03-09",
-    publisher: "République centrafricaine / Ministère de l’Environnement et du Développement durable / UNFCCC NDC Registry", sourceType: "government-notice",
-    title: "Contribution déterminée au niveau national (CDN 3.0) de la République centrafricaine",
+    ...centralAfricanRepublicRecordTimestamps,
+    id: acceptanceFixtureIds.source.centralAfricanRepublicTransport,
+    isDemo: false,
+    publishedOn: "2026-03-09",
+    publisher:
+      "République centrafricaine / Ministère de l’Environnement et du Développement durable / UNFCCC NDC Registry",
+    sourceType: "government-notice",
+    title:
+      "Contribution déterminée au niveau national (CDN 3.0) de la République centrafricaine",
     url: "https://unfccc.int/sites/default/files/2026-03/CDN%203.0%20CAR%202025.pdf",
   },
   {
-    ...democraticRepublicOfCongoRecordTimestamps, id: acceptanceFixtureIds.source.democraticRepublicOfCongoEnvironment, isDemo: false, publishedOn: "2011-07-16",
-    publisher: "Journal officiel de la République démocratique du Congo / Cabinet du Président; official copy hosted by the Ministry of Environment", sourceType: "official-regulation",
-    title: "Loi n° 11/009 du 09 juillet 2011 portant principes fondamentaux relatifs à la protection de l’environnement",
+    ...democraticRepublicOfCongoRecordTimestamps,
+    id: acceptanceFixtureIds.source.democraticRepublicOfCongoEnvironment,
+    isDemo: false,
+    publishedOn: "2011-07-16",
+    publisher:
+      "Journal officiel de la République démocratique du Congo / Cabinet du Président; official copy hosted by the Ministry of Environment",
+    sourceType: "official-regulation",
+    title:
+      "Loi n° 11/009 du 09 juillet 2011 portant principes fondamentaux relatifs à la protection de l’environnement",
     url: "https://medd.gouv.cd/wp-content/uploads/2020/07/attachment1.pdf",
   },
   {
-    ...democraticRepublicOfCongoRecordTimestamps, id: acceptanceFixtureIds.source.democraticRepublicOfCongoTransport, isDemo: false, publishedOn: "2025-11-24",
-    publisher: "Vice-Primature, Ministère des Transports, Voies de Communication et Désenclavement, République démocratique du Congo", sourceType: "official-regulation",
-    title: "Arrêté ministériel n° VPM/MTVCD/CAB/085/2025 du 12 novembre 2025 portant réglementation du contrôle technique des véhicules automobiles et des remorques en circulation en République démocratique du Congo",
+    ...democraticRepublicOfCongoRecordTimestamps,
+    id: acceptanceFixtureIds.source.democraticRepublicOfCongoTransport,
+    isDemo: false,
+    publishedOn: "2025-11-24",
+    publisher:
+      "Vice-Primature, Ministère des Transports, Voies de Communication et Désenclavement, République démocratique du Congo",
+    sourceType: "official-regulation",
+    title:
+      "Arrêté ministériel n° VPM/MTVCD/CAB/085/2025 du 12 novembre 2025 portant réglementation du contrôle technique des véhicules automobiles et des remorques en circulation en République démocratique du Congo",
     url: "https://transports.gouv.cd/wp-content/uploads/2025/11/ARRETE-MINISTERIEL-N%C2%B0085-DU-12-NOV-2025-PORTANT-RE_251124_152526.pdf",
   },
   {
-    ...republicOfCongoRecordTimestamps, id: acceptanceFixtureIds.source.republicOfCongoEnvironment, isDemo: false, publishedOn: "2023-11-17",
-    publisher: "Présidence de la République / Ministère de l’Environnement, du Développement durable et du Bassin du Congo", sourceType: "official-regulation",
-    title: "Loi n° 33-2023 du 17 novembre 2023 portant gestion durable de l’environnement en République du Congo",
+    ...republicOfCongoRecordTimestamps,
+    id: acceptanceFixtureIds.source.republicOfCongoEnvironment,
+    isDemo: false,
+    publishedOn: "2023-11-17",
+    publisher:
+      "Présidence de la République / Ministère de l’Environnement, du Développement durable et du Bassin du Congo",
+    sourceType: "official-regulation",
+    title:
+      "Loi n° 33-2023 du 17 novembre 2023 portant gestion durable de l’environnement en République du Congo",
     url: "https://www.developpement-durable.gouv.cg/wp-content/uploads/2023/11/Loi_n_33-2023_du_17_novembre_portant_gestion_durable_de_l_environnement_en_Republique_du_Congo_.pdf",
   },
   {
-    ...republicOfCongoRecordTimestamps, id: acceptanceFixtureIds.source.republicOfCongoTransport, isDemo: false, publishedOn: "2019-07-18",
-    publisher: "Secrétariat général du Gouvernement / Journal officiel de la République du Congo", sourceType: "official-regulation",
-    title: "Journal officiel n° 29 du 18 juillet 2019 — Décret n° 2019-171 du 1er juillet 2019 portant réglementation du contrôle technique des véhicules routiers",
+    ...republicOfCongoRecordTimestamps,
+    id: acceptanceFixtureIds.source.republicOfCongoTransport,
+    isDemo: false,
+    publishedOn: "2019-07-18",
+    publisher:
+      "Secrétariat général du Gouvernement / Journal officiel de la République du Congo",
+    sourceType: "official-regulation",
+    title:
+      "Journal officiel n° 29 du 18 juillet 2019 — Décret n° 2019-171 du 1er juillet 2019 portant réglementation du contrôle technique des véhicules routiers",
     url: "https://www.sgg.cg/JO/2019/congo-jo-2019-29.pdf",
   },
   {
-    ...cubaRecordTimestamps, id: acceptanceFixtureIds.source.cubaEnvironment, isDemo: false, publishedOn: "2023-09-13",
-    publisher: "Gaceta Oficial de la República de Cuba / Ministerio de Justicia / Asamblea Nacional del Poder Popular", sourceType: "official-regulation",
-    title: "Gaceta Oficial No. 87 Ordinaria de 13 de septiembre de 2023 — Ley 150/2022 Del Sistema de los Recursos Naturales y el Medio Ambiente (GOC-2023-771-O87)",
+    ...cubaRecordTimestamps,
+    id: acceptanceFixtureIds.source.cubaEnvironment,
+    isDemo: false,
+    publishedOn: "2023-09-13",
+    publisher:
+      "Gaceta Oficial de la República de Cuba / Ministerio de Justicia / Asamblea Nacional del Poder Popular",
+    sourceType: "official-regulation",
+    title:
+      "Gaceta Oficial No. 87 Ordinaria de 13 de septiembre de 2023 — Ley 150/2022 Del Sistema de los Recursos Naturales y el Medio Ambiente (GOC-2023-771-O87)",
     url: "https://www.gacetaoficial.gob.cu/sites/default/files/goc-2023-o87.pdf",
   },
   {
-    ...cubaRecordTimestamps, id: acceptanceFixtureIds.source.cubaTransport, isDemo: false, publishedOn: "2011-03-15",
-    publisher: "Gaceta Oficial de la República de Cuba / Ministerio de Justicia / Ministerio del Transporte", sourceType: "official-regulation",
-    title: "Gaceta Oficial No. 014 Extraordinaria de 15 de marzo de 2011 — Resolución No. 151/2011, Normas Complementarias para la Seguridad Vial",
+    ...cubaRecordTimestamps,
+    id: acceptanceFixtureIds.source.cubaTransport,
+    isDemo: false,
+    publishedOn: "2011-03-15",
+    publisher:
+      "Gaceta Oficial de la República de Cuba / Ministerio de Justicia / Ministerio del Transporte",
+    sourceType: "official-regulation",
+    title:
+      "Gaceta Oficial No. 014 Extraordinaria de 15 de marzo de 2011 — Resolución No. 151/2011, Normas Complementarias para la Seguridad Vial",
     url: "https://www.gacetaoficial.gob.cu/sites/default/files/go_x_014_2011.pdf",
   },
   {
-    ...djiboutiRecordTimestamps, id: acceptanceFixtureIds.source.djiboutiEnvironment, isDemo: false, publishedOn: "2009-07-01",
-    publisher: "Journal Officiel de la République de Djibouti / Présidence de la République", sourceType: "official-regulation",
+    ...djiboutiRecordTimestamps,
+    id: acceptanceFixtureIds.source.djiboutiEnvironment,
+    isDemo: false,
+    publishedOn: "2009-07-01",
+    publisher:
+      "Journal Officiel de la République de Djibouti / Présidence de la République",
+    sourceType: "official-regulation",
     title: "Loi n° 51/AN/09/6ème L portant Code de l’Environnement",
     url: "https://www.journalofficiel.dj/texte-juridique/loi-n51-an-09-6eme-l-portant-code-de-lenvironnement/",
   },
   {
-    ...djiboutiRecordTimestamps, id: acceptanceFixtureIds.source.djiboutiTransport, isDemo: false, publishedOn: "2010-12-15",
-    publisher: "Journal Officiel de la République de Djibouti / Présidence de la République", sourceType: "official-regulation",
-    title: "Décret n° 2010-0230/PR/MID du 4 décembre 2010 relatif aux nouvelles dispositions réglementaires du Code de la Route",
+    ...djiboutiRecordTimestamps,
+    id: acceptanceFixtureIds.source.djiboutiTransport,
+    isDemo: false,
+    publishedOn: "2010-12-15",
+    publisher:
+      "Journal Officiel de la République de Djibouti / Présidence de la République",
+    sourceType: "official-regulation",
+    title:
+      "Décret n° 2010-0230/PR/MID du 4 décembre 2010 relatif aux nouvelles dispositions réglementaires du Code de la Route",
     url: "https://www.journalofficiel.dj/texte-juridique/decret-n2010-0230-pr-mid-relatif-aux-nouvelles-dispositions-reglementaires-du-code-de-la-route/",
   },
   {
     ...eritreaRecordTimestamps,
-    id: acceptanceFixtureIds.source.eritreaEnvironmentalProtectionManagementRegulations127_2017,
+    id: acceptanceFixtureIds.source
+      .eritreaEnvironmentalProtectionManagementRegulations127_2017,
     isDemo: false,
     publishedOn: "2017-01-26",
     publisher: "Government of the State of Eritrea / Gazette of Eritrean Laws",
@@ -4203,12 +4646,14 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
   },
   {
     ...eritreaRecordTimestamps,
-    id: acceptanceFixtureIds.source.eritreaVehicleTechnicalStandardsRegulations61_2002,
+    id: acceptanceFixtureIds.source
+      .eritreaVehicleTechnicalStandardsRegulations61_2002,
     isDemo: false,
     publishedOn: "2002-05-13",
     publisher: "Government of the State of Eritrea / Gazette of Eritrean Laws",
     sourceType: "official-regulation",
-    title: "Regulations on Vehicle Technical and Related Standards Specifications 61/2002",
+    title:
+      "Regulations on Vehicle Technical and Related Standards Specifications 61/2002",
     url: "https://tile.loc.gov/storage-services/service/ll/lleritrea/eritrean-notice-61-2002/eritrean-notice-61-2002.pdf",
   },
   {
@@ -4216,39 +4661,58 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.gabonEnvironmentalProtectionLaw007_2014,
     isDemo: false,
     publishedOn: "2014-09-16",
-    publisher: "Journal Officiel de la République Gabonaise / Présidence de la République",
+    publisher:
+      "Journal Officiel de la République Gabonaise / Présidence de la République",
     sourceType: "official-regulation",
-    title: "JOURNAL OFFICIEL N°222 DU 16 SEPTEMBRE 2014 — Loi N° 007/2014 du 31/07/2014 relative à la protection de l'environnement en République Gabonaise",
+    title:
+      "JOURNAL OFFICIEL N°222 DU 16 SEPTEMBRE 2014 — Loi N° 007/2014 du 31/07/2014 relative à la protection de l'environnement en République Gabonaise",
     url: "https://journal-officiel.ga/6186-007-2014/",
   },
   {
     ...gabonRecordTimestamps,
-    id: acceptanceFixtureIds.source.gabonHeavyVehicleHomologationOrder00097_2017,
+    id: acceptanceFixtureIds.source
+      .gabonHeavyVehicleHomologationOrder00097_2017,
     isDemo: false,
     publishedOn: "2017-04-23",
-    publisher: "Journal Officiel de la République Gabonaise / Ministère des Transports et de la Logistique",
+    publisher:
+      "Journal Officiel de la République Gabonaise / Ministère des Transports et de la Logistique",
     sourceType: "official-regulation",
-    title: "JOURNAL OFFICIEL N°345 TER DU 23 AVRIL 2017 — Arrêté N° 00097/MTL/2017 du 24/02/2017 relatif à la conduite, la certification et l'homologation des véhicules poids lourds, remorques, semi-remorques, engins et tous les équipements de levage et de manutention, les engins spéciaux et leurs agrès",
+    title:
+      "JOURNAL OFFICIEL N°345 TER DU 23 AVRIL 2017 — Arrêté N° 00097/MTL/2017 du 24/02/2017 relatif à la conduite, la certification et l'homologation des véhicules poids lourds, remorques, semi-remorques, engins et tous les équipements de levage et de manutention, les engins spéciaux et leurs agrès",
     url: "https://journal-officiel.ga/5680-00097-mtl-2017-/",
   },
   {
-    ...guineaRecordTimestamps, id: acceptanceFixtureIds.source.guineaEnvironment, isDemo: false, publishedOn: "2019-07-26",
-    publisher: "Présidence de la République / Secrétariat général du Gouvernement, République de Guinée", sourceType: "official-regulation",
-    title: "Décret D/2019/221/PRG/SGG portant promulgation de la Loi L/2019/0034/AN du 04 juillet 2019 portant Code de l’environnement de la République de Guinée",
+    ...guineaRecordTimestamps,
+    id: acceptanceFixtureIds.source.guineaEnvironment,
+    isDemo: false,
+    publishedOn: "2019-07-26",
+    publisher:
+      "Présidence de la République / Secrétariat général du Gouvernement, République de Guinée",
+    sourceType: "official-regulation",
+    title:
+      "Décret D/2019/221/PRG/SGG portant promulgation de la Loi L/2019/0034/AN du 04 juillet 2019 portant Code de l’environnement de la République de Guinée",
     url: "https://medd.gov.gn/file/2022/12/Code-de-lEnvironnement-du-04-juillet-2019-1.pdf",
   },
   {
-    ...guineaRecordTimestamps, id: acceptanceFixtureIds.source.guineaTransport, isDemo: false, publishedOn: "2018-06-20",
-    publisher: "Assemblée nationale de la République de Guinée / official archive hosted by the Conseil national de la transition", sourceType: "official-regulation",
-    title: "Loi ordinaire n° L/2018/023/AN du 20 juin 2018 portant Code de la route de la République de Guinée",
+    ...guineaRecordTimestamps,
+    id: acceptanceFixtureIds.source.guineaTransport,
+    isDemo: false,
+    publishedOn: "2018-06-20",
+    publisher:
+      "Assemblée nationale de la République de Guinée / official archive hosted by the Conseil national de la transition",
+    sourceType: "official-regulation",
+    title:
+      "Loi ordinaire n° L/2018/023/AN du 20 juin 2018 portant Code de la route de la République de Guinée",
     url: "https://cnt.gov.gn/archive.assemblee/www.assemblee.gov.gn/node/739.html",
   },
   {
     ...gambiaRecordTimestamps,
-    id: acceptanceFixtureIds.source.gambiaEnvironmentalQualityStandardsRegulations1999,
+    id: acceptanceFixtureIds.source
+      .gambiaEnvironmentalQualityStandardsRegulations1999,
     isDemo: false,
     publishedOn: null,
-    publisher: "National Environment Management Council / National Environment Agency, The Gambia",
+    publisher:
+      "National Environment Management Council / National Environment Agency, The Gambia",
     sourceType: "official-regulation",
     title: "Environmental Quality Standards Regulations, 1999",
     url: "https://faolex.fao.org/docs/pdf/gam95812.pdf",
@@ -4260,7 +4724,8 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: "2014-01-23",
     publisher: "The Gambia Gazette / National Assembly of The Gambia",
     sourceType: "official-regulation",
-    title: "Supplement “C” to The Gambia Gazette No. 1 of 23rd January, 2014 — Motor Traffic (Amendment) Act, 2013 (No. 12 of 2013)",
+    title:
+      "Supplement “C” to The Gambia Gazette No. 1 of 23rd January, 2014 — Motor Traffic (Amendment) Act, 2013 (No. 12 of 2013)",
     url: "https://security-legislation.gm/wp-content/uploads/2022/10/Motor-Traffic-Amendment-Act-2013.pdf",
   },
   {
@@ -4268,9 +4733,11 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.guineaBissauBasicEnvironmentLaw1_2011,
     isDemo: false,
     publishedOn: "2011-03-02",
-    publisher: "Assembleia Nacional Popular / Boletim Oficial da República da Guiné-Bissau",
+    publisher:
+      "Assembleia Nacional Popular / Boletim Oficial da República da Guiné-Bissau",
     sourceType: "official-regulation",
-    title: "2.º Suplemento ao Boletim Oficial da República da Guiné-Bissau n.º 9 — Lei n.º 1/2011, de 2 de Março — Lei de Bases do Ambiente",
+    title:
+      "2.º Suplemento ao Boletim Oficial da República da Guiné-Bissau n.º 9 — Lei n.º 1/2011, de 2 de Março — Lei de Bases do Ambiente",
     url: "https://faolex.fao.org/docs/pdf/gbs118164.pdf",
   },
   {
@@ -4278,9 +4745,11 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.guineaBissauTransportMinistryDirectory,
     isDemo: false,
     publishedOn: null,
-    publisher: "Governo da República da Guiné-Bissau / Ministério dos Transportes e Comunicações",
+    publisher:
+      "Governo da República da Guiné-Bissau / Ministério dos Transportes e Comunicações",
     sourceType: "government-notice",
-    title: "Ministério dos Transportes e Comunicações — Governo da Guiné-Bissau",
+    title:
+      "Ministério dos Transportes e Comunicações — Governo da Guiné-Bissau",
     url: "https://bissaugov.com/ministerios/transportes-comunicacoes",
   },
   {
@@ -4288,157 +4757,867 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     id: acceptanceFixtureIds.source.equatorialGuineaEnvironmentalLaw7_2003,
     isDemo: false,
     publishedOn: "2003-11-27",
-    publisher: "Presidencia de la República de Guinea Ecuatorial / Boletín Oficial del Estado",
+    publisher:
+      "Presidencia de la República de Guinea Ecuatorial / Boletín Oficial del Estado",
     sourceType: "official-regulation",
-    title: "Ley número 7/2003, de fecha 27 de noviembre, Reguladora del Medio Ambiente en Guinea Ecuatorial",
+    title:
+      "Ley número 7/2003, de fecha 27 de noviembre, Reguladora del Medio Ambiente en Guinea Ecuatorial",
     url: "https://faolex.fao.org/docs/pdf/eqg102892.pdf",
   },
   {
     ...equatorialGuineaRecordTimestamps,
-    id: acceptanceFixtureIds.source.equatorialGuineaGeneralRoadTransportLaw4_2018,
+    id: acceptanceFixtureIds.source
+      .equatorialGuineaGeneralRoadTransportLaw4_2018,
     isDemo: false,
     publishedOn: "2019-03-25",
-    publisher: "Dirección General del Boletín Oficial del Estado / Presidencia del Gobierno de Guinea Ecuatorial",
+    publisher:
+      "Dirección General del Boletín Oficial del Estado / Presidencia del Gobierno de Guinea Ecuatorial",
     sourceType: "official-regulation",
-    title: "Ley General de Transporte por Carretera Nº 4 — Ley Núm. 4/2.018, de fecha 19 de Diciembre, General de Transporte por Carretera en la República de Guinea Ecuatorial",
+    title:
+      "Ley General de Transporte por Carretera Nº 4 — Ley Núm. 4/2.018, de fecha 19 de Diciembre, General de Transporte por Carretera en la República de Guinea Ecuatorial",
     url: "https://minhacienda-gob.com/media/stream/8301",
   },
   {
-    ...greenlandRecordTimestamps, id: acceptanceFixtureIds.source.greenlandEnvironment, isDemo: false, publishedOn: "1979-03-27",
-    publisher: "Government of Greenland / Nalunaarutit", sourceType: "official-regulation",
-    title: "Administrative Regulation No. 141/1979 — vehicle construction and equipment in Greenland",
+    ...greenlandRecordTimestamps,
+    id: acceptanceFixtureIds.source.greenlandEnvironment,
+    isDemo: false,
+    publishedOn: "1979-03-27",
+    publisher: "Government of Greenland / Nalunaarutit",
+    sourceType: "official-regulation",
+    title:
+      "Administrative Regulation No. 141/1979 — vehicle construction and equipment in Greenland",
     url: "https://nalunaarutit.gl/Rigslovgivning/1979/Bekendtgoerelse-nr-141-af-27_03_1979?sc_lang=da",
   },
   {
-    ...greenlandRecordTimestamps, id: acceptanceFixtureIds.source.greenlandTransport, isDemo: false, publishedOn: "2009-10-26",
-    publisher: "Danish Ministry of Justice / Official Legal Information System", sourceType: "official-regulation",
+    ...greenlandRecordTimestamps,
+    id: acceptanceFixtureIds.source.greenlandTransport,
+    isDemo: false,
+    publishedOn: "2009-10-26",
+    publisher: "Danish Ministry of Justice / Official Legal Information System",
+    sourceType: "official-regulation",
     title: "Consolidated Act No. 995/2009 — Road Traffic Act for Greenland",
     url: "https://www.retsinformation.dk/eli/lta/2009/995",
   },
   {
-    ...guyanaRecordTimestamps, id: acceptanceFixtureIds.source.guyanaEnvironment, isDemo: false, publishedOn: "2000-12-13",
-    publisher: "Ministry of Legal Affairs, Guyana", sourceType: "official-regulation",
-    title: "Environmental Protection (Air Quality) Regulations, 2000 (Reg. 9/2000) — regulations 18–20 (PDF pp. 167–168)",
+    ...guyanaRecordTimestamps,
+    id: acceptanceFixtureIds.source.guyanaEnvironment,
+    isDemo: false,
+    publishedOn: "2000-12-13",
+    publisher: "Ministry of Legal Affairs, Guyana",
+    sourceType: "official-regulation",
+    title:
+      "Environmental Protection (Air Quality) Regulations, 2000 (Reg. 9/2000) — regulations 18–20 (PDF pp. 167–168)",
     url: "https://mola.gov.gy/laws/Volume%206%20Cap.%2018.01%20-%2023.011696964321.pdf",
   },
   {
-    ...guyanaRecordTimestamps, id: acceptanceFixtureIds.source.guyanaTransport, isDemo: false, publishedOn: "1940-12-20",
-    publisher: "Ministry of Legal Affairs, Guyana", sourceType: "official-regulation",
-    title: "Motor Vehicles and Road Traffic Act, Chapter 51:02 — section 103(1)(xxii) (PDF p. 108)",
+    ...guyanaRecordTimestamps,
+    id: acceptanceFixtureIds.source.guyanaTransport,
+    isDemo: false,
+    publishedOn: "1940-12-20",
+    publisher: "Ministry of Legal Affairs, Guyana",
+    sourceType: "official-regulation",
+    title:
+      "Motor Vehicles and Road Traffic Act, Chapter 51:02 — section 103(1)(xxii) (PDF p. 108)",
     url: "https://mola.gov.gy/laws/Volume%2011%20Cap.%2049.02%20-%2058.011696827006.pdf",
   },
   {
-    ...haitiRecordTimestamps, id: acceptanceFixtureIds.source.haitiEnvironment, isDemo: false, publishedOn: "2006-01-26",
-    publisher: "Le Moniteur — Journal officiel de la République d’Haïti / Presses Nationales d’Haïti", sourceType: "official-regulation",
-    title: "Décret portant sur la Gestion de l’Environnement et de Régulation de la Conduite des Citoyens et Citoyennes pour un Développement Durable — Le Moniteur No. 11",
+    ...haitiRecordTimestamps,
+    id: acceptanceFixtureIds.source.haitiEnvironment,
+    isDemo: false,
+    publishedOn: "2006-01-26",
+    publisher:
+      "Le Moniteur — Journal officiel de la République d’Haïti / Presses Nationales d’Haïti",
+    sourceType: "official-regulation",
+    title:
+      "Décret portant sur la Gestion de l’Environnement et de Régulation de la Conduite des Citoyens et Citoyennes pour un Développement Durable — Le Moniteur No. 11",
     url: "https://faolex.fao.org/docs/pdf/hai65901.pdf",
   },
   {
-    ...haitiRecordTimestamps, id: acceptanceFixtureIds.source.haitiTransport, isDemo: false, publishedOn: "2025-07-18",
-    publisher: "Gouvernement de la République d’Haïti / Ministère du Commerce et de l’Industrie", sourceType: "government-notice",
-    title: "Le MCI intensifie son soutien aux MPME et déploie davantage d’actions sur le territoire national",
+    ...haitiRecordTimestamps,
+    id: acceptanceFixtureIds.source.haitiTransport,
+    isDemo: false,
+    publishedOn: "2025-07-18",
+    publisher:
+      "Gouvernement de la République d’Haïti / Ministère du Commerce et de l’Industrie",
+    sourceType: "government-notice",
+    title:
+      "Le MCI intensifie son soutien aux MPME et déploie davantage d’actions sur le territoire national",
     url: "https://communication.gouv.ht/communiques/le-mci-intensifie-son-soutien-aux-mpme-et-deploie-davantage-dactions-sur-le-territoire-national/",
   },
   {
-    ...iranRecordTimestamps, id: acceptanceFixtureIds.source.iranTechnicalPollutionRegulation, isDemo: false, publishedOn: "2018-10-31",
-    publisher: "Cabinet of Ministers of the Islamic Republic of Iran", sourceType: "official-regulation",
-    title: "آیین‌نامه فنی در زمینه کنترل و کاهش آلودگی‌ها (موضوع ماده (۲) قانون هوای پاک)",
+    ...iranRecordTimestamps,
+    id: acceptanceFixtureIds.source.iranTechnicalPollutionRegulation,
+    isDemo: false,
+    publishedOn: "2018-10-31",
+    publisher: "Cabinet of Ministers of the Islamic Republic of Iran",
+    sourceType: "official-regulation",
+    title:
+      "آیین‌نامه فنی در زمینه کنترل و کاهش آلودگی‌ها (موضوع ماده (۲) قانون هوای پاک)",
     url: "https://nezamat.ir/post-41054/",
   },
   {
-    ...iranRecordTimestamps, id: acceptanceFixtureIds.source.iranArticle4Amendment2024, isDemo: false, publishedOn: "2024-02-18",
-    publisher: "Cabinet of Ministers of the Islamic Republic of Iran", sourceType: "official-regulation",
-    title: "اصلاح ماده (۴) آیین‌نامه فنی در زمینه کنترل و کاهش آلودگی‌ها (موضوع ماده (۲) قانون هوای پاک)",
+    ...iranRecordTimestamps,
+    id: acceptanceFixtureIds.source.iranArticle4Amendment2024,
+    isDemo: false,
+    publishedOn: "2024-02-18",
+    publisher: "Cabinet of Ministers of the Islamic Republic of Iran",
+    sourceType: "official-regulation",
+    title:
+      "اصلاح ماده (۴) آیین‌نامه فنی در زمینه کنترل و کاهش آلودگی‌ها (موضوع ماده (۲) قانون هوای پاک)",
     url: "https://nezamat.ir/post-44973/",
   },
   {
-    ...iraqRecordTimestamps, id: acceptanceFixtureIds.source.iraqTr167AmendmentDecision2024, isDemo: false, publishedOn: "2024-04-15",
-    publisher: "Iraq Central Organization for Standardization and Quality Control (COSQC)", sourceType: "official-regulation",
-    title: "قرارات هيئة اعتماد المواصفات العراقية في اجتماعها المرقم (507) في 3/3/2024",
+    ...iraqRecordTimestamps,
+    id: acceptanceFixtureIds.source.iraqTr167AmendmentDecision2024,
+    isDemo: false,
+    publishedOn: "2024-04-15",
+    publisher:
+      "Iraq Central Organization for Standardization and Quality Control (COSQC)",
+    sourceType: "official-regulation",
+    title:
+      "قرارات هيئة اعتماد المواصفات العراقية في اجتماعها المرقم (507) في 3/3/2024",
     url: "https://www.iraqi-standards.org/wan/ns/p/0000018.html",
   },
   {
-    ...iraqRecordTimestamps, id: acceptanceFixtureIds.source.iraqTr167ImplementationNotice2025, isDemo: false, publishedOn: "2025-12-12",
-    publisher: "Iraqi News Agency (INA) / Iraq Ministry of Trade", sourceType: "government-notice",
-    title: "تشمل جميع المركبات.. التجارة: بدء تطبيق المواصفة العراقية للسيارات مطلع 2026",
+    ...iraqRecordTimestamps,
+    id: acceptanceFixtureIds.source.iraqTr167ImplementationNotice2025,
+    isDemo: false,
+    publishedOn: "2025-12-12",
+    publisher: "Iraqi News Agency (INA) / Iraq Ministry of Trade",
+    sourceType: "government-notice",
+    title:
+      "تشمل جميع المركبات.. التجارة: بدء تطبيق المواصفة العراقية للسيارات مطلع 2026",
     url: "https://ina.iq/ar/local/250006-2026.html",
   },
   {
-    ...jamaicaRecordTimestamps, id: acceptanceFixtureIds.source.jamaicaEnvironment, isDemo: false, publishedOn: "2022-05-20",
-    publisher: "Jamaica Ministry of Energy, Transport and Telecommunications", sourceType: "official-regulation",
-    title: "The Road Traffic Regulations, 2022 — Regulation 66 (PDF pp. 66–68) and Eighth Schedule Part A (PDF pp. 287–289)",
+    ...jamaicaRecordTimestamps,
+    id: acceptanceFixtureIds.source.jamaicaEnvironment,
+    isDemo: false,
+    publishedOn: "2022-05-20",
+    publisher: "Jamaica Ministry of Energy, Transport and Telecommunications",
+    sourceType: "official-regulation",
+    title:
+      "The Road Traffic Regulations, 2022 — Regulation 66 (PDF pp. 66–68) and Eighth Schedule Part A (PDF pp. 287–289)",
     url: "https://mtm.gov.jm/wp-content/uploads/2023/02/Road-Traffic-Regulations-May-20-2022-complete.pdf",
   },
   {
-    ...jamaicaRecordTimestamps, id: acceptanceFixtureIds.source.jamaicaTransport, isDemo: false, publishedOn: null,
-    publisher: "Jamaica Ministry of Energy, Transport and Telecommunications", sourceType: "government-notice",
-    title: "Forms and Documents – Ministry of Energy, Transport and Telecommunications",
+    ...jamaicaRecordTimestamps,
+    id: acceptanceFixtureIds.source.jamaicaTransport,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "Jamaica Ministry of Energy, Transport and Telecommunications",
+    sourceType: "government-notice",
+    title:
+      "Forms and Documents – Ministry of Energy, Transport and Telecommunications",
     url: "https://mtm.gov.jm/forms/",
   },
-  { ...lebanonRecordTimestamps, id: acceptanceFixtureIds.source.lebanonEnvironmentalProtectionLaw444, isDemo: false, publishedOn: "2002-07-29", publisher: "Lebanon Ministry of Environment", sourceType: "official-regulation", title: "قانون رقم 444 - حماية البيئة", url: "https://moe.gov.lb/%D8%A7%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86-%D9%88%D8%A7%D9%84%D8%A7%D9%86%D8%B8%D9%85%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-444-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9.aspx?lang=ar-LB" },
-  { ...lebanonRecordTimestamps, id: acceptanceFixtureIds.source.lebanonThirdBur2019, isDemo: false, publishedOn: "2019-12-31", publisher: "Lebanon Ministry of Environment / UNDP / GEF", sourceType: "government-notice", title: "Lebanon’s Third Biennial Update Report to the UNFCCC", url: "https://lebanon.un.org/en/download/60471/107789" },
-  { ...liberiaRecordTimestamps, id: acceptanceFixtureIds.source.liberiaEnvironmentalProtectionManagementLaw, isDemo: false, publishedOn: "2003-04-30", publisher: "Republic of Liberia / Ministry of Foreign Affairs; official EPA host", sourceType: "official-regulation", title: "Environmental Protection and Management Law of Liberia", url: "https://epa.gov.lr/wp-content/uploads/2025/10/lbr53038.pdf" },
-  { ...liberiaRecordTimestamps, id: acceptanceFixtureIds.source.liberiaVehicleAdministrativeRegulation2011, isDemo: false, publishedOn: "2011-06-18", publisher: "Liberia Ministry of Transport", sourceType: "official-regulation", title: "Ministry of Transport Administrative Regulation PG/No.002/82997 June, 2011", url: "https://mot.gov.lr/sites/default/files/documents/ADMINISTRATIVE%20REGULATION%20%20AA%20June%2017%2C%202016%20-%20Copy.pdf" },
-  { ...libyaRecordTimestamps, id: acceptanceFixtureIds.source.libyaEnvironmentalProtectionLaw15, isDemo: false, publishedOn: "2003-06-13", publisher: "General People's Congress / Libya Ministry of Environment", sourceType: "official-regulation", title: "Law No. 15 of 2003 on Environmental Protection", url: "https://environment.gov.ly/wp-content/uploads/2022/04/Image-to-PDF-%D8%A7%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15-%D9%A2%D9%A0%D9%A2%D9%A2-%D9%A0%D9%A4-%D9%A1%D9%A5-%D9%A1%D9%A5-%D9%A5%D9%A2-%D9%A1%D9%A0.pdf" },
-  { ...libyaRecordTimestamps, id: acceptanceFixtureIds.source.libyaEnvironmentalExecutiveRegulation448, isDemo: false, publishedOn: "2009-10-09", publisher: "General People's Committee / Libya Ministry of Environment", sourceType: "official-regulation", title: "Decision No. 448 of 2009 — executive regulation for Law No. 15 of 2003 on Environmental Protection", url: "https://environment.gov.ly/wp-content/uploads/2022/04/%D8%A7%D9%84%D9%84%D8%A7%D8%A6%D8%AD%D8%A9-%D8%A7%D9%84%D8%AA%D9%86%D9%81%D9%8A%D8%B0%D9%8A%D8%A9-%D9%84%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15.pdf" },
-  { ...maliRecordTimestamps, id: acceptanceFixtureIds.source.maliTechnicalInspectionOrder2020, isDemo: false, publishedOn: "2020-03-27", publisher: "Republic of Mali / Secretariat General of Government", sourceType: "official-regulation", title: "Journal officiel de la République du Mali n°08 du 27 mars 2020 — Arrêté n°2020-1080/MTMU-SG du 20 mars 2020 fixant les modalités de mise en œuvre du contrôle technique automobile", url: "https://sgg-mali.ml/JO/2020/mali-jo-2020-08.pdf" },
-  { ...maliRecordTimestamps, id: acceptanceFixtureIds.source.maliRoadUseVehicleCirculationDecree2023, isDemo: false, publishedOn: "2023-09-29", publisher: "Republic of Mali / Secretariat General of Government", sourceType: "official-regulation", title: "Journal officiel de la République du Mali n°26 du 29 septembre 2023 — Décret n°2023-0509/PT-RM du 12 septembre 2023 fixant les conditions de l’usage des voies ouvertes à la circulation publique et de la mise en circulation des véhicules", url: "https://sgg-mali.ml/JO/2023/mali-jo-2023-26.pdf" },
-  { ...myanmarRecordTimestamps, id: acceptanceFixtureIds.source.myanmarEnvironment, isDemo: false, publishedOn: "2015-12-29", publisher: "Myanmar Ministry of Environmental Conservation and Forestry / Environmental Conservation Department", sourceType: "government-notice", title: "National Environmental Quality (Emission) Guidelines (Final), Notification No. 615/2015", url: "https://www.ecd.gov.mm/national-environmental-quality-emission-guidelines-final/" },
-  { ...myanmarRecordTimestamps, id: acceptanceFixtureIds.source.myanmarTransport, isDemo: false, publishedOn: "2020-05-26", publisher: "Republic of the Union of Myanmar / Ministry of Transport and Communications / Road Transport Administration Department", sourceType: "official-regulation", title: "Road Safety and Motor Vehicle Management Law (2020), Pyidaungsu Hluttaw Law No. 6/2020", url: "https://www.myanmarrtad.com/?q=en%2Fnode%2F1925" },
-  { ...mauritaniaRecordTimestamps, id: acceptanceFixtureIds.source.mauritaniaAirPollutionLaw2018, isDemo: false, publishedOn: "2018-01-02", publisher: "Mauritania Ministry of Environment and Sustainable Development", sourceType: "official-regulation", title: "Law No. 2018-002 on air-pollution prevention and control", url: "http://www.environnement.gov.mr/fr/images/reglementations/Loi_pollution_Air_FR.pdf" },
-  { ...mauritaniaRecordTimestamps, id: acceptanceFixtureIds.source.mauritaniaEnvironmentCode2000, isDemo: false, publishedOn: "2000-10-30", publisher: "Islamic Republic of Mauritania", sourceType: "official-regulation", title: "Journal Officiel de la République Islamique de Mauritanie n°985 — Law No. 2000-045 of 26 July 2000 establishing the Environment Code", url: "http://www.environnement.gov.mr/fr/images/reglementations/LOI_Code_de_l_Environnement.pdf" },
-  { ...newCaledoniaRecordTimestamps, id: acceptanceFixtureIds.source.newCaledoniaEnvironment, isDemo: false, publishedOn: "1965-09-27", publisher: "Congress of New Caledonia / Juridoc", sourceType: "official-regulation", title: "Délibération n° 224 des 9, 10 et 11 juin 1965 portant règlement général sur la police de la circulation et le roulage", url: "https://juridoc.gouv.nc/juridoc/jdcodes.nsf/0/59295762BD9870FE4B258184001CDC1D/%24File/Code_route_NC_9-10-11-06-1965_ChG_07-10-2025.pdf?OpenElement=" },
-  { ...newCaledoniaRecordTimestamps, id: acceptanceFixtureIds.source.newCaledoniaTransport, isDemo: false, publishedOn: "2019-10-03", publisher: "New Caledonia Directorate of Infrastructure, Topography and Land Transport", sourceType: "government-notice", title: "Importation, transformation ou remise en circulation d'un véhicule", url: "https://dittt.gouv.nc/vehicule-formalites/importation-transformation-ou-remise-en-circulation-dun-vehicule" },
-  { ...nigerRecordTimestamps, id: acceptanceFixtureIds.source.nigerEnvironmentalFrameworkLaw9856, isDemo: false, publishedOn: "1998-12-29", publisher: "Republic of Niger", sourceType: "official-regulation", title: "Law No. 98-56 of 29 December 1998 — framework law on environmental management", url: "https://hydraulique.gouv.ne/wp-content/uploads/2025/07/LoiN%C2%B098-056gestiondelEnvironnement.pdf" },
-  { ...nigerRecordTimestamps, id: acceptanceFixtureIds.source.nigerMotorVehicleHomologationEServices, isDemo: false, publishedOn: null, publisher: "Niger Ministry of Transport and Civil Aviation", sourceType: "government-notice", title: "Services en Ligne — Homologation des Véhicules Terrestres à Moteur", url: "https://transports.gouv.ne/e-services" },
-  { ...nicaraguaRecordTimestamps, id: acceptanceFixtureIds.source.nicaraguaEnvironment, isDemo: false, publishedOn: "1997-06-18", publisher: "National Assembly of Nicaragua", sourceType: "official-regulation", title: "Consolidated Decree No. 32-97 — motor vehicle emission control, Articles 10–25", url: "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNormaJuridica.xsp?action=openDocument&documentId=0404E60D225D0ACF062588E2006EE9F8" },
-  { ...nicaraguaRecordTimestamps, id: acceptanceFixtureIds.source.nicaraguaTransport, isDemo: false, publishedOn: "2022-02-22", publisher: "National Assembly of Nicaragua", sourceType: "official-regulation", title: "Consolidated Law No. 431 — vehicle emission-control certificates, Articles 59–60", url: "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNorma.xsp?action=openDocument&documentId=DDDCD831D507891D06258844005A7F39" },
-  { ...papuaNewGuineaRecordTimestamps, id: acceptanceFixtureIds.source.papuaNewGuineaEnvironment, isDemo: false, publishedOn: "2018-11-30", publisher: "Papua New Guinea Road Traffic Authority", sourceType: "official-regulation", title: "Road Traffic Rules — Vehicle Standards and Compliance 2017, including Amendment 1", url: "https://rta.gov.pg/pdfs/resources/legislation/rules/RTR_VehicleStandardsAndCompliance2018.pdf" },
-  { ...papuaNewGuineaRecordTimestamps, id: acceptanceFixtureIds.source.papuaNewGuineaTransport, isDemo: false, publishedOn: null, publisher: "Papua New Guinea Road Traffic Authority", sourceType: "government-notice", title: "Road Traffic Authority rules — commencement and amended vehicle standards", url: "https://www.rta.gov.pg/resources/rules/" },
-  { ...puertoRicoRecordTimestamps, id: acceptanceFixtureIds.source.puertoRicoEnvironment, isDemo: false, publishedOn: null, publisher: "Puerto Rico Department of Natural and Environmental Resources", sourceType: "official-regulation", title: "Regulation No. 5300 — Air Pollution Control Regulation, Rule 403(B)", url: "https://www.drna.pr.gov/wp-content/uploads/2019/10/Reglamento-5300-Reglamento-Control-Contaminacion-Atmosferica-1995.pdf" },
-  { ...puertoRicoRecordTimestamps, id: acceptanceFixtureIds.source.puertoRicoTransport, isDemo: false, publishedOn: null, publisher: "Puerto Rico Department of Transportation and Public Works", sourceType: "official-regulation", title: "Regulation No. 9526 — official inspection stations and motor vehicle inspection", url: "https://docs.pr.gov/files/DTOP/Avisos/Reglamentos%20para%20estaciones%20oficiales.pdf" },
-  { ...northKoreaRecordTimestamps, id: acceptanceFixtureIds.source.northKoreaEnvironment, isDemo: false, publishedOn: "1986-04-09", publisher: "Democratic People's Republic of Korea", sourceType: "official-regulation", title: "Law of the Democratic People's Republic of Korea on the Protection of the Environment", url: "https://faolex.fao.org/docs/pdf/prk22293.pdf" },
-  { ...northKoreaRecordTimestamps, id: acceptanceFixtureIds.source.northKoreaTransport, isDemo: false, publishedOn: "2022-06-02", publisher: "Democratic People's Republic of Korea / UNFCCC", sourceType: "government-notice", title: "Democratic People's Republic of Korea First NDC (Updated submission)", url: "https://unfccc.int/documents/497842" },
-  { ...paraguayRecordTimestamps, id: acceptanceFixtureIds.source.paraguayEnvironment, isDemo: false, publishedOn: "2019-02-13", publisher: "Presidency of the Republic of Paraguay / MADES", sourceType: "official-regulation", title: "Decree No. 1269/2019 implementing Air Quality Law No. 5211/2014", url: "https://www.mades.gov.py/wp-content/uploads/2025/03/DECRETO-Nro-1269-de-fecha-13-de-febrero-de-2019.pdf" },
-  { ...paraguayRecordTimestamps, id: acceptanceFixtureIds.source.paraguayTransport, isDemo: false, publishedOn: "2021-12-29", publisher: "Paraguay Ministry of Environment and Sustainable Development (MADES)", sourceType: "official-regulation", title: "Resolución N° 605/2021 — Por la cual se modifican los artículos 10 y 11 de la Resolución N° 78/18 y el artículo 2° de la Resolución N° 98/19 referentes a emisiones de fuentes móviles y se disponen procedimientos para medición de gases provenientes de las mismas", url: "https://www.mades.gov.py/wp-content/uploads/2025/04/RESOLUCION-N%C2%B0-605-DE-FECHA-29-DE-DICIEMBRE-DE-2021.pdf" },
-  { ...palestineRecordTimestamps, id: acceptanceFixtureIds.source.palestineEnvironment, isDemo: false, publishedOn: "1999-12-28", publisher: "Palestine Bureau of Legislation and Legal Opinion", sourceType: "official-regulation", title: "Environment Law No. 7 of 1999 — Articles 19 and 22 air standards and vehicle exhaust", url: "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/66/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-7-%D9%84%D8%B3%D9%86%D8%A9-1999%D9%85-%D8%A8%D8%B4%D8%A3%D9%86-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86" },
-  { ...palestineRecordTimestamps, id: acceptanceFixtureIds.source.palestineTransport, isDemo: false, publishedOn: "2000-09-17", publisher: "Palestine Bureau of Legislation and Legal Opinion", sourceType: "official-regulation", title: "Traffic Law No. 5 of 2000 — vehicle specifications, first registration and periodic inspection", url: "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/31/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%A7%D9%84%D9%85%D8%B1%D9%88%D8%B1-%D8%B1%D9%82%D9%85-5-%D9%84%D8%B3%D9%86%D8%A9-2000%D9%85-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86" },
-  { ...sudanRecordTimestamps, id: acceptanceFixtureIds.source.sudanEnvironment, isDemo: false, publishedOn: null, publisher: "Republic of the Sudan / Higher Council for Environment and Natural Resources", sourceType: "official-regulation", title: "قانون حماية البيئة لسنة 2001 / Environment Protection Act 2001 (Act No. 18 of 2001)", url: "https://hcenr.gov.sd/wp-content/uploads/2021/05/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%84%D8%B3%D9%86%D8%A9-2001.pdf" },
-  { ...sudanRecordTimestamps, id: acceptanceFixtureIds.source.sudanTransport, isDemo: false, publishedOn: "2025-04-14", publisher: "Republic of the Sudan, Council of Ministers, Higher Council for Environment and Natural Resources / UNFCCC", sourceType: "government-notice", title: "Sudan. National Communication (NC). NC 3.", url: "https://unfccc.int/documents/646439" },
-  { ...solomonIslandsRecordTimestamps, id: acceptanceFixtureIds.source.solomonIslandsEnvironment, isDemo: false, publishedOn: null, publisher: "Attorney-General’s Chambers, Solomon Islands Government / Ministry of Justice and Legal Affairs", sourceType: "official-regulation", title: "Road Transport Act (Cap. 131)", url: "https://attorneygenerals.gov.sb/legislation-dashboard/download-info/road-transport-act-cap-131/" },
-  { ...solomonIslandsRecordTimestamps, id: acceptanceFixtureIds.source.solomonIslandsTransport, isDemo: false, publishedOn: "2025-08-13", publisher: "Solomon Islands Government, Climate Change Division, Ministry of Environment, Climate Change, Disaster Management and Meteorology / UNFCCC", sourceType: "government-notice", title: "Solomon Islands Nationally Determined Contribution 3.0, 2025–2035", url: "https://unfccc.int/node/649205" },
-  { ...sierraLeoneRecordTimestamps, id: acceptanceFixtureIds.source.sierraLeoneEnvironment, isDemo: false, publishedOn: "2022-09-15", publisher: "Government Printing Department / Parliament of Sierra Leone", sourceType: "official-regulation", title: "The Environment Protection Agency Act, 2022 (Act No. 15 of 2022)", url: "https://www.parliament.gov.sl/uploads/acts/THE%20ENVIRONMENT%20PROTECTION%20AGENCY%20ACT%2C%202022.pdf" },
-  { ...sierraLeoneRecordTimestamps, id: acceptanceFixtureIds.source.sierraLeoneTransport, isDemo: false, publishedOn: "2024-11-22", publisher: "Environment Protection Agency Sierra Leone", sourceType: "government-notice", title: "National e-Mobility Strategy 2024–2035 — no type approval and proposed Euro IV–VI pathway", url: "https://epa.gov.sl/wp-content/uploads/2025/03/Gender-Sesitive-National-e-Mobility_-Strategy-2024-35_EPA-converted0.pdf" },
-  { ...elSalvadorRecordTimestamps, id: acceptanceFixtureIds.source.elSalvadorEnvironment, isDemo: false, publishedOn: "2024-06-13", publisher: "Ministerio de Medio Ambiente y Recursos Naturales / Diario Oficial / Imprenta Nacional, El Salvador", sourceType: "official-regulation", title: "Acuerdo No. 126 — Reglamento Técnico Salvadoreño RTS 13.01.02:23 Calidad del Aire. Control de Emisiones Atmosféricas Generadas por Fuentes Móviles. Vehículos Terrestres. Límites Permisibles, Especificaciones Técnicas del Equipo y Procesos de Medición", url: "https://osartec.gob.sv/wp-content/uploads/download-manager-files/RTS-Calidad-del-aire_Fuentes-Moviles.pdf" },
-  { ...elSalvadorRecordTimestamps, id: acceptanceFixtureIds.source.elSalvadorTransport, isDemo: false, publishedOn: null, publisher: "Organismo Salvadoreño de Reglamentación Técnica (OSARTEC)", sourceType: "government-notice", title: "Derogaciones", url: "https://osartec.gob.sv/servicios/derogaciones/" },
-  { ...somaliaRecordTimestamps, id: acceptanceFixtureIds.source.somaliaEnvironment, isDemo: false, publishedOn: null, publisher: "Federal Government of Somalia / Ministry of Environment and Climate Change", sourceType: "official-regulation", title: "Environmental Protection and Management Act", url: "https://moecc.gov.so/wp-content/uploads/2024/10/Environmental-Protection-and-Management-Act-Engl_240625_145520-2.pdf" },
-  { ...somaliaRecordTimestamps, id: acceptanceFixtureIds.source.somaliaTransport, isDemo: false, publishedOn: "2025-09-08", publisher: "Federal Republic of Somalia / UNFCCC", sourceType: "government-notice", title: "Updated Somalia's Third Generation Nationally Determined Contribution (NDC 3.0) — transport mitigation actions", url: "https://unfccc.int/sites/default/files/2025-09/Somalia%20NDC%203.0_Official_2025.pdf" },
-  { ...southSudanRecordTimestamps, id: acceptanceFixtureIds.source.southSudanEnvironment, isDemo: false, publishedOn: null, publisher: "South Sudan National Bureau of Standards", sourceType: "official-regulation", title: "National Bureau of Standards Act, 2012", url: "https://ssnbs.gov.ss/wp-content/uploads/2026/02/National-Bureau-of-Standards-Act-2012-.pdf" },
-  { ...southSudanRecordTimestamps, id: acceptanceFixtureIds.source.southSudanTransport, isDemo: false, publishedOn: "2022-06-02", publisher: "South Sudan Ministry of Environment and Forestry / UNFCCC", sourceType: "government-notice", title: "South Sudan's Second Nationally Determined Contribution", url: "https://unfccc.int/documents/497930" },
-  { ...surinameRecordTimestamps, id: acceptanceFixtureIds.source.surinameEnvironment, isDemo: false, publishedOn: "2020-05-14", publisher: "De Nationale Assemblée / Staatsblad van de Republiek Suriname", sourceType: "official-regulation", title: "WET van 07 mei 2020, houdende regels voor duurzaam milieumanagement (Milieu Raamwet), S.B. 2020 no. 97", url: "https://www.dna.sr/media/bkih12kt/sb_2020___97.pdf" },
-  { ...surinameRecordTimestamps, id: acceptanceFixtureIds.source.surinameTransport, isDemo: false, publishedOn: "2024-05-28", publisher: "De Nationale Assemblée / Staatsblad van de Republiek Suriname", sourceType: "official-regulation", title: "Wet van 21 mei 2024, houdende wijziging van de Milieu Raamwet (S.B. 2020 no. 97), S.B. 2024 no. 56", url: "https://www.dna.sr/media/fadicptr/s-b-_2024_no-_56__wet_van_21_mei_2024__houdende_wijziging_van_de_milieu_raamwet__s-b-_2020_no-_97_.pdf" },
-  { ...syriaRecordTimestamps, id: acceptanceFixtureIds.source.syriaEnvironmentLaw12, isDemo: false, publishedOn: "2012-03-29", publisher: "Syrian Arab Republic / FAOLEX", sourceType: "official-regulation", title: "القانون 12 لعام 2012 قانون وزارة الدولة لشؤون البيئة", url: "https://faolex.fao.org/docs/pdf/syr212392.pdf" },
-  { ...syriaRecordTimestamps, id: acceptanceFixtureIds.source.syriaVehicleImportNotice2025, isDemo: false, publishedOn: "2025-06-30", publisher: "Syrian Arab News Agency (SANA) / Ministry of Economy and Industry", sourceType: "government-notice", title: "وزارة الاقتصاد والصناعة توضح أسباب منع استيراد السيارات المستعملة", url: "https://sana.sy/economy/2238146/" },
-  { ...chadRecordTimestamps, id: acceptanceFixtureIds.source.chadEnvironment, isDemo: false, publishedOn: "2009-08-06", publisher: "Republic of Chad / Ministry of Environment and Fisheries Resources", sourceType: "official-regulation", title: "Décret n° 904/PR/PM/MERH/2009 portant réglementation des pollutions et des nuisances à l'environnement", url: "https://www.environnement.gouv.td/sites/default/files/inline-files/7.pdf" },
-  { ...chadRecordTimestamps, id: acceptanceFixtureIds.source.chadTransport, isDemo: false, publishedOn: "2025-02-12", publisher: "Republic of Chad / UNFCCC", sourceType: "government-notice", title: "Chad. Biennial update reports (BUR). BUR 1.", url: "https://unfccc.int/documents/645659" },
-  { ...togoRecordTimestamps, id: acceptanceFixtureIds.source.togoEnvironment, isDemo: false, publishedOn: "2026-04-09", publisher: "République togolaise / Journal Officiel de la République Togolaise", sourceType: "official-regulation", title: "Loi n° 2026-007 du 24 mars 2026 modifiant et complétant la loi n° 2008-005 du 30 mai 2008 portant loi-cadre sur l’environnement", url: "https://jo.gouv.tg/sites/default/files/JO/JO_SPECIAL_BIS_71E_N_25.pdf" },
-  { ...togoRecordTimestamps, id: acceptanceFixtureIds.source.togoTransport, isDemo: false, publishedOn: "2022-10-07", publisher: "République togolaise / Journal Officiel de la République Togolaise", sourceType: "official-regulation", title: "Décret n° 2022-085/PR du 03/08/22 fixant les modalités d’application de la loi n° 2013-011 du 07 juin 2013 portant code de la route", url: "https://www.jo.gouv.tg/sites/default/files/JO/JOS_07_10_2022%20-%2067%20E%20ANNEE%20N%C2%B041%20BIS.pdf" },
-  { ...timorLesteRecordTimestamps, id: acceptanceFixtureIds.source.timorLesteEnvironment, isDemo: false, publishedOn: "2012-07-04", publisher: "Jornal da República / Ministério da Justiça, República Democrática de Timor-Leste", sourceType: "official-regulation", title: "Decreto-Lei n.º 26/2012, de 4 de Julho — Lei de Bases do Ambiente", url: "https://www.mj.gov.tl/jornal/public/docs/2012/serie_1/serie1_no24.pdf" },
-  { ...timorLesteRecordTimestamps, id: acceptanceFixtureIds.source.timorLesteTransport, isDemo: false, publishedOn: "2003-04-03", publisher: "Jornal da República / Ministério da Justiça, República Democrática de Timor-Leste", sourceType: "official-regulation", title: "Decreto-Lei n.º 6/2003, de 3 de Abril — Código da Estrada", url: "https://www.mj.gov.tl/jornal/public/docs/2002_2005/decreto_lei_governo/6_2003.pdf" },
-  { ...trinidadTobagoRecordTimestamps, id: acceptanceFixtureIds.source.trinidadTobagoEnvironment, isDemo: false, publishedOn: "2015-01-23", publisher: "Republic of Trinidad and Tobago / Environmental Management Authority", sourceType: "official-regulation", title: "The Air Pollution Rules, 2014 — Legal Notice No. 12", url: "https://www.ema.co.tt/our-environment/air/" },
-  { ...trinidadTobagoRecordTimestamps, id: acceptanceFixtureIds.source.trinidadTobagoTransport, isDemo: false, publishedOn: "2026-02-02", publisher: "Parliament / Government Printer / Digital Legislative Library, Republic of Trinidad and Tobago", sourceType: "official-regulation", title: "Motor Vehicles and Road Traffic (Amendment) Act, 2026 — Act No. 2 of 2026", url: "https://laws.gov.tt/ttdll-web/revision/download/123556?type=amendment" },
-  { ...taiwanRecordTimestamps, id: acceptanceFixtureIds.source.taiwanEnvironment, isDemo: false, publishedOn: "2023-06-30", publisher: "Taiwan Ministry of Environment", sourceType: "official-regulation", title: "移動污染源空氣污染物排放標準第五條 — 柴油汽車完整排放標準表", url: "https://oaout.moenv.gov.tw/law/Download.ashx?FileID=133507&id=FL015347&type=LAW" },
-  { ...taiwanRecordTimestamps, id: acceptanceFixtureIds.source.taiwanTransport, isDemo: false, publishedOn: "2024-02-01", publisher: "Taiwan Ministry of Environment", sourceType: "official-regulation", title: "柴油及替代清潔燃料引擎汽車車型排氣審驗合格證明核發撤銷及廢止辦法 — 重型引擎族審驗", url: "https://oaout.moenv.gov.tw/law/LawContent.aspx?id=FL020193" },
-  { ...venezuelaRecordTimestamps, id: acceptanceFixtureIds.source.venezuelaEnvironment, isDemo: false, publishedOn: "1998-09-04", publisher: "Presidencia de la República / Gaceta Oficial de la República de Venezuela", sourceType: "official-regulation", title: "Decreto Nº 2.673 de 19 de agosto de 1998 — Normas sobre emisiones de fuentes móviles", url: "https://faolex.fao.org/docs/pdf/ven181032.pdf" },
-  { ...venezuelaRecordTimestamps, id: acceptanceFixtureIds.source.venezuelaTransport, isDemo: false, publishedOn: "2015-12-28", publisher: "Asamblea Nacional / Gaceta Oficial de la República Bolivariana de Venezuela", sourceType: "official-regulation", title: "Ley de Calidad de las Aguas y del Aire — mobile-source limits and preservation of prior technical rules", url: "https://faolex.fao.org/docs/pdf/ven151760.pdf" },
-  { ...vanuatuRecordTimestamps, id: acceptanceFixtureIds.source.vanuatuEnvironment, isDemo: false, publishedOn: "2014-06-27", publisher: "Republic of Vanuatu / Department of Environmental Protection and Conservation", sourceType: "official-regulation", title: "Pollution (Control) Act No. 10 of 2013 — prescribed vehicle-emission standards and delegated regulations", url: "https://mocca.gov.vu/images/publications/legislation/DEPC/Legislation/Pollution%20%28Control%29%20Act..pdf" },
-  { ...vanuatuRecordTimestamps, id: acceptanceFixtureIds.source.vanuatuTransport, isDemo: false, publishedOn: null, publisher: "Parliament of the Republic of Vanuatu / Ministry of Infrastructure and Public Utilities", sourceType: "government-notice", title: "Bill for the Import of Motor Vehicles (Control) (Amendment) Act No. of 2025", url: "https://parliament.gov.vu/images/Bills/Second%20Ordinary%20session%202025/Bill%20for%20the%20Motor%20Vehicles/Bill%20for%20the%20Motor%20Vehicles%20Control%20Am%20Act%20No.%20%20of%202025.pdf" },
-  { ...yemenRecordTimestamps, id: acceptanceFixtureIds.source.yemenEnvironment, isDemo: false, publishedOn: "1995-10-29", publisher: "Yemen Public Prosecution (Office of the Attorney General) / Republic of Yemen", sourceType: "official-regulation", title: "قانون رقم (26) لسنة 1995م بشأن حماية البيئة — Law No. 26 of 1995 on Environmental Protection", url: "https://www.agoye.gov.ye/page.php?id=323&lng=arabic" },
-  { ...yemenRecordTimestamps, id: acceptanceFixtureIds.source.yemenTransport, isDemo: false, publishedOn: "2002-03-18", publisher: "Yemen Public Prosecution (Office of the Attorney General) / Republic of Yemen", sourceType: "official-regulation", title: "قانون المرور وتعديلاته — Traffic Law No. 46 of 1991, consolidated through Law No. 12 of 2002", url: "https://www.agoye.gov.ye/page.php?id=275&lng=arabic" },
-  { ...antarcticaRecordTimestamps, id: acceptanceFixtureIds.source.antarcticaBoundary, isDemo: false, publishedOn: "1991-10-04", publisher: "Antarctic Treaty Secretariat", sourceType: "official-regulation", title: "Protocol on Environmental Protection to the Antarctic Treaty — environmental governance boundary", url: "https://documents.ats.aq/recatt/Att006_e.pdf" },
-  { ...frenchSouthernLandsRecordTimestamps, id: acceptanceFixtureIds.source.frenchSouthernLandsBoundary, isDemo: false, publishedOn: null, publisher: "République française / Légifrance", sourceType: "official-regulation", title: "Code de l'environnement, articles L640-1 à L640-5 — provisions applicable in the French Southern and Antarctic Lands", url: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006143761" },
-  { ...westernSaharaRecordTimestamps, id: acceptanceFixtureIds.source.westernSaharaBoundary, isDemo: false, publishedOn: "2024-09-09", publisher: "United Nations Department of Political and Peacebuilding Affairs / Decolonization", sourceType: "government-notice", title: "Western Sahara — Non-Self-Governing Territory status and administering-power boundary", url: "https://www.un.org/dppa/decolonization/en/nsgt/western-sahara" },
-  { ...falklandIslandsRecordTimestamps, id: acceptanceFixtureIds.source.falklandIslandsBoundary, isDemo: false, publishedOn: "2017-07-31", publisher: "Falkland Islands Government / Falkland Islands Legislation", sourceType: "official-regulation", title: "Road Traffic (Provisional) Regulations Order 1986 — silencers and vehicle inspection", url: "https://www.legislation.gov.fk/download/pdf/4150cf28-4b25-4f23-ae56-456251ea2378/5a0dfa5f-ceaf-4652-9566-c911493a27c1/fisl-1986-5_2017-07-31.pdf" },
+  {
+    ...lebanonRecordTimestamps,
+    id: acceptanceFixtureIds.source.lebanonEnvironmentalProtectionLaw444,
+    isDemo: false,
+    publishedOn: "2002-07-29",
+    publisher: "Lebanon Ministry of Environment",
+    sourceType: "official-regulation",
+    title: "قانون رقم 444 - حماية البيئة",
+    url: "https://moe.gov.lb/%D8%A7%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86-%D9%88%D8%A7%D9%84%D8%A7%D9%86%D8%B8%D9%85%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-444-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9.aspx?lang=ar-LB",
+  },
+  {
+    ...lebanonRecordTimestamps,
+    id: acceptanceFixtureIds.source.lebanonThirdBur2019,
+    isDemo: false,
+    publishedOn: "2019-12-31",
+    publisher: "Lebanon Ministry of Environment / UNDP / GEF",
+    sourceType: "government-notice",
+    title: "Lebanon’s Third Biennial Update Report to the UNFCCC",
+    url: "https://lebanon.un.org/en/download/60471/107789",
+  },
+  {
+    ...liberiaRecordTimestamps,
+    id: acceptanceFixtureIds.source.liberiaEnvironmentalProtectionManagementLaw,
+    isDemo: false,
+    publishedOn: "2003-04-30",
+    publisher:
+      "Republic of Liberia / Ministry of Foreign Affairs; official EPA host",
+    sourceType: "official-regulation",
+    title: "Environmental Protection and Management Law of Liberia",
+    url: "https://epa.gov.lr/wp-content/uploads/2025/10/lbr53038.pdf",
+  },
+  {
+    ...liberiaRecordTimestamps,
+    id: acceptanceFixtureIds.source.liberiaVehicleAdministrativeRegulation2011,
+    isDemo: false,
+    publishedOn: "2011-06-18",
+    publisher: "Liberia Ministry of Transport",
+    sourceType: "official-regulation",
+    title:
+      "Ministry of Transport Administrative Regulation PG/No.002/82997 June, 2011",
+    url: "https://mot.gov.lr/sites/default/files/documents/ADMINISTRATIVE%20REGULATION%20%20AA%20June%2017%2C%202016%20-%20Copy.pdf",
+  },
+  {
+    ...libyaRecordTimestamps,
+    id: acceptanceFixtureIds.source.libyaEnvironmentalProtectionLaw15,
+    isDemo: false,
+    publishedOn: "2003-06-13",
+    publisher: "General People's Congress / Libya Ministry of Environment",
+    sourceType: "official-regulation",
+    title: "Law No. 15 of 2003 on Environmental Protection",
+    url: "https://environment.gov.ly/wp-content/uploads/2022/04/Image-to-PDF-%D8%A7%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15-%D9%A2%D9%A0%D9%A2%D9%A2-%D9%A0%D9%A4-%D9%A1%D9%A5-%D9%A1%D9%A5-%D9%A5%D9%A2-%D9%A1%D9%A0.pdf",
+  },
+  {
+    ...libyaRecordTimestamps,
+    id: acceptanceFixtureIds.source.libyaEnvironmentalExecutiveRegulation448,
+    isDemo: false,
+    publishedOn: "2009-10-09",
+    publisher: "General People's Committee / Libya Ministry of Environment",
+    sourceType: "official-regulation",
+    title:
+      "Decision No. 448 of 2009 — executive regulation for Law No. 15 of 2003 on Environmental Protection",
+    url: "https://environment.gov.ly/wp-content/uploads/2022/04/%D8%A7%D9%84%D9%84%D8%A7%D8%A6%D8%AD%D8%A9-%D8%A7%D9%84%D8%AA%D9%86%D9%81%D9%8A%D8%B0%D9%8A%D8%A9-%D9%84%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15.pdf",
+  },
+  {
+    ...maliRecordTimestamps,
+    id: acceptanceFixtureIds.source.maliTechnicalInspectionOrder2020,
+    isDemo: false,
+    publishedOn: "2020-03-27",
+    publisher: "Republic of Mali / Secretariat General of Government",
+    sourceType: "official-regulation",
+    title:
+      "Journal officiel de la République du Mali n°08 du 27 mars 2020 — Arrêté n°2020-1080/MTMU-SG du 20 mars 2020 fixant les modalités de mise en œuvre du contrôle technique automobile",
+    url: "https://sgg-mali.ml/JO/2020/mali-jo-2020-08.pdf",
+  },
+  {
+    ...maliRecordTimestamps,
+    id: acceptanceFixtureIds.source.maliRoadUseVehicleCirculationDecree2023,
+    isDemo: false,
+    publishedOn: "2023-09-29",
+    publisher: "Republic of Mali / Secretariat General of Government",
+    sourceType: "official-regulation",
+    title:
+      "Journal officiel de la République du Mali n°26 du 29 septembre 2023 — Décret n°2023-0509/PT-RM du 12 septembre 2023 fixant les conditions de l’usage des voies ouvertes à la circulation publique et de la mise en circulation des véhicules",
+    url: "https://sgg-mali.ml/JO/2023/mali-jo-2023-26.pdf",
+  },
+  {
+    ...myanmarRecordTimestamps,
+    id: acceptanceFixtureIds.source.myanmarEnvironment,
+    isDemo: false,
+    publishedOn: "2015-12-29",
+    publisher:
+      "Myanmar Ministry of Environmental Conservation and Forestry / Environmental Conservation Department",
+    sourceType: "government-notice",
+    title:
+      "National Environmental Quality (Emission) Guidelines (Final), Notification No. 615/2015",
+    url: "https://www.ecd.gov.mm/national-environmental-quality-emission-guidelines-final/",
+  },
+  {
+    ...myanmarRecordTimestamps,
+    id: acceptanceFixtureIds.source.myanmarTransport,
+    isDemo: false,
+    publishedOn: "2020-05-26",
+    publisher:
+      "Republic of the Union of Myanmar / Ministry of Transport and Communications / Road Transport Administration Department",
+    sourceType: "official-regulation",
+    title:
+      "Road Safety and Motor Vehicle Management Law (2020), Pyidaungsu Hluttaw Law No. 6/2020",
+    url: "https://www.myanmarrtad.com/?q=en%2Fnode%2F1925",
+  },
+  {
+    ...mauritaniaRecordTimestamps,
+    id: acceptanceFixtureIds.source.mauritaniaAirPollutionLaw2018,
+    isDemo: false,
+    publishedOn: "2018-01-02",
+    publisher: "Mauritania Ministry of Environment and Sustainable Development",
+    sourceType: "official-regulation",
+    title: "Law No. 2018-002 on air-pollution prevention and control",
+    url: "http://www.environnement.gov.mr/fr/images/reglementations/Loi_pollution_Air_FR.pdf",
+  },
+  {
+    ...mauritaniaRecordTimestamps,
+    id: acceptanceFixtureIds.source.mauritaniaEnvironmentCode2000,
+    isDemo: false,
+    publishedOn: "2000-10-30",
+    publisher: "Islamic Republic of Mauritania",
+    sourceType: "official-regulation",
+    title:
+      "Journal Officiel de la République Islamique de Mauritanie n°985 — Law No. 2000-045 of 26 July 2000 establishing the Environment Code",
+    url: "http://www.environnement.gov.mr/fr/images/reglementations/LOI_Code_de_l_Environnement.pdf",
+  },
+  {
+    ...newCaledoniaRecordTimestamps,
+    id: acceptanceFixtureIds.source.newCaledoniaEnvironment,
+    isDemo: false,
+    publishedOn: "1965-09-27",
+    publisher: "Congress of New Caledonia / Juridoc",
+    sourceType: "official-regulation",
+    title:
+      "Délibération n° 224 des 9, 10 et 11 juin 1965 portant règlement général sur la police de la circulation et le roulage",
+    url: "https://juridoc.gouv.nc/juridoc/jdcodes.nsf/0/59295762BD9870FE4B258184001CDC1D/%24File/Code_route_NC_9-10-11-06-1965_ChG_07-10-2025.pdf?OpenElement=",
+  },
+  {
+    ...newCaledoniaRecordTimestamps,
+    id: acceptanceFixtureIds.source.newCaledoniaTransport,
+    isDemo: false,
+    publishedOn: "2019-10-03",
+    publisher:
+      "New Caledonia Directorate of Infrastructure, Topography and Land Transport",
+    sourceType: "government-notice",
+    title: "Importation, transformation ou remise en circulation d'un véhicule",
+    url: "https://dittt.gouv.nc/vehicule-formalites/importation-transformation-ou-remise-en-circulation-dun-vehicule",
+  },
+  {
+    ...nigerRecordTimestamps,
+    id: acceptanceFixtureIds.source.nigerEnvironmentalFrameworkLaw9856,
+    isDemo: false,
+    publishedOn: "1998-12-29",
+    publisher: "Republic of Niger",
+    sourceType: "official-regulation",
+    title:
+      "Law No. 98-56 of 29 December 1998 — framework law on environmental management",
+    url: "https://hydraulique.gouv.ne/wp-content/uploads/2025/07/LoiN%C2%B098-056gestiondelEnvironnement.pdf",
+  },
+  {
+    ...nigerRecordTimestamps,
+    id: acceptanceFixtureIds.source.nigerMotorVehicleHomologationEServices,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "Niger Ministry of Transport and Civil Aviation",
+    sourceType: "government-notice",
+    title: "Services en Ligne — Homologation des Véhicules Terrestres à Moteur",
+    url: "https://transports.gouv.ne/e-services",
+  },
+  {
+    ...nicaraguaRecordTimestamps,
+    id: acceptanceFixtureIds.source.nicaraguaEnvironment,
+    isDemo: false,
+    publishedOn: "1997-06-18",
+    publisher: "National Assembly of Nicaragua",
+    sourceType: "official-regulation",
+    title:
+      "Consolidated Decree No. 32-97 — motor vehicle emission control, Articles 10–25",
+    url: "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNormaJuridica.xsp?action=openDocument&documentId=0404E60D225D0ACF062588E2006EE9F8",
+  },
+  {
+    ...nicaraguaRecordTimestamps,
+    id: acceptanceFixtureIds.source.nicaraguaTransport,
+    isDemo: false,
+    publishedOn: "2022-02-22",
+    publisher: "National Assembly of Nicaragua",
+    sourceType: "official-regulation",
+    title:
+      "Consolidated Law No. 431 — vehicle emission-control certificates, Articles 59–60",
+    url: "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNorma.xsp?action=openDocument&documentId=DDDCD831D507891D06258844005A7F39",
+  },
+  {
+    ...papuaNewGuineaRecordTimestamps,
+    id: acceptanceFixtureIds.source.papuaNewGuineaEnvironment,
+    isDemo: false,
+    publishedOn: "2018-11-30",
+    publisher: "Papua New Guinea Road Traffic Authority",
+    sourceType: "official-regulation",
+    title:
+      "Road Traffic Rules — Vehicle Standards and Compliance 2017, including Amendment 1",
+    url: "https://rta.gov.pg/pdfs/resources/legislation/rules/RTR_VehicleStandardsAndCompliance2018.pdf",
+  },
+  {
+    ...papuaNewGuineaRecordTimestamps,
+    id: acceptanceFixtureIds.source.papuaNewGuineaTransport,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "Papua New Guinea Road Traffic Authority",
+    sourceType: "government-notice",
+    title:
+      "Road Traffic Authority rules — commencement and amended vehicle standards",
+    url: "https://www.rta.gov.pg/resources/rules/",
+  },
+  {
+    ...puertoRicoRecordTimestamps,
+    id: acceptanceFixtureIds.source.puertoRicoEnvironment,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "Puerto Rico Department of Natural and Environmental Resources",
+    sourceType: "official-regulation",
+    title:
+      "Regulation No. 5300 — Air Pollution Control Regulation, Rule 403(B)",
+    url: "https://www.drna.pr.gov/wp-content/uploads/2019/10/Reglamento-5300-Reglamento-Control-Contaminacion-Atmosferica-1995.pdf",
+  },
+  {
+    ...puertoRicoRecordTimestamps,
+    id: acceptanceFixtureIds.source.puertoRicoTransport,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "Puerto Rico Department of Transportation and Public Works",
+    sourceType: "official-regulation",
+    title:
+      "Regulation No. 9526 — official inspection stations and motor vehicle inspection",
+    url: "https://docs.pr.gov/files/DTOP/Avisos/Reglamentos%20para%20estaciones%20oficiales.pdf",
+  },
+  {
+    ...northKoreaRecordTimestamps,
+    id: acceptanceFixtureIds.source.northKoreaEnvironment,
+    isDemo: false,
+    publishedOn: "1986-04-09",
+    publisher: "Democratic People's Republic of Korea",
+    sourceType: "official-regulation",
+    title:
+      "Law of the Democratic People's Republic of Korea on the Protection of the Environment",
+    url: "https://faolex.fao.org/docs/pdf/prk22293.pdf",
+  },
+  {
+    ...northKoreaRecordTimestamps,
+    id: acceptanceFixtureIds.source.northKoreaTransport,
+    isDemo: false,
+    publishedOn: "2022-06-02",
+    publisher: "Democratic People's Republic of Korea / UNFCCC",
+    sourceType: "government-notice",
+    title:
+      "Democratic People's Republic of Korea First NDC (Updated submission)",
+    url: "https://unfccc.int/documents/497842",
+  },
+  {
+    ...paraguayRecordTimestamps,
+    id: acceptanceFixtureIds.source.paraguayEnvironment,
+    isDemo: false,
+    publishedOn: "2019-02-13",
+    publisher: "Presidency of the Republic of Paraguay / MADES",
+    sourceType: "official-regulation",
+    title: "Decree No. 1269/2019 implementing Air Quality Law No. 5211/2014",
+    url: "https://www.mades.gov.py/wp-content/uploads/2025/03/DECRETO-Nro-1269-de-fecha-13-de-febrero-de-2019.pdf",
+  },
+  {
+    ...paraguayRecordTimestamps,
+    id: acceptanceFixtureIds.source.paraguayTransport,
+    isDemo: false,
+    publishedOn: "2021-12-29",
+    publisher:
+      "Paraguay Ministry of Environment and Sustainable Development (MADES)",
+    sourceType: "official-regulation",
+    title:
+      "Resolución N° 605/2021 — Por la cual se modifican los artículos 10 y 11 de la Resolución N° 78/18 y el artículo 2° de la Resolución N° 98/19 referentes a emisiones de fuentes móviles y se disponen procedimientos para medición de gases provenientes de las mismas",
+    url: "https://www.mades.gov.py/wp-content/uploads/2025/04/RESOLUCION-N%C2%B0-605-DE-FECHA-29-DE-DICIEMBRE-DE-2021.pdf",
+  },
+  {
+    ...palestineRecordTimestamps,
+    id: acceptanceFixtureIds.source.palestineEnvironment,
+    isDemo: false,
+    publishedOn: "1999-12-28",
+    publisher: "Palestine Bureau of Legislation and Legal Opinion",
+    sourceType: "official-regulation",
+    title:
+      "Environment Law No. 7 of 1999 — Articles 19 and 22 air standards and vehicle exhaust",
+    url: "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/66/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-7-%D9%84%D8%B3%D9%86%D8%A9-1999%D9%85-%D8%A8%D8%B4%D8%A3%D9%86-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86",
+  },
+  {
+    ...palestineRecordTimestamps,
+    id: acceptanceFixtureIds.source.palestineTransport,
+    isDemo: false,
+    publishedOn: "2000-09-17",
+    publisher: "Palestine Bureau of Legislation and Legal Opinion",
+    sourceType: "official-regulation",
+    title:
+      "Traffic Law No. 5 of 2000 — vehicle specifications, first registration and periodic inspection",
+    url: "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/31/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%A7%D9%84%D9%85%D8%B1%D9%88%D8%B1-%D8%B1%D9%82%D9%85-5-%D9%84%D8%B3%D9%86%D8%A9-2000%D9%85-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86",
+  },
+  {
+    ...sudanRecordTimestamps,
+    id: acceptanceFixtureIds.source.sudanEnvironment,
+    isDemo: false,
+    publishedOn: null,
+    publisher:
+      "Republic of the Sudan / Higher Council for Environment and Natural Resources",
+    sourceType: "official-regulation",
+    title:
+      "قانون حماية البيئة لسنة 2001 / Environment Protection Act 2001 (Act No. 18 of 2001)",
+    url: "https://hcenr.gov.sd/wp-content/uploads/2021/05/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%84%D8%B3%D9%86%D8%A9-2001.pdf",
+  },
+  {
+    ...sudanRecordTimestamps,
+    id: acceptanceFixtureIds.source.sudanTransport,
+    isDemo: false,
+    publishedOn: "2025-04-14",
+    publisher:
+      "Republic of the Sudan, Council of Ministers, Higher Council for Environment and Natural Resources / UNFCCC",
+    sourceType: "government-notice",
+    title: "Sudan. National Communication (NC). NC 3.",
+    url: "https://unfccc.int/documents/646439",
+  },
+  {
+    ...solomonIslandsRecordTimestamps,
+    id: acceptanceFixtureIds.source.solomonIslandsEnvironment,
+    isDemo: false,
+    publishedOn: null,
+    publisher:
+      "Attorney-General’s Chambers, Solomon Islands Government / Ministry of Justice and Legal Affairs",
+    sourceType: "official-regulation",
+    title: "Road Transport Act (Cap. 131)",
+    url: "https://attorneygenerals.gov.sb/legislation-dashboard/download-info/road-transport-act-cap-131/",
+  },
+  {
+    ...solomonIslandsRecordTimestamps,
+    id: acceptanceFixtureIds.source.solomonIslandsTransport,
+    isDemo: false,
+    publishedOn: "2025-08-13",
+    publisher:
+      "Solomon Islands Government, Climate Change Division, Ministry of Environment, Climate Change, Disaster Management and Meteorology / UNFCCC",
+    sourceType: "government-notice",
+    title: "Solomon Islands Nationally Determined Contribution 3.0, 2025–2035",
+    url: "https://unfccc.int/node/649205",
+  },
+  {
+    ...sierraLeoneRecordTimestamps,
+    id: acceptanceFixtureIds.source.sierraLeoneEnvironment,
+    isDemo: false,
+    publishedOn: "2022-09-15",
+    publisher: "Government Printing Department / Parliament of Sierra Leone",
+    sourceType: "official-regulation",
+    title: "The Environment Protection Agency Act, 2022 (Act No. 15 of 2022)",
+    url: "https://www.parliament.gov.sl/uploads/acts/THE%20ENVIRONMENT%20PROTECTION%20AGENCY%20ACT%2C%202022.pdf",
+  },
+  {
+    ...sierraLeoneRecordTimestamps,
+    id: acceptanceFixtureIds.source.sierraLeoneTransport,
+    isDemo: false,
+    publishedOn: "2024-11-22",
+    publisher: "Environment Protection Agency Sierra Leone",
+    sourceType: "government-notice",
+    title:
+      "National e-Mobility Strategy 2024–2035 — no type approval and proposed Euro IV–VI pathway",
+    url: "https://epa.gov.sl/wp-content/uploads/2025/03/Gender-Sesitive-National-e-Mobility_-Strategy-2024-35_EPA-converted0.pdf",
+  },
+  {
+    ...elSalvadorRecordTimestamps,
+    id: acceptanceFixtureIds.source.elSalvadorEnvironment,
+    isDemo: false,
+    publishedOn: "2024-06-13",
+    publisher:
+      "Ministerio de Medio Ambiente y Recursos Naturales / Diario Oficial / Imprenta Nacional, El Salvador",
+    sourceType: "official-regulation",
+    title:
+      "Acuerdo No. 126 — Reglamento Técnico Salvadoreño RTS 13.01.02:23 Calidad del Aire. Control de Emisiones Atmosféricas Generadas por Fuentes Móviles. Vehículos Terrestres. Límites Permisibles, Especificaciones Técnicas del Equipo y Procesos de Medición",
+    url: "https://osartec.gob.sv/wp-content/uploads/download-manager-files/RTS-Calidad-del-aire_Fuentes-Moviles.pdf",
+  },
+  {
+    ...elSalvadorRecordTimestamps,
+    id: acceptanceFixtureIds.source.elSalvadorTransport,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "Organismo Salvadoreño de Reglamentación Técnica (OSARTEC)",
+    sourceType: "government-notice",
+    title: "Derogaciones",
+    url: "https://osartec.gob.sv/servicios/derogaciones/",
+  },
+  {
+    ...somaliaRecordTimestamps,
+    id: acceptanceFixtureIds.source.somaliaEnvironment,
+    isDemo: false,
+    publishedOn: null,
+    publisher:
+      "Federal Government of Somalia / Ministry of Environment and Climate Change",
+    sourceType: "official-regulation",
+    title: "Environmental Protection and Management Act",
+    url: "https://moecc.gov.so/wp-content/uploads/2024/10/Environmental-Protection-and-Management-Act-Engl_240625_145520-2.pdf",
+  },
+  {
+    ...somaliaRecordTimestamps,
+    id: acceptanceFixtureIds.source.somaliaTransport,
+    isDemo: false,
+    publishedOn: "2025-09-08",
+    publisher: "Federal Republic of Somalia / UNFCCC",
+    sourceType: "government-notice",
+    title:
+      "Updated Somalia's Third Generation Nationally Determined Contribution (NDC 3.0) — transport mitigation actions",
+    url: "https://unfccc.int/sites/default/files/2025-09/Somalia%20NDC%203.0_Official_2025.pdf",
+  },
+  {
+    ...southSudanRecordTimestamps,
+    id: acceptanceFixtureIds.source.southSudanEnvironment,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "South Sudan National Bureau of Standards",
+    sourceType: "official-regulation",
+    title: "National Bureau of Standards Act, 2012",
+    url: "https://ssnbs.gov.ss/wp-content/uploads/2026/02/National-Bureau-of-Standards-Act-2012-.pdf",
+  },
+  {
+    ...southSudanRecordTimestamps,
+    id: acceptanceFixtureIds.source.southSudanTransport,
+    isDemo: false,
+    publishedOn: "2022-06-02",
+    publisher: "South Sudan Ministry of Environment and Forestry / UNFCCC",
+    sourceType: "government-notice",
+    title: "South Sudan's Second Nationally Determined Contribution",
+    url: "https://unfccc.int/documents/497930",
+  },
+  {
+    ...surinameRecordTimestamps,
+    id: acceptanceFixtureIds.source.surinameEnvironment,
+    isDemo: false,
+    publishedOn: "2020-05-14",
+    publisher: "De Nationale Assemblée / Staatsblad van de Republiek Suriname",
+    sourceType: "official-regulation",
+    title:
+      "WET van 07 mei 2020, houdende regels voor duurzaam milieumanagement (Milieu Raamwet), S.B. 2020 no. 97",
+    url: "https://www.dna.sr/media/bkih12kt/sb_2020___97.pdf",
+  },
+  {
+    ...surinameRecordTimestamps,
+    id: acceptanceFixtureIds.source.surinameTransport,
+    isDemo: false,
+    publishedOn: "2024-05-28",
+    publisher: "De Nationale Assemblée / Staatsblad van de Republiek Suriname",
+    sourceType: "official-regulation",
+    title:
+      "Wet van 21 mei 2024, houdende wijziging van de Milieu Raamwet (S.B. 2020 no. 97), S.B. 2024 no. 56",
+    url: "https://www.dna.sr/media/fadicptr/s-b-_2024_no-_56__wet_van_21_mei_2024__houdende_wijziging_van_de_milieu_raamwet__s-b-_2020_no-_97_.pdf",
+  },
+  {
+    ...syriaRecordTimestamps,
+    id: acceptanceFixtureIds.source.syriaEnvironmentLaw12,
+    isDemo: false,
+    publishedOn: "2012-03-29",
+    publisher: "Syrian Arab Republic / FAOLEX",
+    sourceType: "official-regulation",
+    title: "القانون 12 لعام 2012 قانون وزارة الدولة لشؤون البيئة",
+    url: "https://faolex.fao.org/docs/pdf/syr212392.pdf",
+  },
+  {
+    ...syriaRecordTimestamps,
+    id: acceptanceFixtureIds.source.syriaVehicleImportNotice2025,
+    isDemo: false,
+    publishedOn: "2025-06-30",
+    publisher:
+      "Syrian Arab News Agency (SANA) / Ministry of Economy and Industry",
+    sourceType: "government-notice",
+    title: "وزارة الاقتصاد والصناعة توضح أسباب منع استيراد السيارات المستعملة",
+    url: "https://sana.sy/economy/2238146/",
+  },
+  {
+    ...chadRecordTimestamps,
+    id: acceptanceFixtureIds.source.chadEnvironment,
+    isDemo: false,
+    publishedOn: "2009-08-06",
+    publisher:
+      "Republic of Chad / Ministry of Environment and Fisheries Resources",
+    sourceType: "official-regulation",
+    title:
+      "Décret n° 904/PR/PM/MERH/2009 portant réglementation des pollutions et des nuisances à l'environnement",
+    url: "https://www.environnement.gouv.td/sites/default/files/inline-files/7.pdf",
+  },
+  {
+    ...chadRecordTimestamps,
+    id: acceptanceFixtureIds.source.chadTransport,
+    isDemo: false,
+    publishedOn: "2025-02-12",
+    publisher: "Republic of Chad / UNFCCC",
+    sourceType: "government-notice",
+    title: "Chad. Biennial update reports (BUR). BUR 1.",
+    url: "https://unfccc.int/documents/645659",
+  },
+  {
+    ...togoRecordTimestamps,
+    id: acceptanceFixtureIds.source.togoEnvironment,
+    isDemo: false,
+    publishedOn: "2026-04-09",
+    publisher:
+      "République togolaise / Journal Officiel de la République Togolaise",
+    sourceType: "official-regulation",
+    title:
+      "Loi n° 2026-007 du 24 mars 2026 modifiant et complétant la loi n° 2008-005 du 30 mai 2008 portant loi-cadre sur l’environnement",
+    url: "https://jo.gouv.tg/sites/default/files/JO/JO_SPECIAL_BIS_71E_N_25.pdf",
+  },
+  {
+    ...togoRecordTimestamps,
+    id: acceptanceFixtureIds.source.togoTransport,
+    isDemo: false,
+    publishedOn: "2022-10-07",
+    publisher:
+      "République togolaise / Journal Officiel de la République Togolaise",
+    sourceType: "official-regulation",
+    title:
+      "Décret n° 2022-085/PR du 03/08/22 fixant les modalités d’application de la loi n° 2013-011 du 07 juin 2013 portant code de la route",
+    url: "https://www.jo.gouv.tg/sites/default/files/JO/JOS_07_10_2022%20-%2067%20E%20ANNEE%20N%C2%B041%20BIS.pdf",
+  },
+  {
+    ...timorLesteRecordTimestamps,
+    id: acceptanceFixtureIds.source.timorLesteEnvironment,
+    isDemo: false,
+    publishedOn: "2012-07-04",
+    publisher:
+      "Jornal da República / Ministério da Justiça, República Democrática de Timor-Leste",
+    sourceType: "official-regulation",
+    title: "Decreto-Lei n.º 26/2012, de 4 de Julho — Lei de Bases do Ambiente",
+    url: "https://www.mj.gov.tl/jornal/public/docs/2012/serie_1/serie1_no24.pdf",
+  },
+  {
+    ...timorLesteRecordTimestamps,
+    id: acceptanceFixtureIds.source.timorLesteTransport,
+    isDemo: false,
+    publishedOn: "2003-04-03",
+    publisher:
+      "Jornal da República / Ministério da Justiça, República Democrática de Timor-Leste",
+    sourceType: "official-regulation",
+    title: "Decreto-Lei n.º 6/2003, de 3 de Abril — Código da Estrada",
+    url: "https://www.mj.gov.tl/jornal/public/docs/2002_2005/decreto_lei_governo/6_2003.pdf",
+  },
+  {
+    ...trinidadTobagoRecordTimestamps,
+    id: acceptanceFixtureIds.source.trinidadTobagoEnvironment,
+    isDemo: false,
+    publishedOn: "2015-01-23",
+    publisher:
+      "Republic of Trinidad and Tobago / Environmental Management Authority",
+    sourceType: "official-regulation",
+    title: "The Air Pollution Rules, 2014 — Legal Notice No. 12",
+    url: "https://www.ema.co.tt/our-environment/air/",
+  },
+  {
+    ...trinidadTobagoRecordTimestamps,
+    id: acceptanceFixtureIds.source.trinidadTobagoTransport,
+    isDemo: false,
+    publishedOn: "2026-02-02",
+    publisher:
+      "Parliament / Government Printer / Digital Legislative Library, Republic of Trinidad and Tobago",
+    sourceType: "official-regulation",
+    title:
+      "Motor Vehicles and Road Traffic (Amendment) Act, 2026 — Act No. 2 of 2026",
+    url: "https://laws.gov.tt/ttdll-web/revision/download/123556?type=amendment",
+  },
+  {
+    ...taiwanRecordTimestamps,
+    id: acceptanceFixtureIds.source.taiwanEnvironment,
+    isDemo: false,
+    publishedOn: "2023-06-30",
+    publisher: "Taiwan Ministry of Environment",
+    sourceType: "official-regulation",
+    title: "移動污染源空氣污染物排放標準第五條 — 柴油汽車完整排放標準表",
+    url: "https://oaout.moenv.gov.tw/law/Download.ashx?FileID=133507&id=FL015347&type=LAW",
+  },
+  {
+    ...taiwanRecordTimestamps,
+    id: acceptanceFixtureIds.source.taiwanTransport,
+    isDemo: false,
+    publishedOn: "2024-02-01",
+    publisher: "Taiwan Ministry of Environment",
+    sourceType: "official-regulation",
+    title:
+      "柴油及替代清潔燃料引擎汽車車型排氣審驗合格證明核發撤銷及廢止辦法 — 重型引擎族審驗",
+    url: "https://oaout.moenv.gov.tw/law/LawContent.aspx?id=FL020193",
+  },
+  {
+    ...venezuelaRecordTimestamps,
+    id: acceptanceFixtureIds.source.venezuelaEnvironment,
+    isDemo: false,
+    publishedOn: "1998-09-04",
+    publisher:
+      "Presidencia de la República / Gaceta Oficial de la República de Venezuela",
+    sourceType: "official-regulation",
+    title:
+      "Decreto Nº 2.673 de 19 de agosto de 1998 — Normas sobre emisiones de fuentes móviles",
+    url: "https://faolex.fao.org/docs/pdf/ven181032.pdf",
+  },
+  {
+    ...venezuelaRecordTimestamps,
+    id: acceptanceFixtureIds.source.venezuelaTransport,
+    isDemo: false,
+    publishedOn: "2015-12-28",
+    publisher:
+      "Asamblea Nacional / Gaceta Oficial de la República Bolivariana de Venezuela",
+    sourceType: "official-regulation",
+    title:
+      "Ley de Calidad de las Aguas y del Aire — mobile-source limits and preservation of prior technical rules",
+    url: "https://faolex.fao.org/docs/pdf/ven151760.pdf",
+  },
+  {
+    ...vanuatuRecordTimestamps,
+    id: acceptanceFixtureIds.source.vanuatuEnvironment,
+    isDemo: false,
+    publishedOn: "2014-06-27",
+    publisher:
+      "Republic of Vanuatu / Department of Environmental Protection and Conservation",
+    sourceType: "official-regulation",
+    title:
+      "Pollution (Control) Act No. 10 of 2013 — prescribed vehicle-emission standards and delegated regulations",
+    url: "https://mocca.gov.vu/images/publications/legislation/DEPC/Legislation/Pollution%20%28Control%29%20Act..pdf",
+  },
+  {
+    ...vanuatuRecordTimestamps,
+    id: acceptanceFixtureIds.source.vanuatuTransport,
+    isDemo: false,
+    publishedOn: null,
+    publisher:
+      "Parliament of the Republic of Vanuatu / Ministry of Infrastructure and Public Utilities",
+    sourceType: "government-notice",
+    title:
+      "Bill for the Import of Motor Vehicles (Control) (Amendment) Act No. of 2025",
+    url: "https://parliament.gov.vu/images/Bills/Second%20Ordinary%20session%202025/Bill%20for%20the%20Motor%20Vehicles/Bill%20for%20the%20Motor%20Vehicles%20Control%20Am%20Act%20No.%20%20of%202025.pdf",
+  },
+  {
+    ...yemenRecordTimestamps,
+    id: acceptanceFixtureIds.source.yemenEnvironment,
+    isDemo: false,
+    publishedOn: "1995-10-29",
+    publisher:
+      "Yemen Public Prosecution (Office of the Attorney General) / Republic of Yemen",
+    sourceType: "official-regulation",
+    title:
+      "قانون رقم (26) لسنة 1995م بشأن حماية البيئة — Law No. 26 of 1995 on Environmental Protection",
+    url: "https://www.agoye.gov.ye/page.php?id=323&lng=arabic",
+  },
+  {
+    ...yemenRecordTimestamps,
+    id: acceptanceFixtureIds.source.yemenTransport,
+    isDemo: false,
+    publishedOn: "2002-03-18",
+    publisher:
+      "Yemen Public Prosecution (Office of the Attorney General) / Republic of Yemen",
+    sourceType: "official-regulation",
+    title:
+      "قانون المرور وتعديلاته — Traffic Law No. 46 of 1991, consolidated through Law No. 12 of 2002",
+    url: "https://www.agoye.gov.ye/page.php?id=275&lng=arabic",
+  },
+  {
+    ...antarcticaRecordTimestamps,
+    id: acceptanceFixtureIds.source.antarcticaBoundary,
+    isDemo: false,
+    publishedOn: "1991-10-04",
+    publisher: "Antarctic Treaty Secretariat",
+    sourceType: "official-regulation",
+    title:
+      "Protocol on Environmental Protection to the Antarctic Treaty — environmental governance boundary",
+    url: "https://documents.ats.aq/recatt/Att006_e.pdf",
+  },
+  {
+    ...frenchSouthernLandsRecordTimestamps,
+    id: acceptanceFixtureIds.source.frenchSouthernLandsBoundary,
+    isDemo: false,
+    publishedOn: null,
+    publisher: "République française / Légifrance",
+    sourceType: "official-regulation",
+    title:
+      "Code de l'environnement, articles L640-1 à L640-5 — provisions applicable in the French Southern and Antarctic Lands",
+    url: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006143761",
+  },
+  {
+    ...westernSaharaRecordTimestamps,
+    id: acceptanceFixtureIds.source.westernSaharaBoundary,
+    isDemo: false,
+    publishedOn: "2024-09-09",
+    publisher:
+      "United Nations Department of Political and Peacebuilding Affairs / Decolonization",
+    sourceType: "government-notice",
+    title:
+      "Western Sahara — Non-Self-Governing Territory status and administering-power boundary",
+    url: "https://www.un.org/dppa/decolonization/en/nsgt/western-sahara",
+  },
+  {
+    ...falklandIslandsRecordTimestamps,
+    id: acceptanceFixtureIds.source.falklandIslandsBoundary,
+    isDemo: false,
+    publishedOn: "2017-07-31",
+    publisher: "Falkland Islands Government / Falkland Islands Legislation",
+    sourceType: "official-regulation",
+    title:
+      "Road Traffic (Provisional) Regulations Order 1986 — silencers and vehicle inspection",
+    url: "https://www.legislation.gov.fk/download/pdf/4150cf28-4b25-4f23-ae56-456251ea2378/5a0dfa5f-ceaf-4652-9566-c911493a27c1/fisl-1986-5_2017-07-31.pdf",
+  },
   {
     ...recordTimestamps,
     updatedAt: p7VerificationTimestamp,
@@ -4470,8 +5649,7 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
     publishedOn: "2011-07-13",
     publisher: "CONAMA",
     sourceType: "official-regulation",
-    title:
-      "Resolução CONAMA nº 433, de 13 de julho de 2011 (PROCONVE MAR-I)",
+    title: "Resolução CONAMA nº 433, de 13 de julho de 2011 (PROCONVE MAR-I)",
     url: "http://conama.mma.gov.br/?option=com_sisconama&task=arquivo.download&id=635",
   },
 ];
@@ -4530,7 +5708,8 @@ export const fixtureJurisdictions: (typeof jurisdictions.$inferInsert)[] = [
     isDemo: false,
     name: "Conselho Nacional do Meio Ambiente (CONAMA)",
     type: "country",
-    websiteUrl: "https://www.gov.br/ibama/pt-br/assuntos/emissoes-e-residuos/emissoes/programa-de-controle-de-emissoes-veiculares-proconve",
+    websiteUrl:
+      "https://www.gov.br/ibama/pt-br/assuntos/emissoes-e-residuos/emissoes/programa-de-controle-de-emissoes-veiculares-proconve",
   },
   {
     ...japanRecordTimestamps,
@@ -4771,8 +5950,7 @@ export const fixtureJurisdictions: (typeof jurisdictions.$inferInsert)[] = [
     dataSourceId: acceptanceFixtureIds.source.philippinesEuro4LimitsBoI,
     id: acceptanceFixtureIds.jurisdiction.philippines,
     isDemo: false,
-    name:
-      "Philippines Department of Environment and Natural Resources",
+    name: "Philippines Department of Environment and Natural Resources",
     type: "country",
     websiteUrl: "https://emb.gov.ph/",
   },
@@ -5173,7 +6351,8 @@ export const fixtureJurisdictions: (typeof jurisdictions.$inferInsert)[] = [
     isDemo: false,
     name: "Israel vehicle and environmental authorities",
     type: "country",
-    websiteUrl: "https://www.gov.il/he/departments/ministry_of_environmental_protection",
+    websiteUrl:
+      "https://www.gov.il/he/departments/ministry_of_environmental_protection",
   },
   {
     ...pakistanRecordTimestamps,
@@ -5528,899 +6707,1936 @@ export const fixtureJurisdictions: (typeof jurisdictions.$inferInsert)[] = [
     type: "country",
     websiteUrl: "https://www.gov.ls/",
   },
-  { ...madagascarRecordTimestamps, code: "MG-NATIONAL", countryIso3: "MDG", dataSourceId: acceptanceFixtureIds.source.madagascarEnvironment, id: acceptanceFixtureIds.jurisdiction.madagascar, isDemo: false, name: "Madagascar vehicle and environmental authorities", type: "country", websiteUrl: "https://www.environnement.mg/" },
-  { ...mauritiusRecordTimestamps, code: "MU-NATIONAL", countryIso3: "MUS", dataSourceId: acceptanceFixtureIds.source.mauritiusEnvironment, id: acceptanceFixtureIds.jurisdiction.mauritius, isDemo: false, name: "Mauritius vehicle and environmental authorities", type: "country", websiteUrl: "https://environment.govmu.org/" },
-  { ...malawiRecordTimestamps, code: "MW-NATIONAL", countryIso3: "MWI", dataSourceId: acceptanceFixtureIds.source.malawiGovernment, id: acceptanceFixtureIds.jurisdiction.malawi, isDemo: false, name: "Malawi vehicle and environmental authorities", type: "country", websiteUrl: "https://www.malawi.gov.mw/" },
-  { ...fijiRecordTimestamps, code: "FJ-NATIONAL", countryIso3: "FJI", dataSourceId: acceptanceFixtureIds.source.fijiEnvironment, id: acceptanceFixtureIds.jurisdiction.fiji, isDemo: false, name: "Fiji vehicle and environmental authorities", type: "country", websiteUrl: "https://www.environment.gov.fj/" },
-  { ...belizeRecordTimestamps, code: "BZ-NATIONAL", countryIso3: "BLZ", dataSourceId: acceptanceFixtureIds.source.belizeEnvironment, id: acceptanceFixtureIds.jurisdiction.belize, isDemo: false, name: "Belize vehicle and environmental authorities", type: "country", websiteUrl: "https://doe.gov.bz/" },
-  { ...bruneiRecordTimestamps, code: "BN-NATIONAL", countryIso3: "BRN", dataSourceId: acceptanceFixtureIds.source.bruneiEnvironment, id: acceptanceFixtureIds.jurisdiction.brunei, isDemo: false, name: "Brunei vehicle and environmental authorities", type: "country", websiteUrl: "https://www.env.gov.bn/" },
-  { ...bhutanRecordTimestamps, code: "BT-NATIONAL", countryIso3: "BTN", dataSourceId: acceptanceFixtureIds.source.bhutanEnvironment, id: acceptanceFixtureIds.jurisdiction.bhutan, isDemo: false, name: "Bhutan vehicle and environmental authorities", type: "country", websiteUrl: "https://www.nec.gov.bt/" },
-  { ...centralAfricanRepublicRecordTimestamps, code: "CF-NATIONAL", countryIso3: "CAF", dataSourceId: acceptanceFixtureIds.source.centralAfricanRepublicEnvironment, id: acceptanceFixtureIds.jurisdiction.centralAfricanRepublic, isDemo: false, name: "Central African Republic vehicle and environmental authorities", type: "country", websiteUrl: "https://faolex.fao.org/docs/pdf/caf105925.pdf" },
-  { ...democraticRepublicOfCongoRecordTimestamps, code: "CD-NATIONAL", countryIso3: "COD", dataSourceId: acceptanceFixtureIds.source.democraticRepublicOfCongoEnvironment, id: acceptanceFixtureIds.jurisdiction.democraticRepublicOfCongo, isDemo: false, name: "DR Congo vehicle and environmental authorities", type: "country", websiteUrl: "https://medd.gouv.cd/" },
-  { ...republicOfCongoRecordTimestamps, code: "CG-NATIONAL", countryIso3: "COG", dataSourceId: acceptanceFixtureIds.source.republicOfCongoEnvironment, id: acceptanceFixtureIds.jurisdiction.republicOfCongo, isDemo: false, name: "Republic of the Congo vehicle and environmental authorities", type: "country", websiteUrl: "https://www.developpement-durable.gouv.cg/" },
-  { ...cubaRecordTimestamps, code: "CU-NATIONAL", countryIso3: "CUB", dataSourceId: acceptanceFixtureIds.source.cubaEnvironment, id: acceptanceFixtureIds.jurisdiction.cuba, isDemo: false, name: "Cuba vehicle and environmental authorities", type: "country", websiteUrl: "https://www.medioambiente.gob.cu/" },
-  { ...djiboutiRecordTimestamps, code: "DJ-NATIONAL", countryIso3: "DJI", dataSourceId: acceptanceFixtureIds.source.djiboutiEnvironment, id: acceptanceFixtureIds.jurisdiction.djibouti, isDemo: false, name: "Djibouti vehicle and environmental authorities", type: "country", websiteUrl: "https://www.journalofficiel.dj/" },
-  { ...eritreaRecordTimestamps, code: "ER-NATIONAL", countryIso3: "ERI", dataSourceId: acceptanceFixtureIds.source.eritreaEnvironmentalProtectionManagementRegulations127_2017, id: acceptanceFixtureIds.jurisdiction.eritrea, isDemo: false, name: "Eritrea vehicle and environmental authorities", type: "country", websiteUrl: "https://shabait.com/" },
-  { ...gabonRecordTimestamps, code: "GA-NATIONAL", countryIso3: "GAB", dataSourceId: acceptanceFixtureIds.source.gabonEnvironmentalProtectionLaw007_2014, id: acceptanceFixtureIds.jurisdiction.gabon, isDemo: false, name: "Gabon vehicle and environmental authorities", type: "country", websiteUrl: "https://journal-officiel.ga/" },
-  { ...guineaRecordTimestamps, code: "GN-NATIONAL", countryIso3: "GIN", dataSourceId: acceptanceFixtureIds.source.guineaEnvironment, id: acceptanceFixtureIds.jurisdiction.guinea, isDemo: false, name: "Guinea vehicle and environmental authorities", type: "country", websiteUrl: "https://medd.gov.gn/" },
-  { ...gambiaRecordTimestamps, code: "GM-NATIONAL", countryIso3: "GMB", dataSourceId: acceptanceFixtureIds.source.gambiaEnvironmentalQualityStandardsRegulations1999, id: acceptanceFixtureIds.jurisdiction.gambia, isDemo: false, name: "Gambia vehicle and environmental authorities", type: "country", websiteUrl: "https://nea.gm/" },
-  { ...guineaBissauRecordTimestamps, code: "GW-NATIONAL", countryIso3: "GNB", dataSourceId: acceptanceFixtureIds.source.guineaBissauBasicEnvironmentLaw1_2011, id: acceptanceFixtureIds.jurisdiction.guineaBissau, isDemo: false, name: "Guinea-Bissau vehicle and environmental authorities", type: "country", websiteUrl: "https://bissaugov.com/" },
-  { ...equatorialGuineaRecordTimestamps, code: "GQ-NATIONAL", countryIso3: "GNQ", dataSourceId: acceptanceFixtureIds.source.equatorialGuineaEnvironmentalLaw7_2003, id: acceptanceFixtureIds.jurisdiction.equatorialGuinea, isDemo: false, name: "Equatorial Guinea vehicle and environmental authorities", type: "country", websiteUrl: "https://www.guineaecuatorialpress.com/" },
-  { ...greenlandRecordTimestamps, code: "GL-NATIONAL", countryIso3: "GRL", dataSourceId: acceptanceFixtureIds.source.greenlandEnvironment, id: acceptanceFixtureIds.jurisdiction.greenland, isDemo: false, name: "Greenland vehicle and environmental authorities", type: "country", websiteUrl: "https://nalunaarutit.gl/" },
-  { ...guyanaRecordTimestamps, code: "GY-NATIONAL", countryIso3: "GUY", dataSourceId: acceptanceFixtureIds.source.guyanaEnvironment, id: acceptanceFixtureIds.jurisdiction.guyana, isDemo: false, name: "Guyana vehicle and environmental authorities", type: "country", websiteUrl: "https://mola.gov.gy/laws-of-guyana" },
-  { ...haitiRecordTimestamps, code: "HT-NATIONAL", countryIso3: "HTI", dataSourceId: acceptanceFixtureIds.source.haitiEnvironment, id: acceptanceFixtureIds.jurisdiction.haiti, isDemo: false, name: "Haiti vehicle and environmental authorities", type: "country", websiteUrl: "https://mde.gouv.ht/" },
-  { ...iranRecordTimestamps, code: "IR-NATIONAL", countryIso3: "IRN", dataSourceId: acceptanceFixtureIds.source.iranTechnicalPollutionRegulation, id: acceptanceFixtureIds.jurisdiction.iran, isDemo: false, name: "Iran vehicle and environmental authorities", type: "country", websiteUrl: "https://nezamat.ir/post-41054/" },
-  { ...iraqRecordTimestamps, code: "IQ-NATIONAL", countryIso3: "IRQ", dataSourceId: acceptanceFixtureIds.source.iraqTr167AmendmentDecision2024, id: acceptanceFixtureIds.jurisdiction.iraq, isDemo: false, name: "Iraq vehicle and environmental authorities", type: "country", websiteUrl: "https://www.iraqi-standards.org/wan/ns/p/0000018.html" },
-  { ...jamaicaRecordTimestamps, code: "JM-NATIONAL", countryIso3: "JAM", dataSourceId: acceptanceFixtureIds.source.jamaicaEnvironment, id: acceptanceFixtureIds.jurisdiction.jamaica, isDemo: false, name: "Jamaica vehicle and environmental authorities", type: "country", websiteUrl: "https://mtm.gov.jm/forms/" },
-  { ...lebanonRecordTimestamps, code: "LB-NATIONAL", countryIso3: "LBN", dataSourceId: acceptanceFixtureIds.source.lebanonEnvironmentalProtectionLaw444, id: acceptanceFixtureIds.jurisdiction.lebanon, isDemo: false, name: "Lebanon vehicle and environmental authorities", type: "country", websiteUrl: "https://moe.gov.lb/%D8%A7%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86-%D9%88%D8%A7%D9%84%D8%A7%D9%86%D8%B8%D9%85%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-444-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9.aspx?lang=ar-LB" },
-  { ...liberiaRecordTimestamps, code: "LR-NATIONAL", countryIso3: "LBR", dataSourceId: acceptanceFixtureIds.source.liberiaEnvironmentalProtectionManagementLaw, id: acceptanceFixtureIds.jurisdiction.liberia, isDemo: false, name: "Liberia vehicle and environmental authorities", type: "country", websiteUrl: "https://epa.gov.lr/epa-documents/the-environmental-protection-and-management-law-of-liberia/" },
-  { ...libyaRecordTimestamps, code: "LY-NATIONAL", countryIso3: "LBY", dataSourceId: acceptanceFixtureIds.source.libyaEnvironmentalProtectionLaw15, id: acceptanceFixtureIds.jurisdiction.libya, isDemo: false, name: "Libya vehicle and environmental authorities", type: "country", websiteUrl: "https://environment.gov.ly/law-no-15/" },
-  { ...maliRecordTimestamps, code: "ML-NATIONAL", countryIso3: "MLI", dataSourceId: acceptanceFixtureIds.source.maliTechnicalInspectionOrder2020, id: acceptanceFixtureIds.jurisdiction.mali, isDemo: false, name: "Mali vehicle and environmental authorities", type: "country", websiteUrl: "https://sgg-mali.ml/JO/2020/mali-jo-2020-08.pdf" },
-  { ...myanmarRecordTimestamps, code: "MM-NATIONAL", countryIso3: "MMR", dataSourceId: acceptanceFixtureIds.source.myanmarEnvironment, id: acceptanceFixtureIds.jurisdiction.myanmar, isDemo: false, name: "Myanmar vehicle and environmental authorities", type: "country", websiteUrl: "https://www.ecd.gov.mm/national-environmental-quality-emission-guidelines-final/" },
-  { ...mauritaniaRecordTimestamps, code: "MR-NATIONAL", countryIso3: "MRT", dataSourceId: acceptanceFixtureIds.source.mauritaniaAirPollutionLaw2018, id: acceptanceFixtureIds.jurisdiction.mauritania, isDemo: false, name: "Mauritania vehicle and environmental authorities", type: "country", websiteUrl: "http://www.environnement.gov.mr/fr/images/reglementations/Loi_pollution_Air_FR.pdf" },
-  { ...newCaledoniaRecordTimestamps, code: "NC-NATIONAL", countryIso3: "NCL", dataSourceId: acceptanceFixtureIds.source.newCaledoniaEnvironment, id: acceptanceFixtureIds.jurisdiction.newCaledonia, isDemo: false, name: "New Caledonia vehicle and environmental authorities", type: "country", websiteUrl: "https://juridoc.gouv.nc/juridoc/jdcodes.nsf/0/59295762BD9870FE4B258184001CDC1D/%24File/Code_route_NC_9-10-11-06-1965_ChG_07-10-2025.pdf?OpenElement=" },
-  { ...nigerRecordTimestamps, code: "NE-NATIONAL", countryIso3: "NER", dataSourceId: acceptanceFixtureIds.source.nigerEnvironmentalFrameworkLaw9856, id: acceptanceFixtureIds.jurisdiction.niger, isDemo: false, name: "Niger vehicle and environmental authorities", type: "country", websiteUrl: "https://hydraulique.gouv.ne/wp-content/uploads/2025/07/LoiN%C2%B098-056gestiondelEnvironnement.pdf" },
-  { ...nicaraguaRecordTimestamps, code: "NI-NATIONAL", countryIso3: "NIC", dataSourceId: acceptanceFixtureIds.source.nicaraguaEnvironment, id: acceptanceFixtureIds.jurisdiction.nicaragua, isDemo: false, name: "Nicaragua vehicle and environmental authorities", type: "country", websiteUrl: "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNormaJuridica.xsp?action=openDocument&documentId=0404E60D225D0ACF062588E2006EE9F8" },
-  { ...papuaNewGuineaRecordTimestamps, code: "PG-NATIONAL", countryIso3: "PNG", dataSourceId: acceptanceFixtureIds.source.papuaNewGuineaEnvironment, id: acceptanceFixtureIds.jurisdiction.papuaNewGuinea, isDemo: false, name: "Papua New Guinea Road Traffic Authority", type: "country", websiteUrl: "https://rta.gov.pg/pdfs/resources/legislation/rules/RTR_VehicleStandardsAndCompliance2018.pdf" },
-  { ...puertoRicoRecordTimestamps, code: "PR-NATIONAL", countryIso3: "PRI", dataSourceId: acceptanceFixtureIds.source.puertoRicoEnvironment, id: acceptanceFixtureIds.jurisdiction.puertoRico, isDemo: false, name: "Puerto Rico vehicle and environmental authorities", type: "country", websiteUrl: "https://www.drna.pr.gov/wp-content/uploads/2019/10/Reglamento-5300-Reglamento-Control-Contaminacion-Atmosferica-1995.pdf" },
-  { ...northKoreaRecordTimestamps, code: "KP-NATIONAL", countryIso3: "PRK", dataSourceId: acceptanceFixtureIds.source.northKoreaEnvironment, id: acceptanceFixtureIds.jurisdiction.northKorea, isDemo: false, name: "DPR Korea environmental and vehicle authorities", type: "country", websiteUrl: "https://www.fao.org/faolex/country-profiles/general-profile/en/?iso3=PRK" },
-  { ...paraguayRecordTimestamps, code: "PY-NATIONAL", countryIso3: "PRY", dataSourceId: acceptanceFixtureIds.source.paraguayEnvironment, id: acceptanceFixtureIds.jurisdiction.paraguay, isDemo: false, name: "Paraguay Ministry of Environment and Sustainable Development (MADES)", type: "country", websiteUrl: "https://www.mades.gov.py/normativa-direccion-de-normalizacion-del-aire/" },
-  { ...palestineRecordTimestamps, code: "PS-NATIONAL", countryIso3: "PSE", dataSourceId: acceptanceFixtureIds.source.palestineEnvironment, id: acceptanceFixtureIds.jurisdiction.palestine, isDemo: false, name: "Palestine Environment Quality Authority and vehicle licensing authorities", type: "country", websiteUrl: "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/66/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-7-%D9%84%D8%B3%D9%86%D8%A9-1999%D9%85-%D8%A8%D8%B4%D8%A3%D9%86-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86" },
-  { ...sudanRecordTimestamps, code: "SD-NATIONAL", countryIso3: "SDN", dataSourceId: acceptanceFixtureIds.source.sudanEnvironment, id: acceptanceFixtureIds.jurisdiction.sudan, isDemo: false, name: "Sudan Higher Council for Environment and Natural Resources", type: "country", websiteUrl: "https://hcenr.gov.sd/wp-content/uploads/2021/05/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%84%D8%B3%D9%86%D8%A9-2001.pdf" },
-  { ...solomonIslandsRecordTimestamps, code: "SB-NATIONAL", countryIso3: "SLB", dataSourceId: acceptanceFixtureIds.source.solomonIslandsEnvironment, id: acceptanceFixtureIds.jurisdiction.solomonIslands, isDemo: false, name: "Solomon Islands Attorney-General's Chambers and Road Transport Board", type: "country", websiteUrl: "https://attorneygenerals.gov.sb/legislation-dashboard/download-info/road-transport-act-cap-131/" },
-  { ...sierraLeoneRecordTimestamps, code: "SL-NATIONAL", countryIso3: "SLE", dataSourceId: acceptanceFixtureIds.source.sierraLeoneEnvironment, id: acceptanceFixtureIds.jurisdiction.sierraLeone, isDemo: false, name: "Sierra Leone Environment Protection Agency and road transport authorities", type: "country", websiteUrl: "https://www.parliament.gov.sl/uploads/acts/THE%20ENVIRONMENT%20PROTECTION%20AGENCY%20ACT%2C%202022.pdf" },
-  { ...elSalvadorRecordTimestamps, code: "SV-NATIONAL", countryIso3: "SLV", dataSourceId: acceptanceFixtureIds.source.elSalvadorEnvironment, id: acceptanceFixtureIds.jurisdiction.elSalvador, isDemo: false, name: "El Salvador Ministry of Environment and Natural Resources and Vice Ministry of Transport", type: "country", websiteUrl: "https://www.diariooficial.gob.sv/seleccion/31287" },
-  { ...somaliaRecordTimestamps, code: "SO-NATIONAL", countryIso3: "SOM", dataSourceId: acceptanceFixtureIds.source.somaliaEnvironment, id: acceptanceFixtureIds.jurisdiction.somalia, isDemo: false, name: "Somalia Ministry of Environment and Climate Change and Ministry of Transport", type: "country", websiteUrl: "https://moecc.gov.so/policies-and-strategies/" },
-  { ...southSudanRecordTimestamps, code: "SS-NATIONAL", countryIso3: "SSD", dataSourceId: acceptanceFixtureIds.source.southSudanEnvironment, id: acceptanceFixtureIds.jurisdiction.southSudan, isDemo: false, name: "South Sudan National Bureau of Standards and Ministry of Environment and Forestry", type: "country", websiteUrl: "https://ssnbs.gov.ss/" },
-  { ...surinameRecordTimestamps, code: "SR-NATIONAL", countryIso3: "SUR", dataSourceId: acceptanceFixtureIds.source.surinameEnvironment, id: acceptanceFixtureIds.jurisdiction.suriname, isDemo: false, name: "Suriname National Environmental Authority and vehicle inspection authorities", type: "country", websiteUrl: "https://gov.sr/" },
-  { ...syriaRecordTimestamps, code: "SY-NATIONAL", countryIso3: "SYR", dataSourceId: acceptanceFixtureIds.source.syriaEnvironmentLaw12, id: acceptanceFixtureIds.jurisdiction.syria, isDemo: false, name: "Syrian Ministry of Local Administration and Environment", type: "country", websiteUrl: "https://sana.sy/economy/2238146/" },
-  { ...chadRecordTimestamps, code: "TD-NATIONAL", countryIso3: "TCD", dataSourceId: acceptanceFixtureIds.source.chadEnvironment, id: acceptanceFixtureIds.jurisdiction.chad, isDemo: false, name: "Chad Ministry of Environment and Ministry of Transport", type: "country", websiteUrl: "https://www.environnement.gouv.td/" },
-  { ...togoRecordTimestamps, code: "TG-NATIONAL", countryIso3: "TGO", dataSourceId: acceptanceFixtureIds.source.togoEnvironment, id: acceptanceFixtureIds.jurisdiction.togo, isDemo: false, name: "Togo environmental and road-transport authorities", type: "country", websiteUrl: "https://jo.gouv.tg/sites/default/files/JO/JO_SPECIAL_BIS_71E_N_25.pdf" },
-  { ...timorLesteRecordTimestamps, code: "TL-NATIONAL", countryIso3: "TLS", dataSourceId: acceptanceFixtureIds.source.timorLesteEnvironment, id: acceptanceFixtureIds.jurisdiction.timorLeste, isDemo: false, name: "Timor-Leste environmental and road-transport authorities", type: "country", websiteUrl: "https://www.mj.gov.tl/jornal/public/docs/2012/serie_1/serie1_no24.pdf" },
-  { ...trinidadTobagoRecordTimestamps, code: "TT-NATIONAL", countryIso3: "TTO", dataSourceId: acceptanceFixtureIds.source.trinidadTobagoEnvironment, id: acceptanceFixtureIds.jurisdiction.trinidadTobago, isDemo: false, name: "Trinidad and Tobago environmental and vehicle authorities", type: "country", websiteUrl: "https://ec.gov.tt/legislation-and-judgements/legislation" },
-  { ...taiwanRecordTimestamps, code: "TW-NATIONAL", countryIso3: "TWN", dataSourceId: acceptanceFixtureIds.source.taiwanEnvironment, id: acceptanceFixtureIds.jurisdiction.taiwan, isDemo: false, name: "Taiwan Ministry of Environment and emission-certification authorities", type: "country", websiteUrl: "https://oaout.moenv.gov.tw/law/LawContent.aspx?id=FL015347" },
-  { ...venezuelaRecordTimestamps, code: "VE-NATIONAL", countryIso3: "VEN", dataSourceId: acceptanceFixtureIds.source.venezuelaEnvironment, id: acceptanceFixtureIds.jurisdiction.venezuela, isDemo: false, name: "Venezuela mobile-source emission and environmental authorities", type: "country", websiteUrl: "https://faolex.fao.org/docs/pdf/ven181032.pdf" },
-  { ...vanuatuRecordTimestamps, code: "VU-NATIONAL", countryIso3: "VUT", dataSourceId: acceptanceFixtureIds.source.vanuatuEnvironment, id: acceptanceFixtureIds.jurisdiction.vanuatu, isDemo: false, name: "Vanuatu environmental and vehicle-control authorities", type: "country", websiteUrl: "https://mocca.gov.vu/images/publications/legislation/DEPC/Legislation/Pollution%20%28Control%29%20Act..pdf" },
-  { ...yemenRecordTimestamps, code: "YE-NATIONAL", countryIso3: "YEM", dataSourceId: acceptanceFixtureIds.source.yemenEnvironment, id: acceptanceFixtureIds.jurisdiction.yemen, isDemo: false, name: "Republic of Yemen environmental and road-traffic authorities", type: "country", websiteUrl: "https://www.agoye.gov.ye/page.php?id=323&lng=arabic" },
-  { ...antarcticaRecordTimestamps, code: "AQ-BOUNDARY", countryIso3: null, dataSourceId: acceptanceFixtureIds.source.antarcticaBoundary, id: acceptanceFixtureIds.jurisdiction.antarctica, isDemo: false, name: "Antarctic Treaty System governance boundary (no national jurisdiction)", type: "international", websiteUrl: "https://www.ats.aq/e/protocol.html" },
-  { ...frenchSouthernLandsRecordTimestamps, code: "TF-BOUNDARY", countryIso3: null, dataSourceId: acceptanceFixtureIds.source.frenchSouthernLandsBoundary, id: acceptanceFixtureIds.jurisdiction.frenchSouthernLands, isDemo: false, name: "French Southern and Antarctic Lands territorial applicability boundary", type: "international", websiteUrl: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006143761" },
-  { ...westernSaharaRecordTimestamps, code: "EH-BOUNDARY", countryIso3: null, dataSourceId: acceptanceFixtureIds.source.westernSaharaBoundary, id: acceptanceFixtureIds.jurisdiction.westernSahara, isDemo: false, name: "Western Sahara United Nations decolonization boundary", type: "international", websiteUrl: "https://www.un.org/dppa/decolonization/en/nsgt/western-sahara" },
-  { ...falklandIslandsRecordTimestamps, code: "FK-BOUNDARY", countryIso3: null, dataSourceId: acceptanceFixtureIds.source.falklandIslandsBoundary, id: acceptanceFixtureIds.jurisdiction.falklandIslands, isDemo: false, name: "Falkland Islands territorial legislation boundary", type: "international", websiteUrl: "https://www.legislation.gov.fk/view/html/inforce/2017-07-31/fisl-1986-5" },
+  {
+    ...madagascarRecordTimestamps,
+    code: "MG-NATIONAL",
+    countryIso3: "MDG",
+    dataSourceId: acceptanceFixtureIds.source.madagascarEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.madagascar,
+    isDemo: false,
+    name: "Madagascar vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.environnement.mg/",
+  },
+  {
+    ...mauritiusRecordTimestamps,
+    code: "MU-NATIONAL",
+    countryIso3: "MUS",
+    dataSourceId: acceptanceFixtureIds.source.mauritiusEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.mauritius,
+    isDemo: false,
+    name: "Mauritius vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://environment.govmu.org/",
+  },
+  {
+    ...malawiRecordTimestamps,
+    code: "MW-NATIONAL",
+    countryIso3: "MWI",
+    dataSourceId: acceptanceFixtureIds.source.malawiGovernment,
+    id: acceptanceFixtureIds.jurisdiction.malawi,
+    isDemo: false,
+    name: "Malawi vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.malawi.gov.mw/",
+  },
+  {
+    ...fijiRecordTimestamps,
+    code: "FJ-NATIONAL",
+    countryIso3: "FJI",
+    dataSourceId: acceptanceFixtureIds.source.fijiEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.fiji,
+    isDemo: false,
+    name: "Fiji vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.environment.gov.fj/",
+  },
+  {
+    ...belizeRecordTimestamps,
+    code: "BZ-NATIONAL",
+    countryIso3: "BLZ",
+    dataSourceId: acceptanceFixtureIds.source.belizeEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.belize,
+    isDemo: false,
+    name: "Belize vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://doe.gov.bz/",
+  },
+  {
+    ...bruneiRecordTimestamps,
+    code: "BN-NATIONAL",
+    countryIso3: "BRN",
+    dataSourceId: acceptanceFixtureIds.source.bruneiEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.brunei,
+    isDemo: false,
+    name: "Brunei vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.env.gov.bn/",
+  },
+  {
+    ...bhutanRecordTimestamps,
+    code: "BT-NATIONAL",
+    countryIso3: "BTN",
+    dataSourceId: acceptanceFixtureIds.source.bhutanEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.bhutan,
+    isDemo: false,
+    name: "Bhutan vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.nec.gov.bt/",
+  },
+  {
+    ...centralAfricanRepublicRecordTimestamps,
+    code: "CF-NATIONAL",
+    countryIso3: "CAF",
+    dataSourceId: acceptanceFixtureIds.source.centralAfricanRepublicEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.centralAfricanRepublic,
+    isDemo: false,
+    name: "Central African Republic vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://faolex.fao.org/docs/pdf/caf105925.pdf",
+  },
+  {
+    ...democraticRepublicOfCongoRecordTimestamps,
+    code: "CD-NATIONAL",
+    countryIso3: "COD",
+    dataSourceId:
+      acceptanceFixtureIds.source.democraticRepublicOfCongoEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.democraticRepublicOfCongo,
+    isDemo: false,
+    name: "DR Congo vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://medd.gouv.cd/",
+  },
+  {
+    ...republicOfCongoRecordTimestamps,
+    code: "CG-NATIONAL",
+    countryIso3: "COG",
+    dataSourceId: acceptanceFixtureIds.source.republicOfCongoEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.republicOfCongo,
+    isDemo: false,
+    name: "Republic of the Congo vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.developpement-durable.gouv.cg/",
+  },
+  {
+    ...cubaRecordTimestamps,
+    code: "CU-NATIONAL",
+    countryIso3: "CUB",
+    dataSourceId: acceptanceFixtureIds.source.cubaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.cuba,
+    isDemo: false,
+    name: "Cuba vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.medioambiente.gob.cu/",
+  },
+  {
+    ...djiboutiRecordTimestamps,
+    code: "DJ-NATIONAL",
+    countryIso3: "DJI",
+    dataSourceId: acceptanceFixtureIds.source.djiboutiEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.djibouti,
+    isDemo: false,
+    name: "Djibouti vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.journalofficiel.dj/",
+  },
+  {
+    ...eritreaRecordTimestamps,
+    code: "ER-NATIONAL",
+    countryIso3: "ERI",
+    dataSourceId:
+      acceptanceFixtureIds.source
+        .eritreaEnvironmentalProtectionManagementRegulations127_2017,
+    id: acceptanceFixtureIds.jurisdiction.eritrea,
+    isDemo: false,
+    name: "Eritrea vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://shabait.com/",
+  },
+  {
+    ...gabonRecordTimestamps,
+    code: "GA-NATIONAL",
+    countryIso3: "GAB",
+    dataSourceId:
+      acceptanceFixtureIds.source.gabonEnvironmentalProtectionLaw007_2014,
+    id: acceptanceFixtureIds.jurisdiction.gabon,
+    isDemo: false,
+    name: "Gabon vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://journal-officiel.ga/",
+  },
+  {
+    ...guineaRecordTimestamps,
+    code: "GN-NATIONAL",
+    countryIso3: "GIN",
+    dataSourceId: acceptanceFixtureIds.source.guineaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.guinea,
+    isDemo: false,
+    name: "Guinea vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://medd.gov.gn/",
+  },
+  {
+    ...gambiaRecordTimestamps,
+    code: "GM-NATIONAL",
+    countryIso3: "GMB",
+    dataSourceId:
+      acceptanceFixtureIds.source
+        .gambiaEnvironmentalQualityStandardsRegulations1999,
+    id: acceptanceFixtureIds.jurisdiction.gambia,
+    isDemo: false,
+    name: "Gambia vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://nea.gm/",
+  },
+  {
+    ...guineaBissauRecordTimestamps,
+    code: "GW-NATIONAL",
+    countryIso3: "GNB",
+    dataSourceId:
+      acceptanceFixtureIds.source.guineaBissauBasicEnvironmentLaw1_2011,
+    id: acceptanceFixtureIds.jurisdiction.guineaBissau,
+    isDemo: false,
+    name: "Guinea-Bissau vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://bissaugov.com/",
+  },
+  {
+    ...equatorialGuineaRecordTimestamps,
+    code: "GQ-NATIONAL",
+    countryIso3: "GNQ",
+    dataSourceId:
+      acceptanceFixtureIds.source.equatorialGuineaEnvironmentalLaw7_2003,
+    id: acceptanceFixtureIds.jurisdiction.equatorialGuinea,
+    isDemo: false,
+    name: "Equatorial Guinea vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.guineaecuatorialpress.com/",
+  },
+  {
+    ...greenlandRecordTimestamps,
+    code: "GL-NATIONAL",
+    countryIso3: "GRL",
+    dataSourceId: acceptanceFixtureIds.source.greenlandEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.greenland,
+    isDemo: false,
+    name: "Greenland vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://nalunaarutit.gl/",
+  },
+  {
+    ...guyanaRecordTimestamps,
+    code: "GY-NATIONAL",
+    countryIso3: "GUY",
+    dataSourceId: acceptanceFixtureIds.source.guyanaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.guyana,
+    isDemo: false,
+    name: "Guyana vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://mola.gov.gy/laws-of-guyana",
+  },
+  {
+    ...haitiRecordTimestamps,
+    code: "HT-NATIONAL",
+    countryIso3: "HTI",
+    dataSourceId: acceptanceFixtureIds.source.haitiEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.haiti,
+    isDemo: false,
+    name: "Haiti vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://mde.gouv.ht/",
+  },
+  {
+    ...iranRecordTimestamps,
+    code: "IR-NATIONAL",
+    countryIso3: "IRN",
+    dataSourceId: acceptanceFixtureIds.source.iranTechnicalPollutionRegulation,
+    id: acceptanceFixtureIds.jurisdiction.iran,
+    isDemo: false,
+    name: "Iran vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://nezamat.ir/post-41054/",
+  },
+  {
+    ...iraqRecordTimestamps,
+    code: "IQ-NATIONAL",
+    countryIso3: "IRQ",
+    dataSourceId: acceptanceFixtureIds.source.iraqTr167AmendmentDecision2024,
+    id: acceptanceFixtureIds.jurisdiction.iraq,
+    isDemo: false,
+    name: "Iraq vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://www.iraqi-standards.org/wan/ns/p/0000018.html",
+  },
+  {
+    ...jamaicaRecordTimestamps,
+    code: "JM-NATIONAL",
+    countryIso3: "JAM",
+    dataSourceId: acceptanceFixtureIds.source.jamaicaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.jamaica,
+    isDemo: false,
+    name: "Jamaica vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://mtm.gov.jm/forms/",
+  },
+  {
+    ...lebanonRecordTimestamps,
+    code: "LB-NATIONAL",
+    countryIso3: "LBN",
+    dataSourceId:
+      acceptanceFixtureIds.source.lebanonEnvironmentalProtectionLaw444,
+    id: acceptanceFixtureIds.jurisdiction.lebanon,
+    isDemo: false,
+    name: "Lebanon vehicle and environmental authorities",
+    type: "country",
+    websiteUrl:
+      "https://moe.gov.lb/%D8%A7%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86-%D9%88%D8%A7%D9%84%D8%A7%D9%86%D8%B8%D9%85%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-444-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9.aspx?lang=ar-LB",
+  },
+  {
+    ...liberiaRecordTimestamps,
+    code: "LR-NATIONAL",
+    countryIso3: "LBR",
+    dataSourceId:
+      acceptanceFixtureIds.source.liberiaEnvironmentalProtectionManagementLaw,
+    id: acceptanceFixtureIds.jurisdiction.liberia,
+    isDemo: false,
+    name: "Liberia vehicle and environmental authorities",
+    type: "country",
+    websiteUrl:
+      "https://epa.gov.lr/epa-documents/the-environmental-protection-and-management-law-of-liberia/",
+  },
+  {
+    ...libyaRecordTimestamps,
+    code: "LY-NATIONAL",
+    countryIso3: "LBY",
+    dataSourceId: acceptanceFixtureIds.source.libyaEnvironmentalProtectionLaw15,
+    id: acceptanceFixtureIds.jurisdiction.libya,
+    isDemo: false,
+    name: "Libya vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://environment.gov.ly/law-no-15/",
+  },
+  {
+    ...maliRecordTimestamps,
+    code: "ML-NATIONAL",
+    countryIso3: "MLI",
+    dataSourceId: acceptanceFixtureIds.source.maliTechnicalInspectionOrder2020,
+    id: acceptanceFixtureIds.jurisdiction.mali,
+    isDemo: false,
+    name: "Mali vehicle and environmental authorities",
+    type: "country",
+    websiteUrl: "https://sgg-mali.ml/JO/2020/mali-jo-2020-08.pdf",
+  },
+  {
+    ...myanmarRecordTimestamps,
+    code: "MM-NATIONAL",
+    countryIso3: "MMR",
+    dataSourceId: acceptanceFixtureIds.source.myanmarEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.myanmar,
+    isDemo: false,
+    name: "Myanmar vehicle and environmental authorities",
+    type: "country",
+    websiteUrl:
+      "https://www.ecd.gov.mm/national-environmental-quality-emission-guidelines-final/",
+  },
+  {
+    ...mauritaniaRecordTimestamps,
+    code: "MR-NATIONAL",
+    countryIso3: "MRT",
+    dataSourceId: acceptanceFixtureIds.source.mauritaniaAirPollutionLaw2018,
+    id: acceptanceFixtureIds.jurisdiction.mauritania,
+    isDemo: false,
+    name: "Mauritania vehicle and environmental authorities",
+    type: "country",
+    websiteUrl:
+      "http://www.environnement.gov.mr/fr/images/reglementations/Loi_pollution_Air_FR.pdf",
+  },
+  {
+    ...newCaledoniaRecordTimestamps,
+    code: "NC-NATIONAL",
+    countryIso3: "NCL",
+    dataSourceId: acceptanceFixtureIds.source.newCaledoniaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.newCaledonia,
+    isDemo: false,
+    name: "New Caledonia vehicle and environmental authorities",
+    type: "country",
+    websiteUrl:
+      "https://juridoc.gouv.nc/juridoc/jdcodes.nsf/0/59295762BD9870FE4B258184001CDC1D/%24File/Code_route_NC_9-10-11-06-1965_ChG_07-10-2025.pdf?OpenElement=",
+  },
+  {
+    ...nigerRecordTimestamps,
+    code: "NE-NATIONAL",
+    countryIso3: "NER",
+    dataSourceId:
+      acceptanceFixtureIds.source.nigerEnvironmentalFrameworkLaw9856,
+    id: acceptanceFixtureIds.jurisdiction.niger,
+    isDemo: false,
+    name: "Niger vehicle and environmental authorities",
+    type: "country",
+    websiteUrl:
+      "https://hydraulique.gouv.ne/wp-content/uploads/2025/07/LoiN%C2%B098-056gestiondelEnvironnement.pdf",
+  },
+  {
+    ...nicaraguaRecordTimestamps,
+    code: "NI-NATIONAL",
+    countryIso3: "NIC",
+    dataSourceId: acceptanceFixtureIds.source.nicaraguaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.nicaragua,
+    isDemo: false,
+    name: "Nicaragua vehicle and environmental authorities",
+    type: "country",
+    websiteUrl:
+      "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNormaJuridica.xsp?action=openDocument&documentId=0404E60D225D0ACF062588E2006EE9F8",
+  },
+  {
+    ...papuaNewGuineaRecordTimestamps,
+    code: "PG-NATIONAL",
+    countryIso3: "PNG",
+    dataSourceId: acceptanceFixtureIds.source.papuaNewGuineaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.papuaNewGuinea,
+    isDemo: false,
+    name: "Papua New Guinea Road Traffic Authority",
+    type: "country",
+    websiteUrl:
+      "https://rta.gov.pg/pdfs/resources/legislation/rules/RTR_VehicleStandardsAndCompliance2018.pdf",
+  },
+  {
+    ...puertoRicoRecordTimestamps,
+    code: "PR-NATIONAL",
+    countryIso3: "PRI",
+    dataSourceId: acceptanceFixtureIds.source.puertoRicoEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.puertoRico,
+    isDemo: false,
+    name: "Puerto Rico vehicle and environmental authorities",
+    type: "country",
+    websiteUrl:
+      "https://www.drna.pr.gov/wp-content/uploads/2019/10/Reglamento-5300-Reglamento-Control-Contaminacion-Atmosferica-1995.pdf",
+  },
+  {
+    ...northKoreaRecordTimestamps,
+    code: "KP-NATIONAL",
+    countryIso3: "PRK",
+    dataSourceId: acceptanceFixtureIds.source.northKoreaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.northKorea,
+    isDemo: false,
+    name: "DPR Korea environmental and vehicle authorities",
+    type: "country",
+    websiteUrl:
+      "https://www.fao.org/faolex/country-profiles/general-profile/en/?iso3=PRK",
+  },
+  {
+    ...paraguayRecordTimestamps,
+    code: "PY-NATIONAL",
+    countryIso3: "PRY",
+    dataSourceId: acceptanceFixtureIds.source.paraguayEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.paraguay,
+    isDemo: false,
+    name: "Paraguay Ministry of Environment and Sustainable Development (MADES)",
+    type: "country",
+    websiteUrl:
+      "https://www.mades.gov.py/normativa-direccion-de-normalizacion-del-aire/",
+  },
+  {
+    ...palestineRecordTimestamps,
+    code: "PS-NATIONAL",
+    countryIso3: "PSE",
+    dataSourceId: acceptanceFixtureIds.source.palestineEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.palestine,
+    isDemo: false,
+    name: "Palestine Environment Quality Authority and vehicle licensing authorities",
+    type: "country",
+    websiteUrl:
+      "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/66/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-7-%D9%84%D8%B3%D9%86%D8%A9-1999%D9%85-%D8%A8%D8%B4%D8%A3%D9%86-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86",
+  },
+  {
+    ...sudanRecordTimestamps,
+    code: "SD-NATIONAL",
+    countryIso3: "SDN",
+    dataSourceId: acceptanceFixtureIds.source.sudanEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.sudan,
+    isDemo: false,
+    name: "Sudan Higher Council for Environment and Natural Resources",
+    type: "country",
+    websiteUrl:
+      "https://hcenr.gov.sd/wp-content/uploads/2021/05/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%84%D8%B3%D9%86%D8%A9-2001.pdf",
+  },
+  {
+    ...solomonIslandsRecordTimestamps,
+    code: "SB-NATIONAL",
+    countryIso3: "SLB",
+    dataSourceId: acceptanceFixtureIds.source.solomonIslandsEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.solomonIslands,
+    isDemo: false,
+    name: "Solomon Islands Attorney-General's Chambers and Road Transport Board",
+    type: "country",
+    websiteUrl:
+      "https://attorneygenerals.gov.sb/legislation-dashboard/download-info/road-transport-act-cap-131/",
+  },
+  {
+    ...sierraLeoneRecordTimestamps,
+    code: "SL-NATIONAL",
+    countryIso3: "SLE",
+    dataSourceId: acceptanceFixtureIds.source.sierraLeoneEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.sierraLeone,
+    isDemo: false,
+    name: "Sierra Leone Environment Protection Agency and road transport authorities",
+    type: "country",
+    websiteUrl:
+      "https://www.parliament.gov.sl/uploads/acts/THE%20ENVIRONMENT%20PROTECTION%20AGENCY%20ACT%2C%202022.pdf",
+  },
+  {
+    ...elSalvadorRecordTimestamps,
+    code: "SV-NATIONAL",
+    countryIso3: "SLV",
+    dataSourceId: acceptanceFixtureIds.source.elSalvadorEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.elSalvador,
+    isDemo: false,
+    name: "El Salvador Ministry of Environment and Natural Resources and Vice Ministry of Transport",
+    type: "country",
+    websiteUrl: "https://www.diariooficial.gob.sv/seleccion/31287",
+  },
+  {
+    ...somaliaRecordTimestamps,
+    code: "SO-NATIONAL",
+    countryIso3: "SOM",
+    dataSourceId: acceptanceFixtureIds.source.somaliaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.somalia,
+    isDemo: false,
+    name: "Somalia Ministry of Environment and Climate Change and Ministry of Transport",
+    type: "country",
+    websiteUrl: "https://moecc.gov.so/policies-and-strategies/",
+  },
+  {
+    ...southSudanRecordTimestamps,
+    code: "SS-NATIONAL",
+    countryIso3: "SSD",
+    dataSourceId: acceptanceFixtureIds.source.southSudanEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.southSudan,
+    isDemo: false,
+    name: "South Sudan National Bureau of Standards and Ministry of Environment and Forestry",
+    type: "country",
+    websiteUrl: "https://ssnbs.gov.ss/",
+  },
+  {
+    ...surinameRecordTimestamps,
+    code: "SR-NATIONAL",
+    countryIso3: "SUR",
+    dataSourceId: acceptanceFixtureIds.source.surinameEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.suriname,
+    isDemo: false,
+    name: "Suriname National Environmental Authority and vehicle inspection authorities",
+    type: "country",
+    websiteUrl: "https://gov.sr/",
+  },
+  {
+    ...syriaRecordTimestamps,
+    code: "SY-NATIONAL",
+    countryIso3: "SYR",
+    dataSourceId: acceptanceFixtureIds.source.syriaEnvironmentLaw12,
+    id: acceptanceFixtureIds.jurisdiction.syria,
+    isDemo: false,
+    name: "Syrian Ministry of Local Administration and Environment",
+    type: "country",
+    websiteUrl: "https://sana.sy/economy/2238146/",
+  },
+  {
+    ...chadRecordTimestamps,
+    code: "TD-NATIONAL",
+    countryIso3: "TCD",
+    dataSourceId: acceptanceFixtureIds.source.chadEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.chad,
+    isDemo: false,
+    name: "Chad Ministry of Environment and Ministry of Transport",
+    type: "country",
+    websiteUrl: "https://www.environnement.gouv.td/",
+  },
+  {
+    ...togoRecordTimestamps,
+    code: "TG-NATIONAL",
+    countryIso3: "TGO",
+    dataSourceId: acceptanceFixtureIds.source.togoEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.togo,
+    isDemo: false,
+    name: "Togo environmental and road-transport authorities",
+    type: "country",
+    websiteUrl:
+      "https://jo.gouv.tg/sites/default/files/JO/JO_SPECIAL_BIS_71E_N_25.pdf",
+  },
+  {
+    ...timorLesteRecordTimestamps,
+    code: "TL-NATIONAL",
+    countryIso3: "TLS",
+    dataSourceId: acceptanceFixtureIds.source.timorLesteEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.timorLeste,
+    isDemo: false,
+    name: "Timor-Leste environmental and road-transport authorities",
+    type: "country",
+    websiteUrl:
+      "https://www.mj.gov.tl/jornal/public/docs/2012/serie_1/serie1_no24.pdf",
+  },
+  {
+    ...trinidadTobagoRecordTimestamps,
+    code: "TT-NATIONAL",
+    countryIso3: "TTO",
+    dataSourceId: acceptanceFixtureIds.source.trinidadTobagoEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.trinidadTobago,
+    isDemo: false,
+    name: "Trinidad and Tobago environmental and vehicle authorities",
+    type: "country",
+    websiteUrl: "https://ec.gov.tt/legislation-and-judgements/legislation",
+  },
+  {
+    ...taiwanRecordTimestamps,
+    code: "TW-NATIONAL",
+    countryIso3: "TWN",
+    dataSourceId: acceptanceFixtureIds.source.taiwanEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.taiwan,
+    isDemo: false,
+    name: "Taiwan Ministry of Environment and emission-certification authorities",
+    type: "country",
+    websiteUrl: "https://oaout.moenv.gov.tw/law/LawContent.aspx?id=FL015347",
+  },
+  {
+    ...venezuelaRecordTimestamps,
+    code: "VE-NATIONAL",
+    countryIso3: "VEN",
+    dataSourceId: acceptanceFixtureIds.source.venezuelaEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.venezuela,
+    isDemo: false,
+    name: "Venezuela mobile-source emission and environmental authorities",
+    type: "country",
+    websiteUrl: "https://faolex.fao.org/docs/pdf/ven181032.pdf",
+  },
+  {
+    ...vanuatuRecordTimestamps,
+    code: "VU-NATIONAL",
+    countryIso3: "VUT",
+    dataSourceId: acceptanceFixtureIds.source.vanuatuEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.vanuatu,
+    isDemo: false,
+    name: "Vanuatu environmental and vehicle-control authorities",
+    type: "country",
+    websiteUrl:
+      "https://mocca.gov.vu/images/publications/legislation/DEPC/Legislation/Pollution%20%28Control%29%20Act..pdf",
+  },
+  {
+    ...yemenRecordTimestamps,
+    code: "YE-NATIONAL",
+    countryIso3: "YEM",
+    dataSourceId: acceptanceFixtureIds.source.yemenEnvironment,
+    id: acceptanceFixtureIds.jurisdiction.yemen,
+    isDemo: false,
+    name: "Republic of Yemen environmental and road-traffic authorities",
+    type: "country",
+    websiteUrl: "https://www.agoye.gov.ye/page.php?id=323&lng=arabic",
+  },
+  {
+    ...antarcticaRecordTimestamps,
+    code: "AQ-BOUNDARY",
+    countryIso3: null,
+    dataSourceId: acceptanceFixtureIds.source.antarcticaBoundary,
+    id: acceptanceFixtureIds.jurisdiction.antarctica,
+    isDemo: false,
+    name: "Antarctic Treaty System governance boundary (no national jurisdiction)",
+    type: "international",
+    websiteUrl: "https://www.ats.aq/e/protocol.html",
+  },
+  {
+    ...frenchSouthernLandsRecordTimestamps,
+    code: "TF-BOUNDARY",
+    countryIso3: null,
+    dataSourceId: acceptanceFixtureIds.source.frenchSouthernLandsBoundary,
+    id: acceptanceFixtureIds.jurisdiction.frenchSouthernLands,
+    isDemo: false,
+    name: "French Southern and Antarctic Lands territorial applicability boundary",
+    type: "international",
+    websiteUrl: "https://www.legifrance.gouv.fr/codes/id/LEGISCTA000006143761",
+  },
+  {
+    ...westernSaharaRecordTimestamps,
+    code: "EH-BOUNDARY",
+    countryIso3: null,
+    dataSourceId: acceptanceFixtureIds.source.westernSaharaBoundary,
+    id: acceptanceFixtureIds.jurisdiction.westernSahara,
+    isDemo: false,
+    name: "Western Sahara United Nations decolonization boundary",
+    type: "international",
+    websiteUrl: "https://www.un.org/dppa/decolonization/en/nsgt/western-sahara",
+  },
+  {
+    ...falklandIslandsRecordTimestamps,
+    code: "FK-BOUNDARY",
+    countryIso3: null,
+    dataSourceId: acceptanceFixtureIds.source.falklandIslandsBoundary,
+    id: acceptanceFixtureIds.jurisdiction.falklandIslands,
+    isDemo: false,
+    name: "Falkland Islands territorial legislation boundary",
+    type: "international",
+    websiteUrl:
+      "https://www.legislation.gov.fk/view/html/inforce/2017-07-31/fisl-1986-5",
+  },
 ];
 
-export const fixtureCountryJurisdictions: (typeof countryJurisdictions.$inferInsert)[] = [
-  {
-    ...chinaNonroadRecordTimestamps,
-    countryIso3: "CHN",
-    dataSourceId: acceptanceFixtureIds.source.cnGb17691,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.cnMee,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...unitedStatesRecordTimestamps,
-    countryIso3: "USA",
-    dataSourceId: acceptanceFixtureIds.source.usEcfr1036,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.usEpa,
-    validFrom: "2000-01-01",
-  },
-  ...euMemberCountryMemberships.map((membership) => ({
-    ...euMembershipRecordTimestamps,
-    ...membership,
-    dataSourceId: acceptanceFixtureIds.source.euCountries,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.eu,
-  })),
-  ...([
-    { countryIso3: "ARM", validFrom: "2015-01-02" },
-    { countryIso3: "BLR", validFrom: "2015-01-01" },
-    { countryIso3: "KAZ", validFrom: "2015-01-01" },
-    { countryIso3: "KGZ", validFrom: "2015-08-12" },
-    { countryIso3: "RUS", validFrom: "2015-01-01" },
-  ] as const).map(({ countryIso3, validFrom }) => ({
-    ...eaeuRecordTimestamps,
-    countryIso3,
-    dataSourceId: acceptanceFixtureIds.source.eaeuMemberStates,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.eaeu,
-    validFrom,
-  })),
-  {
-    ...recordTimestamps,
-    countryIso3: "BRA",
-    dataSourceId: acceptanceFixtureIds.source.brConama433,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.brConama,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...japanRecordTimestamps,
-    countryIso3: "JPN",
-    dataSourceId: acceptanceFixtureIds.source.japanRoadSafety,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.japan,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...koreaRecordTimestamps,
-    countryIso3: "KOR",
-    dataSourceId: acceptanceFixtureIds.source.koreaRuleAnnex17,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.korea,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...mexicoRecordTimestamps,
-    countryIso3: "MEX",
-    dataSourceId: acceptanceFixtureIds.source.mexicoNom044,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.mexicoSemarnat,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...turkeyRecordTimestamps,
-    countryIso3: "TUR",
-    dataSourceId: acceptanceFixtureIds.source.turkeyRoadRegulation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.turkey,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...australiaRecordTimestamps,
-    countryIso3: "AUS",
-    dataSourceId: acceptanceFixtureIds.source.australiaAdrCurrent,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.australia,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...canadaRecordTimestamps,
-    countryIso3: "CAN",
-    dataSourceId: acceptanceFixtureIds.source.canadaRoadRegulation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.canada,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...unitedKingdomRecordTimestamps,
-    countryIso3: "GBR",
-    dataSourceId: acceptanceFixtureIds.source.unitedKingdomNrmm,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.unitedKingdom,
-    validFrom: "2023-01-01",
-  },
-  {
-    ...indiaRecordTimestamps,
-    countryIso3: "IND",
-    dataSourceId: acceptanceFixtureIds.source.indiaBs6,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.india,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...russiaRecordTimestamps,
-    countryIso3: "RUS",
-    dataSourceId: acceptanceFixtureIds.source.russiaRoadRegulation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.russia,
-    validFrom: "2015-01-01",
-  },
-  {
-    ...indonesiaRecordTimestamps,
-    countryIso3: "IDN",
-    dataSourceId: acceptanceFixtureIds.source.indonesiaEuro4,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.indonesia,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...thailandRecordTimestamps,
-    countryIso3: "THA",
-    dataSourceId: acceptanceFixtureIds.source.thailandTis3046,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.thailand,
-    validFrom: "2024-01-01",
-  },
-  {
-    ...vietnamRecordTimestamps,
-    countryIso3: "VNM",
-    dataSourceId: acceptanceFixtureIds.source.vietnamDecision49,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.vietnam,
-    validFrom: "2000-01-01",
-  },
-  {
-    ...malaysiaRecordTimestamps,
-    countryIso3: "MYS",
-    dataSourceId: acceptanceFixtureIds.source.malaysiaDieselRegulation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.malaysia,
-    validFrom: "1996-09-01",
-  },
-  {
-    ...saudiArabiaRecordTimestamps,
-    countryIso3: "SAU",
-    dataSourceId: acceptanceFixtureIds.source.saudiMachinerySafetyPart2,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.saudiArabia,
-    validFrom: "2021-05-21",
-  },
-  {
-    ...unitedArabEmiratesRecordTimestamps,
-    countryIso3: "ARE",
-    dataSourceId: acceptanceFixtureIds.source.uaeMandatoryStandards2018,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.unitedArabEmirates,
-    validFrom: "2018-05-01",
-  },
-  {
-    ...southAfricaRecordTimestamps,
-    countryIso3: "ZAF",
-    dataSourceId: acceptanceFixtureIds.source.southAfricaMotorVehiclesN23,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.southAfrica,
-    validFrom: "2010-01-01",
-  },
-  {
-    ...argentinaRecordTimestamps,
-    countryIso3: "ARG",
-    dataSourceId: acceptanceFixtureIds.source.argentinaResolution1464,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.argentina,
-    validFrom: "2014-01-01",
-  },
-  {
-    ...newZealandRecordTimestamps,
-    countryIso3: "NZL",
-    dataSourceId: acceptanceFixtureIds.source.newZealandVehicleExhaustRule,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.newZealand,
-    validFrom: "2008-01-03",
-  },
-  {
-    ...chileRecordTimestamps,
-    countryIso3: "CHL",
-    dataSourceId: acceptanceFixtureIds.source.chileMobileMachineryDecree39,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.chile,
-    validFrom: "2021-10-21",
-  },
-  {
-    ...colombiaRecordTimestamps,
-    countryIso3: "COL",
-    dataSourceId: acceptanceFixtureIds.source.colombiaResolution762,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.colombia,
-    validFrom: "2022-07-18",
-  },
-  {
-    ...peruRecordTimestamps,
-    countryIso3: "PER",
-    dataSourceId: acceptanceFixtureIds.source.peruDecree029,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.peru,
-    validFrom: "2021-10-16",
-  },
-  {
-    ...philippinesRecordTimestamps,
-    countryIso3: "PHL",
-    dataSourceId: acceptanceFixtureIds.source.philippinesLtoMc20151946,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.philippines,
-    validFrom: "2016-01-01",
-  },
-  {
-    ...singaporeRecordTimestamps,
-    countryIso3: "SGP",
-    dataSourceId: acceptanceFixtureIds.source.singaporeOffRoad2012,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.singapore,
-    validFrom: "2012-07-01",
-  },
-  {
-    ...norwayRecordTimestamps,
-    countryIso3: "NOR",
-    dataSourceId: acceptanceFixtureIds.source.norwayMachineryRegulation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.norway,
-    validFrom: "2020-07-01",
-  },
-  {
-    ...icelandRecordTimestamps,
-    countryIso3: "ISL",
-    dataSourceId: acceptanceFixtureIds.source.icelandRoadRegulation2013,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.iceland,
-    validFrom: "2013-04-15",
-  },
-  {
-    ...liechtensteinRecordTimestamps,
-    countryIso3: "LIE",
-    dataSourceId: acceptanceFixtureIds.source.liechtensteinVts,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.liechtenstein,
-    validFrom: "2020-08-01",
-  },
-  {
-    ...switzerlandRecordTimestamps,
-    countryIso3: "CHE",
-    dataSourceId: acceptanceFixtureIds.source.switzerlandVts,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.switzerland,
-    validFrom: "2026-07-01",
-  },
-  {
-    ...serbiaRecordTimestamps,
-    countryIso3: "SRB",
-    dataSourceId: acceptanceFixtureIds.source.serbiaTechnicalConditions,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.serbia,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...bosniaRecordTimestamps,
-    countryIso3: "BIH",
-    dataSourceId: acceptanceFixtureIds.source.bosniaR49Orders,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.bosnia,
-    validFrom: "2019-06-01",
-  },
-  {
-    ...northMacedoniaRecordTimestamps,
-    countryIso3: "MKD",
-    dataSourceId: acceptanceFixtureIds.source.northMacedoniaTractorApproval,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.northMacedonia,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...montenegroRecordTimestamps,
-    countryIso3: "MNE",
-    dataSourceId: acceptanceFixtureIds.source.montenegroEuro6Implementation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.montenegro,
-    validFrom: "2018-10-15",
-  },
-  {
-    ...albaniaRecordTimestamps,
-    countryIso3: "ALB",
-    dataSourceId: acceptanceFixtureIds.source.albaniaTreatyStatus,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.albania,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...ukraineRecordTimestamps,
-    countryIso3: "UKR",
-    dataSourceId: acceptanceFixtureIds.source.ukraineImportRegistrationLaw,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.ukraine,
-    validFrom: "2016-01-01",
-  },
-  {
-    ...moldovaRecordTimestamps,
-    countryIso3: "MDA",
-    dataSourceId:
-      acceptanceFixtureIds.source.moldovaTypeApprovalSecondaryConsultation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.moldova,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...nepalRecordTimestamps,
-    countryIso3: "NPL",
-    dataSourceId:
-      acceptanceFixtureIds.source.nepalVehiclePollutionStandardDoenv,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.nepal,
-    validFrom: "2025-06-23",
-  },
-  {
-    ...armeniaRecordTimestamps,
-    countryIso3: "ARM",
-    dataSourceId: acceptanceFixtureIds.source.armeniaTrCu031Consolidated,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.armenia,
-    validFrom: "2019-01-01",
-  },
-  {
-    ...azerbaijanRecordTimestamps,
-    countryIso3: "AZE",
-    dataSourceId: acceptanceFixtureIds.source.azerbaijanAzs6362025,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.azerbaijan,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...georgiaRecordTimestamps,
-    countryIso3: "GEO",
-    dataSourceId: acceptanceFixtureIds.source.georgiaResolution238Mepa,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.georgia,
-    validFrom: "2025-01-01",
-  },
-  {
-    ...uzbekistanRecordTimestamps,
-    countryIso3: "UZB",
-    dataSourceId: acceptanceFixtureIds.source.uzbekistanRoadRegulation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.uzbekistan,
-    validFrom: "2025-10-01",
-  },
-  {
-    ...kazakhstanRecordTimestamps,
-    countryIso3: "KAZ",
-    dataSourceId: acceptanceFixtureIds.source.kazakhstanAgricultureRegulation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.kazakhstan,
-    validFrom: "2019-01-01",
-  },
-  {
-    ...tajikistanRecordTimestamps,
-    countryIso3: "TJK",
-    dataSourceId: acceptanceFixtureIds.source.tajikistanEngineTermsDraft,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.tajikistan,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...kyrgyzstanRecordTimestamps,
-    countryIso3: "KGZ",
-    dataSourceId: acceptanceFixtureIds.source.kyrgyzstanAgricultureRegulation,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.kyrgyzstan,
-    validFrom: "2019-01-01",
-  },
-  {
-    ...turkmenistanRecordTimestamps,
-    countryIso3: "TKM",
-    dataSourceId:
-      acceptanceFixtureIds.source.turkmenistanGasolineMeasurementStandard,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.turkmenistan,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...afghanistanRecordTimestamps,
-    countryIso3: "AFG",
-    dataSourceId: acceptanceFixtureIds.source.afghanistanAirPollutionAmendment,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.afghanistan,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...angolaRecordTimestamps,
-    countryIso3: "AGO",
-    dataSourceId: acceptanceFixtureIds.source.angolaEnvironmentalStandardizationProgram,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.angola,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...burundiRecordTimestamps,
-    countryIso3: "BDI",
-    dataSourceId: acceptanceFixtureIds.source.burundiVehicleInspectionOrder2025,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.burundi,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...beninRecordTimestamps,
-    countryIso3: "BEN",
-    dataSourceId: acceptanceFixtureIds.source.beninAirQualityDecreeIndex,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.benin,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...burkinaFasoRecordTimestamps,
-    countryIso3: "BFA",
-    dataSourceId: acceptanceFixtureIds.source.burkinaFasoCurrentCitation2025,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.burkinaFaso,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...bangladeshRecordTimestamps,
-    countryIso3: "BGD",
-    dataSourceId: acceptanceFixtureIds.source.bangladeshGazetteIndex2022,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.bangladesh,
-    validFrom: "2022-07-26",
-  },
-  {
-    ...bahamasRecordTimestamps,
-    countryIso3: "BHS",
-    dataSourceId: acceptanceFixtureIds.source.bahamasEnvironmentalPlanningAct,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.bahamas,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...belarusRecordTimestamps,
-    countryIso3: "BLR",
-    dataSourceId: acceptanceFixtureIds.source.belarusTrCu031,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.belarus,
-    validFrom: "2019-01-01",
-  },
-  {
-    ...boliviaRecordTimestamps,
-    countryIso3: "BOL",
-    dataSourceId: acceptanceFixtureIds.source.boliviaIbmetroAcceptance,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.bolivia,
-    validFrom: "2022-04-01",
-  },
-  {
-    ...moroccoRecordTimestamps,
-    countryIso3: "MAR",
-    dataSourceId: acceptanceFixtureIds.source.moroccoEuro6Order2251,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.morocco,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...kenyaRecordTimestamps,
-    countryIso3: "KEN",
-    dataSourceId: acceptanceFixtureIds.source.kenyaInspectionRules2026,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.kenya,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...nigeriaRecordTimestamps,
-    countryIso3: "NGA",
-    dataSourceId: acceptanceFixtureIds.source.nigeriaNesrea,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.nigeria,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...egyptRecordTimestamps,
-    countryIso3: "EGY",
-    dataSourceId: acceptanceFixtureIds.source.egyptDecision710,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.egypt,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...ghanaRecordTimestamps,
-    countryIso3: "GHA",
-    dataSourceId:
-      acceptanceFixtureIds.source.ghanaMotorVehicleEmissionsStandard1219,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.ghana,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...israelRecordTimestamps,
-    countryIso3: "ISR",
-    dataSourceId: acceptanceFixtureIds.source.israelNrmmImr2026,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.israel,
-    validFrom: "2026-01-01",
-  },
-  {
-    ...pakistanRecordTimestamps,
-    countryIso3: "PAK",
-    dataSourceId: acceptanceFixtureIds.source.pakistanSro72GazetteScan,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.pakistan,
-    validFrom: "2012-07-01",
-  },
-  {
-    ...qatarRecordTimestamps,
-    countryIso3: "QAT",
-    dataSourceId:
-      acceptanceFixtureIds.source.qatarTechnicalRegulationsDecision125,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.qatar,
-    validFrom: "2026-08-09",
-  },
-  {
-    ...kuwaitRecordTimestamps,
-    countryIso3: "KWT",
-    dataSourceId:
-      acceptanceFixtureIds.source.kuwaitTechnicalRegulationsDecision44,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.kuwait,
-    validFrom: "2026-08-09",
-  },
-  {
-    ...omanRecordTimestamps,
-    countryIso3: "OMN",
-    dataSourceId:
-      acceptanceFixtureIds.source.omanGsoMotorVehicleRegulationsMy2026,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.oman,
-    validFrom: "2026-08-09",
-  },
-  {
-    ...jordanRecordTimestamps,
-    countryIso3: "JOR",
-    dataSourceId:
-      acceptanceFixtureIds.source.jordanTransportEmissionsStandardsCatalogue,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.jordan,
-    validFrom: "2026-08-09",
-  },
-  {
-    ...cambodiaRecordTimestamps,
-    countryIso3: "KHM",
-    dataSourceId: acceptanceFixtureIds.source.cambodiaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.cambodia,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...laosRecordTimestamps,
-    countryIso3: "LAO",
-    dataSourceId: acceptanceFixtureIds.source.laosTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.laos,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...sriLankaRecordTimestamps,
-    countryIso3: "LKA",
-    dataSourceId: acceptanceFixtureIds.source.sriLankaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.sriLanka,
-    validFrom: "2018-07-13",
-  },
-  {
-    ...mongoliaRecordTimestamps,
-    countryIso3: "MNG",
-    dataSourceId: acceptanceFixtureIds.source.mongoliaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.mongolia,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...costaRicaRecordTimestamps,
-    countryIso3: "CRI",
-    dataSourceId: acceptanceFixtureIds.source.costaRicaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.costaRica,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...ecuadorRecordTimestamps,
-    countryIso3: "ECU",
-    dataSourceId: acceptanceFixtureIds.source.ecuadorRte017,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.ecuador,
-    validFrom: "2009-02-07",
-  },
-  {
-    ...dominicanRepublicRecordTimestamps,
-    countryIso3: "DOM",
-    dataSourceId: acceptanceFixtureIds.source.dominicanRepublicTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.dominicanRepublic,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...algeriaRecordTimestamps,
-    countryIso3: "DZA",
-    dataSourceId: acceptanceFixtureIds.source.algeriaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.algeria,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...tunisiaRecordTimestamps,
-    countryIso3: "TUN",
-    dataSourceId: acceptanceFixtureIds.source.tunisiaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.tunisia,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...ethiopiaRecordTimestamps,
-    countryIso3: "ETH",
-    dataSourceId: acceptanceFixtureIds.source.ethiopiaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.ethiopia,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...guatemalaRecordTimestamps,
-    countryIso3: "GTM",
-    dataSourceId: acceptanceFixtureIds.source.guatemalaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.guatemala,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...hondurasRecordTimestamps,
-    countryIso3: "HND",
-    dataSourceId: acceptanceFixtureIds.source.hondurasTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.honduras,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...panamaRecordTimestamps,
-    countryIso3: "PAN",
-    dataSourceId: acceptanceFixtureIds.source.panamaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.panama,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...uruguayRecordTimestamps,
-    countryIso3: "URY",
-    dataSourceId: acceptanceFixtureIds.source.uruguayTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.uruguay,
-    validFrom: "2023-05-14",
-  },
-  {
-    ...botswanaRecordTimestamps,
-    countryIso3: "BWA",
-    dataSourceId: acceptanceFixtureIds.source.botswanaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.botswana,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...namibiaRecordTimestamps,
-    countryIso3: "NAM",
-    dataSourceId: acceptanceFixtureIds.source.namibiaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.namibia,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...tanzaniaRecordTimestamps,
-    countryIso3: "TZA",
-    dataSourceId: acceptanceFixtureIds.source.tanzaniaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.tanzania,
-    validFrom: "2007-12-07",
-  },
-  {
-    ...ugandaRecordTimestamps,
-    countryIso3: "UGA",
-    dataSourceId: acceptanceFixtureIds.source.ugandaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.uganda,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...zambiaRecordTimestamps,
-    countryIso3: "ZMB",
-    dataSourceId: acceptanceFixtureIds.source.zambiaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.zambia,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...zimbabweRecordTimestamps,
-    countryIso3: "ZWE",
-    dataSourceId: acceptanceFixtureIds.source.zimbabweTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.zimbabwe,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...rwandaRecordTimestamps,
-    countryIso3: "RWA",
-    dataSourceId: acceptanceFixtureIds.source.rwandaTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.rwanda,
-    validFrom: "2023-01-23",
-  },
-  {
-    ...coteDIvoireRecordTimestamps,
-    countryIso3: "CIV",
-    dataSourceId: acceptanceFixtureIds.source.coteDIvoireTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.coteDIvoire,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...cameroonRecordTimestamps,
-    countryIso3: "CMR",
-    dataSourceId: acceptanceFixtureIds.source.cameroonTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.cameroon,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...senegalRecordTimestamps,
-    countryIso3: "SEN",
-    dataSourceId: acceptanceFixtureIds.source.senegalTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.senegal,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...mozambiqueRecordTimestamps,
-    countryIso3: "MOZ",
-    dataSourceId: acceptanceFixtureIds.source.mozambiqueTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.mozambique,
-    validFrom: "2026-08-10",
-  },
-  {
-    ...eswatiniRecordTimestamps,
-    countryIso3: "SWZ",
-    dataSourceId: acceptanceFixtureIds.source.eswatiniTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.eswatini,
-    validFrom: "2026-08-11",
-  },
-  {
-    ...lesothoRecordTimestamps,
-    countryIso3: "LSO",
-    dataSourceId: acceptanceFixtureIds.source.lesothoTransport,
-    isDemo: false,
-    jurisdictionId: acceptanceFixtureIds.jurisdiction.lesotho,
-    validFrom: "2026-08-10",
-  },
-  { ...madagascarRecordTimestamps, countryIso3: "MDG", dataSourceId: acceptanceFixtureIds.source.madagascarTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.madagascar, validFrom: "2026-08-10" },
-  { ...mauritiusRecordTimestamps, countryIso3: "MUS", dataSourceId: acceptanceFixtureIds.source.mauritiusTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.mauritius, validFrom: "2026-08-10" },
-  { ...malawiRecordTimestamps, countryIso3: "MWI", dataSourceId: acceptanceFixtureIds.source.malawiTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.malawi, validFrom: "2026-08-10" },
-  { ...fijiRecordTimestamps, countryIso3: "FJI", dataSourceId: acceptanceFixtureIds.source.fijiTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.fiji, validFrom: "2026-08-10" },
-  { ...belizeRecordTimestamps, countryIso3: "BLZ", dataSourceId: acceptanceFixtureIds.source.belizeTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.belize, validFrom: "2026-08-10" },
-  { ...bruneiRecordTimestamps, countryIso3: "BRN", dataSourceId: acceptanceFixtureIds.source.bruneiTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.brunei, validFrom: "2026-08-10" },
-  { ...bhutanRecordTimestamps, countryIso3: "BTN", dataSourceId: acceptanceFixtureIds.source.bhutanTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.bhutan, validFrom: "2026-08-10" },
-  { ...centralAfricanRepublicRecordTimestamps, countryIso3: "CAF", dataSourceId: acceptanceFixtureIds.source.centralAfricanRepublicTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.centralAfricanRepublic, validFrom: "2026-08-10" },
-  { ...democraticRepublicOfCongoRecordTimestamps, countryIso3: "COD", dataSourceId: acceptanceFixtureIds.source.democraticRepublicOfCongoTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.democraticRepublicOfCongo, validFrom: "2026-08-10" },
-  { ...republicOfCongoRecordTimestamps, countryIso3: "COG", dataSourceId: acceptanceFixtureIds.source.republicOfCongoTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.republicOfCongo, validFrom: "2026-08-10" },
-  { ...cubaRecordTimestamps, countryIso3: "CUB", dataSourceId: acceptanceFixtureIds.source.cubaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.cuba, validFrom: "2026-08-10" },
-  { ...djiboutiRecordTimestamps, countryIso3: "DJI", dataSourceId: acceptanceFixtureIds.source.djiboutiTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.djibouti, validFrom: "2026-08-10" },
-  { ...eritreaRecordTimestamps, countryIso3: "ERI", dataSourceId: acceptanceFixtureIds.source.eritreaVehicleTechnicalStandardsRegulations61_2002, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.eritrea, validFrom: "2026-08-10" },
-  { ...gabonRecordTimestamps, countryIso3: "GAB", dataSourceId: acceptanceFixtureIds.source.gabonHeavyVehicleHomologationOrder00097_2017, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.gabon, validFrom: "2026-08-10" },
-  { ...guineaRecordTimestamps, countryIso3: "GIN", dataSourceId: acceptanceFixtureIds.source.guineaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.guinea, validFrom: "2026-08-10" },
-  { ...gambiaRecordTimestamps, countryIso3: "GMB", dataSourceId: acceptanceFixtureIds.source.gambiaMotorTrafficAmendmentAct2013, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.gambia, validFrom: "2026-08-10" },
-  { ...guineaBissauRecordTimestamps, countryIso3: "GNB", dataSourceId: acceptanceFixtureIds.source.guineaBissauTransportMinistryDirectory, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.guineaBissau, validFrom: "2026-08-10" },
-  { ...equatorialGuineaRecordTimestamps, countryIso3: "GNQ", dataSourceId: acceptanceFixtureIds.source.equatorialGuineaGeneralRoadTransportLaw4_2018, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.equatorialGuinea, validFrom: "2026-08-10" },
-  { ...greenlandRecordTimestamps, countryIso3: "GRL", dataSourceId: acceptanceFixtureIds.source.greenlandTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.greenland, validFrom: "2026-08-10" },
-  { ...guyanaRecordTimestamps, countryIso3: "GUY", dataSourceId: acceptanceFixtureIds.source.guyanaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.guyana, validFrom: "2026-08-10" },
-  { ...haitiRecordTimestamps, countryIso3: "HTI", dataSourceId: acceptanceFixtureIds.source.haitiTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.haiti, validFrom: "2026-08-10" },
-  { ...iranRecordTimestamps, countryIso3: "IRN", dataSourceId: acceptanceFixtureIds.source.iranArticle4Amendment2024, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.iran, validFrom: "2026-08-10" },
-  { ...iraqRecordTimestamps, countryIso3: "IRQ", dataSourceId: acceptanceFixtureIds.source.iraqTr167ImplementationNotice2025, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.iraq, validFrom: "2026-08-10" },
-  { ...jamaicaRecordTimestamps, countryIso3: "JAM", dataSourceId: acceptanceFixtureIds.source.jamaicaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.jamaica, validFrom: "2026-08-10" },
-  { ...lebanonRecordTimestamps, countryIso3: "LBN", dataSourceId: acceptanceFixtureIds.source.lebanonThirdBur2019, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.lebanon, validFrom: "2026-08-10" },
-  { ...liberiaRecordTimestamps, countryIso3: "LBR", dataSourceId: acceptanceFixtureIds.source.liberiaVehicleAdministrativeRegulation2011, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.liberia, validFrom: "2026-08-10" },
-  { ...libyaRecordTimestamps, countryIso3: "LBY", dataSourceId: acceptanceFixtureIds.source.libyaEnvironmentalExecutiveRegulation448, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.libya, validFrom: "2026-08-10" },
-  { ...maliRecordTimestamps, countryIso3: "MLI", dataSourceId: acceptanceFixtureIds.source.maliRoadUseVehicleCirculationDecree2023, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.mali, validFrom: "2026-08-10" },
-  { ...myanmarRecordTimestamps, countryIso3: "MMR", dataSourceId: acceptanceFixtureIds.source.myanmarTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.myanmar, validFrom: "2026-08-10" },
-  { ...mauritaniaRecordTimestamps, countryIso3: "MRT", dataSourceId: acceptanceFixtureIds.source.mauritaniaEnvironmentCode2000, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.mauritania, validFrom: "2026-08-10" },
-  { ...newCaledoniaRecordTimestamps, countryIso3: "NCL", dataSourceId: acceptanceFixtureIds.source.newCaledoniaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.newCaledonia, validFrom: "2026-08-10" },
-  { ...nigerRecordTimestamps, countryIso3: "NER", dataSourceId: acceptanceFixtureIds.source.nigerMotorVehicleHomologationEServices, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.niger, validFrom: "2026-08-10" },
-  { ...nicaraguaRecordTimestamps, countryIso3: "NIC", dataSourceId: acceptanceFixtureIds.source.nicaraguaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.nicaragua, validFrom: "2026-08-10" },
-  { ...papuaNewGuineaRecordTimestamps, countryIso3: "PNG", dataSourceId: acceptanceFixtureIds.source.papuaNewGuineaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.papuaNewGuinea, validFrom: "2026-08-10" },
-  { ...puertoRicoRecordTimestamps, countryIso3: "PRI", dataSourceId: acceptanceFixtureIds.source.puertoRicoTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.puertoRico, validFrom: "2026-08-10" },
-  { ...northKoreaRecordTimestamps, countryIso3: "PRK", dataSourceId: acceptanceFixtureIds.source.northKoreaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.northKorea, validFrom: "2026-08-10" },
-  { ...paraguayRecordTimestamps, countryIso3: "PRY", dataSourceId: acceptanceFixtureIds.source.paraguayTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.paraguay, validFrom: "2026-08-10" },
-  { ...palestineRecordTimestamps, countryIso3: "PSE", dataSourceId: acceptanceFixtureIds.source.palestineTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.palestine, validFrom: "2026-08-10" },
-  { ...sudanRecordTimestamps, countryIso3: "SDN", dataSourceId: acceptanceFixtureIds.source.sudanTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.sudan, validFrom: "2026-08-10" },
-  { ...solomonIslandsRecordTimestamps, countryIso3: "SLB", dataSourceId: acceptanceFixtureIds.source.solomonIslandsTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.solomonIslands, validFrom: "2026-08-10" },
-  { ...sierraLeoneRecordTimestamps, countryIso3: "SLE", dataSourceId: acceptanceFixtureIds.source.sierraLeoneTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.sierraLeone, validFrom: "2026-08-10" },
-  { ...elSalvadorRecordTimestamps, countryIso3: "SLV", dataSourceId: acceptanceFixtureIds.source.elSalvadorTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.elSalvador, validFrom: "2026-08-10" },
-  { ...somaliaRecordTimestamps, countryIso3: "SOM", dataSourceId: acceptanceFixtureIds.source.somaliaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.somalia, validFrom: "2026-08-10" },
-  { ...southSudanRecordTimestamps, countryIso3: "SSD", dataSourceId: acceptanceFixtureIds.source.southSudanTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.southSudan, validFrom: "2026-08-10" },
-  { ...surinameRecordTimestamps, countryIso3: "SUR", dataSourceId: acceptanceFixtureIds.source.surinameTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.suriname, validFrom: "2026-08-10" },
-  { ...syriaRecordTimestamps, countryIso3: "SYR", dataSourceId: acceptanceFixtureIds.source.syriaVehicleImportNotice2025, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.syria, validFrom: "2026-08-10" },
-  { ...chadRecordTimestamps, countryIso3: "TCD", dataSourceId: acceptanceFixtureIds.source.chadTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.chad, validFrom: "2026-08-10" },
-  { ...togoRecordTimestamps, countryIso3: "TGO", dataSourceId: acceptanceFixtureIds.source.togoTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.togo, validFrom: "2026-08-10" },
-  { ...timorLesteRecordTimestamps, countryIso3: "TLS", dataSourceId: acceptanceFixtureIds.source.timorLesteTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.timorLeste, validFrom: "2026-08-10" },
-  { ...trinidadTobagoRecordTimestamps, countryIso3: "TTO", dataSourceId: acceptanceFixtureIds.source.trinidadTobagoTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.trinidadTobago, validFrom: "2026-08-10" },
-  { ...taiwanRecordTimestamps, countryIso3: "TWN", dataSourceId: acceptanceFixtureIds.source.taiwanTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.taiwan, validFrom: "2021-09-01" },
-  { ...venezuelaRecordTimestamps, countryIso3: "VEN", dataSourceId: acceptanceFixtureIds.source.venezuelaTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.venezuela, validFrom: "2000-01-01" },
-  { ...vanuatuRecordTimestamps, countryIso3: "VUT", dataSourceId: acceptanceFixtureIds.source.vanuatuTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.vanuatu, validFrom: "2026-08-10" },
-  { ...yemenRecordTimestamps, countryIso3: "YEM", dataSourceId: acceptanceFixtureIds.source.yemenTransport, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.yemen, validFrom: "2026-08-10" },
-  { ...antarcticaRecordTimestamps, countryIso3: "ATA", dataSourceId: acceptanceFixtureIds.source.antarcticaBoundary, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.antarctica, validFrom: "2026-08-10" },
-  { ...frenchSouthernLandsRecordTimestamps, countryIso3: "ATF", dataSourceId: acceptanceFixtureIds.source.frenchSouthernLandsBoundary, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.frenchSouthernLands, validFrom: "2026-08-10" },
-  { ...westernSaharaRecordTimestamps, countryIso3: "ESH", dataSourceId: acceptanceFixtureIds.source.westernSaharaBoundary, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.westernSahara, validFrom: "2026-08-10" },
-  { ...falklandIslandsRecordTimestamps, countryIso3: "FLK", dataSourceId: acceptanceFixtureIds.source.falklandIslandsBoundary, isDemo: false, jurisdictionId: acceptanceFixtureIds.jurisdiction.falklandIslands, validFrom: "2026-08-10" },
-];
+export const fixtureCountryJurisdictions: (typeof countryJurisdictions.$inferInsert)[] =
+  [
+    {
+      ...chinaNonroadRecordTimestamps,
+      countryIso3: "CHN",
+      dataSourceId: acceptanceFixtureIds.source.cnGb17691,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.cnMee,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...unitedStatesRecordTimestamps,
+      countryIso3: "USA",
+      dataSourceId: acceptanceFixtureIds.source.usEcfr1036,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.usEpa,
+      validFrom: "2000-01-01",
+    },
+    ...euMemberCountryMemberships.map((membership) => ({
+      ...euMembershipRecordTimestamps,
+      ...membership,
+      dataSourceId: acceptanceFixtureIds.source.euCountries,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.eu,
+    })),
+    ...(
+      [
+        { countryIso3: "ARM", validFrom: "2015-01-02" },
+        { countryIso3: "BLR", validFrom: "2015-01-01" },
+        { countryIso3: "KAZ", validFrom: "2015-01-01" },
+        { countryIso3: "KGZ", validFrom: "2015-08-12" },
+        { countryIso3: "RUS", validFrom: "2015-01-01" },
+      ] as const
+    ).map(({ countryIso3, validFrom }) => ({
+      ...eaeuRecordTimestamps,
+      countryIso3,
+      dataSourceId: acceptanceFixtureIds.source.eaeuMemberStates,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.eaeu,
+      validFrom,
+    })),
+    {
+      ...recordTimestamps,
+      countryIso3: "BRA",
+      dataSourceId: acceptanceFixtureIds.source.brConama433,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.brConama,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...japanRecordTimestamps,
+      countryIso3: "JPN",
+      dataSourceId: acceptanceFixtureIds.source.japanRoadSafety,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.japan,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...koreaRecordTimestamps,
+      countryIso3: "KOR",
+      dataSourceId: acceptanceFixtureIds.source.koreaRuleAnnex17,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.korea,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...mexicoRecordTimestamps,
+      countryIso3: "MEX",
+      dataSourceId: acceptanceFixtureIds.source.mexicoNom044,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.mexicoSemarnat,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...turkeyRecordTimestamps,
+      countryIso3: "TUR",
+      dataSourceId: acceptanceFixtureIds.source.turkeyRoadRegulation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.turkey,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...australiaRecordTimestamps,
+      countryIso3: "AUS",
+      dataSourceId: acceptanceFixtureIds.source.australiaAdrCurrent,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.australia,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...canadaRecordTimestamps,
+      countryIso3: "CAN",
+      dataSourceId: acceptanceFixtureIds.source.canadaRoadRegulation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.canada,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...unitedKingdomRecordTimestamps,
+      countryIso3: "GBR",
+      dataSourceId: acceptanceFixtureIds.source.unitedKingdomNrmm,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.unitedKingdom,
+      validFrom: "2023-01-01",
+    },
+    {
+      ...indiaRecordTimestamps,
+      countryIso3: "IND",
+      dataSourceId: acceptanceFixtureIds.source.indiaBs6,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.india,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...russiaRecordTimestamps,
+      countryIso3: "RUS",
+      dataSourceId: acceptanceFixtureIds.source.russiaRoadRegulation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.russia,
+      validFrom: "2015-01-01",
+    },
+    {
+      ...indonesiaRecordTimestamps,
+      countryIso3: "IDN",
+      dataSourceId: acceptanceFixtureIds.source.indonesiaEuro4,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.indonesia,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...thailandRecordTimestamps,
+      countryIso3: "THA",
+      dataSourceId: acceptanceFixtureIds.source.thailandTis3046,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.thailand,
+      validFrom: "2024-01-01",
+    },
+    {
+      ...vietnamRecordTimestamps,
+      countryIso3: "VNM",
+      dataSourceId: acceptanceFixtureIds.source.vietnamDecision49,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.vietnam,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...malaysiaRecordTimestamps,
+      countryIso3: "MYS",
+      dataSourceId: acceptanceFixtureIds.source.malaysiaDieselRegulation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.malaysia,
+      validFrom: "1996-09-01",
+    },
+    {
+      ...saudiArabiaRecordTimestamps,
+      countryIso3: "SAU",
+      dataSourceId: acceptanceFixtureIds.source.saudiMachinerySafetyPart2,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.saudiArabia,
+      validFrom: "2021-05-21",
+    },
+    {
+      ...unitedArabEmiratesRecordTimestamps,
+      countryIso3: "ARE",
+      dataSourceId: acceptanceFixtureIds.source.uaeMandatoryStandards2018,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.unitedArabEmirates,
+      validFrom: "2018-05-01",
+    },
+    {
+      ...southAfricaRecordTimestamps,
+      countryIso3: "ZAF",
+      dataSourceId: acceptanceFixtureIds.source.southAfricaMotorVehiclesN23,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.southAfrica,
+      validFrom: "2010-01-01",
+    },
+    {
+      ...argentinaRecordTimestamps,
+      countryIso3: "ARG",
+      dataSourceId: acceptanceFixtureIds.source.argentinaResolution1464,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.argentina,
+      validFrom: "2014-01-01",
+    },
+    {
+      ...newZealandRecordTimestamps,
+      countryIso3: "NZL",
+      dataSourceId: acceptanceFixtureIds.source.newZealandVehicleExhaustRule,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.newZealand,
+      validFrom: "2008-01-03",
+    },
+    {
+      ...chileRecordTimestamps,
+      countryIso3: "CHL",
+      dataSourceId: acceptanceFixtureIds.source.chileMobileMachineryDecree39,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.chile,
+      validFrom: "2021-10-21",
+    },
+    {
+      ...colombiaRecordTimestamps,
+      countryIso3: "COL",
+      dataSourceId: acceptanceFixtureIds.source.colombiaResolution762,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.colombia,
+      validFrom: "2022-07-18",
+    },
+    {
+      ...peruRecordTimestamps,
+      countryIso3: "PER",
+      dataSourceId: acceptanceFixtureIds.source.peruDecree029,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.peru,
+      validFrom: "2021-10-16",
+    },
+    {
+      ...philippinesRecordTimestamps,
+      countryIso3: "PHL",
+      dataSourceId: acceptanceFixtureIds.source.philippinesLtoMc20151946,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.philippines,
+      validFrom: "2016-01-01",
+    },
+    {
+      ...singaporeRecordTimestamps,
+      countryIso3: "SGP",
+      dataSourceId: acceptanceFixtureIds.source.singaporeOffRoad2012,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.singapore,
+      validFrom: "2012-07-01",
+    },
+    {
+      ...norwayRecordTimestamps,
+      countryIso3: "NOR",
+      dataSourceId: acceptanceFixtureIds.source.norwayMachineryRegulation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.norway,
+      validFrom: "2020-07-01",
+    },
+    {
+      ...icelandRecordTimestamps,
+      countryIso3: "ISL",
+      dataSourceId: acceptanceFixtureIds.source.icelandRoadRegulation2013,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.iceland,
+      validFrom: "2013-04-15",
+    },
+    {
+      ...liechtensteinRecordTimestamps,
+      countryIso3: "LIE",
+      dataSourceId: acceptanceFixtureIds.source.liechtensteinVts,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.liechtenstein,
+      validFrom: "2020-08-01",
+    },
+    {
+      ...switzerlandRecordTimestamps,
+      countryIso3: "CHE",
+      dataSourceId: acceptanceFixtureIds.source.switzerlandVts,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.switzerland,
+      validFrom: "2026-07-01",
+    },
+    {
+      ...serbiaRecordTimestamps,
+      countryIso3: "SRB",
+      dataSourceId: acceptanceFixtureIds.source.serbiaTechnicalConditions,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.serbia,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...bosniaRecordTimestamps,
+      countryIso3: "BIH",
+      dataSourceId: acceptanceFixtureIds.source.bosniaR49Orders,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.bosnia,
+      validFrom: "2019-06-01",
+    },
+    {
+      ...northMacedoniaRecordTimestamps,
+      countryIso3: "MKD",
+      dataSourceId: acceptanceFixtureIds.source.northMacedoniaTractorApproval,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.northMacedonia,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...montenegroRecordTimestamps,
+      countryIso3: "MNE",
+      dataSourceId: acceptanceFixtureIds.source.montenegroEuro6Implementation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.montenegro,
+      validFrom: "2018-10-15",
+    },
+    {
+      ...albaniaRecordTimestamps,
+      countryIso3: "ALB",
+      dataSourceId: acceptanceFixtureIds.source.albaniaTreatyStatus,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.albania,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...ukraineRecordTimestamps,
+      countryIso3: "UKR",
+      dataSourceId: acceptanceFixtureIds.source.ukraineImportRegistrationLaw,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.ukraine,
+      validFrom: "2016-01-01",
+    },
+    {
+      ...moldovaRecordTimestamps,
+      countryIso3: "MDA",
+      dataSourceId:
+        acceptanceFixtureIds.source.moldovaTypeApprovalSecondaryConsultation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.moldova,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...nepalRecordTimestamps,
+      countryIso3: "NPL",
+      dataSourceId:
+        acceptanceFixtureIds.source.nepalVehiclePollutionStandardDoenv,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.nepal,
+      validFrom: "2025-06-23",
+    },
+    {
+      ...armeniaRecordTimestamps,
+      countryIso3: "ARM",
+      dataSourceId: acceptanceFixtureIds.source.armeniaTrCu031Consolidated,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.armenia,
+      validFrom: "2019-01-01",
+    },
+    {
+      ...azerbaijanRecordTimestamps,
+      countryIso3: "AZE",
+      dataSourceId: acceptanceFixtureIds.source.azerbaijanAzs6362025,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.azerbaijan,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...georgiaRecordTimestamps,
+      countryIso3: "GEO",
+      dataSourceId: acceptanceFixtureIds.source.georgiaResolution238Mepa,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.georgia,
+      validFrom: "2025-01-01",
+    },
+    {
+      ...uzbekistanRecordTimestamps,
+      countryIso3: "UZB",
+      dataSourceId: acceptanceFixtureIds.source.uzbekistanRoadRegulation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.uzbekistan,
+      validFrom: "2025-10-01",
+    },
+    {
+      ...kazakhstanRecordTimestamps,
+      countryIso3: "KAZ",
+      dataSourceId: acceptanceFixtureIds.source.kazakhstanAgricultureRegulation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.kazakhstan,
+      validFrom: "2019-01-01",
+    },
+    {
+      ...tajikistanRecordTimestamps,
+      countryIso3: "TJK",
+      dataSourceId: acceptanceFixtureIds.source.tajikistanEngineTermsDraft,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.tajikistan,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...kyrgyzstanRecordTimestamps,
+      countryIso3: "KGZ",
+      dataSourceId: acceptanceFixtureIds.source.kyrgyzstanAgricultureRegulation,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.kyrgyzstan,
+      validFrom: "2019-01-01",
+    },
+    {
+      ...turkmenistanRecordTimestamps,
+      countryIso3: "TKM",
+      dataSourceId:
+        acceptanceFixtureIds.source.turkmenistanGasolineMeasurementStandard,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.turkmenistan,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...afghanistanRecordTimestamps,
+      countryIso3: "AFG",
+      dataSourceId:
+        acceptanceFixtureIds.source.afghanistanAirPollutionAmendment,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.afghanistan,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...angolaRecordTimestamps,
+      countryIso3: "AGO",
+      dataSourceId:
+        acceptanceFixtureIds.source.angolaEnvironmentalStandardizationProgram,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.angola,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...burundiRecordTimestamps,
+      countryIso3: "BDI",
+      dataSourceId:
+        acceptanceFixtureIds.source.burundiVehicleInspectionOrder2025,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.burundi,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...beninRecordTimestamps,
+      countryIso3: "BEN",
+      dataSourceId: acceptanceFixtureIds.source.beninAirQualityDecreeIndex,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.benin,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...burkinaFasoRecordTimestamps,
+      countryIso3: "BFA",
+      dataSourceId: acceptanceFixtureIds.source.burkinaFasoCurrentCitation2025,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.burkinaFaso,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...bangladeshRecordTimestamps,
+      countryIso3: "BGD",
+      dataSourceId: acceptanceFixtureIds.source.bangladeshGazetteIndex2022,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.bangladesh,
+      validFrom: "2022-07-26",
+    },
+    {
+      ...bahamasRecordTimestamps,
+      countryIso3: "BHS",
+      dataSourceId: acceptanceFixtureIds.source.bahamasEnvironmentalPlanningAct,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.bahamas,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...belarusRecordTimestamps,
+      countryIso3: "BLR",
+      dataSourceId: acceptanceFixtureIds.source.belarusTrCu031,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.belarus,
+      validFrom: "2019-01-01",
+    },
+    {
+      ...boliviaRecordTimestamps,
+      countryIso3: "BOL",
+      dataSourceId: acceptanceFixtureIds.source.boliviaIbmetroAcceptance,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.bolivia,
+      validFrom: "2022-04-01",
+    },
+    {
+      ...moroccoRecordTimestamps,
+      countryIso3: "MAR",
+      dataSourceId: acceptanceFixtureIds.source.moroccoEuro6Order2251,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.morocco,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...kenyaRecordTimestamps,
+      countryIso3: "KEN",
+      dataSourceId: acceptanceFixtureIds.source.kenyaInspectionRules2026,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.kenya,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...nigeriaRecordTimestamps,
+      countryIso3: "NGA",
+      dataSourceId: acceptanceFixtureIds.source.nigeriaNesrea,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.nigeria,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...egyptRecordTimestamps,
+      countryIso3: "EGY",
+      dataSourceId: acceptanceFixtureIds.source.egyptDecision710,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.egypt,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...ghanaRecordTimestamps,
+      countryIso3: "GHA",
+      dataSourceId:
+        acceptanceFixtureIds.source.ghanaMotorVehicleEmissionsStandard1219,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.ghana,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...israelRecordTimestamps,
+      countryIso3: "ISR",
+      dataSourceId: acceptanceFixtureIds.source.israelNrmmImr2026,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.israel,
+      validFrom: "2026-01-01",
+    },
+    {
+      ...pakistanRecordTimestamps,
+      countryIso3: "PAK",
+      dataSourceId: acceptanceFixtureIds.source.pakistanSro72GazetteScan,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.pakistan,
+      validFrom: "2012-07-01",
+    },
+    {
+      ...qatarRecordTimestamps,
+      countryIso3: "QAT",
+      dataSourceId:
+        acceptanceFixtureIds.source.qatarTechnicalRegulationsDecision125,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.qatar,
+      validFrom: "2026-08-09",
+    },
+    {
+      ...kuwaitRecordTimestamps,
+      countryIso3: "KWT",
+      dataSourceId:
+        acceptanceFixtureIds.source.kuwaitTechnicalRegulationsDecision44,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.kuwait,
+      validFrom: "2026-08-09",
+    },
+    {
+      ...omanRecordTimestamps,
+      countryIso3: "OMN",
+      dataSourceId:
+        acceptanceFixtureIds.source.omanGsoMotorVehicleRegulationsMy2026,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.oman,
+      validFrom: "2026-08-09",
+    },
+    {
+      ...jordanRecordTimestamps,
+      countryIso3: "JOR",
+      dataSourceId:
+        acceptanceFixtureIds.source.jordanTransportEmissionsStandardsCatalogue,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.jordan,
+      validFrom: "2026-08-09",
+    },
+    {
+      ...cambodiaRecordTimestamps,
+      countryIso3: "KHM",
+      dataSourceId: acceptanceFixtureIds.source.cambodiaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.cambodia,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...laosRecordTimestamps,
+      countryIso3: "LAO",
+      dataSourceId: acceptanceFixtureIds.source.laosTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.laos,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...sriLankaRecordTimestamps,
+      countryIso3: "LKA",
+      dataSourceId: acceptanceFixtureIds.source.sriLankaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.sriLanka,
+      validFrom: "2018-07-13",
+    },
+    {
+      ...mongoliaRecordTimestamps,
+      countryIso3: "MNG",
+      dataSourceId: acceptanceFixtureIds.source.mongoliaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.mongolia,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...costaRicaRecordTimestamps,
+      countryIso3: "CRI",
+      dataSourceId: acceptanceFixtureIds.source.costaRicaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.costaRica,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...ecuadorRecordTimestamps,
+      countryIso3: "ECU",
+      dataSourceId: acceptanceFixtureIds.source.ecuadorRte017,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.ecuador,
+      validFrom: "2009-02-07",
+    },
+    {
+      ...dominicanRepublicRecordTimestamps,
+      countryIso3: "DOM",
+      dataSourceId: acceptanceFixtureIds.source.dominicanRepublicTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.dominicanRepublic,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...algeriaRecordTimestamps,
+      countryIso3: "DZA",
+      dataSourceId: acceptanceFixtureIds.source.algeriaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.algeria,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...tunisiaRecordTimestamps,
+      countryIso3: "TUN",
+      dataSourceId: acceptanceFixtureIds.source.tunisiaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.tunisia,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...ethiopiaRecordTimestamps,
+      countryIso3: "ETH",
+      dataSourceId: acceptanceFixtureIds.source.ethiopiaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.ethiopia,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...guatemalaRecordTimestamps,
+      countryIso3: "GTM",
+      dataSourceId: acceptanceFixtureIds.source.guatemalaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.guatemala,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...hondurasRecordTimestamps,
+      countryIso3: "HND",
+      dataSourceId: acceptanceFixtureIds.source.hondurasTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.honduras,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...panamaRecordTimestamps,
+      countryIso3: "PAN",
+      dataSourceId: acceptanceFixtureIds.source.panamaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.panama,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...uruguayRecordTimestamps,
+      countryIso3: "URY",
+      dataSourceId: acceptanceFixtureIds.source.uruguayTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.uruguay,
+      validFrom: "2023-05-14",
+    },
+    {
+      ...botswanaRecordTimestamps,
+      countryIso3: "BWA",
+      dataSourceId: acceptanceFixtureIds.source.botswanaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.botswana,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...namibiaRecordTimestamps,
+      countryIso3: "NAM",
+      dataSourceId: acceptanceFixtureIds.source.namibiaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.namibia,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...tanzaniaRecordTimestamps,
+      countryIso3: "TZA",
+      dataSourceId: acceptanceFixtureIds.source.tanzaniaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.tanzania,
+      validFrom: "2007-12-07",
+    },
+    {
+      ...ugandaRecordTimestamps,
+      countryIso3: "UGA",
+      dataSourceId: acceptanceFixtureIds.source.ugandaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.uganda,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...zambiaRecordTimestamps,
+      countryIso3: "ZMB",
+      dataSourceId: acceptanceFixtureIds.source.zambiaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.zambia,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...zimbabweRecordTimestamps,
+      countryIso3: "ZWE",
+      dataSourceId: acceptanceFixtureIds.source.zimbabweTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.zimbabwe,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...rwandaRecordTimestamps,
+      countryIso3: "RWA",
+      dataSourceId: acceptanceFixtureIds.source.rwandaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.rwanda,
+      validFrom: "2023-01-23",
+    },
+    {
+      ...coteDIvoireRecordTimestamps,
+      countryIso3: "CIV",
+      dataSourceId: acceptanceFixtureIds.source.coteDIvoireTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.coteDIvoire,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...cameroonRecordTimestamps,
+      countryIso3: "CMR",
+      dataSourceId: acceptanceFixtureIds.source.cameroonTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.cameroon,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...senegalRecordTimestamps,
+      countryIso3: "SEN",
+      dataSourceId: acceptanceFixtureIds.source.senegalTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.senegal,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...mozambiqueRecordTimestamps,
+      countryIso3: "MOZ",
+      dataSourceId: acceptanceFixtureIds.source.mozambiqueTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.mozambique,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...eswatiniRecordTimestamps,
+      countryIso3: "SWZ",
+      dataSourceId: acceptanceFixtureIds.source.eswatiniTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.eswatini,
+      validFrom: "2026-08-11",
+    },
+    {
+      ...lesothoRecordTimestamps,
+      countryIso3: "LSO",
+      dataSourceId: acceptanceFixtureIds.source.lesothoTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.lesotho,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...madagascarRecordTimestamps,
+      countryIso3: "MDG",
+      dataSourceId: acceptanceFixtureIds.source.madagascarTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.madagascar,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...mauritiusRecordTimestamps,
+      countryIso3: "MUS",
+      dataSourceId: acceptanceFixtureIds.source.mauritiusTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.mauritius,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...malawiRecordTimestamps,
+      countryIso3: "MWI",
+      dataSourceId: acceptanceFixtureIds.source.malawiTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.malawi,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...fijiRecordTimestamps,
+      countryIso3: "FJI",
+      dataSourceId: acceptanceFixtureIds.source.fijiTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.fiji,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...belizeRecordTimestamps,
+      countryIso3: "BLZ",
+      dataSourceId: acceptanceFixtureIds.source.belizeTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.belize,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...bruneiRecordTimestamps,
+      countryIso3: "BRN",
+      dataSourceId: acceptanceFixtureIds.source.bruneiTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.brunei,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...bhutanRecordTimestamps,
+      countryIso3: "BTN",
+      dataSourceId: acceptanceFixtureIds.source.bhutanTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.bhutan,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...centralAfricanRepublicRecordTimestamps,
+      countryIso3: "CAF",
+      dataSourceId: acceptanceFixtureIds.source.centralAfricanRepublicTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.centralAfricanRepublic,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...democraticRepublicOfCongoRecordTimestamps,
+      countryIso3: "COD",
+      dataSourceId:
+        acceptanceFixtureIds.source.democraticRepublicOfCongoTransport,
+      isDemo: false,
+      jurisdictionId:
+        acceptanceFixtureIds.jurisdiction.democraticRepublicOfCongo,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...republicOfCongoRecordTimestamps,
+      countryIso3: "COG",
+      dataSourceId: acceptanceFixtureIds.source.republicOfCongoTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.republicOfCongo,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...cubaRecordTimestamps,
+      countryIso3: "CUB",
+      dataSourceId: acceptanceFixtureIds.source.cubaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.cuba,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...djiboutiRecordTimestamps,
+      countryIso3: "DJI",
+      dataSourceId: acceptanceFixtureIds.source.djiboutiTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.djibouti,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...eritreaRecordTimestamps,
+      countryIso3: "ERI",
+      dataSourceId:
+        acceptanceFixtureIds.source
+          .eritreaVehicleTechnicalStandardsRegulations61_2002,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.eritrea,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...gabonRecordTimestamps,
+      countryIso3: "GAB",
+      dataSourceId:
+        acceptanceFixtureIds.source
+          .gabonHeavyVehicleHomologationOrder00097_2017,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.gabon,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...guineaRecordTimestamps,
+      countryIso3: "GIN",
+      dataSourceId: acceptanceFixtureIds.source.guineaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.guinea,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...gambiaRecordTimestamps,
+      countryIso3: "GMB",
+      dataSourceId:
+        acceptanceFixtureIds.source.gambiaMotorTrafficAmendmentAct2013,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.gambia,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...guineaBissauRecordTimestamps,
+      countryIso3: "GNB",
+      dataSourceId:
+        acceptanceFixtureIds.source.guineaBissauTransportMinistryDirectory,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.guineaBissau,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...equatorialGuineaRecordTimestamps,
+      countryIso3: "GNQ",
+      dataSourceId:
+        acceptanceFixtureIds.source
+          .equatorialGuineaGeneralRoadTransportLaw4_2018,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.equatorialGuinea,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...greenlandRecordTimestamps,
+      countryIso3: "GRL",
+      dataSourceId: acceptanceFixtureIds.source.greenlandTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.greenland,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...guyanaRecordTimestamps,
+      countryIso3: "GUY",
+      dataSourceId: acceptanceFixtureIds.source.guyanaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.guyana,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...haitiRecordTimestamps,
+      countryIso3: "HTI",
+      dataSourceId: acceptanceFixtureIds.source.haitiTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.haiti,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...iranRecordTimestamps,
+      countryIso3: "IRN",
+      dataSourceId: acceptanceFixtureIds.source.iranArticle4Amendment2024,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.iran,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...iraqRecordTimestamps,
+      countryIso3: "IRQ",
+      dataSourceId:
+        acceptanceFixtureIds.source.iraqTr167ImplementationNotice2025,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.iraq,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...jamaicaRecordTimestamps,
+      countryIso3: "JAM",
+      dataSourceId: acceptanceFixtureIds.source.jamaicaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.jamaica,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...lebanonRecordTimestamps,
+      countryIso3: "LBN",
+      dataSourceId: acceptanceFixtureIds.source.lebanonThirdBur2019,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.lebanon,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...liberiaRecordTimestamps,
+      countryIso3: "LBR",
+      dataSourceId:
+        acceptanceFixtureIds.source.liberiaVehicleAdministrativeRegulation2011,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.liberia,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...libyaRecordTimestamps,
+      countryIso3: "LBY",
+      dataSourceId:
+        acceptanceFixtureIds.source.libyaEnvironmentalExecutiveRegulation448,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.libya,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...maliRecordTimestamps,
+      countryIso3: "MLI",
+      dataSourceId:
+        acceptanceFixtureIds.source.maliRoadUseVehicleCirculationDecree2023,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.mali,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...myanmarRecordTimestamps,
+      countryIso3: "MMR",
+      dataSourceId: acceptanceFixtureIds.source.myanmarTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.myanmar,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...mauritaniaRecordTimestamps,
+      countryIso3: "MRT",
+      dataSourceId: acceptanceFixtureIds.source.mauritaniaEnvironmentCode2000,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.mauritania,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...newCaledoniaRecordTimestamps,
+      countryIso3: "NCL",
+      dataSourceId: acceptanceFixtureIds.source.newCaledoniaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.newCaledonia,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...nigerRecordTimestamps,
+      countryIso3: "NER",
+      dataSourceId:
+        acceptanceFixtureIds.source.nigerMotorVehicleHomologationEServices,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.niger,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...nicaraguaRecordTimestamps,
+      countryIso3: "NIC",
+      dataSourceId: acceptanceFixtureIds.source.nicaraguaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.nicaragua,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...papuaNewGuineaRecordTimestamps,
+      countryIso3: "PNG",
+      dataSourceId: acceptanceFixtureIds.source.papuaNewGuineaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.papuaNewGuinea,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...puertoRicoRecordTimestamps,
+      countryIso3: "PRI",
+      dataSourceId: acceptanceFixtureIds.source.puertoRicoTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.puertoRico,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...northKoreaRecordTimestamps,
+      countryIso3: "PRK",
+      dataSourceId: acceptanceFixtureIds.source.northKoreaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.northKorea,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...paraguayRecordTimestamps,
+      countryIso3: "PRY",
+      dataSourceId: acceptanceFixtureIds.source.paraguayTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.paraguay,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...palestineRecordTimestamps,
+      countryIso3: "PSE",
+      dataSourceId: acceptanceFixtureIds.source.palestineTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.palestine,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...sudanRecordTimestamps,
+      countryIso3: "SDN",
+      dataSourceId: acceptanceFixtureIds.source.sudanTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.sudan,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...solomonIslandsRecordTimestamps,
+      countryIso3: "SLB",
+      dataSourceId: acceptanceFixtureIds.source.solomonIslandsTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.solomonIslands,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...sierraLeoneRecordTimestamps,
+      countryIso3: "SLE",
+      dataSourceId: acceptanceFixtureIds.source.sierraLeoneTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.sierraLeone,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...elSalvadorRecordTimestamps,
+      countryIso3: "SLV",
+      dataSourceId: acceptanceFixtureIds.source.elSalvadorTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.elSalvador,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...somaliaRecordTimestamps,
+      countryIso3: "SOM",
+      dataSourceId: acceptanceFixtureIds.source.somaliaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.somalia,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...southSudanRecordTimestamps,
+      countryIso3: "SSD",
+      dataSourceId: acceptanceFixtureIds.source.southSudanTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.southSudan,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...surinameRecordTimestamps,
+      countryIso3: "SUR",
+      dataSourceId: acceptanceFixtureIds.source.surinameTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.suriname,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...syriaRecordTimestamps,
+      countryIso3: "SYR",
+      dataSourceId: acceptanceFixtureIds.source.syriaVehicleImportNotice2025,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.syria,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...chadRecordTimestamps,
+      countryIso3: "TCD",
+      dataSourceId: acceptanceFixtureIds.source.chadTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.chad,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...togoRecordTimestamps,
+      countryIso3: "TGO",
+      dataSourceId: acceptanceFixtureIds.source.togoTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.togo,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...timorLesteRecordTimestamps,
+      countryIso3: "TLS",
+      dataSourceId: acceptanceFixtureIds.source.timorLesteTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.timorLeste,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...trinidadTobagoRecordTimestamps,
+      countryIso3: "TTO",
+      dataSourceId: acceptanceFixtureIds.source.trinidadTobagoTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.trinidadTobago,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...taiwanRecordTimestamps,
+      countryIso3: "TWN",
+      dataSourceId: acceptanceFixtureIds.source.taiwanTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.taiwan,
+      validFrom: "2021-09-01",
+    },
+    {
+      ...venezuelaRecordTimestamps,
+      countryIso3: "VEN",
+      dataSourceId: acceptanceFixtureIds.source.venezuelaTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.venezuela,
+      validFrom: "2000-01-01",
+    },
+    {
+      ...vanuatuRecordTimestamps,
+      countryIso3: "VUT",
+      dataSourceId: acceptanceFixtureIds.source.vanuatuTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.vanuatu,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...yemenRecordTimestamps,
+      countryIso3: "YEM",
+      dataSourceId: acceptanceFixtureIds.source.yemenTransport,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.yemen,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...antarcticaRecordTimestamps,
+      countryIso3: "ATA",
+      dataSourceId: acceptanceFixtureIds.source.antarcticaBoundary,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.antarctica,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...frenchSouthernLandsRecordTimestamps,
+      countryIso3: "ATF",
+      dataSourceId: acceptanceFixtureIds.source.frenchSouthernLandsBoundary,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.frenchSouthernLands,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...westernSaharaRecordTimestamps,
+      countryIso3: "ESH",
+      dataSourceId: acceptanceFixtureIds.source.westernSaharaBoundary,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.westernSahara,
+      validFrom: "2026-08-10",
+    },
+    {
+      ...falklandIslandsRecordTimestamps,
+      countryIso3: "FLK",
+      dataSourceId: acceptanceFixtureIds.source.falklandIslandsBoundary,
+      isDemo: false,
+      jurisdictionId: acceptanceFixtureIds.jurisdiction.falklandIslands,
+      validFrom: "2026-08-10",
+    },
+  ];
 
 export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
   {
@@ -6563,8 +8779,7 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
   {
     ...japanRecordTimestamps,
     adoptedOn: null,
-    canonicalName:
-      "日本平成28年（2016年）重型柴油车排出ガス規制",
+    canonicalName: "日本平成28年（2016年）重型柴油车排出ガス規制",
     citationCode: "JPN 2016 HD Diesel",
     dataSourceId: acceptanceFixtureIds.source.japanRoadSafety,
     effectiveFrom: "2018-10-01",
@@ -6729,7 +8944,8 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
   {
     ...canadaRecordTimestamps,
     adoptedOn: "2002-12-12",
-    canonicalName: "On-Road Vehicle and Engine Emission Regulations (SOR/2003-2)",
+    canonicalName:
+      "On-Road Vehicle and Engine Emission Regulations (SOR/2003-2)",
     citationCode: "SOR/2003-2",
     dataSourceId: acceptanceFixtureIds.source.canadaRoadRegulation,
     effectiveFrom: "2004-01-01",
@@ -7048,8 +9264,7 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     adoptedOn: "2022-07-26",
     canonicalName:
       "Bangladesh Air Pollution (Control) Rules 2022 new heavy-duty diesel vehicle limits",
-    citationCode:
-      "Air Pollution (Control) Rules 2022, Schedule 2, item 1(b)",
+    citationCode: "Air Pollution (Control) Rules 2022, Schedule 2, item 1(b)",
     dataSourceId: acceptanceFixtureIds.source.bangladeshAirPollutionRules2022,
     effectiveFrom: "2022-07-26",
     id: acceptanceFixtureIds.regulation.bangladeshHeavyDiesel2022,
@@ -7094,8 +9309,7 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     adoptedOn: "2015-05-28",
     canonicalName:
       "Philippines DAO 2015-04 / LTO MC AVT-2015-1946 Euro IV new heavy-duty vehicle representative pathway",
-    citationCode:
-      "DAO 2015-04; LTO MC AVT-2015-1946; UN Regulation No. 49-04",
+    citationCode: "DAO 2015-04; LTO MC AVT-2015-1946; UN Regulation No. 49-04",
     dataSourceId: acceptanceFixtureIds.source.philippinesLtoMc20151946,
     effectiveFrom: "2016-01-01",
     id: acceptanceFixtureIds.regulation.philippinesHeavyDieselEuroIv,
@@ -7370,8 +9584,7 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     adoptedOn: "2021-10-15",
     canonicalName:
       "Peru D.S. 010-2017-MINAM annex I.7 heavy-duty Euro VI/A limits as amended by D.S. 029-2021-MINAM",
-    citationCode:
-      "D.S. 010-2017-MINAM annex I.7 / D.S. 029-2021-MINAM",
+    citationCode: "D.S. 010-2017-MINAM annex I.7 / D.S. 029-2021-MINAM",
     dataSourceId: acceptanceFixtureIds.source.peruDecree029,
     effectiveFrom: "2024-10-01",
     id: acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
@@ -7448,8 +9661,7 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     adoptedOn: "2013-04-15",
     canonicalName:
       "Iceland Regulation 377/2013 heavy-duty Euro VI emission requirements",
-    citationCode:
-      "Reglugerð 377/2013 art. 12 and Annex IV items 45zzk/45zzl",
+    citationCode: "Reglugerð 377/2013 art. 12 and Annex IV items 45zzk/45zzl",
     dataSourceId: acceptanceFixtureIds.source.icelandRoadRegulation2013,
     effectiveFrom: "2013-04-15",
     effectiveTo: "2027-11-29",
@@ -7496,7 +9708,8 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     adoptedOn: "1996-07-16",
     canonicalName:
       "Liechtenstein VTS current heavy-vehicle Euro VI emission pathway",
-    citationCode: "VTS LGBl. 1996 Nr. 143, Fassung 01.07.2026 Anhang 4 Ziff. 211",
+    citationCode:
+      "VTS LGBl. 1996 Nr. 143, Fassung 01.07.2026 Anhang 4 Ziff. 211",
     dataSourceId: acceptanceFixtureIds.source.liechtensteinVts,
     effectiveFrom: "2026-07-01",
     id: acceptanceFixtureIds.regulation.liechtensteinHeavyVehicleEuroVi,
@@ -7584,8 +9797,7 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     adoptedOn: "2023-11-09",
     canonicalName:
       "Uganda National Environment (Air Quality Standards) Regulations, 2024",
-    citationCode:
-      "S.I. No. 22 of 2024, regulations 2 and 9-10, Schedule 4",
+    citationCode: "S.I. No. 22 of 2024, regulations 2 and 9-10, Schedule 4",
     dataSourceId: acceptanceFixtureIds.source.ugandaEnvironment,
     effectiveFrom: "2024-04-26",
     id: acceptanceFixtureIds.regulation.ugandaAirQuality2024,
@@ -7708,8 +9920,7 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     adoptedOn: "2012-08-17",
     canonicalName:
       "Ukraine Euro V heavy-duty road-vehicle type-approval representative pathway",
-    citationCode:
-      "Law No. 2739-IV / Order No. 521 Annex 2 item 52 (Euro V B2)",
+    citationCode: "Law No. 2739-IV / Order No. 521 Annex 2 item 52 (Euro V B2)",
     dataSourceId: acceptanceFixtureIds.source.ukraineTypeApprovalOrder,
     effectiveFrom: "2016-01-01",
     effectiveTo: "2027-01-01",
@@ -7777,7 +9988,8 @@ function fixtureLimit(
   regulationId: string,
   dataSourceId: string,
   limit: {
-    applicationScope: "on-road-truck" | "on-road-bus" | "construction" | "agriculture";
+    applicationScope:
+      "on-road-truck" | "on-road-bus" | "construction" | "agriculture";
     pollutantCode: string;
     limitValue: string;
     unitCode: string;
@@ -9281,9 +11493,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
       testCycleCode: "ETC",
     },
     {
-      rows: [
-        { pollutantCode: "OPACITY", limitValue: "0.5", unitCode: "m-1" },
-      ],
+      rows: [{ pollutantCode: "OPACITY", limitValue: "0.5", unitCode: "m-1" }],
       testCycleCode: "ELR",
     },
   ] as const;
@@ -9497,8 +11707,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
     {
       measurementBasis:
         "NTE INEN 2207(1R):2002 section 6.2.1 Table 2 (European cycles): N2/N3/M2/M3 diesel vehicle with gross vehicle weight >3,500 kg, all reference weights, sea-level ECE-49 engine test; Table 2 footnote (3) supplies g/kWh for the heavy-duty row. RTE INEN 017:2008 sections 5.2 and 6.2(b) incorporate the standard and require its tests before imported or domestically assembled vehicles enter circulation. The US heavy-duty transient route and supplemental opacity test are alternatives or additional checks and are not cumulative",
-      regulationId:
-        acceptanceFixtureIds.regulation.ecuadorHeavyDieselRte017,
+      regulationId: acceptanceFixtureIds.regulation.ecuadorHeavyDieselRte017,
       sourceId: acceptanceFixtureIds.source.ecuadorDieselStandard2207,
       testCycleCode: "ECE-49",
       validFrom: "2009-02-07",
@@ -9688,9 +11897,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
   // representative path, 19..560 kW requires both NRSC and NRTC.
   for (const band of stageVBands) {
     const testCycleCode =
-      band.powerMinKw >= 19 && band.powerMinKw < 560.001
-        ? "NRSC/NRTC"
-        : "NRSC";
+      band.powerMinKw >= 19 && band.powerMinKw < 560.001 ? "NRSC/NRTC" : "NRSC";
     for (const row of band.rows) {
       limits.push(
         fixtureLimit(
@@ -9993,8 +12200,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
             applicationScope,
             measurementBasis:
               "GSO MY2026-D4 pages 7 and 12: Saudi Arabia heavy-duty diesel vehicles shall comply with ECE 49 Euro V; 2026-01-01 is a normalized model-year boundary, not a separately stated calendar commencement. UN R49-05 B2 is the representative CI path; ETC THC 0.55 may substitute for NMHC 0.55 and is not cumulative",
-            testCycleCode:
-              row.pollutantCode === "OPACITY" ? "ELR" : "ESC",
+            testCycleCode: row.pollutantCode === "OPACITY" ? "ELR" : "ESC",
             validFrom: "2026-01-01",
             verifiedAt: saudiArabiaVerificationTimestamp,
           },
@@ -10035,8 +12241,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
             applicationScope,
             measurementBasis:
               "TIS 3046-2563 sections 1.1, 2.18, 3.2 and 7.1; M2/N2 reference mass >2,610 kg and all M3/N3; Pmax/net power measured under UN R85 in kW; ETC THC 0.55 g/kWh may replace NMHC 0.55 and is not cumulative",
-            testCycleCode:
-              row.pollutantCode === "OPACITY" ? "ELR" : "ESC",
+            testCycleCode: row.pollutantCode === "OPACITY" ? "ELR" : "ESC",
             validFrom: "2024-01-01",
             verifiedAt: thailandVerificationTimestamp,
           },
@@ -10313,11 +12518,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
       ],
     },
   ] as const;
-  for (const {
-    applicationScope,
-    regulationId,
-    validFrom,
-  } of [
+  for (const { applicationScope, regulationId, validFrom } of [
     {
       applicationScope: "construction",
       regulationId: acceptanceFixtureIds.regulation.chileMobileMachineryStageV,
@@ -10627,10 +12828,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
   // Maskinforskriften Vedlegg XII incorporated 2016/1628 from 2020-07-01.
   // Construction and agriculture use the same NRE representative bands; exact
   // numeric limits remain traced to the signed EU Annex II source.
-  for (const applicationScope of [
-    "construction",
-    "agriculture",
-  ] as const) {
+  for (const applicationScope of ["construction", "agriculture"] as const) {
     for (const band of stageVBands) {
       for (const row of band.rows) {
         limits.push(
@@ -10704,10 +12902,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
     },
   ];
   for (const period of icelandNrmmPeriods) {
-    for (const applicationScope of [
-      "construction",
-      "agriculture",
-    ] as const) {
+    for (const applicationScope of ["construction", "agriculture"] as const) {
       for (const band of stageVBands) {
         for (const row of band.rows) {
           limits.push(
@@ -10859,9 +13054,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
                 ? `Gazette 2079/42 Third Schedule Table 5; diesel vehicles with GVW > 3500 kg; free-acceleration smoke opacity; ${sriLankaImportGrandfathering}`
                 : `Gazette 2079/42 Third Schedule Table 5; diesel vehicles with GVW > 3500 kg; Third Schedule is one representative route, alternative and not cumulative with the Gazette 2083/3 Fifth Schedule route; ${sriLankaImportGrandfathering}`,
             testCycleCode:
-              row.pollutantCode === "OPACITY"
-                ? "FREE_ACCELERATION"
-                : "ESC",
+              row.pollutantCode === "OPACITY" ? "FREE_ACCELERATION" : "ESC",
             validFrom: "2018-07-13",
             verifiedAt: sriLankaVerificationTimestamp,
           },
@@ -11123,8 +13316,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
         {
           applicationScope,
           limitValue: "0.612",
-          measurementBasis:
-            `${venezuelaMeasurementBasis}; PM 0.36 g/kWh is multiplied by 1.7 when maximum engine power <= 85 kW`,
+          measurementBasis: `${venezuelaMeasurementBasis}; PM 0.36 g/kWh is multiplied by 1.7 when maximum engine power <= 85 kW`,
           pollutantCode: "PM",
           powerMaxKw: 85.001,
           testCycleCode: "Directive 91/542/EEC",
@@ -11139,8 +13331,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
         {
           applicationScope,
           limitValue: "0.36",
-          measurementBasis:
-            `${venezuelaMeasurementBasis}; the 1.7 PM multiplier applies only at maximum engine power <= 85 kW`,
+          measurementBasis: `${venezuelaMeasurementBasis}; the 1.7 PM multiplier applies only at maximum engine power <= 85 kW`,
           pollutantCode: "PM",
           powerMinKw: 85.001,
           testCycleCode: "Directive 91/542/EEC",
@@ -11176,14 +13367,54 @@ export function buildFixtureLimits(): FixtureLimit[] {
   }
 
   const australiaAdr804MissingRows = [
-    { pollutantCode: "CO", limitValue: "1500", testCycleCode: "WHSC", unitCode: "mg/kWh" },
-    { pollutantCode: "THC", limitValue: "130", testCycleCode: "WHSC", unitCode: "mg/kWh" },
-    { pollutantCode: "NH3", limitValue: "10", testCycleCode: "WHSC", unitCode: "ppm" },
-    { pollutantCode: "PN", limitValue: "800", testCycleCode: "WHSC", unitCode: "e9/kWh" },
-    { pollutantCode: "CO", limitValue: "4000", testCycleCode: "WHTC", unitCode: "mg/kWh" },
-    { pollutantCode: "THC", limitValue: "160", testCycleCode: "WHTC", unitCode: "mg/kWh" },
-    { pollutantCode: "NH3", limitValue: "10", testCycleCode: "WHTC", unitCode: "ppm" },
-    { pollutantCode: "PN", limitValue: "600", testCycleCode: "WHTC", unitCode: "e9/kWh" },
+    {
+      pollutantCode: "CO",
+      limitValue: "1500",
+      testCycleCode: "WHSC",
+      unitCode: "mg/kWh",
+    },
+    {
+      pollutantCode: "THC",
+      limitValue: "130",
+      testCycleCode: "WHSC",
+      unitCode: "mg/kWh",
+    },
+    {
+      pollutantCode: "NH3",
+      limitValue: "10",
+      testCycleCode: "WHSC",
+      unitCode: "ppm",
+    },
+    {
+      pollutantCode: "PN",
+      limitValue: "800",
+      testCycleCode: "WHSC",
+      unitCode: "e9/kWh",
+    },
+    {
+      pollutantCode: "CO",
+      limitValue: "4000",
+      testCycleCode: "WHTC",
+      unitCode: "mg/kWh",
+    },
+    {
+      pollutantCode: "THC",
+      limitValue: "160",
+      testCycleCode: "WHTC",
+      unitCode: "mg/kWh",
+    },
+    {
+      pollutantCode: "NH3",
+      limitValue: "10",
+      testCycleCode: "WHTC",
+      unitCode: "ppm",
+    },
+    {
+      pollutantCode: "PN",
+      limitValue: "600",
+      testCycleCode: "WHTC",
+      unitCode: "e9/kWh",
+    },
   ] as const;
   for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
     for (const row of australiaAdr804MissingRows) {

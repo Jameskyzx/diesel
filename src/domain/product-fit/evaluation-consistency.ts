@@ -117,9 +117,7 @@ function projectDerivedEvaluation(evaluation: ProductFitEvaluation) {
     asOf: evaluation.asOf,
     commercialReadiness: evaluation.commercialReadiness,
     productChecks: {
-      applicationScope: projectCheck(
-        evaluation.productChecks.applicationScope,
-      ),
+      applicationScope: projectCheck(evaluation.productChecks.applicationScope),
       availability: projectCheck(evaluation.productChecks.availability),
       power: projectCheck(evaluation.productChecks.power),
     },

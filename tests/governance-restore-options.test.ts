@@ -29,9 +29,12 @@ describe("governance restore options", () => {
     ).toMatchObject({ apply: true, help: false });
   });
 
-  it.each([["--help"], ["-h"]])("supports help without database options", (...args) => {
-    expect(parseGovernanceRestoreOptions(args)).toEqual({ help: true });
-  });
+  it.each([["--help"], ["-h"]])(
+    "supports help without database options",
+    (...args) => {
+      expect(parseGovernanceRestoreOptions(args)).toEqual({ help: true });
+    },
+  );
 
   it.each([
     [],
@@ -45,11 +48,7 @@ describe("governance restore options", () => {
       "--input=/private/tmp/two.json",
       `--sha256=${digest}`,
     ],
-    [
-      "--input=/private/tmp/governance.json",
-      `--sha256=${digest}`,
-      "--force",
-    ],
+    ["--input=/private/tmp/governance.json", `--sha256=${digest}`, "--force"],
   ])("rejects incomplete, ambiguous, or unsafe arguments: %j", (...args) => {
     expect(() => parseGovernanceRestoreOptions(args)).toThrow();
   });

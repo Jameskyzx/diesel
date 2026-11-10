@@ -491,7 +491,9 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     });
     value.tableCounts.regulations += 1;
 
-    expect(() => parseGovernanceSnapshot(value)).toThrow("Duplicate snapshot key");
+    expect(() => parseGovernanceSnapshot(value)).toThrow(
+      "Duplicate snapshot key",
+    );
   });
 
   it("rejects two active catalogue entities for one model but allows an archived predecessor", () => {
@@ -501,7 +503,9 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
       id: "00000000-0000-4000-8000-000000000086",
     });
     value.tableCounts.catalog_engines += 1;
-    expect(() => parseGovernanceSnapshot(value)).toThrow("Duplicate snapshot key");
+    expect(() => parseGovernanceSnapshot(value)).toThrow(
+      "Duplicate snapshot key",
+    );
 
     value.tables.catalog_engines[1]!.archivedAt = timestamp;
     expect(() => parseGovernanceSnapshot(value)).not.toThrow();
@@ -572,68 +576,66 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     ).toBe(rowCount * MARKET_METRIC_NATURAL_KEY_PARAMETERS_PER_ROW);
   });
 
-  it(
-    "restores the closed graph and physically deletes snapshot-external rows",
-    async () => {
-      const { client, database } = await createTestDatabase();
-      openClients.push(client);
-      await seedRowsOutsideSnapshot(client);
+  it("restores the closed graph and physically deletes snapshot-external rows", async () => {
+    const { client, database } = await createTestDatabase();
+    openClients.push(client);
+    await seedRowsOutsideSnapshot(client);
 
-      const result = await database.transaction((transaction) =>
-        restoreGovernanceSnapshotInTransaction(transaction, buildSnapshot()),
-      );
+    const result = await database.transaction((transaction) =>
+      restoreGovernanceSnapshotInTransaction(transaction, buildSnapshot()),
+    );
 
-      expect(result.strategy).toBe("snapshot-upsert-and-delete");
-      const restored = await client.query<{ count: number }>(
-        `select count(*)::int as count
+    expect(result.strategy).toBe("snapshot-upsert-and-delete");
+    const restored = await client.query<{ count: number }>(
+      `select count(*)::int as count
          from regulation_limits l
          join regulations r on r.id = l.regulation_id
          join jurisdictions j on j.id = r.jurisdiction_id
          join countries c on c.iso3 = j.country_iso3
          join data_sources s on s.id = l.data_source_id
         where l.id = $1 and c.iso3 = 'ZZZ' and s.id = $2`,
-        [ids.limit, ids.source],
-      );
-      expect(restored.rows[0]?.count).toBe(1);
+      [ids.limit, ids.source],
+    );
+    expect(restored.rows[0]?.count).toBe(1);
 
-      const safeExtras = await client.query<{
-        batches: number;
-        engines: number;
-        logs: number;
-        sources: number;
-      }>(
-        `select
+    const safeExtras = await client.query<{
+      batches: number;
+      engines: number;
+      logs: number;
+      sources: number;
+    }>(
+      `select
          (select count(*)::int from market_import_batches where id = $1) as batches,
          (select count(*)::int from data_change_logs where id = $2) as logs,
          (select count(*)::int from data_sources where id = $3) as sources,
          (select count(*)::int from catalog_engines where id = $4) as engines`,
-        [ids.extraBatch, ids.extraLog, ids.extraSource, ids.extraCatalogEngine],
-      );
-      expect(safeExtras.rows[0]).toEqual({
-        batches: 0,
-        engines: 0,
-        logs: 0,
-        sources: 0,
-      });
-      const engine = await client.query<{
-        applicationScopes: string[];
-        declaredCitationCodes: string[];
-        ratedPowerKw: string;
-      }>(
-        `select application_scopes::text[] as "applicationScopes",
+      [ids.extraBatch, ids.extraLog, ids.extraSource, ids.extraCatalogEngine],
+    );
+    expect(safeExtras.rows[0]).toEqual({
+      batches: 0,
+      engines: 0,
+      logs: 0,
+      sources: 0,
+    });
+    const engine = await client.query<{
+      applicationScopes: string[];
+      declaredCitationCodes: string[];
+      ratedPowerKw: string;
+    }>(
+      `select application_scopes::text[] as "applicationScopes",
                 declared_citation_codes as "declaredCitationCodes",
                 rated_power_kw::text as "ratedPowerKw"
            from catalog_engines where id = $1`,
-        [ids.catalogEngine],
-      );
-      expect(engine.rows).toEqual([{
+      [ids.catalogEngine],
+    );
+    expect(engine.rows).toEqual([
+      {
         applicationScopes: ["construction", "agriculture"],
         declaredCitationCodes: ["ZZZ-2026", "CELEX:32016R1628"],
         ratedPowerKw: "120.125",
-      }]);
-    },
-    15_000,
-  );
+      },
+    ]);
+  }, 15_000);
 
   it("leaves an identical snapshot physically unchanged and performs no updates", async () => {
     const { client, database } = await createTestDatabase();
@@ -666,23 +668,36 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     const { client, database } = await createTestDatabase();
     openClients.push(client);
     const snapshot = buildSnapshot();
-    const raw = JSON.stringify('{"integer":9007199254740993,"decimal":0.123456789012345678901234567890}');
+    const raw = JSON.stringify(
+      '{"integer":9007199254740993,"decimal":0.123456789012345678901234567890}',
+    );
     Object.assign(snapshot.tables.data_change_logs[0]!, {
-      action: "archived", entityType: "product", entityKey: "legacy-product",
-      draftId: null, importBatchId: null, beforeData: raw, afterData: raw,
+      action: "archived",
+      entityType: "product",
+      entityKey: "legacy-product",
+      draftId: null,
+      importBatchId: null,
+      beforeData: raw,
+      afterData: raw,
     });
     const validated = parseGovernanceSnapshot(snapshot);
-    const restore = () => database.transaction((transaction) =>
-      restoreGovernanceSnapshotInTransaction(transaction, validated),
-    );
+    const restore = () =>
+      database.transaction((transaction) =>
+        restoreGovernanceSnapshotInTransaction(transaction, validated),
+      );
     await restore();
-    const read = () => client.query<{beforeData: string; afterData: string; kind: string}>(
-      `select before_data::text as "beforeData", after_data::text as "afterData",
-              jsonb_typeof(after_data) as kind from data_change_logs where id = $1`, [ids.log],
-    );
-    const expected = {beforeData: raw, afterData: raw, kind: "string"};
+    const read = () =>
+      client.query<{ beforeData: string; afterData: string; kind: string }>(
+        `select before_data::text as "beforeData", after_data::text as "afterData",
+              jsonb_typeof(after_data) as kind from data_change_logs where id = $1`,
+        [ids.log],
+      );
+    const expected = { beforeData: raw, afterData: raw, kind: "string" };
     expect((await read()).rows).toEqual([expected]);
-    await client.query(`update data_change_logs set before_data = '{}', after_data = '{}' where id = $1`, [ids.log]);
+    await client.query(
+      `update data_change_logs set before_data = '{}', after_data = '{}' where id = $1`,
+      [ids.log],
+    );
     await restore();
     expect((await read()).rows).toEqual([expected]);
     const physical = await readPhysicalGovernanceState(client);
@@ -699,8 +714,7 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     snapshot.tables.data_governance_drafts[0]!.payload = exactJson;
     snapshot.tables.data_change_logs[0]!.beforeData = exactJson;
     snapshot.tables.data_change_logs[0]!.afterData = exactJson;
-    snapshot.tables.market_import_batches[0]!.previewRows =
-      `[{"parsed":${exactJson},"rowNumber":1}]`;
+    snapshot.tables.market_import_batches[0]!.previewRows = `[{"parsed":${exactJson},"rowNumber":1}]`;
     snapshot.tables.market_import_batches[0]!.validationErrors =
       '[{"field":null,"message":"exact","rowNumber":1}]';
 
@@ -817,7 +831,9 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
   it("fails the whole restore when an external foreign key blocks physical deletion", async () => {
     const { client, database } = await createTestDatabase();
     openClients.push(client);
-    await seedRowsOutsideSnapshot(client, { withExternalSourceReference: true });
+    await seedRowsOutsideSnapshot(client, {
+      withExternalSourceReference: true,
+    });
 
     await expect(
       database.transaction((transaction) =>
@@ -943,8 +959,7 @@ describe("governance snapshot restore transaction", { timeout: 30_000 }, () => {
     );
 
     const conflicting = structuredClone(original);
-    const replacementRegulationId =
-      "00000000-0000-4000-8000-000000000096";
+    const replacementRegulationId = "00000000-0000-4000-8000-000000000096";
     conflicting.tables.regulations[0]!.id = replacementRegulationId;
     conflicting.tables.regulation_limits[0]!.regulationId =
       replacementRegulationId;

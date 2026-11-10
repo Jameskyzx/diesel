@@ -28,18 +28,36 @@ describe("Playwright server contracts", () => {
       "pnpm exec node --max-old-space-size=6144 --import tsx scripts/e2e/server.ts",
     );
     expect(server?.env).not.toHaveProperty("NODE_OPTIONS");
-    const heapFlag = server?.command.split(" ").find(argument => argument.startsWith("--max-old-space-size="));
-    if (!heapFlag) throw new Error("Missing bounded test-server heap argument.");
-    const result = spawnSync(process.execPath, [heapFlag, "--input-type=module", "--eval",
-      "import { getHeapStatistics } from 'node:v8'; process.stdout.write(String(getHeapStatistics().heap_size_limit));",
-    ], { encoding: "utf8", timeout: 10_000, env: { ...process.env, NODE_OPTIONS: "" } });
+    const heapFlag = server?.command
+      .split(" ")
+      .find((argument) => argument.startsWith("--max-old-space-size="));
+    if (!heapFlag)
+      throw new Error("Missing bounded test-server heap argument.");
+    const result = spawnSync(
+      process.execPath,
+      [
+        heapFlag,
+        "--input-type=module",
+        "--eval",
+        "import { getHeapStatistics } from 'node:v8'; process.stdout.write(String(getHeapStatistics().heap_size_limit));",
+      ],
+      {
+        encoding: "utf8",
+        timeout: 10_000,
+        env: { ...process.env, NODE_OPTIONS: "" },
+      },
+    );
     expect(result.error).toBeUndefined();
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
     expect(Number(result.stdout)).toBeGreaterThanOrEqual(6144 * 1024 * 1024);
     expect(Number(result.stdout)).toBeLessThan(6400 * 1024 * 1024);
-    expect(firstWebServer(productionConfig)?.command).toBe("pnpm start --hostname 127.0.0.1 --port 3400");
-    expect(firstWebServer(productionConfig)?.env).not.toHaveProperty("NODE_OPTIONS");
+    expect(firstWebServer(productionConfig)?.command).toBe(
+      "pnpm start --hostname 127.0.0.1 --port 3400",
+    );
+    expect(firstWebServer(productionConfig)?.env).not.toHaveProperty(
+      "NODE_OPTIONS",
+    );
   });
 
   it.each([
@@ -48,44 +66,79 @@ describe("Playwright server contracts", () => {
     ["true", ""],
     ["true", "master"],
     ["true", "A".repeat(40)],
-  ])("refuses paid live browser execution without explicit opt-in and an exact release (%s, %s)", (optIn, release) => {
-    const result = spawnSync(process.execPath, ["--import", "tsx", "playwright.live.config.ts"], {
-      encoding: "utf8",
-      timeout: 10_000,
-      env: { ...process.env, DIESEL_LIVE_ACCEPTANCE: optIn, DIESEL_LIVE_RELEASE: release },
-    });
-    expect(result.error).toBeUndefined();
-    expect(result.status).not.toBe(0);
-  });
+  ])(
+    "refuses paid live browser execution without explicit opt-in and an exact release (%s, %s)",
+    (optIn, release) => {
+      const result = spawnSync(
+        process.execPath,
+        ["--import", "tsx", "playwright.live.config.ts"],
+        {
+          encoding: "utf8",
+          timeout: 10_000,
+          env: {
+            ...process.env,
+            DIESEL_LIVE_ACCEPTANCE: optIn,
+            DIESEL_LIVE_RELEASE: release,
+          },
+        },
+      );
+      expect(result.error).toBeUndefined();
+      expect(result.status).not.toBe(0);
+    },
+  );
 
   it("bounds paid live acceptance to the production origin without retries or a local server", () => {
-    const result = spawnSync(process.execPath, [
-      "--import", "tsx", "--input-type=module", "--eval",
-      "const imported = (await import(process.argv[1])).default; process.stdout.write(JSON.stringify(imported.default ?? imported));",
-      pathToFileURL(resolve("playwright.live.config.ts")).href,
-    ], {
-      encoding: "utf8",
-      timeout: 10_000,
-      env: { ...process.env, DIESEL_LIVE_ACCEPTANCE: "true", DIESEL_LIVE_RELEASE: "a".repeat(40) },
-    });
+    const result = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "--input-type=module",
+        "--eval",
+        "const imported = (await import(process.argv[1])).default; process.stdout.write(JSON.stringify(imported.default ?? imported));",
+        pathToFileURL(resolve("playwright.live.config.ts")).href,
+      ],
+      {
+        encoding: "utf8",
+        timeout: 10_000,
+        env: {
+          ...process.env,
+          DIESEL_LIVE_ACCEPTANCE: "true",
+          DIESEL_LIVE_RELEASE: "a".repeat(40),
+        },
+      },
+    );
     expect(result.error).toBeUndefined();
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
     const config: unknown = JSON.parse(result.stdout);
     expect(config).toMatchObject({
-      testDir: "./e2e-live", forbidOnly: true, fullyParallel: false, workers: 1,
-      retries: 0, maxFailures: 1, timeout: 120_000, globalTimeout: 900_000,
+      testDir: "./e2e-live",
+      forbidOnly: true,
+      fullyParallel: false,
+      workers: 1,
+      retries: 0,
+      maxFailures: 1,
+      timeout: 120_000,
+      globalTimeout: 900_000,
       use: { baseURL: "https://diesel.jamesky.site", serviceWorkers: "block" },
     });
     expect(config).not.toHaveProperty("webServer");
   });
 
   it("leaves CI time for honest interruption receipts and prints case progress", async () => {
-    const result = spawnSync(process.execPath, [
-      "--import", "tsx", "--input-type=module", "--eval",
-      "const imported = (await import(process.argv[1])).default; const config = imported.default ?? imported; process.stdout.write(JSON.stringify({ globalTimeout: config.globalTimeout, timeout: config.timeout, retries: config.retries, reporter: config.reporter }));",
-      pathToFileURL(resolve("playwright.config.ts")).href,
-    ], { env: { ...process.env, CI: "true" }, encoding: "utf8" });
+    const result = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "--input-type=module",
+        "--eval",
+        "const imported = (await import(process.argv[1])).default; const config = imported.default ?? imported; process.stdout.write(JSON.stringify({ globalTimeout: config.globalTimeout, timeout: config.timeout, retries: config.retries, reporter: config.reporter }));",
+        pathToFileURL(resolve("playwright.config.ts")).href,
+      ],
+      { env: { ...process.env, CI: "true" }, encoding: "utf8" },
+    );
     expect(result.error).toBeUndefined();
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
@@ -95,27 +148,57 @@ describe("Playwright server contracts", () => {
       retries: 2,
       reporter: expect.arrayContaining([["github"], ["list"]]),
     });
-    const workflow = await readFile(resolve(".github/workflows/ci.yml"), "utf8");
-    const publicJob = workflow.split("\n  e2e:\n")[1]?.split("\n  portfolio-demo-e2e:\n")[0];
+    const workflow = await readFile(
+      resolve(".github/workflows/ci.yml"),
+      "utf8",
+    );
+    const publicJob = workflow
+      .split("\n  e2e:\n")[1]
+      ?.split("\n  portfolio-demo-e2e:\n")[0];
     expect(publicJob).toContain("    timeout-minutes: 60\n");
   });
 
   it("ignores generated HTML reports without ignoring authored test inputs", () => {
-    const result = spawnSync("/usr/bin/git", [
-      "-c", "core.excludesFile=/dev/null", "check-ignore", "--no-index", "-v", "--",
-      "playwright-demo-report/index.html", "playwright-report/index.html",
-      "e2e/demo.spec.ts", "scripts/e2e/server.ts",
-    ], {
-      cwd: process.cwd(),
-      env: { NODE_ENV: "test", PATH: "/usr/bin:/bin", GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" },
-      encoding: "utf8",
-    });
+    const result = spawnSync(
+      "/usr/bin/git",
+      [
+        "-c",
+        "core.excludesFile=/dev/null",
+        "check-ignore",
+        "--no-index",
+        "-v",
+        "--",
+        "playwright-demo-report/index.html",
+        "playwright-report/index.html",
+        "e2e/demo.spec.ts",
+        "scripts/e2e/server.ts",
+      ],
+      {
+        cwd: process.cwd(),
+        env: {
+          NODE_ENV: "test",
+          PATH: "/usr/bin:/bin",
+          GIT_CONFIG_GLOBAL: "/dev/null",
+          GIT_CONFIG_NOSYSTEM: "1",
+        },
+        encoding: "utf8",
+      },
+    );
     expect(result.error).toBeUndefined();
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
-    expect(result.stdout.trim().split("\n").map((line) => line.split("\t")[1]))
-      .toEqual(["playwright-demo-report/index.html", "playwright-report/index.html"]);
-    expect(result.stdout).toMatch(/\.gitignore:\d+:\/playwright-demo-report\t/u);
+    expect(
+      result.stdout
+        .trim()
+        .split("\n")
+        .map((line) => line.split("\t")[1]),
+    ).toEqual([
+      "playwright-demo-report/index.html",
+      "playwright-report/index.html",
+    ]);
+    expect(result.stdout).toMatch(
+      /\.gitignore:\d+:\/playwright-demo-report\t/u,
+    );
   });
 
   it("forbids test.only in every Playwright config on CI", () => {
@@ -185,9 +268,7 @@ describe("Playwright server contracts", () => {
   });
 
   it("uses explicit graceful teardown handshakes for every development server", () => {
-    expect(e2eConfig.globalTeardown).toBe(
-      "./scripts/e2e/global-teardown.ts",
-    );
+    expect(e2eConfig.globalTeardown).toBe("./scripts/e2e/global-teardown.ts");
     expect(demoConfig.globalTeardown).toBe(
       "./scripts/e2e/demo-global-teardown.ts",
     );
@@ -222,10 +303,7 @@ describe("Playwright server contracts", () => {
     );
 
     expect(knowledgeProject).toMatchObject({
-      dependencies: [
-        "desktop-chromium",
-        "core-webkit",
-      ],
+      dependencies: ["desktop-chromium", "core-webkit"],
       fullyParallel: false,
       testMatch: "knowledge.spec.ts",
     });

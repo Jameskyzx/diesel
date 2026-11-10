@@ -3,7 +3,10 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 import * as schema from "@/server/db/schema";
 import { catalogEngines, dataSources } from "@/server/db/schema";
-import { throwIfRequestAborted, type RequestSignalOptions } from "@/server/http/request-signal";
+import {
+  throwIfRequestAborted,
+  type RequestSignalOptions,
+} from "@/server/http/request-signal";
 
 export function createCatalogRepository<TQueryResult extends PgQueryResultHKT>(
   database: PgDatabase<TQueryResult, typeof schema>,
@@ -35,12 +38,14 @@ export function createCatalogRepository<TQueryResult extends PgQueryResultHKT>(
         })
         .from(catalogEngines)
         .innerJoin(dataSources, eq(catalogEngines.dataSourceId, dataSources.id))
-        .where(and(
-          isNull(catalogEngines.archivedAt),
-          isNull(dataSources.archivedAt),
-          eq(catalogEngines.isDemo, true),
-          eq(dataSources.isDemo, true),
-        ))
+        .where(
+          and(
+            isNull(catalogEngines.archivedAt),
+            isNull(dataSources.archivedAt),
+            eq(catalogEngines.isDemo, true),
+            eq(dataSources.isDemo, true),
+          ),
+        )
         .orderBy(asc(catalogEngines.modelCode));
       throwIfRequestAborted(options.signal);
       return rows;

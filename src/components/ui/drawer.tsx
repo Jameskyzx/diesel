@@ -58,10 +58,7 @@ function DrawerContent({
   );
 }
 
-function DrawerHeader({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn("grid gap-1.5 border-b px-7 py-5", className)}
@@ -71,10 +68,7 @@ function DrawerHeader({
   );
 }
 
-function DrawerFooter({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function DrawerFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn("mt-auto border-t px-7 py-4", className)}

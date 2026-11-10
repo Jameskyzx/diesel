@@ -24,7 +24,11 @@ import {
   countryCatalog,
   plannedCoverageIso3,
 } from "@/server/db/seed/country-catalog";
-import { demoCatalogDraftPayloads, demoCatalogSource, demoCatalogVerifiedAt } from "@/server/db/seed/demo-engine-catalog";
+import {
+  demoCatalogDraftPayloads,
+  demoCatalogSource,
+  demoCatalogVerifiedAt,
+} from "@/server/db/seed/demo-engine-catalog";
 import { demoFeedbackDraftPayloads } from "@/server/db/seed/demo-engine-feedback";
 
 const demoTimestamp = new Date("2026-01-15T00:00:00.000Z");
@@ -571,10 +575,8 @@ const demoDocuments = [
   },
 ] satisfies (typeof documents.$inferInsert)[];
 
-const demoRegulationChunkContent =
-  `${demoNotice} Searchable fictional source fixture for CHN non-road emissions regulation evidence, original text, section, and citation; 中国: 非道路排放法规; 原文、章节和来源证据。本片段不包含任何真实法规要求。`;
-const demoProductChunkContent =
-  `${demoNotice} This searchable chunk contains no real product specification.`;
+const demoRegulationChunkContent = `${demoNotice} Searchable fictional source fixture for CHN non-road emissions regulation evidence, original text, section, and citation; 中国: 非道路排放法规; 原文、章节和来源证据。本片段不包含任何真实法规要求。`;
+const demoProductChunkContent = `${demoNotice} This searchable chunk contains no real product specification.`;
 
 const demoDocumentChunks = [
   {
@@ -620,8 +622,14 @@ export async function seedDemoData<TQueryResult extends PgQueryResultHKT>(
   database: PgDatabase<TQueryResult, typeof schema>,
 ): Promise<void> {
   await database.transaction(async (transaction) => {
-    await transaction.insert(dataSources).values(demoSources).onConflictDoNothing();
-    await transaction.insert(countries).values(demoCountries).onConflictDoNothing();
+    await transaction
+      .insert(dataSources)
+      .values(demoSources)
+      .onConflictDoNothing();
+    await transaction
+      .insert(countries)
+      .values(demoCountries)
+      .onConflictDoNothing();
     await transaction
       .insert(countries)
       .values(catalogCountries)
@@ -642,15 +650,40 @@ export async function seedDemoData<TQueryResult extends PgQueryResultHKT>(
       .insert(regulationLimits)
       .values(demoRegulationLimits)
       .onConflictDoNothing();
-    await transaction.insert(products).values(demoProducts).onConflictDoNothing();
-    await transaction.insert(dataSources).values({ ...demoCatalogSource, createdAt: demoTimestamp,
-      updatedAt: demoTimestamp, verifiedAt: new Date(demoCatalogVerifiedAt) }).onConflictDoNothing();
-    await transaction.insert(catalogEngines).values(demoCatalogDraftPayloads().map((payload) => ({
-      ...payload, createdAt: demoTimestamp, updatedAt: demoTimestamp, verifiedAt: new Date(payload.verifiedAt),
-    }))).onConflictDoNothing();
-    await transaction.insert(engineFeedback).values(demoFeedbackDraftPayloads().map((payload) => ({
-      ...payload, createdAt: demoTimestamp, updatedAt: demoTimestamp,
-    }))).onConflictDoNothing();
+    await transaction
+      .insert(products)
+      .values(demoProducts)
+      .onConflictDoNothing();
+    await transaction
+      .insert(dataSources)
+      .values({
+        ...demoCatalogSource,
+        createdAt: demoTimestamp,
+        updatedAt: demoTimestamp,
+        verifiedAt: new Date(demoCatalogVerifiedAt),
+      })
+      .onConflictDoNothing();
+    await transaction
+      .insert(catalogEngines)
+      .values(
+        demoCatalogDraftPayloads().map((payload) => ({
+          ...payload,
+          createdAt: demoTimestamp,
+          updatedAt: demoTimestamp,
+          verifiedAt: new Date(payload.verifiedAt),
+        })),
+      )
+      .onConflictDoNothing();
+    await transaction
+      .insert(engineFeedback)
+      .values(
+        demoFeedbackDraftPayloads().map((payload) => ({
+          ...payload,
+          createdAt: demoTimestamp,
+          updatedAt: demoTimestamp,
+        })),
+      )
+      .onConflictDoNothing();
     await transaction
       .insert(productCertifications)
       .values(demoCertifications)
@@ -659,7 +692,10 @@ export async function seedDemoData<TQueryResult extends PgQueryResultHKT>(
       .insert(marketMetrics)
       .values(demoMarketMetrics)
       .onConflictDoNothing();
-    await transaction.insert(documents).values(demoDocuments).onConflictDoNothing();
+    await transaction
+      .insert(documents)
+      .values(demoDocuments)
+      .onConflictDoNothing();
     await transaction
       .insert(documentChunks)
       .values(demoDocumentChunks)

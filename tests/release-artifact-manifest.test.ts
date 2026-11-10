@@ -134,9 +134,7 @@ const TEST_INPUT_DIGEST = computeInputDigest(
 );
 
 async function createArtifactFixture(): Promise<ArtifactFixture> {
-  const deployRoot = await mkdtemp(
-    join(tmpdir(), "diesel-release-artifacts-"),
-  );
+  const deployRoot = await mkdtemp(join(tmpdir(), "diesel-release-artifacts-"));
   temporaryRoots.push(deployRoot);
   const root = join(deployRoot, "releases", TEST_RELEASE_SHA);
   const cachePath = join(root, ".next", "cache");
@@ -181,12 +179,16 @@ async function createArtifactFixture(): Promise<ArtifactFixture> {
     ),
     writeFile(
       inputPath,
-      `${JSON.stringify({
-        commit: TEST_RELEASE_SHA,
-        files: TEST_INPUT_FILES,
-        format: "diesel-release-input-v2",
-        inputDigest: TEST_INPUT_DIGEST,
-      }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          commit: TEST_RELEASE_SHA,
+          files: TEST_INPUT_FILES,
+          format: "diesel-release-input-v2",
+          inputDigest: TEST_INPUT_DIGEST,
+        },
+        null,
+        2,
+      )}\n`,
       "utf8",
     ),
   ]);
@@ -232,10 +234,7 @@ async function installRuntimeLinks(fixture: ArtifactFixture): Promise<void> {
       join(deployRoot, "shared", ".env.production.local"),
       join(fixture.root, ".env.production.local"),
     ),
-    symlink(
-      join(deployRoot, "shared", ".data"),
-      join(fixture.root, ".data"),
-    ),
+    symlink(join(deployRoot, "shared", ".data"), join(fixture.root, ".data")),
   ]);
 }
 
@@ -245,19 +244,23 @@ async function runArtifactCommand(
   commit = TEST_RELEASE_SHA,
   activationIdentity?: ActivationIdentityArguments,
 ): Promise<string> {
-  const args = command === "check-ready"
-    ? [
-        "--input-type=module",
-        "--eval",
-        artifactCheckReadyHarness,
-        commit,
-        ".build-complete",
-        ".deploy-ready",
-      ]
-    : [artifactManifestScript, command, commit, ".build-complete"];
+  const args =
+    command === "check-ready"
+      ? [
+          "--input-type=module",
+          "--eval",
+          artifactCheckReadyHarness,
+          commit,
+          ".build-complete",
+          ".deploy-ready",
+        ]
+      : [artifactManifestScript, command, commit, ".build-complete"];
   if (command === "finalize") args.push(".deploy-ready");
   if (command === "check-ready") {
-    if (typeof process.getuid !== "function" || typeof process.getgid !== "function") {
+    if (
+      typeof process.getuid !== "function" ||
+      typeof process.getgid !== "function"
+    ) {
       throw new Error("release artifact tests require Unix numeric identities");
     }
     const uid = String(process.getuid());
@@ -295,9 +298,9 @@ async function readMarker(path: string): Promise<ArtifactMarker> {
 
 afterEach(async () => {
   await Promise.all(
-    temporaryRoots.splice(0).map((path) =>
-      rm(path, { force: true, recursive: true })
-    ),
+    temporaryRoots
+      .splice(0)
+      .map((path) => rm(path, { force: true, recursive: true })),
   );
 });
 
@@ -379,16 +382,28 @@ describe("release artifact manifest", () => {
     await writeFile(fixture.nextFilePath, "server artifact B\n", "utf8");
 
     const failure = await runArtifactFailure(fixture, "verify");
-    expect(String(failure.stderr)).toContain("artifacts or bound release metadata drifted");
+    expect(String(failure.stderr)).toContain(
+      "artifacts or bound release metadata drifted",
+    );
   });
 
   it.each([
-    ["added", async (fixture: ArtifactFixture) => {
-      await writeFile(join(fixture.root, ".next", "extra.js"), "extra\n", "utf8");
-    }],
-    ["deleted", async (fixture: ArtifactFixture) => {
-      await rm(fixture.nodeFilePath);
-    }],
+    [
+      "added",
+      async (fixture: ArtifactFixture) => {
+        await writeFile(
+          join(fixture.root, ".next", "extra.js"),
+          "extra\n",
+          "utf8",
+        );
+      },
+    ],
+    [
+      "deleted",
+      async (fixture: ArtifactFixture) => {
+        await rm(fixture.nodeFilePath);
+      },
+    ],
   ])("detects an %s artifact path", async (_label, mutate) => {
     const fixture = await createArtifactFixture();
     await runArtifactCommand(fixture, "create");
@@ -478,9 +493,17 @@ describe("release artifact manifest", () => {
     const fixture = await createArtifactFixture();
     const cachePath = join(fixture.root, ".next", "cache");
     const digest = await runArtifactCommand(fixture, "create");
-    await writeFile(join(cachePath, "mutable.bin"), "cache v2 changed\n", "utf8");
+    await writeFile(
+      join(cachePath, "mutable.bin"),
+      "cache v2 changed\n",
+      "utf8",
+    );
     await mkdir(join(cachePath, "nested"));
-    await writeFile(join(cachePath, "nested", "new.bin"), "new cache\n", "utf8");
+    await writeFile(
+      join(cachePath, "nested", "new.bin"),
+      "new cache\n",
+      "utf8",
+    );
 
     await expect(runArtifactCommand(fixture, "verify")).resolves.toBe(digest);
 
@@ -491,17 +514,27 @@ describe("release artifact manifest", () => {
   });
 
   it.each([
-    ["Next BUILD_ID", async (fixture: ArtifactFixture) => {
-      await writeFile(fixture.buildIdPath, "next-build-2\n", "utf8");
-    }],
-    ["input digest", async (fixture: ArtifactFixture) => {
-      const inputPath = join(fixture.root, ".release-input-manifest.json");
-      const input = JSON.parse(await readFile(inputPath, "utf8")) as {
-        inputDigest: string;
-      } & Record<string, unknown>;
-      input.inputDigest = "c".repeat(64);
-      await writeFile(inputPath, `${JSON.stringify(input, null, 2)}\n`, "utf8");
-    }],
+    [
+      "Next BUILD_ID",
+      async (fixture: ArtifactFixture) => {
+        await writeFile(fixture.buildIdPath, "next-build-2\n", "utf8");
+      },
+    ],
+    [
+      "input digest",
+      async (fixture: ArtifactFixture) => {
+        const inputPath = join(fixture.root, ".release-input-manifest.json");
+        const input = JSON.parse(await readFile(inputPath, "utf8")) as {
+          inputDigest: string;
+        } & Record<string, unknown>;
+        input.inputDigest = "c".repeat(64);
+        await writeFile(
+          inputPath,
+          `${JSON.stringify(input, null, 2)}\n`,
+          "utf8",
+        );
+      },
+    ],
   ])("detects %s metadata drift", async (_label, mutate) => {
     const fixture = await createArtifactFixture();
     await runArtifactCommand(fixture, "create");
@@ -565,101 +598,165 @@ describe("release artifact manifest", () => {
   });
 
   it.each([
-    ["Nginx input", async (fixture: ArtifactFixture) => {
-      await writeFile(
-        join(fixture.root, "deploy", "nginx", "jamesky.site.conf"),
-        "server { listen 80; }\n",
-        "utf8",
-      );
-    }],
-    ["ecosystem input", async (fixture: ArtifactFixture) => {
-      await writeFile(
-        join(fixture.root, "ecosystem.config.cjs"),
-        "module.exports = { apps: [{ name: 'tampered' }] };\n",
-        "utf8",
-      );
-    }],
-    ["unexpected input path", async (fixture: ArtifactFixture) => {
-      await writeFile(join(fixture.root, "untracked-runtime.js"), "unsafe\n", "utf8");
-    }],
-    ["unexpected empty input directory", async (fixture: ArtifactFixture) => {
-      await mkdir(join(fixture.root, "untracked-empty-directory"));
-    }],
-    ["group-writable release directory", async (fixture: ArtifactFixture) => {
-      await chmod(fixture.root, 0o770);
-    }],
-    ["group-writable releases directory", async (fixture: ArtifactFixture) => {
-      await chmod(resolve(fixture.root, ".."), 0o777);
-    }],
-    ["group-writable deploy root", async (fixture: ArtifactFixture) => {
-      await chmod(resolve(fixture.root, "..", ".."), 0o777);
-    }],
-    ["group-writable tracked input", async (fixture: ArtifactFixture) => {
-      await chmod(join(fixture.root, "package.json"), 0o660);
-    }],
-    ["under-permissioned tracked input", async (fixture: ArtifactFixture) => {
-      await chmod(join(fixture.root, "package.json"), 0o600);
-    }],
-    ["group-writable tracked input directory", async (fixture: ArtifactFixture) => {
-      await chmod(join(fixture.root, "deploy"), 0o770);
-    }],
-    ["group-writable artifact", async (fixture: ArtifactFixture) => {
-      await chmod(fixture.nodeFilePath, 0o660);
-    }],
-    ["under-permissioned artifact", async (fixture: ArtifactFixture) => {
-      await chmod(fixture.nodeFilePath, 0o600);
-    }],
-    ["group-writable artifact directory", async (fixture: ArtifactFixture) => {
-      await chmod(join(fixture.root, ".next", "server"), 0o770);
-    }],
-    ["group-writable input manifest", async (fixture: ArtifactFixture) => {
-      await chmod(
-        join(fixture.root, ".release-input-manifest.json"),
-        0o660,
-      );
-    }],
-    ["group-writable build marker", async (fixture: ArtifactFixture) => {
-      await chmod(fixture.markerPath, 0o660);
-    }],
-    ["group-writable deploy-ready marker", async (fixture: ArtifactFixture) => {
-      await chmod(fixture.readyPath, 0o660);
-    }],
-    ["environment runtime link", async (fixture: ArtifactFixture) => {
-      const path = join(fixture.root, ".env.production.local");
-      await rm(path);
-      await symlink(join(fixture.root, "package.json"), path);
-    }],
-    ["symlinked shared runtime directory", async (fixture: ArtifactFixture) => {
-      const deployRoot = resolve(fixture.root, "..", "..");
-      const sharedPath = join(deployRoot, "shared");
-      const externalPath = join(deployRoot, "external-shared");
-      await rename(sharedPath, externalPath);
-      await symlink(externalPath, sharedPath);
-    }],
-    ["hardlinked environment target", async (fixture: ArtifactFixture) => {
-      const sharedPath = join(fixture.root, "..", "..", "shared");
-      await link(
-        join(sharedPath, ".env.production.local"),
-        join(sharedPath, "environment-hardlink"),
-      );
-    }],
-    ["world-writable environment target", async (fixture: ArtifactFixture) => {
-      await chmod(
-        join(fixture.root, "..", "..", "shared", ".env.production.local"),
-        0o666,
-      );
-    }],
-    ["data runtime link", async (fixture: ArtifactFixture) => {
-      const path = join(fixture.root, ".data");
-      await rm(path);
-      await symlink(join(fixture.root, "deploy"), path);
-    }],
-    ["group-writable data target", async (fixture: ArtifactFixture) => {
-      await chmod(
-        join(fixture.root, "..", "..", "shared", ".data"),
-        0o770,
-      );
-    }],
+    [
+      "Nginx input",
+      async (fixture: ArtifactFixture) => {
+        await writeFile(
+          join(fixture.root, "deploy", "nginx", "jamesky.site.conf"),
+          "server { listen 80; }\n",
+          "utf8",
+        );
+      },
+    ],
+    [
+      "ecosystem input",
+      async (fixture: ArtifactFixture) => {
+        await writeFile(
+          join(fixture.root, "ecosystem.config.cjs"),
+          "module.exports = { apps: [{ name: 'tampered' }] };\n",
+          "utf8",
+        );
+      },
+    ],
+    [
+      "unexpected input path",
+      async (fixture: ArtifactFixture) => {
+        await writeFile(
+          join(fixture.root, "untracked-runtime.js"),
+          "unsafe\n",
+          "utf8",
+        );
+      },
+    ],
+    [
+      "unexpected empty input directory",
+      async (fixture: ArtifactFixture) => {
+        await mkdir(join(fixture.root, "untracked-empty-directory"));
+      },
+    ],
+    [
+      "group-writable release directory",
+      async (fixture: ArtifactFixture) => {
+        await chmod(fixture.root, 0o770);
+      },
+    ],
+    [
+      "group-writable releases directory",
+      async (fixture: ArtifactFixture) => {
+        await chmod(resolve(fixture.root, ".."), 0o777);
+      },
+    ],
+    [
+      "group-writable deploy root",
+      async (fixture: ArtifactFixture) => {
+        await chmod(resolve(fixture.root, "..", ".."), 0o777);
+      },
+    ],
+    [
+      "group-writable tracked input",
+      async (fixture: ArtifactFixture) => {
+        await chmod(join(fixture.root, "package.json"), 0o660);
+      },
+    ],
+    [
+      "under-permissioned tracked input",
+      async (fixture: ArtifactFixture) => {
+        await chmod(join(fixture.root, "package.json"), 0o600);
+      },
+    ],
+    [
+      "group-writable tracked input directory",
+      async (fixture: ArtifactFixture) => {
+        await chmod(join(fixture.root, "deploy"), 0o770);
+      },
+    ],
+    [
+      "group-writable artifact",
+      async (fixture: ArtifactFixture) => {
+        await chmod(fixture.nodeFilePath, 0o660);
+      },
+    ],
+    [
+      "under-permissioned artifact",
+      async (fixture: ArtifactFixture) => {
+        await chmod(fixture.nodeFilePath, 0o600);
+      },
+    ],
+    [
+      "group-writable artifact directory",
+      async (fixture: ArtifactFixture) => {
+        await chmod(join(fixture.root, ".next", "server"), 0o770);
+      },
+    ],
+    [
+      "group-writable input manifest",
+      async (fixture: ArtifactFixture) => {
+        await chmod(join(fixture.root, ".release-input-manifest.json"), 0o660);
+      },
+    ],
+    [
+      "group-writable build marker",
+      async (fixture: ArtifactFixture) => {
+        await chmod(fixture.markerPath, 0o660);
+      },
+    ],
+    [
+      "group-writable deploy-ready marker",
+      async (fixture: ArtifactFixture) => {
+        await chmod(fixture.readyPath, 0o660);
+      },
+    ],
+    [
+      "environment runtime link",
+      async (fixture: ArtifactFixture) => {
+        const path = join(fixture.root, ".env.production.local");
+        await rm(path);
+        await symlink(join(fixture.root, "package.json"), path);
+      },
+    ],
+    [
+      "symlinked shared runtime directory",
+      async (fixture: ArtifactFixture) => {
+        const deployRoot = resolve(fixture.root, "..", "..");
+        const sharedPath = join(deployRoot, "shared");
+        const externalPath = join(deployRoot, "external-shared");
+        await rename(sharedPath, externalPath);
+        await symlink(externalPath, sharedPath);
+      },
+    ],
+    [
+      "hardlinked environment target",
+      async (fixture: ArtifactFixture) => {
+        const sharedPath = join(fixture.root, "..", "..", "shared");
+        await link(
+          join(sharedPath, ".env.production.local"),
+          join(sharedPath, "environment-hardlink"),
+        );
+      },
+    ],
+    [
+      "world-writable environment target",
+      async (fixture: ArtifactFixture) => {
+        await chmod(
+          join(fixture.root, "..", "..", "shared", ".env.production.local"),
+          0o666,
+        );
+      },
+    ],
+    [
+      "data runtime link",
+      async (fixture: ArtifactFixture) => {
+        const path = join(fixture.root, ".data");
+        await rm(path);
+        await symlink(join(fixture.root, "deploy"), path);
+      },
+    ],
+    [
+      "group-writable data target",
+      async (fixture: ArtifactFixture) => {
+        await chmod(join(fixture.root, "..", "..", "shared", ".data"), 0o770);
+      },
+    ],
   ])("rejects post-finalize %s drift", async (_label, mutate) => {
     const fixture = await createArtifactFixture();
     await runArtifactCommand(fixture, "create");
@@ -680,7 +777,7 @@ describe("release artifact manifest", () => {
     await mkdir(join(dataPath, "runtime-write"));
     await writeFile(
       join(dataPath, "runtime-write", "state.json"),
-      "{\"ok\":true}\n",
+      '{"ok":true}\n',
       "utf8",
     );
 
@@ -702,17 +799,21 @@ describe("release artifact manifest", () => {
     await installRuntimeLinks(fixture);
     const uid = String(process.getuid());
     const gid = String(process.getgid());
-    const result = await execFileAsync(process.execPath, [
-      artifactManifestScript,
-      "check-ready",
-      TEST_RELEASE_SHA,
-      ".build-complete",
-      ".deploy-ready",
-      uid,
-      gid,
-      uid,
-      gid,
-    ], { cwd: fixture.root }).then(
+    const result = await execFileAsync(
+      process.execPath,
+      [
+        artifactManifestScript,
+        "check-ready",
+        TEST_RELEASE_SHA,
+        ".build-complete",
+        ".deploy-ready",
+        uid,
+        gid,
+        uid,
+        gid,
+      ],
+      { cwd: fixture.root },
+    ).then(
       () => null,
       (error: unknown) => error,
     );
@@ -730,7 +831,9 @@ describe("release artifact manifest", () => {
         typeof process.getuid !== "function" ||
         typeof process.getgid !== "function"
       ) {
-        throw new Error("release artifact tests require Unix numeric identities");
+        throw new Error(
+          "release artifact tests require Unix numeric identities",
+        );
       }
       const fixture = await createArtifactFixture();
       await runArtifactCommand(fixture, "create");
@@ -739,9 +842,10 @@ describe("release artifact manifest", () => {
       const uid = String(process.getuid());
       const gid = String(process.getgid());
       const wrongId = String((Number(gid) + 1) % 0xffffffff);
-      const identity: ActivationIdentityArguments = identityKind === "immutable"
-        ? [uid, wrongId, uid, gid]
-        : [uid, gid, uid, wrongId];
+      const identity: ActivationIdentityArguments =
+        identityKind === "immutable"
+          ? [uid, wrongId, uid, gid]
+          : [uid, gid, uid, wrongId];
 
       const failure = await runArtifactFailure(
         fixture,

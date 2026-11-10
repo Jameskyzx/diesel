@@ -17,18 +17,78 @@ import { CANADA_COMPLETENESS_SIGNOFF_ISO } from "../scripts/db/ingest-signoff";
 describe("accepted fixture target selection", () => {
   const limits = buildFixtureLimits();
   const twelveCountrySourceOnlyGraphs = [
-    ["BRN", acceptanceFixtureIds.jurisdiction.brunei, acceptanceFixtureIds.source.bruneiEnvironment, acceptanceFixtureIds.source.bruneiTransport],
-    ["BTN", acceptanceFixtureIds.jurisdiction.bhutan, acceptanceFixtureIds.source.bhutanEnvironment, acceptanceFixtureIds.source.bhutanTransport],
-    ["SLB", acceptanceFixtureIds.jurisdiction.solomonIslands, acceptanceFixtureIds.source.solomonIslandsEnvironment, acceptanceFixtureIds.source.solomonIslandsTransport],
-    ["TLS", acceptanceFixtureIds.jurisdiction.timorLeste, acceptanceFixtureIds.source.timorLesteEnvironment, acceptanceFixtureIds.source.timorLesteTransport],
-    ["MWI", acceptanceFixtureIds.jurisdiction.malawi, acceptanceFixtureIds.source.malawiGovernment, acceptanceFixtureIds.source.malawiTransport],
-    ["SLE", acceptanceFixtureIds.jurisdiction.sierraLeone, acceptanceFixtureIds.source.sierraLeoneEnvironment, acceptanceFixtureIds.source.sierraLeoneTransport],
-    ["SOM", acceptanceFixtureIds.jurisdiction.somalia, acceptanceFixtureIds.source.somaliaEnvironment, acceptanceFixtureIds.source.somaliaTransport],
-    ["SSD", acceptanceFixtureIds.jurisdiction.southSudan, acceptanceFixtureIds.source.southSudanEnvironment, acceptanceFixtureIds.source.southSudanTransport],
-    ["TCD", acceptanceFixtureIds.jurisdiction.chad, acceptanceFixtureIds.source.chadEnvironment, acceptanceFixtureIds.source.chadTransport],
-    ["SLV", acceptanceFixtureIds.jurisdiction.elSalvador, acceptanceFixtureIds.source.elSalvadorEnvironment, acceptanceFixtureIds.source.elSalvadorTransport],
-    ["SUR", acceptanceFixtureIds.jurisdiction.suriname, acceptanceFixtureIds.source.surinameEnvironment, acceptanceFixtureIds.source.surinameTransport],
-    ["TTO", acceptanceFixtureIds.jurisdiction.trinidadTobago, acceptanceFixtureIds.source.trinidadTobagoEnvironment, acceptanceFixtureIds.source.trinidadTobagoTransport],
+    [
+      "BRN",
+      acceptanceFixtureIds.jurisdiction.brunei,
+      acceptanceFixtureIds.source.bruneiEnvironment,
+      acceptanceFixtureIds.source.bruneiTransport,
+    ],
+    [
+      "BTN",
+      acceptanceFixtureIds.jurisdiction.bhutan,
+      acceptanceFixtureIds.source.bhutanEnvironment,
+      acceptanceFixtureIds.source.bhutanTransport,
+    ],
+    [
+      "SLB",
+      acceptanceFixtureIds.jurisdiction.solomonIslands,
+      acceptanceFixtureIds.source.solomonIslandsEnvironment,
+      acceptanceFixtureIds.source.solomonIslandsTransport,
+    ],
+    [
+      "TLS",
+      acceptanceFixtureIds.jurisdiction.timorLeste,
+      acceptanceFixtureIds.source.timorLesteEnvironment,
+      acceptanceFixtureIds.source.timorLesteTransport,
+    ],
+    [
+      "MWI",
+      acceptanceFixtureIds.jurisdiction.malawi,
+      acceptanceFixtureIds.source.malawiGovernment,
+      acceptanceFixtureIds.source.malawiTransport,
+    ],
+    [
+      "SLE",
+      acceptanceFixtureIds.jurisdiction.sierraLeone,
+      acceptanceFixtureIds.source.sierraLeoneEnvironment,
+      acceptanceFixtureIds.source.sierraLeoneTransport,
+    ],
+    [
+      "SOM",
+      acceptanceFixtureIds.jurisdiction.somalia,
+      acceptanceFixtureIds.source.somaliaEnvironment,
+      acceptanceFixtureIds.source.somaliaTransport,
+    ],
+    [
+      "SSD",
+      acceptanceFixtureIds.jurisdiction.southSudan,
+      acceptanceFixtureIds.source.southSudanEnvironment,
+      acceptanceFixtureIds.source.southSudanTransport,
+    ],
+    [
+      "TCD",
+      acceptanceFixtureIds.jurisdiction.chad,
+      acceptanceFixtureIds.source.chadEnvironment,
+      acceptanceFixtureIds.source.chadTransport,
+    ],
+    [
+      "SLV",
+      acceptanceFixtureIds.jurisdiction.elSalvador,
+      acceptanceFixtureIds.source.elSalvadorEnvironment,
+      acceptanceFixtureIds.source.elSalvadorTransport,
+    ],
+    [
+      "SUR",
+      acceptanceFixtureIds.jurisdiction.suriname,
+      acceptanceFixtureIds.source.surinameEnvironment,
+      acceptanceFixtureIds.source.surinameTransport,
+    ],
+    [
+      "TTO",
+      acceptanceFixtureIds.jurisdiction.trinidadTobago,
+      acceptanceFixtureIds.source.trinidadTobagoEnvironment,
+      acceptanceFixtureIds.source.trinidadTobagoTransport,
+    ],
   ] as const;
 
   it("applies the signed publication boundary to USA target and full selection", () => {
@@ -153,10 +213,7 @@ describe("accepted fixture target selection", () => {
     const targets = portfolioReleaseCountryIso3s.map((countryIso3) =>
       buildTargetSelection(countryIso3, limits),
     );
-    const full = buildFullIngestSelection(
-      portfolioReleaseCountryIso3s,
-      limits,
-    );
+    const full = buildFullIngestSelection(portfolioReleaseCountryIso3s, limits);
     const targetJurisdictionIds = new Set(
       targets.flatMap((target) => [...target.jurisdictionIds]),
     );
@@ -288,8 +345,7 @@ describe("accepted fixture target selection", () => {
     expect(
       new Set(
         nonroadRows.map(
-          (row) =>
-            `${row.powerMinKw}-${row.powerMaxKw}:${row.testCycleCode}`,
+          (row) => `${row.powerMinKw}-${row.powerMaxKw}:${row.testCycleCode}`,
         ),
       ),
     ).toEqual(
@@ -348,12 +404,19 @@ describe("accepted fixture target selection", () => {
     const full = buildFullIngestSelection(countryIso3s, limits);
 
     expect(full.jurisdictionIds).toEqual(
-      new Set(twelveCountrySourceOnlyGraphs.map(([, jurisdictionId]) => jurisdictionId)),
+      new Set(
+        twelveCountrySourceOnlyGraphs.map(
+          ([, jurisdictionId]) => jurisdictionId,
+        ),
+      ),
     );
     expect(full.sourceIds).toEqual(
       new Set(
         twelveCountrySourceOnlyGraphs.flatMap(
-          ([, , firstSourceId, secondSourceId]) => [firstSourceId, secondSourceId],
+          ([, , firstSourceId, secondSourceId]) => [
+            firstSourceId,
+            secondSourceId,
+          ],
         ),
       ),
     );
@@ -500,8 +563,7 @@ describe("accepted fixture target selection", () => {
       "GNQ",
       acceptanceFixtureIds.jurisdiction.equatorialGuinea,
       acceptanceFixtureIds.source.equatorialGuineaEnvironmentalLaw7_2003,
-      acceptanceFixtureIds.source
-        .equatorialGuineaGeneralRoadTransportLaw4_2018,
+      acceptanceFixtureIds.source.equatorialGuineaGeneralRoadTransportLaw4_2018,
     ],
   ] as const)(
     "selects %s exact two-source no-data graph after source-currentness review",
@@ -749,9 +811,7 @@ describe("accepted fixture target selection", () => {
   it("keeps the complete fixture membership graph closed over the signed regulation allowlist", () => {
     const countryIso3s = [
       ...new Set(
-        fixtureCountryJurisdictions.map(
-          (membership) => membership.countryIso3,
-        ),
+        fixtureCountryJurisdictions.map((membership) => membership.countryIso3),
       ),
     ];
     const full = buildFullIngestSelection(countryIso3s, limits);
@@ -760,10 +820,7 @@ describe("accepted fixture target selection", () => {
   });
 
   it("builds a closed full-ingest graph from signed country memberships", () => {
-    const selection = buildFullIngestSelection(
-      ["IND", "THA"],
-      limits,
-    );
+    const selection = buildFullIngestSelection(["IND", "THA"], limits);
 
     expect(selection.jurisdictionIds).toContain(
       acceptanceFixtureIds.jurisdiction.india,
@@ -848,9 +905,7 @@ describe("accepted fixture target selection", () => {
       new Set([acceptanceFixtureIds.jurisdiction.sriLanka]),
     );
     expect(selection.regulationIds).toEqual(
-      new Set([
-        acceptanceFixtureIds.regulation.sriLankaVehicleEmission2018,
-      ]),
+      new Set([acceptanceFixtureIds.regulation.sriLankaVehicleEmission2018]),
     );
     expect(selection.sourceIds).toEqual(
       new Set([
@@ -935,10 +990,7 @@ describe("accepted fixture target selection", () => {
 
       expect(
         memberships
-          .map((membership) => [
-            membership.countryIso3,
-            membership.validFrom,
-          ])
+          .map((membership) => [membership.countryIso3, membership.validFrom])
           .sort(([left], [right]) => left.localeCompare(right)),
       ).toEqual(expectedMemberships);
     }
@@ -988,9 +1040,7 @@ describe("accepted fixture target selection", () => {
 
     expect(selection.jurisdictionIds.size).toBe(1);
     expect(selection.regulationIds).toEqual(
-      new Set([
-        acceptanceFixtureIds.regulation.uzbekistanAgricultureStageIIIA,
-      ]),
+      new Set([acceptanceFixtureIds.regulation.uzbekistanAgricultureStageIIIA]),
     );
     expect(selection.limitRows).toHaveLength(3);
     expect(selection.sourceIds.size).toBe(2);
@@ -1433,10 +1483,7 @@ describe("accepted fixture target selection", () => {
   });
 
   it("builds a closed full-ingest no-data graph for retired DZA, ETH, and NGA regulations", () => {
-    const selection = buildFullIngestSelection(
-      ["DZA", "ETH", "NGA"],
-      limits,
-    );
+    const selection = buildFullIngestSelection(["DZA", "ETH", "NGA"], limits);
 
     expect(selection.jurisdictionIds.size).toBe(3);
     expect(selection.regulationIds).toEqual(new Set());

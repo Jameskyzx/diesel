@@ -27,10 +27,11 @@ import {
   productFitStatusSchema,
 } from "@/features/product-fit/schemas";
 
-const productFitQueryProjectionSchema = findCompatibleProductsResultSchema.shape.query
-  .omit({ productModelCode: true })
-  .extend({ productModelCode: z.string().trim().min(1).max(100).nullable() })
-  .strict();
+const productFitQueryProjectionSchema =
+  findCompatibleProductsResultSchema.shape.query
+    .omit({ productModelCode: true })
+    .extend({ productModelCode: z.string().trim().min(1).max(100).nullable() })
+    .strict();
 
 const productFitCheckProjectionSchema = z
   .object({
@@ -166,7 +167,8 @@ function productFitFactSourceIds(
 ): string[] {
   const sourceIds: string[] = [];
   for (const evaluation of evaluations) {
-    if (evaluation.product !== null) sourceIds.push(evaluation.product.sourceId);
+    if (evaluation.product !== null)
+      sourceIds.push(evaluation.product.sourceId);
     for (const check of evaluation.regulationChecks) {
       sourceIds.push(
         check.regulation.sourceId,
@@ -217,7 +219,8 @@ function productFitCitationMatchesFact(
       if (
         citation.entityId === regulation.applicability.jurisdiction.id &&
         ((citation.entityType === "jurisdiction" &&
-          citation.sourceId === regulation.applicability.jurisdiction.sourceId) ||
+          citation.sourceId ===
+            regulation.applicability.jurisdiction.sourceId) ||
           (citation.entityType === "country_jurisdiction" &&
             citation.sourceId === regulation.applicability.membership.sourceId))
       ) {
@@ -262,7 +265,12 @@ function refineProductFitProjection(
     output.evaluations.some(({ status }) => status !== "unknown");
   if (
     output.evidenceSufficient !== evidenceExpected ||
-    output.status !== (evidenceExpected ? "ok" : output.status === "error" ? "error" : "no_data")
+    output.status !==
+      (evidenceExpected
+        ? "ok"
+        : output.status === "error"
+          ? "error"
+          : "no_data")
   ) {
     context.addIssue({
       code: "custom",
@@ -372,8 +380,7 @@ export function compatibleProductsResultToModelOutput(output: unknown) {
       regulationChecks: evaluation.regulationChecks.map((check) => ({
         certifications: check.certifications.map((certificationCheck) => ({
           certification: {
-            applicationScope:
-              certificationCheck.certification.applicationScope,
+            applicationScope: certificationCheck.certification.applicationScope,
             certificateNumber:
               certificationCheck.certification.certificateNumber,
             id: certificationCheck.certification.id,
@@ -381,8 +388,7 @@ export function compatibleProductsResultToModelOutput(output: unknown) {
             powerMaxKw: certificationCheck.certification.powerMaxKw,
             powerMinKw: certificationCheck.certification.powerMinKw,
             productId: certificationCheck.certification.productId,
-            productModelCode:
-              certificationCheck.certification.productModelCode,
+            productModelCode: certificationCheck.certification.productModelCode,
             regulationId: certificationCheck.certification.regulationId,
             sourceId: certificationCheck.certification.source.id,
             status: certificationCheck.certification.status,
@@ -401,8 +407,7 @@ export function compatibleProductsResultToModelOutput(output: unknown) {
               id: check.regulation.applicability.jurisdiction.id,
               isDemo: check.regulation.applicability.jurisdiction.isDemo,
               name: check.regulation.applicability.jurisdiction.name,
-              sourceId:
-                check.regulation.applicability.jurisdiction.source.id,
+              sourceId: check.regulation.applicability.jurisdiction.source.id,
             },
             membership: {
               isDemo: check.regulation.applicability.membership.isDemo,

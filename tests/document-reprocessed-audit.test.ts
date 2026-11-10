@@ -141,19 +141,14 @@ function v2Marker() {
 describe("canonical document provenance audit parser", () => {
   it("selects strict draft_created provenance for v1 and reprocessed provenance for v2+", () => {
     expect(expectation(1, v1Marker())?.action).toBe("draft_created");
-    expect(expectation(2, v2Marker())?.action).toBe(
-      "document_reprocessed",
-    );
+    expect(expectation(2, v2Marker())?.action).toBe("document_reprocessed");
     expect(expectation(1, v2Marker())).toBeNull();
     expect(expectation(2, v1Marker())).toBeNull();
   });
 
   it.each([
     ["empty", []],
-    [
-      "multiple",
-      [supersededDraftId, "82000000-0000-4000-8000-000000000005"],
-    ],
+    ["multiple", [supersededDraftId, "82000000-0000-4000-8000-000000000005"]],
   ])("rejects a %s superseded draft lineage", (_label, supersededDraftIds) => {
     const marker = v2Marker();
     marker.afterData.supersededDraftIds = supersededDraftIds;
@@ -186,9 +181,9 @@ describe("canonical document provenance audit parser", () => {
       updatedAt: "2026-08-30T00:00:00.123000Z",
       verifiedAt: "2026-08-30T00:00:00.123000Z",
     };
-    expect(
-      createDocumentDataSourceFingerprintFromPayload(milliseconds),
-    ).toBe(createDocumentDataSourceFingerprintFromPayload(padded));
+    expect(createDocumentDataSourceFingerprintFromPayload(milliseconds)).toBe(
+      createDocumentDataSourceFingerprintFromPayload(padded),
+    );
     expect(
       createDocumentDataSourceFingerprint({
         ...milliseconds,
@@ -233,27 +228,42 @@ describe("canonical document provenance audit parser", () => {
   });
 
   it.each([
-    ["content", { content: "Replacement content.", contentHash: digest("Replacement content.") }],
+    [
+      "content",
+      {
+        content: "Replacement content.",
+        contentHash: digest("Replacement content."),
+      },
+    ],
     ["heading", { headingPath: ["Replacement heading"] }],
     ["page", { pageFrom: 2, pageTo: 2 }],
     ["section", { sectionLocator: "section-2" }],
     ["tokens", { tokenCount: 4 }],
-    ["embedding", { embedding: [0.5, ...Array.from({ length: 127 }, () => 0)] }],
+    [
+      "embedding",
+      { embedding: [0.5, ...Array.from({ length: 127 }, () => 0)] },
+    ],
     ["model", { embeddingModel: "replacement-model" }],
     ["scope", { applicationScope: "marine" }],
     ["country", { countryIso3: "CHN" }],
-    ["jurisdiction", { jurisdictionId: "82000000-0000-4000-8000-000000000004" }],
+    [
+      "jurisdiction",
+      { jurisdictionId: "82000000-0000-4000-8000-000000000004" },
+    ],
     ["demo", { isDemo: true }],
     ["validity", { validFrom: "2026-02-01" }],
     ["created microseconds", { createdAt: "2026-08-30T00:00:00.123789Z" }],
     ["updated microseconds", { updatedAt: "2026-08-30T00:00:00.123789Z" }],
     ["verified microseconds", { verifiedAt: "2026-08-30T00:00:00.123789Z" }],
-  ] as const)("changes the chunk-set fingerprint after %s drift", (_label, patch) => {
-    expect(
-      createDocumentChunkSetFingerprint({
-        chunks: [{ ...chunk, ...patch }],
-        processingStatus: "ready",
-      }),
-    ).not.toBe(chunkSetFingerprint);
-  });
+  ] as const)(
+    "changes the chunk-set fingerprint after %s drift",
+    (_label, patch) => {
+      expect(
+        createDocumentChunkSetFingerprint({
+          chunks: [{ ...chunk, ...patch }],
+          processingStatus: "ready",
+        }),
+      ).not.toBe(chunkSetFingerprint);
+    },
+  );
 });

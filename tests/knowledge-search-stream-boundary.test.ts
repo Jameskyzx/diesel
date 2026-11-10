@@ -1,9 +1,10 @@
-
-
 import { describe, expect, it, vi } from "vitest";
 
 import type { SearchKnowledgeBaseInput } from "@/features/ai/schemas";
-import { hybridSearchQuerySchema, type HybridSearchResponse } from "@/features/knowledge/schemas";
+import {
+  hybridSearchQuerySchema,
+  type HybridSearchResponse,
+} from "@/features/knowledge/schemas";
 import { createSalesChatTools } from "@/server/ai/sales-chat";
 import { currentUtcDate } from "@/server/ai/tool-results";
 
@@ -85,14 +86,11 @@ describe("knowledge-search stream evidence boundary", () => {
       limit: 1,
       query: "non-road Stage IV emission limits original text",
     };
-    await tools.searchKnowledgeBase.execute(
-      input,
-      {
-        context: undefined as never,
-        messages: [],
-        toolCallId: "normalized-knowledge-query",
-      },
-    );
+    await tools.searchKnowledgeBase.execute(input, {
+      context: undefined as never,
+      messages: [],
+      toolCallId: "normalized-knowledge-query",
+    });
 
     expect(hybridSearchKnowledge).toHaveBeenCalledWith(
       expect.objectContaining({ jurisdictionId: null, limit: 5 }),

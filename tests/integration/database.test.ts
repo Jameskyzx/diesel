@@ -96,10 +96,7 @@ describe("database migration and demo seed", () => {
   });
 
   it("atomically bounds distinct hourly clients across limiter instances", async () => {
-    const scopes = [
-      "integration-ai-chat-global",
-      "integration-ai-chat-client",
-    ];
+    const scopes = ["integration-ai-chat-global", "integration-ai-chat-client"];
     const requestLimit = 5;
     const windowMs = 60 * 60 * 1_000;
     const firstWindow = Date.UTC(2026, 8, 5, 12);
@@ -185,8 +182,7 @@ describe("database migration and demo seed", () => {
       expect(currentBuckets).toHaveLength(requestLimit + 3);
       expect(
         currentBuckets.filter(
-          ({ windowStart }) =>
-            windowStart.getTime() === firstWindow + windowMs,
+          ({ windowStart }) => windowStart.getTime() === firstWindow + windowMs,
         ),
       ).toHaveLength(2);
     } finally {
@@ -216,14 +212,18 @@ describe("database migration and demo seed", () => {
       .delete(apiRateLimitBuckets)
       .where(inArray(apiRateLimitBuckets.scope, scopes));
     try {
-      await expect(limiter.check("203.0.113.80", firstWindow)).resolves
-        .toMatchObject({ allowed: true });
-      await expect(limiter.check("203.0.113.80", firstWindow + 1)).resolves
-        .toMatchObject({ allowed: false });
-      await expect(limiter.check("203.0.113.81", firstWindow + 2)).resolves
-        .toMatchObject({ allowed: true });
-      await expect(limiter.check("203.0.113.82", firstWindow + 3)).resolves
-        .toMatchObject({ allowed: false });
+      await expect(
+        limiter.check("203.0.113.80", firstWindow),
+      ).resolves.toMatchObject({ allowed: true });
+      await expect(
+        limiter.check("203.0.113.80", firstWindow + 1),
+      ).resolves.toMatchObject({ allowed: false });
+      await expect(
+        limiter.check("203.0.113.81", firstWindow + 2),
+      ).resolves.toMatchObject({ allowed: true });
+      await expect(
+        limiter.check("203.0.113.82", firstWindow + 3),
+      ).resolves.toMatchObject({ allowed: false });
 
       const buckets = await testDatabase.database
         .select()
@@ -298,8 +298,9 @@ describe("database migration and demo seed", () => {
           .map(({ requestCount }) => requestCount)
           .sort((left, right) => left - right),
       ).toEqual([5, 5]);
-      expect(buckets.every(({ keyHash }) => /^[0-9a-f]{64}$/.test(keyHash)))
-        .toBe(true);
+      expect(
+        buckets.every(({ keyHash }) => /^[0-9a-f]{64}$/.test(keyHash)),
+      ).toBe(true);
       expect(JSON.stringify(buckets)).not.toContain(rawClientA);
       expect(JSON.stringify(buckets)).not.toContain(rawClientB);
     } finally {
@@ -640,11 +641,7 @@ describe("database migration and demo seed", () => {
 
     expect(extensions.rows).toEqual([{ extname: "vector" }]);
     expect(columns.rows.map(({ column_name }) => column_name)).toEqual(
-      expect.arrayContaining([
-        "embedding",
-        "embedding_model",
-        "search_vector",
-      ]),
+      expect.arrayContaining(["embedding", "embedding_model", "search_vector"]),
     );
   });
 
@@ -823,12 +820,10 @@ describe("repositories", () => {
       const target = dashboard.drafts.find(({ id }) => id === targetId);
 
       expect(dashboard.drafts).toHaveLength(1);
-      expect(
-        dashboard.drafts.some(({ id }) => id === baselineId),
-      ).toBe(false);
-      expect(
-        dashboard.drafts.some(({ id }) => id === latestBaselineId),
-      ).toBe(false);
+      expect(dashboard.drafts.some(({ id }) => id === baselineId)).toBe(false);
+      expect(dashboard.drafts.some(({ id }) => id === latestBaselineId)).toBe(
+        false,
+      );
       expect(dashboard.workflowCounts).toEqual({
         draft: 0,
         published: 102,
@@ -901,7 +896,8 @@ describe("repositories", () => {
         payload: { id },
         updatedAt: new Date(Date.UTC(2300, 0, 1, 0, 0, index)),
         version: 1,
-        workflowStatus: index % 2 === 0 ? "draft" as const : "reviewed" as const,
+        workflowStatus:
+          index % 2 === 0 ? ("draft" as const) : ("reviewed" as const),
       })),
       {
         changeReason: "Exercise the reviewer global queue.",
@@ -949,9 +945,9 @@ describe("repositories", () => {
         ]);
 
       expect(editorRows).toHaveLength(100);
-      expect(editorRows.every(({ createdBy }) => createdBy === editor.email)).toBe(
-        true,
-      );
+      expect(
+        editorRows.every(({ createdBy }) => createdBy === editor.email),
+      ).toBe(true);
       expect(editorRows.some(({ id }) => id === archivedId)).toBe(false);
       expect(editorCounts).toEqual({
         draft: 51,
@@ -984,28 +980,17 @@ describe("repositories", () => {
     const activeCountryIso3 = "QRA";
     const archivedCountryIso3 = "QRB";
     const missingCountryIso3 = "QRC";
-    const unpublishedV1DocumentId =
-      "32000000-0000-4000-8000-000000000811";
-    const unpublishedV2DocumentId =
-      "32000000-0000-4000-8000-000000000812";
-    const activeCountryBaselineId =
-      "33000000-0000-4000-8000-000000000811";
-    const archivedCountryBaselineId =
-      "33000000-0000-4000-8000-000000000812";
-    const missingCountryBaselineId =
-      "33000000-0000-4000-8000-000000000813";
-    const activeCountryDraftId =
-      "33000000-0000-4000-8000-000000000821";
-    const archivedCountryDraftId =
-      "33000000-0000-4000-8000-000000000822";
-    const missingCountryDraftId =
-      "33000000-0000-4000-8000-000000000823";
-    const unpublishedV1DraftId =
-      "33000000-0000-4000-8000-000000000824";
-    const unpublishedV2DraftId =
-      "33000000-0000-4000-8000-000000000825";
-    const dependencyDraftId =
-      "33000000-0000-4000-8000-000000000826";
+    const unpublishedV1DocumentId = "32000000-0000-4000-8000-000000000811";
+    const unpublishedV2DocumentId = "32000000-0000-4000-8000-000000000812";
+    const activeCountryBaselineId = "33000000-0000-4000-8000-000000000811";
+    const archivedCountryBaselineId = "33000000-0000-4000-8000-000000000812";
+    const missingCountryBaselineId = "33000000-0000-4000-8000-000000000813";
+    const activeCountryDraftId = "33000000-0000-4000-8000-000000000821";
+    const archivedCountryDraftId = "33000000-0000-4000-8000-000000000822";
+    const missingCountryDraftId = "33000000-0000-4000-8000-000000000823";
+    const unpublishedV1DraftId = "33000000-0000-4000-8000-000000000824";
+    const unpublishedV2DraftId = "33000000-0000-4000-8000-000000000825";
+    const dependencyDraftId = "33000000-0000-4000-8000-000000000826";
     const targetDraftIds = new Set([
       activeCountryDraftId,
       archivedCountryDraftId,
@@ -1224,10 +1209,9 @@ describe("repositories", () => {
       });
 
     try {
-      const reviewContexts =
-        await dashboardRepository.getDraftReviewContexts(
-          insertedDrafts.filter(({ id }) => targetDraftIds.has(id)),
-        );
+      const reviewContexts = await dashboardRepository.getDraftReviewContexts(
+        insertedDrafts.filter(({ id }) => targetDraftIds.has(id)),
+      );
       const contextByDraftId = new Map(
         reviewContexts.map((context) => [context.draftId, context]),
       );
@@ -1300,9 +1284,7 @@ describe("repositories", () => {
       const dependencyContext = contextByDraftId.get(dependencyDraftId);
       expect(dependencyContext).toMatchObject({
         baselineStatus: "first_revision",
-        blockingReasons: [
-          "存在 2 个缺失或已归档的来源/依赖。",
-        ],
+        blockingReasons: ["存在 2 个缺失或已归档的来源/依赖。"],
         publishReady: false,
       });
       const dependencyStateByValue = new Map(
@@ -1332,7 +1314,9 @@ describe("repositories", () => {
         );
       await testDatabase.database
         .delete(countries)
-        .where(inArray(countries.iso3, [activeCountryIso3, archivedCountryIso3]));
+        .where(
+          inArray(countries.iso3, [activeCountryIso3, archivedCountryIso3]),
+        );
       await testDatabase.database
         .delete(dataSources)
         .where(inArray(dataSources.id, [activeSourceId, archivedSourceId]));
@@ -1987,10 +1971,7 @@ describe("repositories", () => {
       .where(
         and(
           eq(countryJurisdictions.countryIso3, "CHN"),
-          eq(
-            countryJurisdictions.jurisdictionId,
-            demoIds.jurisdiction.china,
-          ),
+          eq(countryJurisdictions.jurisdictionId, demoIds.jurisdiction.china),
         ),
       );
     try {
@@ -2002,10 +1983,7 @@ describe("repositories", () => {
         .where(
           and(
             eq(countryJurisdictions.countryIso3, "CHN"),
-            eq(
-              countryJurisdictions.jurisdictionId,
-              demoIds.jurisdiction.china,
-            ),
+            eq(countryJurisdictions.jurisdictionId, demoIds.jurisdiction.china),
           ),
         );
     }
@@ -2095,13 +2073,12 @@ describe("repositories", () => {
     );
     const marketRepository = createMarketRepository(testDatabase.database);
 
-    const regulationRows =
-      await regulationRepository.findForComparison({
-        applicationScope: "non-road",
-        asOf: "2026-07-29",
-        countryIso3s: ["CHN", "BRA"],
-        powerKw: 100,
-      });
+    const regulationRows = await regulationRepository.findForComparison({
+      applicationScope: "non-road",
+      asOf: "2026-07-29",
+      countryIso3s: ["CHN", "BRA"],
+      powerKw: 100,
+    });
     const marketRows = await marketRepository.findForComparison({
       applicationScope: "non-road",
       countryIso3s: ["CHN", "BRA"],
@@ -2155,9 +2132,7 @@ describe("repositories", () => {
     });
 
     expect(
-      rows.some(
-        ({ citationCode }) => citationCode === "DEMO-CHN-NR-C-ADOPTED",
-      ),
+      rows.some(({ citationCode }) => citationCode === "DEMO-CHN-NR-C-ADOPTED"),
     ).toBe(false);
     expect(rows).toEqual(
       expect.arrayContaining([
@@ -2306,8 +2281,7 @@ describe("repositories", () => {
   it("fails closed for real products and certifications without publication approval", async () => {
     const repository = createProductRepository(testDatabase.database);
     const unapprovedProductId = "10000000-0000-4000-8000-000000000601";
-    const unapprovedCertificationId =
-      "10000000-0000-4000-8000-000000000602";
+    const unapprovedCertificationId = "10000000-0000-4000-8000-000000000602";
 
     await testDatabase.database.insert(products).values({
       applicationScopes: ["non-road"],
@@ -2356,9 +2330,9 @@ describe("repositories", () => {
         productModelCode: "DEMO-ENG-100",
       });
 
-      expect(
-        listedProducts.some(({ id }) => id === unapprovedProductId),
-      ).toBe(false);
+      expect(listedProducts.some(({ id }) => id === unapprovedProductId)).toBe(
+        false,
+      );
       expect(unapprovedProductEvidence.product).toBeNull();
       expect(
         demoProductEvidence.certifications.some(
@@ -2395,9 +2369,10 @@ describe("repositories", () => {
         powerKw: 100,
         productModelCode: "DEMO-ENG-100",
       });
-      const publicLimitSource = evidence.applicableRegulations[0]?.limitSources.find(
-        ({ id }) => id === demoIds.source.countryDirectory,
-      );
+      const publicLimitSource =
+        evidence.applicableRegulations[0]?.limitSources.find(
+          ({ id }) => id === demoIds.source.countryDirectory,
+        );
 
       expect(publicLimitSource).toMatchObject({ isDemo: true });
     } finally {
@@ -2437,9 +2412,10 @@ describe("repositories", () => {
         powerKw: 100,
         productModelCode: "DEMO-ENG-100",
       });
-      const publicLimitSources = evidence.applicableRegulations[0]?.limitSources.filter(
-        ({ id }) => id === demoIds.source.countryDirectory,
-      );
+      const publicLimitSources =
+        evidence.applicableRegulations[0]?.limitSources.filter(
+          ({ id }) => id === demoIds.source.countryDirectory,
+        );
 
       expect(publicLimitSources).toEqual([
         expect.objectContaining({ isDemo: true }),
@@ -2764,9 +2740,7 @@ describe("repositories", () => {
       false,
       true,
     ]);
-    expect(
-      new Set(creations.map(({ documentId }) => documentId)).size,
-    ).toBe(1);
+    expect(new Set(creations.map(({ documentId }) => documentId)).size).toBe(1);
     expect(storedDocuments).toHaveLength(1);
     expect(storedSources).toHaveLength(1);
   });
@@ -3105,9 +3079,8 @@ describe("repositories", () => {
     const hasReentryJurisdiction = (
       details: Awaited<ReturnType<typeof countryRepository.findDetailsByIso3>>,
     ) =>
-      details?.jurisdictions.some(
-        ({ code }) => code === "TEST-REENTRY-JUR",
-      ) ?? false;
+      details?.jurisdictions.some(({ code }) => code === "TEST-REENTRY-JUR") ??
+      false;
 
     expect(hasReentryJurisdiction(beforeExit)).toBe(true);
     expect(hasReentryJurisdiction(duringGap)).toBe(false);
@@ -3176,8 +3149,7 @@ describe("repositories", () => {
     });
     const auditLogs = await governanceRepository.listAuditLogs();
     const reviewAudit = auditLogs.find(
-      ({ action, draftId }) =>
-        action === "reviewed" && draftId === draft.id,
+      ({ action, draftId }) => action === "reviewed" && draftId === draft.id,
     );
     expect(
       auditLogs
@@ -3390,12 +3362,8 @@ describe("repositories", () => {
       draftId: baselineDraft.id,
       reason: "Publish the version-ordering baseline.",
     });
-    const olderDraft = await createRevision(
-      "DEMO ONLY — Version ordering v2",
-    );
-    const newerDraft = await createRevision(
-      "DEMO ONLY — Version ordering v3",
-    );
+    const olderDraft = await createRevision("DEMO ONLY — Version ordering v2");
+    const newerDraft = await createRevision("DEMO ONLY — Version ordering v3");
     for (const draft of [olderDraft, newerDraft]) {
       await governanceRepository.reviewDraft({
         actor: reviewer,
@@ -3689,9 +3657,7 @@ describe("repositories", () => {
         [draft.id],
       );
 
-      expect(storedSources.rows).toEqual([
-        { verifiedAt: persistedVerifiedAt },
-      ]);
+      expect(storedSources.rows).toEqual([{ verifiedAt: persistedVerifiedAt }]);
       expect(publishedAudits.rows).toEqual([
         { afterVerifiedAt: persistedVerifiedAt, beforeData: null },
       ]);
@@ -3835,7 +3801,8 @@ describe("repositories", () => {
     });
     const draft = await governanceRepository.createDraft({
       actor: editor,
-      changeReason: "Prepare a source metadata revision before re-verification.",
+      changeReason:
+        "Prepare a source metadata revision before re-verification.",
       entityKey: sourceId,
       entityType: "data_source",
       payload: {
@@ -4092,8 +4059,7 @@ describe("repositories", () => {
     const countryIso3 = "KDP";
     const jurisdictionId = "10000000-0000-4000-8000-000000000940";
     const countryChunkId = "10000000-0000-4000-8000-000000000941";
-    const jurisdictionChunkId =
-      "10000000-0000-4000-8000-000000000942";
+    const jurisdictionChunkId = "10000000-0000-4000-8000-000000000942";
     const verifiedAt = new Date("2026-08-06T00:00:00.000Z");
 
     await testDatabase.database.insert(countries).values({
@@ -4170,10 +4136,7 @@ describe("repositories", () => {
       await testDatabase.database
         .delete(documentChunks)
         .where(
-          inArray(documentChunks.id, [
-            countryChunkId,
-            jurisdictionChunkId,
-          ]),
+          inArray(documentChunks.id, [countryChunkId, jurisdictionChunkId]),
         );
       await testDatabase.database
         .delete(jurisdictions)
@@ -4322,14 +4285,10 @@ describe("repositories", () => {
 
     expect(log?.beforeData).toMatchObject({
       jurisdiction: { id: jurisdictionId },
-      memberships: [
-        { countryIso3: "CHN", jurisdictionId },
-      ],
+      memberships: [{ countryIso3: "CHN", jurisdictionId }],
     });
     expect(log?.afterData).toMatchObject({
-      archivedMemberships: [
-        { countryIso3: "CHN", jurisdictionId },
-      ],
+      archivedMemberships: [{ countryIso3: "CHN", jurisdictionId }],
     });
   });
 
@@ -5358,9 +5317,7 @@ describe("repositories", () => {
     expect(result).toEqual({ createdDrafts: 1, status: "committed" });
     expect(afterFacts[0]?.count).toBe(beforeFacts[0]?.count);
     expect(
-      importedDrafts.some(
-        ({ workflowStatus }) => workflowStatus === "draft",
-      ),
+      importedDrafts.some(({ workflowStatus }) => workflowStatus === "draft"),
     ).toBe(true);
   });
 
@@ -5428,16 +5385,17 @@ describe("repositories", () => {
         draftId: draft.id,
         reason: "Attempt duplicate natural-key publication.",
       }),
-    ).rejects.toThrow(
-      `natural key already belongs to entity ${existingId}`,
-    );
+    ).rejects.toThrow(`natural key already belongs to entity ${existingId}`);
 
     const [storedDraft] = await testDatabase.database
       .select({ workflowStatus: dataGovernanceDrafts.workflowStatus })
       .from(dataGovernanceDrafts)
       .where(eq(dataGovernanceDrafts.id, draft.id));
     const storedMetrics = await testDatabase.database
-      .select({ id: marketMetrics.id, valueNumeric: marketMetrics.valueNumeric })
+      .select({
+        id: marketMetrics.id,
+        valueNumeric: marketMetrics.valueNumeric,
+      })
       .from(marketMetrics)
       .where(eq(marketMetrics.metricCode, naturalKey.metricCode));
 
@@ -5898,9 +5856,7 @@ describe("repositories", () => {
         draftId: draft.id,
         reason: "Attempt misclassified country publication.",
       }),
-    ).rejects.toThrow(
-      "Non-demo facts cannot reference demo sources: country",
-    );
+    ).rejects.toThrow("Non-demo facts cannot reference demo sources: country");
 
     const [publishedCountry] = await testDatabase.database
       .select({ iso3: countries.iso3 })

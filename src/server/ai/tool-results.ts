@@ -60,8 +60,7 @@ import {
 import type { ProductFitEvaluation } from "@/features/product-fit/schemas";
 import { getOpportunityScoreWeights } from "@/server/config/opportunity-score-config";
 
-const insufficientEvidenceWarning =
-  KNOWLEDGE_INSUFFICIENT_EVIDENCE_WARNING;
+const insufficientEvidenceWarning = KNOWLEDGE_INSUFFICIENT_EVIDENCE_WARNING;
 const opportunityScoreRuntimeMismatchMessage =
   "Opportunity-score payload does not match the runtime configuration.";
 const opportunityScoreComponentKeys = [
@@ -178,9 +177,7 @@ function uniqueCitations(citations: AiCitation[]): AiCitation[] {
   );
 }
 
-function citationsFromAnalysisSources(
-  sources: AnalysisSource[],
-): AiCitation[] {
+function citationsFromAnalysisSources(sources: AnalysisSource[]): AiCitation[] {
   return uniqueCitations(
     sources.map((source) => ({
       chunkId: null,
@@ -195,9 +192,7 @@ function citationsFromAnalysisSources(
       pageFrom: null,
       pageTo: null,
       productCertificationId:
-        source.entityType === "product_certification"
-          ? source.entityId
-          : null,
+        source.entityType === "product_certification" ? source.entityId : null,
       publishedOn: source.publishedOn,
       regulationId: source.regulationId,
       regulationStatus: source.regulationStatus,
@@ -213,9 +208,7 @@ function citationsFromAnalysisSources(
 }
 
 function demoWarning(citations: AiCitation[]): string[] {
-  return citations.some(({ isDemo }) => isDemo)
-    ? [KNOWLEDGE_DEMO_WARNING]
-    : [];
+  return citations.some(({ isDemo }) => isDemo) ? [KNOWLEDGE_DEMO_WARNING] : [];
 }
 
 export function buildRegulationComparisonResult(input: {
@@ -361,10 +354,7 @@ export function buildSalesBriefResult(input: {
 }): GenerateSalesBriefResult {
   const runtimeWeights = runtimeOpportunityScoreWeights();
   if (
-    !countryOpportunityScoreMatchesMath(
-      input.brief.marketScore,
-      runtimeWeights,
-    )
+    !countryOpportunityScoreMatchesMath(input.brief.marketScore, runtimeWeights)
   ) {
     throw new Error(opportunityScoreRuntimeMismatchMessage);
   }
@@ -438,8 +428,7 @@ export function buildKnowledgeResult(input: {
       verifiedAt: result.document.source.verifiedAt,
     })),
   );
-  const evidenceSufficient =
-    relevantResults.length > 0 && citations.length > 0;
+  const evidenceSufficient = relevantResults.length > 0 && citations.length > 0;
   return searchKnowledgeBaseResultSchema.parse({
     citations,
     evidenceSufficient,
@@ -531,8 +520,7 @@ export function buildCountryProfileResult(input: {
         entityId: jurisdiction.id,
         entityType: "country_jurisdiction",
         isDemo:
-          jurisdiction.membershipIsDemo ||
-          jurisdiction.membershipSource.isDemo,
+          jurisdiction.membershipIsDemo || jurisdiction.membershipSource.isDemo,
         locator: `${jurisdiction.validFrom}–${jurisdiction.validTo ?? "open"}`,
         locatorDescriptor: {
           kind: "membership_period",
@@ -562,138 +550,132 @@ export function buildCountryProfileResult(input: {
   const regulationCitations = [
     ...country.currentEffectiveRegulations,
     ...country.futureAdoptedRegulations,
-  ].flatMap(
-    (regulation): AiCitation[] => [
-      {
-        chunkId: null,
-        countryIso3: country.iso3,
-        documentId: null,
-        documentTitle: null,
-        entityId: regulation.id,
-        entityType: "regulation",
-        isDemo: regulation.isDemo || regulation.source.isDemo,
-        locator: regulation.citationCode,
-        pageFrom: null,
-        pageTo: null,
-        productCertificationId: null,
-        publishedOn: regulation.source.publishedOn,
-        regulationId: regulation.id,
-        regulationStatus: regulation.status,
-        sectionLocator: null,
-        sourceId: regulation.source.id,
-        sourceTitle: regulation.source.title,
-        sourceUrl: regulation.source.url,
-        title: regulation.canonicalName,
-        verifiedAt: regulation.source.verifiedAt,
-      },
-      {
-        chunkId: null,
-        countryIso3: country.iso3,
-        documentId: null,
-        documentTitle: null,
-        entityId: regulation.applicability.jurisdiction.id,
-        entityType: "jurisdiction",
-        isDemo:
-          regulation.applicability.jurisdiction.isDemo ||
-          regulation.applicability.jurisdiction.source.isDemo,
-        locator: regulation.applicability.jurisdiction.code,
-        pageFrom: null,
-        pageTo: null,
-        productCertificationId: null,
-        publishedOn:
-          regulation.applicability.jurisdiction.source.publishedOn,
-        regulationId: regulation.id,
-        regulationStatus: regulation.status,
-        sectionLocator: null,
-        sourceId: regulation.applicability.jurisdiction.source.id,
-        sourceTitle: regulation.applicability.jurisdiction.source.title,
-        sourceUrl: regulation.applicability.jurisdiction.source.url,
-        title: `${regulation.canonicalName} 适用辖区：${regulation.applicability.jurisdiction.name}`,
-        titleDescriptor: {
-          jurisdictionName: regulation.applicability.jurisdiction.name,
-          kind: "regulation_jurisdiction",
-          regulationName: regulation.canonicalName,
-        },
-        verifiedAt:
-          regulation.applicability.jurisdiction.source.verifiedAt,
-      },
-      {
-        chunkId: null,
-        countryIso3: country.iso3,
-        documentId: null,
-        documentTitle: null,
-        entityId: regulation.applicability.jurisdiction.id,
-        entityType: "country_jurisdiction",
-        isDemo:
-          regulation.applicability.jurisdiction.isDemo ||
-          regulation.applicability.membership.isDemo ||
-          regulation.applicability.jurisdiction.source.isDemo ||
-          regulation.applicability.membership.source.isDemo,
-        locator: `${regulation.applicability.membership.validFrom}–${regulation.applicability.membership.validTo ?? "open"}`,
-        locatorDescriptor: {
-          kind: "membership_period",
-          validFrom: regulation.applicability.membership.validFrom,
-          validTo: regulation.applicability.membership.validTo,
-        },
-        pageFrom: null,
-        pageTo: null,
-        productCertificationId: null,
-        publishedOn: regulation.applicability.membership.source.publishedOn,
-        regulationId: regulation.id,
-        regulationStatus: regulation.status,
-        sectionLocator: null,
-        sourceId: regulation.applicability.membership.source.id,
-        sourceTitle: regulation.applicability.membership.source.title,
-        sourceUrl: regulation.applicability.membership.source.url,
-        title: `${regulation.applicability.jurisdiction.name} 对 ${country.iso3} 的成员关系`,
-        titleDescriptor: {
-          countryIso3: country.iso3,
-          jurisdictionName: regulation.applicability.jurisdiction.name,
-          kind: "country_jurisdiction_membership",
-        },
-        verifiedAt: regulation.applicability.membership.source.verifiedAt,
-      },
-    ],
-  );
-  const applicabilityCitations = input.profile.applicabilitySummary
-    ? citationsFromAnalysisSources(input.profile.applicabilitySummary.sources)
-    : [];
-  const marketCitations = country.marketMetrics.map(
-    (metric): AiCitation => ({
+  ].flatMap((regulation): AiCitation[] => [
+    {
       chunkId: null,
-      countryIso3: metric.countryIso3,
+      countryIso3: country.iso3,
       documentId: null,
       documentTitle: null,
-      entityId: metric.id,
-      entityType: "market_metric",
-      isDemo: metric.isDemo || metric.source.isDemo,
-      locator: `${metric.periodStart}–${metric.periodEnd}`,
+      entityId: regulation.id,
+      entityType: "regulation",
+      isDemo: regulation.isDemo || regulation.source.isDemo,
+      locator: regulation.citationCode,
+      pageFrom: null,
+      pageTo: null,
+      productCertificationId: null,
+      publishedOn: regulation.source.publishedOn,
+      regulationId: regulation.id,
+      regulationStatus: regulation.status,
+      sectionLocator: null,
+      sourceId: regulation.source.id,
+      sourceTitle: regulation.source.title,
+      sourceUrl: regulation.source.url,
+      title: regulation.canonicalName,
+      verifiedAt: regulation.source.verifiedAt,
+    },
+    {
+      chunkId: null,
+      countryIso3: country.iso3,
+      documentId: null,
+      documentTitle: null,
+      entityId: regulation.applicability.jurisdiction.id,
+      entityType: "jurisdiction",
+      isDemo:
+        regulation.applicability.jurisdiction.isDemo ||
+        regulation.applicability.jurisdiction.source.isDemo,
+      locator: regulation.applicability.jurisdiction.code,
+      pageFrom: null,
+      pageTo: null,
+      productCertificationId: null,
+      publishedOn: regulation.applicability.jurisdiction.source.publishedOn,
+      regulationId: regulation.id,
+      regulationStatus: regulation.status,
+      sectionLocator: null,
+      sourceId: regulation.applicability.jurisdiction.source.id,
+      sourceTitle: regulation.applicability.jurisdiction.source.title,
+      sourceUrl: regulation.applicability.jurisdiction.source.url,
+      title: `${regulation.canonicalName} 适用辖区：${regulation.applicability.jurisdiction.name}`,
+      titleDescriptor: {
+        jurisdictionName: regulation.applicability.jurisdiction.name,
+        kind: "regulation_jurisdiction",
+        regulationName: regulation.canonicalName,
+      },
+      verifiedAt: regulation.applicability.jurisdiction.source.verifiedAt,
+    },
+    {
+      chunkId: null,
+      countryIso3: country.iso3,
+      documentId: null,
+      documentTitle: null,
+      entityId: regulation.applicability.jurisdiction.id,
+      entityType: "country_jurisdiction",
+      isDemo:
+        regulation.applicability.jurisdiction.isDemo ||
+        regulation.applicability.membership.isDemo ||
+        regulation.applicability.jurisdiction.source.isDemo ||
+        regulation.applicability.membership.source.isDemo,
+      locator: `${regulation.applicability.membership.validFrom}–${regulation.applicability.membership.validTo ?? "open"}`,
       locatorDescriptor: {
-        kind: "market_period",
-        periodEnd: metric.periodEnd,
-        periodStart: metric.periodStart,
+        kind: "membership_period",
+        validFrom: regulation.applicability.membership.validFrom,
+        validTo: regulation.applicability.membership.validTo,
       },
       pageFrom: null,
       pageTo: null,
       productCertificationId: null,
-      publishedOn: metric.publishedOn ?? metric.source.publishedOn,
-      regulationId: null,
-      regulationStatus: null,
+      publishedOn: regulation.applicability.membership.source.publishedOn,
+      regulationId: regulation.id,
+      regulationStatus: regulation.status,
       sectionLocator: null,
-      sourceId: metric.source.id,
-      sourceTitle: metric.source.title,
-      sourceUrl: metric.source.url,
-      title: metric.metricName,
+      sourceId: regulation.applicability.membership.source.id,
+      sourceTitle: regulation.applicability.membership.source.title,
+      sourceUrl: regulation.applicability.membership.source.url,
+      title: `${regulation.applicability.jurisdiction.name} 对 ${country.iso3} 的成员关系`,
       titleDescriptor: {
-        isDemo: metric.isDemo,
-        kind: "market_metric",
-        metricCode: metric.metricCode,
-        metricId: metric.id,
-        metricName: metric.metricName,
+        countryIso3: country.iso3,
+        jurisdictionName: regulation.applicability.jurisdiction.name,
+        kind: "country_jurisdiction_membership",
       },
-      verifiedAt: metric.source.verifiedAt,
-    }),
-  );
+      verifiedAt: regulation.applicability.membership.source.verifiedAt,
+    },
+  ]);
+  const applicabilityCitations = input.profile.applicabilitySummary
+    ? citationsFromAnalysisSources(input.profile.applicabilitySummary.sources)
+    : [];
+  const marketCitations = country.marketMetrics.map((metric): AiCitation => ({
+    chunkId: null,
+    countryIso3: metric.countryIso3,
+    documentId: null,
+    documentTitle: null,
+    entityId: metric.id,
+    entityType: "market_metric",
+    isDemo: metric.isDemo || metric.source.isDemo,
+    locator: `${metric.periodStart}–${metric.periodEnd}`,
+    locatorDescriptor: {
+      kind: "market_period",
+      periodEnd: metric.periodEnd,
+      periodStart: metric.periodStart,
+    },
+    pageFrom: null,
+    pageTo: null,
+    productCertificationId: null,
+    publishedOn: metric.publishedOn ?? metric.source.publishedOn,
+    regulationId: null,
+    regulationStatus: null,
+    sectionLocator: null,
+    sourceId: metric.source.id,
+    sourceTitle: metric.source.title,
+    sourceUrl: metric.source.url,
+    title: metric.metricName,
+    titleDescriptor: {
+      isDemo: metric.isDemo,
+      kind: "market_metric",
+      metricCode: metric.metricCode,
+      metricId: metric.id,
+      metricName: metric.metricName,
+    },
+    verifiedAt: metric.source.verifiedAt,
+  }));
   const countryCitation: AiCitation = {
     chunkId: null,
     countryIso3: country.iso3,
@@ -777,8 +759,7 @@ export function buildCompatibleProductsResult(input: {
               entityId: evaluation.product.id,
               entityType: "product",
               isDemo:
-                evaluation.product.isDemo ||
-                evaluation.product.source.isDemo,
+                evaluation.product.isDemo || evaluation.product.source.isDemo,
               locator: evaluation.product.modelCode,
               locatorDescriptor: {
                 availableFrom: evaluation.product.availableFrom,
@@ -830,19 +811,16 @@ export function buildCompatibleProductsResult(input: {
           },
           {
             chunkId: null,
-            countryIso3:
-              regulationCheck.regulation.applicability.countryIso3,
+            countryIso3: regulationCheck.regulation.applicability.countryIso3,
             documentId: null,
             documentTitle: null,
-            entityId:
-              regulationCheck.regulation.applicability.jurisdiction.id,
+            entityId: regulationCheck.regulation.applicability.jurisdiction.id,
             entityType: "jurisdiction",
             isDemo:
               regulationCheck.regulation.applicability.jurisdiction.isDemo ||
               regulationCheck.regulation.applicability.jurisdiction.source
                 .isDemo,
-            locator:
-              regulationCheck.regulation.applicability.jurisdiction.code,
+            locator: regulationCheck.regulation.applicability.jurisdiction.code,
             pageFrom: null,
             pageTo: null,
             productCertificationId: null,
@@ -859,25 +837,21 @@ export function buildCompatibleProductsResult(input: {
                 .title,
             sourceUrl:
               regulationCheck.regulation.applicability.jurisdiction.source.url,
-            title:
-              regulationCheck.regulation.applicability.jurisdiction.name,
+            title: regulationCheck.regulation.applicability.jurisdiction.name,
             verifiedAt:
               regulationCheck.regulation.applicability.jurisdiction.source
                 .verifiedAt,
           },
           {
             chunkId: null,
-            countryIso3:
-              regulationCheck.regulation.applicability.countryIso3,
+            countryIso3: regulationCheck.regulation.applicability.countryIso3,
             documentId: null,
             documentTitle: null,
-            entityId:
-              regulationCheck.regulation.applicability.jurisdiction.id,
+            entityId: regulationCheck.regulation.applicability.jurisdiction.id,
             entityType: "country_jurisdiction",
             isDemo:
               regulationCheck.regulation.applicability.membership.isDemo ||
-              regulationCheck.regulation.applicability.membership.source
-                .isDemo,
+              regulationCheck.regulation.applicability.membership.source.isDemo,
             locator: `${regulationCheck.regulation.applicability.membership.validFrom}–${regulationCheck.regulation.applicability.membership.validTo ?? "open"}`,
             locatorDescriptor: {
               kind: "membership_period",
@@ -903,8 +877,7 @@ export function buildCompatibleProductsResult(input: {
               regulationCheck.regulation.applicability.membership.source.url,
             title: `${regulationCheck.regulation.applicability.jurisdiction.name} 对 ${regulationCheck.regulation.applicability.countryIso3} 的成员关系`,
             titleDescriptor: {
-              countryIso3:
-                regulationCheck.regulation.applicability.countryIso3,
+              countryIso3: regulationCheck.regulation.applicability.countryIso3,
               jurisdictionName:
                 regulationCheck.regulation.applicability.jurisdiction.name,
               kind: "country_jurisdiction_membership",
@@ -947,8 +920,7 @@ export function buildCompatibleProductsResult(input: {
               documentTitle: null,
               entityId: certification.id,
               entityType: "product_certification",
-              isDemo:
-                certification.isDemo || certification.source.isDemo,
+              isDemo: certification.isDemo || certification.source.isDemo,
               locator: certification.certificateNumber,
               pageFrom: null,
               pageTo: null,
@@ -989,9 +961,7 @@ export function buildCompatibleProductsResult(input: {
   ).length;
   const warnings = [
     ...(evidenceSufficient ? [] : [insufficientEvidenceWarning]),
-    ...(unknownCount > 0
-      ? [unknownProductsEvidenceWarning(unknownCount)]
-      : []),
+    ...(unknownCount > 0 ? [unknownProductsEvidenceWarning(unknownCount)] : []),
     ...demoWarning(citations),
   ];
 
@@ -1016,9 +986,7 @@ export function buildCompatibleProductsResult(input: {
   });
 }
 
-function assertCanonicalToolErrorResult<T extends AiToolResult>(
-  result: T,
-): T {
+function assertCanonicalToolErrorResult<T extends AiToolResult>(result: T): T {
   if (!canonicalToolErrorResultMatchesNoFacts(result)) {
     throw new Error("Tool error result is not a canonical no-facts envelope.");
   }
@@ -1053,40 +1021,46 @@ export function buildToolErrorResult(
       throw new Error("Knowledge error baseline does not match its query.");
     }
     const resolvedCountryIso3 = input.countryIso3 ?? null;
-    return assertCanonicalToolErrorResult(searchKnowledgeBaseResultSchema.parse({
-      ...common,
-      resolvedCountryIso3,
-      search: {
-        embeddingModel: "local-hash-embedding-v1",
-        filters: {
-          applicationScope: input.applicationScope ?? null,
-          asOf,
-          countryIso3: resolvedCountryIso3,
-          jurisdictionId: null,
-          limit: 5,
+    return assertCanonicalToolErrorResult(
+      searchKnowledgeBaseResultSchema.parse({
+        ...common,
+        resolvedCountryIso3,
+        search: {
+          embeddingModel: "local-hash-embedding-v1",
+          filters: {
+            applicationScope: input.applicationScope ?? null,
+            asOf,
+            countryIso3: resolvedCountryIso3,
+            jurisdictionId: null,
+            limit: 5,
+          },
+          query: input.query,
+          results: [],
+          scoring: { keywordWeight: 0.5, vectorWeight: 0.5 },
+          status: "ok",
         },
-        query: input.query,
-        results: [],
-        scoring: { keywordWeight: 0.5, vectorWeight: 0.5 },
-        status: "ok",
-      },
-      tool,
-    }));
+        tool,
+      }),
+    );
   }
   if (tool === "getCountryProfile") {
     const input = getCountryProfileInputSchema.parse(rawInput);
     const asOf = input.asOf ?? informationAsOf;
     if (asOf !== informationAsOf) {
-      throw new Error("Country-profile error baseline does not match its query.");
+      throw new Error(
+        "Country-profile error baseline does not match its query.",
+      );
     }
-    return assertCanonicalToolErrorResult(getCountryProfileResultSchema.parse({
-      ...common,
-      ...(input.marketPeriod ? { marketPeriod: input.marketPeriod } : {}),
-      profile: null,
-      requestedTopics: input.topics,
-      resolvedCountryIso3: input.countryIso3 ?? null,
-      tool,
-    }));
+    return assertCanonicalToolErrorResult(
+      getCountryProfileResultSchema.parse({
+        ...common,
+        ...(input.marketPeriod ? { marketPeriod: input.marketPeriod } : {}),
+        profile: null,
+        requestedTopics: input.topics,
+        resolvedCountryIso3: input.countryIso3 ?? null,
+        tool,
+      }),
+    );
   }
 
   if (tool === "compareRegulations") {
@@ -1094,62 +1068,70 @@ export function buildToolErrorResult(
     if (input.asOf !== informationAsOf) {
       throw new Error("Regulation error baseline does not match its query.");
     }
-    return assertCanonicalToolErrorResult(compareRegulationsResultSchema.parse({
-      ...common,
-      comparison: {
-        countries: input.countryIso3s.map((countryIso3) => ({
-          countryIsDemo: false,
-          countryIso3,
-          countryName: null,
-          countrySource: null,
-          currentEffectiveRegulations: [],
-          futureAdoptedRegulations: [],
-          status: "no_data",
-        })),
-        missingData: [],
-        query: input,
-        sources: [],
-      },
-      tool,
-    }));
+    return assertCanonicalToolErrorResult(
+      compareRegulationsResultSchema.parse({
+        ...common,
+        comparison: {
+          countries: input.countryIso3s.map((countryIso3) => ({
+            countryIsDemo: false,
+            countryIso3,
+            countryName: null,
+            countrySource: null,
+            currentEffectiveRegulations: [],
+            futureAdoptedRegulations: [],
+            status: "no_data",
+          })),
+          missingData: [],
+          query: input,
+          sources: [],
+        },
+        tool,
+      }),
+    );
   }
   if (tool === "compareMarkets") {
     const input = compareMarketsInputSchema.parse(rawInput);
-    return assertCanonicalToolErrorResult(compareMarketsResultSchema.parse({
-      ...common,
-      comparison: {
-        metrics: [],
-        missingData: [],
-        query: input,
-        sources: [],
-      },
-      tool,
-    }));
+    return assertCanonicalToolErrorResult(
+      compareMarketsResultSchema.parse({
+        ...common,
+        comparison: {
+          metrics: [],
+          missingData: [],
+          query: input,
+          sources: [],
+        },
+        tool,
+      }),
+    );
   }
   if (tool === "calculateOpportunityScore") {
     const input = calculateOpportunityScoreInputSchema.parse(rawInput);
     if (input.asOf !== informationAsOf) {
-      throw new Error("Opportunity-score error baseline does not match its query.");
+      throw new Error(
+        "Opportunity-score error baseline does not match its query.",
+      );
     }
     const weights = runtimeOpportunityScoreWeights();
-    return assertCanonicalToolErrorResult(calculateOpportunityScoreResultSchema.parse({
-      ...common,
-      scorecard: {
-        provenance: unavailableOpportunityScoreProvenance(input),
-        query: input,
-        rulesetVersion: "opportunity-score-v2",
-        scores: input.countryIso3s.map((countryIso3) => ({
-          components: unavailableOpportunityScoreComponents(weights),
-          countryIso3,
-          dataCoveragePct: 0,
-          gaps: [{ code: "TOOL_EXECUTION_FAILED" as const }],
-          overallScore: null,
-        })),
-        sources: [],
-        weights,
-      },
-      tool,
-    }));
+    return assertCanonicalToolErrorResult(
+      calculateOpportunityScoreResultSchema.parse({
+        ...common,
+        scorecard: {
+          provenance: unavailableOpportunityScoreProvenance(input),
+          query: input,
+          rulesetVersion: "opportunity-score-v2",
+          scores: input.countryIso3s.map((countryIso3) => ({
+            components: unavailableOpportunityScoreComponents(weights),
+            countryIso3,
+            dataCoveragePct: 0,
+            gaps: [{ code: "TOOL_EXECUTION_FAILED" as const }],
+            overallScore: null,
+          })),
+          sources: [],
+          weights,
+        },
+        tool,
+      }),
+    );
   }
   if (tool === "generateSalesBrief") {
     const input = generateSalesBriefInputSchema.parse(rawInput);
@@ -1157,45 +1139,49 @@ export function buildToolErrorResult(
       throw new Error("Sales-brief error baseline does not match its query.");
     }
     const weights = runtimeOpportunityScoreWeights();
-    return assertCanonicalToolErrorResult(generateSalesBriefResultSchema.parse({
-      ...common,
-      brief: {
-        gaps: [{ code: "TOOL_EXECUTION_FAILED" as const }],
-        marketScore: {
-          components: unavailableOpportunityScoreComponents(weights),
-          countryIso3: input.targetCountryIso3,
-          dataCoveragePct: 0,
+    return assertCanonicalToolErrorResult(
+      generateSalesBriefResultSchema.parse({
+        ...common,
+        brief: {
           gaps: [{ code: "TOOL_EXECUTION_FAILED" as const }],
-          overallScore: null,
+          marketScore: {
+            components: unavailableOpportunityScoreComponents(weights),
+            countryIso3: input.targetCountryIso3,
+            dataCoveragePct: 0,
+            gaps: [{ code: "TOOL_EXECUTION_FAILED" as const }],
+            overallScore: null,
+          },
+          opportunities: [],
+          provenance: unavailableOpportunityScoreProvenance(input),
+          query: input,
+          recommendedProducts: [],
+          risks: [],
+          salesActions: [],
+          sources: [],
         },
-        opportunities: [],
-        provenance: unavailableOpportunityScoreProvenance(input),
-        query: input,
-        recommendedProducts: [],
-        risks: [],
-        salesActions: [],
-        sources: [],
-      },
-      tool,
-    }));
+        tool,
+      }),
+    );
   }
 
   const input = findCompatibleProductsInputSchema.parse(rawInput);
   if (input.asOf !== informationAsOf) {
     throw new Error("Product-fit error baseline does not match its query.");
   }
-  return assertCanonicalToolErrorResult(findCompatibleProductsResultSchema.parse({
-    ...common,
-    evaluations: [],
-    query: {
-      applicationScope: input.applicationScope,
-      asOf: input.asOf,
-      countryIso3: input.countryIso3 ?? null,
-      powerKw: input.powerKw,
-      ...(input.productModelCode
-        ? { productModelCode: input.productModelCode }
-        : {}),
-    },
-    tool,
-  }));
+  return assertCanonicalToolErrorResult(
+    findCompatibleProductsResultSchema.parse({
+      ...common,
+      evaluations: [],
+      query: {
+        applicationScope: input.applicationScope,
+        asOf: input.asOf,
+        countryIso3: input.countryIso3 ?? null,
+        powerKw: input.powerKw,
+        ...(input.productModelCode
+          ? { productModelCode: input.productModelCode }
+          : {}),
+      },
+      tool,
+    }),
+  );
 }

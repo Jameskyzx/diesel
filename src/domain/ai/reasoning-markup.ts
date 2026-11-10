@@ -4,20 +4,15 @@ const namedCharacterReferenceSource = "&[a-z][a-z0-9]+;";
 const maximumCharacterReferencePasses = 16;
 
 function allowNamedReferencesBetweenCharacters(value: string): string {
-  return value
-    .split("")
-    .join(`(?:${namedCharacterReferenceSource})*`);
+  return value.split("").join(`(?:${namedCharacterReferenceSource})*`);
 }
 
 const reasoningMarkupWithNamedReferencesPattern = new RegExp(
   `<(?:\\s|${namedCharacterReferenceSource})*\\/?` +
     `(?:\\s|${namedCharacterReferenceSource})*` +
-    `(?:${[
-      "think",
-      "thinking",
-      "analysis",
-      "reasoning",
-    ].map(allowNamedReferencesBetweenCharacters).join("|")})` +
+    `(?:${["think", "thinking", "analysis", "reasoning"]
+      .map(allowNamedReferencesBetweenCharacters)
+      .join("|")})` +
     `(?=[\\s/>]|${namedCharacterReferenceSource})`,
   "iu",
 );
@@ -43,9 +38,9 @@ function decodeCharacterReference(
     hexadecimal === undefined ? 10 : 16,
   );
   return Number.isSafeInteger(codePoint) &&
-      codePoint >= 0 &&
-      codePoint <= 0x10_FFFF &&
-      !(codePoint >= 0xD800 && codePoint <= 0xDFFF)
+    codePoint >= 0 &&
+    codePoint <= 0x10_ffff &&
+    !(codePoint >= 0xd800 && codePoint <= 0xdfff)
     ? String.fromCodePoint(codePoint)
     : match;
 }

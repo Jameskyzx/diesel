@@ -135,7 +135,9 @@ describe("admin direct draft creation boundary", () => {
 
 describe("admin product governance schemas", () => {
   it("accepts valid half-open product and certification periods", () => {
-    expect(productDraftPayloadSchema.safeParse(productPayload).success).toBe(true);
+    expect(productDraftPayloadSchema.safeParse(productPayload).success).toBe(
+      true,
+    );
     expect(
       productCertificationDraftPayloadSchema.safeParse(certificationPayload)
         .success,
@@ -259,9 +261,7 @@ describe("admin product governance schemas", () => {
       valueNumeric: "9007199254740993.000001",
     });
 
-    expect(regulation.limits[0]?.limitValue).toBe(
-      "123456789012.123456",
-    );
+    expect(regulation.limits[0]?.limitValue).toBe("123456789012.123456");
     expect(market.valueNumeric).toBe("9007199254740993.000001");
   });
 
@@ -274,11 +274,7 @@ describe("admin product governance schemas", () => {
         }).success,
       ).toBe(false);
     }
-    for (const valueNumeric of [
-      "1234567890123456789",
-      "1.0000001",
-      "1e3",
-    ]) {
+    for (const valueNumeric of ["1234567890123456789", "1.0000001", "1e3"]) {
       expect(
         marketMetricDraftPayloadSchema.safeParse({
           ...marketMetricPayload,
@@ -419,9 +415,7 @@ describe("admin jurisdiction governance schemas", () => {
       ...jurisdictionPayload,
     };
     delete withoutMemberships.memberships;
-    const result = jurisdictionDraftPayloadSchema.safeParse(
-      withoutMemberships,
-    );
+    const result = jurisdictionDraftPayloadSchema.safeParse(withoutMemberships);
 
     expect(result.success).toBe(false);
     expect(issuePaths(result)).toContain("memberships");
@@ -629,7 +623,9 @@ describe("admin regulation governance schemas", () => {
 
     expect(result.success).toBe(false);
     expect(
-      result.error?.issues.filter(({ path }) => path.join(".") === "effectiveFrom"),
+      result.error?.issues.filter(
+        ({ path }) => path.join(".") === "effectiveFrom",
+      ),
     ).toHaveLength(1);
   });
 
@@ -741,15 +737,15 @@ describe("admin dashboard response schema", () => {
   } as const;
 
   it("accepts only the dashboard draft and audit summary fields", () => {
-    expect(adminDashboardResponseSchema.safeParse(dashboard).success).toBe(true);
+    expect(adminDashboardResponseSchema.safeParse(dashboard).success).toBe(
+      true,
+    );
   });
 
   it("rejects an extra audit snapshot field", () => {
     const result = adminDashboardResponseSchema.safeParse({
       ...dashboard,
-      auditLogs: [
-        { ...dashboard.auditLogs[0], afterData: { private: true } },
-      ],
+      auditLogs: [{ ...dashboard.auditLogs[0], afterData: { private: true } }],
     });
 
     expect(result.success).toBe(false);
@@ -868,10 +864,7 @@ describe("admin dashboard response schema", () => {
     expect(
       adminDashboardResponseSchema.safeParse({
         ...dashboard,
-        auditLogs: Array.from(
-          { length: 31 },
-          () => dashboard.auditLogs[0],
-        ),
+        auditLogs: Array.from({ length: 31 }, () => dashboard.auditLogs[0]),
       }).success,
     ).toBe(false);
   });

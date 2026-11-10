@@ -31,21 +31,34 @@ function normalize(text: string): string {
   return text.trim().replace(/\s+/g, " ");
 }
 
-export function buildSocialChatResponse(text: string, locale: Locale): string | null {
+export function buildSocialChatResponse(
+  text: string,
+  locale: Locale,
+): string | null {
   const normalized = normalize(text);
-  if (greetingPattern.test(normalized)) return locale === "en"
-    ? "Hi! What are you working on—a market, an engine application, or a question about regulations? Tell me in your own words; we can fill in the details together."
-    : "你好！你现在想了解哪个市场、哪类发动机用途，或者有什么法规问题？直接说你的目标就好，条件可以边聊边补。";
-  if (thanksPattern.test(normalized)) return locale === "en" ? "You're welcome. We can pick up from here whenever you're ready." : "不客气。需要时我们可以接着刚才的内容聊。";
+  if (greetingPattern.test(normalized))
+    return locale === "en"
+      ? "Hi! What are you working on—a market, an engine application, or a question about regulations? Tell me in your own words; we can fill in the details together."
+      : "你好！你现在想了解哪个市场、哪类发动机用途，或者有什么法规问题？直接说你的目标就好，条件可以边聊边补。";
+  if (thanksPattern.test(normalized))
+    return locale === "en"
+      ? "You're welcome. We can pick up from here whenever you're ready."
+      : "不客气。需要时我们可以接着刚才的内容聊。";
   return null;
 }
 
 /** App help is available without a provider. Mixed factual requests continue
  * through planning and the evidence tools instead of receiving only help. */
-export function buildCapabilityChatResponse(input: DirectChatResponseInput): string | null {
+export function buildCapabilityChatResponse(
+  input: DirectChatResponseInput,
+): string | null {
   const text = normalize(input.text);
-  if (!capabilityPattern.test(text) || buildConversationBusinessContext([text]).activeTask !== null ||
-    hasConversationComparisonIntent(text)) return null;
+  if (
+    !capabilityPattern.test(text) ||
+    buildConversationBusinessContext([text]).activeTask !== null ||
+    hasConversationComparisonIntent(text)
+  )
+    return null;
   return buildDirectChatResponse({ ...input, userTexts: [input.text] });
 }
 
@@ -142,11 +155,13 @@ function buildEnglishDirectChatResponse({
   const contextText = selectedCountryIso3
     ? `The current country context is ${selectedCountryIso3}; a country named in your question takes precedence.`
     : "There is no country context. Include a country name or ISO3 code in your question.";
-  const disclaimer = "For information only; not a substitute for formal certification or legal advice.";
+  const disclaimer =
+    "For information only; not a substitute for formal certification or legal advice.";
   const missingStructuredParameters = (): string[] => {
     const missing: string[] = [];
     if (context.countryIso3s.length < 2) missing.push("at least two countries");
-    if (context.applicationScope === null) missing.push("an application scope, such as non-road or on-road-truck");
+    if (context.applicationScope === null)
+      missing.push("an application scope, such as non-road or on-road-truck");
     if (context.powerKw === null) missing.push("rated power in kW");
     return missing;
   };
@@ -171,10 +186,19 @@ Try: “Compare CHN and DEU non-road rules at 120 kW as of 2026-08-08, then expl
   if (vagueAnalysisPattern.test(normalized) && context.activeTask === null) {
     return `I can help, but first specify:\n1. one target country or 2–5 countries to compare;\n2. regulations, market data, product fit, or a complete sales brief;\n3. application scope and power when a product is involved; and\n4. an as-of date when needed.\n\n${contextText}`;
   }
-  if (context.activeTask === "country_profile" && context.focusedCountryIso3 === null) {
-    const topics = context.profileTopics.map((topic) =>
-      topic === "regulations" ? "regulations" : topic === "market" ? "market data" : "country profile",
-    ).join(", ");
+  if (
+    context.activeTask === "country_profile" &&
+    context.focusedCountryIso3 === null
+  ) {
+    const topics = context.profileTopics
+      .map((topic) =>
+        topic === "regulations"
+          ? "regulations"
+          : topic === "market"
+            ? "market data"
+            : "country profile",
+      )
+      .join(", ");
     return `A country is required to query ${topics || "country information"}. Provide a country name or ISO3 code such as CHN, BRA, or DEU.\n\n${contextText}`;
   }
   const missingSingleCountryRegulationParameters =
@@ -191,13 +215,17 @@ Try: “Compare CHN and DEU non-road rules at 120 kW as of 2026-08-08, then expl
   }
   if (context.activeTask === "product_fit") {
     const missing: string[] = [];
-    if (context.applicationScope === null) missing.push("an application scope, such as non-road or on-road-truck");
+    if (context.applicationScope === null)
+      missing.push("an application scope, such as non-road or on-road-truck");
     if (context.powerKw === null) missing.push("rated power in kW");
     if (missing.length > 0) {
       return `A deterministic product-fit decision still needs ${missing.join(" and ")}. Add the missing values and retry; if no date is supplied I use the current UTC date.\n\n${contextText}\n\n${disclaimer}`;
     }
   }
-  if (context.activeTask === "sales_brief" || context.activeTask === "opportunity_score") {
+  if (
+    context.activeTask === "sales_brief" ||
+    context.activeTask === "opportunity_score"
+  ) {
     const missing = missingStructuredParameters();
     if (missing.length > 0) {
       return `A deterministic ${context.activeTask === "sales_brief" ? "sales brief" : "opportunity score"} still needs ${missing.join(", ")}. Add the missing values and retry; if no date is supplied I use the current UTC date.\n\n${contextText}\n\n${disclaimer}`;
@@ -247,40 +275,66 @@ export function buildDirectChatResponse({
       : "请提供一个大于 0 的额定功率（kW）。当前功率无效或有多个值，我没有沿用旧功率，也不会去掉负号后查询。已给出的国家、用途和日期保持不变。";
   }
 
-  if (context.activeTask === "product_fit" && getApprovedRealProductIds().length === 0 &&
-    /(?:真实.{0,20}(?:产品|柴油机|发动机)|(?:不要|不用|排除)\s*demo|\b(?:real|non-demo)\b.{0,30}\b(?:products?|engines?)\b|\b(?:no|without|exclude)\s+demo\b)/iu.test(text)) {
+  if (
+    context.activeTask === "product_fit" &&
+    getApprovedRealProductIds().length === 0 &&
+    /(?:真实.{0,20}(?:产品|柴油机|发动机)|(?:不要|不用|排除)\s*demo|\b(?:real|non-demo)\b.{0,30}\b(?:products?|engines?)\b|\b(?:no|without|exclude)\s+demo\b)/iu.test(
+      text,
+    )
+  ) {
     return locale === "en"
       ? "There are currently no approved real products in the public catalogue, so I cannot recommend a verified real engine. I will not substitute fictional Demo products. You can check the target market's regulations first, then provide verified specifications and certification for review. For information only; not a substitute for formal certification or legal advice."
       : "公开产品目录目前没有经过审批的真实产品，因此无法推荐有证据支持的真实柴油机。我不会用虚构 Demo 产品替代。可以先核对目标市场的法规，再准备真实产品规格与认证交由核验。信息参考，不替代正式认证或法律意见";
   }
 
   // Ask only for the missing field, acknowledging the details already given.
-  const missingRegulationParameters = singleCountryRegulationMissingParameters(context);
+  const missingRegulationParameters =
+    singleCountryRegulationMissingParameters(context);
   if (missingRegulationParameters.length > 0 && !context.hasScopeConflict) {
-    const known = [context.focusedCountryIso3, context.powerKw === null ? null : `${context.powerKw} kW`, context.asOf].filter(Boolean).join(" · ");
+    const known = [
+      context.focusedCountryIso3,
+      context.powerKw === null ? null : `${context.powerKw} kW`,
+      context.asOf,
+    ]
+      .filter(Boolean)
+      .join(" · ");
     if (missingRegulationParameters[0] === "applicationScope") {
       return locale === "en"
         ? `I have ${known}. What will the engine power: construction equipment, agricultural machinery, a generator set, a vessel, or a road vehicle? Reply with the actual application; you do not need to repeat the country or power. I will first check the applicable regulations, not certify the product or approve a sale.`
         : `已记住：${known}。这台发动机用于工程机械、农业机械、发电机组、船舶，还是道路车辆？直接回复实际用途即可，不用重复国家和功率。我会先查适用法规；这不能代替产品认证或销售准入判断。`;
     }
-    if (missingRegulationParameters[0] === "powerKw" && context.applicationScope !== null) {
-      const scope = applicationScopeLabel(context.applicationScope, getDictionary(locale));
+    if (
+      missingRegulationParameters[0] === "powerKw" &&
+      context.applicationScope !== null
+    ) {
+      const scope = applicationScopeLabel(
+        context.applicationScope,
+        getDictionary(locale),
+      );
       return locale === "en"
         ? `I have ${known} · ${scope}. What is the rated power in kW? Reply with a positive value, such as 120 kW; I will retain your country, application and date and check the matching power band. For information only; not a substitute for formal certification or legal advice.`
         : `已记住：${known} · ${scope}。额定功率是多少 kW？直接回复一个大于 0 的数值（例如 120 kW）即可，我会保留国家、用途和日期，再核对对应功率段的法规。信息参考，不替代正式认证或法律意见`;
     }
   }
 
-  if (context.activeTask === "knowledge" && !greetingPattern.test(normalized) &&
-    !thanksPattern.test(normalized) && !capabilityPattern.test(normalized) &&
-    buildKnowledgeRequestContext(contextTexts, context).requiresRestatement) {
+  if (
+    context.activeTask === "knowledge" &&
+    !greetingPattern.test(normalized) &&
+    !thanksPattern.test(normalized) &&
+    !capabilityPattern.test(normalized) &&
+    buildKnowledgeRequestContext(contextTexts, context).requiresRestatement
+  ) {
     return locale === "en"
       ? "Please restate the complete source query with its topic, OR branches and exclusions in one message. I cannot safely merge this new query wording with the retained topic or OR branches. No evidence has been accepted for this refinement."
       : "请在同一条消息中重新写出完整来源查询，包含主题、OR 分支和排除条件。无法安全地将新增检索文字合并到原主题或 OR 分支中；本次追问尚未接受任何证据。";
   }
 
-  if (context.hasScopeConflict && !greetingPattern.test(normalized) &&
-    !thanksPattern.test(normalized) && !capabilityPattern.test(normalized)) {
+  if (
+    context.hasScopeConflict &&
+    !greetingPattern.test(normalized) &&
+    !thanksPattern.test(normalized) &&
+    !capabilityPattern.test(normalized)
+  ) {
     return locale === "en"
       ? "Please specify one application scope, such as non-road or marine. The scopes or exclusions in this request do not resolve to one supported filter; I cannot choose one or silently query all scopes. Your country, power, and as-of date remain unchanged."
       : "请明确一个应用场景，例如非道路或船用。当前用途或排除条件无法确定唯一支持的筛选范围，不能替你任选一个，也不能静默查询所有用途。已给出的国家、功率和判断日期保持不变。";

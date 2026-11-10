@@ -198,44 +198,48 @@ describe("public API error logging", () => {
   it.each([
     {
       endpoint: "countries" as const,
-      english: "Country summaries are temporarily unavailable. Please try again later.",
+      english:
+        "Country summaries are temporarily unavailable. Please try again later.",
       chinese: "国家摘要暂时不可用，请稍后重试。",
     },
     {
       endpoint: "products" as const,
-      english: "The product list is temporarily unavailable. Please try again later.",
+      english:
+        "The product list is temporarily unavailable. Please try again later.",
       chinese: "产品列表暂时不可用，请稍后重试。",
     },
-  ])("localizes public $endpoint API failures from the locale cookie", async ({
-    endpoint,
-    chinese,
-    english,
-  }) => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const service = endpoint === "products"
-      ? mocks.listProducts
-      : mocks.listCountryMapSummaries;
-    service.mockRejectedValue(new Error("unavailable"));
-    const call = (locale?: "zh-CN") => {
-      const request = new Request(`http://localhost/api/${endpoint}`, {
-        headers: locale ? { cookie: `diesel_locale=${locale}` } : undefined,
-      });
-      return endpoint === "products"
-        ? getProducts(request)
-        : getCountrySummaries(request);
-    };
+  ])(
+    "localizes public $endpoint API failures from the locale cookie",
+    async ({ endpoint, chinese, english }) => {
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      const service =
+        endpoint === "products"
+          ? mocks.listProducts
+          : mocks.listCountryMapSummaries;
+      service.mockRejectedValue(new Error("unavailable"));
+      const call = (locale?: "zh-CN") => {
+        const request = new Request(`http://localhost/api/${endpoint}`, {
+          headers: locale ? { cookie: `diesel_locale=${locale}` } : undefined,
+        });
+        return endpoint === "products"
+          ? getProducts(request)
+          : getCountrySummaries(request);
+      };
 
-    try {
-      await expect((await call()).json()).resolves.toMatchObject({
-        error: { code: "INTERNAL_ERROR", message: english },
-      });
-      await expect((await call("zh-CN")).json()).resolves.toMatchObject({
-        error: { code: "INTERNAL_ERROR", message: chinese },
-      });
-    } finally {
-      consoleSpy.mockRestore();
-    }
-  });
+      try {
+        await expect((await call()).json()).resolves.toMatchObject({
+          error: { code: "INTERNAL_ERROR", message: english },
+        });
+        await expect((await call("zh-CN")).json()).resolves.toMatchObject({
+          error: { code: "INTERNAL_ERROR", message: chinese },
+        });
+      } finally {
+        consoleSpy.mockRestore();
+      }
+    },
+  );
 
   it("does not log product-fit service error details", async () => {
     mocks.evaluateProductFit.mockRejectedValue(
@@ -264,7 +268,9 @@ describe("public API error logging", () => {
   it("returns a safe structured error when the product-fit request stream fails", async () => {
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.error(new Error(`Request stream failed at ${sensitiveText}`));
+        controller.error(
+          new Error(`Request stream failed at ${sensitiveText}`),
+        );
       },
     });
     const requestInit = {
@@ -285,17 +291,16 @@ describe("public API error logging", () => {
   });
 
   it("localizes product-fit validation errors without changing their code", async () => {
-    const response = await evaluateProduct(new Request(
-      "http://localhost/api/product-fit",
-      {
+    const response = await evaluateProduct(
+      new Request("http://localhost/api/product-fit", {
         body: "{}",
         headers: {
           "content-type": "application/json",
           cookie: "diesel_locale=zh-CN",
         },
         method: "POST",
-      },
-    ));
+      }),
+    );
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({

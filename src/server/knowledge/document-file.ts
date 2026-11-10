@@ -6,7 +6,8 @@ export const MAX_KNOWLEDGE_DOCUMENT_BYTES = 5 * 1024 * 1024;
 
 export class DocumentProcessingError extends Error {
   constructor(
-    readonly code: "EMPTY_TEXT" | "UNSUPPORTED_FILE" | "INVALID_UTF8" | "UNSUPPORTED_TEXT",
+    readonly code:
+      "EMPTY_TEXT" | "UNSUPPORTED_FILE" | "INVALID_UTF8" | "UNSUPPORTED_TEXT",
     message: string,
   ) {
     super(message);

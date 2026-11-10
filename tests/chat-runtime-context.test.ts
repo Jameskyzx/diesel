@@ -17,8 +17,12 @@ describe("server-captured chat runtime clock", () => {
   });
 
   it("uses the UTC day even when the input instant is expressed in another zone", () => {
-    expect(captureChatRuntimeContext(new Date("2026-09-07T00:00:00+08:00")))
-      .toEqual({ capturedAt: "2026-09-06T16:00:00.000Z", utcDate: "2026-09-06" });
+    expect(
+      captureChatRuntimeContext(new Date("2026-09-07T00:00:00+08:00")),
+    ).toEqual({
+      capturedAt: "2026-09-06T16:00:00.000Z",
+      utcDate: "2026-09-06",
+    });
   });
 
   it("does not retain a mutable Date reference", () => {
@@ -34,7 +38,11 @@ describe("server-captured chat runtime clock", () => {
     { capturedAt: "2026-09-06T23:59:59.999+08:00", utcDate: "2026-09-06" },
     { capturedAt: "2026-09-06T23:59:59Z", utcDate: "2026-09-06" },
     { capturedAt: "2025-02-29T00:00:00.000Z", utcDate: "2025-02-29" },
-    { capturedAt: "2026-09-06T00:00:00.000Z", utcDate: "2026-09-06", extra: true },
+    {
+      capturedAt: "2026-09-06T00:00:00.000Z",
+      utcDate: "2026-09-06",
+      extra: true,
+    },
     { capturedAt: "2026-09-06T00:00:00.000Z" },
     { utcDate: "2026-09-06" },
     null,

@@ -3,9 +3,7 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
 import { assertMapLibreWorkerAssets } from "./scripts/maplibre-worker-assets";
 
-import {
-  WORLD_COUNTRIES_GEOJSON_URL,
-} from "./src/lib/geo-assets";
+import { WORLD_COUNTRIES_GEOJSON_URL } from "./src/lib/geo-assets";
 
 export function createApplicationSecurityHeaders(
   allowDevelopmentRuntimeSources: boolean,
@@ -53,9 +51,7 @@ export function createNextConfig(phase: string): NextConfig {
   assertMapLibreWorkerAssets();
   const isDevelopmentServer = phase === PHASE_DEVELOPMENT_SERVER;
   const isPlaywrightE2e = process.env.PLAYWRIGHT_E2E === "true";
-  const securityHeaders = createApplicationSecurityHeaders(
-    isDevelopmentServer,
-  );
+  const securityHeaders = createApplicationSecurityHeaders(isDevelopmentServer);
 
   return {
     distDir: isPlaywrightE2e ? ".next-e2e" : ".next",

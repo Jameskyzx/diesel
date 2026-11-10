@@ -1,7 +1,4 @@
-export function appendDocumentMetadata(
-  formData: FormData,
-  prefix = "",
-): void {
+export function appendDocumentMetadata(formData: FormData, prefix = ""): void {
   const value = (name: string) =>
     String(formData.get(`${prefix}${name}`) ?? "");
   const rawDemoValue = formData.get(`${prefix}isDemo`);

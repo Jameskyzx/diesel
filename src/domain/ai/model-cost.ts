@@ -13,11 +13,7 @@ const exactIdentifierSchema = z
     message: "Must not contain leading or trailing whitespace",
   });
 
-const rateSchema = z
-  .number()
-  .int()
-  .nonnegative()
-  .max(Number.MAX_SAFE_INTEGER);
+const rateSchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 
 const profileMetadataShape = {
   asOf: z.iso.date(),
@@ -160,15 +156,11 @@ function readCompleteBaseUsage(
     return null;
   }
 
-  const inputTokens = readCompleteMetric(
-    observability.tokenUsage.inputTokens,
-  );
+  const inputTokens = readCompleteMetric(observability.tokenUsage.inputTokens);
   const outputTokens = readCompleteMetric(
     observability.tokenUsage.outputTokens,
   );
-  const totalTokens = readCompleteMetric(
-    observability.tokenUsage.totalTokens,
-  );
+  const totalTokens = readCompleteMetric(observability.tokenUsage.totalTokens);
 
   if (
     inputTokens === null ||
@@ -209,8 +201,8 @@ function readCompleteCacheUsage(
     cacheReadTokens > baseUsage.inputTokens ||
     cacheWriteTokens > baseUsage.inputTokens ||
     BigInt(noCacheTokens) +
-        BigInt(cacheReadTokens) +
-        BigInt(cacheWriteTokens) !==
+      BigInt(cacheReadTokens) +
+      BigInt(cacheWriteTokens) !==
       BigInt(baseUsage.inputTokens)
   ) {
     return null;
@@ -227,8 +219,7 @@ function readCompleteCacheUsage(
 function calculateCostMicroUsd(terms: readonly CostTerm[]): number | null {
   const numerator = terms.reduce(
     (sum, term) =>
-      sum +
-      BigInt(term.tokens) * BigInt(term.rateMicroUsdPerMillionTokens),
+      sum + BigInt(term.tokens) * BigInt(term.rateMicroUsdPerMillionTokens),
     0n,
   );
   const roundedUp =
@@ -293,10 +284,7 @@ export function estimateModelCost(input: {
       },
     );
   } else {
-    const cacheUsage = readCompleteCacheUsage(
-      input.observability,
-      baseUsage,
-    );
+    const cacheUsage = readCompleteCacheUsage(input.observability, baseUsage);
     if (cacheUsage === null) {
       return result("usage_incomplete", profile);
     }

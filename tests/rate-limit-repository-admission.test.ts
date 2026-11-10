@@ -55,9 +55,19 @@ function validHourlyInput(): ReserveAiChatHourlyRequestInput {
 function createFakeDatabase(returnedCounts: Array<number | null>) {
   const transaction = {
     execute: vi.fn(async (query?: SQL) => {
-      if (query && new PgDialect().sqlToQuery(query).sql.includes("with global_reservation")) {
+      if (
+        query &&
+        new PgDialect()
+          .sqlToQuery(query)
+          .sql.includes("with global_reservation")
+      ) {
         const [globalCount = null, clientCount = null] = returnedCounts;
-        return [{ globalCount, clientCount: globalCount === null ? null : clientCount }];
+        return [
+          {
+            globalCount,
+            clientCount: globalCount === null ? null : clientCount,
+          },
+        ];
       }
     }),
   };
@@ -95,7 +105,9 @@ describe("rate-limit repository AI admission transaction", () => {
     expect(query.params).toContain("ai-chat-hourly-global-v1");
     expect(query.params).toContain("ai-chat-hourly-v1");
     expect(query.sql).not.toContain("ai-chat-hourly-v1");
-    const settings = new PgDialect().sqlToQuery(fake.transaction.execute.mock.calls[0][0]!);
+    const settings = new PgDialect().sqlToQuery(
+      fake.transaction.execute.mock.calls[0][0]!,
+    );
     expect(settings.params).toEqual([
       String(RATE_LIMIT_STATEMENT_TIMEOUT_MS),
       String(RATE_LIMIT_LOCK_TIMEOUT_MS),
@@ -123,24 +135,39 @@ describe("rate-limit repository AI admission transaction", () => {
   });
 
   it.each([
-    ["client above global", {
-      client: { ...validHourlyInput().client, limit: 301 },
-    }],
-    ["unaligned window", {
-      windowStart: new Date(utcDayStart + 1),
-    }],
-    ["wrong expiry", {
-      expiresAt: new Date(utcDayStart + 60_000),
-    }],
-    ["invalid hash", {
-      global: { ...validHourlyInput().global, keyHash: "global" },
-    }],
-    ["shared scope", {
-      global: {
-        ...validHourlyInput().global,
-        scope: validHourlyInput().client.scope,
+    [
+      "client above global",
+      {
+        client: { ...validHourlyInput().client, limit: 301 },
       },
-    }],
+    ],
+    [
+      "unaligned window",
+      {
+        windowStart: new Date(utcDayStart + 1),
+      },
+    ],
+    [
+      "wrong expiry",
+      {
+        expiresAt: new Date(utcDayStart + 60_000),
+      },
+    ],
+    [
+      "invalid hash",
+      {
+        global: { ...validHourlyInput().global, keyHash: "global" },
+      },
+    ],
+    [
+      "shared scope",
+      {
+        global: {
+          ...validHourlyInput().global,
+          scope: validHourlyInput().client.scope,
+        },
+      },
+    ],
   ] as const)("rejects invalid hourly input: %s", async (_label, patch) => {
     const fake = createFakeDatabase([]);
     await expect(
@@ -168,13 +195,13 @@ describe("rate-limit repository AI admission transaction", () => {
     expect(rendered).toContain("statement_timestamp()");
     expect(rendered).toContain("interval '1 millisecond'");
     expect(rendered).toContain("order by");
-    expect(rendered).toContain("\"expires_at\" asc");
-    expect(rendered).toContain("\"scope\" asc");
-    expect(rendered).toContain("\"key_hash\" asc");
-    expect(rendered).toContain("\"window_start\" asc");
+    expect(rendered).toContain('"expires_at" asc');
+    expect(rendered).toContain('"scope" asc');
+    expect(rendered).toContain('"key_hash" asc');
+    expect(rendered).toContain('"window_start" asc');
     expect(rendered).toContain("limit $");
     expect(rendered).toContain("for update skip locked");
-    expect(rendered).toContain("delete from \"api_rate_limit_buckets\"");
+    expect(rendered).toContain('delete from "api_rate_limit_buckets"');
   });
 
   it("reserves the global bucket before the client bucket", async () => {
@@ -185,7 +212,9 @@ describe("rate-limit repository AI admission transaction", () => {
       repository.reserveAiChatAdmissionProviderCallUnits(validInput()),
     ).resolves.toBe(true);
     const query = pairQuery(fake);
-    expect(query.sql.indexOf("global_reservation as")).toBeLessThan(query.sql.indexOf("client_reservation as"));
+    expect(query.sql.indexOf("global_reservation as")).toBeLessThan(
+      query.sql.indexOf("client_reservation as"),
+    );
     expect(query.sql).toContain("from global_reservation");
     expect(query.params).toContain(495);
     expect(query.params).toContain(45);
@@ -216,18 +245,21 @@ describe("rate-limit repository AI admission transaction", () => {
     ["invalid current date", { now: new Date(Number.NaN) }],
     ["non-midnight window", { windowStart: new Date(utcDayStart + 1) }],
     ["wrong reset date", { resetAt: new Date(utcDayStart + 1_000) }],
-  ] as const)("rejects %s before opening a transaction", async (_name, patch) => {
-    const fake = createFakeDatabase([]);
-    const repository = createRateLimitRepository(fake.database as never);
+  ] as const)(
+    "rejects %s before opening a transaction",
+    async (_name, patch) => {
+      const fake = createFakeDatabase([]);
+      const repository = createRateLimitRepository(fake.database as never);
 
-    await expect(
-      repository.reserveAiChatAdmissionProviderCallUnits({
-        ...validInput(),
-        ...patch,
-      }),
-    ).rejects.toBeInstanceOf(Error);
-    expect(fake.database.transaction).not.toHaveBeenCalled();
-  });
+      await expect(
+        repository.reserveAiChatAdmissionProviderCallUnits({
+          ...validInput(),
+          ...patch,
+        }),
+      ).rejects.toBeInstanceOf(Error);
+      expect(fake.database.transaction).not.toHaveBeenCalled();
+    },
+  );
 
   it("rejects invalid limits, hashes, domain separation, and returned counts", async () => {
     const invalidInputs: ReserveAiChatAdmissionProviderCallUnitsInput[] = [
@@ -283,17 +315,30 @@ describe("rate-limit repository AI admission transaction", () => {
     }
   });
 
-  it.each([
-    undefined,
-    [],
-    [{ globalCount: 1, clientCount: 1 }, { globalCount: 1, clientCount: 1 }],
-    [{ globalCount: null, clientCount: 1 }],
-    [{ globalCount: Number.NaN, clientCount: 1 }],
-    [{ globalCount: "1", clientCount: 1 }],
-  ].map((result) => ({ result })))("rejects malformed pair results without granting admission: %j", async ({ result }) => {
-    const fake = createFakeDatabase([]);
-    fake.transaction.execute.mockResolvedValueOnce(undefined).mockResolvedValueOnce(result as never);
-    await expect(createRateLimitRepository(fake.database as never).reserveAiChatHourlyRequest(validHourlyInput()))
-      .rejects.toBeInstanceOf(Error);
-  });
+  it.each(
+    [
+      undefined,
+      [],
+      [
+        { globalCount: 1, clientCount: 1 },
+        { globalCount: 1, clientCount: 1 },
+      ],
+      [{ globalCount: null, clientCount: 1 }],
+      [{ globalCount: Number.NaN, clientCount: 1 }],
+      [{ globalCount: "1", clientCount: 1 }],
+    ].map((result) => ({ result })),
+  )(
+    "rejects malformed pair results without granting admission: %j",
+    async ({ result }) => {
+      const fake = createFakeDatabase([]);
+      fake.transaction.execute
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(result as never);
+      await expect(
+        createRateLimitRepository(
+          fake.database as never,
+        ).reserveAiChatHourlyRequest(validHourlyInput()),
+      ).rejects.toBeInstanceOf(Error);
+    },
+  );
 });

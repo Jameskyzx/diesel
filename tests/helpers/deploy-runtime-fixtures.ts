@@ -24,7 +24,10 @@ export function quoteShell(value: string): string {
   return `'${value.replaceAll("'", `'"'"'`)}'`;
 }
 
-export async function writeExecutable(path: string, source: string): Promise<void> {
+export async function writeExecutable(
+  path: string,
+  source: string,
+): Promise<void> {
   await writeFile(path, source, "utf8");
   await chmod(path, 0o755);
 }
@@ -57,7 +60,10 @@ export async function writeHostActivationBasis(
   await chmod(stateDir, 0o700);
   const basis = new Map<string, string>([
     [join(stateDir, "previous-release"), `${fixture.previousRelease}\n`],
-    [join(stateDir, "env.production.local.pre-switch"), "DATABASE_URL=postgresql://fixture@database.invalid/diesel\n"],
+    [
+      join(stateDir, "env.production.local.pre-switch"),
+      "DATABASE_URL=postgresql://fixture@database.invalid/diesel\n",
+    ],
     [join(stateDir, "jamesky.site.pre-switch"), "primary fixture\n"],
     [join(stateDir, "diesel-demo.pre-switch"), "alternate fixture\n"],
   ]);
@@ -133,12 +139,16 @@ export async function createHostActivationLedgerFixture(): Promise<HostActivatio
       "DATABASE_URL=postgresql://fixture@database.invalid/diesel\n",
       "utf8",
     ).then(() => chmod(join(sharedRoot, ".env.production.local"), 0o640)),
-    writeFile(join(nginxSitesRoot, "jamesky.site"), "primary fixture\n", "utf8").then(
-      () => chmod(join(nginxSitesRoot, "jamesky.site"), 0o644),
-    ),
-    writeFile(join(nginxSitesRoot, "diesel-demo"), "alternate fixture\n", "utf8").then(
-      () => chmod(join(nginxSitesRoot, "diesel-demo"), 0o644),
-    ),
+    writeFile(
+      join(nginxSitesRoot, "jamesky.site"),
+      "primary fixture\n",
+      "utf8",
+    ).then(() => chmod(join(nginxSitesRoot, "jamesky.site"), 0o644)),
+    writeFile(
+      join(nginxSitesRoot, "diesel-demo"),
+      "alternate fixture\n",
+      "utf8",
+    ).then(() => chmod(join(nginxSitesRoot, "diesel-demo"), 0o644)),
   ]);
   await symlink(previousRelease, currentLink);
 
@@ -259,10 +269,7 @@ path="\${template%XXXXXX}fixture-$$-$RANDOM"
 printf '%s\\n' "$path"
 `,
   );
-  await writeExecutable(
-    join(fakeBin, "chown"),
-    "#!/bin/bash\nexit 0\n",
-  );
+  await writeExecutable(join(fakeBin, "chown"), "#!/bin/bash\nexit 0\n");
   await writeExecutable(
     join(fakeBin, "flock"),
     `#!/bin/bash
@@ -350,10 +357,7 @@ export async function createPreparePreflightFixture(
   const stateRoot = join(deployRoot, "backups", TEST_RELEASE_SHA);
   const backupRoot = join(deployRoot, "backups");
   const environmentPath = join(sharedRoot, ".env.production.local");
-  const environmentBackup = join(
-    stateRoot,
-    "env.production.local.pre-switch",
-  );
+  const environmentBackup = join(stateRoot, "env.production.local.pre-switch");
   const fakeBin = join(root, "bin");
   const previousReleaseFile = join(stateRoot, "previous-release");
   const nginxPrimaryBackup = join(stateRoot, "jamesky.site.pre-switch");
@@ -578,7 +582,10 @@ fi
     [artifactScript, "root:diesel:640"],
   ]);
   const metadataCases = [...metadata]
-    .map(([path, value]) => `  ${quoteShell(path)}) printf '%s\\n' ${quoteShell(value)} ;;`)
+    .map(
+      ([path, value]) =>
+        `  ${quoteShell(path)}) printf '%s\\n' ${quoteShell(value)} ;;`,
+    )
     .join("\n");
   await writeExecutable(
     join(fakeBin, "stat"),
@@ -611,8 +618,7 @@ esac
     environmentBackup,
     environmentPath,
     fakeBin,
-    fakePath:
-      `${fakeBin}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
+    fakePath: `${fakeBin}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
     lifecycleLock,
     nodeBinary,
     nginxAlternateBackup,

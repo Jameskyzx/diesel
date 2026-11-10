@@ -80,27 +80,33 @@ function error(
 
 describe("country-detail render state", () => {
   it("returns idle without a selected query even when older data exists", () => {
-    expect(selectCountryDetailState({
-      detail: ready(),
-      initialResponse: latestResponse,
-      query: null,
-    })).toEqual({ status: "idle" });
+    expect(
+      selectCountryDetailState({
+        detail: ready(),
+        initialResponse: latestResponse,
+        query: null,
+      }),
+    ).toEqual({ status: "idle" });
   });
 
   it("returns loading when a selected query has neither SSR nor local data", () => {
-    expect(selectCountryDetailState({
-      detail: { status: "idle" },
-      query,
-    })).toEqual({ iso3: "CHN", status: "loading" });
+    expect(
+      selectCountryDetailState({
+        detail: { status: "idle" },
+        query,
+      }),
+    ).toEqual({ iso3: "CHN", status: "loading" });
   });
 
   it("uses each latest SSR response instead of retaining an older local snapshot", () => {
     const detail = ready();
-    expect(selectCountryDetailState({
-      detail,
-      initialResponse: originalResponse,
-      query,
-    })).toEqual({ query, response: originalResponse, status: "ready" });
+    expect(
+      selectCountryDetailState({
+        detail,
+        initialResponse: originalResponse,
+        query,
+      }),
+    ).toEqual({ query, response: originalResponse, status: "ready" });
 
     const current = selectCountryDetailState({
       detail,
@@ -112,30 +118,37 @@ describe("country-detail render state", () => {
       response: latestResponse,
       status: "ready",
     });
-    if (current.status !== "ready") throw new Error("Expected current SSR data.");
+    if (current.status !== "ready")
+      throw new Error("Expected current SSR data.");
     expect(current.response).toBe(latestResponse);
     expect(detail).toEqual(ready(query, originalResponse));
   });
 
   it("prefers a successful SSR response over a matching local error", () => {
-    expect(selectCountryDetailState({
-      detail: error(),
-      initialResponse: originalResponse,
-      query,
-    })).toEqual({ query, response: originalResponse, status: "ready" });
+    expect(
+      selectCountryDetailState({
+        detail: error(),
+        initialResponse: originalResponse,
+        query,
+      }),
+    ).toEqual({ query, response: originalResponse, status: "ready" });
   });
 
   it("can switch available SSR data to no-data and back without a remount", () => {
-    expect(selectCountryDetailState({
-      detail: ready(),
-      initialResponse: noData,
-      query,
-    })).toEqual({ query, response: noData, status: "ready" });
-    expect(selectCountryDetailState({
-      detail: ready(query, noData),
-      initialResponse: originalResponse,
-      query,
-    })).toEqual({ query, response: originalResponse, status: "ready" });
+    expect(
+      selectCountryDetailState({
+        detail: ready(),
+        initialResponse: noData,
+        query,
+      }),
+    ).toEqual({ query, response: noData, status: "ready" });
+    expect(
+      selectCountryDetailState({
+        detail: ready(query, noData),
+        initialResponse: originalResponse,
+        query,
+      }),
+    ).toEqual({ query, response: originalResponse, status: "ready" });
   });
 
   it("reuses an exact local ready, no-data, or error state", () => {
@@ -155,15 +168,20 @@ describe("country-detail render state", () => {
   ] satisfies Array<{
     change: Partial<CountryDetailQueryIdentity>;
     label: string;
-  }>)("does not reuse local results or errors across a changed $label", ({ change }) => {
-    const changedQuery = { ...query, ...change };
-    for (const detail of [ready(), ready(query, noData), error()]) {
-      expect(selectCountryDetailState({ detail, query: changedQuery })).toEqual({
-        iso3: changedQuery.iso3,
-        status: "loading",
-      });
-    }
-  });
+  }>)(
+    "does not reuse local results or errors across a changed $label",
+    ({ change }) => {
+      const changedQuery = { ...query, ...change };
+      for (const detail of [ready(), ready(query, noData), error()]) {
+        expect(
+          selectCountryDetailState({ detail, query: changedQuery }),
+        ).toEqual({
+          iso3: changedQuery.iso3,
+          status: "loading",
+        });
+      }
+    },
+  );
 
   it("reuses a default-date available response when its resolved date enters the URL", () => {
     const detail = ready({ ...query, asOf: null });
@@ -179,17 +197,25 @@ describe("country-detail render state", () => {
   ] satisfies Array<{
     change: Partial<CountryDetailQueryIdentity>;
     label: string;
-  }>)("does not use default-date equivalence across a changed $label", ({ change }) => {
-    const changedQuery = { ...query, ...change };
-    expect(selectCountryDetailState({
-      detail: ready({ ...query, asOf: null }),
-      query: changedQuery,
-    })).toEqual({ iso3: changedQuery.iso3, status: "loading" });
-  });
+  }>)(
+    "does not use default-date equivalence across a changed $label",
+    ({ change }) => {
+      const changedQuery = { ...query, ...change };
+      expect(
+        selectCountryDetailState({
+          detail: ready({ ...query, asOf: null }),
+          query: changedQuery,
+        }),
+      ).toEqual({ iso3: changedQuery.iso3, status: "loading" });
+    },
+  );
 
   it("does not treat an error or no-data response as a resolved default date", () => {
     const defaultDateQuery = { ...query, asOf: null };
-    for (const detail of [error(defaultDateQuery), ready(defaultDateQuery, noData)]) {
+    for (const detail of [
+      error(defaultDateQuery),
+      ready(defaultDateQuery, noData),
+    ]) {
       expect(selectCountryDetailState({ detail, query })).toEqual({
         iso3: "CHN",
         status: "loading",
@@ -198,17 +224,21 @@ describe("country-detail render state", () => {
   });
 
   it("does not reuse a default-date response for a different explicit date", () => {
-    expect(selectCountryDetailState({
-      detail: ready({ ...query, asOf: null }),
-      query: { ...query, asOf: "2026-01-21" },
-    })).toEqual({ iso3: "CHN", status: "loading" });
+    expect(
+      selectCountryDetailState({
+        detail: ready({ ...query, asOf: null }),
+        query: { ...query, asOf: "2026-01-21" },
+      }),
+    ).toEqual({ iso3: "CHN", status: "loading" });
   });
 
   it("does not use response.asOf to forgive a different explicit local query date", () => {
-    expect(selectCountryDetailState({
-      detail: ready({ ...query, asOf: "2026-01-19" }),
-      query,
-    })).toEqual({ iso3: "CHN", status: "loading" });
+    expect(
+      selectCountryDetailState({
+        detail: ready({ ...query, asOf: "2026-01-19" }),
+        query,
+      }),
+    ).toEqual({ iso3: "CHN", status: "loading" });
   });
 
   it("reuses a matching all-default query without guessing scope or power", () => {
@@ -219,6 +249,8 @@ describe("country-detail render state", () => {
       powerKw: null,
     };
     const detail = ready(defaultQuery);
-    expect(selectCountryDetailState({ detail, query: defaultQuery })).toBe(detail);
+    expect(selectCountryDetailState({ detail, query: defaultQuery })).toBe(
+      detail,
+    );
   });
 });

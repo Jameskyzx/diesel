@@ -18,11 +18,7 @@ function hasUnsafeDatabaseUrlControlCharacters(value: string): boolean {
   }
 
   const url = new URL(value);
-  const encodedComponents = [
-    url.username,
-    url.password,
-    url.pathname,
-  ];
+  const encodedComponents = [url.username, url.password, url.pathname];
   for (const component of encodedComponents) {
     let decoded: string;
     try {
@@ -49,32 +45,35 @@ export const databaseUrlSchema = z
   .refine((value) => !databaseUrlControlCharacters.test(value), {
     message: "DATABASE_URL must not contain control characters",
   })
-  .pipe(z.string()
-  .url()
-  .refine(
-    (value) => {
-      const protocol = new URL(value).protocol;
-      return protocol === "postgres:" || protocol === "postgresql:";
-    },
-    {
-      message: "DATABASE_URL must use the postgres or postgresql protocol",
-    },
-  )
-  .refine(
-    (value) => {
-      const url = new URL(value);
-      return [...url.searchParams.keys()].every(
-        (key) => !protectedDatabaseUrlParameters.has(key.toLowerCase()),
-      );
-    },
-    {
-      message:
-        "DATABASE_URL must not override application-controlled database timeouts",
-    },
-  )
-  .refine((value) => !hasUnsafeDatabaseUrlControlCharacters(value), {
-    message: "DATABASE_URL must not contain control characters",
-  }));
+  .pipe(
+    z
+      .string()
+      .url()
+      .refine(
+        (value) => {
+          const protocol = new URL(value).protocol;
+          return protocol === "postgres:" || protocol === "postgresql:";
+        },
+        {
+          message: "DATABASE_URL must use the postgres or postgresql protocol",
+        },
+      )
+      .refine(
+        (value) => {
+          const url = new URL(value);
+          return [...url.searchParams.keys()].every(
+            (key) => !protectedDatabaseUrlParameters.has(key.toLowerCase()),
+          );
+        },
+        {
+          message:
+            "DATABASE_URL must not override application-controlled database timeouts",
+        },
+      )
+      .refine((value) => !hasUnsafeDatabaseUrlControlCharacters(value), {
+        message: "DATABASE_URL must not contain control characters",
+      }),
+  );
 
 export function getDatabaseUrl(
   environment: Readonly<Record<string, string | undefined>> = process.env,

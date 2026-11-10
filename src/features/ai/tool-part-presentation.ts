@@ -24,9 +24,7 @@ type ToolPartLike = {
 };
 
 export type ToolPartErrorCode =
-  | "execution_error"
-  | "invalid_result"
-  | "permission_denied";
+  "execution_error" | "invalid_result" | "permission_denied";
 
 export type ToolPartPresentation =
   | { kind: "loading" }
@@ -139,8 +137,7 @@ export function clientToolResultMatchesPartInput(
       result.search.filters.applicationScope &&
     (parsed.data.countryIso3 == null ||
       parsed.data.countryIso3 === result.resolvedCountryIso3) &&
-    (parsed.data.asOf == null ||
-      parsed.data.asOf === result.informationAsOf)
+    (parsed.data.asOf == null || parsed.data.asOf === result.informationAsOf)
   );
 }
 
@@ -154,9 +151,7 @@ function toolNameFromPart(part: ToolPartLike): string | null {
   return null;
 }
 
-export function toolPartPresentation(
-  part: ToolPartLike,
-): ToolPartPresentation {
+export function toolPartPresentation(part: ToolPartLike): ToolPartPresentation {
   switch (part.state) {
     case "input-streaming":
     case "input-available":
@@ -181,9 +176,9 @@ export function toolPartPresentation(
         clientToolResultMatchesPartInput(parsed.data, part.input)
         ? { kind: "result", result: parsed.data }
         : {
-          code: "invalid_result",
-          kind: "error",
-        };
+            code: "invalid_result",
+            kind: "error",
+          };
     }
     default: {
       const exhaustiveState: never = part.state;

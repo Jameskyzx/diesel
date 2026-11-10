@@ -37,10 +37,7 @@ describe("country client error codes", () => {
         error: { code: "UPSTREAM_PRIVATE_ERROR", message: "DO NOT RENDER" },
       }),
     ],
-    [
-      "missing message",
-      JSON.stringify({ error: { code: "INTERNAL_ERROR" } }),
-    ],
+    ["missing message", JSON.stringify({ error: { code: "INTERNAL_ERROR" } })],
     ["malformed JSON", '{"error":'],
   ])("fails closed for a %s response", async (_label, body) => {
     await expect(
@@ -83,12 +80,12 @@ describe("country client error codes", () => {
     expect(countryDetailErrorMessage(detailState.code, chinese)).toBe(
       chinese.apiErrors.invalidCountryFilter,
     );
-    expect(
-      countryDecisionSummaryErrorMessage(mapState.code, english),
-    ).toBe(english.country.decisionSummaryErrorFallback);
-    expect(
-      countryDecisionSummaryErrorMessage(mapState.code, chinese),
-    ).toBe(chinese.country.decisionSummaryErrorFallback);
+    expect(countryDecisionSummaryErrorMessage(mapState.code, english)).toBe(
+      english.country.decisionSummaryErrorFallback,
+    );
+    expect(countryDecisionSummaryErrorMessage(mapState.code, chinese)).toBe(
+      chinese.country.decisionSummaryErrorFallback,
+    );
   });
 
   it("uses fixed surface fallbacks for unknown client failures", () => {

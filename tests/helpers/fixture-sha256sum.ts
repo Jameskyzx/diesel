@@ -28,38 +28,61 @@ export function createFixtureSha256sumShim(
   // real process probe, including its safe fallback when the host is busy.
   const runCapabilityProbe: FixtureSha256CapabilityProbe =
     options.runCapabilityProbe ?? spawnSync;
-  const candidate = options.nativeExecutable === undefined
-    ? "/usr/bin/openssl"
-    : options.nativeExecutable;
+  const candidate =
+    options.nativeExecutable === undefined
+      ? "/usr/bin/openssl"
+      : options.nativeExecutable;
   let nativeIsSupported = false;
   if (candidate && isAbsolute(candidate)) {
     try {
       nativeIsSupported = true;
-      for (const input of [Buffer.alloc(0), Buffer.from([0, 255, 10, 13, 65, 194, 181, 0, 127])]) {
-        const result = runCapabilityProbe(candidate, ["dgst", "-sha256", "-binary"], {
-          input,
-          maxBuffer: 4 * 1024,
-          timeout: 2_000,
-        });
+      for (const input of [
+        Buffer.alloc(0),
+        Buffer.from([0, 255, 10, 13, 65, 194, 181, 0, 127]),
+      ]) {
+        const result = runCapabilityProbe(
+          candidate,
+          ["dgst", "-sha256", "-binary"],
+          {
+            input,
+            maxBuffer: 4 * 1024,
+            timeout: 2_000,
+          },
+        );
         const digest = createHash("sha256").update(input).digest();
-        if (result.error || result.status !== 0 ||
-          !Buffer.isBuffer(result.stdout) || !result.stdout.equals(digest)) {
+        if (
+          result.error ||
+          result.status !== 0 ||
+          !Buffer.isBuffer(result.stdout) ||
+          !result.stdout.equals(digest)
+        ) {
           nativeIsSupported = false;
           break;
         }
       }
       if (nativeIsSupported) {
-        const digest = createHash("sha256").update("fixture-converter-probe").digest();
-        const converted = runCapabilityProbe("/usr/bin/od", ["-An", "-v", "-tx1"], {
-          encoding: "utf8",
-          input: digest,
-          maxBuffer: 4 * 1024,
-          timeout: 2_000,
-        });
-        nativeIsSupported = !converted.error && converted.status === 0 &&
+        const digest = createHash("sha256")
+          .update("fixture-converter-probe")
+          .digest();
+        const converted = runCapabilityProbe(
+          "/usr/bin/od",
+          ["-An", "-v", "-tx1"],
+          {
+            encoding: "utf8",
+            input: digest,
+            maxBuffer: 4 * 1024,
+            timeout: 2_000,
+          },
+        );
+        nativeIsSupported =
+          !converted.error &&
+          converted.status === 0 &&
           typeof converted.stdout === "string" &&
-          /^(?:[ \t\r\n\v\f]*[0-9a-f]{2}){32}[ \t\r\n\v\f]*$/.test(converted.stdout) &&
-          converted.stdout.replace(/[ \t\r\n\v\f]/g, "") === digest.toString("hex");
+          /^(?:[ \t\r\n\v\f]*[0-9a-f]{2}){32}[ \t\r\n\v\f]*$/.test(
+            converted.stdout,
+          ) &&
+          converted.stdout.replace(/[ \t\r\n\v\f]/g, "") ===
+            digest.toString("hex");
       }
     } catch {
       // An unavailable/incompatible backend preserves the original Node behavior.
@@ -67,8 +90,9 @@ export function createFixtureSha256sumShim(
     }
   }
 
-  const native = candidate && nativeIsSupported
-    ? `# Convert raw bytes before command substitution: Bash discards embedded NULs.
+  const native =
+    candidate && nativeIsSupported
+      ? `# Convert raw bytes before command substitution: Bash discards embedded NULs.
 # The native path reads each regular file afresh and keeps both pipeline statuses.
 if [[ "$path" == /* && -f "$path" ]]; then
   if native_output="$(${quoteShell(candidate)} dgst -sha256 -binary 2>/dev/null < "$path" |
@@ -81,7 +105,7 @@ if [[ "$path" == /* && -f "$path" ]]; then
   fi
 fi
 `
-    : "";
+      : "";
   return `#!/bin/bash
 set -euo pipefail
 path="\${!#}"

@@ -17,7 +17,7 @@ import {
   type TrustedUserMessage,
 } from "@/server/ai/trusted-user-messages";
 
-type GetResolvedPdfJs = typeof import("unpdf")["getResolvedPDFJS"];
+type GetResolvedPdfJs = (typeof import("unpdf"))["getResolvedPDFJS"];
 type PdfJsModule = Awaited<ReturnType<GetResolvedPdfJs>>;
 type PdfLoadingTask = ReturnType<PdfJsModule["getDocument"]>;
 type PdfDocument = Awaited<PdfLoadingTask["promise"]>;
@@ -56,9 +56,7 @@ function inlineFile(input: {
   };
 }
 
-function userMessage(
-  parts: TrustedUserMessage["parts"],
-): TrustedUserMessage {
+function userMessage(parts: TrustedUserMessage["parts"]): TrustedUserMessage {
   return {
     id: "00000000-0000-4000-8000-000000000991",
     parts,
@@ -96,17 +94,18 @@ function streamedPdfPage(chunks: readonly unknown[]) {
   let chunkIndex = 0;
   const cancel = vi.fn(async () => undefined);
   const cleanup = vi.fn(() => true);
-  const read = vi.fn(
-    async (): Promise<ReadableStreamReadResult<unknown>> => {
-      if (chunkIndex < chunks.length) {
-        const value = chunks[chunkIndex];
-        chunkIndex += 1;
-        return { done: false, value };
-      }
-      return { done: true, value: undefined };
-    },
-  );
-  const reader = { cancel, read } as unknown as ReadableStreamDefaultReader<unknown>;
+  const read = vi.fn(async (): Promise<ReadableStreamReadResult<unknown>> => {
+    if (chunkIndex < chunks.length) {
+      const value = chunks[chunkIndex];
+      chunkIndex += 1;
+      return { done: false, value };
+    }
+    return { done: true, value: undefined };
+  });
+  const reader = {
+    cancel,
+    read,
+  } as unknown as ReadableStreamDefaultReader<unknown>;
   const stream = {
     getReader: () => reader,
   } as unknown as ReadableStream<unknown>;
@@ -210,31 +209,31 @@ describe("chat attachment model preparation", () => {
     {
       filename: "plate.jpg",
       mediaType: "image/jpeg",
-      base64: "/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAQABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABQb/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCOALpF/9k=",
+      base64:
+        "/9j/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAQABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABQb/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCOALpF/9k=",
     },
     {
       filename: "plate.webp",
       mediaType: "image/webp",
       base64: "UklGRh4AAABXRUJQVlA4TBEAAAAvD8ADAAfQuI7Ur/+BiOh/AAA=",
     },
-  ] as const)("fully decodes a valid $mediaType and preserves its model input", async ({
-    base64,
-    filename,
-    mediaType,
-  }) => {
-    const image = inlineFile({
-      bytes: Buffer.from(base64, "base64"),
-      filename,
-      mediaType,
-    });
-    expect(trustedUserFilePartSchema.safeParse(image).success).toBe(true);
-    const message = userMessage([{ text: "读图", type: "text" }, image]);
+  ] as const)(
+    "fully decodes a valid $mediaType and preserves its model input",
+    async ({ base64, filename, mediaType }) => {
+      const image = inlineFile({
+        bytes: Buffer.from(base64, "base64"),
+        filename,
+        mediaType,
+      });
+      expect(trustedUserFilePartSchema.safeParse(image).success).toBe(true);
+      const message = userMessage([{ text: "读图", type: "text" }, image]);
 
-    const prepared = await prepareTrustedUserMessagesForModel([message]);
+      const prepared = await prepareTrustedUserMessagesForModel([message]);
 
-    expect(prepared.requiresMultimodalModel).toBe(true);
-    expect(prepared.messages).toEqual([message]);
-  });
+      expect(prepared.requiresMultimodalModel).toBe(true);
+      expect(prepared.messages).toEqual([message]);
+    },
+  );
 
   it("rejects images below the provider-compatible 11 pixel boundary", async () => {
     const tinyImage = inlineFile({
@@ -252,13 +251,9 @@ describe("chat attachment model preparation", () => {
   it("rejects a structurally plausible image whose pixels cannot be decoded", async () => {
     const forgedImage = inlineFile({
       bytes: Uint8Array.from([
-        0x52, 0x49, 0x46, 0x46,
-        0x16, 0x00, 0x00, 0x00,
-        0x57, 0x45, 0x42, 0x50,
-        0x56, 0x50, 0x38, 0x4c,
-        0x0a, 0x00, 0x00, 0x00,
-        0x2f, 0x0f, 0xc0, 0x03, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00,
+        0x52, 0x49, 0x46, 0x46, 0x16, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+        0x56, 0x50, 0x38, 0x4c, 0x0a, 0x00, 0x00, 0x00, 0x2f, 0x0f, 0xc0, 0x03,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       ]),
       filename: "forged.webp",
       mediaType: "image/webp",
@@ -297,9 +292,7 @@ describe("chat attachment model preparation", () => {
     const firstPage = streamedPdfPage([
       { items: [{ hasEOL: true, str: "First page" }] },
     ]);
-    const secondPage = streamedPdfPage([
-      { items: [{ str: "Second page" }] },
-    ]);
+    const secondPage = streamedPdfPage([{ items: [{ str: "Second page" }] }]);
     const pdf = mockPdfDocument([firstPage.page, secondPage.page]);
 
     const prepared = await prepareTrustedUserMessagesForModel([
@@ -419,9 +412,7 @@ describe("chat attachment model preparation", () => {
     ]);
     const rejection = expect(preparing).rejects.toThrow("处理超过 15 秒限制");
 
-    await vi.advanceTimersByTimeAsync(
-      CHAT_ATTACHMENT_PROCESSING_TIMEOUT_MS,
-    );
+    await vi.advanceTimersByTimeAsync(CHAT_ATTACHMENT_PROCESSING_TIMEOUT_MS);
     await rejection;
 
     expect(page.cancel).toHaveBeenCalledOnce();
@@ -475,9 +466,7 @@ describe("chat attachment model preparation", () => {
     ]);
     const rejection = expect(preparing).rejects.toThrow("处理超过 15 秒限制");
 
-    await vi.advanceTimersByTimeAsync(
-      CHAT_ATTACHMENT_PROCESSING_TIMEOUT_MS,
-    );
+    await vi.advanceTimersByTimeAsync(CHAT_ATTACHMENT_PROCESSING_TIMEOUT_MS);
     await rejection;
 
     expect(loading.destroy).toHaveBeenCalledOnce();

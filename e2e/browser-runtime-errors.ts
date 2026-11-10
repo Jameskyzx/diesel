@@ -6,7 +6,10 @@ type PageErrorSource = {
   off: (event: "pageerror", listener: ErrorListener) => unknown;
 };
 type RuntimeErrorArtifacts = {
-  attach: (name: string, options: { body: Buffer; contentType: string }) => Promise<void>;
+  attach: (
+    name: string,
+    options: { body: Buffer; contentType: string },
+  ) => Promise<void>;
 };
 
 function sampleError(error: Error) {
@@ -15,7 +18,10 @@ function sampleError(error: Error) {
     name: error.name.slice(0, 200),
     message: error.message.slice(0, 2_000),
     stack: stack?.slice(0, 8_000) ?? null,
-    truncated: error.name.length > 200 || error.message.length > 2_000 || (stack?.length ?? 0) > 8_000,
+    truncated:
+      error.name.length > 200 ||
+      error.message.length > 2_000 ||
+      (stack?.length ?? 0) > 8_000,
   };
 }
 
@@ -41,19 +47,27 @@ export async function checkBrowserRuntimeErrors(
     page.off("pageerror", listener);
   }
   if (totalErrors > 0) {
-    failures.push(new Error(
-      `${totalErrors} unhandled browser runtime error${totalErrors === 1 ? "" : "s"}; see unhandled-browser-runtime-errors attachment.`,
-    ));
+    failures.push(
+      new Error(
+        `${totalErrors} unhandled browser runtime error${totalErrors === 1 ? "" : "s"}; see unhandled-browser-runtime-errors attachment.`,
+      ),
+    );
     try {
       await artifacts.attach("unhandled-browser-runtime-errors", {
         contentType: "application/json",
-        body: Buffer.from(JSON.stringify({
-          version: "scoped-browser-runtime-errors-v1",
-          scope: "wrapped-browser-actions",
-          totalErrors,
-          omittedErrors: totalErrors - samples.length,
-          samples,
-        }, null, 2)),
+        body: Buffer.from(
+          JSON.stringify(
+            {
+              version: "scoped-browser-runtime-errors-v1",
+              scope: "wrapped-browser-actions",
+              totalErrors,
+              omittedErrors: totalErrors - samples.length,
+              samples,
+            },
+            null,
+            2,
+          ),
+        ),
       });
     } catch (error: unknown) {
       failures.push(error);
@@ -61,6 +75,9 @@ export async function checkBrowserRuntimeErrors(
   }
   if (failures.length === 1) throw failures[0];
   if (failures.length > 1) {
-    throw new AggregateError(failures, "Browser actions and runtime-error checks failed.");
+    throw new AggregateError(
+      failures,
+      "Browser actions and runtime-error checks failed.",
+    );
   }
 }

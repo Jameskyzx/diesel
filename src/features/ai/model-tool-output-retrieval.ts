@@ -29,9 +29,7 @@ import {
   marketMetricDecimalSchema,
 } from "@/features/database/schemas";
 import { hybridSearchQuerySchema } from "@/features/knowledge/schemas";
-import {
-  countryProfileTopicSchema,
-} from "@/features/ai/schemas";
+import { countryProfileTopicSchema } from "@/features/ai/schemas";
 
 const isoTimestampSchema = z.iso.datetime({ offset: true });
 type KnowledgeProjectionFilters = Omit<
@@ -103,7 +101,12 @@ function refineKnowledgeProjection(
   const expectedEvidence = results.length > 0 && output.citations.length > 0;
   if (
     output.evidenceSufficient !== expectedEvidence ||
-    output.status !== (expectedEvidence ? "ok" : output.status === "error" ? "error" : "no_data")
+    output.status !==
+      (expectedEvidence
+        ? "ok"
+        : output.status === "error"
+          ? "error"
+          : "no_data")
   ) {
     context.addIssue({
       code: "custom",
@@ -146,7 +149,8 @@ function refineKnowledgeProjection(
     ) {
       context.addIssue({
         code: "custom",
-        message: "Knowledge result is outside its query, trust, rank, or citation boundary",
+        message:
+          "Knowledge result is outside its query, trust, rank, or citation boundary",
         path: ["search", "results", index],
       });
     }
@@ -154,7 +158,9 @@ function refineKnowledgeProjection(
   if (
     output.citations.some(
       (citation) =>
-        !results.some((result) => knowledgeCitationMatchesResult(citation, result)),
+        !results.some((result) =>
+          knowledgeCitationMatchesResult(citation, result),
+        ),
     ) ||
     !modelToolOutputFactSourceClosureMatches(
       results.map(({ document }) => document.sourceId),
@@ -190,7 +196,10 @@ export const searchKnowledgeBaseModelToolOutputSchema =
 const countryIdentitySchema = z
   .object({
     isDemo: z.boolean(),
-    iso2: z.string().length(2).regex(/^[A-Z]{2}$/u),
+    iso2: z
+      .string()
+      .length(2)
+      .regex(/^[A-Z]{2}$/u),
     iso3: iso3Schema,
     nameEn: z.string().trim().min(1),
     nameLocal: z.string().nullable(),
@@ -266,7 +275,11 @@ const countryMarketMetricProjectionSchema = z
   .object({
     applicationScope: applicationScopeSchema.nullable(),
     countryIso3: iso3Schema,
-    currencyCode: z.string().length(3).regex(/^[A-Z]{3}$/u).nullable(),
+    currencyCode: z
+      .string()
+      .length(3)
+      .regex(/^[A-Z]{3}$/u)
+      .nullable(),
     definition: z.string(),
     id: z.uuid(),
     isDemo: z.boolean(),
@@ -308,7 +321,9 @@ const countryProjectionProfileSchema = z.discriminatedUnion("status", [
 
 type CountryProjectionProfile = z.infer<typeof countryProjectionProfileSchema>;
 
-function countryProjectionFactSourceIds(profile: CountryProjectionProfile): string[] {
+function countryProjectionFactSourceIds(
+  profile: CountryProjectionProfile,
+): string[] {
   if (profile.status === "no_data") return [];
   const sourceIds = [profile.identity.sourceId];
   if (profile.regulations) {
@@ -431,7 +446,8 @@ function refineCountryProjection(
     output.citations.length > 0;
   if (
     output.evidenceSufficient !== factsSufficient ||
-    output.status !== (factsSufficient ? "ok" : output.status === "error" ? "error" : "no_data")
+    output.status !==
+      (factsSufficient ? "ok" : output.status === "error" ? "error" : "no_data")
   ) {
     context.addIssue({
       code: "custom",
@@ -552,9 +568,7 @@ type ProfileRegulation =
   | AvailableCountryProfile["country"]["currentEffectiveRegulations"][number]
   | AvailableCountryProfile["country"]["futureAdoptedRegulations"][number];
 
-function projectCountryRegulation(
-  regulation: ProfileRegulation,
-) {
+function projectCountryRegulation(regulation: ProfileRegulation) {
   return {
     adoptedOn: regulation.adoptedOn,
     applicability: {

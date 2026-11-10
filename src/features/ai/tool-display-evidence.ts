@@ -3,7 +3,10 @@ import { latestVerifiedAtFromCitations } from "./evidence-semantics";
 
 /** Presentation only: the validated tool result and evidence gate stay intact. */
 export function toolDisplayEvidence(result: ClientAiToolResult) {
-  if (result.tool !== "getCountryProfile" || result.profile?.status !== "available") {
+  if (
+    result.tool !== "getCountryProfile" ||
+    result.profile?.status !== "available"
+  ) {
     return {
       citations: result.citations,
       latestVerifiedAt: result.latestVerifiedAt,
@@ -20,11 +23,12 @@ export function toolDisplayEvidence(result: ClientAiToolResult) {
       citation.countryIso3 === country.iso3;
     if (countryIdentity) return true;
     if (includeMarket && citation.entityType === "market_metric") return true;
-    return includeRegulations && (
-      citation.entityType === "regulation" ||
-      citation.entityType === "regulation_limit" ||
-      citation.entityType === "jurisdiction" ||
-      citation.entityType === "country_jurisdiction"
+    return (
+      includeRegulations &&
+      (citation.entityType === "regulation" ||
+        citation.entityType === "regulation_limit" ||
+        citation.entityType === "jurisdiction" ||
+        citation.entityType === "country_jurisdiction")
     );
   });
 

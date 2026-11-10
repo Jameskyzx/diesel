@@ -185,9 +185,7 @@ function v1DocumentSnapshot() {
       archivedAt: string | null;
     }
   ).archivedAt = null;
-  snapshot.tables.data_change_logs = [
-    snapshot.tables.data_change_logs[1]!,
-  ];
+  snapshot.tables.data_change_logs = [snapshot.tables.data_change_logs[1]!];
   snapshot.tableCounts.data_governance_drafts = 1;
   snapshot.tableCounts.data_change_logs = 1;
   return snapshot;
@@ -287,43 +285,67 @@ describe("governance snapshot format", () => {
   function archivedProductSnapshot(raw: string | null) {
     const snapshot = emptySnapshot();
     snapshot.tables.data_change_logs.push({
-      action: "archived", actorEmail: "admin@example.test", actorRole: "admin",
-      afterData: raw, beforeData: raw, createdAt: "2026-08-11T00:00:00.000Z",
-      draftId: null, entityKey: "legacy-product", entityType: "product",
-      id: "00000000-0000-4000-8000-000000000091", importBatchId: null,
+      action: "archived",
+      actorEmail: "admin@example.test",
+      actorRole: "admin",
+      afterData: raw,
+      beforeData: raw,
+      createdAt: "2026-08-11T00:00:00.000Z",
+      draftId: null,
+      entityKey: "legacy-product",
+      entityType: "product",
+      id: "00000000-0000-4000-8000-000000000091",
+      importBatchId: null,
       reason: "Historical archival fixture",
     });
     snapshot.tableCounts.data_change_logs = 1;
     return snapshot;
   }
 
-  it.each([null, '{"archived": true}', JSON.stringify('{"integer":9007199254740993,"archived":true}')])(
-    "preserves product archival audit JSON exactly: %s", (raw) => {
-      const parsed = parseGovernanceSnapshot(archivedProductSnapshot(raw));
-      expect(parsed.tables.data_change_logs[0]).toMatchObject({beforeData: raw, afterData: raw});
-    },
-  );
-
-  it.each(['[]', 'null', 'true', '1', JSON.stringify('not-json'), JSON.stringify('[]'), JSON.stringify('null'), JSON.stringify(JSON.stringify('{}')), '{invalid']) (
-    "rejects malformed or non-object archival JSON: %s", (raw) => {
-      expect(() => parseGovernanceSnapshot(archivedProductSnapshot(raw))).toThrow();
-    },
-  );
+  it.each([
+    null,
+    '{"archived": true}',
+    JSON.stringify('{"integer":9007199254740993,"archived":true}'),
+  ])("preserves product archival audit JSON exactly: %s", (raw) => {
+    const parsed = parseGovernanceSnapshot(archivedProductSnapshot(raw));
+    expect(parsed.tables.data_change_logs[0]).toMatchObject({
+      beforeData: raw,
+      afterData: raw,
+    });
+  });
 
   it.each([
-    {action: "published", entityType: "product"},
-    {action: "archived", entityType: "country"},
-    {action: "document_reprocessed", entityType: "document"},
-    {action: "draft_created", entityType: "document"},
+    "[]",
+    "null",
+    "true",
+    "1",
+    JSON.stringify("not-json"),
+    JSON.stringify("[]"),
+    JSON.stringify("null"),
+    JSON.stringify(JSON.stringify("{}")),
+    "{invalid",
+  ])("rejects malformed or non-object archival JSON: %s", (raw) => {
+    expect(() =>
+      parseGovernanceSnapshot(archivedProductSnapshot(raw)),
+    ).toThrow();
+  });
+
+  it.each([
+    { action: "published", entityType: "product" },
+    { action: "archived", entityType: "country" },
+    { action: "document_reprocessed", entityType: "document" },
+    { action: "draft_created", entityType: "document" },
   ])("does not extend legacy encoding to $action / $entityType", (identity) => {
-    const snapshot = archivedProductSnapshot(JSON.stringify('{}'));
+    const snapshot = archivedProductSnapshot(JSON.stringify("{}"));
     Object.assign(snapshot.tables.data_change_logs[0], identity);
     expect(() => parseGovernanceSnapshot(snapshot)).toThrow();
   });
 
   it("keeps live governance draft payloads object-only", () => {
     const snapshot = reprocessedDocumentSnapshot();
-    Object.assign(snapshot.tables.data_governance_drafts[0], {payload: JSON.stringify('{}')});
+    Object.assign(snapshot.tables.data_governance_drafts[0], {
+      payload: JSON.stringify("{}"),
+    });
     expect(() => parseGovernanceSnapshot(snapshot)).toThrow();
   });
 
@@ -332,23 +354,42 @@ describe("governance snapshot format", () => {
   });
 
   it("fails closed on v4 and v5 files instead of restoring without newer tables", () => {
-    expect(() => parseGovernanceSnapshot({ ...emptySnapshot(), formatVersion: 4 })).toThrow();
-    expect(() => parseGovernanceSnapshot({ ...emptySnapshot(), formatVersion: 5 })).toThrow();
+    expect(() =>
+      parseGovernanceSnapshot({ ...emptySnapshot(), formatVersion: 4 }),
+    ).toThrow();
+    expect(() =>
+      parseGovernanceSnapshot({ ...emptySnapshot(), formatVersion: 5 }),
+    ).toThrow();
   });
 
   it("keeps catalogue engines inside the source closure", () => {
     const snapshot = emptySnapshot();
     snapshot.tables.catalog_engines.push({
-      aftertreatment: "SCR", applicationScopes: ["on-road-truck"], archivedAt: null,
-      category: "truck", createdAt: "2026-08-11T00:00:00.000Z", cylinders: 6,
-      dataSourceId: "00000000-0000-4000-8000-000000000099", declaredCitationCodes: [],
-      displacementL: 12, emissionLabel: "Stage", id: "00000000-0000-4000-8000-000000000031",
-      isDemo: true, modelCode: "DEMO-T-300", powerMaxKw: 320, powerMinKw: 280,
-      ratedPowerKw: 300, ratedSpeedRpm: 1900, series: "DEMO-T",
-      updatedAt: "2026-08-11T00:00:00.000Z", verifiedAt: "2026-08-11T00:00:00.000Z",
+      aftertreatment: "SCR",
+      applicationScopes: ["on-road-truck"],
+      archivedAt: null,
+      category: "truck",
+      createdAt: "2026-08-11T00:00:00.000Z",
+      cylinders: 6,
+      dataSourceId: "00000000-0000-4000-8000-000000000099",
+      declaredCitationCodes: [],
+      displacementL: 12,
+      emissionLabel: "Stage",
+      id: "00000000-0000-4000-8000-000000000031",
+      isDemo: true,
+      modelCode: "DEMO-T-300",
+      powerMaxKw: 320,
+      powerMinKw: 280,
+      ratedPowerKw: 300,
+      ratedSpeedRpm: 1900,
+      series: "DEMO-T",
+      updatedAt: "2026-08-11T00:00:00.000Z",
+      verifiedAt: "2026-08-11T00:00:00.000Z",
     });
     snapshot.tableCounts.catalog_engines = 1;
-    expect(() => parseGovernanceSnapshot(snapshot)).toThrow("outside the governance closure");
+    expect(() => parseGovernanceSnapshot(snapshot)).toThrow(
+      "outside the governance closure",
+    );
   });
 
   it("does not treat a non-document v1 draft_created audit as document provenance", () => {
@@ -440,9 +481,8 @@ describe("governance snapshot format", () => {
 
   it("rejects source provenance drift within the same millisecond", () => {
     const snapshot = reprocessedDocumentSnapshot();
-    (
-      snapshot.tables.data_sources[0] as { updatedAt: string }
-    ).updatedAt = "2026-08-30T00:00:00.000789Z";
+    (snapshot.tables.data_sources[0] as { updatedAt: string }).updatedAt =
+      "2026-08-30T00:00:00.000789Z";
 
     expect(() => parseGovernanceSnapshot(snapshot)).toThrow();
   });
@@ -472,9 +512,8 @@ describe("governance snapshot format", () => {
     duplicateV1.tableCounts.data_change_logs = 2;
 
     const sourceDrift = v1DocumentSnapshot();
-    (
-      sourceDrift.tables.data_sources[0] as { title: string }
-    ).title = "Drifted source title";
+    (sourceDrift.tables.data_sources[0] as { title: string }).title =
+      "Drifted source title";
 
     const malformedHash = v1DocumentSnapshot();
     const v1Log = malformedHash.tables.data_change_logs[0] as {
@@ -602,9 +641,7 @@ describe("governance snapshot format", () => {
 
     const unknownSupersededDraft = reprocessedDocumentSnapshot();
     mutateReprocessingAfterData(unknownSupersededDraft, (afterData) => {
-      afterData.supersededDraftIds = [
-        "00000000-0000-4000-8000-000000000096",
-      ];
+      afterData.supersededDraftIds = ["00000000-0000-4000-8000-000000000096"];
     });
 
     const unarchivedSupersededDraft = reprocessedDocumentSnapshot();

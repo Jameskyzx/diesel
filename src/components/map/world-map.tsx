@@ -239,7 +239,9 @@ export function WorldMap({
         setTooltip(null);
         setLoadState("gpu-error");
       });
-      return () => { disposed = true; };
+      return () => {
+        disposed = true;
+      };
     }
     mapRef.current = map;
     const canvas = map.getCanvas();
@@ -257,7 +259,11 @@ export function WorldMap({
       clearTimeout(loadTimeout);
       if (mapRef.current === map) mapRef.current = null;
       hoveredRef.current = null;
-      canvas.removeEventListener("webglcontextlost", handleNativeContextLoss, true);
+      canvas.removeEventListener(
+        "webglcontextlost",
+        handleNativeContextLoss,
+        true,
+      );
       map.remove();
     }
 
@@ -434,10 +440,7 @@ export function WorldMap({
     : undefined;
   const tooltipDisplayIdentity = tooltip
     ? tooltipDirectoryEntry
-      ? countryDirectoryDisplayIdentity(
-          tooltipDirectoryEntry,
-          tooltip.summary,
-        )
+      ? countryDirectoryDisplayIdentity(tooltipDirectoryEntry, tooltip.summary)
       : (tooltip.summary ?? {
           isDemo: false,
           iso2: "",
@@ -482,10 +485,14 @@ export function WorldMap({
               className="mx-auto size-8 text-amber-700"
             />
             <p className="mt-3 font-semibold text-slate-950">
-              {loadState === "gpu-error" ? copy.gpuErrorTitle : copy.boundaryErrorTitle}
+              {loadState === "gpu-error"
+                ? copy.gpuErrorTitle
+                : copy.boundaryErrorTitle}
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              {loadState === "gpu-error" ? copy.gpuErrorBody : copy.boundaryErrorBody}
+              {loadState === "gpu-error"
+                ? copy.gpuErrorBody
+                : copy.boundaryErrorBody}
             </p>
             <button
               className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg border bg-card px-4 text-sm font-medium text-primary hover:bg-accent"
@@ -505,7 +512,10 @@ export function WorldMap({
             {copy.legendData}
           </span>
           <span className="inline-flex items-center gap-2 rounded-md border bg-card/95 px-3 py-2 font-medium text-foreground">
-            <span aria-hidden="true" className="size-2 rounded-sm border border-slate-400 bg-slate-300" />
+            <span
+              aria-hidden="true"
+              className="size-2 rounded-sm border border-slate-400 bg-slate-300"
+            />
             {copy.legendNoData}
           </span>
         </div>
@@ -522,9 +532,7 @@ export function WorldMap({
                 tooltip.x + 14,
                 Math.max(
                   TOOLTIP_EDGE_PADDING,
-                  tooltip.containerWidth -
-                    TOOLTIP_WIDTH -
-                    TOOLTIP_EDGE_PADDING,
+                  tooltip.containerWidth - TOOLTIP_WIDTH - TOOLTIP_EDGE_PADDING,
                 ),
               ),
             ),
@@ -555,12 +563,11 @@ export function WorldMap({
           </p>
           {tooltip.summary ? (
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {copy.verification}{dictionary.common.labelSeparator}
+              {copy.verification}
+              {dictionary.common.labelSeparator}
               {formatUtcDate(tooltip.summary.verifiedAt, locale)}
               {tooltip.summary.isStale &&
-              hasDetailedCountryCoverage(
-                tooltip.summary.dataCoverageStatus,
-              )
+              hasDetailedCountryCoverage(tooltip.summary.dataCoverageStatus)
                 ? copy.tooltipStale
                 : ""}
             </p>

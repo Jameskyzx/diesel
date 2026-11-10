@@ -2,9 +2,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 
-import {
-  tool,
-} from "ai";
+import { tool } from "ai";
 
 import {
   captureChatRuntimeContext,
@@ -32,9 +30,7 @@ import {
   type GetCountryProfileInput,
   type SearchKnowledgeBaseInput,
 } from "@/features/ai/schemas";
-import {
-  salesChatToolResultToSdkModelOutput,
-} from "@/features/ai/model-tool-output-dispatch";
+import { salesChatToolResultToSdkModelOutput } from "@/features/ai/model-tool-output-dispatch";
 import {
   CANONICAL_AI_KNOWLEDGE_RESULT_LIMIT,
   hybridSearchResponseMatchesQuery,
@@ -59,9 +55,7 @@ import {
 } from "@/server/ai/tool-results";
 import { getCountryDetails } from "@/server/services/country-service";
 import { findCompatibleProducts } from "@/server/services/compatible-products-service";
-import {
-  hybridSearchKnowledge,
-} from "@/server/services/knowledge-service";
+import { hybridSearchKnowledge } from "@/server/services/knowledge-service";
 import {
   calculateOpportunityScore,
   compareMarkets,
@@ -280,27 +274,24 @@ function resultSummary(result: AiToolResult): Record<string, unknown> {
     evaluationCount: result.evaluations.length,
     fitCount: result.evaluations.filter(({ status }) => status === "fit")
       .length,
-    notFitCount: result.evaluations.filter(
-      ({ status }) => status === "not_fit",
-    ).length,
+    notFitCount: result.evaluations.filter(({ status }) => status === "not_fit")
+      .length,
     unknownCount: result.evaluations.filter(
       ({ status }) => status === "unknown",
     ).length,
   };
 }
 
-async function executeAuditedTool<TInput extends object>(
-  options: {
-    auditRepository: Pick<AiAuditRepository, "recordToolCall">;
-    errorInput?: object;
-    execute: () => Promise<AiToolResult>;
-    fallbackAsOf: string;
-    input: TInput;
-    sessionId: string;
-    toolCallId: string;
-    toolName: AiToolResult["tool"];
-  },
-): Promise<AiToolResult> {
+async function executeAuditedTool<TInput extends object>(options: {
+  auditRepository: Pick<AiAuditRepository, "recordToolCall">;
+  errorInput?: object;
+  execute: () => Promise<AiToolResult>;
+  fallbackAsOf: string;
+  input: TInput;
+  sessionId: string;
+  toolCallId: string;
+  toolName: AiToolResult["tool"];
+}): Promise<AiToolResult> {
   const startedAt = new Date();
   let errorCode: string | null = null;
   let result: AiToolResult;
@@ -383,10 +374,12 @@ export function createSalesChatTools({
               execute: async () => {
                 const result = buildOpportunityScoreResult({
                   informationAsOf: input.asOf,
-                  scorecard:
-                    await resolvedServices.calculateOpportunityScore(input, {
+                  scorecard: await resolvedServices.calculateOpportunityScore(
+                    input,
+                    {
                       signal,
-                    }),
+                    },
+                  ),
                 });
                 return result;
               },
@@ -398,7 +391,7 @@ export function createSalesChatTools({
             }).then((result) =>
               calculateOpportunityScoreResultSchema.parse(result),
             ),
-      }),
+        }),
       inputSchema: calculateOpportunityScoreInputSchema,
       outputSchema: calculateOpportunityScoreResultSchema,
       toModelOutput: salesChatToolResultToSdkModelOutput,
@@ -453,8 +446,9 @@ export function createSalesChatTools({
               auditRepository,
               execute: async () =>
                 buildRegulationComparisonResult({
-                  comparison:
-                    await resolvedServices.compareRegulations(input, { signal }),
+                  comparison: await resolvedServices.compareRegulations(input, {
+                    signal,
+                  }),
                   informationAsOf: input.asOf,
                 }),
               fallbackAsOf: input.asOf,
@@ -462,9 +456,7 @@ export function createSalesChatTools({
               sessionId,
               toolCallId: buildAuditToolCallId(turnId, toolCallId),
               toolName: "compareRegulations",
-            }).then((result) =>
-              compareRegulationsResultSchema.parse(result),
-            ),
+            }).then((result) => compareRegulationsResultSchema.parse(result)),
         }),
       inputSchema: compareRegulationsInputSchema,
       outputSchema: compareRegulationsResultSchema,
@@ -559,14 +551,18 @@ export function createSalesChatTools({
                         {
                           asOf: informationAsOf,
                           iso3: countryIso3,
-                          ...(input.marketPeriod ? { marketPeriod: input.marketPeriod } : {}),
+                          ...(input.marketPeriod
+                            ? { marketPeriod: input.marketPeriod }
+                            : {}),
                         },
                         { signal },
                       );
 
                 return buildCountryProfileResult({
                   informationAsOf,
-                  ...(input.marketPeriod ? { marketPeriod: input.marketPeriod } : {}),
+                  ...(input.marketPeriod
+                    ? { marketPeriod: input.marketPeriod }
+                    : {}),
                   profile,
                   requestedTopics: canonicalInput.topics,
                   resolvedCountryIso3: countryIso3,
@@ -613,8 +609,7 @@ export function createSalesChatTools({
               auditRepository,
               execute: async () => {
                 const searchQuery = hybridSearchQuerySchema.parse({
-                  applicationScope:
-                    canonicalInput.applicationScope ?? null,
+                  applicationScope: canonicalInput.applicationScope ?? null,
                   asOf: informationAsOf,
                   countryIso3,
                   // Provider-generated UUID and count narrowing cannot be
@@ -680,10 +675,8 @@ export function createSalesChatTools({
               sessionId,
               toolCallId: buildAuditToolCallId(turnId, toolCallId),
               toolName: "generateSalesBrief",
-            }).then((result) =>
-              generateSalesBriefResultSchema.parse(result),
-            ),
-      }),
+            }).then((result) => generateSalesBriefResultSchema.parse(result)),
+        }),
       inputSchema: generateSalesBriefInputSchema,
       outputSchema: generateSalesBriefResultSchema,
       toModelOutput: salesChatToolResultToSdkModelOutput,

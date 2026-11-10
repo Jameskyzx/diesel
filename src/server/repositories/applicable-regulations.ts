@@ -1,7 +1,9 @@
 import type { createRegulationRepository } from "@/server/repositories/regulation-repository";
 
 type EffectiveRegulationLimitRow = Awaited<
-  ReturnType<ReturnType<typeof createRegulationRepository>["findEffectiveByCountry"]>
+  ReturnType<
+    ReturnType<typeof createRegulationRepository>["findEffectiveByCountry"]
+  >
 >[number];
 
 function toApplicableRegulation(row: EffectiveRegulationLimitRow) {
@@ -51,7 +53,9 @@ function toApplicableRegulation(row: EffectiveRegulationLimitRow) {
   };
 }
 
-export type ApplicableRegulationRecord = ReturnType<typeof toApplicableRegulation>;
+export type ApplicableRegulationRecord = ReturnType<
+  typeof toApplicableRegulation
+>;
 
 function limitSourceOf(row: EffectiveRegulationLimitRow) {
   return {

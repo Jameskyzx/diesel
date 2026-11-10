@@ -33,7 +33,9 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         </p>
         {error.digest ? (
           <p className="mt-2 font-mono text-xs text-muted-foreground">
-            {copy.errorCode}{dictionary.common.labelSeparator}{error.digest}
+            {copy.errorCode}
+            {dictionary.common.labelSeparator}
+            {error.digest}
           </p>
         ) : null}
         <Button className="mt-6" onClick={reset} type="button">

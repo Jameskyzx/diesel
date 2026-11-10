@@ -63,9 +63,7 @@ describe("rate-limit retention cleanup in PGlite", () => {
         requestCount: 1,
         scope: cleanupScope,
         updatedAt: withinGraceExpiry,
-        windowStart: new Date(
-          withinGraceExpiry.getTime() - 60 * 60 * 1_000,
-        ),
+        windowStart: new Date(withinGraceExpiry.getTime() - 60 * 60 * 1_000),
       },
       {
         expiresAt: futureExpiry,

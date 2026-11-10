@@ -15,11 +15,10 @@ type AvailableCountryDetail = Extract<
 >;
 type CountrySource = AvailableCountryDetail["country"]["source"];
 type ProfileRegulation =
-  AvailableCountryDetail["country"]["currentEffectiveRegulations"][number] |
-  AvailableCountryDetail["country"]["futureAdoptedRegulations"][number];
-type SummaryRegulation = RegulationComparison["countries"][number][
-  "currentEffectiveRegulations"
-][number];
+  | AvailableCountryDetail["country"]["currentEffectiveRegulations"][number]
+  | AvailableCountryDetail["country"]["futureAdoptedRegulations"][number];
+type SummaryRegulation =
+  RegulationComparison["countries"][number]["currentEffectiveRegulations"][number];
 
 function hasDuplicates(values: readonly string[]): boolean {
   return new Set(values).size !== values.length;
@@ -38,10 +37,7 @@ function marketMetricObservationKey(
   ]);
 }
 
-function sameCountrySource(
-  left: CountrySource,
-  right: CountrySource,
-): boolean {
+function sameCountrySource(left: CountrySource, right: CountrySource): boolean {
   return (
     left.id === right.id &&
     left.isDemo === right.isDemo &&
@@ -53,10 +49,7 @@ function sameCountrySource(
   );
 }
 
-function validHalfOpenRange(
-  start: string | null,
-  end: string | null,
-): boolean {
+function validHalfOpenRange(start: string | null, end: string | null): boolean {
   return end === null || (start !== null && end > start);
 }
 
@@ -82,23 +75,15 @@ export function regulationIsCurrentAt(
 ): boolean {
   const recordCanSupportDate =
     regulation.status === "effective" ||
-    (regulation.status === "superseded" &&
-      regulation.effectiveTo !== null);
+    (regulation.status === "superseded" && regulation.effectiveTo !== null);
   const adoptionWasKnown =
     regulation.adoptedOn !== null && regulation.adoptedOn <= asOf;
   return (
     recordCanSupportDate &&
     adoptionWasKnown &&
-    validHalfOpenRange(
-      regulation.effectiveFrom,
-      regulation.effectiveTo,
-    ) &&
+    validHalfOpenRange(regulation.effectiveFrom, regulation.effectiveTo) &&
     regulation.effectiveFrom !== null &&
-    containsDate(
-      asOf,
-      regulation.effectiveFrom,
-      regulation.effectiveTo,
-    )
+    containsDate(asOf, regulation.effectiveFrom, regulation.effectiveTo)
   );
 }
 
@@ -118,12 +103,8 @@ export function regulationIsFutureAdoptedAt(
     lifecycleIsUsable &&
     recordHasRequiredEffectiveDate &&
     adoptionWasKnown &&
-    validHalfOpenRange(
-      regulation.effectiveFrom,
-      regulation.effectiveTo,
-    ) &&
-    (regulation.effectiveFrom === null ||
-      regulation.effectiveFrom > asOf)
+    validHalfOpenRange(regulation.effectiveFrom, regulation.effectiveTo) &&
+    (regulation.effectiveFrom === null || regulation.effectiveFrom > asOf)
   );
 }
 
@@ -169,10 +150,7 @@ function jurisdictionProjectionMatches(
     applicability.jurisdiction.name === jurisdiction.name &&
     applicability.jurisdiction.verifiedAt ===
       jurisdiction.jurisdictionVerifiedAt &&
-    sameCountrySource(
-      applicability.jurisdiction.source,
-      jurisdiction.source,
-    ) &&
+    sameCountrySource(applicability.jurisdiction.source, jurisdiction.source) &&
     applicability.membership.isDemo === jurisdiction.membershipIsDemo &&
     applicability.membership.validFrom === jurisdiction.validFrom &&
     applicability.membership.validTo === jurisdiction.validTo &&
@@ -268,8 +246,7 @@ function summaryRegulationMatchesProfile(
   profile: ProfileRegulation,
 ): boolean {
   return (
-    summary.applicability.countryIso3 ===
-      profile.applicability.countryIso3 &&
+    summary.applicability.countryIso3 === profile.applicability.countryIso3 &&
     summary.applicability.jurisdiction.code ===
       profile.applicability.jurisdiction.code &&
     summary.applicability.jurisdiction.id ===
@@ -314,9 +291,7 @@ function summaryRegulationMatchesProfile(
   );
 }
 
-function applicabilitySummaryMatches(
-  detail: AvailableCountryDetail,
-): boolean {
+function applicabilitySummaryMatches(detail: AvailableCountryDetail): boolean {
   const { applicabilitySummary: summary, asOf, country } = detail;
   if (summary === null) {
     return true;
@@ -414,15 +389,8 @@ export function countryDetailResponseMatchesDeterministicRules(
       ) ||
       country.jurisdictions.some(
         (jurisdiction) =>
-          !validHalfOpenRange(
-            jurisdiction.validFrom,
-            jurisdiction.validTo,
-          ) ||
-          !containsDate(
-            asOf,
-            jurisdiction.validFrom,
-            jurisdiction.validTo,
-          ),
+          !validHalfOpenRange(jurisdiction.validFrom, jurisdiction.validTo) ||
+          !containsDate(asOf, jurisdiction.validFrom, jurisdiction.validTo),
       ) ||
       current.some(
         (regulation) =>

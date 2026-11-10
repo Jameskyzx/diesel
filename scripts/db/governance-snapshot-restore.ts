@@ -389,7 +389,9 @@ export async function assertNoMarketMetricTargetNaturalKeyConflicts(
        limit 1
     `);
     if (queryReturnedRows(result)) {
-      throw new Error("Target natural key conflict: market_metrics observation");
+      throw new Error(
+        "Target natural key conflict: market_metrics observation",
+      );
     }
   }
 }
@@ -512,7 +514,9 @@ async function assertNoTargetNaturalKeyConflicts(
        limit 1
     `);
     if (queryReturnedRows(result)) {
-      throw new Error("Target natural key conflict: catalog_engines active model");
+      throw new Error(
+        "Target natural key conflict: catalog_engines active model",
+      );
     }
   }
 
@@ -535,7 +539,10 @@ function renderValue(
     return sql`${null}`;
   }
   if (arrayType) {
-    if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+    if (
+      !Array.isArray(value) ||
+      value.some((item) => typeof item !== "string")
+    ) {
       throw new Error("Snapshot array value must be a list of strings");
     }
     // Bind the whole list as one jsonb parameter; the driver never expands it.
@@ -583,9 +590,7 @@ async function upsertRows(
     sql.raw(", "),
   );
   const incomingValues = sql.join(
-    updateColumns.map(
-      (column) => sql`excluded.${sql.identifier(column.name)}`,
-    ),
+    updateColumns.map((column) => sql`excluded.${sql.identifier(column.name)}`),
     sql.raw(", "),
   );
 

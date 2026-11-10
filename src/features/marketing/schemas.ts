@@ -221,8 +221,7 @@ export const regulationComparisonItemSchema = z
     isDemo: z.boolean(),
     limits: z.array(regulationLimitComparisonSchema),
     source: analysisSourceSchema,
-    recordStatus: z
-      .enum(["adopted", "effective", "superseded"]),
+    recordStatus: z.enum(["adopted", "effective", "superseded"]),
     status: z.enum(["adopted", "effective"]),
     verifiedAt: isoTimestampSchema,
   })
@@ -459,30 +458,29 @@ export const recommendedProductSchema = z
   })
   .strict();
 
-export const salesActionSchema = z
-  .discriminatedUnion("ruleCode", [
-    z
-      .object({
-        priority: z.literal("high"),
-        productIds: z.array(z.uuid()).min(1),
-        ruleCode: z.literal("PREPARE_PRODUCT_EVIDENCE_PACK"),
-      })
-      .strict(),
-    z
-      .object({
-        priority: z.literal("high"),
-        regulationIds: z.array(z.uuid()).min(1),
-        ruleCode: z.literal("REVALIDATE_BEFORE_FUTURE_REGULATION"),
-      })
-      .strict(),
-    z
-      .object({
-        missingDataIndexes: z.array(z.number().int().nonnegative()).min(1),
-        priority: z.literal("medium"),
-        ruleCode: z.literal("RESOLVE_MISSING_DATA_BEFORE_COMMITMENT"),
-      })
-      .strict(),
-  ]);
+export const salesActionSchema = z.discriminatedUnion("ruleCode", [
+  z
+    .object({
+      priority: z.literal("high"),
+      productIds: z.array(z.uuid()).min(1),
+      ruleCode: z.literal("PREPARE_PRODUCT_EVIDENCE_PACK"),
+    })
+    .strict(),
+  z
+    .object({
+      priority: z.literal("high"),
+      regulationIds: z.array(z.uuid()).min(1),
+      ruleCode: z.literal("REVALIDATE_BEFORE_FUTURE_REGULATION"),
+    })
+    .strict(),
+  z
+    .object({
+      missingDataIndexes: z.array(z.number().int().nonnegative()).min(1),
+      priority: z.literal("medium"),
+      ruleCode: z.literal("RESOLVE_MISSING_DATA_BEFORE_COMMITMENT"),
+    })
+    .strict(),
+]);
 
 export const salesOpportunitySchema = z.discriminatedUnion("ruleCode", [
   z
@@ -537,9 +535,7 @@ export type AnalysisSource = z.infer<typeof analysisSourceSchema>;
 export type CalculateOpportunityScoreInput = z.infer<
   typeof calculateOpportunityScoreInputSchema
 >;
-export type CompareMarketsInput = z.infer<
-  typeof compareMarketsInputSchema
->;
+export type CompareMarketsInput = z.infer<typeof compareMarketsInputSchema>;
 export type CompareRegulationsInput = z.infer<
   typeof compareRegulationsInputSchema
 >;
@@ -551,9 +547,7 @@ export type GenerateSalesBriefInput = z.infer<
 >;
 export type MarketComparison = z.infer<typeof marketComparisonSchema>;
 export type MarketObservation = z.infer<typeof marketObservationSchema>;
-export type OpportunityScorecard = z.infer<
-  typeof opportunityScorecardSchema
->;
+export type OpportunityScorecard = z.infer<typeof opportunityScorecardSchema>;
 export type OpportunityScoreWeights = z.infer<
   typeof opportunityScoreWeightsSchema
 >;
@@ -561,9 +555,7 @@ export type OpportunityScoreGap = z.infer<typeof opportunityScoreGapSchema>;
 export type OpportunityScoreProvenance = z.infer<
   typeof opportunityScoreProvenanceSchema
 >;
-export type RegulationComparison = z.infer<
-  typeof regulationComparisonSchema
->;
+export type RegulationComparison = z.infer<typeof regulationComparisonSchema>;
 export type RegulationComparisonItem = z.infer<
   typeof regulationComparisonItemSchema
 >;

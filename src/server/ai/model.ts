@@ -50,8 +50,10 @@ function endpointSha256(baseUrl: string): string {
 
 function isOfficialDeepSeekEndpoint(baseUrl: string): boolean {
   const url = new URL(baseUrl);
-  return url.origin === "https://api.deepseek.com" &&
-    (url.pathname === "/" || url.pathname === "/v1");
+  return (
+    url.origin === "https://api.deepseek.com" &&
+    (url.pathname === "/" || url.pathname === "/v1")
+  );
 }
 
 const requiredFunctionSchema = z.object({
@@ -59,20 +61,38 @@ const requiredFunctionSchema = z.object({
   function: z.object({ name: z.string().min(1).max(128) }),
 });
 
-function sequenceDeepSeekRequiredTools(body: Record<string, unknown>): Record<string, unknown> {
+function sequenceDeepSeekRequiredTools(
+  body: Record<string, unknown>,
+): Record<string, unknown> {
   if (body.tool_choice !== "required") return body;
-  const firstTool: unknown = Array.isArray(body.tools) ? body.tools[0] : undefined;
+  const firstTool: unknown = Array.isArray(body.tools)
+    ? body.tools[0]
+    : undefined;
   const parsed = requiredFunctionSchema.safeParse(firstTool);
   if (!parsed.success) {
     throw new AiConfigurationError("必选工具请求缺少有效工具定义。");
   }
-  const messages = z.array(z.record(z.string(), z.unknown())).parse(body.messages);
-  const argumentFormat = "Function arguments must be a single valid JSON object. Quote every property name and string value, separate each property from its value with a colon, and close every object and array. Do not emit XML, DSML, or tool markup inside arguments.";
-  const instruction = "For this provider request, invoke the named tool exactly once. Do not repeat this tool, omit requested parameters, or substitute it for another tool to simulate parallel execution. The application will make other required tools available on subsequent steps. A user request for parallel execution does not override this transport constraint.";
+  const messages = z
+    .array(z.record(z.string(), z.unknown()))
+    .parse(body.messages);
+  const argumentFormat =
+    "Function arguments must be a single valid JSON object. Quote every property name and string value, separate each property from its value with a colon, and close every object and array. Do not emit XML, DSML, or tool markup inside arguments.";
+  const instruction =
+    "For this provider request, invoke the named tool exactly once. Do not repeat this tool, omit requested parameters, or substitute it for another tool to simulate parallel execution. The application will make other required tools available on subsequent steps. A user request for parallel execution does not override this transport constraint.";
   const firstMessage = messages[0];
-  const sequencedMessages = firstMessage?.role === "system" && typeof firstMessage.content === "string"
-    ? [{ ...firstMessage, content: `${firstMessage.content}\n${argumentFormat}\n<provider_tool_execution>${instruction}</provider_tool_execution>` }, ...messages.slice(1)]
-    : [{ role: "system", content: `${argumentFormat}\n${instruction}` }, ...messages];
+  const sequencedMessages =
+    firstMessage?.role === "system" && typeof firstMessage.content === "string"
+      ? [
+          {
+            ...firstMessage,
+            content: `${firstMessage.content}\n${argumentFormat}\n<provider_tool_execution>${instruction}</provider_tool_execution>`,
+          },
+          ...messages.slice(1),
+        ]
+      : [
+          { role: "system", content: `${argumentFormat}\n${instruction}` },
+          ...messages,
+        ];
   // Parallel tool arguments were observed to be malformed. Name only the first
   // currently allowed tool; production prepareStep supplies the remaining tools
   // on the next step. Never repair/guess provider arguments or add a retry.
@@ -80,7 +100,10 @@ function sequenceDeepSeekRequiredTools(body: Record<string, unknown>): Record<st
     ...body,
     messages: sequencedMessages,
     tools: [firstTool],
-    tool_choice: { type: "function", function: { name: parsed.data.function.name } },
+    tool_choice: {
+      type: "function",
+      function: { name: parsed.data.function.name },
+    },
   };
 }
 
@@ -108,10 +131,7 @@ export function parseConfiguredModelCostProfile(
   }
 }
 
-function parseServerAiConfigForModel(
-  config: ServerAiConfig,
-  model: string,
-) {
+function parseServerAiConfigForModel(config: ServerAiConfig, model: string) {
   return userAiConfigSchema.safeParse({
     apiKey: config.apiKey,
     baseUrl: config.baseUrl,
@@ -137,9 +157,7 @@ export function getServerAiConfig(): ServerAiConfig | null {
   return parsedConfig.success
     ? {
         ...parsedConfig.data,
-        costProfile: parseConfiguredModelCostProfile(
-          env.AI_COST_PROFILE_JSON,
-        ),
+        costProfile: parseConfiguredModelCostProfile(env.AI_COST_PROFILE_JSON),
         includeUsage: env.AI_INCLUDE_USAGE,
         multimodalModel: env.AI_MULTIMODAL_MODEL,
       }
@@ -157,8 +175,7 @@ export function isServerMultimodalAiConfigured(
     return false;
   }
 
-  const resolvedConfig =
-    config === undefined ? getServerAiConfig() : config;
+  const resolvedConfig = config === undefined ? getServerAiConfig() : config;
   if (!resolvedConfig?.multimodalModel) {
     return false;
   }
@@ -200,16 +217,16 @@ export function getConfiguredAiModel(
 
   const resolvedConfig = config ?? getServerAiConfig();
   if (!resolvedConfig) {
-    throw new AiConfigurationError("服务端尚未配置 OpenAI-compatible AI 接口。");
+    throw new AiConfigurationError(
+      "服务端尚未配置 OpenAI-compatible AI 接口。",
+    );
   }
 
   const selectedModel = options.requiresMultimodalModel
     ? resolvedConfig.multimodalModel
     : resolvedConfig.model;
   if (!selectedModel) {
-    throw new AiConfigurationError(
-      "服务端尚未配置支持图片输入的多模态模型。",
-    );
+    throw new AiConfigurationError("服务端尚未配置支持图片输入的多模态模型。");
   }
 
   const parsedConfig = parseServerAiConfigForModel(
@@ -217,12 +234,16 @@ export function getConfiguredAiModel(
     selectedModel,
   );
   if (!parsedConfig.success) {
-    throw new AiConfigurationError("服务端 AI 配置无效，请检查接口地址和模型名。");
+    throw new AiConfigurationError(
+      "服务端 AI 配置无效，请检查接口地址和模型名。",
+    );
   }
 
-  const usesDeepSeekContract = isOfficialDeepSeekEndpoint(parsedConfig.data.baseUrl);
+  const usesDeepSeekContract = isOfficialDeepSeekEndpoint(
+    parsedConfig.data.baseUrl,
+  );
   const enableThinking = usesDeepSeekContract
-    ? parsedConfig.data.enableThinking ?? false
+    ? (parsedConfig.data.enableThinking ?? false)
     : parsedConfig.data.enableThinking;
   if (usesDeepSeekContract && enableThinking) {
     // DeepSeek thinking mode rejects the required tool choice used by this
@@ -241,7 +262,9 @@ export function getConfiguredAiModel(
       enableThinking === undefined
         ? body
         : {
-            ...(usesDeepSeekContract ? sequenceDeepSeekRequiredTools(body) : body),
+            ...(usesDeepSeekContract
+              ? sequenceDeepSeekRequiredTools(body)
+              : body),
             ...(usesDeepSeekContract
               ? { thinking: { type: "disabled" } }
               : { enable_thinking: enableThinking }),

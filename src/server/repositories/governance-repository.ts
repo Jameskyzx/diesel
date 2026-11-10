@@ -1,14 +1,5 @@
 import { engineFeedbackDraftPayloadSchema } from "@/features/feedback/schemas";
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  inArray,
-  isNull,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 import { findOverlappingMembershipIndexes } from "@/domain/admin/jurisdiction-membership";
@@ -101,15 +92,12 @@ function assertDocumentReprocessingDraftAccess(input: {
   if (
     input.actor.role === "admin" ||
     input.actor.role === "reviewer" ||
-    (input.actor.role === "editor" &&
-      input.actor.email === input.createdBy)
+    (input.actor.role === "editor" && input.actor.email === input.createdBy)
   ) {
     return;
   }
 
-  throw new GovernanceConflictError(
-    documentReprocessingDraftConflictMessage,
-  );
+  throw new GovernanceConflictError(documentReprocessingDraftConflictMessage);
 }
 
 type ImportEntityType = "market_metric" | "catalog_engine" | "engine_feedback";
@@ -354,9 +342,9 @@ export function createGovernanceRepository<
     }
     if (
       firstChunk !== undefined &&
-        (firstChunk.isDemo !== snapshot.document.isDemo ||
-          firstChunk.validFrom !== snapshot.document.validFrom ||
-          firstChunk.validTo !== snapshot.document.validTo)
+      (firstChunk.isDemo !== snapshot.document.isDemo ||
+        firstChunk.validFrom !== snapshot.document.validFrom ||
+        firstChunk.validTo !== snapshot.document.validTo)
     ) {
       throw new GovernanceConflictError(
         "Document and chunk metadata provenance is inconsistent.",
@@ -367,13 +355,13 @@ export function createGovernanceRepository<
       applicationScope:
         firstChunk?.applicationScope ??
         (processingStatus === "failed"
-          ? failedChunkMetadataFallback?.applicationScope ?? null
+          ? (failedChunkMetadataFallback?.applicationScope ?? null)
           : null),
       canonicalUrl: snapshot.document.canonicalUrl,
       countryIso3:
         firstChunk?.countryIso3 ??
         (processingStatus === "failed"
-          ? failedChunkMetadataFallback?.countryIso3 ?? null
+          ? (failedChunkMetadataFallback?.countryIso3 ?? null)
           : null),
       demoNotice: snapshot.document.demoNotice,
       documentType: snapshot.document.type,
@@ -381,7 +369,7 @@ export function createGovernanceRepository<
       jurisdictionId:
         firstChunk?.jurisdictionId ??
         (processingStatus === "failed"
-          ? failedChunkMetadataFallback?.jurisdictionId ?? null
+          ? (failedChunkMetadataFallback?.jurisdictionId ?? null)
           : null),
       languageCode: snapshot.document.languageCode,
       licenseCode: snapshot.document.licenseCode,
@@ -406,9 +394,7 @@ export function createGovernanceRepository<
       document: { ...snapshot.document, processingStatus },
       metadata: metadata.data,
       source: snapshot.source,
-      sourceFingerprint: createDocumentDataSourceFingerprint(
-        snapshot.source,
-      ),
+      sourceFingerprint: createDocumentDataSourceFingerprint(snapshot.source),
     };
   };
 
@@ -454,30 +440,22 @@ export function createGovernanceRepository<
     const marker =
       action === "draft_created"
         ? parseDocumentDraftCreatedAuditMarkerFor({
-            expectedChunkSetFingerprint:
-              initialSnapshot.chunkSetFingerprint,
-            expectedContentSha256:
-              initialSnapshot.document.contentSha256,
+            expectedChunkSetFingerprint: initialSnapshot.chunkSetFingerprint,
+            expectedContentSha256: initialSnapshot.document.contentSha256,
             expectedDocumentId: draft.entityKey,
             expectedDraftId: draft.id,
-            expectedProcessingStatus:
-              initialSnapshot.document.processingStatus,
-            expectedSourceFingerprint:
-              initialSnapshot.sourceFingerprint,
+            expectedProcessingStatus: initialSnapshot.document.processingStatus,
+            expectedSourceFingerprint: initialSnapshot.sourceFingerprint,
             expectedSourceId: initialSnapshot.source.id,
             marker: auditRows[0],
           })
         : parseDocumentReprocessedAuditMarkerFor({
-            expectedChunkSetFingerprint:
-              initialSnapshot.chunkSetFingerprint,
-            expectedContentSha256:
-              initialSnapshot.document.contentSha256,
+            expectedChunkSetFingerprint: initialSnapshot.chunkSetFingerprint,
+            expectedContentSha256: initialSnapshot.document.contentSha256,
             expectedDocumentId: draft.entityKey,
             expectedDraftId: draft.id,
-            expectedProcessingStatus:
-              initialSnapshot.document.processingStatus,
-            expectedSourceFingerprint:
-              initialSnapshot.sourceFingerprint,
+            expectedProcessingStatus: initialSnapshot.document.processingStatus,
+            expectedSourceFingerprint: initialSnapshot.sourceFingerprint,
             expectedSourceId: initialSnapshot.source.id,
             marker: auditRows[0],
           });
@@ -876,19 +854,14 @@ export function createGovernanceRepository<
                 .from(productCertifications)
                 .where(
                   and(
-                    eq(
-                      productCertifications.regulationId,
-                      input.entityKey,
-                    ),
+                    eq(productCertifications.regulationId, input.entityKey),
                     isNull(productCertifications.archivedAt),
                   ),
                 )
                 .limit(1),
             ))
           ) {
-            requireNoActiveDependents("regulation", [
-              "product certifications",
-            ]);
+            requireNoActiveDependents("regulation", ["product certifications"]);
           }
           await transaction
             .update(regulations)
@@ -936,9 +909,7 @@ export function createGovernanceRepository<
                 .limit(1),
             ))
           ) {
-            requireNoActiveDependents("product", [
-              "product certifications",
-            ]);
+            requireNoActiveDependents("product", ["product certifications"]);
           }
           await transaction
             .update(products)
@@ -1106,10 +1077,7 @@ export function createGovernanceRepository<
                   )
                   .where(
                     and(
-                      eq(
-                        documentChunks.jurisdictionId,
-                        input.entityKey,
-                      ),
+                      eq(documentChunks.jurisdictionId, input.entityKey),
                       eq(documents.governanceStatus, "published"),
                       eq(documents.processingStatus, "ready"),
                       isNull(documents.archivedAt),
@@ -1128,18 +1096,13 @@ export function createGovernanceRepository<
                 .from(countryJurisdictions)
                 .where(
                   and(
-                    eq(
-                      countryJurisdictions.jurisdictionId,
-                      input.entityKey,
-                    ),
+                    eq(countryJurisdictions.jurisdictionId, input.entityKey),
                     isNull(countryJurisdictions.archivedAt),
                   ),
                 )
                 .for("update")
             : [];
-          beforeData = before
-            ? { jurisdiction: before, memberships }
-            : null;
+          beforeData = before ? { jurisdiction: before, memberships } : null;
           afterData = {
             archivedAt: now.toISOString(),
             archivedMemberships: memberships.map(
@@ -1276,25 +1239,34 @@ export function createGovernanceRepository<
           return { createdDrafts: 0, status: "rejected" as const };
         }
 
-        const parsedRows = entityType === "engine_feedback"
-          ? (input.confirmedRows ?? []).map((row) =>
-            engineFeedbackDraftPayloadSchema.parse({ ...(row as object), id: crypto.randomUUID(), sourceBatchId: input.batchId }))
-          : batch.previewRows.map((row) => {
-          if (!row.parsed) {
-            throw new GovernanceConflictError(
-              "A valid preview batch contained an empty parsed row.",
-            );
-          }
-          return entityType === "catalog_engine"
-            ? catalogEngineDraftPayloadSchema.parse(row.parsed)
-            : marketMetricDraftPayloadSchema.parse(row.parsed);
-          });
+        const parsedRows =
+          entityType === "engine_feedback"
+            ? (input.confirmedRows ?? []).map((row) =>
+                engineFeedbackDraftPayloadSchema.parse({
+                  ...(row as object),
+                  id: crypto.randomUUID(),
+                  sourceBatchId: input.batchId,
+                }),
+              )
+            : batch.previewRows.map((row) => {
+                if (!row.parsed) {
+                  throw new GovernanceConflictError(
+                    "A valid preview batch contained an empty parsed row.",
+                  );
+                }
+                return entityType === "catalog_engine"
+                  ? catalogEngineDraftPayloadSchema.parse(row.parsed)
+                  : marketMetricDraftPayloadSchema.parse(row.parsed);
+              });
         const now = new Date();
         const drafts = await transaction
           .insert(dataGovernanceDrafts)
           .values(
             parsedRows.map((payload) => {
-              const id = "id" in payload && typeof payload.id === "string" ? payload.id : crypto.randomUUID();
+              const id =
+                "id" in payload && typeof payload.id === "string"
+                  ? payload.id
+                  : crypto.randomUUID();
               return {
                 changeReason: input.reason,
                 createdBy: input.actor.email,
@@ -1359,7 +1331,9 @@ export function createGovernanceRepository<
           createdDrafts: drafts.length,
           status: "committed" as const,
           // Feedback can be published right after confirmation by the same person.
-          ...(entityType === "engine_feedback" ? { draftIds: drafts.map(({ id }) => id) } : {}),
+          ...(entityType === "engine_feedback"
+            ? { draftIds: drafts.map(({ id }) => id) }
+            : {}),
         };
       });
     },
@@ -1430,8 +1404,7 @@ export function createGovernanceRepository<
           ? { ...createdDocument, sourceArchivedAt: null as Date | null }
           : undefined;
         let prelockedVersions:
-          | (typeof dataGovernanceDrafts.$inferSelect)[]
-          | null = null;
+          (typeof dataGovernanceDrafts.$inferSelect)[] | null = null;
         const created = Boolean(createdDocument);
         if (!document) {
           await transaction
@@ -1483,7 +1456,10 @@ export function createGovernanceRepository<
             );
           }
         } else if (outcome.processingStatus === "ready") {
-          for (const batch of documentChunkInsertBatches(document.id, outcome.chunks)) {
+          for (const batch of documentChunkInsertBatches(
+            document.id,
+            outcome.chunks,
+          )) {
             await transaction.insert(documentChunks).values(batch);
           }
         }
@@ -1557,11 +1533,10 @@ export function createGovernanceRepository<
           }
           if (insertedDraft) {
             draftCreated = true;
-            const initialProvenance =
-              await loadDocumentProvenanceExpectation(
-                transaction,
-                document.id,
-              );
+            const initialProvenance = await loadDocumentProvenanceExpectation(
+              transaction,
+              document.id,
+            );
             let provenanceMetadata = created
               ? normalizeDocumentImportMetadataForProvenance(metadata)
               : null;
@@ -1621,8 +1596,7 @@ export function createGovernanceRepository<
                         marker,
                       })
                     : parseDocumentDraftCreatedAuditMarkerFor({
-                        expectedContentSha256:
-                          input.prepared.contentSha256,
+                        expectedContentSha256: input.prepared.contentSha256,
                         expectedDocumentId: document.id,
                         expectedDraftId: audit.draftId,
                         expectedChunkSetFingerprint:
@@ -1659,15 +1633,13 @@ export function createGovernanceRepository<
                 : initialProvenance;
             const draftCreatedAfterData =
               documentDraftCreatedAuditAfterDataSchema.parse({
-                chunkSetFingerprint:
-                  documentProvenance.chunkSetFingerprint,
+                chunkSetFingerprint: documentProvenance.chunkSetFingerprint,
                 contentSha256: input.prepared.contentSha256,
                 documentId: document.id,
                 metadata: documentProvenance.metadata,
                 processingStatus: document.processingStatus,
                 provenanceVersion: 2,
-                sourceFingerprint:
-                  documentProvenance.sourceFingerprint,
+                sourceFingerprint: documentProvenance.sourceFingerprint,
                 sourceId: document.dataSourceId,
               });
             await transaction.insert(dataChangeLogs).values({
@@ -1791,17 +1763,13 @@ export function createGovernanceRepository<
           actorRole: input.actor.role,
           afterData: documentProvenance
             ? documentDraftCreatedAuditAfterDataSchema.parse({
-                chunkSetFingerprint:
-                  documentProvenance.chunkSetFingerprint,
-                contentSha256:
-                  documentProvenance.document.contentSha256,
+                chunkSetFingerprint: documentProvenance.chunkSetFingerprint,
+                contentSha256: documentProvenance.document.contentSha256,
                 documentId: input.entityKey,
                 metadata: documentProvenance.metadata,
-                processingStatus:
-                  documentProvenance.document.processingStatus,
+                processingStatus: documentProvenance.document.processingStatus,
                 provenanceVersion: 2,
-                sourceFingerprint:
-                  documentProvenance.sourceFingerprint,
+                sourceFingerprint: documentProvenance.sourceFingerprint,
                 sourceId: documentProvenance.source.id,
               })
             : input.payload,
@@ -1826,7 +1794,9 @@ export function createGovernanceRepository<
     }) {
       return database.transaction(async (transaction) => {
         await assertGovernanceWriteAllowed(transaction);
-        const rowNumbers = new Set(input.rows.map(({ rowNumber }) => rowNumber));
+        const rowNumbers = new Set(
+          input.rows.map(({ rowNumber }) => rowNumber),
+        );
         const invalidRowNumbers = new Set(
           input.errors.map(({ rowNumber }) => rowNumber),
         );
@@ -1870,11 +1840,12 @@ export function createGovernanceRepository<
           entityKey: batch.id,
           entityType: input.entityType ?? "market_metric",
           importBatchId: batch.id,
-          reason: input.entityType === "catalog_engine"
-            ? "Spreadsheet preview created; no catalogue records were written."
-            : input.entityType === "engine_feedback"
-              ? "Feedback extraction preview created; no feedback was written."
-              : "CSV preview created; no market facts were written.",
+          reason:
+            input.entityType === "catalog_engine"
+              ? "Spreadsheet preview created; no catalogue records were written."
+              : input.entityType === "engine_feedback"
+                ? "Feedback extraction preview created; no feedback was written."
+                : "CSV preview created; no market facts were written.",
         });
 
         return batch;
@@ -1929,11 +1900,7 @@ export function createGovernanceRepository<
           .for("update");
         const draft = entityDrafts.find(({ id }) => id === input.draftId);
 
-        if (
-          !draft ||
-          draft.workflowStatus !== "reviewed" ||
-          draft.archivedAt
-        ) {
+        if (!draft || draft.workflowStatus !== "reviewed" || draft.archivedAt) {
           throw new GovernanceConflictError(
             "Only an active reviewed draft can be published.",
           );
@@ -1968,19 +1935,12 @@ export function createGovernanceRepository<
         });
         const documentProvenance =
           draft.entityType === "document" && draft.version > 1
-            ? (
-                await requireCanonicalDocumentProvenance(
-                  transaction,
-                  draft,
-                )
-              ).provenance
+            ? (await requireCanonicalDocumentProvenance(transaction, draft))
+                .provenance
             : null;
 
         type FormalEntityState =
-          | "active"
-          | "archived"
-          | "missing"
-          | "unpublished";
+          "active" | "archived" | "missing" | "unpublished";
         const rowState = (
           row:
             | {
@@ -2061,7 +2021,10 @@ export function createGovernanceRepository<
               sourceArchivedAt: dataSources.archivedAt,
             })
             .from(catalogEngines)
-            .innerJoin(dataSources, eq(catalogEngines.dataSourceId, dataSources.id))
+            .innerJoin(
+              dataSources,
+              eq(catalogEngines.dataSourceId, dataSources.id),
+            )
             .where(eq(catalogEngines.id, draft.entityKey))
             .limit(1)
             .for("update");
@@ -2151,16 +2114,16 @@ export function createGovernanceRepository<
             parsedMarker?.afterData.supersededDraftIds[0];
           hasReprocessingAuditMarker = Boolean(
             supersededDraftId &&
-              entityDrafts.some(
-                (candidate) =>
-                  candidate.id === supersededDraftId &&
-                  candidate.entityType === "document" &&
-                  candidate.entityKey === draft.entityKey &&
-                  candidate.version === draft.version - 1 &&
-                  candidate.archivedAt !== null &&
-                  (candidate.workflowStatus === "draft" ||
-                    candidate.workflowStatus === "reviewed"),
-              ),
+            entityDrafts.some(
+              (candidate) =>
+                candidate.id === supersededDraftId &&
+                candidate.entityType === "document" &&
+                candidate.entityKey === draft.entityKey &&
+                candidate.version === draft.version - 1 &&
+                candidate.archivedAt !== null &&
+                (candidate.workflowStatus === "draft" ||
+                  candidate.workflowStatus === "reviewed"),
+            ),
           );
         }
         const isReprocessedDocumentFirstPublication =
@@ -2222,9 +2185,7 @@ export function createGovernanceRepository<
               ),
             )
             .for("update");
-          const activeSourceIds = new Set(
-            activeSources.map(({ id }) => id),
-          );
+          const activeSourceIds = new Set(activeSources.map(({ id }) => id));
           const unavailableSourceIds = uniqueSourceIds.filter(
             (id) => !activeSourceIds.has(id),
           );
@@ -2276,10 +2237,7 @@ export function createGovernanceRepository<
           const activeCountries = await transaction
             .select({ id: countries.iso3, isDemo: countries.isDemo })
             .from(countries)
-            .innerJoin(
-              dataSources,
-              eq(countries.dataSourceId, dataSources.id),
-            )
+            .innerJoin(dataSources, eq(countries.dataSourceId, dataSources.id))
             .where(
               and(
                 inArray(countries.iso3, uniqueCountryIso3s),
@@ -2288,9 +2246,7 @@ export function createGovernanceRepository<
               ),
             )
             .for("update");
-          const activeCountryIds = new Set(
-            activeCountries.map(({ id }) => id),
-          );
+          const activeCountryIds = new Set(activeCountries.map(({ id }) => id));
           const unavailableCountryIds = uniqueCountryIso3s.filter(
             (id) => !activeCountryIds.has(id),
           );
@@ -2300,9 +2256,7 @@ export function createGovernanceRepository<
               `Referenced countries or their sources are missing or archived: ${unavailableCountryIds.join(", ")}.`,
             );
           }
-          return new Map(
-            activeCountries.map(({ id, isDemo }) => [id, isDemo]),
-          );
+          return new Map(activeCountries.map(({ id, isDemo }) => [id, isDemo]));
         };
         const requireActiveJurisdictions = async (ids: string[]) => {
           const uniqueIds = Array.from(new Set(ids));
@@ -2322,28 +2276,21 @@ export function createGovernanceRepository<
             )
             .for("update");
           const activeIds = new Set(activeRows.map(({ id }) => id));
-          const unavailableIds = uniqueIds.filter(
-            (id) => !activeIds.has(id),
-          );
+          const unavailableIds = uniqueIds.filter((id) => !activeIds.has(id));
 
           if (unavailableIds.length > 0) {
             throw new GovernanceConflictError(
               `Referenced jurisdictions or their sources are missing or archived: ${unavailableIds.join(", ")}.`,
             );
           }
-          return new Map(
-            activeRows.map(({ id, isDemo }) => [id, isDemo]),
-          );
+          return new Map(activeRows.map(({ id, isDemo }) => [id, isDemo]));
         };
         const requireActiveProducts = async (ids: string[]) => {
           const uniqueIds = Array.from(new Set(ids));
           const activeRows = await transaction
             .select({ id: products.id, isDemo: products.isDemo })
             .from(products)
-            .innerJoin(
-              dataSources,
-              eq(products.dataSourceId, dataSources.id),
-            )
+            .innerJoin(dataSources, eq(products.dataSourceId, dataSources.id))
             .where(
               and(
                 inArray(products.id, uniqueIds),
@@ -2353,18 +2300,14 @@ export function createGovernanceRepository<
             )
             .for("update");
           const activeIds = new Set(activeRows.map(({ id }) => id));
-          const unavailableIds = uniqueIds.filter(
-            (id) => !activeIds.has(id),
-          );
+          const unavailableIds = uniqueIds.filter((id) => !activeIds.has(id));
 
           if (unavailableIds.length > 0) {
             throw new GovernanceConflictError(
               `Referenced products or their sources are missing or archived: ${unavailableIds.join(", ")}.`,
             );
           }
-          return new Map(
-            activeRows.map(({ id, isDemo }) => [id, isDemo]),
-          );
+          return new Map(activeRows.map(({ id, isDemo }) => [id, isDemo]));
         };
         const requireActiveRegulations = async (ids: string[]) => {
           const uniqueIds = Array.from(new Set(ids));
@@ -2384,18 +2327,14 @@ export function createGovernanceRepository<
             )
             .for("update");
           const activeIds = new Set(activeRows.map(({ id }) => id));
-          const unavailableIds = uniqueIds.filter(
-            (id) => !activeIds.has(id),
-          );
+          const unavailableIds = uniqueIds.filter((id) => !activeIds.has(id));
 
           if (unavailableIds.length > 0) {
             throw new GovernanceConflictError(
               `Referenced regulations or their sources are missing or archived: ${unavailableIds.join(", ")}.`,
             );
           }
-          return new Map(
-            activeRows.map(({ id, isDemo }) => [id, isDemo]),
-          );
+          return new Map(activeRows.map(({ id, isDemo }) => [id, isDemo]));
         };
         const requireCompatibleParentClassifications = (
           parentType: string,
@@ -2785,8 +2724,9 @@ export function createGovernanceRepository<
             });
           afterData = { ...payload, id };
         } else if (draft.entityType === "product_certification") {
-          const payload =
-            productCertificationDraftPayloadSchema.parse(draft.payload);
+          const payload = productCertificationDraftPayloadSchema.parse(
+            draft.payload,
+          );
           await requirePublishableSources([
             {
               isDemo: payload.isDemo,
@@ -2797,17 +2737,13 @@ export function createGovernanceRepository<
           const productDemoById = await requireActiveProducts([
             payload.productId,
           ]);
-          requireCompatibleParentClassifications(
-            "products",
-            productDemoById,
-            [
-              {
-                childIsDemo: payload.isDemo,
-                childLabel: "product certification",
-                parentId: payload.productId,
-              },
-            ],
-          );
+          requireCompatibleParentClassifications("products", productDemoById, [
+            {
+              childIsDemo: payload.isDemo,
+              childLabel: "product certification",
+              parentId: payload.productId,
+            },
+          ]);
           const regulationDemoById = await requireActiveRegulations([
             payload.regulationId,
           ]);
@@ -2875,17 +2811,13 @@ export function createGovernanceRepository<
           const countryDemoById = await requireActiveCountries([
             payload.countryIso3,
           ]);
-          requireCompatibleParentClassifications(
-            "countries",
-            countryDemoById,
-            [
-              {
-                childIsDemo: payload.isDemo,
-                childLabel: "market metric",
-                parentId: payload.countryIso3,
-              },
-            ],
-          );
+          requireCompatibleParentClassifications("countries", countryDemoById, [
+            {
+              childIsDemo: payload.isDemo,
+              childLabel: "market metric",
+              parentId: payload.countryIso3,
+            },
+          ]);
           const id = requiredId(payload.id, draft.entityType);
           const scopeFilter = payload.applicationScope
             ? eq(marketMetrics.applicationScope, payload.applicationScope)
@@ -2970,7 +2902,10 @@ export function createGovernanceRepository<
           const payload = engineFeedbackDraftPayloadSchema.parse(draft.payload);
           const id = requiredId(payload.id, draft.entityType);
           const [engine] = await transaction
-            .select({ archivedAt: catalogEngines.archivedAt, modelCode: catalogEngines.modelCode })
+            .select({
+              archivedAt: catalogEngines.archivedAt,
+              modelCode: catalogEngines.modelCode,
+            })
             .from(catalogEngines)
             .where(eq(catalogEngines.id, payload.catalogEngineId))
             .limit(1);
@@ -3015,7 +2950,10 @@ export function createGovernanceRepository<
           await transaction
             .insert(engineFeedback)
             .values({ ...values, id })
-            .onConflictDoUpdate({ set: { ...values, updatedAt: now }, target: engineFeedback.id });
+            .onConflictDoUpdate({
+              set: { ...values, updatedAt: now },
+              target: engineFeedback.id,
+            });
           afterData = { ...payload, id, modelCode: engine.modelCode };
         } else if (draft.entityType === "catalog_engine") {
           const payload = catalogEngineDraftPayloadSchema.parse(draft.payload);
@@ -3072,7 +3010,10 @@ export function createGovernanceRepository<
             await transaction
               .insert(catalogEngines)
               .values({ ...values, id })
-              .onConflictDoUpdate({ set: { ...values, updatedAt: now }, target: catalogEngines.id });
+              .onConflictDoUpdate({
+                set: { ...values, updatedAt: now },
+                target: catalogEngines.id,
+              });
           } catch (error: unknown) {
             if (hasPostgresErrorCode(error, "23505")) {
               throw new GovernanceConflictError(
@@ -3185,13 +3126,12 @@ export function createGovernanceRepository<
                 `${membership.countryIso3}\u0000${membership.validFrom}`,
             ),
           );
-          const toArchive = beforeMemberships
-            .filter(
-              (membership) =>
-                !payloadMembershipKeys.has(
-                  `${membership.countryIso3}\u0000${membership.validFrom}`,
-                ),
-            );
+          const toArchive = beforeMemberships.filter(
+            (membership) =>
+              !payloadMembershipKeys.has(
+                `${membership.countryIso3}\u0000${membership.validFrom}`,
+              ),
+          );
           if (toArchive.length > 0) {
             await transaction
               .update(countryJurisdictions)
@@ -3321,10 +3261,9 @@ export function createGovernanceRepository<
             );
           }
           if (jurisdictionReferences.length > 0) {
-            const jurisdictionDemoById =
-              await requireActiveJurisdictions(
-                jurisdictionReferences.map(({ parentId }) => parentId),
-              );
+            const jurisdictionDemoById = await requireActiveJurisdictions(
+              jurisdictionReferences.map(({ parentId }) => parentId),
+            );
             requireCompatibleParentClassifications(
               "jurisdictions",
               jurisdictionDemoById,
@@ -3437,10 +3376,7 @@ export function createGovernanceRepository<
               eq(dataChangeLogs.entityType, "document"),
               eq(dataChangeLogs.entityKey, input.prepared.documentId),
               eq(dataGovernanceDrafts.entityType, "document"),
-              eq(
-                dataGovernanceDrafts.entityKey,
-                input.prepared.documentId,
-              ),
+              eq(dataGovernanceDrafts.entityKey, input.prepared.documentId),
             ),
           )
           .orderBy(
@@ -3459,7 +3395,7 @@ export function createGovernanceRepository<
           : null;
         if (
           latestMarker?.afterData.operationFingerprint ===
-            input.prepared.operationFingerprint
+          input.prepared.operationFingerprint
         ) {
           // Under PostgreSQL READ COMMITTED, a SELECT FOR UPDATE that waited
           // for the superseded draft can return that updated row without
@@ -3495,17 +3431,14 @@ export function createGovernanceRepository<
             actor: input.actor,
             createdBy: matchingMarkerDraft.createdBy,
           });
-          const currentProvenance =
-            await requireCanonicalDocumentProvenance(
-              transaction,
-              matchingMarkerDraft,
-            );
+          const currentProvenance = await requireCanonicalDocumentProvenance(
+            transaction,
+            matchingMarkerDraft,
+          );
           if (
-            currentProvenance.provenance.action !==
-              "document_reprocessed" ||
+            currentProvenance.provenance.action !== "document_reprocessed" ||
             currentProvenance.provenance.marker.afterData
-              .operationFingerprint !==
-              input.prepared.operationFingerprint ||
+              .operationFingerprint !== input.prepared.operationFingerprint ||
             JSON.stringify(
               currentProvenance.provenance.marker.afterData.metadata,
             ) !==
@@ -3611,10 +3544,7 @@ export function createGovernanceRepository<
           .from(dataChangeLogs)
           .where(
             and(
-              eq(
-                dataChangeLogs.draftId,
-                input.prepared.expected.activeDraftId,
-              ),
+              eq(dataChangeLogs.draftId, input.prepared.expected.activeDraftId),
               eq(dataChangeLogs.entityType, "document"),
               eq(dataChangeLogs.entityKey, input.prepared.documentId),
               inArray(dataChangeLogs.action, [
@@ -3638,8 +3568,7 @@ export function createGovernanceRepository<
             "The document metadata provenance changed while reprocessing was prepared; retry from the latest version.",
           );
         }
-        const preparedProvenance =
-          await requireCanonicalDocumentProvenance(
+        const preparedProvenance = await requireCanonicalDocumentProvenance(
           transaction,
           activeDraftsBeforeCommit[0]!,
         );
@@ -3650,11 +3579,11 @@ export function createGovernanceRepository<
           JSON.stringify(
             preparedProvenance.provenance.marker.afterData.metadata,
           ) !==
-          JSON.stringify(
-            normalizeDocumentImportMetadataForProvenance(
-              input.prepared.expected.provenanceMetadata,
-            ),
-          )
+            JSON.stringify(
+              normalizeDocumentImportMetadataForProvenance(
+                input.prepared.expected.provenanceMetadata,
+              ),
+            )
         ) {
           throw new GovernanceConflictError(
             "The document metadata provenance changed while reprocessing was prepared; retry from the latest version.",
@@ -3692,7 +3621,10 @@ export function createGovernanceRepository<
           .delete(documentChunks)
           .where(eq(documentChunks.documentId, input.prepared.documentId));
         if (outcome.processingStatus === "ready") {
-          for (const batch of documentChunkInsertBatches(input.prepared.documentId, outcome.chunks)) {
+          for (const batch of documentChunkInsertBatches(
+            input.prepared.documentId,
+            outcome.chunks,
+          )) {
             await transaction.insert(documentChunks).values(batch);
           }
         }
@@ -3721,10 +3653,7 @@ export function createGovernanceRepository<
               eq(documents.id, input.prepared.documentId),
               eq(documents.dataSourceId, before.document.dataSourceId),
               eq(documents.governanceStatus, "draft"),
-              eq(
-                documents.processingStatus,
-                before.document.processingStatus,
-              ),
+              eq(documents.processingStatus, before.document.processingStatus),
               isNull(documents.archivedAt),
             ),
           )
@@ -3734,12 +3663,11 @@ export function createGovernanceRepository<
             "The document changed while reprocessing was committed.",
           );
         }
-        const afterProvenance =
-          await loadDocumentProvenanceExpectation(
-            transaction,
-            input.prepared.documentId,
-            outcome.processingStatus === "failed" ? metadata : undefined,
-          );
+        const afterProvenance = await loadDocumentProvenanceExpectation(
+          transaction,
+          input.prepared.documentId,
+          outcome.processingStatus === "failed" ? metadata : undefined,
+        );
 
         const activeDrafts = activeDraftsBeforeCommit;
         if (activeDrafts.length > 0) {
@@ -3790,8 +3718,7 @@ export function createGovernanceRepository<
         });
         const reprocessingAuditAfterData =
           documentReprocessedAuditAfterDataSchema.parse({
-            chunkSetFingerprint:
-              afterProvenance.chunkSetFingerprint,
+            chunkSetFingerprint: afterProvenance.chunkSetFingerprint,
             contentSha256: before.document.contentSha256,
             documentId: input.prepared.documentId,
             metadata: afterProvenance.metadata,
@@ -3885,11 +3812,7 @@ export function createGovernanceRepository<
           .for("update");
         const draft = entityDrafts.find(({ id }) => id === input.draftId);
 
-        if (
-          !draft ||
-          draft.workflowStatus !== "draft" ||
-          draft.archivedAt
-        ) {
+        if (!draft || draft.workflowStatus !== "draft" || draft.archivedAt) {
           throw new GovernanceConflictError(
             "Only an active draft can be reviewed.",
           );
@@ -3916,8 +3839,10 @@ export function createGovernanceRepository<
           processingStatus: "pending" | "processing" | "ready" | "failed";
         } | null = null;
         if (draft.entityType === "document") {
-          const { document } =
-            await requireCanonicalDocumentProvenance(transaction, draft);
+          const { document } = await requireCanonicalDocumentProvenance(
+            transaction,
+            draft,
+          );
           if (
             document.processingStatus !== "ready" ||
             document.governanceStatus !== "draft"
@@ -3974,9 +3899,7 @@ export function createGovernanceRepository<
             workflowStatus: "reviewed",
           },
           beforeData: {
-            ...(documentBeforeReview
-              ? { document: documentBeforeReview }
-              : {}),
+            ...(documentBeforeReview ? { document: documentBeforeReview } : {}),
             payload: draft.payload,
             reviewedAt: draft.reviewedAt?.toISOString() ?? null,
             reviewedBy: draft.reviewedBy,

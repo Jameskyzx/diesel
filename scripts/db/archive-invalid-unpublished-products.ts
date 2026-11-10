@@ -13,7 +13,9 @@ import {
 
 function flagValue(name: string): string | undefined {
   const prefix = `--${name}=`;
-  return process.argv.slice(2).find((argument) => argument.startsWith(prefix))
+  return process.argv
+    .slice(2)
+    .find((argument) => argument.startsWith(prefix))
     ?.slice(prefix.length);
 }
 
@@ -65,7 +67,9 @@ async function main(): Promise<void> {
     const absoluteManifestPath = resolve(process.cwd(), manifestPath!);
     const manifestMode = (await stat(absoluteManifestPath)).mode & 0o777;
     if ((manifestMode & 0o077) !== 0) {
-      throw new Error("Apply manifest must not be readable or writable by group/other.");
+      throw new Error(
+        "Apply manifest must not be readable or writable by group/other.",
+      );
     }
     const expectedManifest: unknown = JSON.parse(
       await readFile(absoluteManifestPath, "utf8"),
@@ -76,7 +80,9 @@ async function main(): Promise<void> {
       expectedManifest,
       reason: reason!,
     });
-    process.stdout.write(`${JSON.stringify({ status: "archived", ...result })}\n`);
+    process.stdout.write(
+      `${JSON.stringify({ status: "archived", ...result })}\n`,
+    );
   } finally {
     await sql.end();
   }

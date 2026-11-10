@@ -125,29 +125,27 @@ export const marketMetricDecimalSchema = exactFixedScaleDecimalSchema({
   scale: 6,
 });
 
-export const httpUrlSchema = z
-  .url()
-  .superRefine((value, context) => {
-    let url: URL;
-    try {
-      url = new URL(value);
-    } catch {
-      return;
-    }
+export const httpUrlSchema = z.url().superRefine((value, context) => {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return;
+  }
 
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      context.addIssue({
-        code: "custom",
-        message: "URL must use HTTP or HTTPS",
-      });
-    }
-    if (url.username.length > 0 || url.password.length > 0) {
-      context.addIssue({
-        code: "custom",
-        message: "URL must not include embedded credentials",
-      });
-    }
-  });
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    context.addIssue({
+      code: "custom",
+      message: "URL must use HTTP or HTTPS",
+    });
+  }
+  if (url.username.length > 0 || url.password.length > 0) {
+    context.addIssue({
+      code: "custom",
+      message: "URL must not include embedded credentials",
+    });
+  }
+});
 
 /** Check exact integer watts before IEEE-754 can round across a power band. */
 function isExactPowerDecimal(value: string): boolean {
@@ -169,7 +167,8 @@ function isExactPowerDecimal(value: string): boolean {
   const exponent = Number(exponentText);
   if (
     !Number.isSafeInteger(exponent) ||
-    exponent < minimumExponent || exponent > maximumExponent
+    exponent < minimumExponent ||
+    exponent > maximumExponent
   ) {
     return false;
   }
@@ -185,21 +184,15 @@ export const powerKwSchema = z
   .union([
     z.number(),
     decimalNumberStringSchema.refine(isExactPowerDecimal, {
-      message: "Power must be between 0 and 100000 kW in exact 0.001 kW increments",
+      message:
+        "Power must be between 0 and 100000 kW in exact 0.001 kW increments",
     }),
   ])
-  .transform((value) =>
-    typeof value === "number" ? value : Number(value),
-  )
+  .transform((value) => (typeof value === "number" ? value : Number(value)))
   .pipe(
-    z
-      .number()
-      .finite()
-      .nonnegative()
-      .max(100_000)
-      .multipleOf(0.001, {
-        message: "Power must use at most three decimal places",
-      }),
+    z.number().finite().nonnegative().max(100_000).multipleOf(0.001, {
+      message: "Power must use at most three decimal places",
+    }),
   );
 
 export const countryQuerySchema = z

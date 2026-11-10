@@ -44,9 +44,9 @@ describe("readiness", () => {
     process.env.DATABASE_MODE = "pglite-demo";
 
     try {
-      await expect(
-        checkDatabaseReadiness({ timeoutMs: 10_000 }),
-      ).resolves.toBe(true);
+      await expect(checkDatabaseReadiness({ timeoutMs: 10_000 })).resolves.toBe(
+        true,
+      );
     } finally {
       if (originalMode === undefined) {
         delete process.env.DATABASE_MODE;

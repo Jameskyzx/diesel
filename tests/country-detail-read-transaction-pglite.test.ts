@@ -41,20 +41,17 @@ function postgresErrorCode(error: unknown): string | null {
 describe("country detail PGlite read transaction", () => {
   it("applies repeatable-read and read-only settings in the demo runtime", async () => {
     const database = await getDemoDatabase();
-    const settings = await database.transaction(
-      async (transaction) => {
-        const result = await transaction.execute<{
-          isolationLevel: string;
-          readOnly: string;
-        }>(sql`
+    const settings = await database.transaction(async (transaction) => {
+      const result = await transaction.execute<{
+        isolationLevel: string;
+        readOnly: string;
+      }>(sql`
           select
             current_setting('transaction_isolation') as "isolationLevel",
             current_setting('transaction_read_only') as "readOnly"
         `);
-        return result.rows[0];
-      },
-      COUNTRY_DETAIL_READ_TRANSACTION_CONFIG,
-    );
+      return result.rows[0];
+    }, COUNTRY_DETAIL_READ_TRANSACTION_CONFIG);
 
     expect(settings).toEqual({
       isolationLevel: "repeatable read",
@@ -66,16 +63,13 @@ describe("country detail PGlite read transaction", () => {
     const database = await getDemoDatabase();
     let writeError: unknown;
     try {
-      await database.transaction(
-        async (transaction) => {
-          await transaction.execute(sql`
+      await database.transaction(async (transaction) => {
+        await transaction.execute(sql`
             update countries
             set name_en = name_en
             where iso3 = 'CHN'
           `);
-        },
-        COUNTRY_DETAIL_READ_TRANSACTION_CONFIG,
-      );
+      }, COUNTRY_DETAIL_READ_TRANSACTION_CONFIG);
     } catch (error: unknown) {
       writeError = error;
     }

@@ -6,7 +6,9 @@ import ts from "typescript";
 import { expect, it } from "vitest";
 
 it("excludes only the root temporary workspace while retaining maintained TypeScript", async () => {
-  const workspace = await mkdtemp(join(tmpdir(), "diesel-typescript-boundary-"));
+  const workspace = await mkdtemp(
+    join(tmpdir(), "diesel-typescript-boundary-"),
+  );
   const maintained = [
     "src/app/page.tsx",
     "src/tmp/example.ts",
@@ -32,11 +34,16 @@ it("excludes only the root temporary workspace while retaining maintained TypeSc
     const source = await readFile(join(process.cwd(), "tsconfig.json"), "utf8");
     const parsed = ts.parseConfigFileTextToJson("tsconfig.json", source);
     expect(parsed.error).toBeUndefined();
-    const configuration = ts.parseJsonConfigFileContent(parsed.config, ts.sys, workspace);
+    const configuration = ts.parseJsonConfigFileContent(
+      parsed.config,
+      ts.sys,
+      workspace,
+    );
     expect(configuration.errors).toEqual([]);
     expect(configuration.options.strict).toBe(true);
-    expect(configuration.fileNames.map((path) => relative(workspace, path)).sort())
-      .toEqual([...maintained].sort());
+    expect(
+      configuration.fileNames.map((path) => relative(workspace, path)).sort(),
+    ).toEqual([...maintained].sort());
   } finally {
     await rm(workspace, { recursive: true, force: true });
   }

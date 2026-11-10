@@ -20,7 +20,10 @@ import {
 import { GovernanceMaintenanceError } from "@/server/db/governance-maintenance-lock";
 import { GovernanceConflictError } from "@/server/repositories/governance-repository";
 import { AiConfigurationError } from "@/server/ai/model";
-import { FeedbackExtractionError, FeedbackInputError } from "@/server/services/feedback-errors";
+import {
+  FeedbackExtractionError,
+  FeedbackInputError,
+} from "@/server/services/feedback-errors";
 import { GovernancePermissionError } from "@/server/services/governance-service";
 import {
   readFormDataRequest,
@@ -134,10 +137,7 @@ function assertAdminWriteSameOrigin(request: Request): void {
   // Browser form submissions carry Origin and/or Fetch Metadata. Keep
   // non-browser administrative clients compatible when both are absent, but
   // fail closed for any browser-declared cross-site write.
-  const fetchSite = request.headers
-    .get("sec-fetch-site")
-    ?.trim()
-    .toLowerCase();
+  const fetchSite = request.headers.get("sec-fetch-site")?.trim().toLowerCase();
   if (fetchSite && fetchSite !== "same-origin") {
     throw new AdminAuthorizationError(
       "FORBIDDEN",
@@ -162,12 +162,8 @@ function assertExpectedAdminWritePrincipal(
   }
 
   const expectedPrincipal = adminPrincipalSchema.safeParse({
-    email: request.headers.get(
-      ADMIN_EXPECTED_PRINCIPAL_EMAIL_REQUEST_HEADER,
-    ),
-    role: request.headers.get(
-      ADMIN_EXPECTED_PRINCIPAL_ROLE_REQUEST_HEADER,
-    ),
+    email: request.headers.get(ADMIN_EXPECTED_PRINCIPAL_EMAIL_REQUEST_HEADER),
+    role: request.headers.get(ADMIN_EXPECTED_PRINCIPAL_ROLE_REQUEST_HEADER),
   });
 
   if (
@@ -198,11 +194,7 @@ export async function handleAdminRoute(
   } catch (error: unknown) {
     if (error instanceof AdminPrincipalChangedError) {
       errorCode = "PRINCIPAL_CHANGED";
-      response = errorResponse(
-        "PRINCIPAL_CHANGED",
-        error.message,
-        409,
-      );
+      response = errorResponse("PRINCIPAL_CHANGED", error.message, 409);
     } else if (error instanceof AdminAuthorizationError) {
       errorCode = error.code;
       response = errorResponse(error.code, error.message, error.status);
@@ -232,7 +224,11 @@ export async function handleAdminRoute(
       );
     } else if (error instanceof FeedbackInputError) {
       errorCode = error.code;
-      response = errorResponse(error.code, error.message, error.code === "FILE_TOO_LARGE" ? 413 : 400);
+      response = errorResponse(
+        error.code,
+        error.message,
+        error.code === "FILE_TOO_LARGE" ? 413 : 400,
+      );
     } else if (error instanceof FeedbackExtractionError) {
       errorCode = "AI_EXTRACTION_FAILED";
       response = errorResponse("AI_EXTRACTION_FAILED", error.message, 502);
@@ -281,10 +277,7 @@ export async function handleAdminRoute(
   }
 
   const observedResponse = observer.finish(response, errorCode);
-  observedResponse.headers.set(
-    "Cache-Control",
-    "private, no-store, max-age=0",
-  );
+  observedResponse.headers.set("Cache-Control", "private, no-store, max-age=0");
   observedResponse.headers.set("Pragma", "no-cache");
   if (authenticatedPrincipal) {
     observedResponse.headers.set(

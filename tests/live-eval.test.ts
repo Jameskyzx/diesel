@@ -33,9 +33,7 @@ describe("live eval scoring and budget", () => {
   it("requires remote streaming usage and disables provider retries", () => {
     expect(LIVE_EVAL_MAX_OUTPUT_TOKENS_PER_CALL).toBe(1_024);
     expect(LIVE_EVAL_MAX_RETRIES_PER_MODEL_CALL).toBe(0);
-    expect(LIVE_EVAL_TOKEN_BUDGET_ENFORCEMENT).toBe(
-      "post_usage_acceptance",
-    );
+    expect(LIVE_EVAL_TOKEN_BUDGET_ENFORCEMENT).toBe("post_usage_acceptance");
     expect(
       liveEvalProviderProfileCanRun({
         adapter: "@ai-sdk/openai-compatible",
@@ -77,30 +75,32 @@ describe("live eval scoring and budget", () => {
       },
       label: "a missing provider-profile key",
     },
-  ])("rejects $label in the expected provider binding", ({
-    actualProviderProfile,
-  }) => {
-    const expectedProviderProfile = {
-      adapter: "@ai-sdk/openai-compatible",
-      adapterContractVersion: 1,
-      enableThinking: false,
-      endpointSha256: "a".repeat(64),
-      includeUsage: true,
-    };
+  ])(
+    "rejects $label in the expected provider binding",
+    ({ actualProviderProfile }) => {
+      const expectedProviderProfile = {
+        adapter: "@ai-sdk/openai-compatible",
+        adapterContractVersion: 1,
+        enableThinking: false,
+        endpointSha256: "a".repeat(64),
+        includeUsage: true,
+      };
 
-    expect(
-      liveEvalProviderBindingMatchesExpected({
-        actual: {
-          modelId: "server-openai-compatible/model",
-          providerProfile: actualProviderProfile as typeof expectedProviderProfile,
-        },
-        expected: {
-          modelId: "server-openai-compatible/model",
-          providerProfile: expectedProviderProfile,
-        },
-      }),
-    ).toBe(false);
-  });
+      expect(
+        liveEvalProviderBindingMatchesExpected({
+          actual: {
+            modelId: "server-openai-compatible/model",
+            providerProfile:
+              actualProviderProfile as typeof expectedProviderProfile,
+          },
+          expected: {
+            modelId: "server-openai-compatible/model",
+            providerProfile: expectedProviderProfile,
+          },
+        }),
+      ).toBe(false);
+    },
+  );
 
   it.each([
     {
@@ -131,11 +131,18 @@ describe("live eval scoring and budget", () => {
       expected: false,
       label: "a retry before the terminal failure",
     },
-  ])("checks $label", ({ attemptCount, completedCount, errorCode, expected }) => {
-    expect(
-      liveEvalAttemptBudgetPassed({ attemptCount, completedCount, errorCode }),
-    ).toBe(expected);
-  });
+  ])(
+    "checks $label",
+    ({ attemptCount, completedCount, errorCode, expected }) => {
+      expect(
+        liveEvalAttemptBudgetPassed({
+          attemptCount,
+          completedCount,
+          errorCode,
+        }),
+      ).toBe(expected);
+    },
+  );
 
   it("stops at either case or token budget", () => {
     expect(
@@ -328,8 +335,9 @@ describe("live eval scoring and budget", () => {
       modelStreamCompleted: false,
     },
   ] as const)("derives completeness from $label", (input) => {
-    expect(recomputeLiveEvalCaseTokenUsage(input).tokenUsage.usageComplete)
-      .toBe(input.expectedComplete);
+    expect(
+      recomputeLiveEvalCaseTokenUsage(input).tokenUsage.usageComplete,
+    ).toBe(input.expectedComplete);
   });
 
   it.each([
@@ -381,12 +389,12 @@ describe("live eval scoring and budget", () => {
         totalTokens: LIVE_EVAL_MAX_TOKENS - LIVE_EVAL_CASE_TOKEN_RESERVE - 1,
       },
     },
-  ] as const)("resolves the explicit stop reason $expected", ({
-    expected,
-    input,
-  }) => {
-    expect(resolveLiveEvalStopReason(input)).toBe(expected);
-  });
+  ] as const)(
+    "resolves the explicit stop reason $expected",
+    ({ expected, input }) => {
+      expect(resolveLiveEvalStopReason(input)).toBe(expected);
+    },
+  );
 
   it.each([
     {
@@ -461,12 +469,9 @@ describe("live eval scoring and budget", () => {
       },
       label: "a case execution error",
     },
-  ] as const)(
-    "derives $expected for $label",
-    ({ expected, input }) => {
-      expect(resolveLiveEvalTerminationReason(input)).toBe(expected);
-    },
-  );
+  ] as const)("derives $expected for $label", ({ expected, input }) => {
+    expect(resolveLiveEvalTerminationReason(input)).toBe(expected);
+  });
 
   it("matches only the expected normalized argument subset", () => {
     expect(
@@ -583,7 +588,8 @@ describe("live eval scoring and budget", () => {
   it.each([
     {
       caseId: "country-overview-china",
-      responseText: "I will not provide the requested country overview for CHN.",
+      responseText:
+        "I will not provide the requested country overview for CHN.",
     },
     {
       caseId: "scoped-single-country-regulation",
@@ -897,26 +903,26 @@ describe("live eval scoring and budget", () => {
       responseText:
         "DEMO-ENG-100 在 CHN non-road、100 kW、2026-08-13 的合规适配结论为通过，供应状态为可供货。信息参考，不替代正式认证或法律意见",
     },
-  ])("accepts an explicit positive product-ready decision in $expectedLocale", ({
-    expectedLocale,
-    responseText,
-  }) => {
-    const testCase = salesChatLiveCases.find(
-      ({ id }) => id === "product-ready-dual-axis",
-    )!;
-    const observation = evaluateLiveEvalResponseContract({
-      expectedLocale,
-      responseContract: testCase.responseContract,
-      responseText,
-    });
+  ])(
+    "accepts an explicit positive product-ready decision in $expectedLocale",
+    ({ expectedLocale, responseText }) => {
+      const testCase = salesChatLiveCases.find(
+        ({ id }) => id === "product-ready-dual-axis",
+      )!;
+      const observation = evaluateLiveEvalResponseContract({
+        expectedLocale,
+        responseContract: testCase.responseContract,
+        responseText,
+      });
 
-    expect(observation).toMatchObject({
-      detectedResponseLocale: expectedLocale,
-      missingResponseAnchorIds: [],
-      responseGroundingPassed: true,
-      responseLocalePassed: true,
-    });
-  });
+      expect(observation).toMatchObject({
+        detectedResponseLocale: expectedLocale,
+        missingResponseAnchorIds: [],
+        responseGroundingPassed: true,
+        responseLocalePassed: true,
+      });
+    },
+  );
 
   it("recomputes tool, evidence, grounding, locale and safety scores independently", () => {
     expect(
@@ -1361,12 +1367,16 @@ describe("live eval scoring and budget", () => {
     const expectedById = new Map(
       salesChatLiveCases.map((testCase) => [testCase.id, testCase]),
     );
-    expect(expectedById.get("unknown-product-fails-closed")?.expectedEvidenceAllowed)
-      .toBe(false);
-    expect(expectedById.get("source-document-retrieval")?.expectedEvidenceAllowed)
-      .toBe(true);
-    expect(expectedById.get("retrieved-prompt-injection-is-data")?.expectedEvidenceAllowed)
-      .toBe(false);
+    expect(
+      expectedById.get("unknown-product-fails-closed")?.expectedEvidenceAllowed,
+    ).toBe(false);
+    expect(
+      expectedById.get("source-document-retrieval")?.expectedEvidenceAllowed,
+    ).toBe(true);
+    expect(
+      expectedById.get("retrieved-prompt-injection-is-data")
+        ?.expectedEvidenceAllowed,
+    ).toBe(false);
     expect(
       salesChatLiveCases
         .filter(({ safetyCritical }) => safetyCritical)
@@ -1376,27 +1386,51 @@ describe("live eval scoring and budget", () => {
 });
 
 describe("harness grounding surface", () => {
-  const responseContract = salesChatLiveCases.find(({ id }) => id === "product-ready-dual-axis")!.responseContract;
+  const responseContract = salesChatLiveCases.find(
+    ({ id }) => id === "product-ready-dual-axis",
+  )!.responseContract;
   const cardText = [
-    "Deterministic product fit", "Evidence retrieved", "Country: CHN", "Application: Non-road", "Power: 100 kW",
-    "Date: Aug 13, 2026", "Product: DEMO-ENG-100", "Regulation/certification fit: Confirmed fit · Commercially ready",
+    "Deterministic product fit",
+    "Evidence retrieved",
+    "Country: CHN",
+    "Application: Non-road",
+    "Power: 100 kW",
+    "Date: Aug 13, 2026",
+    "Product: DEMO-ENG-100",
+    "Regulation/certification fit: Confirmed fit · Commercially ready",
     "For information only; not a substitute for formal certification or legal advice.",
   ].join("\n");
 
   it("grounds anchors only on server-rendered evidence, never on the narrative alone", () => {
-    const grounded = evaluateLiveEvalResponseContract({ expectedLocale: "en", responseContract,
-      responseText: "Review the product-fit result below.", evidenceText: cardText });
+    const grounded = evaluateLiveEvalResponseContract({
+      expectedLocale: "en",
+      responseContract,
+      responseText: "Review the product-fit result below.",
+      evidenceText: cardText,
+    });
     expect(grounded.missingResponseAnchorIds).toEqual([]);
-    const narrativeOnly = evaluateLiveEvalResponseContract({ expectedLocale: "en", responseContract,
-      responseText: cardText.replaceAll("\n", ". "), evidenceText: "The requested evidence checks completed." });
+    const narrativeOnly = evaluateLiveEvalResponseContract({
+      expectedLocale: "en",
+      responseContract,
+      responseText: cardText.replaceAll("\n", ". "),
+      evidenceText: "The requested evidence checks completed.",
+    });
     expect(narrativeOnly.responseGroundingPassed).toBe(false);
-    expect(narrativeOnly.missingResponseAnchorIds).toContain("fact:model-demo-eng-100");
+    expect(narrativeOnly.missingResponseAnchorIds).toContain(
+      "fact:model-demo-eng-100",
+    );
   });
 
   it("still vetoes a contradiction the narrative adds to valid evidence", () => {
-    const observation = evaluateLiveEvalResponseContract({ expectedLocale: "en", responseContract,
-      responseText: "Note: DEMO-ENG-100 is not compatible with this market.", evidenceText: cardText });
+    const observation = evaluateLiveEvalResponseContract({
+      expectedLocale: "en",
+      responseContract,
+      responseText: "Note: DEMO-ENG-100 is not compatible with this market.",
+      evidenceText: cardText,
+    });
     expect(observation.responseGroundingPassed).toBe(false);
-    expect(observation.missingResponseAnchorIds).toContain("decision:product-compatible");
+    expect(observation.missingResponseAnchorIds).toContain(
+      "decision:product-compatible",
+    );
   });
 });

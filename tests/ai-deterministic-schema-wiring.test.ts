@@ -1,10 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
-import {
-  aiToolResultSchema,
-  type AiToolResult,
-} from "@/features/ai/schemas";
+import { aiToolResultSchema, type AiToolResult } from "@/features/ai/schemas";
 import {
   buildCompatibleProductsResult,
   buildMarketComparisonResult,
@@ -156,8 +153,7 @@ describe("deterministic AI result schema wiring", () => {
           throw new Error("Expected a regulation result fixture.");
         }
         const country = result.comparison.countries.find(
-          ({ futureAdoptedRegulations }) =>
-            futureAdoptedRegulations.length > 0,
+          ({ futureAdoptedRegulations }) => futureAdoptedRegulations.length > 0,
         );
         const future = country?.futureAdoptedRegulations.pop();
         if (!country || !future) {
@@ -265,18 +261,15 @@ describe("deterministic AI result schema wiring", () => {
     expectBothSchemasToReject(missingPeriod);
   });
 
-  it.each([
-    "brief",
-    "market",
-    "products",
-    "regulations",
-    "score",
-  ] as const)("rejects a forged top-level warning on $s", (fixtureName) => {
-    const result = structuredClone(fixtures[fixtureName]);
-    result.warnings.push("FORGED_TOP_LEVEL_WARNING");
+  it.each(["brief", "market", "products", "regulations", "score"] as const)(
+    "rejects a forged top-level warning on $s",
+    (fixtureName) => {
+      const result = structuredClone(fixtures[fixtureName]);
+      result.warnings.push("FORGED_TOP_LEVEL_WARNING");
 
-    expectBothSchemasToReject(result);
-  });
+      expectBothSchemasToReject(result);
+    },
+  );
 
   it("keeps canonical no-facts error placeholders valid at both boundaries", () => {
     const errorCases = [
@@ -408,7 +401,8 @@ describe("deterministic AI result schema wiring", () => {
         result.comparison.missingData.push("FORGED_ERROR_FACT");
       },
       (result: AiToolResult) => {
-        if (result.tool !== "calculateOpportunityScore") throw new Error("score");
+        if (result.tool !== "calculateOpportunityScore")
+          throw new Error("score");
         result.scorecard.scores[0]!.overallScore = 99;
       },
       (result: AiToolResult) => {
@@ -434,11 +428,9 @@ describe("deterministic AI result schema wiring", () => {
 
   it("rejects invalid error inputs instead of inventing fallback queries", () => {
     expect(() =>
-      buildToolErrorResult(
-        "findCompatibleProducts",
-        analysisInput.asOf,
-        { countryIso3: "CHN" },
-      ),
+      buildToolErrorResult("findCompatibleProducts", analysisInput.asOf, {
+        countryIso3: "CHN",
+      }),
     ).toThrow();
     expect(() =>
       buildToolErrorResult("searchKnowledgeBase", analysisInput.asOf, {

@@ -1,25 +1,31 @@
 import { z } from "zod";
 
-export const healthResponseSchema = z.object({
-  service: z.literal("global-diesel-regulations"),
-  status: z.literal("ok"),
-  timestamp: z.iso.datetime(),
-  version: z.string().min(1),
-}).strict();
+export const healthResponseSchema = z
+  .object({
+    service: z.literal("global-diesel-regulations"),
+    status: z.literal("ok"),
+    timestamp: z.iso.datetime(),
+    version: z.string().min(1),
+  })
+  .strict();
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
-export const readinessResponseSchema = z.object({
-  service: z.literal("global-diesel-regulations"),
-  status: z.enum(["ok", "unavailable"]),
-  timestamp: z.iso.datetime(),
-  version: z.string().min(1),
-  checks: z.object({
-    aiChatAdmission: z.enum(["ok", "unavailable"]),
-    aiChatRateLimit: z.enum(["ok", "unavailable"]),
-    database: z.enum(["ok", "unavailable"]),
-  }).strict(),
-}).strict();
+export const readinessResponseSchema = z
+  .object({
+    service: z.literal("global-diesel-regulations"),
+    status: z.enum(["ok", "unavailable"]),
+    timestamp: z.iso.datetime(),
+    version: z.string().min(1),
+    checks: z
+      .object({
+        aiChatAdmission: z.enum(["ok", "unavailable"]),
+        aiChatRateLimit: z.enum(["ok", "unavailable"]),
+        database: z.enum(["ok", "unavailable"]),
+      })
+      .strict(),
+  })
+  .strict();
 
 export type ReadinessResponse = z.infer<typeof readinessResponseSchema>;
 
@@ -53,8 +59,7 @@ export function createReadinessPayload({
   now = new Date(),
   version,
 }: CreateReadinessPayloadOptions): ReadinessResponse {
-  const ready =
-    aiChatAdmissionReady && aiChatRateLimitReady && databaseReady;
+  const ready = aiChatAdmissionReady && aiChatRateLimitReady && databaseReady;
   return readinessResponseSchema.parse({
     service: "global-diesel-regulations",
     status: ready ? "ok" : "unavailable",

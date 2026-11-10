@@ -99,30 +99,68 @@ export type GovernanceMaintenanceUnlockResult = {
 };
 
 const maintenanceFailureReasons = [
-  "session-proof-failed", "probe-timeout", "probe-query-failed",
-  "backend-changed", "global-lock-lost", "token-lock-lost",
-  "global-lock-reentry-failed", "token-lock-reentry-failed",
-  "global-lock-balance-failed", "token-lock-balance-failed",
-  "unlock-timeout", "unlock-query-failed", "unlock-proof-failed",
-  "session-close-failed", "process-group-not-terminated", "command-failed",
+  "session-proof-failed",
+  "probe-timeout",
+  "probe-query-failed",
+  "backend-changed",
+  "global-lock-lost",
+  "token-lock-lost",
+  "global-lock-reentry-failed",
+  "token-lock-reentry-failed",
+  "global-lock-balance-failed",
+  "token-lock-balance-failed",
+  "unlock-timeout",
+  "unlock-query-failed",
+  "unlock-proof-failed",
+  "session-close-failed",
+  "process-group-not-terminated",
+  "command-failed",
 ] as const;
 type MaintenanceFailureReason = (typeof maintenanceFailureReasons)[number];
 
 // Diagnostics are an allowlist, never an Error message, query or connection URL.
 const maintenanceDatabaseCodes = new Set([
-  "08000", "08001", "08003", "08004", "08006", "08007", "08P01",
-  "25P03", "53300", "53400", "57014", "57P01", "57P02", "57P03",
-  "CONNECT_TIMEOUT", "CONNECTION_CLOSED", "CONNECTION_DESTROYED",
-  "CONNECTION_ENDED", "EAI_AGAIN", "ECONNREFUSED", "ECONNRESET",
-  "EHOSTUNREACH", "ENETDOWN", "ENETUNREACH", "EPIPE", "ETIMEDOUT",
+  "08000",
+  "08001",
+  "08003",
+  "08004",
+  "08006",
+  "08007",
+  "08P01",
+  "25P03",
+  "53300",
+  "53400",
+  "57014",
+  "57P01",
+  "57P02",
+  "57P03",
+  "CONNECT_TIMEOUT",
+  "CONNECTION_CLOSED",
+  "CONNECTION_DESTROYED",
+  "CONNECTION_ENDED",
+  "EAI_AGAIN",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "ENETDOWN",
+  "ENETUNREACH",
+  "EPIPE",
+  "ETIMEDOUT",
 ]);
 function maintenanceDatabaseCode(error: unknown): string | null {
   try {
-    if (typeof error === "object" && error !== null && "code" in error &&
-        typeof error.code === "string" && maintenanceDatabaseCodes.has(error.code)) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      typeof error.code === "string" &&
+      maintenanceDatabaseCodes.has(error.code)
+    ) {
       return error.code;
     }
-  } catch { /* Even a throwing error property must not mask termination. */ }
+  } catch {
+    /* Even a throwing error property must not mask termination. */
+  }
   return null;
 }
 
@@ -140,16 +178,24 @@ export function formatGovernanceMaintenanceDiagnostic(
   error: unknown,
   phase: "heartbeat" | "command",
 ): string {
-  const reason = error instanceof GovernanceMaintenanceSessionError &&
-      maintenanceFailureReasons.includes(error.reason)
-    ? error.reason
-    : error instanceof GovernanceMaintenanceProcessGroupError
-      ? "process-group-not-terminated" : "command-failed";
-  const code = error instanceof GovernanceMaintenanceSessionError &&
-      typeof error.databaseCode === "string" && maintenanceDatabaseCodes.has(error.databaseCode)
-    ? error.databaseCode : maintenanceDatabaseCode(error);
+  const reason =
+    error instanceof GovernanceMaintenanceSessionError &&
+    maintenanceFailureReasons.includes(error.reason)
+      ? error.reason
+      : error instanceof GovernanceMaintenanceProcessGroupError
+        ? "process-group-not-terminated"
+        : "command-failed";
+  const code =
+    error instanceof GovernanceMaintenanceSessionError &&
+    typeof error.databaseCode === "string" &&
+    maintenanceDatabaseCodes.has(error.databaseCode)
+      ? error.databaseCode
+      : maintenanceDatabaseCode(error);
   return `${JSON.stringify({
-    kind: "governance-maintenance-failure-v1", phase, reason, databaseCode: code,
+    kind: "governance-maintenance-failure-v1",
+    phase,
+    reason,
+    databaseCode: code,
   })}\n`;
 }
 
@@ -202,12 +248,16 @@ export async function cleanupGovernanceMaintenanceSession(input: {
   close: (timeoutSeconds: number) => Promise<void>;
   globalLockHeld: boolean;
   tokenLockHeld: boolean;
-  unlock: (() => PromiseLike<GovernanceMaintenanceUnlockResult | undefined>) | null;
+  unlock:
+    (() => PromiseLike<GovernanceMaintenanceUnlockResult | undefined>) | null;
 }): Promise<void> {
   let cleanupFailure: unknown;
 
   try {
-    if ((input.globalLockHeld || input.tokenLockHeld) && input.unlock !== null) {
+    if (
+      (input.globalLockHeld || input.tokenLockHeld) &&
+      input.unlock !== null
+    ) {
       const result = await waitForGovernanceMaintenanceOperation(
         input.unlock(),
         governanceMaintenanceCleanupTimeoutMs,
@@ -224,14 +274,22 @@ export async function cleanupGovernanceMaintenanceSession(input: {
       }
     }
   } catch (error) {
-    cleanupFailure = error instanceof GovernanceMaintenanceSessionError ? error :
-      new GovernanceMaintenanceSessionError("unlock-query-failed", maintenanceDatabaseCode(error));
+    cleanupFailure =
+      error instanceof GovernanceMaintenanceSessionError
+        ? error
+        : new GovernanceMaintenanceSessionError(
+            "unlock-query-failed",
+            maintenanceDatabaseCode(error),
+          );
   }
 
   try {
     await input.close(governanceMaintenanceCleanupTimeoutSeconds);
   } catch (error) {
-    cleanupFailure ??= new GovernanceMaintenanceSessionError("session-close-failed", maintenanceDatabaseCode(error));
+    cleanupFailure ??= new GovernanceMaintenanceSessionError(
+      "session-close-failed",
+      maintenanceDatabaseCode(error),
+    );
   }
 
   if (cleanupFailure !== undefined) {
@@ -252,9 +310,7 @@ held so the child can run its own rollback trap.
 export const governanceMaintenanceFailureMessage =
   "Governance maintenance command failed; no credentials or command arguments were logged.\n";
 
-export function parseGovernanceMaintenanceCommand(
-  args: readonly string[],
-):
+export function parseGovernanceMaintenanceCommand(args: readonly string[]):
   | { help: true }
   | {
       command: string;
@@ -269,9 +325,7 @@ export function parseGovernanceMaintenanceCommand(
   let separatorIndex = 0;
   let databaseEnvironmentFile: string | undefined;
   if (args[0]?.startsWith("--database-env-file=")) {
-    databaseEnvironmentFile = args[0].slice(
-      "--database-env-file=".length,
-    );
+    databaseEnvironmentFile = args[0].slice("--database-env-file=".length);
     separatorIndex = 1;
     if (!databaseEnvironmentFile) {
       throw new Error("The database environment file path is required");
@@ -452,10 +506,7 @@ type GovernanceMaintenanceSignalOptions = {
   signalProcess?: (pid: number, signal: ForwardedSignal) => boolean;
 };
 
-type GovernanceMaintenanceProcessGroupSignal =
-  | ForwardedSignal
-  | "SIGKILL"
-  | 0;
+type GovernanceMaintenanceProcessGroupSignal = ForwardedSignal | "SIGKILL" | 0;
 
 export type GovernanceMaintenanceProcessGroupOptions = {
   killGraceMs?: number;
@@ -561,10 +612,7 @@ export async function ensureGovernanceMaintenanceProcessGroupTerminated(
 ): Promise<void> {
   const platform = options.platform ?? process.platform;
   if (platform === "win32") return;
-  if (
-    !Number.isInteger(processGroupId) ||
-    processGroupId <= 1
-  ) {
+  if (!Number.isInteger(processGroupId) || processGroupId <= 1) {
     processGroupFailure();
   }
 
@@ -587,7 +635,9 @@ export async function ensureGovernanceMaintenanceProcessGroupTerminated(
         setTimeout(resolve, timeoutMs);
       }));
   if (!unixProcessGroupExists(processGroupId, signalProcess)) return;
-  if (!signalUnixProcessGroup(processGroupId, terminationSignal, signalProcess)) {
+  if (
+    !signalUnixProcessGroup(processGroupId, terminationSignal, signalProcess)
+  ) {
     return;
   }
   if (
@@ -756,12 +806,12 @@ export function startGovernanceMaintenanceHeartbeat(input: {
 } {
   const intervalMs =
     input.intervalMs ?? governanceMaintenanceHeartbeatIntervalMs;
-  const timeoutMs =
-    input.timeoutMs ?? governanceMaintenanceHeartbeatTimeoutMs;
+  const timeoutMs = input.timeoutMs ?? governanceMaintenanceHeartbeatTimeoutMs;
   let activeCheck: Promise<void> | undefined;
   let failure: GovernanceMaintenanceSessionError | null = null;
   let monitoring = true;
-  let stopPromise: Promise<GovernanceMaintenanceSessionError | null> | undefined;
+  let stopPromise:
+    Promise<GovernanceMaintenanceSessionError | null> | undefined;
   const timerState: { current?: ReturnType<typeof setInterval> } = {};
 
   const stopTimer = () => {
@@ -774,7 +824,11 @@ export function startGovernanceMaintenanceHeartbeat(input: {
     const firstFailure = failure === null;
     failure ??= error;
     if (firstFailure) {
-      try { input.onFailure?.(failure); } catch { /* Diagnostics never prevent termination. */ }
+      try {
+        input.onFailure?.(failure);
+      } catch {
+        /* Diagnostics never prevent termination. */
+      }
     }
     if (!monitoring) {
       return;
@@ -791,24 +845,42 @@ export function startGovernanceMaintenanceHeartbeat(input: {
     }
   };
   const probeBeforeDeadline = () =>
-    waitForGovernanceMaintenanceOperation(input.probe(), timeoutMs, "probe-timeout");
+    waitForGovernanceMaintenanceOperation(
+      input.probe(),
+      timeoutMs,
+      "probe-timeout",
+    );
   const check = async () => {
     try {
       const probe = await probeBeforeDeadline();
       const failedProof: MaintenanceFailureReason | null =
-        probe?.backendPid !== input.expectedBackendPid ? "backend-changed" :
-        probe.globalHeld !== true ? "global-lock-lost" :
-        probe.tokenHeld !== true ? "token-lock-lost" :
-        probe.globalReentered !== true ? "global-lock-reentry-failed" :
-        probe.tokenReentered !== true ? "token-lock-reentry-failed" :
-        probe.globalBalanced !== true ? "global-lock-balance-failed" :
-        probe.tokenBalanced !== true ? "token-lock-balance-failed" : null;
+        probe?.backendPid !== input.expectedBackendPid
+          ? "backend-changed"
+          : probe.globalHeld !== true
+            ? "global-lock-lost"
+            : probe.tokenHeld !== true
+              ? "token-lock-lost"
+              : probe.globalReentered !== true
+                ? "global-lock-reentry-failed"
+                : probe.tokenReentered !== true
+                  ? "token-lock-reentry-failed"
+                  : probe.globalBalanced !== true
+                    ? "global-lock-balance-failed"
+                    : probe.tokenBalanced !== true
+                      ? "token-lock-balance-failed"
+                      : null;
       if (failedProof !== null) {
         fail(new GovernanceMaintenanceSessionError(failedProof));
       }
     } catch (error: unknown) {
-      fail(error instanceof GovernanceMaintenanceSessionError ? error :
-        new GovernanceMaintenanceSessionError("probe-query-failed", maintenanceDatabaseCode(error)));
+      fail(
+        error instanceof GovernanceMaintenanceSessionError
+          ? error
+          : new GovernanceMaintenanceSessionError(
+              "probe-query-failed",
+              maintenanceDatabaseCode(error),
+            ),
+      );
     }
   };
   const timer = setInterval(() => {
@@ -854,8 +926,7 @@ export async function waitForMaintenanceChild(
     let settled = false;
     let childError: Error | undefined;
     let closeResult:
-      | { code: number | null; signal: NodeJS.Signals | null }
-      | undefined;
+      { code: number | null; signal: NodeJS.Signals | null } | undefined;
     const controller =
       terminationController ??
       createGovernanceMaintenanceChildTerminationController(
@@ -896,10 +967,7 @@ export async function waitForMaintenanceChild(
       resolve(exitCode);
     };
     const proveGroupAndFinish = () => {
-      void controller.proveTerminated().then(
-        finishFromClose,
-        finishRejected,
-      );
+      void controller.proveTerminated().then(finishFromClose, finishRejected);
     };
     const forward = (signal: ForwardedSignal) => {
       forwardedSignal ??= signal;
@@ -928,12 +996,9 @@ export async function waitForMaintenanceChild(
         finishRejected(error);
         return;
       }
-      void controller.terminate("SIGTERM").then(
-        () => {
-          if (closeResult !== undefined) finishFromClose();
-        },
-        finishRejected,
-      );
+      void controller.terminate("SIGTERM").then(() => {
+        if (closeResult !== undefined) finishFromClose();
+      }, finishRejected);
     });
     child.once("close", (code, signal) => {
       if (settled) return;
@@ -1008,7 +1073,9 @@ async function main(): Promise<void> {
       child,
       expectedBackendPid: backendPid,
       onFailure: (failure) => {
-        process.stderr.write(formatGovernanceMaintenanceDiagnostic(failure, "heartbeat"));
+        process.stderr.write(
+          formatGovernanceMaintenanceDiagnostic(failure, "heartbeat"),
+        );
       },
       probe: () =>
         client<GovernanceMaintenanceSessionProbe[]>`
@@ -1126,7 +1193,9 @@ if (
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   main().catch((error: unknown) => {
-    process.stderr.write(formatGovernanceMaintenanceDiagnostic(error, "command"));
+    process.stderr.write(
+      formatGovernanceMaintenanceDiagnostic(error, "command"),
+    );
     process.stderr.write(governanceMaintenanceFailureMessage);
     process.exitCode = 1;
   });

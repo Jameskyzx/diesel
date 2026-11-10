@@ -16,11 +16,10 @@ async function startServer() {
   const hostname = "127.0.0.1";
   const port = 3200;
   const nextEnvPath = `${fixtureDirectory}/next-env.d.ts`;
-  const nextEnvironmentGuard =
-    await createNextEnvironmentFileGuard({
-      allowedGeneratedRouteImports: ["./.next/dev/types/routes.d.ts"],
-      path: nextEnvPath,
-    });
+  const nextEnvironmentGuard = await createNextEnvironmentFileGuard({
+    allowedGeneratedRouteImports: ["./.next/dev/types/routes.d.ts"],
+    path: nextEnvPath,
+  });
   let terminationRequested = false;
   let activeSignalShutdown: (() => void) | null = null;
   const handleTerminationSignal = () => {
@@ -135,9 +134,7 @@ async function startServer() {
           closeError,
         );
       }
-      await restoreRecordedNextEnvironmentAfterOperation(
-        nextEnvironmentGuard,
-      );
+      await restoreRecordedNextEnvironmentAfterOperation(nextEnvironmentGuard);
     })();
     return shutdownPromise;
   };
@@ -190,9 +187,7 @@ async function startServer() {
       operationError,
     );
   }
-  console.log(
-    `Global-error fixture ready at http://${hostname}:${port}`,
-  );
+  console.log(`Global-error fixture ready at http://${hostname}:${port}`);
 }
 
 void startServer().catch((error: unknown) => {

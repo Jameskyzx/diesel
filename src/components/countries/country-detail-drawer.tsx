@@ -15,7 +15,14 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useLocale } from "@/components/i18n/locale-provider";
@@ -113,9 +120,8 @@ type CountryDetailDrawerProps = {
 
 const ProductFitPanel = dynamic(
   async () => {
-    const productModule = await import(
-      "@/components/products/product-fit-panel"
-    );
+    const productModule =
+      await import("@/components/products/product-fit-panel");
     return productModule.ProductFitPanel;
   },
   {
@@ -188,9 +194,10 @@ export function CountryDetailDrawer({
         locale,
       )
     : null;
-  const selectedCountryNameWithCode = selectedDirectoryEntry && selectedCountryName
-    ? nameWithCode(selectedCountryName, selectedDirectoryEntry.iso3, locale)
-    : (iso3 ?? copy.unknownCountryTitle);
+  const selectedCountryNameWithCode =
+    selectedDirectoryEntry && selectedCountryName
+      ? nameWithCode(selectedCountryName, selectedDirectoryEntry.iso3, locale)
+      : (iso3 ?? copy.unknownCountryTitle);
   const requestedAsOf = initialFilters?.asOf ?? null;
   const query: CountryDetailQueryIdentity | null = iso3
     ? {
@@ -205,9 +212,8 @@ export function CountryDetailDrawer({
     initialResponse,
     query,
   });
-  const fetchAsOf = currentDetail.status === "ready"
-    ? currentDetail.query.asOf
-    : requestedAsOf;
+  const fetchAsOf =
+    currentDetail.status === "ready" ? currentDetail.query.asOf : requestedAsOf;
 
   useEffect(() => {
     if (!iso3) {
@@ -388,7 +394,8 @@ export function CountryDetailDrawer({
                     countrySummariesByIso3.get(country.iso3),
                   ),
                   locale,
-                )} · {country.iso3}
+                )}{" "}
+                · {country.iso3}
                 {country.hasGeometry
                   ? ""
                   : ` · ${dictionary.map.boundaryMissingOption}`}
@@ -397,14 +404,33 @@ export function CountryDetailDrawer({
           </select>
         </div>
 
-        {currentDetail.status === "ready" && currentDetail.response.status === "available" ? (
-          <div aria-label={dictionary.workspace.navigation} className="grid grid-cols-4 border-b bg-muted/30 px-3 text-[11px] font-medium" role="group">
+        {currentDetail.status === "ready" &&
+        currentDetail.response.status === "available" ? (
+          <div
+            aria-label={dictionary.workspace.navigation}
+            className="grid grid-cols-4 border-b bg-muted/30 px-3 text-[11px] font-medium"
+            role="group"
+          >
             {[
-              { id: "current-regulations", label: dictionary.workspace.regulations },
-              { id: "product-fit-heading", label: dictionary.workspace.productFit },
+              {
+                id: "current-regulations",
+                label: dictionary.workspace.regulations,
+              },
+              {
+                id: "product-fit-heading",
+                label: dictionary.workspace.productFit,
+              },
               { id: "market-metrics", label: dictionary.workspace.market },
               { id: "country-source", label: dictionary.workspace.sources },
-            ].map(({ id, label }) => <a className="flex min-h-11 items-center justify-center px-1 text-center text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" href={`#${id}`} key={id}>{label}</a>)}
+            ].map(({ id, label }) => (
+              <a
+                className="flex min-h-11 items-center justify-center px-1 text-center text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                href={`#${id}`}
+                key={id}
+              >
+                {label}
+              </a>
+            ))}
           </div>
         ) : null}
 
@@ -476,8 +502,12 @@ export function CountryDetailDrawer({
                   ? copy.geometryNoData
                   : copy.missingGeometryNoData}
               </p>
-              <p className="mt-4 text-sm font-semibold">{dictionary.queryEditor.nextSteps}</p>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">{dictionary.queryEditor.regulationEvidence}</p>
+              <p className="mt-4 text-sm font-semibold">
+                {dictionary.queryEditor.nextSteps}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                {dictionary.queryEditor.regulationEvidence}
+              </p>
             </div>
           ) : null}
 
@@ -536,7 +566,8 @@ function CountryDetailContent({
     createProductFitNavigationState(routeKey),
   );
   const [historyTarget, setHistoryTarget] = useState<string | null>(null);
-  const waitingForHistoryRoute = historyTarget !== null &&
+  const waitingForHistoryRoute =
+    historyTarget !== null &&
     productFitHistoryRouteKey(historyTarget, response.asOf) !== routeKey;
   const navigation = waitingForHistoryRoute
     ? navigationState
@@ -552,7 +583,8 @@ function CountryDetailContent({
   /* eslint-disable react-hooks/set-state-in-effect -- One bounded commit-phase acknowledgement is required; render-phase acknowledgement leaks from interrupted RSC transitions. */
   useLayoutEffect(() => {
     if (navigation !== navigationState) setNavigationState(navigation);
-    if (historyTarget !== null && !waitingForHistoryRoute) setHistoryTarget(null);
+    if (historyTarget !== null && !waitingForHistoryRoute)
+      setHistoryTarget(null);
   }, [historyTarget, navigation, navigationState, waitingForHistoryRoute]);
   /* eslint-enable react-hooks/set-state-in-effect */
   const contextKey = `${routeKey}:${navigation.routeRevision}`;
@@ -596,7 +628,8 @@ function CountryDetailContent({
       setHistoryTarget(window.location.href);
     };
     window.addEventListener("popstate", handleHistoryNavigation);
-    return () => window.removeEventListener("popstate", handleHistoryNavigation);
+    return () =>
+      window.removeEventListener("popstate", handleHistoryNavigation);
   }, [cancelPendingProductEvaluation]);
 
   useEffect(
@@ -609,13 +642,16 @@ function CountryDetailContent({
 
   const handleEvaluationCommitted = useCallback(
     (filters: ProductFitCommittedFilters) => {
-      setNavigationState((current) => recordProductFitOwnNavigation(current,
-        buildProductFitRouteKey({
-          countryIso3: country.iso3,
-          asOf: filters.asOf,
-          initialFilters: filters,
-        }),
-      ));
+      setNavigationState((current) =>
+        recordProductFitOwnNavigation(
+          current,
+          buildProductFitRouteKey({
+            countryIso3: country.iso3,
+            asOf: filters.asOf,
+            initialFilters: filters,
+          }),
+        ),
+      );
       setCommittedFilters({ contextKey, filters });
       summaryAbortController.current?.abort();
       const abortController = new AbortController();
@@ -683,32 +719,34 @@ function CountryDetailContent({
           }
         });
     },
-    [
-      contextKey,
-      country.iso3,
-    ],
+    [contextKey, country.iso3],
   );
 
   if (waitingForHistoryRoute) return <ProductFitLoading />;
 
   return (
-    <div className="country-record-sections space-y-5" data-testid="country-detail">
+    <div
+      className="country-record-sections space-y-5"
+      data-testid="country-detail"
+    >
       {country.isDemo || country.source.isDemo ? (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
           <div className="flex items-center gap-2 font-semibold">
             <AlertTriangle aria-hidden="true" className="size-4" />
             {copy.demoCountryTitle}
           </div>
-          <p className="mt-1.5 text-xs leading-5">
-            {copy.demoCountryBody}
-          </p>
+          <p className="mt-1.5 text-xs leading-5">{copy.demoCountryBody}</p>
         </div>
       ) : null}
 
       <div className="rounded-md border bg-card p-4">
         <QueryContextForm
           beforeNavigate={cancelPendingProductEvaluation}
-          context={{ ...initialFilters, asOf: initialFilters?.asOf ?? response.asOf, countryIso3: country.iso3 }}
+          context={{
+            ...initialFilters,
+            asOf: initialFilters?.asOf ?? response.asOf,
+            countryIso3: country.iso3,
+          }}
           key={contextKey}
           mode="regulations"
         />
@@ -850,16 +888,29 @@ function CountryDetailContent({
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {copy.code}{dictionary.common.labelSeparator}{jurisdiction.code} · {copy.membershipPeriod}{dictionary.common.labelSeparator}
-                  {formatUtcDate(jurisdiction.validFrom, locale)} → {formatOptionalUtcDate(jurisdiction.validTo, locale, dictionary.common.open)}
+                  {copy.code}
+                  {dictionary.common.labelSeparator}
+                  {jurisdiction.code} · {copy.membershipPeriod}
+                  {dictionary.common.labelSeparator}
+                  {formatUtcDate(jurisdiction.validFrom, locale)} →{" "}
+                  {formatOptionalUtcDate(
+                    jurisdiction.validTo,
+                    locale,
+                    dictionary.common.open,
+                  )}
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {copy.jurisdictionSource}{dictionary.common.labelSeparator}<SourceLink source={jurisdiction.source} /> · {copy.verifiedAt}{" "}
+                  {copy.jurisdictionSource}
+                  {dictionary.common.labelSeparator}
+                  <SourceLink source={jurisdiction.source} /> ·{" "}
+                  {copy.verifiedAt}{" "}
                   {formatUtcDate(jurisdiction.jurisdictionVerifiedAt, locale)}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {copy.membershipSource}{dictionary.common.labelSeparator}
-                  <SourceLink source={jurisdiction.membershipSource} /> · {copy.verifiedAt}{" "}
+                  {copy.membershipSource}
+                  {dictionary.common.labelSeparator}
+                  <SourceLink source={jurisdiction.membershipSource} /> ·{" "}
+                  {copy.verifiedAt}{" "}
                   {formatUtcDate(jurisdiction.verifiedAt, locale)}
                 </p>
               </article>
@@ -922,14 +973,27 @@ function CountryDetailContent({
                   )}
                 </p>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  {copy.period}{dictionary.common.labelSeparator}{formatUtcDate(metric.periodStart, locale)} → {formatUtcDate(metric.periodEnd, locale)} · {copy.methodology}{dictionary.common.labelSeparator}
+                  {copy.period}
+                  {dictionary.common.labelSeparator}
+                  {formatUtcDate(metric.periodStart, locale)} →{" "}
+                  {formatUtcDate(metric.periodEnd, locale)} · {copy.methodology}
+                  {dictionary.common.labelSeparator}
                   {metric.methodologyVersion}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {copy.metricPublished}{dictionary.common.labelSeparator}{formatOptionalUtcDate(metric.publishedOn, locale, dictionary.common.notRecorded)}
+                  {copy.metricPublished}
+                  {dictionary.common.labelSeparator}
+                  {formatOptionalUtcDate(
+                    metric.publishedOn,
+                    locale,
+                    dictionary.common.notRecorded,
+                  )}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {dictionary.common.source}{dictionary.common.labelSeparator}<SourceLink source={metric.source} /> · {copy.verifiedAt}{dictionary.common.labelSeparator}
+                  {dictionary.common.source}
+                  {dictionary.common.labelSeparator}
+                  <SourceLink source={metric.source} /> · {copy.verifiedAt}
+                  {dictionary.common.labelSeparator}
                   {formatUtcDate(metric.source.verifiedAt, locale)}
                 </p>
               </article>
@@ -968,7 +1032,9 @@ function CountryDetailContent({
               </p>
               <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <CalendarDays aria-hidden="true" className="size-3.5" />
-                {copy.lastVerified}{dictionary.common.labelSeparator}{formatUtcDate(source.verifiedAt, locale)}
+                {copy.lastVerified}
+                {dictionary.common.labelSeparator}
+                {formatUtcDate(source.verifiedAt, locale)}
               </div>
             </article>
           ))}
@@ -979,8 +1045,11 @@ function CountryDetailContent({
             {copy.detailAsOf}
           </div>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {copy.lastVerified}{dictionary.common.labelSeparator}{formatUtcDate(country.lastVerifiedAt, locale)} ·{" "}
-            {copy.detailAsOf}{dictionary.common.labelSeparator}{formatUtcDate(response.asOf, locale)}
+            {copy.lastVerified}
+            {dictionary.common.labelSeparator}
+            {formatUtcDate(country.lastVerifiedAt, locale)} · {copy.detailAsOf}
+            {dictionary.common.labelSeparator}
+            {formatUtcDate(response.asOf, locale)}
           </p>
           {country.isStale ? (
             <p
@@ -1083,14 +1152,22 @@ function ApplicabilitySummarySection({
         {copy.applicabilitySummary}
       </h2>
       <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-        {copy.queryConditions}{dictionary.common.labelSeparator}
-        {applicationScopeLabel(summary.query.applicationScope, dictionary)} · {summary.query.powerKw} kW · {copy.queryAsOf} {formatUtcDate(summary.query.asOf, locale)}
+        {copy.queryConditions}
+        {dictionary.common.labelSeparator}
+        {applicationScopeLabel(
+          summary.query.applicationScope,
+          dictionary,
+        )} · {summary.query.powerKw} kW · {copy.queryAsOf}{" "}
+        {formatUtcDate(summary.query.asOf, locale)}
       </p>
 
       {current.length > 0 ? (
         <div className="mt-3 space-y-3">
           {current.map((regulation) => (
-            <article className="rounded-md border bg-background p-3" key={regulation.id}>
+            <article
+              className="rounded-md border bg-background p-3"
+              key={regulation.id}
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">
                   {regulationDisplayName(regulation, dictionary, locale)}
@@ -1102,7 +1179,23 @@ function ApplicabilitySummarySection({
               <div className="mt-2 space-y-1 text-xs">
                 {regulation.limits.map((limit) => (
                   <p key={limit.id}>
-                    {limit.pollutantCode}{dictionary.common.labelSeparator}{formatDecimalForDisplay(limit.limitValue)} {limit.unitCode} · {copy.powerBand} {formatPowerBand(limit.powerMinKw, limit.powerMaxKw, dictionary.common.noData, dictionary.common.open)} · {copy.limitPeriod} {formatUtcDate(limit.validFrom, locale)} → {formatOptionalUtcDate(limit.validTo, locale, dictionary.common.open)}
+                    {limit.pollutantCode}
+                    {dictionary.common.labelSeparator}
+                    {formatDecimalForDisplay(limit.limitValue)} {limit.unitCode}{" "}
+                    · {copy.powerBand}{" "}
+                    {formatPowerBand(
+                      limit.powerMinKw,
+                      limit.powerMaxKw,
+                      dictionary.common.noData,
+                      dictionary.common.open,
+                    )}{" "}
+                    · {copy.limitPeriod}{" "}
+                    {formatUtcDate(limit.validFrom, locale)} →{" "}
+                    {formatOptionalUtcDate(
+                      limit.validTo,
+                      locale,
+                      dictionary.common.open,
+                    )}
                   </p>
                 ))}
               </div>
@@ -1138,14 +1231,23 @@ function ApplicabilitySummarySection({
           {missingDataMessages.map((message) => (
             <p key={message}>{message}</p>
           ))}
-          <p className="mt-3 font-semibold">{dictionary.queryEditor.nextSteps}</p>
+          <p className="mt-3 font-semibold">
+            {dictionary.queryEditor.nextSteps}
+          </p>
           <ol className="mt-1 list-decimal space-y-2 pl-4">
             <li>{dictionary.queryEditor.checkQuery}</li>
             <li>{dictionary.queryEditor.regulationEvidence}</li>
           </ol>
           <div className="mt-2 flex flex-wrap gap-3">
-            <a className="underline underline-offset-2" href="#regulation-query-form">{dictionary.queryEditor.editConditions}</a>
-            <a className="underline underline-offset-2" href="#country-source">{dictionary.queryEditor.reviewSources}</a>
+            <a
+              className="underline underline-offset-2"
+              href="#regulation-query-form"
+            >
+              {dictionary.queryEditor.editConditions}
+            </a>
+            <a className="underline underline-offset-2" href="#country-source">
+              {dictionary.queryEditor.reviewSources}
+            </a>
           </div>
         </div>
       ) : null}
@@ -1155,7 +1257,15 @@ function ApplicabilitySummarySection({
           {copy.sourceCount.replace("{count}", String(summary.sources.length))}
         </summary>
         <div className="mt-2 space-y-1 text-muted-foreground">
-          <p>{copy.lastVerified}{dictionary.common.labelSeparator}{formatOptionalUtcDate(summary.lastVerifiedAt, locale, dictionary.common.notRecorded)}</p>
+          <p>
+            {copy.lastVerified}
+            {dictionary.common.labelSeparator}
+            {formatOptionalUtcDate(
+              summary.lastVerifiedAt,
+              locale,
+              dictionary.common.notRecorded,
+            )}
+          </p>
           {summary.sources.map((source) => (
             <p
               key={[
@@ -1177,7 +1287,15 @@ function ApplicabilitySummarySection({
                 </a>
               ) : (
                 source.sourceTitle
-              )} · {localizedCitationLocator(source, locale, dictionary, copy.noLocator)} · {copy.verifiedAt} {formatUtcDate(source.verifiedAt, locale)}
+              )}{" "}
+              ·{" "}
+              {localizedCitationLocator(
+                source,
+                locale,
+                dictionary,
+                copy.noLocator,
+              )}{" "}
+              · {copy.verifiedAt} {formatUtcDate(source.verifiedAt, locale)}
             </p>
           ))}
         </div>
@@ -1243,7 +1361,9 @@ function RegulationSection({
                   </span>
                   {regulation.status !== regulation.statusAtAsOf ? (
                     <span className="rounded-full border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-                      {copy.archiveCurrent}{dictionary.common.labelSeparator}{localizedStatusLabels[regulation.status]}
+                      {copy.archiveCurrent}
+                      {dictionary.common.labelSeparator}
+                      {localizedStatusLabels[regulation.status]}
                     </span>
                   ) : null}
                 </div>
@@ -1251,11 +1371,19 @@ function RegulationSection({
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                 <DetailItem
                   label={copy.effectiveDate}
-                  value={formatOptionalUtcDate(regulation.effectiveFrom, locale, dictionary.common.notRecorded)}
+                  value={formatOptionalUtcDate(
+                    regulation.effectiveFrom,
+                    locale,
+                    dictionary.common.notRecorded,
+                  )}
                 />
                 <DetailItem
                   label={copy.endDate}
-                  value={formatOptionalUtcDate(regulation.effectiveTo, locale, dictionary.common.notRecorded)}
+                  value={formatOptionalUtcDate(
+                    regulation.effectiveTo,
+                    locale,
+                    dictionary.common.notRecorded,
+                  )}
                 />
               </dl>
               <details className="mt-3 border-t pt-3 text-xs text-muted-foreground">
@@ -1263,50 +1391,71 @@ function RegulationSection({
                   {copy.formalTrace}
                 </summary>
                 <div className="mt-2">
-                  <p>{copy.regulationId}{dictionary.common.labelSeparator}{regulation.id}</p>
+                  <p>
+                    {copy.regulationId}
+                    {dictionary.common.labelSeparator}
+                    {regulation.id}
+                  </p>
                   <p className="mt-1">
-                    {dictionary.common.source}{dictionary.common.labelSeparator}<SourceLink source={regulation.source} /> · {copy.verifiedAt}{dictionary.common.labelSeparator}
+                    {dictionary.common.source}
+                    {dictionary.common.labelSeparator}
+                    <SourceLink source={regulation.source} /> ·{" "}
+                    {copy.verifiedAt}
+                    {dictionary.common.labelSeparator}
                     {formatUtcDate(regulation.source.verifiedAt, locale)}
                   </p>
-                <p>
-                  {copy.applicableJurisdiction}{dictionary.common.labelSeparator}
-                  {nameWithCode(
-                    jurisdictionDisplayName(
-                      {
-                        code: regulation.applicability.jurisdiction.code,
-                        countryIso3: regulation.applicability.countryIso3,
-                        id: regulation.applicability.jurisdiction.id,
-                        isDemo: regulation.applicability.jurisdiction.isDemo,
-                        name: regulation.applicability.jurisdiction.name,
-                        sourceId:
-                          regulation.applicability.jurisdiction.source.id,
-                        sourceIsDemo:
-                          regulation.applicability.jurisdiction.source.isDemo,
-                        sourceTitle:
-                          regulation.applicability.jurisdiction.source.title,
-                        type: "country",
-                      },
-                      dictionary,
+                  <p>
+                    {copy.applicableJurisdiction}
+                    {dictionary.common.labelSeparator}
+                    {nameWithCode(
+                      jurisdictionDisplayName(
+                        {
+                          code: regulation.applicability.jurisdiction.code,
+                          countryIso3: regulation.applicability.countryIso3,
+                          id: regulation.applicability.jurisdiction.id,
+                          isDemo: regulation.applicability.jurisdiction.isDemo,
+                          name: regulation.applicability.jurisdiction.name,
+                          sourceId:
+                            regulation.applicability.jurisdiction.source.id,
+                          sourceIsDemo:
+                            regulation.applicability.jurisdiction.source.isDemo,
+                          sourceTitle:
+                            regulation.applicability.jurisdiction.source.title,
+                          type: "country",
+                        },
+                        dictionary,
+                        locale,
+                      ),
+                      regulation.applicability.jurisdiction.code,
                       locale,
-                    ),
-                    regulation.applicability.jurisdiction.code,
-                    locale,
-                  )} · {copy.membershipPeriod}{dictionary.common.labelSeparator}
-                  {formatUtcDate(regulation.applicability.membership.validFrom, locale)} →{" "}
-                  {formatOptionalUtcDate(regulation.applicability.membership.validTo, locale, dictionary.common.open)}
-                </p>
-                <p className="mt-1">
-                  {copy.jurisdictionSource}{dictionary.common.labelSeparator}
-                  <SourceLink
-                    source={regulation.applicability.jurisdiction.source}
-                  />
-                </p>
-                <p className="mt-1">
-                  {copy.membershipSource}{dictionary.common.labelSeparator}
-                  <SourceLink
-                    source={regulation.applicability.membership.source}
-                  />
-                </p>
+                    )}{" "}
+                    · {copy.membershipPeriod}
+                    {dictionary.common.labelSeparator}
+                    {formatUtcDate(
+                      regulation.applicability.membership.validFrom,
+                      locale,
+                    )}{" "}
+                    →{" "}
+                    {formatOptionalUtcDate(
+                      regulation.applicability.membership.validTo,
+                      locale,
+                      dictionary.common.open,
+                    )}
+                  </p>
+                  <p className="mt-1">
+                    {copy.jurisdictionSource}
+                    {dictionary.common.labelSeparator}
+                    <SourceLink
+                      source={regulation.applicability.jurisdiction.source}
+                    />
+                  </p>
+                  <p className="mt-1">
+                    {copy.membershipSource}
+                    {dictionary.common.labelSeparator}
+                    <SourceLink
+                      source={regulation.applicability.membership.source}
+                    />
+                  </p>
                 </div>
               </details>
             </article>

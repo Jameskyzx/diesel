@@ -10,13 +10,15 @@ import {
   type NormalizedModelStepObservation,
 } from "@/domain/ai/model-observability";
 
-function step(input: {
-  cacheRead?: number;
-  cacheWrite?: number;
-  inputTokens?: number;
-  performance?: Partial<ModelStepPerformanceSource>;
-  rawCache?: unknown;
-} = {}): NormalizedModelStepObservation {
+function step(
+  input: {
+    cacheRead?: number;
+    cacheWrite?: number;
+    inputTokens?: number;
+    performance?: Partial<ModelStepPerformanceSource>;
+    rawCache?: unknown;
+  } = {},
+): NormalizedModelStepObservation {
   const inputTokens = input.inputTokens ?? 100;
   const cacheRead = input.cacheRead;
   const cacheWrite = input.cacheWrite;

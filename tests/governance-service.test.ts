@@ -19,25 +19,30 @@ vi.mock("@/server/db/demo-client", () => ({
   getDemoDatabase: vi.fn(async () => ({})),
 }));
 
-vi.mock("@/server/repositories/governance-repository", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("@/server/repositories/governance-repository")
-  >();
-  return {
-    ...actual,
-    createGovernanceRepository: () => ({
-      commitDocumentReprocessing: mocks.commitDocumentReprocessing,
-      commitDocumentUpload: mocks.commitDocumentUpload,
-      createDraft: mocks.createDraft,
-      updateSourceVerifiedAt: mocks.updateSourceVerifiedAt,
-    }),
-  };
-});
+vi.mock(
+  "@/server/repositories/governance-repository",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("@/server/repositories/governance-repository")
+      >();
+    return {
+      ...actual,
+      createGovernanceRepository: () => ({
+        commitDocumentReprocessing: mocks.commitDocumentReprocessing,
+        commitDocumentUpload: mocks.commitDocumentUpload,
+        createDraft: mocks.createDraft,
+        updateSourceVerifiedAt: mocks.updateSourceVerifiedAt,
+      }),
+    };
+  },
+);
 
 vi.mock("@/server/services/knowledge-service", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("@/server/services/knowledge-service")
-  >();
+  const actual =
+    await importOriginal<
+      typeof import("@/server/services/knowledge-service")
+    >();
   return {
     ...actual,
     createKnowledgeDocumentImportResponse:
@@ -280,9 +285,7 @@ describe("governed document orchestration", () => {
         reason: "Refresh governed evidence.",
       }),
     );
-    expect(
-      mocks.prepareKnowledgeDocumentReprocessing,
-    ).toHaveBeenCalledWith({
+    expect(mocks.prepareKnowledgeDocumentReprocessing).toHaveBeenCalledWith({
       accessScope: { createdBy: actor.email, kind: "creator" },
       documentId,
       metadata: { title: "Updated" },
@@ -324,9 +327,7 @@ describe("governed document orchestration", () => {
       reason: "Refresh governed evidence.",
     });
 
-    expect(
-      mocks.prepareKnowledgeDocumentReprocessing,
-    ).toHaveBeenCalledWith({
+    expect(mocks.prepareKnowledgeDocumentReprocessing).toHaveBeenCalledWith({
       accessScope: { kind: "global" },
       documentId,
       metadata: {},

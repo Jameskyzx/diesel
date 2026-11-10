@@ -58,8 +58,7 @@ type AiKnowledgeSearchResult = {
 export const CANONICAL_AI_KNOWLEDGE_RESULT_LIMIT = 5;
 export const KNOWLEDGE_APPLICATION_SCOPE_MISSING_WARNING =
   "该片段未记录应用场景 metadata。";
-export const KNOWLEDGE_COUNTRY_MISSING_WARNING =
-  "该片段未记录国家 metadata。";
+export const KNOWLEDGE_COUNTRY_MISSING_WARNING = "该片段未记录国家 metadata。";
 export const KNOWLEDGE_DEMO_WARNING =
   "结果包含明确标记的虚构 Demo 数据，不得作为真实法规或市场事实。";
 export const KNOWLEDGE_INSUFFICIENT_EVIDENCE_WARNING =
@@ -101,12 +100,8 @@ export function expectedKnowledgeHitWarnings(input: {
   validFrom: string | null;
 }): string[] {
   return [
-    ...(input.validFrom === null
-      ? [KNOWLEDGE_VALID_FROM_MISSING_WARNING]
-      : []),
-    ...(input.countryIso3 === null
-      ? [KNOWLEDGE_COUNTRY_MISSING_WARNING]
-      : []),
+    ...(input.validFrom === null ? [KNOWLEDGE_VALID_FROM_MISSING_WARNING] : []),
+    ...(input.countryIso3 === null ? [KNOWLEDGE_COUNTRY_MISSING_WARNING] : []),
     ...(input.applicationScope === null
       ? [KNOWLEDGE_APPLICATION_SCOPE_MISSING_WARNING]
       : []),
@@ -130,10 +125,7 @@ function hasValidHalfOpenInterval(hit: KnowledgeSearchHit): boolean {
   return hit.validFrom !== null && hit.validTo > hit.validFrom;
 }
 
-function appliesAt(
-  hit: KnowledgeSearchHit,
-  asOf: string | null,
-): boolean {
+function appliesAt(hit: KnowledgeSearchHit, asOf: string | null): boolean {
   if (asOf === null) {
     return true;
   }
@@ -164,8 +156,7 @@ function hitMatchesFilters(
   return (
     (filters.applicationScope === null ||
       hit.applicationScope === filters.applicationScope) &&
-    (filters.countryIso3 === null ||
-      hit.countryIso3 === filters.countryIso3) &&
+    (filters.countryIso3 === null || hit.countryIso3 === filters.countryIso3) &&
     (filters.jurisdictionId === null ||
       hit.jurisdiction?.id === filters.jurisdictionId) &&
     appliesAt(hit, filters.asOf)
@@ -191,8 +182,7 @@ function hitScoresMatch(
         keywordWeight: response.scoring.keywordWeight,
         vectorScore: hit.vectorScore,
         vectorWeight: response.scoring.vectorWeight,
-      }) &&
-    isKnowledgeResultRelevant(hit)
+      }) && isKnowledgeResultRelevant(hit)
   );
 }
 
@@ -279,7 +269,10 @@ export function hasExactUntrustedKnowledgeExcerptBoundary(
   content: string,
 ): boolean {
   const unwrapped = unwrapUntrustedKnowledgeExcerpt(content);
-  return unwrapped !== content && wrapUntrustedKnowledgeExcerpt(unwrapped) === content;
+  return (
+    unwrapped !== content &&
+    wrapUntrustedKnowledgeExcerpt(unwrapped) === content
+  );
 }
 
 /** Adds AI-only wrapper and outer query-echo rules to the raw response rules. */

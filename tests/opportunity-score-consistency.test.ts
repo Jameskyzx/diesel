@@ -91,10 +91,7 @@ function buildScorecard(
           futureAdoptedRegulations: [],
           status: "no_data" as const,
         })),
-        missingData: [
-          "CHN 没有国家结构化记录。",
-          "BRA 没有国家结构化记录。",
-        ],
+        missingData: ["CHN 没有国家结构化记录。", "BRA 没有国家结构化记录。"],
         query: {
           applicationScope: "non-road",
           asOf: "2026-08-13",
@@ -190,9 +187,9 @@ describe("opportunity-score arithmetic consistency", () => {
     const coherent = buildCountryScore({ marketPotential: 80 });
 
     expect(coherent).toMatchObject({ overallScore: 90 });
-    expect(
-      countryOpportunityScoreMatchesMath(coherent, defaultWeights),
-    ).toBe(true);
+    expect(countryOpportunityScoreMatchesMath(coherent, defaultWeights)).toBe(
+      true,
+    );
   });
 
   const driftCases: Array<{
@@ -265,9 +262,9 @@ describe("opportunity-score arithmetic consistency", () => {
     const drifted = structuredClone(buildCountryScore());
     mutate(drifted);
 
-    expect(
-      countryOpportunityScoreMatchesMath(drifted, defaultWeights),
-    ).toBe(false);
+    expect(countryOpportunityScoreMatchesMath(drifted, defaultWeights)).toBe(
+      false,
+    );
   });
 
   it("rejects a scorecard whose top-level weights disagree with its components", () => {

@@ -72,10 +72,7 @@ const regulation: RegulationEvidence = {
   effectiveTo: null,
   isDemo: true,
   limitSources: [
-    source(
-      "00000000-0000-4000-8000-000000000304",
-      "DEMO ONLY — Limit source",
-    ),
+    source("00000000-0000-4000-8000-000000000304", "DEMO ONLY — Limit source"),
   ],
   recordStatus: "effective",
   regulationId: "00000000-0000-4000-8000-000000000305",
@@ -238,8 +235,7 @@ describe("product-fit evaluation deterministic consistency", () => {
     },
     {
       mutate: (evaluation) => {
-        evaluation.productChecks.power.code =
-          "PRODUCT_POWER_OUT_OF_RANGE";
+        evaluation.productChecks.power.code = "PRODUCT_POWER_OUT_OF_RANGE";
       },
       name: "power check code",
     },
@@ -325,8 +321,7 @@ describe("product-fit evaluation deterministic consistency", () => {
     },
     {
       mutate: (evaluation) => {
-        evaluation.regulationChecks[0]!.regulation.effectiveFrom =
-          "2027-01-01";
+        evaluation.regulationChecks[0]!.regulation.effectiveFrom = "2027-01-01";
       },
       name: "regulation not yet effective",
     },

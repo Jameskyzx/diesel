@@ -21,9 +21,7 @@ export function findOverlappingMembershipIndexes(
   const overlapping: number[] = [];
   for (const indexes of indexesByCountry.values()) {
     const sortedIndexes = indexes.toSorted((left, right) =>
-      memberships[left]!.validFrom.localeCompare(
-        memberships[right]!.validFrom,
-      ),
+      memberships[left]!.validFrom.localeCompare(memberships[right]!.validFrom),
     );
     let frontierEnd: string | null | undefined;
     sortedIndexes.forEach((currentIndex, position) => {

@@ -34,9 +34,7 @@ function sameStructuredValue(left: unknown, right: unknown): boolean {
       Array.isArray(left) &&
       Array.isArray(right) &&
       left.length === right.length &&
-      left.every((value, index) =>
-        sameStructuredValue(value, right[index]),
-      )
+      left.every((value, index) => sameStructuredValue(value, right[index]))
     );
   }
   if (
@@ -194,8 +192,7 @@ export function regulationComparisonSourcesMatchVisibleFacts(
             title: `${regulation.applicability.jurisdiction.name} 对 ${country.countryIso3} 的成员关系`,
             titleDescriptor: {
               countryIso3: country.countryIso3,
-              jurisdictionName:
-                regulation.applicability.jurisdiction.name,
+              jurisdictionName: regulation.applicability.jurisdiction.name,
               kind: "country_jurisdiction_membership",
             },
           })
@@ -244,14 +241,10 @@ export function regulationComparisonSourcesMatchVisibleFacts(
     return (
       !hasDuplicates(topLevelKeys) &&
       comparison.sources.every((source) =>
-        nestedSources.some((nested) =>
-          sameAnalysisSource(source, nested),
-        ),
+        nestedSources.some((nested) => sameAnalysisSource(source, nested)),
       ) &&
       nestedSources.every((nested) =>
-        comparison.sources.some((source) =>
-          sameAnalysisSource(source, nested),
-        ),
+        comparison.sources.some((source) => sameAnalysisSource(source, nested)),
       )
     );
   } catch {
@@ -312,24 +305,26 @@ function regulationItemMatchesVisibleQuery(
     !sameStrings(
       item.limits.map(({ id }) => id),
       item.limits
-        .toSorted((left, right) => compareCanonicalText(
-          [
-            left.pollutantCode,
-            left.powerMinKw ?? -1,
-            left.powerMaxKw ?? -1,
-            left.validFrom,
-            left.validTo ?? "",
-            left.id,
-          ].join("\u0000"),
-          [
-            right.pollutantCode,
-            right.powerMinKw ?? -1,
-            right.powerMaxKw ?? -1,
-            right.validFrom,
-            right.validTo ?? "",
-            right.id,
-          ].join("\u0000"),
-        ))
+        .toSorted((left, right) =>
+          compareCanonicalText(
+            [
+              left.pollutantCode,
+              left.powerMinKw ?? -1,
+              left.powerMaxKw ?? -1,
+              left.validFrom,
+              left.validTo ?? "",
+              left.id,
+            ].join("\u0000"),
+            [
+              right.pollutantCode,
+              right.powerMinKw ?? -1,
+              right.powerMaxKw ?? -1,
+              right.validFrom,
+              right.validTo ?? "",
+              right.id,
+            ].join("\u0000"),
+          ),
+        )
         .map(({ id }) => id),
     )
   ) {
@@ -343,17 +338,11 @@ function regulationItemMatchesVisibleQuery(
     return false;
   }
 
-  if (
-    item.recordStatus === "effective" &&
-    item.effectiveFrom === null
-  ) {
+  if (item.recordStatus === "effective" && item.effectiveFrom === null) {
     return false;
   }
 
-  if (
-    item.recordStatus === "superseded" &&
-    item.effectiveTo === null
-  ) {
+  if (item.recordStatus === "superseded" && item.effectiveTo === null) {
     return false;
   }
 
@@ -404,19 +393,23 @@ function regulationCountryMatchesVisibleQuery(
     !sameStrings(
       country.currentEffectiveRegulations.map(({ id }) => id),
       country.currentEffectiveRegulations
-        .toSorted((left, right) => compareCanonicalText(
-          `${left.canonicalName}\u0000${left.id}`,
-          `${right.canonicalName}\u0000${right.id}`,
-        ))
+        .toSorted((left, right) =>
+          compareCanonicalText(
+            `${left.canonicalName}\u0000${left.id}`,
+            `${right.canonicalName}\u0000${right.id}`,
+          ),
+        )
         .map(({ id }) => id),
     ) ||
     !sameStrings(
       country.futureAdoptedRegulations.map(({ id }) => id),
       country.futureAdoptedRegulations
-        .toSorted((left, right) => compareCanonicalText(
-          `${left.canonicalName}\u0000${left.id}`,
-          `${right.canonicalName}\u0000${right.id}`,
-        ))
+        .toSorted((left, right) =>
+          compareCanonicalText(
+            `${left.canonicalName}\u0000${left.id}`,
+            `${right.canonicalName}\u0000${right.id}`,
+          ),
+        )
         .map(({ id }) => id),
     )
   ) {
@@ -513,9 +506,16 @@ function observationIsLatestVisibleForCountry(
   );
 }
 
-type ComparisonBasisObservation = Pick<MarketObservation,
-  "countryIso3" | "applicationScope" | "unitCode" | "currencyCode" |
-  "definition" | "methodologyVersion" | "periodStart" | "periodEnd"
+type ComparisonBasisObservation = Pick<
+  MarketObservation,
+  | "countryIso3"
+  | "applicationScope"
+  | "unitCode"
+  | "currencyCode"
+  | "definition"
+  | "methodologyVersion"
+  | "periodStart"
+  | "periodEnd"
 >;
 
 /** Missing required basis is unknown, even when every observation omits it. */
@@ -545,7 +545,9 @@ export function marketComparisonIssues(
     ["methodologyVersion", "MISSING_METHODOLOGY"],
   ] as const;
   for (const [field, issue] of requiredBasis) {
-    if (observations.some((observation) => observation[field].trim().length === 0)) {
+    if (
+      observations.some((observation) => observation[field].trim().length === 0)
+    ) {
       issues.push(issue);
     }
   }
@@ -561,13 +563,18 @@ export function marketComparisonIssues(
   ] as const;
 
   for (const [field, issue] of comparableFields) {
-    const isRequiredBasis = field === "unitCode" || field === "definition" || field === "methodologyVersion";
-    const knownValues = observations.map((observation) => observation[field])
-      .filter((value) => !isRequiredBasis || (typeof value === "string" && value.trim().length > 0));
-    if (
-      new Set(knownValues).size > 1 &&
-      !issues.includes(issue)
-    ) {
+    const isRequiredBasis =
+      field === "unitCode" ||
+      field === "definition" ||
+      field === "methodologyVersion";
+    const knownValues = observations
+      .map((observation) => observation[field])
+      .filter(
+        (value) =>
+          !isRequiredBasis ||
+          (typeof value === "string" && value.trim().length > 0),
+      );
+    if (new Set(knownValues).size > 1 && !issues.includes(issue)) {
       issues.push(issue);
     }
   }
@@ -632,7 +639,10 @@ function marketMetricMatchesVisibleQuery(
           observation.applicationScope !== null &&
           observation.applicationScope !== scopedQuery) ||
         observation.periodEnd <= observation.periodStart ||
-        !observationInReportingPeriod(observation, comparison.query.marketPeriod) ||
+        !observationInReportingPeriod(
+          observation,
+          comparison.query.marketPeriod,
+        ) ||
         !observationIsLatestVisibleForCountry(observation, observations),
     )
   ) {
@@ -707,10 +717,7 @@ export function marketComparisonMatchesDeterministicRules(
     comparison.metrics.every((metric) =>
       marketMetricMatchesVisibleQuery(metric, comparison),
     ) &&
-    sameStrings(
-      comparison.missingData,
-      expectedMarketMissingData(comparison),
-    )
+    sameStrings(comparison.missingData, expectedMarketMissingData(comparison))
   );
 }
 import { observationInReportingPeriod } from "@/domain/marketing/reporting-period";

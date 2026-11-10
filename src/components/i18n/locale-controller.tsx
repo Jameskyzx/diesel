@@ -68,13 +68,19 @@ const LocaleRenderReceiptContext = createContext<
   ((locale: Locale) => () => void) | null
 >(null);
 
-export function LocaleControllerProvider({ children }: { children: ReactNode }) {
+export function LocaleControllerProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const routeKey = JSON.stringify([pathname, searchParams?.toString() ?? ""]);
   const { locale } = useLocale();
-  const [pageReceipt, setPageReceipt] = useState<{ locale: Locale } | null>(null);
+  const [pageReceipt, setPageReceipt] = useState<{ locale: Locale } | null>(
+    null,
+  );
   const pageReceiptRef = useRef<{ locale: Locale } | null>(null);
   const pageLocale = pageReceipt?.locale ?? null;
   const reportPageLocale = useCallback((renderedPageLocale: Locale) => {
@@ -84,7 +90,7 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
     // A replaced or hidden page may clean up after a new page committed.
     return () => {
       if (pageReceiptRef.current === receipt) pageReceiptRef.current = null;
-      setPageReceipt((current) => current === receipt ? null : current);
+      setPageReceipt((current) => (current === receipt ? null : current));
     };
   }, []);
   const [requestState, setRequestState] =
@@ -93,7 +99,9 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
   const requestIdRef = useRef(0);
   const reloadObligationRequestIdRef = useRef<number | null>(null);
   const localeRefreshWaiterRef = useRef<LocaleRefreshWaiter | null>(null);
-  const operationPhaseRef = useRef<"submitting" | "refreshing" | "recovering" | null>(null);
+  const operationPhaseRef = useRef<
+    "submitting" | "refreshing" | "recovering" | null
+  >(null);
   const committedRouteRef = useRef(routeKey);
   const lastSynchronizationRef = useRef<string | null>(null);
   const recheckOnSettlementRef = useRef(false);
@@ -105,8 +113,7 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
     (requestState.status === "submitting" &&
       requestState.localeAtStart === locale);
   const showError =
-    requestState.status === "error" &&
-    requestState.localeAtStart === locale;
+    requestState.status === "error" && requestState.localeAtStart === locale;
 
   useEffect(
     () => () => {
@@ -147,7 +154,11 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
     }
     // Receipt registration happens in the child's commit effect. Read that
     // same commit directly, rather than a prior render's state closure.
-    waiter.resolve({ locale, pageLocale: pageReceiptRef.current?.locale ?? null, status: "settled" });
+    waiter.resolve({
+      locale,
+      pageLocale: pageReceiptRef.current?.locale ?? null,
+      status: "settled",
+    });
   }, [locale, pageLocale, pending]);
 
   useEffect(
@@ -168,7 +179,10 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
     [],
   );
 
-  async function changeLocale(nextLocale: Locale, action: "persist" | "refresh") {
+  async function changeLocale(
+    nextLocale: Locale,
+    action: "persist" | "refresh",
+  ) {
     if (
       reloadObligationRequestIdRef.current !== null ||
       pending ||
@@ -201,7 +215,11 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
         });
         if (!requestIsCurrent()) return;
         if (!response.ok) {
-          setRequestState({ localeAtStart: locale, requestId, status: "error" });
+          setRequestState({
+            localeAtStart: locale,
+            requestId,
+            status: "error",
+          });
           return;
         }
       }
@@ -216,26 +234,28 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
         status: "refreshing",
         targetLocale: nextLocale,
       });
-      const refreshResult = await new Promise<LocaleRefreshWaitResult>((resolve) => {
-        const waiter: LocaleRefreshWaiter = {
-          requestId,
-          resolve,
-          transitionObserved: false,
-        };
-        waiter.timeoutId = setTimeout(() => {
-          if (localeRefreshWaiterRef.current !== waiter) {
-            return;
-          }
-          localeRefreshWaiterRef.current = null;
-          resolve({ status: "timed_out" });
-        }, PUBLIC_API_REQUEST_TIMEOUT_MS);
-        localeRefreshWaiterRef.current = waiter;
-        startTransition(() => {
-          // A server refresh keeps the current pathname, query string, and scroll
-          // position while rebuilding server-rendered copy from the new cookie.
-          router.refresh();
-        });
-      });
+      const refreshResult = await new Promise<LocaleRefreshWaitResult>(
+        (resolve) => {
+          const waiter: LocaleRefreshWaiter = {
+            requestId,
+            resolve,
+            transitionObserved: false,
+          };
+          waiter.timeoutId = setTimeout(() => {
+            if (localeRefreshWaiterRef.current !== waiter) {
+              return;
+            }
+            localeRefreshWaiterRef.current = null;
+            resolve({ status: "timed_out" });
+          }, PUBLIC_API_REQUEST_TIMEOUT_MS);
+          localeRefreshWaiterRef.current = waiter;
+          startTransition(() => {
+            // A server refresh keeps the current pathname, query string, and scroll
+            // position while rebuilding server-rendered copy from the new cookie.
+            router.refresh();
+          });
+        },
+      );
       const refreshTimedOut = refreshResult.status === "timed_out";
       if (action === "refresh") {
         // Cookie synchronization is read-only, including every failure path.
@@ -243,23 +263,35 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
         if (refreshTimedOut) {
           reloadObligationRequestIdRef.current = requestId;
           operationPhaseRef.current = "recovering";
-          setRequestState({ localeAtStart: locale, requestId, status: "recovering", targetLocale: nextLocale });
+          setRequestState({
+            localeAtStart: locale,
+            requestId,
+            status: "recovering",
+            targetLocale: nextLocale,
+          });
           window.location.reload();
           return;
         }
         if (refreshResult.locale === null) return;
-        const preference = tryReadBrowserLocalePreference(() => document.cookie);
-        const aligned = preference.status === "available" &&
+        const preference = tryReadBrowserLocalePreference(
+          () => document.cookie,
+        );
+        const aligned =
+          preference.status === "available" &&
           localeSynchronizationTarget({
             browserPreference: preference,
             pageLocale: refreshResult.pageLocale,
             renderedLocale: refreshResult.locale,
           }) === null;
-        setRequestState(aligned ? initialRequestState : {
-          localeAtStart: refreshResult.locale,
-          requestId,
-          status: "error",
-        });
+        setRequestState(
+          aligned
+            ? initialRequestState
+            : {
+                localeAtStart: refreshResult.locale,
+                requestId,
+                status: "error",
+              },
+        );
         // A newer Cookie/route gets one latest-state check after settlement;
         // an unchanged failed identity is not automatically retried.
         return;
@@ -378,7 +410,6 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
     }
   }
 
-
   const synchronizeCookie = useEffectEvent((explicitRetry: boolean) => {
     if (reloadObligationRequestIdRef.current !== null) return;
     if (pending || requestAbortControllerRef.current !== null) {
@@ -396,7 +427,12 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
       lastSynchronizationRef.current = null;
       return;
     }
-    const identity = JSON.stringify([routeKey, locale, pageLocale, targetLocale]);
+    const identity = JSON.stringify([
+      routeKey,
+      locale,
+      pageLocale,
+      targetLocale,
+    ]);
     if (!retry && lastSynchronizationRef.current === identity) return;
     lastSynchronizationRef.current = identity;
     void changeLocale(targetLocale, "refresh");
@@ -449,10 +485,14 @@ export function LocaleControllerProvider({ children }: { children: ReactNode }) 
       targetLocale: nextLocale,
     });
     if (action === "none") return;
-    lastSynchronizationRef.current = JSON.stringify([routeKey, locale, pageLocale, nextLocale]);
+    lastSynchronizationRef.current = JSON.stringify([
+      routeKey,
+      locale,
+      pageLocale,
+      nextLocale,
+    ]);
     await changeLocale(nextLocale, action);
   }
-
 
   return (
     <LocaleControllerContext.Provider

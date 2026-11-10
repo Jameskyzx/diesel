@@ -8,13 +8,7 @@ import { z } from "zod";
 export const PNPM_AUDIT_TIMEOUT_MS = 60_000;
 const PNPM_AUDIT_FORCE_KILL_GRACE_MS = 5_000;
 
-const severitySchema = z.enum([
-  "info",
-  "low",
-  "moderate",
-  "high",
-  "critical",
-]);
+const severitySchema = z.enum(["info", "low", "moderate", "high", "critical"]);
 
 const auditAdvisorySchema = z
   .object({
@@ -135,7 +129,9 @@ export function interpretPnpmAuditProcessResult(
 
   const parsed = pnpmAuditReportSchema.safeParse(decoded);
   if (!parsed.success) {
-    throw new Error("pnpm audit returned an incomplete or unexpected JSON report");
+    throw new Error(
+      "pnpm audit returned an incomplete or unexpected JSON report",
+    );
   }
 
   const advisoryCount = Object.keys(parsed.data.advisories).length;
@@ -154,7 +150,9 @@ export function interpretPnpmAuditProcessResult(
     recomputedSeverityCounts[advisory.severity] += 1;
   }
   for (const severity of severitySchema.options) {
-    if (reportedSeverityCounts[severity] !== recomputedSeverityCounts[severity]) {
+    if (
+      reportedSeverityCounts[severity] !== recomputedSeverityCounts[severity]
+    ) {
       throw new Error(
         `pnpm audit ${severity} vulnerability count does not match its advisories`,
       );
@@ -163,7 +161,9 @@ export function interpretPnpmAuditProcessResult(
 
   if (result.status === 0) {
     if (advisoryCount !== 0) {
-      throw new Error("pnpm audit returned advisories with a successful exit status");
+      throw new Error(
+        "pnpm audit returned advisories with a successful exit status",
+      );
     }
   } else if (result.status === 1) {
     if (advisoryCount === 0) {
@@ -224,49 +224,51 @@ export function evaluateAuditPolicy(input: {
 }
 
 async function runPnpmAudit(): Promise<AuditReport> {
-  const result = await new Promise<PnpmAuditProcessResult>((resolveResult, reject) => {
-    const child = spawn("pnpm", ["audit", "--json"], {
-      cwd: process.cwd(),
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    const stdout: Buffer[] = [];
-    const stderr: Buffer[] = [];
-    let timedOut = false;
-    let forceKillTimer: NodeJS.Timeout | null = null;
-    const timeout = setTimeout(() => {
-      timedOut = true;
-      child.kill("SIGTERM");
-      forceKillTimer = setTimeout(() => {
-        child.kill("SIGKILL");
-      }, PNPM_AUDIT_FORCE_KILL_GRACE_MS);
-      forceKillTimer.unref();
-    }, PNPM_AUDIT_TIMEOUT_MS);
-    timeout.unref();
-    child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
-    child.once("error", (error) => {
-      clearTimeout(timeout);
-      if (forceKillTimer) clearTimeout(forceKillTimer);
-      reject(error);
-    });
-    child.once("close", (status, signal) => {
-      clearTimeout(timeout);
-      if (forceKillTimer) clearTimeout(forceKillTimer);
-      if (timedOut) {
-        reject(
-          new Error(`pnpm audit timed out after ${PNPM_AUDIT_TIMEOUT_MS} ms`),
-        );
-        return;
-      }
-      resolveResult({
-        signal,
-        status,
-        stderr: Buffer.concat(stderr).toString("utf8"),
-        stdout: Buffer.concat(stdout).toString("utf8"),
+  const result = await new Promise<PnpmAuditProcessResult>(
+    (resolveResult, reject) => {
+      const child = spawn("pnpm", ["audit", "--json"], {
+        cwd: process.cwd(),
+        env: process.env,
+        stdio: ["ignore", "pipe", "pipe"],
       });
-    });
-  });
+      const stdout: Buffer[] = [];
+      const stderr: Buffer[] = [];
+      let timedOut = false;
+      let forceKillTimer: NodeJS.Timeout | null = null;
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        child.kill("SIGTERM");
+        forceKillTimer = setTimeout(() => {
+          child.kill("SIGKILL");
+        }, PNPM_AUDIT_FORCE_KILL_GRACE_MS);
+        forceKillTimer.unref();
+      }, PNPM_AUDIT_TIMEOUT_MS);
+      timeout.unref();
+      child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
+      child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
+      child.once("error", (error) => {
+        clearTimeout(timeout);
+        if (forceKillTimer) clearTimeout(forceKillTimer);
+        reject(error);
+      });
+      child.once("close", (status, signal) => {
+        clearTimeout(timeout);
+        if (forceKillTimer) clearTimeout(forceKillTimer);
+        if (timedOut) {
+          reject(
+            new Error(`pnpm audit timed out after ${PNPM_AUDIT_TIMEOUT_MS} ms`),
+          );
+          return;
+        }
+        resolveResult({
+          signal,
+          status,
+          stderr: Buffer.concat(stderr).toString("utf8"),
+          stdout: Buffer.concat(stdout).toString("utf8"),
+        });
+      });
+    },
+  );
 
   return interpretPnpmAuditProcessResult(result);
 }
@@ -285,7 +287,9 @@ async function main(): Promise<void> {
   const failures = evaluateAuditPolicy({ policy, report, today });
 
   if (failures.length > 0) {
-    throw new Error(`Dependency advisory policy failed:\n- ${failures.join("\n- ")}`);
+    throw new Error(
+      `Dependency advisory policy failed:\n- ${failures.join("\n- ")}`,
+    );
   }
 
   const highCount = Object.values(report.advisories).filter(
@@ -296,7 +300,10 @@ async function main(): Promise<void> {
   );
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   main().catch((error: unknown) => {
     process.stderr.write(
       `${error instanceof Error ? error.message : String(error)}\n`,

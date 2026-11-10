@@ -1,7 +1,4 @@
-export function formatErrorTree(
-  error: unknown,
-  rootLabel = "error",
-): string {
+export function formatErrorTree(error: unknown, rootLabel = "error"): string {
   const lines: string[] = [];
   const visited = new Set<object>();
   const visit = (value: unknown, label: string): void => {

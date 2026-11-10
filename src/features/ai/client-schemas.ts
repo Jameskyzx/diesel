@@ -186,94 +186,90 @@ const clientCountryRegulationSchema = z
 
 const clientCountryProfileResultSchema = clientToolResultBase
   .extend({
-    profile: z
-      .union([
-        z
-          .object({
-            iso3: iso3Schema,
-            status: z.literal("no_data"),
-          })
-          .passthrough(),
-        z
-          .object({
-            asOf: z.iso.date(),
-            country: z
-              .object({
-                currentEffectiveRegulations: z.array(
-                  clientCountryRegulationSchema,
-                ),
-                futureAdoptedRegulations: z.array(
-                  clientCountryRegulationSchema,
-                ),
-                marketMetrics: z.array(
-                  z
-                    .object({
-                      applicationScope: applicationScopeSchema.nullable(),
-                      countryIso3: iso3Schema,
-                      currencyCode: z
-                        .string()
-                        .length(3)
-                        .regex(/^[A-Z]{3}$/)
-                        .nullable(),
-                      id: z.uuid(),
-                      isDemo: z.boolean(),
-                      metricCode: nonEmptyTextSchema,
-                      metricName: nonEmptyTextSchema,
-                      periodEnd: z.iso.date(),
-                      periodStart: z.iso.date(),
-                      source: clientEvidenceSourceIdentitySchema,
-                      unitCode: z.string(),
-                      valueNumeric: marketMetricDecimalSchema,
-                      verifiedAt: isoTimestampSchema,
-                    })
-                    .passthrough()
-                    .superRefine((metric, context) => {
-                      if (metric.periodEnd <= metric.periodStart) {
-                        context.addIssue({
-                          code: "custom",
-                          message: "periodEnd must be after periodStart",
-                          path: ["periodEnd"],
-                        });
-                      }
-                    }),
-                ),
-                isDemo: z.boolean(),
-                iso3: iso3Schema,
-                source: clientEvidenceSourceIdentitySchema,
-              })
-              .passthrough()
-              .superRefine((country, context) => {
-                if (
-                  country.currentEffectiveRegulations.some(
-                    (regulation) =>
-                      regulation.statusAtAsOf !== "effective",
-                  )
-                ) {
-                  context.addIssue({
-                    code: "custom",
-                    message:
-                      "Current-effective profile regulations must be effective at the query date",
-                    path: ["currentEffectiveRegulations"],
-                  });
-                }
-                if (
-                  country.futureAdoptedRegulations.some(
-                    (regulation) => regulation.statusAtAsOf !== "adopted",
-                  )
-                ) {
-                  context.addIssue({
-                    code: "custom",
-                    message:
-                      "Future-adopted profile regulations must be adopted at the query date",
-                    path: ["futureAdoptedRegulations"],
-                  });
-                }
-              }),
-            status: z.literal("available"),
-          })
-          .passthrough(),
-        z.null(),
-      ]),
+    profile: z.union([
+      z
+        .object({
+          iso3: iso3Schema,
+          status: z.literal("no_data"),
+        })
+        .passthrough(),
+      z
+        .object({
+          asOf: z.iso.date(),
+          country: z
+            .object({
+              currentEffectiveRegulations: z.array(
+                clientCountryRegulationSchema,
+              ),
+              futureAdoptedRegulations: z.array(clientCountryRegulationSchema),
+              marketMetrics: z.array(
+                z
+                  .object({
+                    applicationScope: applicationScopeSchema.nullable(),
+                    countryIso3: iso3Schema,
+                    currencyCode: z
+                      .string()
+                      .length(3)
+                      .regex(/^[A-Z]{3}$/)
+                      .nullable(),
+                    id: z.uuid(),
+                    isDemo: z.boolean(),
+                    metricCode: nonEmptyTextSchema,
+                    metricName: nonEmptyTextSchema,
+                    periodEnd: z.iso.date(),
+                    periodStart: z.iso.date(),
+                    source: clientEvidenceSourceIdentitySchema,
+                    unitCode: z.string(),
+                    valueNumeric: marketMetricDecimalSchema,
+                    verifiedAt: isoTimestampSchema,
+                  })
+                  .passthrough()
+                  .superRefine((metric, context) => {
+                    if (metric.periodEnd <= metric.periodStart) {
+                      context.addIssue({
+                        code: "custom",
+                        message: "periodEnd must be after periodStart",
+                        path: ["periodEnd"],
+                      });
+                    }
+                  }),
+              ),
+              isDemo: z.boolean(),
+              iso3: iso3Schema,
+              source: clientEvidenceSourceIdentitySchema,
+            })
+            .passthrough()
+            .superRefine((country, context) => {
+              if (
+                country.currentEffectiveRegulations.some(
+                  (regulation) => regulation.statusAtAsOf !== "effective",
+                )
+              ) {
+                context.addIssue({
+                  code: "custom",
+                  message:
+                    "Current-effective profile regulations must be effective at the query date",
+                  path: ["currentEffectiveRegulations"],
+                });
+              }
+              if (
+                country.futureAdoptedRegulations.some(
+                  (regulation) => regulation.statusAtAsOf !== "adopted",
+                )
+              ) {
+                context.addIssue({
+                  code: "custom",
+                  message:
+                    "Future-adopted profile regulations must be adopted at the query date",
+                  path: ["futureAdoptedRegulations"],
+                });
+              }
+            }),
+          status: z.literal("available"),
+        })
+        .passthrough(),
+      z.null(),
+    ]),
     requestedTopics: z
       .array(z.enum(["country", "regulations", "market"]))
       .min(1)
@@ -318,10 +314,7 @@ const productFitReasonStatusByCode = {
   PRODUCT_NO_LONGER_AVAILABLE: "fail",
   PRODUCT_POWER_MATCH: "pass",
   PRODUCT_POWER_OUT_OF_RANGE: "fail",
-} as const satisfies Record<
-  ProductFitReasonCode,
-  "fail" | "pass" | "unknown"
->;
+} as const satisfies Record<ProductFitReasonCode, "fail" | "pass" | "unknown">;
 
 const clientProductFitReasonSchema = z
   .object({
@@ -449,9 +442,7 @@ const clientCompatibleProductsResultSchema = clientToolResultBase
             })
             .nullable(),
           reasons: z.array(clientProductFitReasonSchema).min(1),
-          regulationChecks: z.array(
-            clientProductRegulationCheckIdentitySchema,
-          ),
+          regulationChecks: z.array(clientProductRegulationCheckIdentitySchema),
           productChecks: z
             .object({
               availability: clientProductAvailabilityCheckSchema,
@@ -592,8 +583,7 @@ const clientRegulationComparisonItemSchema = z
     id: nonEmptyTextSchema,
     isDemo: z.boolean(),
     limits: z.array(clientRegulationLimitSchema),
-    recordStatus: z
-      .enum(["adopted", "effective", "superseded"]),
+    recordStatus: z.enum(["adopted", "effective", "superseded"]),
     status: z.enum(["adopted", "effective"]),
     source: clientAnalysisSourceIdentitySchema,
   })
@@ -644,8 +634,7 @@ const clientRegulationComparisonResultSchema = clientToolResultBase
                 country.countrySource !== null &&
                 regulations.length > 0;
               if (
-                country.status !==
-                (shouldBeAvailable ? "available" : "no_data")
+                country.status !== (shouldBeAvailable ? "available" : "no_data")
               ) {
                 context.addIssue({
                   code: "custom",
@@ -688,7 +677,8 @@ const clientRegulationComparisonResultSchema = clientToolResultBase
   })
   .strict();
 
-const clientMarketIssueSchema = marketMetricComparisonSchema.shape.issues.element;
+const clientMarketIssueSchema =
+  marketMetricComparisonSchema.shape.issues.element;
 
 const clientMarketQuerySchema = compareMarketsInputSchema;
 
@@ -761,7 +751,6 @@ const clientMarketComparisonResultSchema = clientToolResultBase
   })
   .strict();
 
-
 const clientOpportunityScoreResultSchema = clientToolResultBase
   .extend({
     scorecard: opportunityScorecardSchema,
@@ -786,9 +775,7 @@ const clientAiToolResultUnionSchema = z.discriminatedUnion("tool", [
   clientSalesBriefResultSchema,
 ]);
 
-type ClientAiToolResultUnion = z.infer<
-  typeof clientAiToolResultUnionSchema
->;
+type ClientAiToolResultUnion = z.infer<typeof clientAiToolResultUnionSchema>;
 
 type ClientCountryScore = z.infer<typeof countryOpportunityScoreSchema>;
 
@@ -808,15 +795,12 @@ function hasVisibleScoreFacts(score: ClientCountryScore): boolean {
     score.dataCoveragePct !== 0 ||
     score.components.some(
       (component) =>
-        component.status === "available" ||
-        component.effectiveWeight !== 0,
+        component.status === "available" || component.effectiveWeight !== 0,
     )
   );
 }
 
-function hasVisibleStructuredFacts(
-  result: ClientAiToolResultUnion,
-): boolean {
+function hasVisibleStructuredFacts(result: ClientAiToolResultUnion): boolean {
   if (result.tool === "searchKnowledgeBase") {
     return result.search.results.length > 0;
   }
@@ -839,7 +823,9 @@ function hasVisibleStructuredFacts(
   if (result.tool === "compareMarkets") {
     // An explicitly requested metric can have a query-only, empty placeholder.
     // It is not a sourced observation; real observations still require citations.
-    return result.comparison.metrics.some(({ observations }) => observations.length > 0);
+    return result.comparison.metrics.some(
+      ({ observations }) => observations.length > 0,
+    );
   }
   if (result.tool === "calculateOpportunityScore") {
     return result.scorecard.scores.some(hasVisibleScoreFacts);
@@ -906,9 +892,7 @@ function hasVisibleDemoEntity(result: ClientAiToolResultUnion): boolean {
   return false;
 }
 
-function safelyMatchesDeterministicRules(
-  matcher: () => boolean,
-): boolean {
+function safelyMatchesDeterministicRules(matcher: () => boolean): boolean {
   try {
     return matcher();
   } catch {
@@ -916,8 +900,8 @@ function safelyMatchesDeterministicRules(
   }
 }
 
-export const clientAiToolResultSchema = clientAiToolResultUnionSchema
-  .superRefine((result, context) => {
+export const clientAiToolResultSchema =
+  clientAiToolResultUnionSchema.superRefine((result, context) => {
     const hasStructuredFacts = hasVisibleStructuredFacts(result);
 
     if (!aiToolResultWarningsMatchFacts(result)) {
@@ -947,10 +931,7 @@ export const clientAiToolResultSchema = clientAiToolResultUnionSchema
       });
     }
 
-    if (
-      result.evidenceSufficient !==
-      expectedAiEvidenceSufficiency(result)
-    ) {
+    if (result.evidenceSufficient !== expectedAiEvidenceSufficiency(result)) {
       context.addIssue({
         code: "custom",
         message: "Evidence sufficiency does not match the structured result",
@@ -1162,16 +1143,17 @@ export const clientAiToolResultSchema = clientAiToolResultUnionSchema
 
     if (result.tool === "findCompatibleProducts") {
       for (const [index, evaluation] of result.evaluations.entries()) {
-        const expectedAvailabilityCode = evaluation.product === null
-          ? "PRODUCT_NOT_FOUND"
-          : evaluation.product.availableFrom === null ||
-              evaluation.product.availableTo === null
-            ? "PRODUCT_AVAILABILITY_UNKNOWN"
-            : result.query.asOf < evaluation.product.availableFrom
-              ? "PRODUCT_NOT_YET_AVAILABLE"
-              : result.query.asOf >= evaluation.product.availableTo
-                ? "PRODUCT_NO_LONGER_AVAILABLE"
-                : "PRODUCT_AVAILABLE";
+        const expectedAvailabilityCode =
+          evaluation.product === null
+            ? "PRODUCT_NOT_FOUND"
+            : evaluation.product.availableFrom === null ||
+                evaluation.product.availableTo === null
+              ? "PRODUCT_AVAILABILITY_UNKNOWN"
+              : result.query.asOf < evaluation.product.availableFrom
+                ? "PRODUCT_NOT_YET_AVAILABLE"
+                : result.query.asOf >= evaluation.product.availableTo
+                  ? "PRODUCT_NO_LONGER_AVAILABLE"
+                  : "PRODUCT_AVAILABLE";
         if (
           evaluation.productChecks.availability.code !==
           expectedAvailabilityCode
@@ -1194,6 +1176,4 @@ export const clientAiToolResultSchema = clientAiToolResultUnionSchema
   });
 
 export type ClientAiCitation = z.infer<typeof clientCitationSchema>;
-export type ClientAiToolResult = z.infer<
-  typeof clientAiToolResultSchema
->;
+export type ClientAiToolResult = z.infer<typeof clientAiToolResultSchema>;

@@ -12,9 +12,7 @@ import {
 
 const demoServerEnvironmentSchema = z
   .object({
-    DEMO_HOST: z
-      .enum(["127.0.0.1", "localhost"])
-      .default("127.0.0.1"),
+    DEMO_HOST: z.enum(["127.0.0.1", "localhost"]).default("127.0.0.1"),
     DEMO_PORT: z.coerce.number().int().min(1_024).max(65_535).default(3_000),
   })
   .strict();
@@ -155,9 +153,7 @@ async function startDemoServer() {
           closeError,
         );
       }
-      await restoreRecordedNextEnvironmentAfterOperation(
-        nextEnvironmentGuard,
-      );
+      await restoreRecordedNextEnvironmentAfterOperation(nextEnvironmentGuard);
     })();
     return shutdownPromise;
   };
@@ -192,10 +188,7 @@ async function startDemoServer() {
       };
       server.once("error", handleListenError);
       server.once("listening", handleListening);
-      server.listen(
-        serverEnvironment.DEMO_PORT,
-        serverEnvironment.DEMO_HOST,
-      );
+      server.listen(serverEnvironment.DEMO_PORT, serverEnvironment.DEMO_HOST);
     });
   } catch (listenError: unknown) {
     let operationError = listenError;

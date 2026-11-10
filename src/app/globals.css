@@ -118,7 +118,8 @@
     @apply border-t px-5 py-4 text-sm;
   }
 
-  .workspace-table tr:focus-within td, .workspace-table tbody tr:hover td {
+  .workspace-table tr:focus-within td,
+  .workspace-table tbody tr:hover td {
     @apply bg-accent/30;
   }
 
@@ -130,7 +131,9 @@
     scroll-margin-top: 1rem;
   }
 
-  .app-frame { padding-left: 15rem; }
+  .app-frame {
+    padding-left: 15rem;
+  }
   .app-sidebar-surface {
     display: block;
     position: fixed;
@@ -146,8 +149,13 @@
     padding-left: 1.25rem;
     color: #fff;
   }
-  .brand-subtitle { color: #b7c3d2; }
-  .app-toolbar { width: 100%; padding-inline: 1.5rem; }
+  .brand-subtitle {
+    color: #b7c3d2;
+  }
+  .app-toolbar {
+    width: 100%;
+    padding-inline: 1.5rem;
+  }
   .app-navigation {
     position: fixed;
     inset: 5.5rem auto 0 0;
@@ -170,9 +178,19 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
-  .sidebar-link { justify-content: flex-start; min-height: 2.75rem; color: #b7c3d2; }
-  .sidebar-link:hover { color: #fff; background: #23354b; }
-  .sidebar-link-active { color: #fff; background: #2d435d; }
+  .sidebar-link {
+    justify-content: flex-start;
+    min-height: 2.75rem;
+    color: #b7c3d2;
+  }
+  .sidebar-link:hover {
+    color: #fff;
+    background: #23354b;
+  }
+  .sidebar-link-active {
+    color: #fff;
+    background: #2d435d;
+  }
   .sidebar-evidence-note {
     display: block;
     margin-top: auto;
@@ -181,14 +199,24 @@
     padding: 1rem;
     margin-bottom: 1rem;
   }
-  .sidebar-evidence-note > p:first-of-type { color: #fff; }
-  .sidebar-footnote { display: block; font-size: 0.6875rem; padding-inline: 0.25rem; }
+  .sidebar-evidence-note > p:first-of-type {
+    color: #fff;
+  }
+  .sidebar-footnote {
+    display: block;
+    font-size: 0.6875rem;
+    padding-inline: 0.25rem;
+  }
   @media (min-width: 1280px) {
-    .chat-workbench { height: max(38rem, calc(100dvh - 16rem)); }
+    .chat-workbench {
+      height: max(38rem, calc(100dvh - 16rem));
+    }
   }
 
   @media (min-width: 1440px) {
-    .country-workspace-selected { padding-right: 35rem; }
+    .country-workspace-selected {
+      padding-right: 35rem;
+    }
   }
 
   .section-kicker {
@@ -248,10 +276,18 @@ body:has([data-slot="drawer-content"]) .country-server-fallback {
 }
 
 /* Printed documents (customer briefs) drop the app shell and its sidebar offset. */
-@page { margin: 16mm; }
+@page {
+  margin: 16mm;
+}
 
 @media print {
-  body { background: #fff; }
-  .app-frame { padding-left: 0; }
-  .app-sidebar-surface { display: none; }
+  body {
+    background: #fff;
+  }
+  .app-frame {
+    padding-left: 0;
+  }
+  .app-sidebar-surface {
+    display: none;
+  }
 }

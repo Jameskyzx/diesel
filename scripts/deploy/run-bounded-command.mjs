@@ -35,8 +35,7 @@ const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const capabilityModeFlag = "--check-process-group-inventory-v1";
 const capabilityProbeModeFlag = "--process-group-inventory-probe-v1";
-const capabilitySuccess =
-  "bounded-command-v2:process-group-inventory-ok\n";
+const capabilitySuccess = "bounded-command-v2:process-group-inventory-ok\n";
 const guardianModeFlag = "--bounded-command-guardian-v1";
 const guardianSignals = new Set(["SIGHUP", "SIGINT", "SIGTERM"]);
 const supervisorSignals = [
@@ -177,7 +176,11 @@ function inspectCurrentProcessGroup(callback) {
   };
   const failAndStopInspector = (error) => {
     failure ??= error;
-    if (inspector && inspector.exitCode === null && inspector.signalCode === null) {
+    if (
+      inspector &&
+      inspector.exitCode === null &&
+      inspector.signalCode === null
+    ) {
       // The inspector is still an unreaped direct child, so a positive-PID
       // SIGKILL cannot race PID reuse.
       try {
@@ -202,7 +205,9 @@ function inspectCurrentProcessGroup(callback) {
   }
   const inspectorPid = inspector.pid;
   if (!Number.isSafeInteger(inspectorPid) || inspectorPid <= 0) {
-    failAndStopInspector(new Error("process-group inspector has no stable PID"));
+    failAndStopInspector(
+      new Error("process-group inspector has no stable PID"),
+    );
   }
   inventoryTimer = setTimeout(() => {
     failAndStopInspector(new Error("process-group inventory timed out"));
@@ -603,8 +608,8 @@ function runSupervisor() {
     stdoutPath === stderrPath ||
     stdinPath === stdoutPath ||
     stdinPath === stderrPath ||
-    ((completionReceiptPath === undefined) !==
-      (completionReceiptToken === undefined)) ||
+    (completionReceiptPath === undefined) !==
+      (completionReceiptToken === undefined) ||
     (completionReceiptPath !== undefined &&
       (!completionReceiptPath.startsWith("/") ||
         /[\u0000-\u001f\u007f]/u.test(completionReceiptPath))) ||
@@ -824,7 +829,12 @@ function runSupervisor() {
       );
       let offset = 0;
       while (offset < bytes.byteLength) {
-        offset += writeSync(descriptor, bytes, offset, bytes.byteLength - offset);
+        offset += writeSync(
+          descriptor,
+          bytes,
+          offset,
+          bytes.byteLength - offset,
+        );
       }
       fsyncSync(descriptor);
       closeSync(descriptor);
@@ -1032,7 +1042,9 @@ function runSupervisor() {
       "residualGroup" in message &&
       "signal" in message &&
       (message.code === null ||
-        (Number.isInteger(message.code) && message.code >= 0 && message.code <= 255)) &&
+        (Number.isInteger(message.code) &&
+          message.code >= 0 &&
+          message.code <= 255)) &&
       (message.signal === null ||
         (typeof message.signal === "string" &&
           Object.hasOwn(osConstants.signals, message.signal))) &&

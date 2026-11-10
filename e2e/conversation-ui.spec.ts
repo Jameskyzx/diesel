@@ -5,25 +5,73 @@ import { ANALYSES_STORAGE_KEY } from "../src/features/analyses/storage";
 import { clientAiToolResultSchema } from "../src/features/ai/client-schemas";
 
 for (const locale of ["en", "zh-CN"] as const) {
-  test(`${locale} reporting period is distinct from the query date and survives reload`, async ({ page, context, baseURL }) => {
+  test(`${locale} reporting period is distinct from the query date and survives reload`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
     const copy = getDictionary(locale).chat;
-    await context.addCookies([{ name: "diesel_locale", value: locale, url: baseURL! }]);
+    await context.addCookies([
+      { name: "diesel_locale", value: locale, url: baseURL! },
+    ]);
     const marketPeriod = { start: "2023-01-01", end: "2024-01-01" };
     const events = noDataChatEvents();
-    const input = { countryIso3: "CHN", asOf: "2026-08-13", topics: ["market"], marketPeriod };
-    const output = clientAiToolResultSchema.parse({ ...events[1]!.output, requestedTopics: ["market"], marketPeriod });
-    await page.route("**/api/chat", route => route.fulfill({ headers: { "content-type": "text/event-stream", "x-vercel-ai-ui-message-stream": "v1" },
-      body: [{ type: "start", messageId: "period-result" },
-        { type: "tool-input-available", toolCallId: "period-query", toolName: "getCountryProfile", input },
-        { type: "tool-output-available", toolCallId: "period-query", output },
-        { type: "text-start", id: "answer" }, { type: "text-delta", id: "answer", delta: "No observations for this reporting period." },
-        { type: "text-end", id: "answer" }, { type: "finish", finishReason: "stop" },
-      ].map(event => `data: ${JSON.stringify(event)}\n\n`).join("") + "data: [DONE]\n\n" }));
+    const input = {
+      countryIso3: "CHN",
+      asOf: "2026-08-13",
+      topics: ["market"],
+      marketPeriod,
+    };
+    const output = clientAiToolResultSchema.parse({
+      ...events[1]!.output,
+      requestedTopics: ["market"],
+      marketPeriod,
+    });
+    await page.route("**/api/chat", (route) =>
+      route.fulfill({
+        headers: {
+          "content-type": "text/event-stream",
+          "x-vercel-ai-ui-message-stream": "v1",
+        },
+        body:
+          [
+            { type: "start", messageId: "period-result" },
+            {
+              type: "tool-input-available",
+              toolCallId: "period-query",
+              toolName: "getCountryProfile",
+              input,
+            },
+            {
+              type: "tool-output-available",
+              toolCallId: "period-query",
+              output,
+            },
+            { type: "text-start", id: "answer" },
+            {
+              type: "text-delta",
+              id: "answer",
+              delta: "No observations for this reporting period.",
+            },
+            { type: "text-end", id: "answer" },
+            { type: "finish", finishReason: "stop" },
+          ]
+            .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+            .join("") + "data: [DONE]\n\n",
+      }),
+    );
     await page.goto("/chat");
-    await page.getByRole("textbox", { name: copy.questionInput, exact: true }).fill("CHN market data for 2023");
+    await page
+      .getByRole("textbox", { name: copy.questionInput, exact: true })
+      .fill("CHN market data for 2023");
     await page.getByRole("button", { name: copy.send, exact: true }).click();
-    await expect(page.getByTestId("assistant-markdown")).toHaveText("No observations for this reporting period.");
-    const period = page.getByText(locale === "en" ? "Reporting period" : "统计期", { exact: true });
+    await expect(page.getByTestId("assistant-markdown")).toHaveText(
+      "No observations for this reporting period.",
+    );
+    const period = page.getByText(
+      locale === "en" ? "Reporting period" : "统计期",
+      { exact: true },
+    );
     await expect(period).toBeVisible();
     await expect(period.locator("..")).toContainText("2023-01-01");
     await expect(period.locator("..")).toContainText("2024-01-01");
@@ -32,64 +80,169 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect(period.locator("..")).toContainText("2023-01-01");
   });
 
-  test(`${locale} twenty-turn conversation restores its latest window and continues with the newest receipt`, async ({ page, context, baseURL }) => {
+  test(`${locale} twenty-turn conversation restores its latest window and continues with the newest receipt`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
     const copy = getDictionary(locale).chat;
-    await context.addCookies([{ name: "diesel_locale", value: locale, url: baseURL! }]);
+    await context.addCookies([
+      { name: "diesel_locale", value: locale, url: baseURL! },
+    ]);
     let requests = 0;
-    await page.route("**/api/chat", async route => {
-      const body = route.request().postDataJSON() as { conversation: { receipt?: string }; messages: { role: string }[] };
+    await page.route("**/api/chat", async (route) => {
+      const body = route.request().postDataJSON() as {
+        conversation: { receipt?: string };
+        messages: { role: string }[];
+      };
       requests += 1;
-      if (requests > 1) expect(body.conversation.receipt).toBe(`recent-receipt-${requests - 1}`);
+      if (requests > 1)
+        expect(body.conversation.receipt).toBe(
+          `recent-receipt-${requests - 1}`,
+        );
       expect(body.messages.length).toBeLessThanOrEqual(12);
-      expect(body.messages.every(message => message.role === "user")).toBe(true);
-      await route.fulfill({ headers: { "content-type": "text/event-stream", "x-vercel-ai-ui-message-stream": "v1" }, body: [
-        { type: "start", messageId: `recent-${requests}` },
-        { type: "text-start", id: "answer" }, { type: "text-delta", id: "answer", delta: `Recent complete answer ${requests}` },
-        { type: "text-end", id: "answer" },
-        { type: "finish", finishReason: "stop", messageMetadata: { conversation: { receipt: `recent-receipt-${requests}`,
-          state: { tasks: [], countryIso3s: ["DEU"], applicationScope: "construction", powerKw: 200, asOf: "2026-08-13", productModelCode: null }, mode: "general" } } },
-      ].map(event => `data: ${JSON.stringify(event)}\n\n`).join("") + "data: [DONE]\n\n" });
+      expect(body.messages.every((message) => message.role === "user")).toBe(
+        true,
+      );
+      await route.fulfill({
+        headers: {
+          "content-type": "text/event-stream",
+          "x-vercel-ai-ui-message-stream": "v1",
+        },
+        body:
+          [
+            { type: "start", messageId: `recent-${requests}` },
+            { type: "text-start", id: "answer" },
+            {
+              type: "text-delta",
+              id: "answer",
+              delta: `Recent complete answer ${requests}`,
+            },
+            { type: "text-end", id: "answer" },
+            {
+              type: "finish",
+              finishReason: "stop",
+              messageMetadata: {
+                conversation: {
+                  receipt: `recent-receipt-${requests}`,
+                  state: {
+                    tasks: [],
+                    countryIso3s: ["DEU"],
+                    applicationScope: "construction",
+                    powerKw: 200,
+                    asOf: "2026-08-13",
+                    productModelCode: null,
+                  },
+                  mode: "general",
+                },
+              },
+            },
+          ]
+            .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+            .join("") + "data: [DONE]\n\n",
+      });
     });
     async function send(turn: number) {
-      await page.getByRole("textbox", { name: copy.questionInput, exact: true }).fill(`Question ${turn}`);
+      await page
+        .getByRole("textbox", { name: copy.questionInput, exact: true })
+        .fill(`Question ${turn}`);
       await page.getByRole("button", { name: copy.send, exact: true }).click();
-      await expect(page.getByTestId("assistant-markdown").last()).toHaveText(`Recent complete answer ${turn}`);
-      await expect(page.getByText(copy.statusComplete, { exact: true })).toBeAttached();
+      await expect(page.getByTestId("assistant-markdown").last()).toHaveText(
+        `Recent complete answer ${turn}`,
+      );
+      await expect(
+        page.getByText(copy.statusComplete, { exact: true }),
+      ).toBeAttached();
     }
     await page.goto("/chat");
     for (let turn = 1; turn <= 20; turn += 1) await send(turn);
-    await expect(page.getByText(copy.historyWindowed, { exact: false })).toBeVisible();
-    await expect(page.getByText(copy.historyUnavailable, { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByText(copy.historyWindowed, { exact: false }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(copy.historyUnavailable, { exact: true }),
+    ).toHaveCount(0);
     await page.reload();
     await expect(page.getByTestId("assistant-markdown")).toHaveCount(12);
-    await expect(page.getByTestId("assistant-markdown").last()).toHaveText("Recent complete answer 20");
+    await expect(page.getByTestId("assistant-markdown").last()).toHaveText(
+      "Recent complete answer 20",
+    );
     await send(21);
-    await expect(page.getByText(copy.historyUnavailable, { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByText(copy.historyUnavailable, { exact: true }),
+    ).toHaveCount(0);
   });
 
-  test(`${locale} conversation receipt survives reload; greetings aren't analyses`, async ({ page, context, baseURL }) => {
+  test(`${locale} conversation receipt survives reload; greetings aren't analyses`, async ({
+    page,
+    context,
+    baseURL,
+  }) => {
     const dictionary = getDictionary(locale);
     const copy = dictionary.chat;
-    await context.addCookies([{ name: "diesel_locale", value: locale, url: baseURL! }]);
+    await context.addCookies([
+      { name: "diesel_locale", value: locale, url: baseURL! },
+    ]);
     let requests = 0;
-    await page.route("**/api/chat", async route => {
+    await page.route("**/api/chat", async (route) => {
       requests += 1;
-      const body = route.request().postDataJSON() as { conversation: { version: number; receipt?: string }; messages: { role: string }[] };
+      const body = route.request().postDataJSON() as {
+        conversation: { version: number; receipt?: string };
+        messages: { role: string }[];
+      };
       expect(body.conversation.version).toBe(2);
-      expect(body.messages.every(message => message.role === "user")).toBe(true);
-      if (requests === 3) expect(body.conversation.receipt).toBe("transport-only-receipt-2");
-      const state = { tasks: requests === 1 ? [] : ["regulations"], countryIso3s: requests === 1 ? [] : ["CHN"],
-        applicationScope: null, powerKw: null, asOf: requests === 1 ? null : "2026-08-13", productModelCode: null };
-      await route.fulfill({ headers: { "content-type": "text/event-stream", "x-vercel-ai-ui-message-stream": "v1" }, body: [
-        { type: "start", messageId: `conversation-${requests}` },
-        ...(requests === 1 ? [] : noDataChatEvents()),
-        { type: "text-start", id: "answer" }, { type: "text-delta", id: "answer", delta: requests === 1 ? "Hello, what would you like to investigate?" : "Recorded query: evidence remains incomplete." },
-        { type: "text-end", id: "answer" },
-        { type: "finish", finishReason: "stop", messageMetadata: { conversation: { receipt: `transport-only-receipt-${requests}`, state, mode: requests === 1 ? "general" : "research" } } },
-      ].map(event => `data: ${JSON.stringify(event)}\n\n`).join("") + "data: [DONE]\n\n" });
+      expect(body.messages.every((message) => message.role === "user")).toBe(
+        true,
+      );
+      if (requests === 3)
+        expect(body.conversation.receipt).toBe("transport-only-receipt-2");
+      const state = {
+        tasks: requests === 1 ? [] : ["regulations"],
+        countryIso3s: requests === 1 ? [] : ["CHN"],
+        applicationScope: null,
+        powerKw: null,
+        asOf: requests === 1 ? null : "2026-08-13",
+        productModelCode: null,
+      };
+      await route.fulfill({
+        headers: {
+          "content-type": "text/event-stream",
+          "x-vercel-ai-ui-message-stream": "v1",
+        },
+        body:
+          [
+            { type: "start", messageId: `conversation-${requests}` },
+            ...(requests === 1 ? [] : noDataChatEvents()),
+            { type: "text-start", id: "answer" },
+            {
+              type: "text-delta",
+              id: "answer",
+              delta:
+                requests === 1
+                  ? "Hello, what would you like to investigate?"
+                  : "Recorded query: evidence remains incomplete.",
+            },
+            { type: "text-end", id: "answer" },
+            {
+              type: "finish",
+              finishReason: "stop",
+              messageMetadata: {
+                conversation: {
+                  receipt: `transport-only-receipt-${requests}`,
+                  state,
+                  mode: requests === 1 ? "general" : "research",
+                },
+              },
+            },
+          ]
+            .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+            .join("") + "data: [DONE]\n\n",
+      });
     });
     async function send(text: string) {
-      await page.getByRole("textbox", { name: copy.questionInput, exact: true }).fill(text);
+      await page
+        .getByRole("textbox", { name: copy.questionInput, exact: true })
+        .fill(text);
       await page.getByRole("button", { name: copy.send, exact: true }).click();
     }
     await page.goto("/chat");
@@ -97,22 +250,45 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect(page.getByTestId("assistant-markdown")).toHaveCount(1);
     await expect(page.getByTestId("save-analysis")).toHaveCount(0);
     await expect(page.getByTestId("chat-active-tasks")).toHaveCount(0);
-    await send(locale === "en" ? "CHN regulations as of 2026-08-13" : "查询CHN法规，日期2026-08-13");
+    await send(
+      locale === "en"
+        ? "CHN regulations as of 2026-08-13"
+        : "查询CHN法规，日期2026-08-13",
+    );
     await expect(page.getByTestId("assistant-markdown")).toHaveCount(2);
     await expect(page.getByTestId("save-analysis")).toBeVisible();
-    await expect(page.getByTestId("chat-active-tasks")).toContainText(copy.toolCompareRegulations);
-    await expect(page.getByLabel(dictionary.analysis.titleLabel, { exact: true })).not.toHaveAttribute("placeholder", "Hello");
+    await expect(page.getByTestId("chat-active-tasks")).toContainText(
+      copy.toolCompareRegulations,
+    );
+    await expect(
+      page.getByLabel(dictionary.analysis.titleLabel, { exact: true }),
+    ).not.toHaveAttribute("placeholder", "Hello");
     await page.reload();
     await expect(page.getByTestId("assistant-markdown")).toHaveCount(2);
-    await send(locale === "en" ? "Explain that gap briefly" : "简单解释刚才的缺口");
+    await send(
+      locale === "en" ? "Explain that gap briefly" : "简单解释刚才的缺口",
+    );
     await expect(page.getByTestId("assistant-markdown")).toHaveCount(3);
-    await page.getByRole("button", { name: dictionary.analysis.save, exact: true }).click();
-    await expect(page.getByText(dictionary.analysis.saved, { exact: true })).toBeVisible();
-    const saved = await page.evaluate(key => localStorage.getItem(key), ANALYSES_STORAGE_KEY);
+    await page
+      .getByRole("button", { name: dictionary.analysis.save, exact: true })
+      .click();
+    await expect(
+      page.getByText(dictionary.analysis.saved, { exact: true }),
+    ).toBeVisible();
+    const saved = await page.evaluate(
+      (key) => localStorage.getItem(key),
+      ANALYSES_STORAGE_KEY,
+    );
     expect(saved).not.toContain("transport-only-receipt");
-    await page.getByRole("button", { name: copy.newConversation, exact: true }).click();
+    await page
+      .getByRole("button", { name: copy.newConversation, exact: true })
+      .click();
     await expect(page.getByTestId("assistant-markdown")).toHaveCount(0);
     await expect(page.getByTestId("save-analysis")).toHaveCount(0);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
   });
 }

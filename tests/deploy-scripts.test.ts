@@ -1,6 +1,10 @@
 import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 import {
   chmod,
   chown,
@@ -409,8 +413,7 @@ async function execute(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -456,19 +459,16 @@ async function executePm2StateHarness(
   `;
 
   try {
-    const result = await execFileAsync(
-      process.execPath,
-      [
-        "--input-type=module",
-        "--eval",
-        harness,
-        action,
-        expectedReleaseId,
-        payload,
-        TEST_RUNTIME_UID,
-        TEST_RUNTIME_GID,
-      ],
-    );
+    const result = await execFileAsync(process.execPath, [
+      "--input-type=module",
+      "--eval",
+      harness,
+      action,
+      expectedReleaseId,
+      payload,
+      TEST_RUNTIME_UID,
+      TEST_RUNTIME_GID,
+    ]);
     return {
       exitCode: 0,
       stderr: String(result.stderr),
@@ -482,16 +482,14 @@ async function executePm2StateHarness(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
   }
 }
 
-type SystemdBuildUnitProperty =
-  (typeof SYSTEMD_BUILD_UNIT_PROPERTIES)[number];
+type SystemdBuildUnitProperty = (typeof SYSTEMD_BUILD_UNIT_PROPERTIES)[number];
 
 type SystemdUnitMetadata = Record<SystemdBuildUnitProperty, string>;
 
@@ -546,8 +544,7 @@ async function executeLinuxReleaseHandoff(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -578,8 +575,7 @@ async function executeStageRelease(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -611,28 +607,28 @@ function healthResponseHeaders(
   payloadKind: "liveness" | "readiness",
 ): Record<string, string> {
   const headers: Record<string, string> = {};
-  if (
-    !(payloadKind === "liveness" && mode === "missing-health-cache-control")
-  ) {
+  if (!(
+    payloadKind === "liveness" && mode === "missing-health-cache-control"
+  )) {
     headers["cache-control"] =
       payloadKind === "readiness" && mode === "wrong-readiness-cache-control"
         ? "public, max-age=300"
         : "private, no-store, max-age=0";
   }
   if (!(payloadKind === "readiness" && mode === "missing-readiness-pragma")) {
-    headers.pragma = payloadKind === "liveness" && mode === "wrong-health-pragma"
-      ? "cache"
-      : "no-cache";
+    headers.pragma =
+      payloadKind === "liveness" && mode === "wrong-health-pragma"
+        ? "cache"
+        : "no-cache";
   }
   return headers;
 }
 
-function sendHtml(
-  response: ServerResponse,
-  locale: "en" | "zh-CN",
-): void {
+function sendHtml(response: ServerResponse, locale: "en" | "zh-CN"): void {
   response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-  response.end(`<!doctype html><html lang="${locale}"><body>stub</body></html>`);
+  response.end(
+    `<!doctype html><html lang="${locale}"><body>stub</body></html>`,
+  );
 }
 
 function sendChatStream(
@@ -655,13 +651,11 @@ function sendChatStream(
       type: "reasoning-delta",
     });
   }
-  events.push(
-    {
-      delta: "Deterministic capability response.",
-      id: "stub-answer",
-      type: "text-delta",
-    },
-  );
+  events.push({
+    delta: "Deterministic capability response.",
+    id: "stub-answer",
+    type: "text-delta",
+  });
   if (mode !== "unclosed-text") {
     events.push({ id: "stub-answer", type: "text-end" });
   }
@@ -751,7 +745,7 @@ async function executeVerifyRelease(
       const curlrcHeader = request.headers["x-curlrc-marker"];
       const curlrcMarker = Array.isArray(curlrcHeader)
         ? curlrcHeader.join(",")
-        : curlrcHeader ?? null;
+        : (curlrcHeader ?? null);
       requests.push({ body, cookie, curlrcMarker, method, url });
 
       if (method === "GET" && url === "/api/health") {
@@ -759,18 +753,21 @@ async function executeVerifyRelease(
         sendJson(
           response,
           {
-            service: mode === "wrong-health-service"
-              ? "wrong-service"
-              : "global-diesel-regulations",
+            service:
+              mode === "wrong-health-service"
+                ? "wrong-service"
+                : "global-diesel-regulations",
             status: mode === "wrong-health-status" ? "unavailable" : "ok",
-            timestamp: mode === "stale-health-timestamp"
-              ? new Date(Date.now() - 60_000).toISOString()
-              : mode === "noncanonical-health-timestamp"
-                ? currentTimestamp.replace(/Z$/u, "+00:00")
-                : currentTimestamp,
-            version: mode === "wrong-health-version"
-              ? "b".repeat(40)
-              : TEST_RELEASE_SHA,
+            timestamp:
+              mode === "stale-health-timestamp"
+                ? new Date(Date.now() - 60_000).toISOString()
+                : mode === "noncanonical-health-timestamp"
+                  ? currentTimestamp.replace(/Z$/u, "+00:00")
+                  : currentTimestamp,
+            version:
+              mode === "wrong-health-version"
+                ? "b".repeat(40)
+                : TEST_RELEASE_SHA,
           },
           healthResponseHeaders(mode, "liveness"),
         );
@@ -780,16 +777,10 @@ async function executeVerifyRelease(
         const currentTimestamp = new Date().toISOString();
         const checks: Record<string, string> = {
           aiChatAdmission:
-            mode === "wrong-readiness-admission-check"
-              ? "unavailable"
-              : "ok",
+            mode === "wrong-readiness-admission-check" ? "unavailable" : "ok",
           aiChatRateLimit:
-            mode === "wrong-readiness-rate-limit-check"
-              ? "unavailable"
-              : "ok",
-          database: mode === "wrong-readiness-check"
-            ? "unavailable"
-            : "ok",
+            mode === "wrong-readiness-rate-limit-check" ? "unavailable" : "ok",
+          database: mode === "wrong-readiness-check" ? "unavailable" : "ok",
         };
         if (mode === "extra-readiness-check") checks.provider = "ok";
         if (mode === "missing-readiness-check") {
@@ -797,20 +788,23 @@ async function executeVerifyRelease(
         }
         const readinessBody: Record<string, unknown> = {
           checks,
-          service: mode === "wrong-readiness-service"
-            ? "wrong-service"
-            : "global-diesel-regulations",
+          service:
+            mode === "wrong-readiness-service"
+              ? "wrong-service"
+              : "global-diesel-regulations",
           status: mode === "wrong-readiness-status" ? "unavailable" : "ok",
-          timestamp: mode === "future-readiness-timestamp"
-            ? new Date(Date.now() + 60_000).toISOString()
-            : mode === "stale-readiness-timestamp"
-              ? new Date(Date.now() - 60_000).toISOString()
-              : mode === "noncanonical-readiness-timestamp"
-                ? currentTimestamp.replace(/Z$/u, "+00:00")
-                : currentTimestamp,
-          version: mode === "wrong-readiness-version"
-            ? "b".repeat(40)
-            : TEST_RELEASE_SHA,
+          timestamp:
+            mode === "future-readiness-timestamp"
+              ? new Date(Date.now() + 60_000).toISOString()
+              : mode === "stale-readiness-timestamp"
+                ? new Date(Date.now() - 60_000).toISOString()
+                : mode === "noncanonical-readiness-timestamp"
+                  ? currentTimestamp.replace(/Z$/u, "+00:00")
+                  : currentTimestamp,
+          version:
+            mode === "wrong-readiness-version"
+              ? "b".repeat(40)
+              : TEST_RELEASE_SHA,
         };
         if (mode === "extra-readiness-field") {
           readinessBody.provider = "unexpected";
@@ -889,7 +883,11 @@ async function executeVerifyRelease(
           cookie,
         );
         let locale: "en" | "zh-CN" = hasChineseCookie ? "zh-CN" : "en";
-        if (mode === "wrong-default-locale" && url === "/" && !hasChineseCookie) {
+        if (
+          mode === "wrong-default-locale" &&
+          url === "/" &&
+          !hasChineseCookie
+        ) {
           locale = "zh-CN";
         }
         if (mode === "lost-locale" && url === "/map" && hasChineseCookie) {
@@ -927,7 +925,11 @@ async function executeVerifyRelease(
   try {
     const result = await execFileAsync(
       "bash",
-      [verifyReleaseScript, `http://127.0.0.1:${address.port}`, TEST_RELEASE_SHA],
+      [
+        verifyReleaseScript,
+        `http://127.0.0.1:${address.port}`,
+        TEST_RELEASE_SHA,
+      ],
       {
         env: commandEnvironment,
       },
@@ -945,8 +947,7 @@ async function executeVerifyRelease(
       stdout?: unknown;
     };
     command = {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -979,7 +980,11 @@ async function createBuildFixture(
         output === ".build-complete"
           ? resolve(process.cwd(), "package.json")
           : process.cwd();
-      await symlink(target, outputPath, output === ".build-complete" ? "file" : "dir");
+      await symlink(
+        target,
+        outputPath,
+        output === ".build-complete" ? "file" : "dir",
+      );
     } else if (output === ".build-complete") {
       await writeFile(outputPath, "", "utf8");
     } else {
@@ -998,10 +1003,7 @@ async function resolveSearchPathExecutable(
     if (!directory.startsWith("/")) continue;
     const candidate = join(directory, name);
     const metadata = await stat(candidate).catch(() => undefined);
-    if (
-      metadata?.isFile() &&
-      (metadata.mode & 0o111) !== 0
-    ) {
+    if (metadata?.isFile() && (metadata.mode & 0o111) !== 0) {
       return candidate;
     }
   }
@@ -1009,10 +1011,7 @@ async function resolveSearchPathExecutable(
 }
 
 type StageReleaseAuthorizationMode =
-  | "empty-output"
-  | "oversized-output"
-  | "success"
-  | "validation-failure";
+  "empty-output" | "oversized-output" | "success" | "validation-failure";
 
 type StageReleaseFixture = {
   eventLog: string;
@@ -1055,11 +1054,7 @@ async function runStageFixtureGit(
 async function createStageReleaseFixture(options?: {
   authorizationMode?: StageReleaseAuthorizationMode;
   boundedCommandReceiptFault?:
-    | "exit-mismatch"
-    | "hardlink"
-    | "malformed"
-    | "missing"
-    | "token-mismatch";
+    "exit-mismatch" | "hardlink" | "malformed" | "missing" | "token-mismatch";
   forbiddenPath?: string;
   remoteDigestMismatch?: boolean;
   remoteIdentityOutputMode?: "extra-newline" | "oversized";
@@ -1191,7 +1186,9 @@ exec ${quoteShell(process.execPath)} "$@"
   const resolvedGit = await resolveSearchPathExecutable(fakePath, "git");
   const resolvedGh = await resolveSearchPathExecutable(fakePath, "gh");
   if (!resolvedNode || !resolvedGit) {
-    throw new Error("stage fixture requires node and git in its controlled PATH");
+    throw new Error(
+      "stage fixture requires node and git in its controlled PATH",
+    );
   }
   const transportPath = [
     dirname(resolvedNode),
@@ -1203,15 +1200,14 @@ exec ${quoteShell(process.execPath)} "$@"
     "/sbin",
   ].join(":");
   if (transportPath.split(":").includes(fakeBin)) {
-    throw new Error("stage fixture transport PATH must exclude the fake tool directory");
+    throw new Error(
+      "stage fixture transport PATH must exclude the fake tool directory",
+    );
   }
   await Promise.all([
     copyFile(stageReleaseScript, fixtureScript),
     copyFile(
-      resolve(
-        process.cwd(),
-        "scripts/deploy/release-input-manifest.mjs",
-      ),
+      resolve(process.cwd(), "scripts/deploy/release-input-manifest.mjs"),
       inputManifest,
     ),
     copyFile(boundedCommandScript, boundedCommand),
@@ -1282,10 +1278,7 @@ if (args[0] === "validate-output") {
   await chmod(fixtureScript, 0o755);
 
   if (options?.forbiddenPath) {
-    const forbiddenFile = join(
-      repository,
-      ...options.forbiddenPath.split("/"),
-    );
+    const forbiddenFile = join(repository, ...options.forbiddenPath.split("/"));
     await mkdir(dirname(forbiddenFile), { recursive: true });
     await writeFile(forbiddenFile, "PRIVATE_CANARY\n", "utf8");
   }
@@ -1303,10 +1296,7 @@ if (args[0] === "validate-output") {
     "-m",
     "stage release fixture",
   ]);
-  const releaseId = await runStageFixtureGit(repository, [
-    "rev-parse",
-    "HEAD",
-  ]);
+  const releaseId = await runStageFixtureGit(repository, ["rev-parse", "HEAD"]);
   const committedExport = join(root, "committed-stage");
   const committedArchive = join(root, "committed-stage.tar");
   await mkdir(committedExport);
@@ -1535,9 +1525,7 @@ function stageReleaseEnvironment(
   return environment;
 }
 
-async function readStageReleaseEvents(
-  fixture: StageReleaseFixture,
-): Promise<
+async function readStageReleaseEvents(fixture: StageReleaseFixture): Promise<
   Array<{
     args?: string[];
     command: string;
@@ -1551,13 +1539,16 @@ async function readStageReleaseEvents(
     .trim()
     .split("\n")
     .filter(Boolean)
-    .map((line) => JSON.parse(line) as {
-      args?: string[];
-      command: string;
-      count?: number;
-      environmentKeys?: string[];
-      signal?: string;
-    });
+    .map(
+      (line) =>
+        JSON.parse(line) as {
+          args?: string[];
+          command: string;
+          count?: number;
+          environmentKeys?: string[];
+          signal?: string;
+        },
+    );
 }
 
 function stageReleaseFailureContext(
@@ -1565,7 +1556,8 @@ function stageReleaseFailureContext(
   fixture: StageReleaseFixture,
   events: Awaited<ReturnType<typeof readStageReleaseEvents>>,
 ): string {
-  const sourceArgument = events.find(({ command }) => command === "rsync")
+  const sourceArgument = events
+    .find(({ command }) => command === "rsync")
     ?.args?.at(-2);
   return [
     result.stderr.trimEnd(),
@@ -1573,7 +1565,9 @@ function stageReleaseFailureContext(
       expectedSourcePrefix: `${fixture.temporaryRoot}/`,
       sourceArgument: sourceArgument ?? null,
     })}`,
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 async function waitForFileContents(
@@ -1626,7 +1620,10 @@ async function readOptionalTestPid(path: string): Promise<number | undefined> {
   return Number.isSafeInteger(pid) && pid > 0 ? pid : undefined;
 }
 
-function signalTestProcess(pid: number | undefined, signal: NodeJS.Signals): void {
+function signalTestProcess(
+  pid: number | undefined,
+  signal: NodeJS.Signals,
+): void {
   if (pid === undefined) return;
   try {
     process.kill(pid, signal);
@@ -1677,7 +1674,9 @@ function waitForBoundedPromise<T>(
   });
 }
 
-async function captureFirstVerifyCurlArguments(origin: string): Promise<string[]> {
+async function captureFirstVerifyCurlArguments(
+  origin: string,
+): Promise<string[]> {
   const fixture = await mkdtemp(join(tmpdir(), "diesel-verify-curl-args-"));
   const fakeBin = join(fixture, "bin");
   const argumentsPath = join(fixture, "curl-arguments");
@@ -1893,8 +1892,7 @@ async function executePrepareDatabaseIdentity(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -1951,8 +1949,7 @@ async function executePreparePersistCandidate(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -1999,8 +1996,7 @@ async function executePrepareBeforeBuild(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -2039,7 +2035,10 @@ async function createGovernanceCountryPublisherFixture(): Promise<GovernanceCoun
     "db",
     "ingest-accepted-fixtures.ts",
   );
-  const catalogueScript = join(dirname(ingestScript), "ingest-demo-catalogue.ts");
+  const catalogueScript = join(
+    dirname(ingestScript),
+    "ingest-demo-catalogue.ts",
+  );
   const fakeBin = join(root, "bin");
   const invocationLog = join(root, "corepack-invocations.log");
   const trapLog = join(root, "recovery-traps.log");
@@ -2056,18 +2055,11 @@ async function createGovernanceCountryPublisherFixture(): Promise<GovernanceCoun
     writeFile(ingestScript, "// fixture\n", "utf8"),
     writeFile(catalogueScript, "// fixture\n", "utf8"),
     writeFile(snapshotPath, snapshot, "utf8"),
-    writeFile(
-      recoveryMarker,
-      `${snapshotSha256}\t${snapshotPath}\n`,
-      "utf8",
-    ),
+    writeFile(recoveryMarker, `${snapshotSha256}\t${snapshotPath}\n`, "utf8"),
   ]);
   await symlink(releaseDir, currentLink);
 
-  await writeExecutable(
-    join(fakeBin, "id"),
-    "#!/bin/bash\nprintf '0\\n'\n",
-  );
+  await writeExecutable(join(fakeBin, "id"), "#!/bin/bash\nprintf '0\\n'\n");
   await writeExecutable(
     join(fakeBin, "stat"),
     `#!/bin/bash
@@ -2189,8 +2181,7 @@ trap - ERR INT TERM HUP EXIT
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -2208,11 +2199,7 @@ async function createRollbackFixture(options?: {
   // Shared temporary directories can assign a host-specific group (for
   // example wheel on Darwin). The fixture models one deterministic runtime
   // identity, so normalize its root before descendants inherit ownership.
-  await chown(
-    root,
-    Number(TEST_PROCESS_UID),
-    Number(TEST_PROCESS_GID),
-  );
+  await chown(root, Number(TEST_PROCESS_UID), Number(TEST_PROCESS_GID));
   const deployRoot = join(root, "deploy");
   const releasesRoot = join(deployRoot, "releases");
   const releaseId = options?.releaseId ?? "failed-release";
@@ -2434,10 +2421,7 @@ async function createRollbackFixture(options?: {
     "deploy",
     "verify-release.sh",
   );
-  await writeExecutable(
-    pm2Exec,
-    "#!/bin/bash\nexit 0\n",
-  );
+  await writeExecutable(pm2Exec, "#!/bin/bash\nexit 0\n");
   await writeExecutable(
     verifier,
     `#!/bin/bash
@@ -3086,9 +3070,7 @@ if [[ "\${1:-}" == 'show' ]]; then
   if [[ -f ${quoteShell(join(root, "systemd-upholds-drift"))} ]]; then
     unit_upholds='network.target'
   fi
-  if [[ -f ${quoteShell(
-    join(root, "systemd-exec-start-post-drift"),
-  )} ]]; then
+  if [[ -f ${quoteShell(join(root, "systemd-exec-start-post-drift"))} ]]; then
     unit_exec_start_post='{ path=/usr/bin/true ; argv[]=/usr/bin/true ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }'
   fi
   if [[ -f ${quoteShell(join(root, "systemd-exec-reload-drift"))} ]]; then
@@ -3109,9 +3091,7 @@ if [[ "\${1:-}" == 'show' ]]; then
   if [[ -f ${quoteShell(join(root, "systemd-dynamic-user-drift"))} ]]; then
     unit_dynamic_user='yes'
   fi
-  if [[ -f ${quoteShell(
-    join(root, "systemd-working-directory-drift"),
-  )} ]]; then
+  if [[ -f ${quoteShell(join(root, "systemd-working-directory-drift"))} ]]; then
     unit_working_directory='/tmp'
   fi
   if [[ "$loaded_count" -ge 2 && -f ${quoteShell(
@@ -3291,11 +3271,7 @@ async function createActivationFixture(): Promise<RollbackFixture> {
     pm2Version: "previous-release",
     releaseId: TEST_RELEASE_SHA,
   });
-  const candidateNginxRoot = join(
-    fixture.failedRelease,
-    "deploy",
-    "nginx",
-  );
+  const candidateNginxRoot = join(fixture.failedRelease, "deploy", "nginx");
   const statePrimary = join(fixture.stateDir, "jamesky.site.pre-switch");
   const stateAlternate = join(fixture.stateDir, "diesel-demo.pre-switch");
 
@@ -3321,7 +3297,11 @@ async function createActivationFixture(): Promise<RollbackFixture> {
       "enforce\n",
       "utf8",
     ),
-    writeFile(join(fixture.failedRelease, ".build-complete"), "build\n", "utf8"),
+    writeFile(
+      join(fixture.failedRelease, ".build-complete"),
+      "build\n",
+      "utf8",
+    ),
     writeFile(join(fixture.failedRelease, ".deploy-ready"), "ready\n", "utf8"),
   ]);
   await Promise.all([
@@ -3369,9 +3349,9 @@ async function executeActivation(
           '    [[ "$(<"$ACTIVATION_TEST_ROOT/pending-fail-at")" == "${count}" ]]; then',
           "    return 96",
           "  fi",
-          "  HOST_ACTIVATION_LEDGER_PREVIOUS_RELEASE_PATH=\"$ACTIVATION_TEST_PREVIOUS_RELEASE\"",
-          "  HOST_ACTIVATION_LEDGER_NGINX_PRIMARY_BACKUP=\"$ACTIVATION_TEST_PRIMARY_BACKUP\"",
-          "  HOST_ACTIVATION_LEDGER_NGINX_ALTERNATE_BACKUP=\"$ACTIVATION_TEST_ALTERNATE_BACKUP\"",
+          '  HOST_ACTIVATION_LEDGER_PREVIOUS_RELEASE_PATH="$ACTIVATION_TEST_PREVIOUS_RELEASE"',
+          '  HOST_ACTIVATION_LEDGER_NGINX_PRIMARY_BACKUP="$ACTIVATION_TEST_PRIMARY_BACKUP"',
+          '  HOST_ACTIVATION_LEDGER_NGINX_ALTERNATE_BACKUP="$ACTIVATION_TEST_ALTERNATE_BACKUP"',
           "}",
           'activate_host_release "$@"',
         ].join("\n"),
@@ -3389,10 +3369,9 @@ async function executeActivation(
         fixture.pm2UnitFragment,
         TEST_PROCESS_UID,
         TEST_PROCESS_GID,
-        [
-          fixture.systemdSecondaryUnitRoot,
-          fixture.systemdAbsentUnitRoot,
-        ].join(":"),
+        [fixture.systemdSecondaryUnitRoot, fixture.systemdAbsentUnitRoot].join(
+          ":",
+        ),
       ],
       {
         env: {
@@ -3425,8 +3404,7 @@ async function executeActivation(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -3458,8 +3436,7 @@ async function executeActivationCli(args: string[]): Promise<CommandResult> {
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -3522,10 +3499,9 @@ async function executeRollback(
         fixture.pm2UnitFragment,
         TEST_PROCESS_UID,
         TEST_PROCESS_GID,
-        [
-          fixture.systemdSecondaryUnitRoot,
-          fixture.systemdAbsentUnitRoot,
-        ].join(":"),
+        [fixture.systemdSecondaryUnitRoot, fixture.systemdAbsentUnitRoot].join(
+          ":",
+        ),
       ],
       {
         env: {
@@ -3548,8 +3524,7 @@ async function executeRollback(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -3585,8 +3560,7 @@ async function expectDurablePm2Validation(
   ].join(" ");
   const expectedManagerShow =
     "systemctl:show --property=UnitPath --property=Environment";
-  const expectedCompiledUnitPaths =
-    "systemd-analyze:--system unit-paths";
+  const expectedCompiledUnitPaths = "systemd-analyze:--system unit-paths";
   const firstManagerIdentityIndex = events.indexOf(
     expectedManagerShow,
     helperIndex + 1,
@@ -3621,9 +3595,7 @@ async function expectDurablePm2Validation(
   expect(firstSystemdIdentityIndex).toBeGreaterThan(
     firstCompiledUnitPathsIndex,
   );
-  expect(secondSystemdIdentityIndex).toBeGreaterThan(
-    firstSystemdIdentityIndex,
-  );
+  expect(secondSystemdIdentityIndex).toBeGreaterThan(firstSystemdIdentityIndex);
   expect(secondManagerIdentityIndex).toBeGreaterThan(
     secondSystemdIdentityIndex,
   );
@@ -3800,10 +3772,7 @@ function systemdDiskIdentityFaults(): SystemdDiskIdentityFault[] {
     faults.push({
       name: `${scope}.d drop-in`,
       mutate: async (fixture) => {
-        const directory = join(
-          fixture.systemdSecondaryUnitRoot,
-          `${scope}.d`,
-        );
+        const directory = join(fixture.systemdSecondaryUnitRoot, `${scope}.d`);
         await mkdir(directory);
         await writeFile(join(directory, "override.conf"), "[Service]\n");
       },
@@ -3937,10 +3906,7 @@ async function expectActivationLedgerBasisUnchanged(
     readFile(join(fixture.stateDir, "previous-release"), "utf8"),
   ).resolves.toBe(`${fixture.previousRelease}\n`);
   await expect(
-    readFile(
-      join(fixture.stateDir, "env.production.local.pre-switch"),
-      "utf8",
-    ),
+    readFile(join(fixture.stateDir, "env.production.local.pre-switch"), "utf8"),
   ).resolves.toBe("OLD_ENV=1\n");
   await expect(
     readFile(join(fixture.stateDir, "jamesky.site.pre-switch"), "utf8"),
@@ -3967,39 +3933,66 @@ describe("host activation ledger fixture stat metadata", () => {
         const calls = join(fixture.root, "stat-calls");
         const response = join(fixture.root, "native-response");
         const sharedFile = join(fixture.sharedRoot, ".env.production.local");
-        await writeExecutable(nativeStat, `#!/bin/bash
+        await writeExecutable(
+          nativeStat,
+          `#!/bin/bash
 set -euo pipefail
 printf '%s %s\\n' "$1" "$2" >>${quoteShell(calls)}
 [[ "$#" -eq 4 && "$3" == '--' && "$4" == ${quoteShell(sharedFile)} ]] || exit 64
 [[ "$1" == '${dialect === "gnu" ? "-c" : "-f"}' ]] || exit 64
 [[ "$2" == '${dialect === "gnu" ? "%a:%h:%s" : "%Lp:%l:%z"}' ]] || exit 64
 printf '%s\\n' "$(<${quoteShell(response)})"
-`);
-        await writeExecutable(shim, (await readFile(shim, "utf8")).replaceAll(
-          "/usr/bin/stat", quoteShell(nativeStat),
-        ));
+`,
+        );
+        await writeExecutable(
+          shim,
+          (await readFile(shim, "utf8")).replaceAll(
+            "/usr/bin/stat",
+            quoteShell(nativeStat),
+          ),
+        );
         for (const [nativeMode, expectedMode] of [
-          ["640", "640"], ["0", "0"], ["0007", "7"],
-          ["1640", "640"], ["4640", "640"], ["7640", "640"],
+          ["640", "640"],
+          ["0", "0"],
+          ["0007", "7"],
+          ["1640", "640"],
+          ["4640", "640"],
+          ["7640", "640"],
         ] as const) {
           await writeFile(response, `${nativeMode}:2:7\n`);
           for (const [format, expected] of [
             ["%U:%G:%a", `root:diesel:${expectedMode}\n`],
-            ["%h", "2\n"], ["%s", "7\n"],
+            ["%h", "2\n"],
+            ["%s", "7\n"],
           ] as const) {
             await writeFile(calls, "");
-            const result = await execFileAsync(shim, ["-c", format, "--", sharedFile]);
+            const result = await execFileAsync(shim, [
+              "-c",
+              format,
+              "--",
+              sharedFile,
+            ]);
             expect(result.stdout).toBe(expected);
             expect(result.stderr).toBe("");
-            expect(await readFile(calls, "utf8")).toBe(dialect === "gnu"
-              ? "-c %a:%h:%s\n"
-              : "-c %a:%h:%s\n-f %Lp:%l:%z\n");
+            expect(await readFile(calls, "utf8")).toBe(
+              dialect === "gnu"
+                ? "-c %a:%h:%s\n"
+                : "-c %a:%h:%s\n-f %Lp:%l:%z\n",
+            );
           }
         }
-        for (const malformed of ["", "8:2:7", "640:x:7", "640:2:x", "640:2", "640:2:7:extra"]) {
+        for (const malformed of [
+          "",
+          "8:2:7",
+          "640:x:7",
+          "640:2:x",
+          "640:2",
+          "640:2:7:extra",
+        ]) {
           await writeFile(response, malformed);
-          await expect(execFileAsync(shim, ["-c", "%s", "--", sharedFile]))
-            .rejects.toMatchObject({ code: 65, stdout: "" });
+          await expect(
+            execFileAsync(shim, ["-c", "%s", "--", sharedFile]),
+          ).rejects.toMatchObject({ code: 65, stdout: "" });
         }
       } finally {
         await rm(fixture.root, { force: true, recursive: true });
@@ -4019,7 +4012,8 @@ printf '%s\\n' "$(<${quoteShell(response)})"
         const metadata = await lstat(path);
         for (const [format, expected] of [
           ["%U:%G:%a", `root:root:${(metadata.mode & 0o777).toString(8)}\n`],
-          ["%h", `${metadata.nlink}\n`], ["%s", `${metadata.size}\n`],
+          ["%h", `${metadata.nlink}\n`],
+          ["%s", `${metadata.size}\n`],
         ] as const) {
           const result = await execFileAsync(shim, ["-c", format, "--", path]);
           expect(result.stdout).toBe(expected);
@@ -4033,13 +4027,20 @@ printf '%s\\n' "$(<${quoteShell(response)})"
       await link(file, hardLink);
       await symlink(file, symbolicLink);
       await symlink(join(fixture.root, "absent-target"), danglingLink);
-      for (const path of [file, hardLink, symbolicLink, danglingLink, fixture.root]) {
+      for (const path of [
+        file,
+        hardLink,
+        symbolicLink,
+        danglingLink,
+        fixture.root,
+      ]) {
         await assertMetadata(path);
       }
       await rm(hardLink);
       await assertMetadata(file);
-      await expect(execFileAsync(shim, ["-c", "%s", "--", join(fixture.root, "absent")]))
-        .rejects.toMatchObject({ code: 1, stdout: "" });
+      await expect(
+        execFileAsync(shim, ["-c", "%s", "--", join(fixture.root, "absent")]),
+      ).rejects.toMatchObject({ code: 1, stdout: "" });
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
     }
@@ -4058,11 +4059,14 @@ printf '%s\\n' "$(<${quoteShell(response)})"
         [fixture.sharedRoot, "root:diesel:750\n"],
         [nonShared, "root:root:700\n"],
       ] as const) {
-        expect((await execFileAsync(shim, ["-c", "%U:%G:%a", "--", path])).stdout).toBe(expected);
+        expect(
+          (await execFileAsync(shim, ["-c", "%U:%G:%a", "--", path])).stdout,
+        ).toBe(expected);
       }
       for (const format of ["", "%a", "%U:%G:%h:%s", "unknown"]) {
-        await expect(execFileAsync(shim, ["-c", format, "--", sharedFile]))
-          .rejects.toMatchObject({ code: 64, stdout: "" });
+        await expect(
+          execFileAsync(shim, ["-c", format, "--", sharedFile]),
+        ).rejects.toMatchObject({ code: 64, stdout: "" });
       }
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
@@ -4109,14 +4113,15 @@ esac
         ] as const) {
           await writeFile(calls, "");
           const result = await execFileAsync(shim, [
-            "-c", format, "--", fixture.environmentPath,
+            "-c",
+            format,
+            "--",
+            fixture.environmentPath,
           ]);
           expect(result.stdout).toBe(expected);
           expect(result.stderr).toBe("");
           expect(await readFile(calls, "utf8")).toBe(
-            dialect === "gnu"
-              ? "-c %a:%h:%s\n"
-              : "-c %a:%h:%s\n-f %Lp:%l:%z\n",
+            dialect === "gnu" ? "-c %a:%h:%s\n" : "-c %a:%h:%s\n-f %Lp:%l:%z\n",
           );
         }
       } finally {
@@ -4153,11 +4158,22 @@ esac
       await link(file, hardLink);
       await symlink(file, symbolicLink);
       await symlink(join(fixture.root, "absent-target"), danglingLink);
-      for (const path of [file, hardLink, symbolicLink, danglingLink, fixture.root]) {
+      for (const path of [
+        file,
+        hardLink,
+        symbolicLink,
+        danglingLink,
+        fixture.root,
+      ]) {
         await assertMetadata(path);
       }
       await expect(
-        execFileAsync(shim, ["-c", "%U:%G:%a", "--", join(fixture.root, "absent")]),
+        execFileAsync(shim, [
+          "-c",
+          "%U:%G:%a",
+          "--",
+          join(fixture.root, "absent"),
+        ]),
       ).rejects.toMatchObject({ code: 1, stdout: "" });
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
@@ -4172,16 +4188,31 @@ esac
         (await execFileAsync(shim, ["-c", "%U:%G:%a", "--", path])).stdout;
       await chmod(fixture.environmentPath, 0o640);
       await chmod(fixture.root, 0o700);
-      expect(await readIdentity(fixture.environmentPath)).toBe("root:diesel:640\n");
+      expect(await readIdentity(fixture.environmentPath)).toBe(
+        "root:diesel:640\n",
+      );
       expect(await readIdentity(fixture.root)).toBe("root:root:700\n");
       expect(await readIdentity(dirname(fixture.root))).toBe("root:root:755\n");
       expect(await readIdentity("/")).toBe("root:root:755\n");
-      await writeFile(join(fixture.root, "untrusted-owner-path"), fixture.environmentPath);
-      await writeFile(join(fixture.root, "untrusted-mode-path"), dirname(fixture.root));
-      expect(await readIdentity(fixture.environmentPath)).toBe("diesel:diesel:640\n");
+      await writeFile(
+        join(fixture.root, "untrusted-owner-path"),
+        fixture.environmentPath,
+      );
+      await writeFile(
+        join(fixture.root, "untrusted-mode-path"),
+        dirname(fixture.root),
+      );
+      expect(await readIdentity(fixture.environmentPath)).toBe(
+        "diesel:diesel:640\n",
+      );
       expect(await readIdentity(dirname(fixture.root))).toBe("root:root:777\n");
-      await writeFile(join(fixture.root, "untrusted-mode-path"), fixture.environmentPath);
-      expect(await readIdentity(fixture.environmentPath)).toBe("diesel:diesel:777\n");
+      await writeFile(
+        join(fixture.root, "untrusted-mode-path"),
+        fixture.environmentPath,
+      );
+      expect(await readIdentity(fixture.environmentPath)).toBe(
+        "diesel:diesel:777\n",
+      );
       expect(await readIdentity(dirname(fixture.root))).toBe("root:root:755\n");
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
@@ -4421,11 +4452,26 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
   it.each([
     ["system directory", "system-directory", "root:root:755", 0],
     ["normalized release directory", "release-directory", "root:diesel:750", 0],
-    ["normalized release executable", "release-executable", "root:diesel:750:1", 0],
+    [
+      "normalized release executable",
+      "release-executable",
+      "root:diesel:750:1",
+      0,
+    ],
     ["staged release directory", "release-directory", "root:root:755", 1],
     ["staged release executable", "release-executable", "root:root:755:1", 1],
-    ["hard-linked release executable", "release-executable", "root:diesel:750:2", 1],
-    ["group-writable release executable", "release-executable", "root:diesel:770:1", 1],
+    [
+      "hard-linked release executable",
+      "release-executable",
+      "root:diesel:750:2",
+      1,
+    ],
+    [
+      "group-writable release executable",
+      "release-executable",
+      "root:diesel:770:1",
+      1,
+    ],
   ] as const)(
     "classifies %s at the direct activation source boundary",
     async (_name, profile, metadata, expectedStatus) => {
@@ -4480,7 +4526,9 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
   it.each(["entry", "rollback", "ledger"] as const)(
     "does not execute poisoned activation dependencies when %s validation fails",
     async (rejectedObject) => {
-      const root = await mkdtemp(join(tmpdir(), "diesel-activation-bootstrap-"));
+      const root = await mkdtemp(
+        join(tmpdir(), "diesel-activation-bootstrap-"),
+      );
       const deployRoot = join(root, "diesel");
       const releaseDirectory = join(deployRoot, "releases", TEST_RELEASE_SHA);
       const deployDirectory = join(releaseDirectory, "scripts", "deploy");
@@ -4520,10 +4568,10 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
           'BOOTSTRAP_LOG="$6"',
           'BOOTSTRAP_ROLLBACK_MARKER="$7"',
           'BOOTSTRAP_LEDGER_MARKER="$8"',
-          'activate_host_release_require_cli_bootstrap_path() {',
+          "activate_host_release_require_cli_bootstrap_path() {",
           '  printf "%s|%s\\n" "$1" "$2" >>"${BOOTSTRAP_LOG}"',
           '  [[ "$1" != "${BOOTSTRAP_REJECT}" ]]',
-          '}',
+          "}",
           'activate_host_release_cli_bootstrap "$2" "$3" "$4"',
         ].join("\n");
         const result = await execute("/bin/bash", [
@@ -4610,9 +4658,9 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
         'BOOTSTRAP_LOG="$5"',
         'BOOTSTRAP_ROLLBACK_MARKER="$6"',
         'BOOTSTRAP_LEDGER_MARKER="$7"',
-        'activate_host_release_require_cli_bootstrap_path() {',
+        "activate_host_release_require_cli_bootstrap_path() {",
         '  printf "%s|%s\\n" "$1" "$2" >>"${BOOTSTRAP_LOG}"',
-        '}',
+        "}",
         'activate_host_release_cli_bootstrap "$2" "$3" "$4"',
       ].join("\n");
       const result = await execute("/bin/bash", [
@@ -4705,9 +4753,9 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       await expect(readFile(fixture.nginxPrimaryPath, "utf8")).resolves.toBe(
         "candidate primary nginx\n",
       );
-      await expect(
-        readFile(fixture.nginxAlternatePath, "utf8"),
-      ).resolves.toBe("candidate alternate nginx\n");
+      await expect(readFile(fixture.nginxAlternatePath, "utf8")).resolves.toBe(
+        "candidate alternate nginx\n",
+      );
       await expect(readFile(fixture.pm2State, "utf8")).resolves.toBe(
         TEST_RELEASE_SHA,
       );
@@ -4719,9 +4767,10 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       let cursor = -1;
       const expectAfter = (event: string): number => {
         const eventIndex = lifecycleEvents.indexOf(event, cursor + 1);
-        expect(eventIndex, `missing ordered activation event: ${event}`).toBeGreaterThan(
-          cursor,
-        );
+        expect(
+          eventIndex,
+          `missing ordered activation event: ${event}`,
+        ).toBeGreaterThan(cursor);
         cursor = eventIndex;
         return eventIndex;
       };
@@ -4730,7 +4779,8 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       expectAfter(`check-ready:${TEST_RELEASE_SHA}`);
       expectAfter("ledger-pending:2");
       const offlineNginxIndex = lifecycleEvents.findIndex(
-        (event, index) => index > cursor && event.startsWith("nginx-offline-test:"),
+        (event, index) =>
+          index > cursor && event.startsWith("nginx-offline-test:"),
       );
       expect(offlineNginxIndex).toBeGreaterThan(cursor);
       cursor = offlineNginxIndex;
@@ -4782,10 +4832,12 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       expectAfter("systemctl:is-active --quiet pm2-root");
       expectAfter("ledger-pending:6");
       expectAfter("systemctl:reload nginx");
-      expect(lifecycleEvents.filter((event) => event.startsWith("ledger-pending:")))
-        .toHaveLength(6);
-      expect(lifecycleEvents.some((event) => event.startsWith("fd8-leaked:")))
-        .toBe(false);
+      expect(
+        lifecycleEvents.filter((event) => event.startsWith("ledger-pending:")),
+      ).toHaveLength(6);
+      expect(
+        lifecycleEvents.some((event) => event.startsWith("fd8-leaked:")),
+      ).toBe(false);
 
       const mutations = await readMutationLog(fixture);
       expect(mutations).not.toContain("secret-leaked");
@@ -4814,7 +4866,9 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       const result = await executeActivation(fixture);
 
       expect(result).toMatchObject({ exitCode: 0, stderr: "" });
-      await expect(lstat(currentNext)).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(lstat(currentNext)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
       await expect(realpath(fixture.currentLink)).resolves.toBe(
         fixture.failedRelease,
       );
@@ -4890,7 +4944,9 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       const result = await executeActivation(fixture);
 
       expect(result).toMatchObject({ exitCode: 96, stdout: "" });
-      await expect(lstat(currentNext)).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(lstat(currentNext)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
       await expect(realpath(fixture.currentLink)).resolves.toBe(
         fixture.previousRelease,
       );
@@ -4917,61 +4973,99 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
     ["--recover-pending-0b5207c", "preflight", 45],
     ["--recover-pending-0b5207c", "rollback", 46],
     ["--recover-pending-0b5207c", "scan", 47],
-  ] as const)("routes incident recovery %s with %s failure honestly", async (mode, fault, expectedCode) => {
-    const root = await mkdtemp(join(tmpdir(), "diesel-recovery-routing-"));
-    try {
-      const source = await readFile(rollbackHostReleaseScript, "utf8");
-      const main = source.slice(source.indexOf("rollback_host_release_main() ("),
-        source.indexOf("\nrollback_prepare_pending_incident() {"));
-      expect(main).toContain("local target_release");
-      const entry = join(root, "entry.sh");
-      const log = join(root, "calls");
-      await writeExecutable(entry, [
-        "#!/bin/bash", "set -Eeuo pipefail",
-        `rollback_prepare_pending_incident() { printf 'preflight:%s\\n' "$1" >>${quoteShell(log)}; return ${fault === "preflight" ? 45 : 0}; }`,
-        `rollback_host_release() { printf 'rollback:%s:%s\\n' "$1" "$2" >>${quoteShell(log)}; return ${fault === "rollback" ? 46 : 0}; }`,
-        `host_activation_ledger_scan_all() { printf 'scan:%s\\n' "$3" >>${quoteShell(log)}; return ${fault === "scan" ? 47 : 0}; }`,
-        main, 'rollback_host_release_main "$@"',
-      ].join("\n"));
-      const result = await execFileAsync("bash", [entry, TEST_RELEASE_SHA, mode])
-        .then(() => 0, (error: unknown) => (error as { code: number }).code);
-      expect(result).toBe(expectedCode);
-      const calls = await readFile(log, "utf8");
-      expect(calls).toContain(`preflight:${TEST_RELEASE_SHA}`);
-      if (fault === "preflight") expect(calls).not.toContain("rollback:");
-      else expect(calls).toContain(`rollback:0b5207c17a6b98260733e0e4f470376f23e377b2:${mode === "--check-pending-0b5207c" ? "--check" : "--abort-if-uncommitted"}`);
-      if (fault === "preflight" || fault === "rollback" || mode === "--check-pending-0b5207c")
-        expect(calls).not.toContain("scan:");
-      else expect(calls).toContain("scan:zero-active");
-    } finally {
-      await rm(root, { force: true, recursive: true });
-    }
-  });
+  ] as const)(
+    "routes incident recovery %s with %s failure honestly",
+    async (mode, fault, expectedCode) => {
+      const root = await mkdtemp(join(tmpdir(), "diesel-recovery-routing-"));
+      try {
+        const source = await readFile(rollbackHostReleaseScript, "utf8");
+        const main = source.slice(
+          source.indexOf("rollback_host_release_main() ("),
+          source.indexOf("\nrollback_prepare_pending_incident() {"),
+        );
+        expect(main).toContain("local target_release");
+        const entry = join(root, "entry.sh");
+        const log = join(root, "calls");
+        await writeExecutable(
+          entry,
+          [
+            "#!/bin/bash",
+            "set -Eeuo pipefail",
+            `rollback_prepare_pending_incident() { printf 'preflight:%s\\n' "$1" >>${quoteShell(log)}; return ${fault === "preflight" ? 45 : 0}; }`,
+            `rollback_host_release() { printf 'rollback:%s:%s\\n' "$1" "$2" >>${quoteShell(log)}; return ${fault === "rollback" ? 46 : 0}; }`,
+            `host_activation_ledger_scan_all() { printf 'scan:%s\\n' "$3" >>${quoteShell(log)}; return ${fault === "scan" ? 47 : 0}; }`,
+            main,
+            'rollback_host_release_main "$@"',
+          ].join("\n"),
+        );
+        const result = await execFileAsync("bash", [
+          entry,
+          TEST_RELEASE_SHA,
+          mode,
+        ]).then(
+          () => 0,
+          (error: unknown) => (error as { code: number }).code,
+        );
+        expect(result).toBe(expectedCode);
+        const calls = await readFile(log, "utf8");
+        expect(calls).toContain(`preflight:${TEST_RELEASE_SHA}`);
+        if (fault === "preflight") expect(calls).not.toContain("rollback:");
+        else
+          expect(calls).toContain(
+            `rollback:0b5207c17a6b98260733e0e4f470376f23e377b2:${mode === "--check-pending-0b5207c" ? "--check" : "--abort-if-uncommitted"}`,
+          );
+        if (
+          fault === "preflight" ||
+          fault === "rollback" ||
+          mode === "--check-pending-0b5207c"
+        )
+          expect(calls).not.toContain("scan:");
+        else expect(calls).toContain("scan:zero-active");
+      } finally {
+        await rm(root, { force: true, recursive: true });
+      }
+    },
+  );
 
   it("forbids invoking production incident recovery through a sourced test seam", async () => {
-    const result = await execFileAsync("bash", ["-c", 'source "$1"; rollback_prepare_pending_incident "$2"',
-      "recovery-test", rollbackHostReleaseScript, TEST_RELEASE_SHA])
-      .then(() => 0, (error: unknown) => (error as { code: number }).code);
+    const result = await execFileAsync("bash", [
+      "-c",
+      'source "$1"; rollback_prepare_pending_incident "$2"',
+      "recovery-test",
+      rollbackHostReleaseScript,
+      TEST_RELEASE_SHA,
+    ]).then(
+      () => 0,
+      (error: unknown) => (error as { code: number }).code,
+    );
     expect(result).toBe(64);
   });
 
   it.each(["activation", "rollback"] as const)(
     "waits for the exact Next startup transition during %s",
     async (operation) => {
-      const fixture = operation === "activation"
-        ? await createActivationFixture() : await createRollbackFixture();
+      const fixture =
+        operation === "activation"
+          ? await createActivationFixture()
+          : await createRollbackFixture();
       try {
         await writeFile(join(fixture.root, "pm2-start-delayed"), "yes");
-        const result = operation === "activation"
-          ? await executeActivation(fixture)
-          : await executeRollback(fixture, "--abort-if-uncommitted");
+        const result =
+          operation === "activation"
+            ? await executeActivation(fixture)
+            : await executeRollback(fixture, "--abort-if-uncommitted");
         expect(result.exitCode ?? 0, result.stderr).toBe(0);
-        expect(Number(await readFile(join(fixture.root, "pm2-startup-count"), "utf8"))).toBeGreaterThanOrEqual(3);
+        expect(
+          Number(
+            await readFile(join(fixture.root, "pm2-startup-count"), "utf8"),
+          ),
+        ).toBeGreaterThanOrEqual(3);
         expect(await readMutationLog(fixture)).toContain("pm2-save");
       } finally {
         await rm(fixture.root, { force: true, recursive: true });
       }
-    }, 30_000,
+    },
+    30_000,
   );
 
   it.each([
@@ -4981,35 +5075,60 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
     ["pm2-live-uid-drift", 0],
     ["pm2-live-env-version-drift", 0],
     ["pm2-start-never-ready", 30_000],
-  ] as const)("rejects startup %s without saving or terminalizing", async (fault, minimumMs) => {
-    const fixture = await createRollbackFixture();
-    try {
-      await writeFile(join(fixture.root, "pm2-start-delayed"), "yes");
-      await writeFile(join(fixture.root, fault), "yes");
-      const started = performance.now();
-      const result = await executeRollback(fixture, "--abort-if-uncommitted");
-      expect(result.exitCode).toBe(70);
-      expect(result.stderr).toContain("rollback process identity validation failed");
-      expect(performance.now() - started).toBeGreaterThanOrEqual(minimumMs);
-      expect(await readMutationLog(fixture)).not.toContain("pm2-save");
-      expect(await readLifecycleLog(fixture)).not.toContain("ledger-transition:");
-    } finally {
-      await rm(fixture.root, { force: true, recursive: true });
-    }
-  }, 45_000);
+  ] as const)(
+    "rejects startup %s without saving or terminalizing",
+    async (fault, minimumMs) => {
+      const fixture = await createRollbackFixture();
+      try {
+        await writeFile(join(fixture.root, "pm2-start-delayed"), "yes");
+        await writeFile(join(fixture.root, fault), "yes");
+        const started = performance.now();
+        const result = await executeRollback(fixture, "--abort-if-uncommitted");
+        expect(result.exitCode).toBe(70);
+        expect(result.stderr).toContain(
+          "rollback process identity validation failed",
+        );
+        expect(performance.now() - started).toBeGreaterThanOrEqual(minimumMs);
+        expect(await readMutationLog(fixture)).not.toContain("pm2-save");
+        expect(await readLifecycleLog(fixture)).not.toContain(
+          "ledger-transition:",
+        );
+      } finally {
+        await rm(fixture.root, { force: true, recursive: true });
+      }
+    },
+    45_000,
+  );
 
   it("does not grant a startup grace period to committed-state validation", async () => {
     const fixture = await createRollbackFixture();
     try {
       await writePublishStateMarker(fixture, "PUBLISH_FINALIZED");
-      await writeFile(join(fixture.root, "ledger-terminal"), "COMMITTED:PUBLISH_FINALIZED\n");
-      await writeFile(join(fixture.procRoot, "321", "cmdline"), Buffer.from([
-        fixture.nodeBinary, "--env-file=.env.production.local", "node_modules/next/dist/bin/next",
-        "start", "--hostname", "127.0.0.1", "--port", "8788", "",
-      ].join("\0")));
+      await writeFile(
+        join(fixture.root, "ledger-terminal"),
+        "COMMITTED:PUBLISH_FINALIZED\n",
+      );
+      await writeFile(
+        join(fixture.procRoot, "321", "cmdline"),
+        Buffer.from(
+          [
+            fixture.nodeBinary,
+            "--env-file=.env.production.local",
+            "node_modules/next/dist/bin/next",
+            "start",
+            "--hostname",
+            "127.0.0.1",
+            "--port",
+            "8788",
+            "",
+          ].join("\0"),
+        ),
+      );
       const result = await executeRollback(fixture, "--validate-committed");
       expect(result.exitCode).toBe(70);
-      expect(result.stderr).toContain("rollback process identity validation failed");
+      expect(result.stderr).toContain(
+        "rollback process identity validation failed",
+      );
       expect(await readMutationLog(fixture)).toBe("");
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
@@ -5019,10 +5138,7 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
   it("rejects a live Nginx hardlink race before the first live rename without changing the alias", async () => {
     const fixture = await createActivationFixture();
     const aliasPath = join(fixture.root, "primary-nginx-alias");
-    const primaryStage = join(
-      fixture.nginxSitesRoot,
-      ".jamesky.site.activate",
-    );
+    const primaryStage = join(fixture.nginxSitesRoot, ".jamesky.site.activate");
     const alternateStage = join(
       fixture.nginxSitesRoot,
       ".diesel-demo.activate",
@@ -5051,8 +5167,12 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       expect((await stat(fixture.nginxAlternatePath)).ino).toBe(
         alternateBefore.ino,
       );
-      await expect(lstat(primaryStage)).rejects.toMatchObject({ code: "ENOENT" });
-      await expect(lstat(alternateStage)).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(lstat(primaryStage)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+      await expect(lstat(alternateStage)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
       const lifecycle = await readLifecycleLog(fixture);
       expect(lifecycle).toContain(`inject-live-nginx-hardlink:${aliasPath}`);
       expect(lifecycle).not.toContain("live-nginx-rename:");
@@ -5065,10 +5185,7 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
 
   it("keeps both live Nginx files untouched when offline candidate validation fails", async () => {
     const fixture = await createActivationFixture();
-    const primaryStage = join(
-      fixture.nginxSitesRoot,
-      ".jamesky.site.activate",
-    );
+    const primaryStage = join(fixture.nginxSitesRoot, ".jamesky.site.activate");
     const alternateStage = join(
       fixture.nginxSitesRoot,
       ".diesel-demo.activate",
@@ -5077,10 +5194,7 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       const primaryBefore = await stat(fixture.nginxPrimaryPath);
       const alternateBefore = await stat(fixture.nginxAlternatePath);
       const primaryBytes = await readFile(fixture.nginxPrimaryPath, "utf8");
-      const alternateBytes = await readFile(
-        fixture.nginxAlternatePath,
-        "utf8",
-      );
+      const alternateBytes = await readFile(fixture.nginxAlternatePath, "utf8");
       await writeFile(
         join(fixture.root, "nginx-backup-invalid"),
         "fault\n",
@@ -5093,15 +5207,21 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
       await expect(readFile(fixture.nginxPrimaryPath, "utf8")).resolves.toBe(
         primaryBytes,
       );
-      await expect(
-        readFile(fixture.nginxAlternatePath, "utf8"),
-      ).resolves.toBe(alternateBytes);
-      expect((await stat(fixture.nginxPrimaryPath)).ino).toBe(primaryBefore.ino);
+      await expect(readFile(fixture.nginxAlternatePath, "utf8")).resolves.toBe(
+        alternateBytes,
+      );
+      expect((await stat(fixture.nginxPrimaryPath)).ino).toBe(
+        primaryBefore.ino,
+      );
       expect((await stat(fixture.nginxAlternatePath)).ino).toBe(
         alternateBefore.ino,
       );
-      await expect(lstat(primaryStage)).rejects.toMatchObject({ code: "ENOENT" });
-      await expect(lstat(alternateStage)).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(lstat(primaryStage)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+      await expect(lstat(alternateStage)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
       const lifecycle = await readLifecycleLog(fixture);
       expect(lifecycle).toContain("nginx-offline-test:");
       expect(lifecycle).not.toContain("live-nginx-rename:");
@@ -5267,7 +5387,9 @@ describe("versioned host activation", { timeout: 30_000 }, () => {
           expectedPm2Start,
         );
         expect(lifecycle.includes("pm2-save")).toBe(expectedSave);
-        expect(lifecycle).not.toContain("systemctl:is-enabled --quiet pm2-root");
+        expect(lifecycle).not.toContain(
+          "systemctl:is-enabled --quiet pm2-root",
+        );
         expect(lifecycle).not.toContain("systemctl:is-active --quiet pm2-root");
         expect(lifecycle).not.toContain("systemctl:reload nginx");
         expect(lifecycle).not.toContain("fd8-leaked:");
@@ -5394,17 +5516,20 @@ describe("PM2 durable release state helper", () => {
       document: durablePm2Application(expectedReleaseId, { gid: 0 }),
       name: "gid drift",
     },
-  ] as const)("rejects durable $name with one fixed error", async ({ document }) => {
-    const result = await executePm2StateHarness(
-      "validate",
-      expectedReleaseId,
-      JSON.stringify([document]),
-    );
+  ] as const)(
+    "rejects durable $name with one fixed error",
+    async ({ document }) => {
+      const result = await executePm2StateHarness(
+        "validate",
+        expectedReleaseId,
+        JSON.stringify([document]),
+      );
 
-    expect(result.exitCode).toBe(70);
-    expect(result.stderr).toBe(`${fixedFailure}\n`);
-    expect(result.stderr).not.toContain(expectedReleaseId);
-  });
+      expect(result.exitCode).toBe(70);
+      expect(result.stderr).toBe(`${fixedFailure}\n`);
+      expect(result.stderr).not.toContain(expectedReleaseId);
+    },
+  );
 
   it.each([
     {
@@ -5462,7 +5587,9 @@ describe("PM2 durable release state helper", () => {
   });
 
   it("uses the fixed error for an untrusted PM2 state root", async () => {
-    const root = await realpath(await mkdtemp(join(tmpdir(), "diesel-pm2-root-")));
+    const root = await realpath(
+      await mkdtemp(join(tmpdir(), "diesel-pm2-root-")),
+    );
     try {
       await chmod(root, 0o750);
       const result = await executePm2StateHarness(
@@ -5479,23 +5606,72 @@ describe("PM2 durable release state helper", () => {
     }
   });
 
-  it(
-    "normalizes and durably copies a bounded root-owned dump",
-    async (context) => {
-      if (!(typeof process.getuid === "function" && process.getuid() === 0)) {
-        context.skip();
-        return;
+  it("normalizes and durably copies a bounded root-owned dump", async (context) => {
+    if (!(typeof process.getuid === "function" && process.getuid() === 0)) {
+      context.skip();
+      return;
+    }
+    const root = await realpath(
+      await mkdtemp(join(tmpdir(), "diesel-pm2-root-")),
+    );
+    const dumpPath = join(root, "dump.pm2");
+    const backupPath = join(root, "dump.pm2.bak");
+    const document = [durablePm2Application(expectedReleaseId)];
+    try {
+      await chmod(root, 0o700);
+      await writeFile(dumpPath, `${JSON.stringify(document)}\n`, "utf8");
+      await chmod(dumpPath, 0o644);
+
+      const result = await executePm2StateHarness(
+        "persist",
+        expectedReleaseId,
+        root,
+      );
+
+      expect(result).toMatchObject({ exitCode: 0, stderr: "", stdout: "ok\n" });
+      await expect(readFile(backupPath)).resolves.toEqual(
+        await readFile(dumpPath),
+      );
+      for (const path of [dumpPath, backupPath]) {
+        const metadata = await lstat(path);
+        expect(metadata.isFile()).toBe(true);
+        expect(metadata.isSymbolicLink()).toBe(false);
+        expect(metadata.nlink).toBe(1);
+        expect(metadata.uid).toBe(0);
+        expect(metadata.gid).toBe(0);
+        expect(metadata.mode & 0o777).toBe(0o600);
       }
+      expect(await readdir(root)).toEqual(["dump.pm2", "dump.pm2.bak"]);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it("rejects symlinked, multiply linked, and oversized PM2 dumps", async (context) => {
+    if (!(typeof process.getuid === "function" && process.getuid() === 0)) {
+      context.skip();
+      return;
+    }
+    for (const kind of ["hardlink", "oversized", "symlink"] as const) {
       const root = await realpath(
         await mkdtemp(join(tmpdir(), "diesel-pm2-root-")),
       );
       const dumpPath = join(root, "dump.pm2");
-      const backupPath = join(root, "dump.pm2.bak");
-      const document = [durablePm2Application(expectedReleaseId)];
+      const targetPath = join(root, "target.pm2");
       try {
         await chmod(root, 0o700);
-        await writeFile(dumpPath, `${JSON.stringify(document)}\n`, "utf8");
-        await chmod(dumpPath, 0o644);
+        if (kind === "oversized") {
+          await writeFile(dumpPath, Buffer.alloc(16 * 1024 * 1024 + 1, 0x20));
+        } else {
+          await writeFile(
+            targetPath,
+            JSON.stringify([durablePm2Application(expectedReleaseId)]),
+            "utf8",
+          );
+          if (kind === "hardlink") await link(targetPath, dumpPath);
+          else await symlink(targetPath, dumpPath);
+        }
+        await chmod(kind === "symlink" ? targetPath : dumpPath, 0o600);
 
         const result = await executePm2StateHarness(
           "persist",
@@ -5503,71 +5679,14 @@ describe("PM2 durable release state helper", () => {
           root,
         );
 
-        expect(result).toMatchObject({ exitCode: 0, stderr: "", stdout: "ok\n" });
-        await expect(readFile(backupPath)).resolves.toEqual(
-          await readFile(dumpPath),
-        );
-        for (const path of [dumpPath, backupPath]) {
-          const metadata = await lstat(path);
-          expect(metadata.isFile()).toBe(true);
-          expect(metadata.isSymbolicLink()).toBe(false);
-          expect(metadata.nlink).toBe(1);
-          expect(metadata.uid).toBe(0);
-          expect(metadata.gid).toBe(0);
-          expect(metadata.mode & 0o777).toBe(0o600);
-        }
-        expect(await readdir(root)).toEqual(["dump.pm2", "dump.pm2.bak"]);
+        expect(result.exitCode).toBe(70);
+        expect(result.stderr).toBe(`${fixedFailure}\n`);
+        expect(result.stderr).not.toContain(root);
       } finally {
         await rm(root, { force: true, recursive: true });
       }
-    },
-  );
-
-  it(
-    "rejects symlinked, multiply linked, and oversized PM2 dumps",
-    async (context) => {
-      if (!(typeof process.getuid === "function" && process.getuid() === 0)) {
-        context.skip();
-        return;
-      }
-      for (const kind of ["hardlink", "oversized", "symlink"] as const) {
-        const root = await realpath(
-          await mkdtemp(join(tmpdir(), "diesel-pm2-root-")),
-        );
-        const dumpPath = join(root, "dump.pm2");
-        const targetPath = join(root, "target.pm2");
-        try {
-          await chmod(root, 0o700);
-          if (kind === "oversized") {
-            await writeFile(dumpPath, Buffer.alloc(16 * 1024 * 1024 + 1, 0x20));
-          } else {
-            await writeFile(
-              targetPath,
-              JSON.stringify([
-                durablePm2Application(expectedReleaseId),
-              ]),
-              "utf8",
-            );
-            if (kind === "hardlink") await link(targetPath, dumpPath);
-            else await symlink(targetPath, dumpPath);
-          }
-          await chmod(kind === "symlink" ? targetPath : dumpPath, 0o600);
-
-          const result = await executePm2StateHarness(
-            "persist",
-            expectedReleaseId,
-            root,
-          );
-
-          expect(result.exitCode).toBe(70);
-          expect(result.stderr).toBe(`${fixedFailure}\n`);
-          expect(result.stderr).not.toContain(root);
-        } finally {
-          await rm(root, { force: true, recursive: true });
-        }
-      }
-    },
-  );
+    }
+  });
 });
 
 describe("versioned deployment scripts", () => {
@@ -5652,7 +5771,8 @@ describe("versioned deployment scripts", () => {
         };
       };
       const sourceArgument = capture.args.at(-2);
-      if (!sourceArgument) throw new Error("rsync fixture omitted its source argument");
+      if (!sourceArgument)
+        throw new Error("rsync fixture omitted its source argument");
       expect(sourceArgument.startsWith(`${fixture.temporaryRoot}/`)).toBe(true);
       expect(sourceArgument.endsWith("/release/")).toBe(true);
       const expectedTransportEnvironment = {
@@ -5665,10 +5785,9 @@ describe("versioned deployment scripts", () => {
       const expectedTransportEnvironmentKeys = Object.keys(
         expectedTransportEnvironment,
       );
-      const expectedSshTransport = [
-        fixture.sshPath,
-        ...STAGE_SSH_OPTIONS,
-      ].join(" ");
+      const expectedSshTransport = [fixture.sshPath, ...STAGE_SSH_OPTIONS].join(
+        " ",
+      );
       expect(capture.args).toEqual([
         "-a",
         "--no-owner",
@@ -5778,11 +5897,18 @@ describe("versioned deployment scripts", () => {
             mode: file.mode === "100755" ? 0o755 : 0o644,
           });
         }
-        for (const directory of paths.filter(({ type }) => type === "directory")) {
+        for (const directory of paths.filter(
+          ({ type }) => type === "directory",
+        )) {
           expect(directory.mode, directory.path).toBe(0o755);
         }
-        expect(paths.find(({ path }) => path === ".release-input-manifest.json"))
-          .toEqual({ path: ".release-input-manifest.json", type: "file", mode: 0o600 });
+        expect(
+          paths.find(({ path }) => path === ".release-input-manifest.json"),
+        ).toEqual({
+          path: ".release-input-manifest.json",
+          type: "file",
+          mode: 0o600,
+        });
       }
       expect(JSON.stringify(capture)).not.toContain("PRIVATE_CANARY");
       await expect(readdir(fixture.temporaryRoot)).resolves.toEqual([]);
@@ -5850,7 +5976,9 @@ describe("versioned deployment scripts", () => {
   ] as const)(
     "forwards a direct stage $signal to the active command group and returns $expectedExitCode",
     async ({ expectedExitCode, signal }) => {
-      const fixture = await createStageReleaseFixture({ sshMode: "hang-first" });
+      const fixture = await createStageReleaseFixture({
+        sshMode: "hang-first",
+      });
       const child = spawn(fixture.script, [fixture.releaseId], {
         cwd: fixture.repository,
         env: stageReleaseEnvironment(fixture),
@@ -5862,16 +5990,18 @@ describe("versioned deployment scripts", () => {
       let runnerPid: number | undefined;
       child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
       child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
-      const resultPromise = new Promise<CommandResult>((resolveResult, reject) => {
-        child.once("error", reject);
-        child.once("close", (code) => {
-          resolveResult({
-            exitCode: code ?? -1,
-            stderr: Buffer.concat(stderr).toString("utf8"),
-            stdout: Buffer.concat(stdout).toString("utf8"),
+      const resultPromise = new Promise<CommandResult>(
+        (resolveResult, reject) => {
+          child.once("error", reject);
+          child.once("close", (code) => {
+            resolveResult({
+              exitCode: code ?? -1,
+              stderr: Buffer.concat(stderr).toString("utf8"),
+              stdout: Buffer.concat(stdout).toString("utf8"),
+            });
           });
-        });
-      });
+        },
+      );
 
       try {
         await waitForFileContents(
@@ -5883,8 +6013,10 @@ describe("versioned deployment scripts", () => {
         runnerPid = await readOptionalTestPid(fixture.runnerPidPath);
         expect(sshPid).toBeTypeOf("number");
         expect(runnerPid).toBeTypeOf("number");
-        if (sshPid === undefined) throw new Error("fake SSH PID was not recorded");
-        if (runnerPid === undefined) throw new Error("runner PID was not recorded");
+        if (sshPid === undefined)
+          throw new Error("fake SSH PID was not recorded");
+        if (runnerPid === undefined)
+          throw new Error("runner PID was not recorded");
         expect(stageProcessIsRunning(sshPid)).toBe(true);
 
         const signalledAt = Date.now();
@@ -5900,8 +6032,8 @@ describe("versioned deployment scripts", () => {
         expect(result.stdout).not.toContain("diesel-release-stage-v1");
         expect(result.stderr).not.toContain("remote release preflight failed");
         expect(
-          (await readStageReleaseEvents(fixture)).map(
-            ({ command, signal }) => signal ? `${command}:${signal}` : command,
+          (await readStageReleaseEvents(fixture)).map(({ command, signal }) =>
+            signal ? `${command}:${signal}` : command,
           ),
         ).toEqual([
           "authorization-read",
@@ -5979,7 +6111,7 @@ describe("versioned deployment scripts", () => {
           'require("node:fs").writeFileSync(',
           `  ${JSON.stringify(startupMarker)},`,
           '  "startup injection executed\\n",',
-          ');',
+          ");",
           "",
         ].join("\n"),
         "utf8",
@@ -6082,8 +6214,8 @@ describe("versioned deployment scripts", () => {
       expect(result.exitCode).not.toBe(0);
       expect(result.stdout).not.toContain("diesel-release-stage-v1");
       expect(
-        (await readStageReleaseEvents(fixture)).some(({ command }) =>
-          command === "ssh" || command === "rsync"
+        (await readStageReleaseEvents(fixture)).some(
+          ({ command }) => command === "ssh" || command === "rsync",
         ),
       ).toBe(false);
       await expect(readdir(fixture.temporaryRoot)).resolves.toEqual([]);
@@ -6176,8 +6308,8 @@ describe("versioned deployment scripts", () => {
       }
 
       expect(
-        (await readStageReleaseEvents(fixture)).some(({ command }) =>
-          command === "ssh" || command === "rsync"
+        (await readStageReleaseEvents(fixture)).some(
+          ({ command }) => command === "ssh" || command === "rsync",
         ),
       ).toBe(false);
       await expect(readdir(fixture.temporaryRoot)).resolves.toEqual([]);
@@ -6276,9 +6408,7 @@ describe("versioned deployment scripts", () => {
           );
         }
         const events = await readStageReleaseEvents(fixture);
-        const actualCommands = events.map(
-          ({ command }) => command,
-        );
+        const actualCommands = events.map(({ command }) => command);
         expect(
           actualCommands,
           stageReleaseFailureContext(result, fixture, events),
@@ -6299,129 +6429,121 @@ describe("versioned deployment scripts", () => {
     ).resolves.toMatchObject({ stderr: "" });
   });
 
-  it(
-    "keeps an inherited lifecycle flock on the same open file description until the orphan exits",
-    async (context) => {
-      if (process.platform !== "linux") {
-        context.skip();
-        return;
-      }
-      const root = await realpath(
-        await mkdtemp(join(tmpdir(), "diesel-lifecycle-flock-")),
+  it("keeps an inherited lifecycle flock on the same open file description until the orphan exits", async (context) => {
+    if (process.platform !== "linux") {
+      context.skip();
+      return;
+    }
+    const root = await realpath(
+      await mkdtemp(join(tmpdir(), "diesel-lifecycle-flock-")),
+    );
+    const lockPath = join(root, ".release-lifecycle.lock");
+    try {
+      await writeFile(lockPath, "", "utf8");
+      await chmod(lockPath, 0o600);
+      const script = [
+        "set -euo pipefail",
+        'lock_path="$1"',
+        'ready_path="${lock_path}.ready"',
+        'release_path="${lock_path}.release"',
+        'exec 8<>"${lock_path}"',
+        "flock -n 8",
+        "(",
+        "  flock -n 8",
+        "  printf 'sibling-reentrant\\n'",
+        '  : >"${ready_path}"',
+        '  while [[ ! -e "${release_path}" ]]; do sleep 0.01; done',
+        ") &",
+        'sibling_pid="$!"',
+        "for ((attempt = 0; attempt < 500; attempt += 1)); do",
+        '  [[ -e "${ready_path}" ]] && break',
+        '  kill -0 "${sibling_pid}" 2>/dev/null',
+        "  sleep 0.01",
+        "done",
+        '[[ -e "${ready_path}" ]]',
+        "exec 8>&-",
+        'if bash -c \'exec 8<>"$1"; flock -n 8\' reopen-while-orphan "${lock_path}" 2>/dev/null; then',
+        "  exit 81",
+        "fi",
+        "printf 'reopen-blocked-while-orphan-held-lock\\n'",
+        ': >"${release_path}"',
+        'wait "${sibling_pid}"',
+        'bash -c \'exec 8<>"$1"; flock -n 8\' reopen-after-orphan "${lock_path}"',
+        "printf 'reopen-succeeded-after-orphan-exit\\n'",
+      ].join("\n");
+
+      const result = await execFileAsync(
+        "bash",
+        ["-c", script, "lifecycle-flock-fixture", lockPath],
+        { env: { ...process.env } },
       );
-      const lockPath = join(root, ".release-lifecycle.lock");
-      try {
-        await writeFile(lockPath, "", "utf8");
-        await chmod(lockPath, 0o600);
-        const script = [
-          "set -euo pipefail",
-          'lock_path="$1"',
-          'ready_path="${lock_path}.ready"',
-          'release_path="${lock_path}.release"',
-          'exec 8<>"${lock_path}"',
-          "flock -n 8",
-          "(",
-          "  flock -n 8",
-          "  printf 'sibling-reentrant\\n'",
-          '  : >"${ready_path}"',
-          '  while [[ ! -e "${release_path}" ]]; do sleep 0.01; done',
-          ") &",
-          'sibling_pid="$!"',
-          "for ((attempt = 0; attempt < 500; attempt += 1)); do",
-          '  [[ -e "${ready_path}" ]] && break',
-          '  kill -0 "${sibling_pid}" 2>/dev/null',
-          "  sleep 0.01",
-          "done",
-          '[[ -e "${ready_path}" ]]',
-          "exec 8>&-",
-          "if bash -c 'exec 8<>\"$1\"; flock -n 8' reopen-while-orphan \"${lock_path}\" 2>/dev/null; then",
-          "  exit 81",
-          "fi",
-          "printf 'reopen-blocked-while-orphan-held-lock\\n'",
-          ': >"${release_path}"',
-          'wait "${sibling_pid}"',
-          "bash -c 'exec 8<>\"$1\"; flock -n 8' reopen-after-orphan \"${lock_path}\"",
-          "printf 'reopen-succeeded-after-orphan-exit\\n'",
-        ].join("\n");
 
-        const result = await execFileAsync(
-          "bash",
-          ["-c", script, "lifecycle-flock-fixture", lockPath],
-          { env: { ...process.env } },
-        );
+      expect(String(result.stderr)).toBe("");
+      expect(String(result.stdout).trim().split("\n")).toEqual([
+        "sibling-reentrant",
+        "reopen-blocked-while-orphan-held-lock",
+        "reopen-succeeded-after-orphan-exit",
+      ]);
+      expect(script).not.toContain("flock -u");
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  }, 15_000);
 
-        expect(String(result.stderr)).toBe("");
-        expect(String(result.stdout).trim().split("\n")).toEqual([
-          "sibling-reentrant",
-          "reopen-blocked-while-orphan-held-lock",
-          "reopen-succeeded-after-orphan-exit",
-        ]);
-        expect(script).not.toContain("flock -u");
-      } finally {
-        await rm(root, { force: true, recursive: true });
-      }
-    },
-    15_000,
-  );
+  it("makes the host ledger accept an inherited locked OFD and reject a separately opened FD8", async (context) => {
+    if (process.platform !== "linux") {
+      context.skip();
+      return;
+    }
+    const root = await realpath(
+      await mkdtemp(join(tmpdir(), "diesel-ledger-flock-proof-")),
+    );
+    const deployRoot = join(root, "deploy");
+    const lockPath = join(deployRoot, ".release-lifecycle.lock");
+    try {
+      await mkdir(deployRoot);
+      await writeFile(lockPath, "", "utf8");
+      await chmod(lockPath, 0o600);
+      const script = [
+        "set -euo pipefail",
+        'deploy_root="$1"',
+        'ledger_script="$2"',
+        'exec 8<>"${deploy_root}/.release-lifecycle.lock"',
+        "flock -n 8",
+        "export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8",
+        'source "${ledger_script}"',
+        'host_activation_ledger_require_lifecycle_lock "${deploy_root}"',
+        "printf 'parent-reentrant-ok\\n'",
+        'bash -c \'source "$2"; host_activation_ledger_require_lifecycle_lock "$1"\' inherited "${deploy_root}" "${ledger_script}"',
+        "printf 'inherited-sibling-reentrant-ok\\n'",
+        'if bash -c \'exec 8>&-; exec 8<>"$1/.release-lifecycle.lock"; export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8; source "$2"; host_activation_ledger_require_lifecycle_lock "$1"\' distinct "${deploy_root}" "${ledger_script}" 2>/dev/null; then',
+        "  exit 81",
+        "fi",
+        "printf 'distinct-ofd-rejected\\n'",
+      ].join("\n");
 
-  it(
-    "makes the host ledger accept an inherited locked OFD and reject a separately opened FD8",
-    async (context) => {
-      if (process.platform !== "linux") {
-        context.skip();
-        return;
-      }
-      const root = await realpath(
-        await mkdtemp(join(tmpdir(), "diesel-ledger-flock-proof-")),
+      const result = await execFileAsync(
+        "/bin/bash",
+        [
+          "-c",
+          script,
+          "host-ledger-flock-proof",
+          deployRoot,
+          hostActivationLedgerScript,
+        ],
+        { env: { ...process.env } },
       );
-      const deployRoot = join(root, "deploy");
-      const lockPath = join(deployRoot, ".release-lifecycle.lock");
-      try {
-        await mkdir(deployRoot);
-        await writeFile(lockPath, "", "utf8");
-        await chmod(lockPath, 0o600);
-        const script = [
-          "set -euo pipefail",
-          'deploy_root="$1"',
-          'ledger_script="$2"',
-          'exec 8<>"${deploy_root}/.release-lifecycle.lock"',
-          "flock -n 8",
-          "export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8",
-          'source "${ledger_script}"',
-          'host_activation_ledger_require_lifecycle_lock "${deploy_root}"',
-          "printf 'parent-reentrant-ok\\n'",
-          "bash -c 'source \"$2\"; host_activation_ledger_require_lifecycle_lock \"$1\"' inherited \"${deploy_root}\" \"${ledger_script}\"",
-          "printf 'inherited-sibling-reentrant-ok\\n'",
-          "if bash -c 'exec 8>&-; exec 8<>\"$1/.release-lifecycle.lock\"; export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8; source \"$2\"; host_activation_ledger_require_lifecycle_lock \"$1\"' distinct \"${deploy_root}\" \"${ledger_script}\" 2>/dev/null; then",
-          "  exit 81",
-          "fi",
-          "printf 'distinct-ofd-rejected\\n'",
-        ].join("\n");
 
-        const result = await execFileAsync(
-          "/bin/bash",
-          [
-            "-c",
-            script,
-            "host-ledger-flock-proof",
-            deployRoot,
-            hostActivationLedgerScript,
-          ],
-          { env: { ...process.env } },
-        );
-
-        expect(String(result.stderr)).toBe("");
-        expect(String(result.stdout).trim().split("\n")).toEqual([
-          "parent-reentrant-ok",
-          "inherited-sibling-reentrant-ok",
-          "distinct-ofd-rejected",
-        ]);
-      } finally {
-        await rm(root, { force: true, recursive: true });
-      }
-    },
-    15_000,
-  );
+      expect(String(result.stderr)).toBe("");
+      expect(String(result.stdout).trim().split("\n")).toEqual([
+        "parent-reentrant-ok",
+        "inherited-sibling-reentrant-ok",
+        "distinct-ofd-rejected",
+      ]);
+    } finally {
+      await rm(root, { force: true, recursive: true });
+    }
+  }, 15_000);
 
   it("rejects malformed Linux handoff input before any privileged preflight", async () => {
     const result = await executeLinuxReleaseHandoff(
@@ -6462,9 +6584,7 @@ describe("versioned deployment scripts", () => {
     expect(script).toContain(
       'install -d -m 0710 -o root -g diesel-build "${build_root}"',
     );
-    expect(script).toContain(
-      '"${deploy_root}/.release-build.lock"',
-    );
+    expect(script).toContain('"${deploy_root}/.release-build.lock"');
     expect(script).toContain("systemctl systemd systemd-run timeout");
     expect(script).toContain(
       'source "${release_dir}/scripts/deploy/prepare-release-runtime.sh"',
@@ -6501,13 +6621,16 @@ describe("versioned deployment scripts", () => {
     expect(script).toContain("prepare_release_control_group_has_processes");
     expect(script).toContain("linux_release_handoff_run_cgroup_canary");
     expect(script).toContain("linux_release_handoff_run_status_canary");
-    expect(script).toContain('exec 8<>"${deploy_root}/.release-lifecycle.lock"');
+    expect(script).toContain(
+      'exec 8<>"${deploy_root}/.release-lifecycle.lock"',
+    );
     expect(script).toContain("export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8");
     expect(script).toContain("host_activation_ledger_initialize_protocol");
     expect(script).toContain("host_activation_ledger_begin");
     expect(script).toContain("host_activation_ledger_require_pending");
-    expect(script.indexOf("    linux_release_handoff_begin_fixture"))
-      .toBeLessThan(script.indexOf("    prepare_release_runtime"));
+    expect(
+      script.indexOf("    linux_release_handoff_begin_fixture"),
+    ).toBeLessThan(script.indexOf("    prepare_release_runtime"));
     expect(script).not.toContain("PUBLISH_FINALIZED");
     expect(script).toContain("'/usr/bin/sleep 300 &'");
     expect(script).toContain("payload_terminal_command='exit 23'");
@@ -6536,10 +6659,15 @@ describe("versioned deployment scripts", () => {
     expect(script).not.toContain("AI_API_KEY");
   });
 
-  it.each(deployScripts)("%s is executable in release archives", async (name) => {
-    const metadata = await stat(resolve(process.cwd(), "scripts/deploy", name));
-    expect(metadata.mode & 0o100).toBe(0o100);
-  });
+  it.each(deployScripts)(
+    "%s is executable in release archives",
+    async (name) => {
+      const metadata = await stat(
+        resolve(process.cwd(), "scripts/deploy", name),
+      );
+      expect(metadata.mode & 0o100).toBe(0o100);
+    },
+  );
 
   it.each(deployScripts)("%s passes Bash syntax validation", async (name) => {
     await expect(
@@ -6609,13 +6737,17 @@ describe("versioned deployment scripts", () => {
         `${destination}/`,
       ]);
 
-      const [destinationMetadata, plainMetadata, executableMetadata, linkMetadata] =
-        await Promise.all([
-          stat(destination),
-          stat(join(destination, "plain.txt")),
-          stat(join(destination, "scripts", "deploy.sh")),
-          lstat(join(destination, "current-script")),
-        ]);
+      const [
+        destinationMetadata,
+        plainMetadata,
+        executableMetadata,
+        linkMetadata,
+      ] = await Promise.all([
+        stat(destination),
+        stat(join(destination, "plain.txt")),
+        stat(join(destination, "scripts", "deploy.sh")),
+        lstat(join(destination, "current-script")),
+      ]);
       expect(destinationMetadata.mode & 0o777).toBe(0o750);
       expect(plainMetadata.mode & 0o111).toBe(0);
       expect(executableMetadata.mode & 0o111).not.toBe(0);
@@ -6792,9 +6924,13 @@ printf '%s\\n' "$value"
       expect(countryInvocations.at(-1)).toBe(
         "pnpm exec tsx --conditions=react-server scripts/db/ingest-accepted-fixtures.ts --country=MLT",
       );
-      expect(countryInvocations.every((invocation) => invocation.startsWith(
-        "pnpm exec tsx --conditions=react-server scripts/db/ingest-accepted-fixtures.ts --country=",
-      ))).toBe(true);
+      expect(
+        countryInvocations.every((invocation) =>
+          invocation.startsWith(
+            "pnpm exec tsx --conditions=react-server scripts/db/ingest-accepted-fixtures.ts --country=",
+          ),
+        ),
+      ).toBe(true);
       expect(new Set(countryInvocations).size).toBe(97);
       expect(invocations.at(-1)).toBe(
         "pnpm exec tsx --conditions=react-server scripts/db/ingest-demo-catalogue.ts",
@@ -6867,68 +7003,74 @@ printf '%s\\n' "$value"
     "existing-commit-symlink",
     "missing-recovery-trap",
     "missing-catalogue-ingester",
-  ] as const)("rejects %s before the first governance write", async (failureMode) => {
-    const fixture = await createGovernanceCountryPublisherFixture();
-    let releaseId = TEST_RELEASE_SHA;
-    let cwd = fixture.releaseDir;
-    const environment: Record<string, string | undefined> = {};
+  ] as const)(
+    "rejects %s before the first governance write",
+    async (failureMode) => {
+      const fixture = await createGovernanceCountryPublisherFixture();
+      let releaseId = TEST_RELEASE_SHA;
+      let cwd = fixture.releaseDir;
+      const environment: Record<string, string | undefined> = {};
 
-    try {
-      switch (failureMode) {
-        case "invalid-release-id":
-          releaseId = "not-a-commit";
-          break;
-        case "wrong-environment":
-          environment.NODE_ENV = "development";
-          break;
-        case "missing-maintenance-token":
-          environment.DIESEL_GOVERNANCE_MAINTENANCE_TOKEN = "";
-          break;
-        case "wrong-working-directory":
-          cwd = fixture.root;
-          break;
-        case "missing-recovery-marker":
-          await rm(fixture.recoveryMarker);
-          break;
-        case "symlinked-recovery-marker":
-          await rm(fixture.recoveryMarker);
-          await symlink(fixture.snapshotPath, fixture.recoveryMarker);
-          break;
-        case "wrong-recovery-marker-mode":
-          await writeFile(fixture.wrongMarkerModeFlag, "1\n", "utf8");
-          break;
-        case "existing-commit-file":
-          await writeFile(fixture.commitMarker, "premature\n", "utf8");
-          break;
-        case "existing-commit-symlink":
-          await symlink(join(fixture.root, "missing-commit"), fixture.commitMarker);
-          break;
-        case "missing-recovery-trap":
-          environment.GOVERNANCE_TEST_OMIT_TERM_TRAP = "1";
-          break;
-        case "missing-catalogue-ingester":
-          await rm(fixture.catalogueScript);
-          break;
+      try {
+        switch (failureMode) {
+          case "invalid-release-id":
+            releaseId = "not-a-commit";
+            break;
+          case "wrong-environment":
+            environment.NODE_ENV = "development";
+            break;
+          case "missing-maintenance-token":
+            environment.DIESEL_GOVERNANCE_MAINTENANCE_TOKEN = "";
+            break;
+          case "wrong-working-directory":
+            cwd = fixture.root;
+            break;
+          case "missing-recovery-marker":
+            await rm(fixture.recoveryMarker);
+            break;
+          case "symlinked-recovery-marker":
+            await rm(fixture.recoveryMarker);
+            await symlink(fixture.snapshotPath, fixture.recoveryMarker);
+            break;
+          case "wrong-recovery-marker-mode":
+            await writeFile(fixture.wrongMarkerModeFlag, "1\n", "utf8");
+            break;
+          case "existing-commit-file":
+            await writeFile(fixture.commitMarker, "premature\n", "utf8");
+            break;
+          case "existing-commit-symlink":
+            await symlink(
+              join(fixture.root, "missing-commit"),
+              fixture.commitMarker,
+            );
+            break;
+          case "missing-recovery-trap":
+            environment.GOVERNANCE_TEST_OMIT_TERM_TRAP = "1";
+            break;
+          case "missing-catalogue-ingester":
+            await rm(fixture.catalogueScript);
+            break;
+        }
+
+        const result = await executeGovernanceCountryPublisher(fixture, {
+          cwd,
+          environment,
+          releaseId,
+        });
+        expect(result.exitCode).toBe(
+          failureMode === "invalid-release-id" ? 64 : 70,
+        );
+        await expect(
+          readFile(fixture.invocationLog, "utf8"),
+        ).rejects.toMatchObject({ code: "ENOENT" });
+        await expect(readFile(fixture.trapLog, "utf8")).resolves.toMatch(
+          failureMode === "invalid-release-id" ? /^64\n$/u : /^70\n$/u,
+        );
+      } finally {
+        await rm(fixture.root, { force: true, recursive: true });
       }
-
-      const result = await executeGovernanceCountryPublisher(fixture, {
-        cwd,
-        environment,
-        releaseId,
-      });
-      expect(result.exitCode).toBe(
-        failureMode === "invalid-release-id" ? 64 : 70,
-      );
-      await expect(readFile(fixture.invocationLog, "utf8")).rejects.toMatchObject(
-        { code: "ENOENT" },
-      );
-      await expect(readFile(fixture.trapLog, "utf8")).resolves.toMatch(
-        failureMode === "invalid-release-id" ? /^64\n$/u : /^70\n$/u,
-      );
-    } finally {
-      await rm(fixture.root, { force: true, recursive: true });
-    }
-  });
+    },
+  );
 
   it("fails build preflight when a production secret is inherited", async () => {
     const result = await execFileAsync(
@@ -6956,7 +7098,7 @@ printf '%s\\n' "$value"
       resolve(process.cwd(), "scripts/deploy/build-release.sh"),
       "utf8",
     );
-    const firstExternalCommand = buildScript.indexOf('id -u');
+    const firstExternalCommand = buildScript.indexOf("id -u");
 
     expect(firstExternalCommand).toBeGreaterThanOrEqual(0);
     for (const signalTrap of [
@@ -6978,10 +7120,7 @@ printf '%s\\n' "$value"
     const buildHome = join(fixture, "home");
     const fakeBin = join(fixture, "bin");
     const deployScriptRoot = join(workspace, "scripts", "deploy");
-    const expectedNextEnvironmentPath = join(
-      fixture,
-      "expected-next-env.d.ts",
-    );
+    const expectedNextEnvironmentPath = join(fixture, "expected-next-env.d.ts");
     const inputVerifyCounterPath = join(fixture, "input-verify-count");
     const installInvocationPath = join(fixture, "install-arguments");
     const originalNextEnvironment =
@@ -7017,13 +7156,13 @@ printf '%s\\n' "$value"
           originalNextEnvironment,
           "utf8",
         ),
+        writeFile(expectedNextEnvironmentPath, originalNextEnvironment, "utf8"),
+        writeFile(join(workspace, ".build-complete"), "", "utf8"),
         writeFile(
-          expectedNextEnvironmentPath,
-          originalNextEnvironment,
+          join(workspace, ".release-input-manifest.json"),
+          "{}\n",
           "utf8",
         ),
-        writeFile(join(workspace, ".build-complete"), "", "utf8"),
-        writeFile(join(workspace, ".release-input-manifest.json"), "{}\n", "utf8"),
         writeFile(
           join(deployScriptRoot, "release-input-manifest.mjs"),
           "// verified by the fake node command\n",
@@ -7182,7 +7321,9 @@ fi
         join(installFixture, "pnpm-lock.yaml"),
         "utf8",
       );
-      const realInstallArguments = (await readFile(installInvocationPath, "utf8"))
+      const realInstallArguments = (
+        await readFile(installInvocationPath, "utf8")
+      )
         .trimEnd()
         .split("\n")
         .slice(1);
@@ -7221,12 +7362,22 @@ fi
       const unit = `diesel-build-${TEST_RELEASE_SHA}.service`;
       const workspace = "/fixture/build-workspace";
       const controlGroup = `/system.slice/${unit}`;
-      const args = mutation === "arity" ? ["show"] : [
-        "status", "--all", "--no-pager", unit,
-        ...SYSTEMD_BUILD_UNIT_PROPERTIES.map((property) => `--property=${property}`),
-      ];
+      const args =
+        mutation === "arity"
+          ? ["show"]
+          : [
+              "status",
+              "--all",
+              "--no-pager",
+              unit,
+              ...SYSTEMD_BUILD_UNIT_PROPERTIES.map(
+                (property) => `--property=${property}`,
+              ),
+            ];
       const result = await executeSystemdUnitMetadataFixture(
-        renderSystemdUnitMetadata(createLoadedSystemdUnitMetadata(unit, workspace, controlGroup)),
+        renderSystemdUnitMetadata(
+          createLoadedSystemdUnitMetadata(unit, workspace, controlGroup),
+        ),
         [
           "set -Eeuo pipefail",
           "status=0",
@@ -7263,7 +7414,7 @@ fi
         'source "$1"',
         'prepare_release_load_unit_state "$2"',
         'prepare_release_validate_loaded_build_unit "$2" "$3" "$4"',
-        "printf '%s|%s|%s|%s\\n' \"${PREPARE_RELEASE_UNIT_PROPERTY_COUNT}\" \"${PREPARE_RELEASE_UNIT_LOAD_STATE}\" \"${PREPARE_RELEASE_UNIT_RUNTIME_MAX_USEC}\" \"${PREPARE_RELEASE_UNIT_PROTECT_CONTROL_GROUPS}\"",
+        'printf \'%s|%s|%s|%s\\n\' "${PREPARE_RELEASE_UNIT_PROPERTY_COUNT}" "${PREPARE_RELEASE_UNIT_LOAD_STATE}" "${PREPARE_RELEASE_UNIT_RUNTIME_MAX_USEC}" "${PREPARE_RELEASE_UNIT_PROTECT_CONTROL_GROUPS}"',
       ].join("\n"),
       unit,
       workspace,
@@ -7308,7 +7459,7 @@ fi
         "set -Eeuo pipefail",
         'source "$1"',
         'prepare_release_require_unit_absent "$2"',
-        "printf '%s|%s|%s|%s\\n' \"${PREPARE_RELEASE_UNIT_PROPERTY_COUNT}\" \"${PREPARE_RELEASE_UNIT_LOAD_STATE}\" \"${PREPARE_RELEASE_UNIT_FRAGMENT_PATH}\" \"${PREPARE_RELEASE_UNIT_USER}\"",
+        'printf \'%s|%s|%s|%s\\n\' "${PREPARE_RELEASE_UNIT_PROPERTY_COUNT}" "${PREPARE_RELEASE_UNIT_LOAD_STATE}" "${PREPARE_RELEASE_UNIT_FRAGMENT_PATH}" "${PREPARE_RELEASE_UNIT_USER}"',
       ].join("\n"),
       unit,
       workspace,
@@ -7394,10 +7545,7 @@ fi
       let output: string;
       switch (mutation) {
         case "missing-property":
-          output = renderSystemdUnitMetadata(
-            metadata,
-            "ProtectControlGroups",
-          );
+          output = renderSystemdUnitMetadata(metadata, "ProtectControlGroups");
           break;
         case "missing-memory-max":
           output = renderSystemdUnitMetadata(metadata, "MemoryMax");
@@ -7613,16 +7761,48 @@ fi
     { active: "failed", sub: "failed", absent: true, expected: 23 },
     { active: "failed", sub: "failed", absent: false, expected: 70 },
     { active: "active", sub: "running", absent: true, expected: 70 },
-    { active: "active", sub: "exited", absent: true, result: "success", code: "1", status: "0", expected: 0 },
-    { active: "active", sub: "exited", absent: false, result: "success", code: "1", status: "0", expected: 70 },
-    { active: "active", sub: "exited", absent: true, result: "success", code: "2", status: "15", expected: 143 },
+    {
+      active: "active",
+      sub: "exited",
+      absent: true,
+      result: "success",
+      code: "1",
+      status: "0",
+      expected: 0,
+    },
+    {
+      active: "active",
+      sub: "exited",
+      absent: false,
+      result: "success",
+      code: "1",
+      status: "0",
+      expected: 70,
+    },
+    {
+      active: "active",
+      sub: "exited",
+      absent: true,
+      result: "success",
+      code: "2",
+      status: "15",
+      expected: 143,
+    },
     { active: "activating", sub: "start", absent: true, expected: 70 },
     { active: "deactivating", sub: "stop", absent: true, expected: 70 },
     { active: "inactive", sub: "dead", absent: true, expected: 70 },
     { active: "failed", sub: "running", absent: true, expected: 70 },
   ])(
     "preserves terminal outcomes only with a reclaimed build cgroup: $active/$sub absent=$absent",
-    async ({ active, sub, absent, expected, result: terminalResult, code, status }) => {
+    async ({
+      active,
+      sub,
+      absent,
+      expected,
+      result: terminalResult,
+      code,
+      status,
+    }) => {
       const unit = `diesel-build-${TEST_RELEASE_SHA}.service`;
       const workspace = "/fixture/build-workspace";
       const controlGroup = `/system.slice/${unit}`;
@@ -7666,18 +7846,15 @@ fi
   ])(
     "maps retained systemd build metadata $result/$code/$status to $expected",
     async ({ code, expected, result, status }) => {
-      const execution = await execFileAsync(
-        "/bin/bash",
-        [
-          "-c",
-          'source "$1"; prepare_release_map_build_status "$2" "$3" "$4"',
-          "bash",
-          prepareReleaseRuntimeScript,
-          result,
-          code,
-          status,
-        ],
-      ).then(
+      const execution = await execFileAsync("/bin/bash", [
+        "-c",
+        'source "$1"; prepare_release_map_build_status "$2" "$3" "$4"',
+        "bash",
+        prepareReleaseRuntimeScript,
+        result,
+        code,
+        status,
+      ]).then(
         () => ({ code: 0 }),
         (error: unknown) => error as { code?: number },
       );
@@ -7716,12 +7893,12 @@ fi
             "timeout() {",
             '  if [[ " $* " == *" systemctl stop "* ]]; then',
             "    stop_calls=$((stop_calls + 1))",
-            '    printf \'stop\\n\' >>"${PREPARE_TEST_COMMAND_LOG}"',
+            "    printf 'stop\\n' >>\"${PREPARE_TEST_COMMAND_LOG}\"",
             '    [[ "${stop_calls}" -gt 1 ]]',
             "    return",
             "  fi",
             '  if [[ " $* " == *" systemctl kill "* ]]; then',
-            '    printf \'kill\\n\' >>"${PREPARE_TEST_COMMAND_LOG}"',
+            "    printf 'kill\\n' >>\"${PREPARE_TEST_COMMAND_LOG}\"",
             "    return 0",
             "  fi",
             "  return 98",
@@ -7766,17 +7943,14 @@ fi
           `0::${controlGroup}${memberSuffix}\n`,
           "utf8",
         );
-        const execution = await execFileAsync(
-          "/bin/bash",
-          [
-            "-c",
-            'source "$1"; prepare_release_control_group_has_processes "$2" "$3"',
-            "bash",
-            prepareReleaseRuntimeScript,
-            procRoot,
-            controlGroup,
-          ],
-        ).then(
+        const execution = await execFileAsync("/bin/bash", [
+          "-c",
+          'source "$1"; prepare_release_control_group_has_processes "$2" "$3"',
+          "bash",
+          prepareReleaseRuntimeScript,
+          procRoot,
+          controlGroup,
+        ]).then(
           () => ({ code: 0 }),
           (error: unknown) => error as { code?: number },
         );
@@ -7788,29 +7962,28 @@ fi
     },
   );
 
-  it.each([
-    "test-release",
-    "A".repeat(40),
-    "a".repeat(39),
-  ])("rejects non-commit build release ID %s", async (releaseId) => {
-    const result = await execFileAsync(
-      "bash",
-      [resolve(process.cwd(), "scripts/deploy/build-release.sh")],
-      {
-        cwd: process.cwd(),
-        env: {
-          ...process.env,
-          BUILD_HOME: process.cwd(),
-          BUILD_RELEASE_ID: releaseId,
+  it.each(["test-release", "A".repeat(40), "a".repeat(39)])(
+    "rejects non-commit build release ID %s",
+    async (releaseId) => {
+      const result = await execFileAsync(
+        "bash",
+        [resolve(process.cwd(), "scripts/deploy/build-release.sh")],
+        {
+          cwd: process.cwd(),
+          env: {
+            ...process.env,
+            BUILD_HOME: process.cwd(),
+            BUILD_RELEASE_ID: releaseId,
+          },
         },
-      },
-    ).catch((error: unknown) => error);
+      ).catch((error: unknown) => error);
 
-    expect(result).toMatchObject({ code: 64 });
-    expect(String((result as { stderr?: unknown }).stderr)).toContain(
-      "full lowercase Git commit SHA",
-    );
-  });
+      expect(result).toMatchObject({ code: 64 });
+      expect(String((result as { stderr?: unknown }).stderr)).toContain(
+        "full lowercase Git commit SHA",
+      );
+    },
+  );
 
   it.each(["", "../current", "A".repeat(40), "a".repeat(39)])(
     "rejects non-commit public governance release ID %s before network access",
@@ -7860,33 +8033,51 @@ fi
       args: [TEST_RELEASE_SHA, "/tmp/attempted-path-override"],
       name: "an extra production path override",
     },
-  ])("rejects $name at the runtime-preparation CLI boundary", async ({ args }) => {
-    const result = await execFileAsync(
-      "/bin/bash",
-      [prepareReleaseRuntimeScript, ...args],
-      {
-        env: {
-          ...process.env,
-          PATH: "/nonexistent",
+  ])(
+    "rejects $name at the runtime-preparation CLI boundary",
+    async ({ args }) => {
+      const result = await execFileAsync(
+        "/bin/bash",
+        [prepareReleaseRuntimeScript, ...args],
+        {
+          env: {
+            ...process.env,
+            PATH: "/nonexistent",
+          },
         },
-      },
-    ).catch((error: unknown) => error);
+      ).catch((error: unknown) => error);
 
-    expect(result).toMatchObject({ code: 64 });
-    expect(String((result as { stderr?: unknown }).stderr)).toContain(
-      "full-lowercase-git-commit-sha",
-    );
-  });
+      expect(result).toMatchObject({ code: 64 });
+      expect(String((result as { stderr?: unknown }).stderr)).toContain(
+        "full-lowercase-git-commit-sha",
+      );
+    },
+  );
 
   it.each([
     ["system directory", "system-directory", "root:root:755", 0],
     ["staged release directory", "release-directory", "root:root:755", 0],
     ["normalized release directory", "release-directory", "root:diesel:750", 0],
     ["staged release executable", "release-executable", "root:root:755:1", 0],
-    ["normalized release executable", "release-executable", "root:diesel:750:1", 0],
+    [
+      "normalized release executable",
+      "release-executable",
+      "root:diesel:750:1",
+      0,
+    ],
     ["group-owned system directory", "system-directory", "root:diesel:750", 1],
-    ["hard-linked release executable", "release-executable", "root:root:755:2", 1],
-    ["group-writable release executable", "release-executable", "root:diesel:770:1", 1],
+    [
+      "hard-linked release executable",
+      "release-executable",
+      "root:root:755:2",
+      1,
+    ],
+    [
+      "group-writable release executable",
+      "release-executable",
+      "root:diesel:770:1",
+      1,
+    ],
   ] as const)(
     "classifies %s at the direct runtime-preparation source boundary",
     async (_name, profile, metadata, expectedStatus) => {
@@ -7924,9 +8115,7 @@ fi
     const rootPathIndex = source.indexOf(
       'export PATH="/usr/sbin:/usr/bin:/sbin:/bin"',
     );
-    const ledgerSourceIndex = source.indexOf(
-      'source -- "${expected_ledger}"',
-    );
+    const ledgerSourceIndex = source.indexOf('source -- "${expected_ledger}"');
 
     expect(result).toMatchObject({ code: 70 });
     expect(String((result as { stderr?: unknown }).stderr)).toContain(
@@ -8005,10 +8194,10 @@ fi
           'BOOTSTRAP_REJECT="$5"',
           'BOOTSTRAP_LOG="$6"',
           'BOOTSTRAP_MARKER="$7"',
-          'prepare_release_require_cli_bootstrap_path() {',
+          "prepare_release_require_cli_bootstrap_path() {",
           '  printf "%s|%s\\n" "$1" "$2" >>"${BOOTSTRAP_LOG}"',
           '  [[ "$1" != "${BOOTSTRAP_REJECT}" ]]',
-          '}',
+          "}",
           'prepare_release_cli_bootstrap "$2" "$3" "$4"',
         ].join("\n");
         const result = await execute("/bin/bash", [
@@ -8077,9 +8266,9 @@ fi
         'source -- "$1"',
         'BOOTSTRAP_LOG="$5"',
         'BOOTSTRAP_MARKER="$6"',
-        'prepare_release_require_cli_bootstrap_path() {',
+        "prepare_release_require_cli_bootstrap_path() {",
         '  printf "%s|%s\\n" "$1" "$2" >>"${BOOTSTRAP_LOG}"',
-        '}',
+        "}",
         'prepare_release_cli_bootstrap "$2" "$3" "$4"',
       ].join("\n");
       const result = await execute("/bin/bash", [
@@ -8097,9 +8286,7 @@ fi
       ]);
 
       expect(result).toEqual({ exitCode: 0, stderr: "", stdout: "" });
-      await expect(readFile(marker, "utf8")).resolves.toBe(
-        "ledger-executed\n",
-      );
+      await expect(readFile(marker, "utf8")).resolves.toBe("ledger-executed\n");
       const validatedPaths = (await readFile(validationLog, "utf8"))
         .trim()
         .split("\n");
@@ -8186,8 +8373,7 @@ fi
         "postgresql://stable-user:endpoint-secret@database-a.invalid/diesel",
       expectedError:
         "runtime database identity changed across the release boundary",
-      live:
-        "DATABASE_URL=postgresql://stable-user:endpoint-secret@database-b.invalid/diesel",
+      live: "DATABASE_URL=postgresql://stable-user:endpoint-secret@database-b.invalid/diesel",
       name: "endpoint drift",
       secret: "endpoint-secret",
     },
@@ -8196,13 +8382,13 @@ fi
         "postgresql://stable-user:credential-before@database.invalid/diesel",
       expectedError:
         "runtime database identity changed across the release boundary",
-      live:
-        "DATABASE_URL=postgresql://stable-user:credential-after@database.invalid/diesel",
+      live: "DATABASE_URL=postgresql://stable-user:credential-after@database.invalid/diesel",
       name: "credential drift",
       secret: "credential-after",
     },
     {
-      backup: "postgresql://stable-user:protocol-secret@database.invalid/diesel",
+      backup:
+        "postgresql://stable-user:protocol-secret@database.invalid/diesel",
       expectedError: "runtime database identity is missing or invalid",
       live: "DATABASE_URL=mysql://stable-user:protocol-secret@database.invalid/diesel",
       name: "a non-PostgreSQL protocol",
@@ -8296,20 +8482,17 @@ fi
     async (readyKind) => {
       const fixture = await createPreparePreflightFixture(readyKind);
       try {
-        const result = await execFileAsync(
-          "/bin/bash",
-          [
-            "-c",
-            'source "$1"; prepare_release_effective_uid() { printf "0\\n"; }; prepare_release_require_fixed_root_command_boundary() { export PATH="$1"; }; host_activation_ledger_require_pending() { return 0; }; prepare_release_require_transient_build_commands() { return 0; }; prepare_release_require_systemd_host() { return 0; }; prepare_release_require_unit_absent() { return 0; }; prepare_release_control_group_has_processes() { return 1; }; prepare_release_control_group_is_populated() { return 1; }; prepare_release_uid_has_processes() { return 1; }; prepare_release_run_build_unit() { echo "fake systemd build invoked" >&2; return "${PREPARE_TEST_BUILD_STATUS:-99}"; }; prepare_release_runtime "$2" "$3" "$4" "$5" "$6"',
-            "bash",
-            prepareReleaseRuntimeScript,
-            TEST_RELEASE_SHA,
-            fixture.deployRoot,
-            fixture.fakePath,
-            fixture.nodeBinary,
-            fixture.root,
-          ],
-        ).catch((error: unknown) => error);
+        const result = await execFileAsync("/bin/bash", [
+          "-c",
+          'source "$1"; prepare_release_effective_uid() { printf "0\\n"; }; prepare_release_require_fixed_root_command_boundary() { export PATH="$1"; }; host_activation_ledger_require_pending() { return 0; }; prepare_release_require_transient_build_commands() { return 0; }; prepare_release_require_systemd_host() { return 0; }; prepare_release_require_unit_absent() { return 0; }; prepare_release_control_group_has_processes() { return 1; }; prepare_release_control_group_is_populated() { return 1; }; prepare_release_uid_has_processes() { return 1; }; prepare_release_run_build_unit() { echo "fake systemd build invoked" >&2; return "${PREPARE_TEST_BUILD_STATUS:-99}"; }; prepare_release_runtime "$2" "$3" "$4" "$5" "$6"',
+          "bash",
+          prepareReleaseRuntimeScript,
+          TEST_RELEASE_SHA,
+          fixture.deployRoot,
+          fixture.fakePath,
+          fixture.nodeBinary,
+          fixture.root,
+        ]).catch((error: unknown) => error);
 
         expect(String((result as { stderr?: unknown }).stderr)).toContain(
           ".deploy-ready",
@@ -8436,10 +8619,7 @@ fi
           `rollback-basis:${fixture.environmentBackup}`,
           `rollback-basis:${fixture.nginxPrimaryBackup}`,
           `rollback-basis:${fixture.nginxAlternateBackup}`,
-          `rollback-basis:${join(
-            fixture.backupRoot,
-            TEST_RELEASE_SHA,
-          )}`,
+          `rollback-basis:${join(fixture.backupRoot, TEST_RELEASE_SHA)}`,
           `rollback-basis:${fixture.backupRoot}`,
           `rollback-basis:${fixture.deployRoot}`,
           "database-identity-start",
@@ -8493,20 +8673,17 @@ fi
         ),
       ]);
 
-      const result = await execFileAsync(
-        "/bin/bash",
-        [
-          "-c",
-          'source "$1"; prepare_release_effective_uid() { printf "0\\n"; }; prepare_release_require_fixed_root_command_boundary() { export PATH="$1"; }; host_activation_ledger_require_pending() { return 0; }; prepare_release_require_transient_build_commands() { return 0; }; prepare_release_require_systemd_host() { return 0; }; prepare_release_require_unit_absent() { return 0; }; prepare_release_control_group_has_processes() { return 1; }; prepare_release_control_group_is_populated() { return 1; }; prepare_release_uid_has_processes() { return 1; }; prepare_release_run_build_unit() { PREPARE_RELEASE_CLEANUP_BUILD_UNIT_ARMED=1; return 23; }; prepare_release_quiesce_build_unit() { echo "fake cgroup cleanup failure" >&2; return 70; }; prepare_release_runtime "$2" "$3" "$4" "$5" "$6"',
-          "bash",
-          prepareReleaseRuntimeScript,
-          TEST_RELEASE_SHA,
-          fixture.deployRoot,
-          fixture.fakePath,
-          fixture.nodeBinary,
-          fixture.root,
-        ],
-      ).catch((error: unknown) => error);
+      const result = await execFileAsync("/bin/bash", [
+        "-c",
+        'source "$1"; prepare_release_effective_uid() { printf "0\\n"; }; prepare_release_require_fixed_root_command_boundary() { export PATH="$1"; }; host_activation_ledger_require_pending() { return 0; }; prepare_release_require_transient_build_commands() { return 0; }; prepare_release_require_systemd_host() { return 0; }; prepare_release_require_unit_absent() { return 0; }; prepare_release_control_group_has_processes() { return 1; }; prepare_release_control_group_is_populated() { return 1; }; prepare_release_uid_has_processes() { return 1; }; prepare_release_run_build_unit() { PREPARE_RELEASE_CLEANUP_BUILD_UNIT_ARMED=1; return 23; }; prepare_release_quiesce_build_unit() { echo "fake cgroup cleanup failure" >&2; return 70; }; prepare_release_runtime "$2" "$3" "$4" "$5" "$6"',
+        "bash",
+        prepareReleaseRuntimeScript,
+        TEST_RELEASE_SHA,
+        fixture.deployRoot,
+        fixture.fakePath,
+        fixture.nodeBinary,
+        fixture.root,
+      ]).catch((error: unknown) => error);
 
       expect(result).toMatchObject({ code: 70 });
       expect(String((result as { stderr?: unknown }).stderr)).toContain(
@@ -8563,7 +8740,9 @@ fi
   );
 
   it("fails public governance validation on a mismatched public release", async () => {
-    const fixture = await mkdtemp(join(tmpdir(), "diesel-governance-validator-"));
+    const fixture = await mkdtemp(
+      join(tmpdir(), "diesel-governance-validator-"),
+    );
     const fakeBin = join(fixture, "bin");
     const curlArguments = join(fixture, "curl-arguments");
     await mkdir(fakeBin);
@@ -8712,28 +8891,27 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
       nodeBinary: "/opt/node-v22.22.3-linux-x64/bin/node",
       pm2Executable: "/tmp/untrusted-pm2",
     },
-  ])("rejects production rollback $name drift before host access", async ({
-    fixedPath,
-    nodeBinary,
-    pm2Executable,
-  }) => {
-    const result = await execute("/bin/bash", [
-      "--noprofile",
-      "--norc",
-      "-c",
-      'source -- "$1"; rollback_require_production_command_boundary "$2" "$3" "$4"',
-      "rollback-runtime-boundary-fixture",
-      rollbackHostReleaseScript,
-      fixedPath,
-      nodeBinary,
-      pm2Executable,
-    ]);
+  ])(
+    "rejects production rollback $name drift before host access",
+    async ({ fixedPath, nodeBinary, pm2Executable }) => {
+      const result = await execute("/bin/bash", [
+        "--noprofile",
+        "--norc",
+        "-c",
+        'source -- "$1"; rollback_require_production_command_boundary "$2" "$3" "$4"',
+        "rollback-runtime-boundary-fixture",
+        rollbackHostReleaseScript,
+        fixedPath,
+        nodeBinary,
+        pm2Executable,
+      ]);
 
-    expect(result).toMatchObject({ exitCode: 70, stdout: "" });
-    expect(result.stderr).toContain(
-      "production rollback requires the fixed runtime profile",
-    );
-  });
+      expect(result).toMatchObject({ exitCode: 70, stdout: "" });
+      expect(result.stderr).toContain(
+        "production rollback requires the fixed runtime profile",
+      );
+    },
+  );
 
   it.each([
     {
@@ -8769,23 +8947,23 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
         "rollback test seam cannot target the production deployment root",
       name: "13-argument repeated-slash test seam",
     },
-  ])("rejects the sourced production rollback $name", async ({
-    command,
-    expectedError,
-  }) => {
-    const result = await execute("/bin/bash", [
-      "--noprofile",
-      "--norc",
-      "-c",
-      command,
-      "rollback-sourced-fixture",
-      rollbackHostReleaseScript,
-      TEST_RELEASE_SHA,
-    ]);
+  ])(
+    "rejects the sourced production rollback $name",
+    async ({ command, expectedError }) => {
+      const result = await execute("/bin/bash", [
+        "--noprofile",
+        "--norc",
+        "-c",
+        command,
+        "rollback-sourced-fixture",
+        rollbackHostReleaseScript,
+        TEST_RELEASE_SHA,
+      ]);
 
-    expect(result).toMatchObject({ exitCode: 64, stdout: "" });
-    expect(result.stderr).toContain(expectedError);
-  });
+      expect(result).toMatchObject({ exitCode: 64, stdout: "" });
+      expect(result.stderr).toContain(expectedError);
+    },
+  );
 
   it("rejects attempts to override fixed production rollback paths", async () => {
     const result = await execFileAsync("bash", [
@@ -8895,29 +9073,74 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
   );
 
   it.each([
-    { name: "upstream vendor ordering", paths: ["/etc/systemd/system", "/usr/local/lib/systemd/system", "/usr/lib/systemd/system", "/lib/systemd/system", "/run/systemd/generator.late"], allowed: true },
-    { name: "Ubuntu 249 vendor ordering", paths: ["/etc/systemd/system", "/usr/local/lib/systemd/system", "/lib/systemd/system", "/usr/lib/systemd/system", "/run/systemd/generator.late"], allowed: true },
-    { name: "optional roots omitted", paths: ["/etc/systemd/system", "/lib/systemd/system"], allowed: true },
-    { name: "reversed administrative precedence", paths: ["/run/systemd/system", "/etc/systemd/system"], allowed: false },
-    { name: "reversed local vendor precedence", paths: ["/lib/systemd/system", "/usr/local/lib/systemd/system"], allowed: false },
-    { name: "duplicate root", paths: ["/etc/systemd/system", "/etc/systemd/system"], allowed: false },
-    { name: "unknown root", paths: ["/etc/systemd/system", "/tmp/units"], allowed: false },
+    {
+      name: "upstream vendor ordering",
+      paths: [
+        "/etc/systemd/system",
+        "/usr/local/lib/systemd/system",
+        "/usr/lib/systemd/system",
+        "/lib/systemd/system",
+        "/run/systemd/generator.late",
+      ],
+      allowed: true,
+    },
+    {
+      name: "Ubuntu 249 vendor ordering",
+      paths: [
+        "/etc/systemd/system",
+        "/usr/local/lib/systemd/system",
+        "/lib/systemd/system",
+        "/usr/lib/systemd/system",
+        "/run/systemd/generator.late",
+      ],
+      allowed: true,
+    },
+    {
+      name: "optional roots omitted",
+      paths: ["/etc/systemd/system", "/lib/systemd/system"],
+      allowed: true,
+    },
+    {
+      name: "reversed administrative precedence",
+      paths: ["/run/systemd/system", "/etc/systemd/system"],
+      allowed: false,
+    },
+    {
+      name: "reversed local vendor precedence",
+      paths: ["/lib/systemd/system", "/usr/local/lib/systemd/system"],
+      allowed: false,
+    },
+    {
+      name: "duplicate root",
+      paths: ["/etc/systemd/system", "/etc/systemd/system"],
+      allowed: false,
+    },
+    {
+      name: "unknown root",
+      paths: ["/etc/systemd/system", "/tmp/units"],
+      allowed: false,
+    },
   ])("native PM2 unit paths: $name", async ({ paths, allowed }) => {
     const source = await readFile(rollbackHostReleaseScript, "utf8");
     const orders = source.slice(
       source.indexOf("const approvedUnitPathOrder = ["),
-      source.indexOf("function readBoundedDescriptor", source.indexOf("const approvedUnitPathOrder = [")),
+      source.indexOf(
+        "function readBoundedDescriptor",
+        source.indexOf("const approvedUnitPathOrder = ["),
+      ),
     );
     const predicate = source.slice(
       source.indexOf("function isOrderedSubset("),
       source.indexOf("function parseManagerProperties("),
     );
     expect(source).toContain("!approvedUnitPathOrders.some((order) =>");
-    expect(runInNewContext(
-      `${orders}\n${predicate}\npaths.every(path => approvedUnitPaths.has(path)) && approvedUnitPathOrders.some(order => isOrderedSubset(paths, order))`,
-      { paths },
-      { timeout: 100 },
-    )).toBe(allowed);
+    expect(
+      runInNewContext(
+        `${orders}\n${predicate}\npaths.every(path => approvedUnitPaths.has(path)) && approvedUnitPathOrders.some(order => isOrderedSubset(paths, order))`,
+        { paths },
+        { timeout: 100 },
+      ),
+    ).toBe(allowed);
   });
 
   it.each(["249.11-0ubuntu3.11", "250", "250.1-1"])(
@@ -8925,17 +9148,40 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     async (version) => {
       const fixture = await createRollbackFixture();
       try {
-        await writeFile(join(fixture.root, "systemd-show-omit"), "EnvironmentFiles\nExecCondition\nExecStartPre\nExecStartPost\nExecStopPost\nUpholds\n");
-        await writeFile(join(fixture.root, "systemd-manager-includes-absent"), "1\n");
-        await writeFile(join(fixture.root, "systemd-bus-config.json"), JSON.stringify({ Version: { value: { type: "s", data: version } } }));
-        await writeFile(join(fixture.procRoot, "111", "cgroup"), "10:net_prio:/\n9:perf_event:/\n8:net_cls:/\n7:freezer:/\n6:devices:/\n3:cpuacct:/\n0::/system.slice/pm2-root.service\n");
+        await writeFile(
+          join(fixture.root, "systemd-show-omit"),
+          "EnvironmentFiles\nExecCondition\nExecStartPre\nExecStartPost\nExecStopPost\nUpholds\n",
+        );
+        await writeFile(
+          join(fixture.root, "systemd-manager-includes-absent"),
+          "1\n",
+        );
+        await writeFile(
+          join(fixture.root, "systemd-bus-config.json"),
+          JSON.stringify({ Version: { value: { type: "s", data: version } } }),
+        );
+        await writeFile(
+          join(fixture.procRoot, "111", "cgroup"),
+          "10:net_prio:/\n9:perf_event:/\n8:net_cls:/\n7:freezer:/\n6:devices:/\n3:cpuacct:/\n0::/system.slice/pm2-root.service\n",
+        );
         const before = await captureRollbackTargets(fixture);
         const result = await executeRollback(fixture, "--check");
-        expect(result, await readLifecycleLog(fixture)).toMatchObject({ exitCode: 0, stderr: "" });
+        expect(result, await readLifecycleLog(fixture)).toMatchObject({
+          exitCode: 0,
+          stderr: "",
+        });
         await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
         await expect(readMutationLog(fixture)).resolves.toBe("");
         const log = await readLifecycleLog(fixture);
-        for (const key of ["EnvironmentFiles", "ExecCondition", "ExecStartPre", "ExecStartPost", "ExecStopPost", "GetAll", "Version"]) {
+        for (const key of [
+          "EnvironmentFiles",
+          "ExecCondition",
+          "ExecStartPre",
+          "ExecStartPost",
+          "ExecStopPost",
+          "GetAll",
+          "Version",
+        ]) {
           expect(log.split(`busctl:${key}\n`).length - 1).toBe(2);
         }
       } finally {
@@ -8946,48 +9192,134 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
   );
 
   it.each([
-    ...["EnvironmentFiles", "ExecCondition", "ExecStartPre", "ExecStartPost", "ExecStopPost"].map((key) => ({
+    ...[
+      "EnvironmentFiles",
+      "ExecCondition",
+      "ExecStartPre",
+      "ExecStartPost",
+      "ExecStopPost",
+    ].map((key) => ({
       name: `nonempty omitted ${key}`,
       omit: key,
-      config: { [key]: { value: { type: key === "EnvironmentFiles" ? "a(sb)" : "a(sasbttttuii)", data: [["untrusted"]] } } },
+      config: {
+        [key]: {
+          value: {
+            type: key === "EnvironmentFiles" ? "a(sb)" : "a(sasbttttuii)",
+            data: [["untrusted"]],
+          },
+        },
+      },
     })),
-    { name: "failed D-Bus read", omit: "EnvironmentFiles", config: { EnvironmentFiles: { status: 1 } } },
-    { name: "malformed D-Bus JSON", omit: "EnvironmentFiles", config: { EnvironmentFiles: { stdout: "not-json\n" } } },
-    { name: "wrong empty array signature", omit: "EnvironmentFiles", config: { EnvironmentFiles: { value: { type: "as", data: [] } } } },
-    { name: "null array", omit: "EnvironmentFiles", config: { EnvironmentFiles: { value: { type: "a(sb)", data: null } } } },
-    { name: "extra D-Bus field", omit: "EnvironmentFiles", config: { EnvironmentFiles: { value: { type: "a(sb)", data: [], extra: true } } } },
-    { name: "D-Bus A/B drift", omit: "EnvironmentFiles", config: { EnvironmentFiles: { second: { value: { type: "a(sb)", data: [["untrusted", false]] } } } } },
+    {
+      name: "failed D-Bus read",
+      omit: "EnvironmentFiles",
+      config: { EnvironmentFiles: { status: 1 } },
+    },
+    {
+      name: "malformed D-Bus JSON",
+      omit: "EnvironmentFiles",
+      config: { EnvironmentFiles: { stdout: "not-json\n" } },
+    },
+    {
+      name: "wrong empty array signature",
+      omit: "EnvironmentFiles",
+      config: { EnvironmentFiles: { value: { type: "as", data: [] } } },
+    },
+    {
+      name: "null array",
+      omit: "EnvironmentFiles",
+      config: { EnvironmentFiles: { value: { type: "a(sb)", data: null } } },
+    },
+    {
+      name: "extra D-Bus field",
+      omit: "EnvironmentFiles",
+      config: {
+        EnvironmentFiles: { value: { type: "a(sb)", data: [], extra: true } },
+      },
+    },
+    {
+      name: "D-Bus A/B drift",
+      omit: "EnvironmentFiles",
+      config: {
+        EnvironmentFiles: {
+          second: { value: { type: "a(sb)", data: [["untrusted", false]] } },
+        },
+      },
+    },
     ...["248", "251", "255.4", "249\n", "249 arbitrary"].map((version) => ({
       name: `unsupported Upholds omission version ${JSON.stringify(version)}`,
-      omit: "Upholds", config: { Version: { value: { type: "s", data: version } } },
+      omit: "Upholds",
+      config: { Version: { value: { type: "s", data: version } } },
     })),
-    { name: "existing Upholds despite show omission", omit: "Upholds", config: { GetAll: { value: { type: "a{sv}", data: [{ Id: { type: "s", data: "pm2-root.service" }, Upholds: { type: "as", data: [] } }] } } } },
-    { name: "wrong GetAll unit identity", omit: "Upholds", config: { GetAll: { value: { type: "a{sv}", data: [{ Id: { type: "s", data: "other.service" } }] } } } },
-    { name: "failed capability read", omit: "Upholds", config: { GetAll: { status: 1 } } },
-    { name: "failed manager version read", omit: "Upholds", config: { Version: { status: 1 } } },
+    {
+      name: "existing Upholds despite show omission",
+      omit: "Upholds",
+      config: {
+        GetAll: {
+          value: {
+            type: "a{sv}",
+            data: [
+              {
+                Id: { type: "s", data: "pm2-root.service" },
+                Upholds: { type: "as", data: [] },
+              },
+            ],
+          },
+        },
+      },
+    },
+    {
+      name: "wrong GetAll unit identity",
+      omit: "Upholds",
+      config: {
+        GetAll: {
+          value: {
+            type: "a{sv}",
+            data: [{ Id: { type: "s", data: "other.service" } }],
+          },
+        },
+      },
+    },
+    {
+      name: "failed capability read",
+      omit: "Upholds",
+      config: { GetAll: { status: 1 } },
+    },
+    {
+      name: "failed manager version read",
+      omit: "Upholds",
+      config: { Version: { status: 1 } },
+    },
     { name: "unapproved missing property", omit: "RootDirectory", config: {} },
-  ])("native PM2 compatibility rejects $name without mutation", async ({ omit, config }) => {
-    const fixture = await createRollbackFixture();
-    try {
-      await writeFile(join(fixture.root, "systemd-show-omit"), `${omit}\n`);
-      await writeFile(join(fixture.root, "systemd-bus-config.json"), JSON.stringify(config));
-      const before = await captureRollbackTargets(fixture);
-      const result = await executeRollback(fixture, "--check");
-      expect(result.exitCode).toBe(70);
-      const log = await readLifecycleLog(fixture);
-      if (omit === "Upholds") {
-        expect(log).toContain("busctl:GetAll\n");
-      } else if (omit !== "RootDirectory") {
-        expect(log).toContain(`busctl:${omit}\n`);
-      } else {
-        expect(log).not.toContain("busctl:");
+  ])(
+    "native PM2 compatibility rejects $name without mutation",
+    async ({ omit, config }) => {
+      const fixture = await createRollbackFixture();
+      try {
+        await writeFile(join(fixture.root, "systemd-show-omit"), `${omit}\n`);
+        await writeFile(
+          join(fixture.root, "systemd-bus-config.json"),
+          JSON.stringify(config),
+        );
+        const before = await captureRollbackTargets(fixture);
+        const result = await executeRollback(fixture, "--check");
+        expect(result.exitCode).toBe(70);
+        const log = await readLifecycleLog(fixture);
+        if (omit === "Upholds") {
+          expect(log).toContain("busctl:GetAll\n");
+        } else if (omit !== "RootDirectory") {
+          expect(log).toContain(`busctl:${omit}\n`);
+        } else {
+          expect(log).not.toContain("busctl:");
+        }
+        await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+        await expect(readMutationLog(fixture)).resolves.toBe("");
+      } finally {
+        await rm(fixture.root, { recursive: true, force: true });
       }
-      await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
-      await expect(readMutationLog(fixture)).resolves.toBe("");
-    } finally {
-      await rm(fixture.root, { recursive: true, force: true });
-    }
-  }, 30_000);
+    },
+    30_000,
+  );
 
   it.each([
     "0::/other.service\n",
@@ -8999,18 +9331,22 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     "3:unknown:/\n0::/system.slice/pm2-root.service\n",
     "3:cpuacct,:/\n0::/system.slice/pm2-root.service\n",
     "3:cpuacct:/\n",
-  ])("native PM2 compatibility rejects ambiguous cgroup identity %#", async (contents) => {
-    const fixture = await createRollbackFixture();
-    try {
-      await writeFile(join(fixture.procRoot, "111", "cgroup"), contents);
-      const before = await captureRollbackTargets(fixture);
-      expect((await executeRollback(fixture, "--check")).exitCode).toBe(70);
-      await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
-      await expect(readMutationLog(fixture)).resolves.toBe("");
-    } finally {
-      await rm(fixture.root, { recursive: true, force: true });
-    }
-  }, 30_000);
+  ])(
+    "native PM2 compatibility rejects ambiguous cgroup identity %#",
+    async (contents) => {
+      const fixture = await createRollbackFixture();
+      try {
+        await writeFile(join(fixture.procRoot, "111", "cgroup"), contents);
+        const before = await captureRollbackTargets(fixture);
+        expect((await executeRollback(fixture, "--check")).exitCode).toBe(70);
+        await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+        await expect(readMutationLog(fixture)).resolves.toBe("");
+      } finally {
+        await rm(fixture.root, { recursive: true, force: true });
+      }
+    },
+    30_000,
+  );
 
   it("keeps a successful host rollback check read-only", async () => {
     const fixture = await createRollbackFixture();
@@ -9104,9 +9440,9 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
         await expectRollbackFilesRestored(fixture);
         const mutations = await readMutationLog(fixture);
         expect(mutations.match(/^pm2-delete:diesel-demo$/gmu)).toHaveLength(1);
-        expect(mutations.match(/^pm2-start:previous-release:.*$/gmu)).toHaveLength(
-          1,
-        );
+        expect(
+          mutations.match(/^pm2-start:previous-release:.*$/gmu),
+        ).toHaveLength(1);
         expect(mutations).toContain("pm2-save");
         expect(mutations).toContain("systemctl-reload:nginx");
         expect(mutations).toContain(
@@ -9119,129 +9455,115 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     30_000,
   );
 
-  it(
-    "fails closed when PM2 reports the wrong version after start and converges on retry",
-    async () => {
-      const fixture = await createRollbackFixture();
-      const wrongVersionFlag = join(
-        fixture.root,
-        "pm2-start-wrong-version",
+  it("fails closed when PM2 reports the wrong version after start and converges on retry", async () => {
+    const fixture = await createRollbackFixture();
+    const wrongVersionFlag = join(fixture.root, "pm2-start-wrong-version");
+    try {
+      await writeFile(wrongVersionFlag, "fault\n", "utf8");
+
+      const firstResult = await executeRollback(fixture, "--apply");
+
+      expect(firstResult.exitCode).not.toBe(0);
+      expect(firstResult.stderr).toContain(
+        "rollback process identity validation failed",
       );
-      try {
-        await writeFile(wrongVersionFlag, "fault\n", "utf8");
+      await expect(readFile(fixture.environmentPath, "utf8")).resolves.toBe(
+        "OLD_ENV=1\n",
+      );
+      await expect(readFile(fixture.nginxPrimaryPath, "utf8")).resolves.toBe(
+        "old primary nginx\n",
+      );
+      await expect(readFile(fixture.nginxAlternatePath, "utf8")).resolves.toBe(
+        "old alternate nginx\n",
+      );
+      await expect(realpath(fixture.currentLink)).resolves.toBe(
+        fixture.previousRelease,
+      );
+      await expect(readFile(fixture.pm2State, "utf8")).resolves.toBe(
+        "wrong-release",
+      );
+      const failedAttemptMutations = await readMutationLog(fixture);
+      // Startup identity is now proven before persisting a replacement.
+      expect(failedAttemptMutations).not.toContain("pm2-save");
+      expect(failedAttemptMutations).not.toContain("systemctl-reload:nginx");
+      expect(failedAttemptMutations).not.toContain("verify:");
+      expect(await readLifecycleLog(fixture)).not.toContain("pm2-helper:");
 
-        const firstResult = await executeRollback(fixture, "--apply");
+      await rm(wrongVersionFlag);
+      const secondResult = await executeRollback(fixture, "--apply");
 
-        expect(firstResult.exitCode).not.toBe(0);
-        expect(firstResult.stderr).toContain(
-          "rollback process identity validation failed",
-        );
-        await expect(readFile(fixture.environmentPath, "utf8")).resolves.toBe(
-          "OLD_ENV=1\n",
-        );
-        await expect(readFile(fixture.nginxPrimaryPath, "utf8")).resolves.toBe(
-          "old primary nginx\n",
-        );
-        await expect(
-          readFile(fixture.nginxAlternatePath, "utf8"),
-        ).resolves.toBe("old alternate nginx\n");
-        await expect(realpath(fixture.currentLink)).resolves.toBe(
-          fixture.previousRelease,
-        );
-        await expect(readFile(fixture.pm2State, "utf8")).resolves.toBe(
-          "wrong-release",
-        );
-        const failedAttemptMutations = await readMutationLog(fixture);
-        // Startup identity is now proven before persisting a replacement.
-        expect(failedAttemptMutations).not.toContain("pm2-save");
-        expect(failedAttemptMutations).not.toContain("systemctl-reload:nginx");
-        expect(failedAttemptMutations).not.toContain("verify:");
-        expect(await readLifecycleLog(fixture)).not.toContain("pm2-helper:");
+      expect(secondResult).toMatchObject({ exitCode: 0, stderr: "" });
+      await expectRollbackFilesRestored(fixture);
+      const mutations = await readMutationLog(fixture);
+      expect(mutations.match(/^pm2-delete:diesel-demo$/gmu)).toHaveLength(2);
+      expect(
+        mutations.match(/^pm2-start:previous-release:.*$/gmu),
+      ).toHaveLength(2);
+      expect(mutations.match(/^systemctl-reload:nginx$/gmu)).toHaveLength(1);
+      expect(
+        mutations.match(
+          /^verify:http:\/\/127\.0\.0\.1:8788:previous-release$/gmu,
+        ),
+      ).toHaveLength(1);
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
 
-        await rm(wrongVersionFlag);
-        const secondResult = await executeRollback(fixture, "--apply");
+  it("keeps an exact current.next during rollback check, then durably removes it before abort reaches terminal state", async () => {
+    const fixture = await createRollbackFixture({
+      current: "previous",
+      pm2Version: "previous-release",
+    });
+    const currentNext = join(fixture.deployRoot, "current.next");
+    try {
+      await symlink(fixture.failedRelease, currentNext);
 
-        expect(secondResult).toMatchObject({ exitCode: 0, stderr: "" });
-        await expectRollbackFilesRestored(fixture);
-        const mutations = await readMutationLog(fixture);
-        expect(mutations.match(/^pm2-delete:diesel-demo$/gmu)).toHaveLength(2);
-        expect(mutations.match(/^pm2-start:previous-release:.*$/gmu)).toHaveLength(
-          2,
-        );
-        expect(mutations.match(/^systemctl-reload:nginx$/gmu)).toHaveLength(1);
-        expect(
-          mutations.match(
-            /^verify:http:\/\/127\.0\.0\.1:8788:previous-release$/gmu,
-          ),
-        ).toHaveLength(1);
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
-      }
-    },
-    30_000,
-  );
+      const checked = await executeRollback(fixture, "--check");
 
-  it(
-    "keeps an exact current.next during rollback check, then durably removes it before abort reaches terminal state",
-    async () => {
-      const fixture = await createRollbackFixture({
-        current: "previous",
-        pm2Version: "previous-release",
+      expect(checked).toMatchObject({ exitCode: 0, stderr: "" });
+      await expect(readlink(currentNext)).resolves.toBe(fixture.failedRelease);
+      const checkedLifecycle = await readLifecycleLog(fixture);
+      expect(checkedLifecycle).not.toContain("delete-current-next");
+      const abortStartIndex = checkedLifecycle.trim().split("\n").length;
+      await expect(readMutationLog(fixture)).resolves.toBe("");
+
+      const aborted = await executeRollback(fixture, "--abort-if-uncommitted");
+
+      expect(aborted).toMatchObject({ exitCode: 0, stderr: "" });
+      expect(aborted.stdout).toContain("Host rollback completed");
+      await expect(lstat(currentNext)).rejects.toMatchObject({
+        code: "ENOENT",
       });
-      const currentNext = join(fixture.deployRoot, "current.next");
-      try {
-        await symlink(fixture.failedRelease, currentNext);
-
-        const checked = await executeRollback(fixture, "--check");
-
-        expect(checked).toMatchObject({ exitCode: 0, stderr: "" });
-        await expect(readlink(currentNext)).resolves.toBe(
-          fixture.failedRelease,
-        );
-        const checkedLifecycle = await readLifecycleLog(fixture);
-        expect(checkedLifecycle).not.toContain("delete-current-next");
-        const abortStartIndex = checkedLifecycle.trim().split("\n").length;
-        await expect(readMutationLog(fixture)).resolves.toBe("");
-
-        const aborted = await executeRollback(
-          fixture,
-          "--abort-if-uncommitted",
-        );
-
-        expect(aborted).toMatchObject({ exitCode: 0, stderr: "" });
-        expect(aborted.stdout).toContain("Host rollback completed");
-        await expect(lstat(currentNext)).rejects.toMatchObject({ code: "ENOENT" });
-        await expectRollbackFilesRestored(fixture);
-        const events = (await readLifecycleLog(fixture)).trim().split("\n");
-        const secondLockIndex = events.indexOf("flock:-n 8", abortStartIndex);
-        const deleteIndex = events.indexOf(
-          "delete-current-next",
-          secondLockIndex + 1,
-        );
-        const cleanupFsyncIndex = events.indexOf(
-          `fsync:${fixture.deployRoot}`,
-          deleteIndex + 1,
-        );
-        const pm2StartIndex = events.findIndex(
-          (event, index) =>
-            index > cleanupFsyncIndex &&
-            event.startsWith("pm2-start:previous-release:"),
-        );
-        const terminalIndex = events.indexOf(
-          "ledger-transition:failed-release:ROLLED_BACK",
-          pm2StartIndex + 1,
-        );
-        expect(secondLockIndex).toBeGreaterThan(-1);
-        expect(deleteIndex).toBeGreaterThan(secondLockIndex);
-        expect(cleanupFsyncIndex).toBeGreaterThan(deleteIndex);
-        expect(pm2StartIndex).toBeGreaterThan(cleanupFsyncIndex);
-        expect(terminalIndex).toBeGreaterThan(pm2StartIndex);
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
-      }
-    },
-    30_000,
-  );
+      await expectRollbackFilesRestored(fixture);
+      const events = (await readLifecycleLog(fixture)).trim().split("\n");
+      const secondLockIndex = events.indexOf("flock:-n 8", abortStartIndex);
+      const deleteIndex = events.indexOf(
+        "delete-current-next",
+        secondLockIndex + 1,
+      );
+      const cleanupFsyncIndex = events.indexOf(
+        `fsync:${fixture.deployRoot}`,
+        deleteIndex + 1,
+      );
+      const pm2StartIndex = events.findIndex(
+        (event, index) =>
+          index > cleanupFsyncIndex &&
+          event.startsWith("pm2-start:previous-release:"),
+      );
+      const terminalIndex = events.indexOf(
+        "ledger-transition:failed-release:ROLLED_BACK",
+        pm2StartIndex + 1,
+      );
+      expect(secondLockIndex).toBeGreaterThan(-1);
+      expect(deleteIndex).toBeGreaterThan(secondLockIndex);
+      expect(cleanupFsyncIndex).toBeGreaterThan(deleteIndex);
+      expect(pm2StartIndex).toBeGreaterThan(cleanupFsyncIndex);
+      expect(terminalIndex).toBeGreaterThan(pm2StartIndex);
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
 
   it.each([
     {
@@ -9302,95 +9624,84 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     30_000,
   );
 
-  it(
-    "restores the host in governance mode while preserving HOST_ROLLBACK_REQUIRED",
-    async () => {
-      const fixture = await createRollbackFixture();
-      const completedMarker = join(
+  it("restores the host in governance mode while preserving HOST_ROLLBACK_REQUIRED", async () => {
+    const fixture = await createRollbackFixture();
+    const completedMarker = join(fixture.stateDir, "HOST_ROLLBACK_COMPLETED");
+    try {
+      const hostRollbackMarker = await writeHostRollbackMarker(fixture);
+      const governanceSnapshot = join(
         fixture.stateDir,
-        "HOST_ROLLBACK_COMPLETED",
+        "governance-before.json",
       );
-      try {
-        const hostRollbackMarker = await writeHostRollbackMarker(fixture);
-        const governanceSnapshot = join(
-          fixture.stateDir,
-          "governance-before.json",
-        );
-        const markerPayload = await readFile(hostRollbackMarker, "utf8");
-        const [snapshotHash, snapshotPath] = markerPayload
-          .trimEnd()
-          .split("\t");
+      const markerPayload = await readFile(hostRollbackMarker, "utf8");
+      const [snapshotHash, snapshotPath] = markerPayload.trimEnd().split("\t");
 
-        expect(snapshotHash).toMatch(/^[0-9a-f]{64}$/u);
-        expect(snapshotPath).toBe(governanceSnapshot);
-        expect(markerPayload).toBe(
-          `${snapshotHash}\t${governanceSnapshot}\n`,
-        );
-        for (const path of [
-          fixture.lifecycleLock,
-          governanceSnapshot,
-          hostRollbackMarker,
-        ]) {
-          const metadata = await lstat(path);
-          expect(metadata.isFile()).toBe(true);
-          expect(metadata.mode & 0o777).toBe(0o600);
-        }
-
-        const result = await executeRollback(
-          fixture,
-          "--restore-governance-host",
-        );
-
-        expect(result).toMatchObject({ exitCode: 0, stderr: "" });
-        await expectRollbackFilesRestored(fixture);
-        await expect(readFile(hostRollbackMarker, "utf8")).resolves.toBe(
-          markerPayload,
-        );
-        await expect(readFile(completedMarker, "utf8")).rejects.toMatchObject({
-          code: "ENOENT",
-        });
-
-        const lifecycleEvents = (await readLifecycleLog(fixture))
-          .trim()
-          .split("\n");
-        const pm2SaveIndex = lifecycleEvents.indexOf("pm2-save");
-        const durablePm2Index = await expectDurablePm2Validation(
-          fixture,
-          "previous-release",
-          pm2SaveIndex,
-        );
-        const verifierIndex = lifecycleEvents.indexOf(
-          "verify:http://127.0.0.1:8788:previous-release",
-        );
-        const markerFsyncIndex = lifecycleEvents.indexOf(
-          `fsync:${hostRollbackMarker}`,
-          verifierIndex,
-        );
-        const stateFsyncIndex = lifecycleEvents.indexOf(
-          `fsync:${fixture.stateDir}`,
-          markerFsyncIndex,
-        );
-        const backupsFsyncIndex = lifecycleEvents.indexOf(
-          `fsync:${join(fixture.deployRoot, "backups")}`,
-          stateFsyncIndex,
-        );
-        expect(lifecycleEvents.filter((event) => event === "flock:-n 8")).toHaveLength(
-          1,
-        );
-        expect(pm2SaveIndex).toBeGreaterThan(-1);
-        expect(verifierIndex).toBeGreaterThan(durablePm2Index);
-        expect(markerFsyncIndex).toBeGreaterThan(verifierIndex);
-        expect(stateFsyncIndex).toBeGreaterThan(markerFsyncIndex);
-        expect(backupsFsyncIndex).toBeGreaterThan(stateFsyncIndex);
-        expect(lifecycleEvents).not.toContain(
-          `transition:${hostRollbackMarker}:${completedMarker}`,
-        );
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
+      expect(snapshotHash).toMatch(/^[0-9a-f]{64}$/u);
+      expect(snapshotPath).toBe(governanceSnapshot);
+      expect(markerPayload).toBe(`${snapshotHash}\t${governanceSnapshot}\n`);
+      for (const path of [
+        fixture.lifecycleLock,
+        governanceSnapshot,
+        hostRollbackMarker,
+      ]) {
+        const metadata = await lstat(path);
+        expect(metadata.isFile()).toBe(true);
+        expect(metadata.mode & 0o777).toBe(0o600);
       }
-    },
-    30_000,
-  );
+
+      const result = await executeRollback(
+        fixture,
+        "--restore-governance-host",
+      );
+
+      expect(result).toMatchObject({ exitCode: 0, stderr: "" });
+      await expectRollbackFilesRestored(fixture);
+      await expect(readFile(hostRollbackMarker, "utf8")).resolves.toBe(
+        markerPayload,
+      );
+      await expect(readFile(completedMarker, "utf8")).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+
+      const lifecycleEvents = (await readLifecycleLog(fixture))
+        .trim()
+        .split("\n");
+      const pm2SaveIndex = lifecycleEvents.indexOf("pm2-save");
+      const durablePm2Index = await expectDurablePm2Validation(
+        fixture,
+        "previous-release",
+        pm2SaveIndex,
+      );
+      const verifierIndex = lifecycleEvents.indexOf(
+        "verify:http://127.0.0.1:8788:previous-release",
+      );
+      const markerFsyncIndex = lifecycleEvents.indexOf(
+        `fsync:${hostRollbackMarker}`,
+        verifierIndex,
+      );
+      const stateFsyncIndex = lifecycleEvents.indexOf(
+        `fsync:${fixture.stateDir}`,
+        markerFsyncIndex,
+      );
+      const backupsFsyncIndex = lifecycleEvents.indexOf(
+        `fsync:${join(fixture.deployRoot, "backups")}`,
+        stateFsyncIndex,
+      );
+      expect(
+        lifecycleEvents.filter((event) => event === "flock:-n 8"),
+      ).toHaveLength(1);
+      expect(pm2SaveIndex).toBeGreaterThan(-1);
+      expect(verifierIndex).toBeGreaterThan(durablePm2Index);
+      expect(markerFsyncIndex).toBeGreaterThan(verifierIndex);
+      expect(stateFsyncIndex).toBeGreaterThan(markerFsyncIndex);
+      expect(backupsFsyncIndex).toBeGreaterThan(stateFsyncIndex);
+      expect(lifecycleEvents).not.toContain(
+        `transition:${hostRollbackMarker}:${completedMarker}`,
+      );
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
 
   it("refuses HOST_ROLLBACK_REQUIRED outside maintenance-locked governance recovery", async () => {
     const fixture = await createRollbackFixture();
@@ -9399,10 +9710,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
       const markerPayload = await readFile(hostRollbackMarker, "utf8");
       const before = await captureRollbackTargets(fixture);
 
-      const result = await executeRollback(
-        fixture,
-        "--abort-if-uncommitted",
-      );
+      const result = await executeRollback(fixture, "--abort-if-uncommitted");
 
       expect(result.exitCode).toBe(70);
       expect(result.stderr).toContain(
@@ -9418,44 +9726,40 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     }
   });
 
-  it(
-    "rejects a terminal HOST_ROLLBACK_COMPLETED ledger in every host rollback mode",
-    async () => {
-      const fixture = await createRollbackFixture({
-        current: "previous",
-        pm2Version: "previous-release",
-      });
-      try {
-        const completedMarker = await writePublishStateMarker(
-          fixture,
-          "HOST_ROLLBACK_COMPLETED",
+  it("rejects a terminal HOST_ROLLBACK_COMPLETED ledger in every host rollback mode", async () => {
+    const fixture = await createRollbackFixture({
+      current: "previous",
+      pm2Version: "previous-release",
+    });
+    try {
+      const completedMarker = await writePublishStateMarker(
+        fixture,
+        "HOST_ROLLBACK_COMPLETED",
+      );
+      const markerPayload = await readFile(completedMarker, "utf8");
+
+      for (const mode of [
+        "--abort-if-uncommitted",
+        "--restore-governance-host",
+      ] as const) {
+        const before = await captureRollbackTargets(fixture);
+        const result = await executeRollback(fixture, mode);
+
+        expect(result.exitCode).toBe(70);
+        expect(result.stderr).toContain(
+          "HOST_ROLLBACK_COMPLETED is a terminal audit ledger",
         );
-        const markerPayload = await readFile(completedMarker, "utf8");
-
-        for (const mode of [
-          "--abort-if-uncommitted",
-          "--restore-governance-host",
-        ] as const) {
-          const before = await captureRollbackTargets(fixture);
-          const result = await executeRollback(fixture, mode);
-
-          expect(result.exitCode).toBe(70);
-          expect(result.stderr).toContain(
-            "HOST_ROLLBACK_COMPLETED is a terminal audit ledger",
-          );
-          await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
-          await expect(readFile(completedMarker, "utf8")).resolves.toBe(
-            markerPayload,
-          );
-        }
-        expect(await readMutationLog(fixture)).toBe("");
-        expect(await readLifecycleLog(fixture)).not.toContain("transition:");
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
+        await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+        await expect(readFile(completedMarker, "utf8")).resolves.toBe(
+          markerPayload,
+        );
       }
-    },
-    30_000,
-  );
+      expect(await readMutationLog(fixture)).toBe("");
+      expect(await readLifecycleLog(fixture)).not.toContain("transition:");
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
 
   it.each([
     {
@@ -9478,10 +9782,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     "retains HOST_ROLLBACK_REQUIRED when $name",
     async ({ failureFlag }) => {
       const fixture = await createRollbackFixture();
-      const completedMarker = join(
-        fixture.stateDir,
-        "HOST_ROLLBACK_COMPLETED",
-      );
+      const completedMarker = join(fixture.stateDir, "HOST_ROLLBACK_COMPLETED");
       try {
         const hostRollbackMarker = await writeHostRollbackMarker(fixture);
         const markerPayload = await readFile(hostRollbackMarker, "utf8");
@@ -9510,45 +9811,39 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     30_000,
   );
 
-  it(
-    "refuses host rollback while RECOVERY_REQUIRED exists and retains its snapshot-bound payload",
-    async () => {
-      const fixture = await createRollbackFixture();
-      try {
-        const recoveryMarker = await writePublishStateMarker(
-          fixture,
-          "RECOVERY_REQUIRED",
-        );
-        const markerPayload = await readFile(recoveryMarker, "utf8");
-        const before = await captureRollbackTargets(fixture);
+  it("refuses host rollback while RECOVERY_REQUIRED exists and retains its snapshot-bound payload", async () => {
+    const fixture = await createRollbackFixture();
+    try {
+      const recoveryMarker = await writePublishStateMarker(
+        fixture,
+        "RECOVERY_REQUIRED",
+      );
+      const markerPayload = await readFile(recoveryMarker, "utf8");
+      const before = await captureRollbackTargets(fixture);
 
-        const result = await executeRollback(
-          fixture,
-          "--abort-if-uncommitted",
-        );
+      const result = await executeRollback(fixture, "--abort-if-uncommitted");
 
-        expect(result.exitCode).toBe(70);
-        expect(result.stderr).toContain(
-          "governance recovery marker must be absent before host rollback",
-        );
-        await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
-        await expect(readFile(recoveryMarker, "utf8")).resolves.toBe(
-          markerPayload,
-        );
-        await expect(readMutationLog(fixture)).resolves.toBe("");
-        expect((await readLifecycleLog(fixture)).match(/^flock:-n 8$/gmu)).toHaveLength(
-          1,
-        );
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
-      }
-    },
-    30_000,
-  );
+      expect(result.exitCode).toBe(70);
+      expect(result.stderr).toContain(
+        "governance recovery marker must be absent before host rollback",
+      );
+      await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+      await expect(readFile(recoveryMarker, "utf8")).resolves.toBe(
+        markerPayload,
+      );
+      await expect(readMutationLog(fixture)).resolves.toBe("");
+      expect(
+        (await readLifecycleLog(fixture)).match(/^flock:-n 8$/gmu),
+      ).toHaveLength(1);
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
 
   it.each([
     {
-      expectedError: "publish commit marker must be absent before host rollback",
+      expectedError:
+        "publish commit marker must be absent before host rollback",
       markerName: "PUBLISH_COMMITTED",
     },
     {
@@ -9565,10 +9860,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     "rechecks an injected $markerName under the same lifecycle lock before returning from governance host recovery",
     async ({ expectedError, markerName }) => {
       const fixture = await createRollbackFixture();
-      const completedMarker = join(
-        fixture.stateDir,
-        "HOST_ROLLBACK_COMPLETED",
-      );
+      const completedMarker = join(fixture.stateDir, "HOST_ROLLBACK_COMPLETED");
       try {
         const hostRollbackMarker = await writeHostRollbackMarker(fixture);
         const markerPayload = await readFile(hostRollbackMarker, "utf8");
@@ -9610,54 +9902,43 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     30_000,
   );
 
-  it(
-    "preserves a structurally valid committed release in abort mode",
-    async () => {
-      const fixture = await createRollbackFixture();
-      try {
-        await writePublishCommitMarker(fixture);
-        const before = await captureRollbackTargets(fixture);
-        const result = await executeRollback(
-          fixture,
-          "--abort-if-uncommitted",
-        );
+  it("preserves a structurally valid committed release in abort mode", async () => {
+    const fixture = await createRollbackFixture();
+    try {
+      await writePublishCommitMarker(fixture);
+      const before = await captureRollbackTargets(fixture);
+      const result = await executeRollback(fixture, "--abort-if-uncommitted");
 
-        expect(result).toMatchObject({ exitCode: 0, stderr: "" });
-        expect(result.stdout).toContain(
-          "Publish commit point is valid; preserving committed release",
-        );
-        await expectDurablePm2Validation(fixture, "failed-release");
-        await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
-        await expect(readMutationLog(fixture)).resolves.toBe("");
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
-      }
-    },
-    30_000,
-  );
+      expect(result).toMatchObject({ exitCode: 0, stderr: "" });
+      expect(result.stdout).toContain(
+        "Publish commit point is valid; preserving committed release",
+      );
+      await expectDurablePm2Validation(fixture, "failed-release");
+      await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+      await expect(readMutationLog(fixture)).resolves.toBe("");
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
 
-  it(
-    "validates committed state without exposing an uncommitted rollback path",
-    async () => {
-      const fixture = await createRollbackFixture();
-      try {
-        await writePublishCommitMarker(fixture);
-        const before = await captureRollbackTargets(fixture);
-        const result = await executeRollback(fixture, "--validate-committed");
+  it("validates committed state without exposing an uncommitted rollback path", async () => {
+    const fixture = await createRollbackFixture();
+    try {
+      await writePublishCommitMarker(fixture);
+      const before = await captureRollbackTargets(fixture);
+      const result = await executeRollback(fixture, "--validate-committed");
 
-        expect(result).toMatchObject({ exitCode: 0, stderr: "" });
-        expect(result.stdout).toContain(
-          "Publish commit point is valid for release",
-        );
-        await expectDurablePm2Validation(fixture, "failed-release");
-        await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
-        await expect(readMutationLog(fixture)).resolves.toBe("");
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
-      }
-    },
-    30_000,
-  );
+      expect(result).toMatchObject({ exitCode: 0, stderr: "" });
+      expect(result.stdout).toContain(
+        "Publish commit point is valid for release",
+      );
+      await expectDurablePm2Validation(fixture, "failed-release");
+      await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+      await expect(readMutationLog(fixture)).resolves.toBe("");
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
 
   it.each([
     {
@@ -9738,37 +10019,38 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
       markerName: "PUBLISH_FINALIZED",
       name: "a runtime gid mismatch for finalized state",
     },
-  ] as const)("retains the publication ledger on $name", async ({
-    failureFlag,
-    markerName,
-  }) => {
-    const fixture = await createRollbackFixture();
-    try {
-      const markerPath = await writePublishStateMarker(fixture, markerName);
-      const markerPayload = await readFile(markerPath, "utf8");
-      if (markerName === "PUBLISH_FINALIZED") {
-        await writeFile(
-          join(fixture.root, "ledger-terminal"),
-          "COMMITTED:PUBLISH_FINALIZED\n",
-          "utf8",
-        );
-      }
-      await writeFile(join(fixture.root, failureFlag), "fault\n", "utf8");
+  ] as const)(
+    "retains the publication ledger on $name",
+    async ({ failureFlag, markerName }) => {
+      const fixture = await createRollbackFixture();
+      try {
+        const markerPath = await writePublishStateMarker(fixture, markerName);
+        const markerPayload = await readFile(markerPath, "utf8");
+        if (markerName === "PUBLISH_FINALIZED") {
+          await writeFile(
+            join(fixture.root, "ledger-terminal"),
+            "COMMITTED:PUBLISH_FINALIZED\n",
+            "utf8",
+          );
+        }
+        await writeFile(join(fixture.root, failureFlag), "fault\n", "utf8");
 
-      const result = await executeRollback(fixture, "--validate-committed");
+        const result = await executeRollback(fixture, "--validate-committed");
 
-      expect(result.exitCode).toBe(70);
-      await expect(readFile(markerPath, "utf8")).resolves.toBe(markerPayload);
-      await expect(readMutationLog(fixture)).resolves.toBe("");
-      if (markerName === "PUBLISH_FINALIZED") {
-        expect(await readLifecycleLog(fixture)).toContain(
-          "ledger-revalidate:failed-release",
-        );
+        expect(result.exitCode).toBe(70);
+        await expect(readFile(markerPath, "utf8")).resolves.toBe(markerPayload);
+        await expect(readMutationLog(fixture)).resolves.toBe("");
+        if (markerName === "PUBLISH_FINALIZED") {
+          expect(await readLifecycleLog(fixture)).toContain(
+            "ledger-revalidate:failed-release",
+          );
+        }
+      } finally {
+        await rm(fixture.root, { force: true, recursive: true });
       }
-    } finally {
-      await rm(fixture.root, { force: true, recursive: true });
-    }
-  }, 30_000);
+    },
+    30_000,
+  );
 
   it.each([
     {
@@ -9889,15 +10171,10 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
         }
         const before = await captureRollbackTargets(fixture);
 
-        const result = await executeRollback(
-          fixture,
-          "--validate-committed",
-        );
+        const result = await executeRollback(fixture, "--validate-committed");
 
         expect(result.exitCode).toBe(70);
-        await expect(readFile(markerPath, "utf8")).resolves.toBe(
-          markerPayload,
-        );
+        await expect(readFile(markerPath, "utf8")).resolves.toBe(markerPayload);
         await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
         await expect(readMutationLog(fixture)).resolves.toBe("");
         expect(await readLifecycleLog(fixture)).toContain(
@@ -10058,10 +10335,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     async ({ fault, kind, markerName }) => {
       const fixture = await createRollbackFixture();
       try {
-        const markerPath = await writePublishStateMarker(
-          fixture,
-          markerName,
-        );
+        const markerPath = await writePublishStateMarker(fixture, markerName);
         const markerPayload = await readFile(markerPath, "utf8");
         if (markerName === "PUBLISH_FINALIZED") {
           await writeFile(
@@ -10095,15 +10369,10 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
         }
         const before = await captureRollbackTargets(fixture);
 
-        const result = await executeRollback(
-          fixture,
-          "--validate-committed",
-        );
+        const result = await executeRollback(fixture, "--validate-committed");
 
         expect(result.exitCode).toBe(70);
-        await expect(readFile(markerPath, "utf8")).resolves.toBe(
-          markerPayload,
-        );
+        await expect(readFile(markerPath, "utf8")).resolves.toBe(markerPayload);
         await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
         await expect(readMutationLog(fixture)).resolves.toBe("");
         if (markerName === "PUBLISH_FINALIZED") {
@@ -10131,10 +10400,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     async ({ markerName, mutate }) => {
       const fixture = await createRollbackFixture();
       try {
-        const markerPath = await writePublishStateMarker(
-          fixture,
-          markerName,
-        );
+        const markerPath = await writePublishStateMarker(fixture, markerName);
         const markerPayload = await readFile(markerPath, "utf8");
         if (markerName === "PUBLISH_FINALIZED") {
           await writeFile(
@@ -10146,15 +10412,10 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
         await mutate(fixture);
         const before = await captureRollbackTargets(fixture);
 
-        const result = await executeRollback(
-          fixture,
-          "--validate-committed",
-        );
+        const result = await executeRollback(fixture, "--validate-committed");
 
         expect(result.exitCode).toBe(70);
-        await expect(readFile(markerPath, "utf8")).resolves.toBe(
-          markerPayload,
-        );
+        await expect(readFile(markerPath, "utf8")).resolves.toBe(markerPayload);
         await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
         await expect(readMutationLog(fixture)).resolves.toBe("");
         expect(await readLifecycleLog(fixture)).not.toContain(
@@ -10189,10 +10450,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
         "utf8",
       );
 
-      const result = await executeRollback(
-        fixture,
-        "--validate-committed",
-      );
+      const result = await executeRollback(fixture, "--validate-committed");
 
       expect(result.exitCode).toBe(70);
       expect(result.stderr).toContain(
@@ -10307,10 +10565,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
         const corruptedPayload = await readFile(markerPath, "utf8");
         const before = await captureRollbackTargets(fixture);
 
-        const result = await executeRollback(
-          fixture,
-          "--abort-if-uncommitted",
-        );
+        const result = await executeRollback(fixture, "--abort-if-uncommitted");
 
         expect(result.exitCode).toBe(70);
         expect(result.stderr).toContain(
@@ -10377,8 +10632,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
         await rm(marker);
         await symlink(join(fixture.stateDir, "governance-before.json"), marker);
       },
-      expectedError:
-        "publish commit marker must be a regular non-symlink file",
+      expectedError: "publish commit marker must be a regular non-symlink file",
       name: "a symlinked marker",
     },
     {
@@ -10399,10 +10653,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
         await writePublishCommitMarker(fixture);
         await corrupt(fixture);
         const before = await captureRollbackTargets(fixture);
-        const result = await executeRollback(
-          fixture,
-          "--abort-if-uncommitted",
-        );
+        const result = await executeRollback(fixture, "--abort-if-uncommitted");
 
         expect(result.exitCode).toBe(70);
         expect(result.stderr).toContain(expectedError);
@@ -10417,7 +10668,8 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
   it.each([
     {
       current: "unexpected",
-      expectedError: "current points to neither the failed nor previous release",
+      expectedError:
+        "current points to neither the failed nor previous release",
       name: "an unexpected current release",
       prepare: async () => {},
     },
@@ -10518,136 +10770,116 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     },
   );
 
-  it(
-    "converges when rerun after the previous release verifier fails once",
-    async () => {
-      const fixture = await createRollbackFixture();
-      try {
-        await writeFile(
-          join(fixture.root, "fail-verifier-once"),
+  it("converges when rerun after the previous release verifier fails once", async () => {
+    const fixture = await createRollbackFixture();
+    try {
+      await writeFile(
+        join(fixture.root, "fail-verifier-once"),
+        "fail\n",
+        "utf8",
+      );
+
+      const firstResult = await executeRollback(fixture, "--apply");
+      expect(firstResult).toMatchObject({
+        exitCode: 91,
+      });
+      await expectRollbackFilesRestored(fixture);
+
+      const secondResult = await executeRollback(fixture, "--apply");
+      expect(secondResult).toMatchObject({ exitCode: 0, stderr: "" });
+      await expectRollbackFilesRestored(fixture);
+
+      const mutations = await readMutationLog(fixture);
+      expect(mutations.match(/^pm2-start:/gmu)).toHaveLength(2);
+      expect(mutations.match(/^pm2-delete:/gmu)).toHaveLength(2);
+      expect(mutations.match(/^verify:/gmu)).toHaveLength(2);
+      expect(mutations).not.toContain("failed-verifier");
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
+
+  it("restores the pre-attempt Nginx files before retrying an invalid candidate", async () => {
+    const fixture = await createRollbackFixture();
+    try {
+      const before = await captureRollbackTargets(fixture);
+      await writeFile(join(fixture.root, "nginx-fail-once"), "fail\n", "utf8");
+
+      const firstResult = await executeRollback(fixture, "--apply");
+      expect(firstResult.exitCode).not.toBe(0);
+      expect(firstResult.stderr).toContain(
+        "rollback Nginx candidate configuration is invalid",
+      );
+      await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
+      const failedAttemptMutations = await readMutationLog(fixture);
+      expect(failedAttemptMutations).not.toContain("pm2-delete:");
+      expect(failedAttemptMutations).not.toContain("pm2-start:");
+      expect(failedAttemptMutations).not.toContain("systemctl-reload:");
+      expect(failedAttemptMutations).not.toContain("verify:");
+
+      const secondResult = await executeRollback(fixture, "--apply");
+      expect(secondResult).toMatchObject({ exitCode: 0, stderr: "" });
+      await expectRollbackFilesRestored(fixture);
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
+
+  it("preserves immutable recovery masters when pre-attempt Nginx restoration is interrupted", async () => {
+    const fixture = await createRollbackFixture();
+    try {
+      await Promise.all([
+        writeFile(
+          join(fixture.root, "mv-fail-pre-attempt-restore-once"),
           "fail\n",
           "utf8",
-        );
+        ),
+        writeFile(join(fixture.root, "nginx-fail-always"), "fail\n", "utf8"),
+      ]);
 
-        const firstResult = await executeRollback(fixture, "--apply");
-        expect(firstResult).toMatchObject({
-          exitCode: 91,
-        });
-        await expectRollbackFilesRestored(fixture);
+      const result = await executeRollback(fixture, "--apply");
 
-        const secondResult = await executeRollback(fixture, "--apply");
-        expect(secondResult).toMatchObject({ exitCode: 0, stderr: "" });
-        await expectRollbackFilesRestored(fixture);
-
-        const mutations = await readMutationLog(fixture);
-        expect(mutations.match(/^pm2-start:/gmu)).toHaveLength(2);
-        expect(mutations.match(/^pm2-delete:/gmu)).toHaveLength(2);
-        expect(mutations.match(/^verify:/gmu)).toHaveLength(2);
-        expect(mutations).not.toContain("failed-verifier");
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
-      }
-    },
-    30_000,
-  );
-
-  it(
-    "restores the pre-attempt Nginx files before retrying an invalid candidate",
-    async () => {
-      const fixture = await createRollbackFixture();
-      try {
-        const before = await captureRollbackTargets(fixture);
-        await writeFile(
-          join(fixture.root, "nginx-fail-once"),
-          "fail\n",
-          "utf8",
-        );
-
-        const firstResult = await executeRollback(fixture, "--apply");
-        expect(firstResult.exitCode).not.toBe(0);
-        expect(firstResult.stderr).toContain(
-          "rollback Nginx candidate configuration is invalid",
-        );
-        await expect(captureRollbackTargets(fixture)).resolves.toEqual(before);
-        const failedAttemptMutations = await readMutationLog(fixture);
-        expect(failedAttemptMutations).not.toContain("pm2-delete:");
-        expect(failedAttemptMutations).not.toContain("pm2-start:");
-        expect(failedAttemptMutations).not.toContain("systemctl-reload:");
-        expect(failedAttemptMutations).not.toContain("verify:");
-
-        const secondResult = await executeRollback(fixture, "--apply");
-        expect(secondResult).toMatchObject({ exitCode: 0, stderr: "" });
-        await expectRollbackFilesRestored(fixture);
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
-      }
-    },
-    30_000,
-  );
-
-  it(
-    "preserves immutable recovery masters when pre-attempt Nginx restoration is interrupted",
-    async () => {
-      const fixture = await createRollbackFixture();
-      try {
-        await Promise.all([
-          writeFile(
-            join(fixture.root, "mv-fail-pre-attempt-restore-once"),
-            "fail\n",
-            "utf8",
-          ),
-          writeFile(
-            join(fixture.root, "nginx-fail-always"),
-            "fail\n",
-            "utf8",
-          ),
-        ]);
-
-        const result = await executeRollback(fixture, "--apply");
-
-        expect(result.exitCode).not.toBe(0);
-        expect(result.stderr).toContain(
-          "rollback Nginx candidate was invalid and the pre-attempt state could not be revalidated",
-        );
-        const recoveryMasterPaths = [...result.stderr.matchAll(
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain(
+        "rollback Nginx candidate was invalid and the pre-attempt state could not be revalidated",
+      );
+      const recoveryMasterPaths = [
+        ...result.stderr.matchAll(
           /preserving Nginx recovery master: (\/[^\n]+)/gu,
-        )].map((match) => match[1]);
-        expect(recoveryMasterPaths).toHaveLength(2);
-        expect(
-          recoveryMasterPaths.every((path) =>
-            path.startsWith(`${fixture.nginxSitesRoot}/.`),
-          ),
-        ).toBe(true);
-        await expect(
-          Promise.all(
-            recoveryMasterPaths.map((path) => readFile(path, "utf8")),
-          ),
-        ).resolves.toEqual(
-          expect.arrayContaining([
-            "new primary nginx\n",
-            "new alternate nginx\n",
-          ]),
-        );
-        await expect(readFile(fixture.environmentPath, "utf8")).resolves.toBe(
-          "NEW_ENV=1\n",
-        );
-        await expect(realpath(fixture.currentLink)).resolves.toBe(
-          fixture.failedRelease,
-        );
-        await expect(readFile(fixture.pm2State, "utf8")).resolves.toBe(
-          "failed-release",
-        );
-        const mutations = await readMutationLog(fixture);
-        expect(mutations).not.toContain("pm2-delete:");
-        expect(mutations).not.toContain("pm2-start:");
-        expect(mutations).not.toContain("systemctl-reload:");
-        expect(mutations).not.toContain("verify:");
-      } finally {
-        await rm(fixture.root, { force: true, recursive: true });
-      }
-    },
-    30_000,
-  );
+        ),
+      ].map((match) => match[1]);
+      expect(recoveryMasterPaths).toHaveLength(2);
+      expect(
+        recoveryMasterPaths.every((path) =>
+          path.startsWith(`${fixture.nginxSitesRoot}/.`),
+        ),
+      ).toBe(true);
+      await expect(
+        Promise.all(recoveryMasterPaths.map((path) => readFile(path, "utf8"))),
+      ).resolves.toEqual(
+        expect.arrayContaining([
+          "new primary nginx\n",
+          "new alternate nginx\n",
+        ]),
+      );
+      await expect(readFile(fixture.environmentPath, "utf8")).resolves.toBe(
+        "NEW_ENV=1\n",
+      );
+      await expect(realpath(fixture.currentLink)).resolves.toBe(
+        fixture.failedRelease,
+      );
+      await expect(readFile(fixture.pm2State, "utf8")).resolves.toBe(
+        "failed-release",
+      );
+      const mutations = await readMutationLog(fixture);
+      expect(mutations).not.toContain("pm2-delete:");
+      expect(mutations).not.toContain("pm2-start:");
+      expect(mutations).not.toContain("systemctl-reload:");
+      expect(mutations).not.toContain("verify:");
+    } finally {
+      await rm(fixture.root, { force: true, recursive: true });
+    }
+  }, 30_000);
 
   it.each([
     "http://127.0.0.1:0",
@@ -10698,27 +10930,24 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     const loopbackProtocolIndex = loopbackArguments.indexOf("--proto");
     expect(loopbackProtocolIndex).toBeGreaterThanOrEqual(0);
     expect(loopbackArguments[loopbackProtocolIndex + 1]).toBe("=http");
-    expect(loopbackArguments.at(-1)).toBe(
-      "http://127.0.0.1:8788/api/health",
-    );
+    expect(loopbackArguments.at(-1)).toBe("http://127.0.0.1:8788/api/health");
   });
 
-  it.each([
-    "test-release",
-    "A".repeat(40),
-    "a".repeat(39),
-  ])("rejects non-commit verification version %s", async (version) => {
-    const result = await execFileAsync("bash", [
-      verifyReleaseScript,
-      "http://127.0.0.1:8788",
-      version,
-    ]).catch((error: unknown) => error);
+  it.each(["test-release", "A".repeat(40), "a".repeat(39)])(
+    "rejects non-commit verification version %s",
+    async (version) => {
+      const result = await execFileAsync("bash", [
+        verifyReleaseScript,
+        "http://127.0.0.1:8788",
+        version,
+      ]).catch((error: unknown) => error);
 
-    expect(result).toMatchObject({ code: 64 });
-    expect(String((result as { stderr?: unknown }).stderr)).toContain(
-      "full lowercase Git commit SHA",
-    );
-  });
+      expect(result).toMatchObject({ code: 64 });
+      expect(String((result as { stderr?: unknown }).stderr)).toContain(
+        "full lowercase Git commit SHA",
+      );
+    },
+  );
 
   it("verifies locale persistence and a deterministic no-reasoning chat SSE response", async () => {
     const { command, requests } = await executeVerifyRelease("success");
@@ -10748,7 +10977,8 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     ).toEqual(["/", "/map", "/chat", "/countries/CHN"]);
 
     const localeRequest = requests.find(
-      ({ method, url }) => method === "POST" && url === "/api/preferences/locale",
+      ({ method, url }) =>
+        method === "POST" && url === "/api/preferences/locale",
     );
     expect(JSON.parse(localeRequest?.body ?? "null")).toEqual({
       locale: "zh-CN",
@@ -10773,7 +11003,8 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
 
   it("keeps the release success fixture inside the canonical product DTO", () => {
     expect(
-      productListResponseSchema.safeParse(createReleasePublicProducts()).success,
+      productListResponseSchema.safeParse(createReleasePublicProducts())
+        .success,
     ).toBe(true);
   });
 
@@ -10879,14 +11110,8 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
   });
 
   it.each([
-    [
-      "wrong-default-locale",
-      'Expected / to render <html lang="en">',
-    ],
-    [
-      "lost-locale",
-      'Expected /map to render <html lang="zh-CN">',
-    ],
+    ["wrong-default-locale", 'Expected / to render <html lang="en">'],
+    ["lost-locale", 'Expected /map to render <html lang="zh-CN">'],
     ["reasoning-part", "exposed a forbidden reasoning-delta part"],
     ["missing-start", "must begin with a start event"],
     ["missing-finish", "returned [DONE] before a valid finish event"],
@@ -10918,12 +11143,8 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     expect(rollbackScript).toContain(
       '"${pm2_command[@]}" describe diesel-demo',
     );
-    expect(rollbackScript).toContain(
-      '"${pm2_command[@]}" delete diesel-demo',
-    );
-    expect(rollbackScript).toContain(
-      'app?.name === "diesel-demo" ||',
-    );
+    expect(rollbackScript).toContain('"${pm2_command[@]}" delete diesel-demo');
+    expect(rollbackScript).toContain('app?.name === "diesel-demo" ||');
     expect(rollbackScript).toContain("matches.length !== 1");
     expect(rollbackScript).toContain('pm2Environment.name !== "diesel-demo"');
     expect(rollbackScript).toContain(
@@ -10932,9 +11153,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     expect(rollbackScript).toContain(
       "pm2Environment.env?.APP_VERSION !== expectedVersion",
     );
-    expect(rollbackScript).toContain(
-      "pm2Environment.pm_cwd !== expectedCwd",
-    );
+    expect(rollbackScript).toContain("pm2Environment.pm_cwd !== expectedCwd");
     expect(rollbackScript).toContain(
       'pm2Environment.pm_exec_path !== "/usr/bin/env"',
     );
@@ -11012,9 +11231,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
       'chown -R diesel-build:diesel "${release_dir}"',
     );
     expect(buildScript).not.toContain("chown");
-    expect(buildScript).toContain(
-      "[[ -d node_modules && ! -L node_modules ]]",
-    );
+    expect(buildScript).toContain("[[ -d node_modules && ! -L node_modules ]]");
     expect(buildScript).toContain("[[ -d .next && ! -L .next ]]");
     expect(buildScript).toContain(
       "[[ -f .build-complete && ! -L .build-complete ]]",
@@ -11038,23 +11255,21 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     expect(stageScript).toContain(
       'create "${release_id}" "${generated_manifest}"',
     );
-    expect(stageScript).toContain(
-      ".release-input-manifest.json",
+    expect(stageScript).toContain(".release-input-manifest.json");
+    expect(runbook).not.toContain(
+      'chown -hR root:diesel-build "${release_dir}"',
     );
-    expect(runbook).not.toContain('chown -hR root:diesel-build "${release_dir}"');
     expect(runbook).toContain("scripts/deploy/prepare-release-runtime.sh");
     expect(prepareScript).toContain(
       'build_workspace="${build_workspace_root}/${release_id}"',
     );
+    expect(prepareScript).toContain('build_home="${build_root}/${release_id}"');
     expect(prepareScript).toContain(
-      'build_home="${build_root}/${release_id}"',
+      "prepare_release_require_identity_boundary",
     );
-    expect(prepareScript).toContain("prepare_release_require_identity_boundary");
+    expect(prepareScript).toContain("COREPACK_ENABLE_DOWNLOAD_PROMPT=0");
     expect(prepareScript).toContain(
-      'COREPACK_ENABLE_DOWNLOAD_PROMPT=0',
-    );
-    expect(prepareScript).toContain(
-      'trap \'prepare_release_cleanup_on_exit "$?"\' EXIT',
+      "trap 'prepare_release_cleanup_on_exit \"$?\"' EXIT",
     );
     expect(prepareScript).toContain(
       "prepare_release_remove_exact_directory \\\n" +
@@ -11070,9 +11285,7 @@ printf '%s\\n' '{"status":"ok","version":"wrong-release"}'
     expect(prepareScript).not.toContain(
       'mv "${build_workspace}/${build_output}" "${release_dir}/${build_output}"',
     );
-    expect(prepareScript).toContain(
-      'chown -hR root:diesel "${release_dir}"',
-    );
+    expect(prepareScript).toContain('chown -hR root:diesel "${release_dir}"');
     expect(prepareScript).toContain(
       'finalize "${release_id}" .build-complete .deploy-ready',
     );

@@ -305,11 +305,7 @@ export const countryJurisdictions = pgTable(
   },
   (table) => [
     primaryKey({
-      columns: [
-        table.countryIso3,
-        table.jurisdictionId,
-        table.validFrom,
-      ],
+      columns: [table.countryIso3, table.jurisdictionId, table.validFrom],
       name: "country_jurisdictions_pk",
     }),
     index("country_jurisdictions_jurisdiction_idx").on(table.jurisdictionId),
@@ -450,19 +446,13 @@ export const regulationLimits = pgTable(
       table.validFrom,
       table.validTo,
     ),
-    index("regulation_limits_power_idx").on(
-      table.powerMinKw,
-      table.powerMaxKw,
-    ),
+    index("regulation_limits_power_idx").on(table.powerMinKw, table.powerMaxKw),
     index("regulation_limits_data_source_idx").on(table.dataSourceId),
     check(
       "regulation_limits_power_check",
       sql`(${table.powerMinKw} IS NULL OR ${table.powerMinKw} >= 0) AND (${table.powerMaxKw} IS NULL OR ${table.powerMaxKw} > 0) AND (${table.powerMinKw} IS NULL OR ${table.powerMaxKw} IS NULL OR ${table.powerMaxKw} > ${table.powerMinKw})`,
     ),
-    check(
-      "regulation_limits_value_check",
-      sql`${table.limitValue} >= 0`,
-    ),
+    check("regulation_limits_value_check", sql`${table.limitValue} >= 0`),
     check(
       "regulation_limits_validity_check",
       sql`${table.validTo} IS NULL OR ${table.validTo} > ${table.validFrom}`,
@@ -470,10 +460,7 @@ export const regulationLimits = pgTable(
   ],
 );
 
-type ProductParameters = Record<
-  string,
-  boolean | number | string | null
->;
+type ProductParameters = Record<string, boolean | number | string | null>;
 
 export const products = pgTable(
   "products",
@@ -561,35 +548,79 @@ export const catalogEngines = pgTable(
     modelCode: text("model_code").notNull(),
     series: text("series").notNull(),
     category: text("category").notNull(),
-    applicationScopes: applicationScopeEnum("application_scopes").array().notNull(),
-    ratedPowerKw: numeric("rated_power_kw", { mode: "number", precision: 12, scale: 3 }).notNull(),
-    ratedSpeedRpm: numeric("rated_speed_rpm", { mode: "number", precision: 12, scale: 3 }).notNull(),
-    powerMinKw: numeric("power_min_kw", { mode: "number", precision: 12, scale: 3 }).notNull(),
-    powerMaxKw: numeric("power_max_kw", { mode: "number", precision: 12, scale: 3 }).notNull(),
-    displacementL: numeric("displacement_l", { mode: "number", precision: 8, scale: 3 }).notNull(),
+    applicationScopes: applicationScopeEnum("application_scopes")
+      .array()
+      .notNull(),
+    ratedPowerKw: numeric("rated_power_kw", {
+      mode: "number",
+      precision: 12,
+      scale: 3,
+    }).notNull(),
+    ratedSpeedRpm: numeric("rated_speed_rpm", {
+      mode: "number",
+      precision: 12,
+      scale: 3,
+    }).notNull(),
+    powerMinKw: numeric("power_min_kw", {
+      mode: "number",
+      precision: 12,
+      scale: 3,
+    }).notNull(),
+    powerMaxKw: numeric("power_max_kw", {
+      mode: "number",
+      precision: 12,
+      scale: 3,
+    }).notNull(),
+    displacementL: numeric("displacement_l", {
+      mode: "number",
+      precision: 8,
+      scale: 3,
+    }).notNull(),
     cylinders: integer("cylinders").notNull(),
     aftertreatment: text("aftertreatment").notNull(),
     emissionLabel: text("emission_label").notNull(),
-    declaredCitationCodes: text("declared_citation_codes").array().default(sql`'{}'::text[]`).notNull(),
+    declaredCitationCodes: text("declared_citation_codes")
+      .array()
+      .default(sql`'{}'::text[]`)
+      .notNull(),
     dataSourceId: uuid("data_source_id")
       .notNull()
       .references(() => dataSources.id, { onDelete: "restrict" }),
-    verifiedAt: timestamp("verified_at", { mode: "date", withTimezone: true }).notNull(),
+    verifiedAt: timestamp("verified_at", {
+      mode: "date",
+      withTimezone: true,
+    }).notNull(),
     isDemo: boolean("is_demo").default(false).notNull(),
-    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
     archivedAt: timestamp("archived_at", { mode: "date", withTimezone: true }),
   },
   (table) => [
-    uniqueIndex("catalog_engines_active_model_idx").on(table.modelCode).where(sql`${table.archivedAt} IS NULL`),
+    uniqueIndex("catalog_engines_active_model_idx")
+      .on(table.modelCode)
+      .where(sql`${table.archivedAt} IS NULL`),
     index("catalog_engines_power_idx").on(table.powerMinKw, table.powerMaxKw),
     index("catalog_engines_data_source_idx").on(table.dataSourceId),
-    check("catalog_engines_category_check",
-      sql`${table.category} IN ('truck', 'bus', 'construction', 'agriculture', 'generator-set', 'marine')`),
-    check("catalog_engines_power_check",
-      sql`${table.powerMinKw} >= 0 AND ${table.powerMaxKw} > ${table.powerMinKw} AND ${table.ratedPowerKw} >= ${table.powerMinKw} AND ${table.ratedPowerKw} < ${table.powerMaxKw} AND ${table.ratedSpeedRpm} > 0`),
-    check("catalog_engines_geometry_check", sql`${table.displacementL} > 0 AND ${table.cylinders} > 0`),
-    check("catalog_engines_application_scopes_check", sql`cardinality(${table.applicationScopes}) > 0`),
+    check(
+      "catalog_engines_category_check",
+      sql`${table.category} IN ('truck', 'bus', 'construction', 'agriculture', 'generator-set', 'marine')`,
+    ),
+    check(
+      "catalog_engines_power_check",
+      sql`${table.powerMinKw} >= 0 AND ${table.powerMaxKw} > ${table.powerMinKw} AND ${table.ratedPowerKw} >= ${table.powerMinKw} AND ${table.ratedPowerKw} < ${table.powerMaxKw} AND ${table.ratedSpeedRpm} > 0`,
+    ),
+    check(
+      "catalog_engines_geometry_check",
+      sql`${table.displacementL} > 0 AND ${table.cylinders} > 0`,
+    ),
+    check(
+      "catalog_engines_application_scopes_check",
+      sql`cardinality(${table.applicationScopes}) > 0`,
+    ),
   ],
 );
 
@@ -607,7 +638,10 @@ export const engineFeedback = pgTable(
       .references(() => catalogEngines.id, { onDelete: "restrict" }),
     // The model code at publication time, kept for a readable audit trail.
     modelCode: text("model_code").notNull(),
-    countryIso3: varchar("country_iso3", { length: 3 }).references(() => countries.iso3, { onDelete: "restrict" }),
+    countryIso3: varchar("country_iso3", { length: 3 }).references(
+      () => countries.iso3,
+      { onDelete: "restrict" },
+    ),
     occurredOn: date("occurred_on", { mode: "string" }),
     receivedOn: date("received_on", { mode: "string" }).notNull(),
     category: text("category").notNull(),
@@ -615,32 +649,68 @@ export const engineFeedback = pgTable(
     component: text("component"),
     symptom: text("symptom").notNull(),
     customerRequest: text("customer_request"),
-    tags: text("tags").array().default(sql`'{}'::text[]`).notNull(),
-    requestedPowerValue: numeric("requested_power_value", { mode: "number", precision: 12, scale: 3 }),
+    tags: text("tags")
+      .array()
+      .default(sql`'{}'::text[]`)
+      .notNull(),
+    requestedPowerValue: numeric("requested_power_value", {
+      mode: "number",
+      precision: 12,
+      scale: 3,
+    }),
     requestedPowerUnit: text("requested_power_unit"),
-    requestedPowerKw: numeric("requested_power_kw", { mode: "number", precision: 12, scale: 3 }),
+    requestedPowerKw: numeric("requested_power_kw", {
+      mode: "number",
+      precision: 12,
+      scale: 3,
+    }),
     quantityAffected: integer("quantity_affected"),
     severity: text("severity").notNull(),
     evidenceQuote: text("evidence_quote").notNull(),
     evidenceVerified: boolean("evidence_verified").notNull(),
     sourceKind: text("source_kind").notNull(),
     sourceLanguage: text("source_language"),
-    sourceBatchId: uuid("source_batch_id").references(() => marketImportBatches.id, { onDelete: "restrict" }),
+    sourceBatchId: uuid("source_batch_id").references(
+      () => marketImportBatches.id,
+      { onDelete: "restrict" },
+    ),
     customerRef: text("customer_ref"),
     isDemo: boolean("is_demo").default(false).notNull(),
-    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
     archivedAt: timestamp("archived_at", { mode: "date", withTimezone: true }),
   },
   (table) => [
     index("engine_feedback_engine_idx").on(table.catalogEngineId),
     index("engine_feedback_country_idx").on(table.countryIso3),
-    check("engine_feedback_category_check", sql`${table.category} IN ('failure', 'quality', 'performance_request', 'service_parts', 'commercial', 'documentation', 'other')`),
-    check("engine_feedback_system_check", sql`${table.system} IN ('intake', 'exhaust', 'aftertreatment', 'fuel', 'cooling', 'lubrication', 'electronics', 'power_output', 'structure', 'other')`),
-    check("engine_feedback_severity_check", sql`${table.severity} IN ('low', 'medium', 'high', 'safety')`),
-    check("engine_feedback_source_kind_check", sql`${table.sourceKind} IN ('chat_screenshot', 'paper_photo', 'pdf', 'email', 'text')`),
-    check("engine_feedback_power_check", sql`(${table.requestedPowerValue} IS NULL AND ${table.requestedPowerUnit} IS NULL AND ${table.requestedPowerKw} IS NULL) OR (${table.requestedPowerValue} > 0 AND ${table.requestedPowerUnit} IN ('kW', 'hp', 'PS') AND ${table.requestedPowerKw} > 0)`),
-    check("engine_feedback_quantity_check", sql`${table.quantityAffected} IS NULL OR ${table.quantityAffected} > 0`),
+    check(
+      "engine_feedback_category_check",
+      sql`${table.category} IN ('failure', 'quality', 'performance_request', 'service_parts', 'commercial', 'documentation', 'other')`,
+    ),
+    check(
+      "engine_feedback_system_check",
+      sql`${table.system} IN ('intake', 'exhaust', 'aftertreatment', 'fuel', 'cooling', 'lubrication', 'electronics', 'power_output', 'structure', 'other')`,
+    ),
+    check(
+      "engine_feedback_severity_check",
+      sql`${table.severity} IN ('low', 'medium', 'high', 'safety')`,
+    ),
+    check(
+      "engine_feedback_source_kind_check",
+      sql`${table.sourceKind} IN ('chat_screenshot', 'paper_photo', 'pdf', 'email', 'text')`,
+    ),
+    check(
+      "engine_feedback_power_check",
+      sql`(${table.requestedPowerValue} IS NULL AND ${table.requestedPowerUnit} IS NULL AND ${table.requestedPowerKw} IS NULL) OR (${table.requestedPowerValue} > 0 AND ${table.requestedPowerUnit} IN ('kW', 'hp', 'PS') AND ${table.requestedPowerKw} > 0)`,
+    ),
+    check(
+      "engine_feedback_quantity_check",
+      sql`${table.quantityAffected} IS NULL OR ${table.quantityAffected} > 0`,
+    ),
   ],
 );
 
@@ -662,7 +732,9 @@ export const feedbackSourceFiles = pgTable(
     byteSize: integer("byte_size").notNull(),
     storagePath: text("storage_path").notNull(),
     createdBy: text("created_by").notNull(),
-    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     index("feedback_source_files_batch_idx").on(table.batchId),
@@ -952,10 +1024,9 @@ export const documentChunks = pgTable(
     embedding: vector("embedding", { dimensions: 128 }),
     embeddingModel: text("embedding_model"),
     contentHash: varchar("content_hash", { length: 64 }).notNull(),
-    jurisdictionId: uuid("jurisdiction_id").references(
-      () => jurisdictions.id,
-      { onDelete: "set null" },
-    ),
+    jurisdictionId: uuid("jurisdiction_id").references(() => jurisdictions.id, {
+      onDelete: "set null",
+    }),
     countryIso3: varchar("country_iso3", { length: 3 }).references(
       () => countries.iso3,
       { onDelete: "set null" },
@@ -991,10 +1062,7 @@ export const documentChunks = pgTable(
       table.documentId,
       table.contentHash,
     ),
-    index("document_chunks_search_vector_idx").using(
-      "gin",
-      table.searchVector,
-    ),
+    index("document_chunks_search_vector_idx").using("gin", table.searchVector),
     index("document_chunks_country_scope_validity_idx").on(
       table.countryIso3,
       table.applicationScope,
@@ -1093,7 +1161,9 @@ export const marketImportBatches = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     // Historically market-only; also holds catalogue import batches.
-    entityType: governedEntityTypeEnum("entity_type").default("market_metric").notNull(),
+    entityType: governedEntityTypeEnum("entity_type")
+      .default("market_metric")
+      .notNull(),
     status: marketImportStatusEnum("status").default("previewed").notNull(),
     originalFilename: text("original_filename").notNull(),
     contentSha256: varchar("content_sha256", { length: 64 }).notNull(),
@@ -1207,10 +1277,7 @@ export const apiRateLimitBuckets = pgTable(
       "api_rate_limit_buckets_key_hash_check",
       sql`${table.keyHash} ~ '^[0-9a-f]{64}$'`,
     ),
-    check(
-      "api_rate_limit_buckets_count_check",
-      sql`${table.requestCount} > 0`,
-    ),
+    check("api_rate_limit_buckets_count_check", sql`${table.requestCount} > 0`),
     check(
       "api_rate_limit_buckets_expiry_check",
       sql`${table.expiresAt} > ${table.windowStart}`,
@@ -1356,9 +1423,7 @@ export const aiCitations = pgTable(
       table.chunkId,
     ),
     index("ai_citations_regulation_idx").on(table.regulationId),
-    index("ai_citations_certification_idx").on(
-      table.productCertificationId,
-    ),
+    index("ai_citations_certification_idx").on(table.productCertificationId),
     check(
       "ai_citations_pages_check",
       sql`(${table.pageFrom} IS NULL OR ${table.pageFrom} > 0) AND (${table.pageTo} IS NULL OR (${table.pageFrom} IS NOT NULL AND ${table.pageTo} >= ${table.pageFrom}))`,

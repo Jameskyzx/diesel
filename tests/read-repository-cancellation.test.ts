@@ -52,13 +52,26 @@ describe("read repository cancellation", () => {
 
   it("does not start retrieval when cancellation arrives during native spelling parsing", async () => {
     const controller = new AbortController();
-    const from = vi.fn(async () => { controller.abort(); return [{ query: "'nonroad'" }]; });
+    const from = vi.fn(async () => {
+      controller.abort();
+      return [{ query: "'nonroad'" }];
+    });
     const select = vi.fn(() => ({ from }));
     const repository = createKnowledgeRepository({ select } as never);
-    await expect(repository.searchCandidates({
-      applicationScope: "non-road", asOf: "2026-08-20", countryIso3: "CHN",
-      jurisdictionId: null, limit: 5, query: "nonroad emissions source",
-    }, [0, 1], { signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
+    await expect(
+      repository.searchCandidates(
+        {
+          applicationScope: "non-road",
+          asOf: "2026-08-20",
+          countryIso3: "CHN",
+          jurisdictionId: null,
+          limit: 5,
+          query: "nonroad emissions source",
+        },
+        [0, 1],
+        { signal: controller.signal },
+      ),
+    ).rejects.toMatchObject({ name: "AbortError" });
     expect(select).toHaveBeenCalledTimes(1);
     expect(from).toHaveBeenCalledTimes(1);
   });

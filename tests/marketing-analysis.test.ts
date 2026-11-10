@@ -39,7 +39,10 @@ import { evaluateProductFit } from "@/server/services/product-fit-service";
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
 import { aiEvidenceCitationsMatchFacts } from "@/features/ai/evidence-semantics";
 import { aiToolResultSchema } from "@/features/ai/schemas";
-import { buildSalesChatEvidenceContract, evidenceQueryWasAnswered } from "@/server/ai/evidence-contract";
+import {
+  buildSalesChatEvidenceContract,
+  evidenceQueryWasAnswered,
+} from "@/server/ai/evidence-contract";
 import {
   opportunityScoreModelToolOutputSchema,
   opportunityScoreResultToModelOutput,
@@ -114,14 +117,12 @@ describe("opportunity-score-v2 pure rules", () => {
     expect(first).toEqual(second);
     expect(first.overallScore).toBe(81);
     expect(
-      first.components.map(
-        ({ contribution, effectiveWeight, key, score }) => ({
-          contribution,
-          effectiveWeight,
-          key,
-          score,
-        }),
-      ),
+      first.components.map(({ contribution, effectiveWeight, key, score }) => ({
+        contribution,
+        effectiveWeight,
+        key,
+        score,
+      })),
     ).toEqual([
       {
         contribution: 35,
@@ -356,24 +357,24 @@ describe("marketing analysis service", () => {
       }),
     ]);
     const knowledgeResult = buildKnowledgeResult({
-        informationAsOf: input.asOf,
-        resolvedCountryIso3: "CHN",
-        search,
-      });
+      informationAsOf: input.asOf,
+      resolvedCountryIso3: "CHN",
+      search,
+    });
     const profileResult = buildCountryProfileResult({
-        informationAsOf: input.asOf,
-        profile,
-        requestedTopics: ["country"],
-        resolvedCountryIso3: "CHN",
-      });
+      informationAsOf: input.asOf,
+      profile,
+      requestedTopics: ["country"],
+      resolvedCountryIso3: "CHN",
+    });
     const productResult = buildCompatibleProductsResult({
-        applicationScope: input.applicationScope,
-        asOf: input.asOf,
-        countryIso3: "CHN",
-        evaluations: [productEvaluation],
-        powerKw: input.powerKw,
-        productModelCode: productQuery.productModelCode,
-      });
+      applicationScope: input.applicationScope,
+      asOf: input.asOf,
+      countryIso3: "CHN",
+      evaluations: [productEvaluation],
+      powerKw: input.powerKw,
+      productModelCode: productQuery.productModelCode,
+    });
     const regulationResult = buildRegulationComparisonResult({
       comparison: regulationComparison,
       informationAsOf: input.asOf,
@@ -423,8 +424,7 @@ describe("marketing analysis service", () => {
       throw new Error("Expected an available country-profile fixture.");
     }
     const profileCountry = profileResult.profile.country;
-    const currentRegulation =
-      profileCountry.currentEffectiveRegulations.at(0);
+    const currentRegulation = profileCountry.currentEffectiveRegulations.at(0);
     if (!currentRegulation) {
       throw new Error("Expected a current regulation in the profile fixture.");
     }
@@ -474,9 +474,9 @@ describe("marketing analysis service", () => {
     }
     crossProductCertification.productId =
       "00000000-0000-4000-8000-000000009905";
-    expect(
-      aiEvidenceCitationsMatchFacts(crossProductCertificationResult),
-    ).toBe(false);
+    expect(aiEvidenceCitationsMatchFacts(crossProductCertificationResult)).toBe(
+      false,
+    );
 
     const productInputDrifts = [
       { field: "asOf", value: "2026-07-30" },
@@ -706,8 +706,7 @@ describe("marketing analysis service", () => {
                     index === 0
                       ? {
                           ...certification,
-                          regulationId:
-                            "00000000-0000-4000-8000-000000009903",
+                          regulationId: "00000000-0000-4000-8000-000000009903",
                         }
                       : certification,
                 ),
@@ -743,10 +742,9 @@ describe("marketing analysis service", () => {
 
     for (const { label, result } of identityDrifts) {
       expect(aiToolResultSchema.safeParse(result).success, label).toBe(false);
-      expect(
-        clientAiToolResultSchema.safeParse(result).success,
-        label,
-      ).toBe(false);
+      expect(clientAiToolResultSchema.safeParse(result).success, label).toBe(
+        false,
+      );
     }
   });
 
@@ -789,8 +787,7 @@ describe("marketing analysis service", () => {
           const regulation =
             comparison.countries[0]?.currentEffectiveRegulations[0];
           if (!regulation) throw new Error("Missing regulation fixture.");
-          regulation.source.entityId =
-            "00000000-0000-4000-8000-000000009911";
+          regulation.source.entityId = "00000000-0000-4000-8000-000000009911";
         },
       },
       {
@@ -812,16 +809,15 @@ describe("marketing analysis service", () => {
             comparison.countries[0]?.currentEffectiveRegulations[0];
           const limit = regulation?.limits[0];
           if (!limit) throw new Error("Missing limit fixture.");
-          limit.source.sourceId =
-            "00000000-0000-4000-8000-000000009912";
+          limit.source.sourceId = "00000000-0000-4000-8000-000000009912";
         },
       },
       {
         label: "reordered regulation limits",
         mutate: (comparison) => {
           const regulation = comparison.countries
-            .flatMap(({ currentEffectiveRegulations }) =>
-              currentEffectiveRegulations,
+            .flatMap(
+              ({ currentEffectiveRegulations }) => currentEffectiveRegulations,
             )
             .find(({ limits }) => limits.length > 1);
           if (!regulation) throw new Error("Missing multi-limit fixture.");
@@ -869,10 +865,9 @@ describe("marketing analysis service", () => {
       ).toThrow();
       const result = { ...regulationResult, comparison };
       expect(aiToolResultSchema.safeParse(result).success, label).toBe(false);
-      expect(
-        clientAiToolResultSchema.safeParse(result).success,
-        label,
-      ).toBe(false);
+      expect(clientAiToolResultSchema.safeParse(result).success, label).toBe(
+        false,
+      );
     }
 
     const marketMutations: Array<{
@@ -950,10 +945,9 @@ describe("marketing analysis service", () => {
     for (const { label, mutate } of marketMutations) {
       const comparison = structuredClone(marketComparison);
       mutate(comparison);
-      expect(
-        marketComparisonSchema.safeParse(comparison).success,
-        label,
-      ).toBe(false);
+      expect(marketComparisonSchema.safeParse(comparison).success, label).toBe(
+        false,
+      );
       expect(() =>
         buildMarketComparisonResult({
           comparison,
@@ -962,10 +956,9 @@ describe("marketing analysis service", () => {
       ).toThrow();
       const result = { ...marketResult, comparison };
       expect(aiToolResultSchema.safeParse(result).success, label).toBe(false);
-      expect(
-        clientAiToolResultSchema.safeParse(result).success,
-        label,
-      ).toBe(false);
+      expect(clientAiToolResultSchema.safeParse(result).success, label).toBe(
+        false,
+      );
     }
   });
 
@@ -1015,109 +1008,104 @@ describe("marketing analysis service", () => {
     }
   });
 
-  it(
-    "returns jurisdiction and membership evidence for regulation applicability",
-    async () => {
-      const comparison = await compareRegulations({
-        applicationScope: input.applicationScope,
-        asOf: input.asOf,
-        countryIso3s: input.countryIso3s,
-        powerKw: input.powerKw,
-      });
-      const china = comparison.countries.find(
-        ({ countryIso3 }) => countryIso3 === "CHN",
-      );
-      const chinaRegulation = china?.currentEffectiveRegulations.at(0);
+  it("returns jurisdiction and membership evidence for regulation applicability", async () => {
+    const comparison = await compareRegulations({
+      applicationScope: input.applicationScope,
+      asOf: input.asOf,
+      countryIso3s: input.countryIso3s,
+      powerKw: input.powerKw,
+    });
+    const china = comparison.countries.find(
+      ({ countryIso3 }) => countryIso3 === "CHN",
+    );
+    const chinaRegulation = china?.currentEffectiveRegulations.at(0);
 
-      expect(china).toMatchObject({
-        countryIsDemo: true,
-        countrySource: {
-          id: "00000000-0000-4000-8000-000000000001",
-          isDemo: true,
-          title: "DEMO ONLY — Fictional country metadata source",
-        },
-      });
+    expect(china).toMatchObject({
+      countryIsDemo: true,
+      countrySource: {
+        id: "00000000-0000-4000-8000-000000000001",
+        isDemo: true,
+        title: "DEMO ONLY — Fictional country metadata source",
+      },
+    });
 
-      expect(chinaRegulation?.applicability).toMatchObject({
-        countryIso3: "CHN",
-        jurisdiction: {
-          isDemo: true,
-          source: { entityType: "jurisdiction", isDemo: true },
-        },
-        membership: {
-          isDemo: true,
-          source: { entityType: "country_jurisdiction", isDemo: true },
-        },
-      });
-      expect(chinaRegulation?.limits).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            validFrom: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-            validTo: null,
-          }),
-        ]),
-      );
-      expect(chinaRegulation).toMatchObject({
-        recordStatus: "effective",
-        status: "effective",
-      });
-      expect(
-        chinaRegulation?.limits.every(({ source, validFrom }) =>
-          source.locator?.includes(validFrom),
+    expect(chinaRegulation?.applicability).toMatchObject({
+      countryIso3: "CHN",
+      jurisdiction: {
+        isDemo: true,
+        source: { entityType: "jurisdiction", isDemo: true },
+      },
+      membership: {
+        isDemo: true,
+        source: { entityType: "country_jurisdiction", isDemo: true },
+      },
+    });
+    expect(chinaRegulation?.limits).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          validFrom: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          validTo: null,
+        }),
+      ]),
+    );
+    expect(chinaRegulation).toMatchObject({
+      recordStatus: "effective",
+      status: "effective",
+    });
+    expect(
+      chinaRegulation?.limits.every(({ source, validFrom }) =>
+        source.locator?.includes(validFrom),
+      ),
+    ).toBe(true);
+    expect(chinaRegulation?.limits[0]?.source.locatorDescriptor).toEqual({
+      kind: "regulation_limit_period",
+      pollutantCode: chinaRegulation?.limits[0]?.pollutantCode,
+      validFrom: chinaRegulation?.limits[0]?.validFrom,
+      validTo: chinaRegulation?.limits[0]?.validTo,
+    });
+    expect(chinaRegulation?.limits[0]?.source.titleDescriptor).toEqual({
+      kind: "regulation_pollutant_limit",
+      pollutantCode: chinaRegulation?.limits[0]?.pollutantCode,
+      regulationName: chinaRegulation?.canonicalName,
+    });
+    expect(
+      chinaRegulation?.applicability.membership.source.locatorDescriptor,
+    ).toEqual({
+      kind: "membership_period",
+      validFrom: chinaRegulation?.applicability.membership.validFrom,
+      validTo: chinaRegulation?.applicability.membership.validTo,
+    });
+    expect(
+      chinaRegulation?.applicability.membership.source.titleDescriptor,
+    ).toEqual({
+      countryIso3: "CHN",
+      jurisdictionName: chinaRegulation?.applicability.jurisdiction.name,
+      kind: "country_jurisdiction_membership",
+    });
+    const applicabilitySources = comparison.sources.filter(({ entityType }) =>
+      ["jurisdiction", "country_jurisdiction"].includes(entityType),
+    );
+    expect(
+      applicabilitySources
+        .map(({ countryIso3, entityType }) => `${countryIso3}:${entityType}`)
+        .sort(),
+    ).toEqual([
+      "BRA:country_jurisdiction",
+      "BRA:jurisdiction",
+      "CHN:country_jurisdiction",
+      "CHN:country_jurisdiction",
+      "CHN:jurisdiction",
+      "CHN:jurisdiction",
+    ]);
+    expect(
+      new Set(
+        applicabilitySources.map(
+          ({ countryIso3, entityId, entityType, regulationId, sourceId }) =>
+            `${countryIso3}:${entityType}:${entityId}:${regulationId}:${sourceId}`,
         ),
-      ).toBe(true);
-      expect(chinaRegulation?.limits[0]?.source.locatorDescriptor).toEqual({
-        kind: "regulation_limit_period",
-        pollutantCode: chinaRegulation?.limits[0]?.pollutantCode,
-        validFrom: chinaRegulation?.limits[0]?.validFrom,
-        validTo: chinaRegulation?.limits[0]?.validTo,
-      });
-      expect(chinaRegulation?.limits[0]?.source.titleDescriptor).toEqual({
-        kind: "regulation_pollutant_limit",
-        pollutantCode: chinaRegulation?.limits[0]?.pollutantCode,
-        regulationName: chinaRegulation?.canonicalName,
-      });
-      expect(
-        chinaRegulation?.applicability.membership.source.locatorDescriptor,
-      ).toEqual({
-        kind: "membership_period",
-        validFrom: chinaRegulation?.applicability.membership.validFrom,
-        validTo: chinaRegulation?.applicability.membership.validTo,
-      });
-      expect(
-        chinaRegulation?.applicability.membership.source.titleDescriptor,
-      ).toEqual({
-        countryIso3: "CHN",
-        jurisdictionName: chinaRegulation?.applicability.jurisdiction.name,
-        kind: "country_jurisdiction_membership",
-      });
-      const applicabilitySources = comparison.sources.filter(
-        ({ entityType }) =>
-          ["jurisdiction", "country_jurisdiction"].includes(entityType),
-      );
-      expect(
-        applicabilitySources
-          .map(({ countryIso3, entityType }) => `${countryIso3}:${entityType}`)
-          .sort(),
-      ).toEqual([
-        "BRA:country_jurisdiction",
-        "BRA:jurisdiction",
-        "CHN:country_jurisdiction",
-        "CHN:country_jurisdiction",
-        "CHN:jurisdiction",
-        "CHN:jurisdiction",
-      ]);
-      expect(
-        new Set(
-          applicabilitySources.map(
-            ({ countryIso3, entityId, entityType, regulationId, sourceId }) =>
-              `${countryIso3}:${entityType}:${entityId}:${regulationId}:${sourceId}`,
-          ),
-        ).size,
-      ).toBe(applicabilitySources.length);
-    },
-    30_000,
-  );
+      ).size,
+    ).toBe(applicabilitySources.length);
+  }, 30_000);
 
   it("preserves historical record status from comparison service output", async () => {
     const comparison = await compareRegulations({
@@ -1170,8 +1158,7 @@ describe("marketing analysis service", () => {
       productModelCode: "DEMO-ENG-100",
     });
     const historicalCitations = result.citations.filter(
-      ({ regulationId }) =>
-        regulationId === demoIds.regulation.chinaSuperseded,
+      ({ regulationId }) => regulationId === demoIds.regulation.chinaSuperseded,
     );
 
     expect(historicalCitations).not.toHaveLength(0);
@@ -1204,8 +1191,7 @@ describe("marketing analysis service", () => {
       historicalEvaluation,
     ]).find(
       ({ entityId, entityType }) =>
-        entityType === "product_certification" &&
-        entityId === certification.id,
+        entityType === "product_certification" && entityId === certification.id,
     );
 
     expect(certificationSource?.regulationStatus).toBe("superseded");
@@ -1327,7 +1313,9 @@ describe("marketing analysis service", () => {
     const first = await calculateOpportunityScore(input);
     const second = await calculateOpportunityScore(input);
     const china = first.scores.find(({ countryIso3 }) => countryIso3 === "CHN");
-    const brazil = first.scores.find(({ countryIso3 }) => countryIso3 === "BRA");
+    const brazil = first.scores.find(
+      ({ countryIso3 }) => countryIso3 === "BRA",
+    );
 
     expect(first).toEqual(second);
     expect(china).toMatchObject({
@@ -1582,7 +1570,8 @@ describe("marketing analysis service", () => {
       ({ locatorDescriptor, titleDescriptor }) =>
         locatorDescriptor != null || titleDescriptor != null,
     );
-    if (!descriptorCitation) throw new Error("Missing descriptor citation fixture.");
+    if (!descriptorCitation)
+      throw new Error("Missing descriptor citation fixture.");
     const projectedDescriptorCitation = scoreProjection.citations.find(
       ({ entityId, entityType, sourceId }) =>
         entityId === descriptorCitation.entityId &&
@@ -1734,7 +1723,8 @@ describe("marketing analysis service", () => {
 
     const driftedProjectedScore = structuredClone(scoreProjection);
     const firstProjectedScore = driftedProjectedScore.scorecard.scores[0];
-    if (!firstProjectedScore) throw new Error("Missing projected score fixture.");
+    if (!firstProjectedScore)
+      throw new Error("Missing projected score fixture.");
     firstProjectedScore.overallScore = 99;
     expect(
       opportunityScoreModelToolOutputSchema.safeParse(driftedProjectedScore)
@@ -1766,8 +1756,7 @@ describe("marketing analysis service", () => {
     const driftedQueryDate = structuredClone(scoreProjection);
     driftedQueryDate.scorecard.query.asOf = "2027-01-01";
     expect(
-      opportunityScoreModelToolOutputSchema.safeParse(driftedQueryDate)
-        .success,
+      opportunityScoreModelToolOutputSchema.safeParse(driftedQueryDate).success,
     ).toBe(false);
 
     const queryWithoutMetricCodes: Partial<
@@ -1798,9 +1787,8 @@ describe("marketing analysis service", () => {
     );
     reorderedMetricProjection.scorecard.query.metricCodes.reverse();
     expect(
-      opportunityScoreModelToolOutputSchema.safeParse(
-        reorderedMetricProjection,
-      ).success,
+      opportunityScoreModelToolOutputSchema.safeParse(reorderedMetricProjection)
+        .success,
     ).toBe(false);
 
     const namedScorecard = await calculateOpportunityScore({
@@ -1926,10 +1914,8 @@ describe("marketing analysis service", () => {
       },
       {
         mutate: (projection) => {
-          findProjectedCitation(
-            projection,
-            "jurisdiction",
-          ).locatorDescriptor = validExtraLocatorDescriptor;
+          findProjectedCitation(projection, "jurisdiction").locatorDescriptor =
+            validExtraLocatorDescriptor;
         },
         name: "jurisdiction locator descriptor",
       },
@@ -2015,8 +2001,7 @@ describe("marketing analysis service", () => {
     const driftedFreshness = structuredClone(scoreProjection);
     driftedFreshness.latestVerifiedAt = "2027-01-01T00:00:00.000Z";
     expect(
-      opportunityScoreModelToolOutputSchema.safeParse(driftedFreshness)
-        .success,
+      opportunityScoreModelToolOutputSchema.safeParse(driftedFreshness).success,
     ).toBe(false);
 
     const offsetFreshness = structuredClone(scoreProjection);
@@ -2074,9 +2059,7 @@ describe("marketing analysis service", () => {
     if (!readyProducts || !("productIds" in readyProducts)) {
       throw new Error("Missing ready-products rule fixture.");
     }
-    readyProducts.productIds = [
-      "00000000-0000-4000-8000-000000009997",
-    ];
+    readyProducts.productIds = ["00000000-0000-4000-8000-000000009997"];
     expect(
       salesBriefModelToolOutputSchema.safeParse(outsideBriefProduct).success,
     ).toBe(false);
@@ -2085,7 +2068,9 @@ describe("marketing analysis service", () => {
     const firstScore = driftedScoreResult.scorecard.scores[0];
     if (!firstScore) throw new Error("Missing score fixture.");
     firstScore.overallScore = 99;
-    expect(() => opportunityScoreResultToModelOutput(driftedScoreResult)).toThrow();
+    expect(() =>
+      opportunityScoreResultToModelOutput(driftedScoreResult),
+    ).toThrow();
 
     const globallyScopedMarketResult = structuredClone(scoreResult);
     for (const metric of globallyScopedMarketResult.scorecard.provenance
@@ -2177,7 +2162,9 @@ describe("marketing analysis service", () => {
     await database
       .update(productCertifications)
       .set({ certificateNumber: null })
-      .where(eq(productCertifications.id, demoIds.certification.engine100China));
+      .where(
+        eq(productCertifications.id, demoIds.certification.engine100China),
+      );
 
     try {
       const brief = await generateSalesBrief({
@@ -2312,7 +2299,9 @@ describe("marketing analysis service", () => {
 
     await database
       .update(marketMetrics)
-      .set({ definition: "DEMO ONLY — A materially different metric definition." })
+      .set({
+        definition: "DEMO ONLY — A materially different metric definition.",
+      })
       .where(eq(marketMetrics.id, demoIds.marketMetric.brazil));
 
     try {
@@ -2398,34 +2387,82 @@ describe("marketing analysis service", () => {
         historicalMetricId,
       );
       const marketPeriod = { start: "2024-01-01", end: "2025-01-01" };
-      const historical = await compareMarkets({ countryIso3s: ["CHN", "BRA"],
-        metricCodes: ["DEMO_ADDRESSABLE_UNITS"], marketPeriod });
-      expect(historical.metrics[0]?.observations.map(({ id }) => id)).toEqual([historicalMetricId]);
+      const historical = await compareMarkets({
+        countryIso3s: ["CHN", "BRA"],
+        metricCodes: ["DEMO_ADDRESSABLE_UNITS"],
+        marketPeriod,
+      });
+      expect(historical.metrics[0]?.observations.map(({ id }) => id)).toEqual([
+        historicalMetricId,
+      ]);
       expect(historical.metrics[0]?.comparisonStatus).toBe("insufficient_data");
-      expect(historical.sources.map(({ entityId }) => entityId)).toEqual([historicalMetricId]);
-      const profile = await getCountryDetails({ iso3: "BRA", asOf: "2026-07-29", marketPeriod });
-      const result = buildCountryProfileResult({ profile, informationAsOf: "2026-07-29", resolvedCountryIso3: "BRA",
-        requestedTopics: ["market"], marketPeriod });
+      expect(historical.sources.map(({ entityId }) => entityId)).toEqual([
+        historicalMetricId,
+      ]);
+      const profile = await getCountryDetails({
+        iso3: "BRA",
+        asOf: "2026-07-29",
+        marketPeriod,
+      });
+      const result = buildCountryProfileResult({
+        profile,
+        informationAsOf: "2026-07-29",
+        resolvedCountryIso3: "BRA",
+        requestedTopics: ["market"],
+        marketPeriod,
+      });
       expect(result.marketPeriod).toEqual(marketPeriod);
       expect(result.evidenceSufficient).toBe(true);
       if (profile.status !== "available") throw new Error("Expected profile");
-      expect(profile.country.marketMetrics.map(({ id }) => id)).toEqual([historicalMetricId]);
+      expect(profile.country.marketMetrics.map(({ id }) => id)).toEqual([
+        historicalMetricId,
+      ]);
       expect(clientAiToolResultSchema.safeParse(result).success).toBe(true);
-      const unfilteredContract = buildSalesChatEvidenceContract({ userTexts: ["BRA market data as of 2026-07-29"], selectedCountryIso3: null });
+      const unfilteredContract = buildSalesChatEvidenceContract({
+        userTexts: ["BRA market data as of 2026-07-29"],
+        selectedCountryIso3: null,
+      });
       expect(evidenceQueryWasAnswered(unfilteredContract, result)).toBe(false);
-      const filteredContract = { ...unfilteredContract, requirements: unfilteredContract.requirements.map(requirement => ({
-        ...requirement, query: { ...requirement.query, marketPeriod },
-      })) };
+      const filteredContract = {
+        ...unfilteredContract,
+        requirements: unfilteredContract.requirements.map((requirement) => ({
+          ...requirement,
+          query: { ...requirement.query, marketPeriod },
+        })),
+      };
       expect(evidenceQueryWasAnswered(filteredContract, result)).toBe(true);
       const { marketPeriod: _period, ...missingPeriod } = result;
       expect(_period).toEqual(marketPeriod);
-      expect(evidenceQueryWasAnswered(filteredContract, missingPeriod)).toBe(false);
-      expect(aiToolResultSchema.safeParse({ ...result, marketPeriod: { start: "2025-01-01", end: "2026-01-01" } }).success).toBe(false);
-      expect(clientAiToolResultSchema.safeParse({ ...result, marketPeriod: { start: "2025-01-01", end: "2026-01-01" } }).success).toBe(false);
+      expect(evidenceQueryWasAnswered(filteredContract, missingPeriod)).toBe(
+        false,
+      );
+      expect(
+        aiToolResultSchema.safeParse({
+          ...result,
+          marketPeriod: { start: "2025-01-01", end: "2026-01-01" },
+        }).success,
+      ).toBe(false);
+      expect(
+        clientAiToolResultSchema.safeParse({
+          ...result,
+          marketPeriod: { start: "2025-01-01", end: "2026-01-01" },
+        }).success,
+      ).toBe(false);
       const absentPeriod = { start: "1998-01-01", end: "1999-01-01" };
-      const absent = await getCountryDetails({ iso3: "BRA", marketPeriod: absentPeriod, asOf: "2026-07-29" });
-      expect(buildCountryProfileResult({ profile: absent, marketPeriod: absentPeriod, informationAsOf: "2026-07-29",
-        resolvedCountryIso3: "BRA", requestedTopics: ["market"] })).toMatchObject({ status: "no_data", evidenceSufficient: false });
+      const absent = await getCountryDetails({
+        iso3: "BRA",
+        marketPeriod: absentPeriod,
+        asOf: "2026-07-29",
+      });
+      expect(
+        buildCountryProfileResult({
+          profile: absent,
+          marketPeriod: absentPeriod,
+          informationAsOf: "2026-07-29",
+          resolvedCountryIso3: "BRA",
+          requestedTopics: ["market"],
+        }),
+      ).toMatchObject({ status: "no_data", evidenceSufficient: false });
     } finally {
       await database
         .delete(marketMetrics)

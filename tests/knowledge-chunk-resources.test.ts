@@ -10,7 +10,10 @@ function generatedTextCodeUnits(
   chunks: ReturnType<typeof chunkStructuredText>,
 ): number {
   return chunks.reduce(
-    (total, chunk) => total + chunk.content.length + chunk.sectionLocator.length +
+    (total, chunk) =>
+      total +
+      chunk.content.length +
+      chunk.sectionLocator.length +
       chunk.headingPath.reduce((length, heading) => length + heading.length, 0),
     0,
   );
@@ -21,11 +24,17 @@ function outputBudgetFixture() {
   const section = "H".repeat(headingLimit - title.length - " > ".length);
   const heading = `${title} > ${section}`;
   const bodies = Array.from({ length: 2700 }, () => "b");
-  let remaining = generatedTextLimit - bodies.reduce(
-    (total, body, index) => total + `${heading}\n${body}`.length +
-      `${heading} · paragraph ${index + 1}`.length + title.length + section.length,
-    0,
-  );
+  let remaining =
+    generatedTextLimit -
+    bodies.reduce(
+      (total, body, index) =>
+        total +
+        `${heading}\n${body}`.length +
+        `${heading} · paragraph ${index + 1}`.length +
+        title.length +
+        section.length,
+      0,
+    );
   // Fill only body text, keeping each paragraph within the existing 1200-unit
   // body budget. This reaches the independent aggregate-field budget exactly.
   for (let index = 0; remaining > 0 && index < bodies.length; index += 1) {
@@ -42,13 +51,16 @@ describe("knowledge chunk output budgets", () => {
     { name: "one long heading", text: `# ${"H".repeat(16000)}\n\nbody` },
     {
       name: "the combined hierarchy, not just individual headings",
-      text: Array.from({ length: 6 }, (_, index) =>
-        `${"#".repeat(index + 1)} ${"H".repeat(400)}`
-      ).join("\n") + "\n\nbody",
+      text:
+        Array.from(
+          { length: 6 },
+          (_, index) => `${"#".repeat(index + 1)} ${"H".repeat(400)}`,
+        ).join("\n") + "\n\nbody",
     },
   ])("rejects $name before producing oversized chunks", ({ text }) => {
-    expect(() => chunkStructuredText("T", text))
-      .toThrowError("Knowledge chunking limit exceeded: HEADING_PATH_LIMIT.");
+    expect(() => chunkStructuredText("T", text)).toThrowError(
+      "Knowledge chunking limit exceeded: HEADING_PATH_LIMIT.",
+    );
   });
 
   it.each(["H".repeat(2044), "😀".repeat(1022)])(
@@ -62,16 +74,21 @@ describe("knowledge chunk output budgets", () => {
   );
 
   it("counts the document title in the heading budget", () => {
-    expect(() => chunkStructuredText("T".repeat(headingLimit + 1), "body"))
-      .toThrowError("Knowledge chunking limit exceeded: HEADING_PATH_LIMIT.");
+    expect(() =>
+      chunkStructuredText("T".repeat(headingLimit + 1), "body"),
+    ).toThrowError("Knowledge chunking limit exceeded: HEADING_PATH_LIMIT.");
   });
 
   it("releases replaced sibling headings from the active-path budget", () => {
     const section = "H".repeat(2044);
-    const chunks = chunkStructuredText("T", `# ${section}\n\na\n# ${section}\n\nb`);
+    const chunks = chunkStructuredText(
+      "T",
+      `# ${section}\n\na\n# ${section}\n\nb`,
+    );
     expect(chunks).toHaveLength(2);
     expect(chunks.map((chunk) => chunk.headingPath)).toEqual([
-      ["T", section], ["T", section],
+      ["T", section],
+      ["T", section],
     ]);
     expect(chunks[0]?.headingPath).not.toBe(chunks[1]?.headingPath);
   });
@@ -81,13 +98,15 @@ describe("knowledge chunk output budgets", () => {
     const chunks = chunkStructuredText("T", text);
     expect(chunks).toHaveLength(chunkLimit);
     expect(chunks.at(-1)?.chunkIndex).toBe(chunkLimit - 1);
-    expect(() => chunkStructuredText("T", `${text}body`))
-      .toThrowError("Knowledge chunking limit exceeded: CHUNK_COUNT_LIMIT.");
+    expect(() => chunkStructuredText("T", `${text}body`)).toThrowError(
+      "Knowledge chunking limit exceeded: CHUNK_COUNT_LIMIT.",
+    );
   });
 
   it("counts chunks across page boundaries", () => {
-    expect(() => chunkStructuredText("T", "body\f".repeat(chunkLimit + 1)))
-      .toThrowError("Knowledge chunking limit exceeded: CHUNK_COUNT_LIMIT.");
+    expect(() =>
+      chunkStructuredText("T", "body\f".repeat(chunkLimit + 1)),
+    ).toThrowError("Knowledge chunking limit exceeded: CHUNK_COUNT_LIMIT.");
   });
 
   it("counts content, every heading field and locators at the exact output limit", () => {
@@ -98,8 +117,9 @@ describe("knowledge chunk output budgets", () => {
     expect(generatedTextCodeUnits(chunks)).toBe(generatedTextLimit);
     // The last paragraph remains shorter than the body limit, so this adds
     // precisely one generated code unit rather than a new chunk or locator.
-    expect(() => chunkStructuredText(fixture.title, `${fixture.text}b`))
-      .toThrowError("Knowledge chunking limit exceeded: GENERATED_TEXT_LIMIT.");
+    expect(() =>
+      chunkStructuredText(fixture.title, `${fixture.text}b`),
+    ).toThrowError("Knowledge chunking limit exceeded: GENERATED_TEXT_LIMIT.");
   });
 
   it("still chunks a 5 MiB plain source with a maximum-length metadata title", () => {
@@ -107,8 +127,9 @@ describe("knowledge chunk output budgets", () => {
     const text = "b".repeat(5 * 1024 * 1024);
     const chunks = chunkStructuredText(title, text);
     expect(chunks).toHaveLength(Math.ceil(text.length / 1200));
-    expect(chunks.map((chunk) => chunk.content.slice(title.length + 1)).join(""))
-      .toBe(text);
+    expect(
+      chunks.map((chunk) => chunk.content.slice(title.length + 1)).join(""),
+    ).toBe(text);
     expect(generatedTextCodeUnits(chunks)).toBeLessThan(generatedTextLimit);
   });
 });

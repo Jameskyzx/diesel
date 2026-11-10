@@ -5,10 +5,7 @@ import {
   KNOWLEDGE_TOOL_EXECUTION_FAILURE_WARNING,
 } from "@/domain/knowledge/search-consistency";
 import { OPPORTUNITY_SCORE_RULESET_VERSION } from "@/features/marketing/constants";
-import type {
-  AiCitation,
-  AiToolResult,
-} from "@/features/ai/schemas";
+import type { AiCitation, AiToolResult } from "@/features/ai/schemas";
 import type {
   OpportunityScoreGap,
   OpportunityScoreWeights,
@@ -90,9 +87,7 @@ export function unknownProductsEvidenceWarning(count: number): string {
  * Rebuilds the exact server-authored warning sequence from public structured
  * state. Raw warning text is never accepted as an independent fact channel.
  */
-export function expectedAiToolResultWarnings(
-  result: AiToolResult,
-): string[] {
+export function expectedAiToolResultWarnings(result: AiToolResult): string[] {
   if (result.status === "error") {
     return [KNOWLEDGE_TOOL_EXECUTION_FAILURE_WARNING];
   }
@@ -107,10 +102,7 @@ export function expectedAiToolResultWarnings(
   if (result.tool === "searchKnowledgeBase") {
     return result.search.results.length === 0
       ? [KNOWLEDGE_INSUFFICIENT_EVIDENCE_WARNING]
-      : [
-          ...result.search.results.flatMap(({ warnings }) => warnings),
-          ...demo,
-        ];
+      : [...result.search.results.flatMap(({ warnings }) => warnings), ...demo];
   }
   if (result.tool === "getCountryProfile") {
     if (
@@ -153,18 +145,10 @@ export function expectedAiToolResultWarnings(
     ];
   }
   if (result.tool === "compareRegulations") {
-    return [
-      ...insufficient,
-      ...result.comparison.missingData,
-      ...demo,
-    ];
+    return [...insufficient, ...result.comparison.missingData, ...demo];
   }
   if (result.tool === "compareMarkets") {
-    return [
-      ...insufficient,
-      ...result.comparison.missingData,
-      ...demo,
-    ];
+    return [...insufficient, ...result.comparison.missingData, ...demo];
   }
   if (result.tool === "calculateOpportunityScore") {
     return [
@@ -180,10 +164,7 @@ export function expectedAiToolResultWarnings(
   return [
     ...insufficient,
     ...result.brief.gaps.map((gap) =>
-      opportunityScoreGapWarning(
-        gap,
-        result.brief.marketScore.countryIso3,
-      ),
+      opportunityScoreGapWarning(gap, result.brief.marketScore.countryIso3),
     ),
     ...demo,
   ];
@@ -192,10 +173,7 @@ export function expectedAiToolResultWarnings(
 export function aiToolResultWarningsMatchFacts(value: unknown): boolean {
   try {
     const result = value as AiToolResult;
-    return exactSequence(
-      result.warnings,
-      expectedAiToolResultWarnings(result),
-    );
+    return exactSequence(result.warnings, expectedAiToolResultWarnings(result));
   } catch {
     return false;
   }
@@ -234,7 +212,9 @@ function canonicalAnalysisQuery(query: {
   };
 }
 
-function unavailableProvenance(query: ReturnType<typeof canonicalAnalysisQuery>) {
+function unavailableProvenance(
+  query: ReturnType<typeof canonicalAnalysisQuery>,
+) {
   return {
     marketComparison: {
       metrics: [],
@@ -354,8 +334,7 @@ export function expectedCanonicalToolErrorPayload(
           ...(result.comparison.query.applicationScope === undefined
             ? {}
             : {
-                applicationScope:
-                  result.comparison.query.applicationScope,
+                applicationScope: result.comparison.query.applicationScope,
               }),
           countryIso3s: [...result.comparison.query.countryIso3s],
           ...(result.comparison.query.metricCodes === undefined

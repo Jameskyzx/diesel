@@ -64,9 +64,8 @@ type RuntimeEnvironmentContract = Readonly<{
 }>;
 
 const require = createRequire(import.meta.url);
-const contract = require(
-  "../scripts/deploy/runtime-environment-contract.cjs",
-) as RuntimeEnvironmentContract;
+const contract =
+  require("../scripts/deploy/runtime-environment-contract.cjs") as RuntimeEnvironmentContract;
 
 const validEnvironment = {
   AI_CHAT_ADMISSION_CLIENT_PROVIDER_CALL_UNITS_PER_DAY: "500",
@@ -87,10 +86,12 @@ const validEnvironmentText = [
   "",
 ].join("\n");
 
-async function createReadbackFixture(options: {
-  candidateText?: string;
-  liveText?: string;
-} = {}) {
+async function createReadbackFixture(
+  options: {
+    candidateText?: string;
+    liveText?: string;
+  } = {},
+) {
   const directory = await mkdtemp(join(tmpdir(), "diesel-runtime-env-"));
   const backupPath = join(directory, "backup.env");
   const candidatePath = join(directory, "candidate.env");
@@ -109,8 +110,13 @@ async function createReadbackFixture(options: {
 }
 
 function currentIdentity(): { gid: number; uid: number } {
-  if (typeof process.getuid !== "function" || typeof process.getgid !== "function") {
-    throw new Error("POSIX identity is required for deployment contract tests.");
+  if (
+    typeof process.getuid !== "function" ||
+    typeof process.getgid !== "function"
+  ) {
+    throw new Error(
+      "POSIX identity is required for deployment contract tests.",
+    );
   }
   return { gid: process.getgid(), uid: process.getuid() };
 }
@@ -132,12 +138,10 @@ describe("production runtime environment contract", () => {
       globalDefaultPerHour: AI_CHAT_RATE_LIMIT_GLOBAL_DEFAULT_PER_HOUR,
       maxPerHour: AI_CHAT_RATE_LIMIT_MAX_PER_HOUR,
     });
-    expect(Object.isFrozen(contract.PRODUCTION_AI_CHAT_RATE_LIMIT_CONTRACT)).toBe(
-      true,
-    );
     expect(
-      contract.validateProductionAiChatRateLimitConfiguration({}),
-    ).toEqual(
+      Object.isFrozen(contract.PRODUCTION_AI_CHAT_RATE_LIMIT_CONTRACT),
+    ).toBe(true);
+    expect(contract.validateProductionAiChatRateLimitConfiguration({})).toEqual(
       resolveAiChatRateLimitConfig({ perClientLimitPerHour: 30 }),
     );
   });
@@ -477,7 +481,7 @@ describe("production runtime environment contract", () => {
         '  process.stdout.write("unexpected-success");',
         "  process.exit(1);",
         "} catch (error) {",
-        '  process.stdout.write(String(error && error.code));',
+        "  process.stdout.write(String(error && error.code));",
         "}",
       ].join("\n");
 

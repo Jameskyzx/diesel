@@ -23,22 +23,52 @@ export function powerToKw(value: number, unit: FeedbackPowerUnit): number {
 
 /** Width, case and punctuation-insensitive text for evidence matching. */
 export function normalizeForEvidence(text: string): string {
-  return text.normalize("NFKC").toLocaleLowerCase("en-US").replace(/[\s\p{P}\p{S}]+/gu, "");
+  return text
+    .normalize("NFKC")
+    .toLocaleLowerCase("en-US")
+    .replace(/[\s\p{P}\p{S}]+/gu, "");
 }
 
-export function evidenceFoundIn(quote: string, sources: readonly string[]): boolean {
+export function evidenceFoundIn(
+  quote: string,
+  sources: readonly string[],
+): boolean {
   const needle = normalizeForEvidence(quote);
-  return needle.length > 0 && sources.some(source => normalizeForEvidence(source).includes(needle));
+  return (
+    needle.length > 0 &&
+    sources.some((source) => normalizeForEvidence(source).includes(needle))
+  );
 }
 
-const chineseNumerals: Record<string, number> = { 一: 1, 两: 2, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+const chineseNumerals: Record<string, number> = {
+  一: 1,
+  两: 2,
+  二: 2,
+  三: 3,
+  四: 4,
+  五: 5,
+  六: 6,
+  七: 7,
+  八: 8,
+  九: 9,
+  十: 10,
+};
 
 function numberAppearsIn(value: number, text: string): boolean {
-  const digits = text.normalize("NFKC").replace(/(?<=\d)[,\s](?=\d{3}\b)/gu, "");
+  const digits = text
+    .normalize("NFKC")
+    .replace(/(?<=\d)[,\s](?=\d{3}\b)/gu, "");
   const numbers = digits.match(/\d+(?:\.\d+)?/gu) ?? [];
   // Small counts are often written in Chinese, e.g. "两台" for two units.
-  const spelled = [...digits].flatMap(character => chineseNumerals[character] === undefined ? [] : [chineseNumerals[character]]);
-  return numbers.some(candidate => Number(candidate) === value) || spelled.includes(value);
+  const spelled = [...digits].flatMap((character) =>
+    chineseNumerals[character] === undefined
+      ? []
+      : [chineseNumerals[character]],
+  );
+  return (
+    numbers.some((candidate) => Number(candidate) === value) ||
+    spelled.includes(value)
+  );
 }
 
 const REDACTED = "[已隐去]";
@@ -49,14 +79,21 @@ const contactPatterns = [
 ];
 
 /** Removes e-mail addresses, phone numbers and messenger ids before storage. */
-export function redactContacts(text: string): { text: string; redacted: boolean } {
+export function redactContacts(text: string): {
+  text: string;
+  redacted: boolean;
+} {
   let redacted = false;
   let result = text.normalize("NFC");
   for (const pattern of contactPatterns) {
-    result = result.replace(pattern, match => {
+    result = result.replace(pattern, (match) => {
       // A long digit run is a phone number; a model code such as H13-460 is not.
-      if (pattern === contactPatterns[2] &&
-        (match.replace(/\D/gu, "").length < 7 || /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/u.test(match.trim()))) return match;
+      if (
+        pattern === contactPatterns[2] &&
+        (match.replace(/\D/gu, "").length < 7 ||
+          /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$/u.test(match.trim()))
+      )
+        return match;
       redacted = true;
       return REDACTED;
     });
@@ -71,35 +108,59 @@ export type ModelMatch =
   | { status: "ambiguous"; candidates: CatalogueModel[] }
   | { status: "unmatched" };
 
-const compactModel = (value: string) => value.normalize("NFKC").toUpperCase().replace(/[\s_\-–—.]+/gu, "");
+const compactModel = (value: string) =>
+  value
+    .normalize("NFKC")
+    .toUpperCase()
+    .replace(/[\s_\-–—.]+/gu, "");
 
 /**
  * Exact catalogue matching only. A mention matches a model code (with or
  * without the DEMO prefix); a series mention with several models is ambiguous.
  */
-export function matchCatalogueModel(mention: string | null, records: readonly CatalogueModel[]): ModelMatch {
+export function matchCatalogueModel(
+  mention: string | null,
+  records: readonly CatalogueModel[],
+): ModelMatch {
   if (!mention) return { status: "unmatched" };
   const wanted = compactModel(mention);
   if (!wanted) return { status: "unmatched" };
   const withoutPrefix = (value: string) => value.replace(/^DEMO/u, "");
-  const exact = records.filter(record =>
-    compactModel(record.model) === wanted || withoutPrefix(compactModel(record.model)) === withoutPrefix(wanted));
+  const exact = records.filter(
+    (record) =>
+      compactModel(record.model) === wanted ||
+      withoutPrefix(compactModel(record.model)) === withoutPrefix(wanted),
+  );
   if (exact.length === 1) return { status: "matched", record: exact[0]! };
   if (exact.length > 1) return { status: "ambiguous", candidates: exact };
-  const series = records.filter(record =>
-    compactModel(record.series) === wanted || withoutPrefix(compactModel(record.series)) === withoutPrefix(wanted));
+  const series = records.filter(
+    (record) =>
+      compactModel(record.series) === wanted ||
+      withoutPrefix(compactModel(record.series)) === withoutPrefix(wanted),
+  );
   if (series.length === 1) return { status: "matched", record: series[0]! };
   if (series.length > 1) return { status: "ambiguous", candidates: series };
   return { status: "unmatched" };
 }
 
-export type DirectoryCountry = { iso2: string | null; iso3: string; name: string };
+export type DirectoryCountry = {
+  iso2: string | null;
+  iso3: string;
+  name: string;
+};
 
 const regionNames = new Intl.DisplayNames(["zh-CN"], { type: "region" });
-const compactName = (value: string) => value.normalize("NFKC").toLocaleLowerCase("en-US").replace(/[\s.'’()-]+/gu, "");
+const compactName = (value: string) =>
+  value
+    .normalize("NFKC")
+    .toLocaleLowerCase("en-US")
+    .replace(/[\s.'’()-]+/gu, "");
 
 /** Exact match on ISO codes, the English directory name or the Chinese region name. */
-export function matchDirectoryCountry(mention: string | null, directory: readonly DirectoryCountry[]): string | null {
+export function matchDirectoryCountry(
+  mention: string | null,
+  directory: readonly DirectoryCountry[],
+): string | null {
   if (!mention) return null;
   const wanted = compactName(mention);
   if (!wanted) return null;
@@ -112,7 +173,8 @@ export function matchDirectoryCountry(mention: string | null, directory: readonl
         // An unknown region code simply has no Chinese name.
       }
     }
-    if (names.some(name => name && compactName(name) === wanted)) return country.iso3;
+    if (names.some((name) => name && compactName(name) === wanted))
+      return country.iso3;
   }
   return null;
 }
@@ -130,29 +192,58 @@ export function resolveExtractedItem(
 ): { item: FeedbackDraftItem; issues: FeedbackItemIssue[] } {
   const issues: FeedbackItemIssue[] = [];
   const quote = redactContacts(extracted.evidenceQuote);
-  const evidenceVerified = evidenceFoundIn(extracted.evidenceQuote, context.sources);
+  const evidenceVerified = evidenceFoundIn(
+    extracted.evidenceQuote,
+    context.sources,
+  );
   if (!evidenceVerified) {
-    issues.push({ code: "evidence_not_found", message: "原文摘录在上传内容里找不到，请核对或改写后再保存。" });
+    issues.push({
+      code: "evidence_not_found",
+      message: "原文摘录在上传内容里找不到，请核对或改写后再保存。",
+    });
   }
   if (quote.redacted) {
-    issues.push({ code: "contact_redacted", message: "摘录中的电话、邮箱或社交账号已隐去。" });
+    issues.push({
+      code: "contact_redacted",
+      message: "摘录中的电话、邮箱或社交账号已隐去。",
+    });
   }
 
-  const numbers = [extracted.requestedPower?.value, extracted.quantityAffected].filter((value): value is number => typeof value === "number");
-  if (numbers.some(value => !numberAppearsIn(value, extracted.evidenceQuote))) {
-    issues.push({ code: "number_not_in_evidence", message: "功率或台数没有出现在原文摘录里，请核对数字。" });
+  const numbers = [
+    extracted.requestedPower?.value,
+    extracted.quantityAffected,
+  ].filter((value): value is number => typeof value === "number");
+  if (
+    numbers.some((value) => !numberAppearsIn(value, extracted.evidenceQuote))
+  ) {
+    issues.push({
+      code: "number_not_in_evidence",
+      message: "功率或台数没有出现在原文摘录里，请核对数字。",
+    });
   }
 
   const model = matchCatalogueModel(extracted.modelMention, context.catalogue);
   if (model.status === "ambiguous") {
-    issues.push({ code: "model_ambiguous", message: `型号可能是 ${model.candidates.map(c => c.model).join("、")}，请选择。` });
+    issues.push({
+      code: "model_ambiguous",
+      message: `型号可能是 ${model.candidates.map((c) => c.model).join("、")}，请选择。`,
+    });
   } else if (model.status === "unmatched") {
-    issues.push({ code: "model_unmatched", message: "没有在机型目录里找到对应型号，请选择。" });
+    issues.push({
+      code: "model_unmatched",
+      message: "没有在机型目录里找到对应型号，请选择。",
+    });
   }
 
-  const countryIso3 = matchDirectoryCountry(extracted.countryMention, context.directory);
+  const countryIso3 = matchDirectoryCountry(
+    extracted.countryMention,
+    context.directory,
+  );
   if (extracted.countryMention && !countryIso3) {
-    issues.push({ code: "country_unmatched", message: `无法确定“${extracted.countryMention}”对应的国家，请选择。` });
+    issues.push({
+      code: "country_unmatched",
+      message: `无法确定“${extracted.countryMention}”对应的国家，请选择。`,
+    });
   }
 
   const power = extracted.requestedPower;
@@ -169,7 +260,9 @@ export function resolveExtractedItem(
       system: extracted.system,
       component: extracted.component,
       symptom: redactContacts(extracted.symptom).text,
-      customerRequest: extracted.customerRequest ? redactContacts(extracted.customerRequest).text : null,
+      customerRequest: extracted.customerRequest
+        ? redactContacts(extracted.customerRequest).text
+        : null,
       requestedPowerValue: power?.value ?? null,
       requestedPowerUnit: power?.unit ?? null,
       requestedPowerKw: power ? powerToKw(power.value, power.unit) : null,

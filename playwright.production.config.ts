@@ -7,9 +7,7 @@ export default defineConfig({
   testDir: "./e2e",
   testMatch: "security-policy.spec.ts",
   forbidOnly: Boolean(process.env.CI),
-  reporter: [
-    ["list"],
-  ],
+  reporter: [["list"]],
   outputDir: "test-results/production-csp",
   timeout: 60_000,
   workers: 1,
@@ -21,8 +19,7 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_PRODUCTION_BASE_URL
     ? undefined
     : {
-        command:
-          "pnpm start --hostname 127.0.0.1 --port 3400",
+        command: "pnpm start --hostname 127.0.0.1 --port 3400",
         env: {
           AI_API_KEY: "production-csp-placeholder-not-a-secret",
           AI_BASE_URL: "https://example.invalid/v1",
@@ -36,8 +33,7 @@ export default defineConfig({
           AI_PROVIDER: "openai-compatible",
           APP_VERSION: "production-csp-e2e",
           DATABASE_MODE: "postgres",
-          DATABASE_URL:
-            "postgresql://diesel_e2e:unused@127.0.0.1:1/diesel_e2e",
+          DATABASE_URL: "postgresql://diesel_e2e:unused@127.0.0.1:1/diesel_e2e",
           KNOWLEDGE_STORAGE_ROOT: "production-csp-e2e-knowledge",
           NODE_ENV: "production",
           PORTFOLIO_DEMO_MODE: "false",

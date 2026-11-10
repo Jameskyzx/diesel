@@ -2,9 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import {
-  type AiCitation,
-} from "@/features/ai/schemas";
+import { type AiCitation } from "@/features/ai/schemas";
 import { citationLocatorDescriptorSchema } from "@/features/ai/citation-locator";
 import { citationTitleDescriptorSchema } from "@/features/ai/citation-title";
 import {
@@ -245,7 +243,9 @@ export function refineModelToolOutputEnvelope(
   }
 
   const sourceIds = output.sources.map(({ id }) => id);
-  const citationSourceIds = [...new Set(output.citations.map(({ sourceId }) => sourceId))];
+  const citationSourceIds = [
+    ...new Set(output.citations.map(({ sourceId }) => sourceId)),
+  ];
   if (
     duplicateStrings(sourceIds) ||
     !exactModelToolOutputSequence(sourceIds, citationSourceIds)
@@ -257,7 +257,9 @@ export function refineModelToolOutputEnvelope(
     });
   }
 
-  const sourcesById = new Map(output.sources.map((source) => [source.id, source]));
+  const sourcesById = new Map(
+    output.sources.map((source) => [source.id, source]),
+  );
   if (
     output.citations.some(({ sourceId }) => !sourcesById.has(sourceId)) ||
     latestVerifiedAtFromCitations(output.sources) !== output.latestVerifiedAt

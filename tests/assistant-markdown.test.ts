@@ -32,7 +32,7 @@ describe("assistant Markdown", () => {
     expect(html).toContain("<h3");
     expect(html).toContain("<strong>已验证</strong>");
     expect(html).toContain("<code");
-    expect(html).toContain("type=\"checkbox\"");
+    expect(html).toContain('type="checkbox"');
     expect(html).toContain("<table");
     expect(html).toContain('href="https://authority.example/evidence"');
     expect(html).toContain('target="_blank"');
@@ -75,27 +75,21 @@ describe("assistant Markdown", () => {
       safeAssistantMarkdownUrl("https://example.com/a", [
         "https://example.com/a",
       ]),
-    ).toBe(
-      "https://example.com/a",
-    );
+    ).toBe("https://example.com/a");
     expect(safeAssistantMarkdownUrl("https://example.com/a")).toBe("");
     expect(
       safeAssistantMarkdownUrl("https://evil.example/phishing", [
         "https://example.com/a",
       ]),
     ).toBe("");
-    expect(safeAssistantMarkdownUrl("/countries/CHN")).toBe(
-      "/countries/CHN",
-    );
+    expect(safeAssistantMarkdownUrl("/countries/CHN")).toBe("/countries/CHN");
     expect(safeAssistantMarkdownUrl("#sources")).toBe("#sources");
     expect(safeAssistantMarkdownUrl("?asOf=2026-08-14")).toBe(
       "?asOf=2026-08-14",
     );
     expect(safeAssistantMarkdownUrl("//evil.example/path")).toBe("");
     expect(safeAssistantMarkdownUrl("/\\evil.example/path")).toBe("");
-    expect(safeAssistantMarkdownUrl("https://user:pass@example.com")).toBe(
-      "",
-    );
+    expect(safeAssistantMarkdownUrl("https://user:pass@example.com")).toBe("");
     expect(safeAssistantMarkdownUrl("javascript:alert(1)")).toBe("");
     expect(safeAssistantMarkdownUrl("data:text/html;base64,WA==")).toBe("");
   });

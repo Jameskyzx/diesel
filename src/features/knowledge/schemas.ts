@@ -15,9 +15,7 @@ const isoTimestampSchema = z.iso.datetime({ offset: true });
 const nullableIsoDateSchema = z.union([isoDateSchema, z.null()]);
 const searchLimitSchema = z
   .union([z.number(), decimalNumberStringSchema])
-  .transform((value) =>
-    typeof value === "number" ? value : Number(value),
-  )
+  .transform((value) => (typeof value === "number" ? value : Number(value)))
   .pipe(z.number().finite().int().min(1).max(25));
 
 export const documentTypes = [
@@ -46,22 +44,22 @@ export const documentProcessingStatusSchema = z.enum([
   "failed",
 ]);
 
-const optionalUrlSchema = z.union([
-  httpUrlSchema,
-  z.literal(""),
-  z.null(),
-]);
+const optionalUrlSchema = z.union([httpUrlSchema, z.literal(""), z.null()]);
 
 const documentTextValidationMessage =
   "Document text must not contain NUL or unpaired UTF-16 surrogates.";
-const documentDescriptorTextSchema = z.string().refine(isPersistableDocumentText, {
-  message: documentTextValidationMessage,
-});
+const documentDescriptorTextSchema = z
+  .string()
+  .refine(isPersistableDocumentText, {
+    message: documentTextValidationMessage,
+  });
 
-export const documentFileDescriptorSchema = z.object({
-  fileName: documentDescriptorTextSchema,
-  mimeType: documentDescriptorTextSchema,
-}).strict();
+export const documentFileDescriptorSchema = z
+  .object({
+    fileName: documentDescriptorTextSchema,
+    mimeType: documentDescriptorTextSchema,
+  })
+  .strict();
 
 export const documentImportMetadataSchema = z
   .object({
@@ -158,9 +156,7 @@ export const documentImportResponseSchema = z
 
 export const hybridSearchQuerySchema = z
   .object({
-    applicationScope: z
-      .union([applicationScopeSchema, z.null()])
-      .default(null),
+    applicationScope: z.union([applicationScopeSchema, z.null()]).default(null),
     asOf: z.union([isoDateSchema, z.null()]).default(null),
     countryIso3: z.union([iso3Schema, z.null()]).default(null),
     jurisdictionId: z.union([z.uuid(), z.null()]).default(null),

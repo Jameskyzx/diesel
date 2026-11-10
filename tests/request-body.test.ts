@@ -121,7 +121,10 @@ describe("uploaded text encoding", () => {
 
     await expect(
       readUtf8File(
-        new File([Uint8Array.from([0x63, 0x61, 0x66, 0xc3, 0x28])], "market.csv"),
+        new File(
+          [Uint8Array.from([0x63, 0x61, 0x66, 0xc3, 0x28])],
+          "market.csv",
+        ),
       ),
     ).rejects.toThrow("not valid UTF-8");
   });
@@ -237,7 +240,9 @@ describe("JSON request media types", () => {
       body: new ReadableStream<Uint8Array>({
         cancel,
         start(controller) {
-          controller.enqueue(new TextEncoder().encode(`{"value":"${"x".repeat(128)}"}`));
+          controller.enqueue(
+            new TextEncoder().encode(`{"value":"${"x".repeat(128)}"}`),
+          );
         },
       }),
       duplex: "half",

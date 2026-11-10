@@ -45,13 +45,16 @@ describe("country URL filters", () => {
     ["00300", 300, true],
     ["3e2", 300, true],
     [".125", 0.125, true],
-  ] as const)("parses powerKw=%s with the existing decimal rules", (raw, powerKw, needsRedirect) => {
-    expect(parseCountryFilters({ powerKw: raw })).toEqual({
-      canonicalQuery: `powerKw=${powerKw}`,
-      filters: { powerKw },
-      needsRedirect,
-    });
-  });
+  ] as const)(
+    "parses powerKw=%s with the existing decimal rules",
+    (raw, powerKw, needsRedirect) => {
+      expect(parseCountryFilters({ powerKw: raw })).toEqual({
+        canonicalQuery: `powerKw=${powerKw}`,
+        filters: { powerKw },
+        needsRedirect,
+      });
+    },
+  );
 
   it.each([
     ["applicationScope", ""],
@@ -80,23 +83,31 @@ describe("country URL filters", () => {
     ["productModelCode", ""],
     ["productModelCode", " \t "],
     ["productModelCode", "A".repeat(101)],
-  ])("removes invalid %s=%s without discarding unknown metadata", (key, value) => {
-    expect(parseCountryFilters({ [key]: value, utm_source: "shared" })).toEqual({
-      canonicalQuery: "utm_source=shared",
-      filters: {},
-      needsRedirect: true,
-    });
-  });
+  ])(
+    "removes invalid %s=%s without discarding unknown metadata",
+    (key, value) => {
+      expect(
+        parseCountryFilters({ [key]: value, utm_source: "shared" }),
+      ).toEqual({
+        canonicalQuery: "utm_source=shared",
+        filters: {},
+        needsRedirect: true,
+      });
+    },
+  );
 
   it("drops invalid fields independently and retains the remaining context", () => {
-    expect(parseCountryFilters({
-      applicationScope: "non-road",
-      asOf: "2025-02-29",
-      powerKw: "300.0",
-      productModelCode: " demo-eng-300 ",
-      utm_source: "interview",
-    })).toEqual({
-      canonicalQuery: "applicationScope=non-road&powerKw=300&productModelCode=DEMO-ENG-300&utm_source=interview",
+    expect(
+      parseCountryFilters({
+        applicationScope: "non-road",
+        asOf: "2025-02-29",
+        powerKw: "300.0",
+        productModelCode: " demo-eng-300 ",
+        utm_source: "interview",
+      }),
+    ).toEqual({
+      canonicalQuery:
+        "applicationScope=non-road&powerKw=300&productModelCode=DEMO-ENG-300&utm_source=interview",
       filters: {
         applicationScope: "non-road",
         powerKw: 300,
@@ -108,10 +119,12 @@ describe("country URL filters", () => {
 
   it("accepts a valid leap date and a trimmed 100-character product model", () => {
     const model = "A".repeat(100);
-    expect(parseCountryFilters({
-      asOf: "2024-02-29",
-      productModelCode: ` ${model.toLowerCase()} `,
-    })).toEqual({
+    expect(
+      parseCountryFilters({
+        asOf: "2024-02-29",
+        productModelCode: ` ${model.toLowerCase()} `,
+      }),
+    ).toEqual({
       canonicalQuery: `asOf=2024-02-29&productModelCode=${model}`,
       filters: { asOf: "2024-02-29", productModelCode: model },
       needsRedirect: true,
@@ -119,13 +132,16 @@ describe("country URL filters", () => {
   });
 
   it("collapses each repeated known filter to its first value", () => {
-    expect(parseCountryFilters({
-      applicationScope: ["non-road", "marine"],
-      asOf: ["2026-09-14", "2024-02-29"],
-      powerKw: ["300", "100"],
-      productModelCode: ["DEMO-ENG-300", "DEMO-ENG-100"],
-    })).toEqual({
-      canonicalQuery: "applicationScope=non-road&asOf=2026-09-14&powerKw=300&productModelCode=DEMO-ENG-300",
+    expect(
+      parseCountryFilters({
+        applicationScope: ["non-road", "marine"],
+        asOf: ["2026-09-14", "2024-02-29"],
+        powerKw: ["300", "100"],
+        productModelCode: ["DEMO-ENG-300", "DEMO-ENG-100"],
+      }),
+    ).toEqual({
+      canonicalQuery:
+        "applicationScope=non-road&asOf=2026-09-14&powerKw=300&productModelCode=DEMO-ENG-300",
       filters: {
         applicationScope: "non-road",
         asOf: "2026-09-14",
@@ -137,12 +153,14 @@ describe("country URL filters", () => {
   });
 
   it("removes a repeated known field when its first value is invalid", () => {
-    expect(parseCountryFilters({
-      applicationScope: ["invalid", "non-road"],
-      asOf: ["", "2026-09-14"],
-      powerKw: ["NaN", "300"],
-      productModelCode: [" ", "DEMO-ENG-300"],
-    })).toEqual({ canonicalQuery: "", filters: {}, needsRedirect: true });
+    expect(
+      parseCountryFilters({
+        applicationScope: ["invalid", "non-road"],
+        asOf: ["", "2026-09-14"],
+        powerKw: ["NaN", "300"],
+        productModelCode: [" ", "DEMO-ENG-300"],
+      }),
+    ).toEqual({ canonicalQuery: "", filters: {}, needsRedirect: true });
   });
 
   it("collapses even identical repeated known values", () => {
@@ -154,13 +172,16 @@ describe("country URL filters", () => {
   });
 
   it("does not round an invalid first power or replace it with a later valid value", () => {
-    expect(parseCountryFilters({
-      applicationScope: "non-road",
-      asOf: "2026-09-14",
-      powerKw: ["55.999999999999999999", "100"],
-      utm_source: ["first", "second"],
-    })).toEqual({
-      canonicalQuery: "applicationScope=non-road&asOf=2026-09-14&utm_source=first&utm_source=second",
+    expect(
+      parseCountryFilters({
+        applicationScope: "non-road",
+        asOf: "2026-09-14",
+        powerKw: ["55.999999999999999999", "100"],
+        utm_source: ["first", "second"],
+      }),
+    ).toEqual({
+      canonicalQuery:
+        "applicationScope=non-road&asOf=2026-09-14&utm_source=first&utm_source=second",
       filters: { applicationScope: "non-road", asOf: "2026-09-14" },
       needsRedirect: true,
     });
@@ -186,13 +207,15 @@ describe("country URL filters", () => {
   });
 
   it("does not redirect merely because input keys have a different order", () => {
-    expect(parseCountryFilters({
-      utm_source: "shared",
-      productModelCode: "DEMO-ENG-300",
-      powerKw: "300",
-      asOf: "2026-09-14",
-      applicationScope: "non-road",
-    }).needsRedirect).toBe(false);
+    expect(
+      parseCountryFilters({
+        utm_source: "shared",
+        productModelCode: "DEMO-ENG-300",
+        powerKw: "300",
+        asOf: "2026-09-14",
+        applicationScope: "non-road",
+      }).needsRedirect,
+    ).toBe(false);
   });
 
   it("can parse its canonical output without another redirect", () => {
@@ -204,9 +227,11 @@ describe("country URL filters", () => {
       utm_source: ["first", "second"],
     });
     const query = new URLSearchParams(initial.canonicalQuery);
-    const result = parseCountryFilters(Object.fromEntries(
-      [...new Set(query.keys())].map((key) => [key, query.getAll(key)]),
-    ));
+    const result = parseCountryFilters(
+      Object.fromEntries(
+        [...new Set(query.keys())].map((key) => [key, query.getAll(key)]),
+      ),
+    );
 
     expect(result).toEqual({ ...initial, needsRedirect: false });
   });

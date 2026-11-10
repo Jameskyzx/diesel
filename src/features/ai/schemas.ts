@@ -78,7 +78,10 @@ const blockedAiEndpointHostnames = new Set([
 
 function isPrivateIpv4(hostname: string): boolean {
   const parts = hostname.split(".").map(Number);
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
     return false;
   }
 
@@ -309,7 +312,11 @@ export const salesChatModelKnowledgeSearchInputSchema =
 
 export const getCountryProfileInputSchema = z
   .object({
-    marketPeriod: marketReportingPeriodSchema.optional().describe("Optional half-open market observation interval, distinct from asOf."),
+    marketPeriod: marketReportingPeriodSchema
+      .optional()
+      .describe(
+        "Optional half-open market observation interval, distinct from asOf.",
+      ),
     asOf: isoDateSchema
       .optional()
       .describe("YYYY-MM-DD date used to classify current and future rules."),
@@ -363,10 +370,7 @@ export const searchKnowledgeBaseResultSchema = toolResultBase
         path: ["search"],
       });
     }
-    if (
-      result.evidenceSufficient !==
-      expectedAiEvidenceSufficiency(result)
-    ) {
+    if (result.evidenceSufficient !== expectedAiEvidenceSufficiency(result)) {
       context.addIssue({
         code: "custom",
         message: "Evidence sufficiency does not match the structured result",
@@ -400,10 +404,7 @@ export const getCountryProfileResultSchema = toolResultBase
   .strict()
   .superRefine((result, context) => {
     refineToolResultEnvelope(result, context);
-    if (
-      result.evidenceSufficient !==
-      expectedAiEvidenceSufficiency(result)
-    ) {
+    if (result.evidenceSufficient !== expectedAiEvidenceSufficiency(result)) {
       context.addIssue({
         code: "custom",
         message: "Evidence sufficiency does not match the structured result",
@@ -454,10 +455,7 @@ export const findCompatibleProductsResultSchema = toolResultBase
   .strict()
   .superRefine((result, context) => {
     refineToolResultEnvelope(result, context);
-    if (
-      result.evidenceSufficient !==
-      expectedAiEvidenceSufficiency(result)
-    ) {
+    if (result.evidenceSufficient !== expectedAiEvidenceSufficiency(result)) {
       context.addIssue({
         code: "custom",
         message: "Evidence sufficiency does not match the structured result",
@@ -502,10 +500,7 @@ export const compareRegulationsResultSchema = toolResultBase
   .strict()
   .superRefine((result, context) => {
     refineToolResultEnvelope(result, context);
-    if (
-      result.evidenceSufficient !==
-      expectedAiEvidenceSufficiency(result)
-    ) {
+    if (result.evidenceSufficient !== expectedAiEvidenceSufficiency(result)) {
       context.addIssue({
         code: "custom",
         message: "Evidence sufficiency does not match the structured result",
@@ -540,10 +535,7 @@ export const compareMarketsResultSchema = toolResultBase
   .strict()
   .superRefine((result, context) => {
     refineToolResultEnvelope(result, context);
-    if (
-      result.evidenceSufficient !==
-      expectedAiEvidenceSufficiency(result)
-    ) {
+    if (result.evidenceSufficient !== expectedAiEvidenceSufficiency(result)) {
       context.addIssue({
         code: "custom",
         message: "Evidence sufficiency does not match the structured result",
@@ -578,10 +570,7 @@ export const calculateOpportunityScoreResultSchema = toolResultBase
   .strict()
   .superRefine((result, context) => {
     refineToolResultEnvelope(result, context);
-    if (
-      result.evidenceSufficient !==
-      expectedAiEvidenceSufficiency(result)
-    ) {
+    if (result.evidenceSufficient !== expectedAiEvidenceSufficiency(result)) {
       context.addIssue({
         code: "custom",
         message: "Evidence sufficiency does not match the structured result",
@@ -615,10 +604,7 @@ export const generateSalesBriefResultSchema = toolResultBase
   .strict()
   .superRefine((result, context) => {
     refineToolResultEnvelope(result, context);
-    if (
-      result.evidenceSufficient !==
-      expectedAiEvidenceSufficiency(result)
-    ) {
+    if (result.evidenceSufficient !== expectedAiEvidenceSufficiency(result)) {
       context.addIssue({
         code: "custom",
         message: "Evidence sufficiency does not match the structured result",
@@ -717,7 +703,13 @@ export const aiToolResultSchema = z
 export const chatRequestSchema = z
   .object({
     // AI SDK DefaultChatTransport 信封字段（非业务输入，忽略但允许）。
-    conversation: z.object({ version: z.union([z.literal(1), z.literal(2)]), receipt: z.string().max(64_000).optional() }).strict().optional(),
+    conversation: z
+      .object({
+        version: z.union([z.literal(1), z.literal(2)]),
+        receipt: z.string().max(64_000).optional(),
+      })
+      .strict()
+      .optional(),
     id: z.string().trim().min(1).max(100).optional(),
     locale: z.enum(locales).optional(),
     messages: z.array(z.unknown()).min(1).max(40),
@@ -759,12 +751,8 @@ export type CalculateOpportunityScoreInput = z.infer<
 export type CalculateOpportunityScoreResult = z.infer<
   typeof calculateOpportunityScoreResultSchema
 >;
-export type CompareMarketsInput = z.infer<
-  typeof compareMarketsInputSchema
->;
-export type CompareMarketsResult = z.infer<
-  typeof compareMarketsResultSchema
->;
+export type CompareMarketsInput = z.infer<typeof compareMarketsInputSchema>;
+export type CompareMarketsResult = z.infer<typeof compareMarketsResultSchema>;
 export type CompareRegulationsInput = z.infer<
   typeof compareRegulationsInputSchema
 >;

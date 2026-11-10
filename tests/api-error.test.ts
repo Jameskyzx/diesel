@@ -12,29 +12,51 @@ import {
 
 describe("admission database diagnostic codes", () => {
   it.each(["55P03", "57014", "25P03", "CONNECTION_CLOSED", "ECONNRESET"])(
-    "retains allowlisted %s through wrappers regardless of constructor name", (code) => {
+    "retains allowlisted %s through wrappers regardless of constructor name",
+    (code) => {
       class a extends Error {}
-      const cause = Object.assign(new a("private connection information"), { code });
-      expect(getAdmissionDatabaseErrorCode(new Error("private SQL", { cause }))).toBe(code);
+      const cause = Object.assign(new a("private connection information"), {
+        code,
+      });
+      expect(
+        getAdmissionDatabaseErrorCode(new Error("private SQL", { cause })),
+      ).toBe(code);
     },
   );
 
   it("never derives a code from private messages or arbitrary properties", () => {
-    expect(getAdmissionDatabaseErrorCode({ code: "postgres://secret", message: "55P03" }))
-      .toBe("UNKNOWN_DATABASE_ERROR");
-    expect(getAdmissionDatabaseErrorCode({ message: "57014", sql: "private" }))
-      .toBe("UNKNOWN_DATABASE_ERROR");
+    expect(
+      getAdmissionDatabaseErrorCode({
+        code: "postgres://secret",
+        message: "55P03",
+      }),
+    ).toBe("UNKNOWN_DATABASE_ERROR");
+    expect(
+      getAdmissionDatabaseErrorCode({ message: "57014", sql: "private" }),
+    ).toBe("UNKNOWN_DATABASE_ERROR");
   });
 
   it("bounds cause traversal and safely handles cycles and hostile getters", () => {
     const cycle: { cause?: unknown } = {};
     cycle.cause = cycle;
     expect(getAdmissionDatabaseErrorCode(cycle)).toBe("UNKNOWN_DATABASE_ERROR");
-    expect(getAdmissionDatabaseErrorCode(new Proxy({}, { has() { throw new Error("private"); } })))
-      .toBe("UNKNOWN_DATABASE_ERROR");
+    expect(
+      getAdmissionDatabaseErrorCode(
+        new Proxy(
+          {},
+          {
+            has() {
+              throw new Error("private");
+            },
+          },
+        ),
+      ),
+    ).toBe("UNKNOWN_DATABASE_ERROR");
     let nested: unknown = { code: "55P03" };
     for (let i = 0; i < 5; i += 1) nested = { cause: nested };
-    expect(getAdmissionDatabaseErrorCode(nested)).toBe("UNKNOWN_DATABASE_ERROR");
+    expect(getAdmissionDatabaseErrorCode(nested)).toBe(
+      "UNKNOWN_DATABASE_ERROR",
+    );
   });
 });
 
@@ -77,9 +99,9 @@ describe("safe API error envelope codes", () => {
       error: { code: "INTERNAL_ERROR", message: "provider text" },
     });
 
-    await expect(
-      parseApiErrorCode(new Response(envelope)),
-    ).resolves.toBe("INTERNAL_ERROR");
+    await expect(parseApiErrorCode(new Response(envelope))).resolves.toBe(
+      "INTERNAL_ERROR",
+    );
     expect(parseSerializedApiErrorCode(envelope)).toBe("INTERNAL_ERROR");
     expect(
       parseSerializedApiErrorCode(
@@ -88,7 +110,9 @@ describe("safe API error envelope codes", () => {
         }),
       ),
     ).toBeNull();
-    expect(parseSerializedApiErrorCode("<html>upstream failure</html>")).toBeNull();
+    expect(
+      parseSerializedApiErrorCode("<html>upstream failure</html>"),
+    ).toBeNull();
   });
 });
 
@@ -96,9 +120,9 @@ describe("user-facing client errors", () => {
   const fallback = "响应暂时不可用。";
 
   it("hides JSON parsing and response-schema details", async () => {
-    const malformedResponseError = await new Response("<html>").json().catch(
-      (error: unknown) => error,
-    );
+    const malformedResponseError = await new Response("<html>")
+      .json()
+      .catch((error: unknown) => error);
 
     expect(toUserFacingErrorMessage(malformedResponseError, fallback)).toBe(
       fallback,
@@ -114,10 +138,7 @@ describe("user-facing client errors", () => {
 
   it("keeps an already-sanitized ordinary Error message", () => {
     expect(
-      toUserFacingErrorMessage(
-        new Error("产品列表请求失败"),
-        fallback,
-      ),
+      toUserFacingErrorMessage(new Error("产品列表请求失败"), fallback),
     ).toBe("产品列表请求失败");
   });
 });

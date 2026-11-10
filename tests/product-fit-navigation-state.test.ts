@@ -30,7 +30,9 @@ const a = key();
 const b = key({ powerKw: 150 });
 const c = key({ powerKw: 175 });
 
-function freezeState(state: ProductFitNavigationState): ProductFitNavigationState {
+function freezeState(
+  state: ProductFitNavigationState,
+): ProductFitNavigationState {
   if (state.pendingOwnRouteKeys !== null) {
     Object.freeze(state.pendingOwnRouteKeys);
   }
@@ -51,11 +53,13 @@ describe("product-fit route identity", () => {
       asOf,
       applicationScope: "non-road" as const,
     };
-    expect(buildProductFitRouteKey({
-      asOf,
-      countryIso3: "CHN",
-      initialFilters: extended,
-    })).toBe(a);
+    expect(
+      buildProductFitRouteKey({
+        asOf,
+        countryIso3: "CHN",
+        initialFilters: extended,
+      }),
+    ).toBe(a);
   });
 
   it.each([
@@ -72,11 +76,13 @@ describe("product-fit route identity", () => {
   );
 
   it("includes country and supports an entirely missing filter object", () => {
-    expect(buildProductFitRouteKey({
-      asOf,
-      countryIso3: "BRA",
-      initialFilters: filters,
-    })).not.toBe(a);
+    expect(
+      buildProductFitRouteKey({
+        asOf,
+        countryIso3: "BRA",
+        initialFilters: filters,
+      }),
+    ).not.toBe(a);
     expect(buildProductFitRouteKey({ asOf, countryIso3: "CHN" })).toBe(
       JSON.stringify(["CHN", asOf, null, null, null]),
     );
@@ -119,24 +125,37 @@ describe("product-fit navigation ownership", () => {
     expect(secondA.routeRevision).toBe(2);
     expect(secondA.routeRevision).not.toBe(firstA.routeRevision);
     expect(secondA.panelGeneration).toBe(1);
-    const forwardB = reconcileProductFitNavigation(secondA, b, { external: true });
+    const forwardB = reconcileProductFitNavigation(secondA, b, {
+      external: true,
+    });
     expect(forwardB.routeRevision).toBe(3);
     expect(forwardB.panelGeneration).toBe(2);
   });
 
-  it.each([a, b, c])("explicit external navigation overrides own targets: %s", (target) => {
-    const pending = recordProductFitOwnNavigation(createProductFitNavigationState(a), b);
-    const next = reconcileProductFitNavigation(pending, target, { external: true });
-    expect(next).toEqual({
-      routeKey: target,
-      routeRevision: 1,
-      panelGeneration: 1,
-      pendingOwnRouteKeys: [],
-    });
-  });
+  it.each([a, b, c])(
+    "explicit external navigation overrides own targets: %s",
+    (target) => {
+      const pending = recordProductFitOwnNavigation(
+        createProductFitNavigationState(a),
+        b,
+      );
+      const next = reconcileProductFitNavigation(pending, target, {
+        external: true,
+      });
+      expect(next).toEqual({
+        routeKey: target,
+        routeRevision: 1,
+        panelGeneration: 1,
+        pendingOwnRouteKeys: [],
+      });
+    },
+  );
 
   it("treats an unregistered changed route as external and retires old intents", () => {
-    const pending = recordProductFitOwnNavigation(createProductFitNavigationState(a), b);
+    const pending = recordProductFitOwnNavigation(
+      createProductFitNavigationState(a),
+      b,
+    );
     const next = reconcileProductFitNavigation(pending, c);
     expect(next.panelGeneration).toBe(1);
     expect(next.pendingOwnRouteKeys).toEqual([]);
@@ -189,9 +208,14 @@ describe("product-fit navigation ownership", () => {
       { length: MAX_PRODUCT_FIT_PENDING_NAVIGATIONS },
       (_, index) => key({ powerKw: 200 + index }),
     );
-    for (const target of targets) state = recordProductFitOwnNavigation(state, target);
-    expect(state.pendingOwnRouteKeys).toHaveLength(MAX_PRODUCT_FIT_PENDING_NAVIGATIONS);
-    expect(recordProductFitOwnNavigation(state, targets[targets.length - 1]!)).toBe(state);
+    for (const target of targets)
+      state = recordProductFitOwnNavigation(state, target);
+    expect(state.pendingOwnRouteKeys).toHaveLength(
+      MAX_PRODUCT_FIT_PENDING_NAVIGATIONS,
+    );
+    expect(
+      recordProductFitOwnNavigation(state, targets[targets.length - 1]!),
+    ).toBe(state);
 
     const overflowed = recordProductFitOwnNavigation(freezeState(state), b);
     expect(overflowed.pendingOwnRouteKeys).toBeNull();

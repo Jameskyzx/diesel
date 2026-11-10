@@ -51,13 +51,15 @@ describe("unmodified primary click classification", () => {
   it.each(Array.from({ length: 16 }, (_, mask) => ({ mask })))(
     "classifies all modifier combinations, mask $mask",
     ({ mask }) => {
-      expect(isUnmodifiedPrimaryClick({
-        ...primary,
-        altKey: Boolean(mask & 1),
-        ctrlKey: Boolean(mask & 2),
-        metaKey: Boolean(mask & 4),
-        shiftKey: Boolean(mask & 8),
-      })).toBe(mask === 0);
+      expect(
+        isUnmodifiedPrimaryClick({
+          ...primary,
+          altKey: Boolean(mask & 1),
+          ctrlKey: Boolean(mask & 2),
+          metaKey: Boolean(mask & 4),
+          shiftKey: Boolean(mask & 8),
+        }),
+      ).toBe(mask === 0);
     },
   );
 
@@ -66,15 +68,28 @@ describe("unmodified primary click classification", () => {
   });
 
   it("respects an already-prevented ordinary activation", () => {
-    expect(isUnmodifiedPrimaryClick({ ...primary, defaultPrevented: true })).toBe(false);
+    expect(
+      isUnmodifiedPrimaryClick({ ...primary, defaultPrevented: true }),
+    ).toBe(false);
   });
 
   it("needs no browser global, target, or URL to classify the activation", () => {
     vi.stubGlobal("window", undefined);
-    const event = Object.defineProperties({ ...primary }, {
-      currentTarget: { get() { throw new Error("Must not inspect the anchor."); } },
-      target: { get() { throw new Error("Must not inspect the event target."); } },
-    });
+    const event = Object.defineProperties(
+      { ...primary },
+      {
+        currentTarget: {
+          get() {
+            throw new Error("Must not inspect the anchor.");
+          },
+        },
+        target: {
+          get() {
+            throw new Error("Must not inspect the event target.");
+          },
+        },
+      },
+    );
 
     expect(isUnmodifiedPrimaryClick(event)).toBe(true);
   });
@@ -105,7 +120,8 @@ describe("public navigation intent", () => {
     expect(dispatch).toHaveBeenCalledTimes(1);
     const event = dispatch.mock.calls[0]?.[0];
     expect(event).toBeInstanceOf(Event);
-    if (event === undefined) throw new Error("Expected a navigation intent event.");
+    if (event === undefined)
+      throw new Error("Expected a navigation intent event.");
     expect(event.constructor).toBe(Event);
     expect(event.type.length).toBeGreaterThan(0);
     for (const property of ["detail", "url", "href", "destination"]) {
@@ -166,7 +182,8 @@ describe("public navigation intent", () => {
     const unsubscribe = subscribe(listener);
     notifyPublicNavigationIntent();
     const event = dispatch.mock.calls[0]?.[0];
-    if (event === undefined) throw new Error("Expected a navigation intent event.");
+    if (event === undefined)
+      throw new Error("Expected a navigation intent event.");
 
     vi.stubGlobal("window", new EventTarget());
     notifyPublicNavigationIntent();
@@ -201,21 +218,30 @@ function findNodes<T extends ts.Node>(
 }
 
 function calls(root: ts.Node, name: string): ts.CallExpression[] {
-  return findNodes(root, (node): node is ts.CallExpression =>
-    ts.isCallExpression(node) &&
-    ts.isIdentifier(node.expression) &&
-    node.expression.text === name,
+  return findNodes(
+    root,
+    (node): node is ts.CallExpression =>
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === name,
   );
 }
 
 function namedCallbackBody(root: ts.Node, name: string): ts.Block {
-  const declarations = findNodes(root, (node): node is ts.VariableDeclaration =>
-    ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === name,
+  const declarations = findNodes(
+    root,
+    (node): node is ts.VariableDeclaration =>
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === name,
   );
   expect(declarations).toHaveLength(1);
   const callback = declarations[0]?.initializer;
-  if (!callback || !(ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)) ||
-    !ts.isBlock(callback.body)) {
+  if (
+    !callback ||
+    !(ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)) ||
+    !ts.isBlock(callback.body)
+  ) {
     throw new Error(`Expected ${name} to have a block callback body.`);
   }
   return callback.body;
@@ -228,8 +254,11 @@ function expectDirectAssignment(
   operator: ts.SyntaxKind,
   value: string,
 ): void {
-  if (!statement || !ts.isExpressionStatement(statement) ||
-    !ts.isBinaryExpression(statement.expression)) {
+  if (
+    !statement ||
+    !ts.isExpressionStatement(statement) ||
+    !ts.isBinaryExpression(statement.expression)
+  ) {
     throw new Error(`Expected a direct assignment to ${target}.`);
   }
   expect(statement.expression.left.getText(source)).toBe(target);
@@ -244,7 +273,8 @@ describe("public navigation intent wiring", () => {
       source,
       (node): node is ts.JsxOpeningElement | ts.JsxSelfClosingElement =>
         (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
-        ts.isIdentifier(node.tagName) && node.tagName.text === "Link",
+        ts.isIdentifier(node.tagName) &&
+        node.tagName.text === "Link",
     );
 
     // Brand, mapped primary navigation items, and the separate Analyze CTA.
@@ -252,112 +282,195 @@ describe("public navigation intent wiring", () => {
     for (const link of links) {
       const attribute = link.attributes.properties.find(
         (node): node is ts.JsxAttribute =>
-          ts.isJsxAttribute(node) && ts.isIdentifier(node.name) &&
+          ts.isJsxAttribute(node) &&
+          ts.isIdentifier(node.name) &&
           node.name.text === "onNavigate",
       );
       const initializer = attribute?.initializer;
-      const handler = initializer && ts.isJsxExpression(initializer)
-        ? initializer.expression
-        : undefined;
+      const handler =
+        initializer && ts.isJsxExpression(initializer)
+          ? initializer.expression
+          : undefined;
       expect(handler?.getText(source)).toBe("notifyPublicNavigationIntent");
     }
   });
 
   it("retires initial and queued auto-runs on navigation but only aborts the current request during cleanup", async () => {
-    const source = await parseTsx("src/components/products/product-fit-panel.tsx");
+    const source = await parseTsx(
+      "src/components/products/product-fit-panel.tsx",
+    );
     const intentCalls = calls(source, "subscribeToPublicNavigationIntent");
     expect(intentCalls).toHaveLength(1);
     const intentCall = intentCalls[0];
-    if (intentCall === undefined) throw new Error("Expected one intent subscription.");
-    expect(intentCall.arguments[0]?.getText(source)).toBe("cancelPendingEvaluation");
+    if (intentCall === undefined)
+      throw new Error("Expected one intent subscription.");
+    expect(intentCall.arguments[0]?.getText(source)).toBe(
+      "cancelPendingEvaluation",
+    );
 
     const declaration = intentCall.parent;
-    if (!ts.isVariableDeclaration(declaration) || !ts.isIdentifier(declaration.name)) {
-      throw new Error("The effect must retain its subscription cleanup callback.");
+    if (
+      !ts.isVariableDeclaration(declaration) ||
+      !ts.isIdentifier(declaration.name)
+    ) {
+      throw new Error(
+        "The effect must retain its subscription cleanup callback.",
+      );
     }
     const cleanupName = declaration.name.text;
     let ancestor: ts.Node | undefined = declaration.parent;
-    while (ancestor && !ts.isArrowFunction(ancestor)) ancestor = ancestor.parent;
-    if (!ancestor || !ts.isArrowFunction(ancestor) || !ts.isBlock(ancestor.body)) {
-      throw new Error("Expected the subscription inside the cancellation effect.");
+    while (ancestor && !ts.isArrowFunction(ancestor))
+      ancestor = ancestor.parent;
+    if (
+      !ancestor ||
+      !ts.isArrowFunction(ancestor) ||
+      !ts.isBlock(ancestor.body)
+    ) {
+      throw new Error(
+        "Expected the subscription inside the cancellation effect.",
+      );
     }
     const effect = ancestor;
     const effectBody = ancestor.body;
-    expect(ts.isCallExpression(effect.parent) &&
-      ts.isIdentifier(effect.parent.expression) &&
-      effect.parent.expression.text === "useEffect").toBe(true);
-    expect(calls(effectBody, "registerNavigationGuard").some((call) =>
-      call.arguments[0]?.getText(source) === "cancelPendingEvaluation",
-    )).toBe(true);
+    expect(
+      ts.isCallExpression(effect.parent) &&
+        ts.isIdentifier(effect.parent.expression) &&
+        effect.parent.expression.text === "useEffect",
+    ).toBe(true);
+    expect(
+      calls(effectBody, "registerNavigationGuard").some(
+        (call) =>
+          call.arguments[0]?.getText(source) === "cancelPendingEvaluation",
+      ),
+    ).toBe(true);
 
-    const cancellation = namedCallbackBody(effectBody, "cancelPendingEvaluation");
+    const cancellation = namedCallbackBody(
+      effectBody,
+      "cancelPendingEvaluation",
+    );
     expect(cancellation.statements).toHaveLength(3);
     expectDirectAssignment(
-      cancellation.statements[0], source, "autoRanRef.current", ts.SyntaxKind.EqualsToken, "true",
+      cancellation.statements[0],
+      source,
+      "autoRanRef.current",
+      ts.SyntaxKind.EqualsToken,
+      "true",
     );
     expectDirectAssignment(
-      cancellation.statements[1], source, "autoRunEpochRef.current", ts.SyntaxKind.PlusEqualsToken, "1",
+      cancellation.statements[1],
+      source,
+      "autoRunEpochRef.current",
+      ts.SyntaxKind.PlusEqualsToken,
+      "1",
     );
     const cancellationAbort = cancellation.statements[2];
-    if (!cancellationAbort || !ts.isExpressionStatement(cancellationAbort) ||
-      !ts.isCallExpression(cancellationAbort.expression)) {
-      throw new Error("Expected a direct abort after retiring automatic evaluation.");
+    if (
+      !cancellationAbort ||
+      !ts.isExpressionStatement(cancellationAbort) ||
+      !ts.isCallExpression(cancellationAbort.expression)
+    ) {
+      throw new Error(
+        "Expected a direct abort after retiring automatic evaluation.",
+      );
     }
-    expect(cancellationAbort.expression.expression.getText(source)).toBe("abortCurrentEvaluation");
+    expect(cancellationAbort.expression.expression.getText(source)).toBe(
+      "abortCurrentEvaluation",
+    );
     expect(cancellationAbort.expression.arguments).toHaveLength(0);
 
     const abortBody = namedCallbackBody(effectBody, "abortCurrentEvaluation");
-    const abortIdentifiers = findNodes(abortBody, ts.isIdentifier).map((node) => node.text);
+    const abortIdentifiers = findNodes(abortBody, ts.isIdentifier).map(
+      (node) => node.text,
+    );
     // StrictMode's effect cleanup must not consume a still-valid shared-link attempt.
     expect(abortIdentifiers).not.toContain("autoRanRef");
     expect(abortIdentifiers).not.toContain("autoRunEpochRef");
     expect(calls(abortBody, "cancelPendingEvaluation")).toHaveLength(0);
 
-    const cleanup = effectBody.statements.find(ts.isReturnStatement)?.expression;
-    if (!cleanup || !(ts.isArrowFunction(cleanup) || ts.isFunctionExpression(cleanup)) ||
-      !ts.isBlock(cleanup.body)) {
+    const cleanup = effectBody.statements.find(
+      ts.isReturnStatement,
+    )?.expression;
+    if (
+      !cleanup ||
+      !(ts.isArrowFunction(cleanup) || ts.isFunctionExpression(cleanup)) ||
+      !ts.isBlock(cleanup.body)
+    ) {
       throw new Error("Expected the effect's returned cleanup function.");
     }
     const cleanupCalls = cleanup.body.statements.map((statement) => {
-      if (!ts.isExpressionStatement(statement) || !ts.isCallExpression(statement.expression)) {
-        throw new Error("Expected direct unsubscribe, abort, and unregister cleanup calls.");
+      if (
+        !ts.isExpressionStatement(statement) ||
+        !ts.isCallExpression(statement.expression)
+      ) {
+        throw new Error(
+          "Expected direct unsubscribe, abort, and unregister cleanup calls.",
+        );
       }
       return statement.expression;
     });
-    expect(cleanupCalls.map((call) => call.expression.getText(source))).toEqual([
-      cleanupName, "abortCurrentEvaluation", "registerNavigationGuard",
-    ]);
+    expect(cleanupCalls.map((call) => call.expression.getText(source))).toEqual(
+      [cleanupName, "abortCurrentEvaluation", "registerNavigationGuard"],
+    );
     expect(cleanupCalls[0]?.arguments).toHaveLength(0);
     expect(cleanupCalls[1]?.arguments).toHaveLength(0);
-    expect(cleanupCalls[2]?.arguments.map((argument) => argument.getText(source))).toEqual(["null"]);
+    expect(
+      cleanupCalls[2]?.arguments.map((argument) => argument.getText(source)),
+    ).toEqual(["null"]);
     expect(calls(cleanup.body, "cancelPendingEvaluation")).toHaveLength(0);
   });
 
   it("binds the queued zero-delay auto-run to its scheduling epoch and rejects a retired epoch before evaluation", async () => {
-    const source = await parseTsx("src/components/products/product-fit-panel.tsx");
-    const timers = calls(source, "setTimeout").filter((call) =>
-      call.arguments[0] !== undefined && calls(call.arguments[0], "runEvaluation").length > 0,
+    const source = await parseTsx(
+      "src/components/products/product-fit-panel.tsx",
+    );
+    const timers = calls(source, "setTimeout").filter(
+      (call) =>
+        call.arguments[0] !== undefined &&
+        calls(call.arguments[0], "runEvaluation").length > 0,
     );
     expect(timers).toHaveLength(1);
     const timer = timers[0];
-    if (!timer || !ts.isVariableDeclaration(timer.parent) || !ts.isIdentifier(timer.parent.name)) {
-      throw new Error("Expected the auto-run timer to retain its cleanup handle.");
+    if (
+      !timer ||
+      !ts.isVariableDeclaration(timer.parent) ||
+      !ts.isIdentifier(timer.parent.name)
+    ) {
+      throw new Error(
+        "Expected the auto-run timer to retain its cleanup handle.",
+      );
     }
     expect(timer.arguments[1]?.getText(source)).toBe("0");
     const timerName = timer.parent.name.text;
     const timerStatement = timer.parent.parent.parent;
-    if (!ts.isVariableStatement(timerStatement) || !ts.isBlock(timerStatement.parent)) {
-      throw new Error("Expected the auto-run timer directly inside its effect body.");
+    if (
+      !ts.isVariableStatement(timerStatement) ||
+      !ts.isBlock(timerStatement.parent)
+    ) {
+      throw new Error(
+        "Expected the auto-run timer directly inside its effect body.",
+      );
     }
     const effectBody = timerStatement.parent;
     const effect = effectBody.parent;
-    if (!ts.isArrowFunction(effect) || !ts.isCallExpression(effect.parent) ||
-      !ts.isIdentifier(effect.parent.expression) || effect.parent.expression.text !== "useEffect") {
+    if (
+      !ts.isArrowFunction(effect) ||
+      !ts.isCallExpression(effect.parent) ||
+      !ts.isIdentifier(effect.parent.expression) ||
+      effect.parent.expression.text !== "useEffect"
+    ) {
       throw new Error("Expected an auto-run useEffect.");
     }
-    const epochDeclarations = effectBody.statements.flatMap((statement) =>
-      ts.isVariableStatement(statement) ? [...statement.declarationList.declarations] : [],
-    ).filter((declaration) => ts.isIdentifier(declaration.name) && declaration.name.text === "autoRunEpoch");
+    const epochDeclarations = effectBody.statements
+      .flatMap((statement) =>
+        ts.isVariableStatement(statement)
+          ? [...statement.declarationList.declarations]
+          : [],
+      )
+      .filter(
+        (declaration) =>
+          ts.isIdentifier(declaration.name) &&
+          declaration.name.text === "autoRunEpoch",
+      );
     expect(epochDeclarations).toHaveLength(1);
     const epoch = epochDeclarations[0];
     if (!epoch || !ts.isVariableDeclarationList(epoch.parent)) {
@@ -368,19 +481,33 @@ describe("public navigation intent wiring", () => {
     expect(epoch.getStart(source)).toBeLessThan(timer.getStart(source));
 
     const callback = timer.arguments[0];
-    if (!callback || !ts.isArrowFunction(callback) || !ts.isBlock(callback.body)) {
+    if (
+      !callback ||
+      !ts.isArrowFunction(callback) ||
+      !ts.isBlock(callback.body)
+    ) {
       throw new Error("Expected a guarded auto-run timer callback.");
     }
     expect(callback.body.statements).toHaveLength(2);
     const guard = callback.body.statements[0];
-    if (!guard || !ts.isIfStatement(guard) || !ts.isBinaryExpression(guard.expression)) {
+    if (
+      !guard ||
+      !ts.isIfStatement(guard) ||
+      !ts.isBinaryExpression(guard.expression)
+    ) {
       throw new Error("Expected the epoch guard before runEvaluation.");
     }
-    expect(guard.expression.left.getText(source)).toBe("autoRunEpochRef.current");
-    expect(guard.expression.operatorToken.kind).toBe(ts.SyntaxKind.ExclamationEqualsEqualsToken);
+    expect(guard.expression.left.getText(source)).toBe(
+      "autoRunEpochRef.current",
+    );
+    expect(guard.expression.operatorToken.kind).toBe(
+      ts.SyntaxKind.ExclamationEqualsEqualsToken,
+    );
     expect(guard.expression.right.getText(source)).toBe("autoRunEpoch");
     expect(guard.elseStatement).toBeUndefined();
-    const rejected = ts.isBlock(guard.thenStatement) ? [...guard.thenStatement.statements] : [guard.thenStatement];
+    const rejected = ts.isBlock(guard.thenStatement)
+      ? [...guard.thenStatement.statements]
+      : [guard.thenStatement];
     expect(rejected).toHaveLength(1);
     const earlyReturn = rejected[0];
     if (!earlyReturn || !ts.isReturnStatement(earlyReturn)) {
@@ -388,14 +515,23 @@ describe("public navigation intent wiring", () => {
     }
     expect(earlyReturn.expression).toBeUndefined();
     const evaluation = callback.body.statements[1];
-    if (!evaluation || !ts.isExpressionStatement(evaluation) ||
-      !ts.isVoidExpression(evaluation.expression) || !ts.isCallExpression(evaluation.expression.expression)) {
+    if (
+      !evaluation ||
+      !ts.isExpressionStatement(evaluation) ||
+      !ts.isVoidExpression(evaluation.expression) ||
+      !ts.isCallExpression(evaluation.expression.expression)
+    ) {
       throw new Error("Expected the evaluation only after the epoch guard.");
     }
-    expect(evaluation.expression.expression.expression.getText(source)).toBe("runEvaluation");
+    expect(evaluation.expression.expression.expression.getText(source)).toBe(
+      "runEvaluation",
+    );
     expect(evaluation.expression.expression.arguments).toHaveLength(0);
-    const cleanup = effectBody.statements.find(ts.isReturnStatement)?.expression;
-    if (!cleanup || !ts.isArrowFunction(cleanup)) throw new Error("Expected timer cleanup.");
+    const cleanup = effectBody.statements.find(
+      ts.isReturnStatement,
+    )?.expression;
+    if (!cleanup || !ts.isArrowFunction(cleanup))
+      throw new Error("Expected timer cleanup.");
     const clears = calls(cleanup.body, "clearTimeout");
     expect(clears).toHaveLength(1);
     expect(clears[0]?.arguments[0]?.getText(source)).toBe(timerName);

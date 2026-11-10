@@ -430,11 +430,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
           ["PN", 5000],
         ]),
       );
-      const continuation = await query(
-        applicationScope,
-        "2026-08-11",
-        560.001,
-      );
+      const continuation = await query(applicationScope, "2026-08-11", 560.001);
       expect(values(continuation)).toEqual(
         new Map([
           ["CO", 3.5],
@@ -497,7 +493,10 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("USA switches complete representative road paths at MY2027", async () => {
-    const query = (applicationScope: "on-road-truck" | "on-road-bus", asOf: string) =>
+    const query = (
+      applicationScope: "on-road-truck" | "on-road-bus",
+      asOf: string,
+    ) =>
       repository().findEffectiveByCountry({
         applicationScope,
         asOf,
@@ -523,8 +522,14 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       );
 
       expect(beforeRows).toHaveLength(7);
-      expect(beforeRows.every((row) => row.citationCode === "40 CFR 86.007-11")).toBe(true);
-      expect(beforeRows.every((row) => row.limit.sourceId === acceptanceFixtureIds.source.usEcfr86)).toBe(true);
+      expect(
+        beforeRows.every((row) => row.citationCode === "40 CFR 86.007-11"),
+      ).toBe(true);
+      expect(
+        beforeRows.every(
+          (row) => row.limit.sourceId === acceptanceFixtureIds.source.usEcfr86,
+        ),
+      ).toBe(true);
       expect(beforeValues.get("FTP/SET:NOX")).toBe(0.2);
       expect(beforeValues.get("FTP/SET:NMHC")).toBe(0.14);
       expect(beforeValues.get("FTP/SET:CO")).toBe(15.5);
@@ -534,8 +539,15 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(beforeValues.get("CFR86-SMOKE-PEAK:OPACITY")).toBe(50);
 
       expect(afterRows).toHaveLength(8);
-      expect(afterRows.every((row) => row.citationCode === "40 CFR 1036.104")).toBe(true);
-      expect(afterRows.every((row) => row.limit.sourceId === acceptanceFixtureIds.source.usEcfr1036)).toBe(true);
+      expect(
+        afterRows.every((row) => row.citationCode === "40 CFR 1036.104"),
+      ).toBe(true);
+      expect(
+        afterRows.every(
+          (row) =>
+            row.limit.sourceId === acceptanceFixtureIds.source.usEcfr1036,
+        ),
+      ).toBe(true);
       expect(afterValues.get("FTP/SET:NOX")).toBe(0.035);
       expect(afterValues.get("FTP/SET:NMHC")).toBe(0.06);
       expect(afterValues.get("FTP/SET:PM")).toBe(0.005);
@@ -571,8 +583,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         expect(
           rows.every(
             (row) =>
-              row.regulationId ===
-                acceptanceFixtureIds.regulation.us1039101 &&
+              row.regulationId === acceptanceFixtureIds.regulation.us1039101 &&
               row.limit.sourceId === acceptanceFixtureIds.source.usEcfr1039 &&
               row.limit.testCycleCode === testCycleCode,
           ),
@@ -705,16 +716,16 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         .map((row) => Number(row.limit.limitValue));
 
       expect(rows.length).toBeGreaterThan(0);
-      expect(
-        rows.every((row) => row.citationCode === "CONAMA 490/2018"),
-      ).toBe(true);
+      expect(rows.every((row) => row.citationCode === "CONAMA 490/2018")).toBe(
+        true,
+      );
       expect(noxValues).toEqual(expect.arrayContaining([400, 460]));
       expect(pmValues).toHaveLength(2);
       expect(new Set(pmValues)).toEqual(new Set([10]));
       expect(pnValues).toEqual(expect.arrayContaining([600, 800]));
-      expect(
-        new Set(rows.map((row) => row.verifiedAt.toISOString())),
-      ).toEqual(new Set(["2026-08-05T12:00:00.000Z"]));
+      expect(new Set(rows.map((row) => row.verifiedAt.toISOString()))).toEqual(
+        new Set(["2026-08-05T12:00:00.000Z"]),
+      );
       expect(
         new Set(rows.map((row) => row.limit.verifiedAt.toISOString())),
       ).toEqual(new Set(["2026-08-05T12:00:00.000Z"]));
@@ -737,16 +748,16 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         .map((row) => Number(row.limit.limitValue));
 
       expect(rows).toHaveLength(11);
-      expect(
-        rows.every((row) => row.citationCode === "CONAMA 403/2008"),
-      ).toBe(true);
+      expect(rows.every((row) => row.citationCode === "CONAMA 403/2008")).toBe(
+        true,
+      );
       expect(noxValues).toEqual([2, 2]);
-      expect(
-        rows.some((row) => row.citationCode === "CONAMA 490/2018"),
-      ).toBe(false);
-      expect(
-        new Set(rows.map((row) => row.verifiedAt.toISOString())),
-      ).toEqual(new Set(["2026-08-05T12:50:00.000Z"]));
+      expect(rows.some((row) => row.citationCode === "CONAMA 490/2018")).toBe(
+        false,
+      );
+      expect(new Set(rows.map((row) => row.verifiedAt.toISOString()))).toEqual(
+        new Set(["2026-08-05T12:50:00.000Z"]),
+      );
       expect(
         new Set(rows.map((row) => row.limit.verifiedAt.toISOString())),
       ).toEqual(new Set(["2026-08-05T12:50:00.000Z"]));
@@ -766,12 +777,12 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       });
 
       expect(rows).toHaveLength(12);
-      expect(
-        rows.every((row) => row.citationCode === "CONAMA 490/2018"),
-      ).toBe(true);
-      expect(
-        rows.some((row) => row.citationCode === "CONAMA 403/2008"),
-      ).toBe(false);
+      expect(rows.every((row) => row.citationCode === "CONAMA 490/2018")).toBe(
+        true,
+      );
+      expect(rows.some((row) => row.citationCode === "CONAMA 403/2008")).toBe(
+        false,
+      );
     }
   });
 
@@ -787,9 +798,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         .filter((row) => row.limit.pollutantCode === "NOX")
         .map((row) => Number(row.limit.limitValue));
       expect(rows.length).toBeGreaterThan(0);
-      expect(
-        rows.every((row) => row.citationCode === "CELEX:32009R0595"),
-      ).toBe(true);
+      expect(rows.every((row) => row.citationCode === "CELEX:32009R0595")).toBe(
+        true,
+      );
       expect(noxValues).toContain(460); // WHTC (CI)
       expect(noxValues).toContain(400); // WHSC (CI)
       expect(
@@ -812,9 +823,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
           Number(row.limit.limitValue),
         ]),
       );
-      expect(
-        rows.every((row) => row.citationCode === "CELEX:32016R1628"),
-      ).toBe(true);
+      expect(rows.every((row) => row.citationCode === "CELEX:32016R1628")).toBe(
+        true,
+      );
       expect(byPollutant.get("NOX")).toBe(0.4);
       expect(byPollutant.get("PM")).toBe(0.015);
       expect(byPollutant.get("CO")).toBe(3.5);
@@ -829,9 +840,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         countryIso3: "JPN",
         powerKw: 300,
       });
-      const noxRows = rows.filter(
-        (row) => row.limit.pollutantCode === "NOX",
-      );
+      const noxRows = rows.filter((row) => row.limit.pollutantCode === "NOX");
 
       expect(rows).toHaveLength(8);
       expect(
@@ -891,9 +900,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         expect(rows).toHaveLength(4);
         expect(
           rows.every(
-            (row) =>
-              row.citationCode ===
-              "平成26年三省告示第1号（2014年基準）",
+            (row) => row.citationCode === "平成26年三省告示第1号（2014年基準）",
           ),
         ).toBe(true);
         expect(byPollutant).toMatchObject(
@@ -937,9 +944,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
       expect(rows).toHaveLength(12);
       expect(
-        rows.every(
-          (row) => row.citationCode === "KOR Annex 17 HD Diesel 2017",
-        ),
+        rows.every((row) => row.citationCode === "KOR Annex 17 HD Diesel 2017"),
       ).toBe(true);
       expect(noxValues).toEqual(expect.arrayContaining([0.4, 0.46]));
       expect(new Set(rows.map((row) => row.limit.testCycleCode))).toEqual(
@@ -1029,9 +1034,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
     expect(truckRows).toHaveLength(16);
     expect(busRows).toHaveLength(16);
-    expect(
-      new Set(truckRows.map((row) => row.regulationId)),
-    ).toEqual(
+    expect(new Set(truckRows.map((row) => row.regulationId))).toEqual(
       new Set([
         acceptanceFixtureIds.regulation.mexicoNom044Table1,
         acceptanceFixtureIds.regulation.mexicoNom044Table2,
@@ -1040,9 +1043,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(new Set(busRows.map((row) => row.regulationId))).toEqual(
       new Set(truckRows.map((row) => row.regulationId)),
     );
-    expect(
-      new Set(truckRows.map((row) => row.limit.testCycleCode)),
-    ).toEqual(new Set(["CT/CSE", "CEEMAP", "CETMAP"]));
+    expect(new Set(truckRows.map((row) => row.limit.testCycleCode))).toEqual(
+      new Set(["CT/CSE", "CEEMAP", "CETMAP"]),
+    );
 
     const table1Nox = truckRows.find(
       (row) =>
@@ -1256,9 +1259,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
           ["WHTC:PN", 600],
         ]),
       );
-      expect(
-        new Set(rows.map((row) => row.verifiedAt.toISOString())),
-      ).toEqual(new Set(["2026-08-10T23:00:23.000Z"]));
+      expect(new Set(rows.map((row) => row.verifiedAt.toISOString()))).toEqual(
+        new Set(["2026-08-10T23:00:23.000Z"]),
+      );
       expect(
         rows.every(
           (row) =>
@@ -1288,9 +1291,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     });
     expect(firstFullCoverageDay).toHaveLength(9);
     expect(
-      firstFullCoverageDay.every(
-        (row) => row.citationCode === "ADR 80/03",
-      ),
+      firstFullCoverageDay.every((row) => row.citationCode === "ADR 80/03"),
     ).toBe(true);
 
     const before = await repository().findEffectiveByCountry({
@@ -1360,9 +1361,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         powerKw: 300,
       });
       expect(rows).toHaveLength(4);
-      expect(rows.every((row) => row.citationCode === "SOR/2003-2")).toBe(
-        true,
-      );
+      expect(rows.every((row) => row.citationCode === "SOR/2003-2")).toBe(true);
       expect(
         new Map(
           rows.map((row) => [
@@ -1469,8 +1468,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     ).resolves.toHaveLength(0);
     const fixtureRows = buildFixtureLimits().filter(
       (row) =>
-        row.regulationId ===
-        acceptanceFixtureIds.regulation.canadaOffroad2020,
+        row.regulationId === acceptanceFixtureIds.regulation.canadaOffroad2020,
     );
     expect(fixtureRows).toHaveLength(40);
     expect(
@@ -1530,14 +1528,12 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     ).toBe(true);
     expect(
       roadRows.every(
-        (row) =>
-          row.limit.sourceId === acceptanceFixtureIds.source.usEcfr86,
+        (row) => row.limit.sourceId === acceptanceFixtureIds.source.usEcfr86,
       ),
     ).toBe(true);
     expect(
       nonroadRows.every(
-        (row) =>
-          row.limit.sourceId === acceptanceFixtureIds.source.usEcfr1039,
+        (row) => row.limit.sourceId === acceptanceFixtureIds.source.usEcfr1039,
       ),
     ).toBe(true);
   });
@@ -1550,9 +1546,16 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       powerKw: 150,
     });
     expect(rows).toHaveLength(5);
-    expect(rows.every((row) => row.citationCode === "GB NRMM Stage V")).toBe(true);
+    expect(rows.every((row) => row.citationCode === "GB NRMM Stage V")).toBe(
+      true,
+    );
     expect(
-      new Map(rows.map((row) => [row.limit.pollutantCode, Number(row.limit.limitValue)])),
+      new Map(
+        rows.map((row) => [
+          row.limit.pollutantCode,
+          Number(row.limit.limitValue),
+        ]),
+      ),
     ).toEqual(
       new Map([
         ["CO", 3.5],
@@ -1579,10 +1582,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("IND applies verified BS VI WHSC and WHTC limits to trucks and buses", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       const rows = await repository().findEffectiveByCountry({
         applicationScope,
         asOf: "2026-08-07",
@@ -1642,9 +1642,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     });
     expect(before).toHaveLength(4);
     expect(
-      before.every(
-        (row) => row.citationCode === "G.S.R. 598(E) CEV Stage IV",
-      ),
+      before.every((row) => row.citationCode === "G.S.R. 598(E) CEV Stage IV"),
     ).toBe(true);
     expect(
       Number(
@@ -1654,14 +1652,11 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     ).toBe(0.025);
     expect(after).toHaveLength(5);
     expect(
-      after.every(
-        (row) => row.citationCode === "G.S.R. 598(E) CEV Stage V",
-      ),
+      after.every((row) => row.citationCode === "G.S.R. 598(E) CEV Stage V"),
     ).toBe(true);
     expect(
       Number(
-        after.find((row) => row.limit.pollutantCode === "PM")?.limit
-          .limitValue,
+        after.find((row) => row.limit.pollutantCode === "PM")?.limit.limitValue,
       ),
     ).toBe(0.015);
   });
@@ -1696,8 +1691,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       tremIv.every(
         (row) =>
-          row.citationCode ===
-          "G.S.R. 850(E) / G.S.R. 598(E) TREM Stage IV",
+          row.citationCode === "G.S.R. 850(E) / G.S.R. 598(E) TREM Stage IV",
       ),
     ).toBe(true);
     expect(lowPowerBeforeTremV).toHaveLength(0);
@@ -1705,8 +1699,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       lowPowerTremV.every(
         (row) =>
-          row.citationCode ===
-          "G.S.R. 141(E) / G.S.R. 598(E) TREM Stage V",
+          row.citationCode === "G.S.R. 141(E) / G.S.R. 598(E) TREM Stage V",
       ),
     ).toBe(true);
   });
@@ -1785,10 +1778,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("RUS applies TR CU 018/2011 class 5 B2 limits to trucks and buses", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       const rows = await repository().findEffectiveByCountry({
         applicationScope,
         asOf: "2026-08-07",
@@ -1797,9 +1787,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       });
       expect(rows).toHaveLength(11);
       expect(
-        rows.every(
-          (row) => row.citationCode === "TR CU 018/2011 Class 5",
-        ),
+        rows.every((row) => row.citationCode === "TR CU 018/2011 Class 5"),
       ).toBe(true);
       const values = new Map(
         rows.map((row) => [
@@ -1863,9 +1851,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(highAtBoundary).toHaveLength(3);
     expect(
       Number(
-        highAtBoundary.find(
-          (row) => row.limit.pollutantCode === "HC+NOx",
-        )?.limit.limitValue,
+        highAtBoundary.find((row) => row.limit.pollutantCode === "HC+NOx")
+          ?.limit.limitValue,
       ),
     ).toBe(4);
   });
@@ -1894,10 +1881,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("IDN applies KLHK P.20/2017 Euro 4 to road trucks and buses", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       const before = await repository().findEffectiveByCountry({
         applicationScope,
         asOf: "2022-03-31",
@@ -1914,9 +1898,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(rows).toHaveLength(8);
       expect(
         rows.every(
-          (row) =>
-            row.citationCode ===
-            "P.20/MENLHK/SETJEN/KUM.1/3/2017",
+          (row) => row.citationCode === "P.20/MENLHK/SETJEN/KUM.1/3/2017",
         ),
       ).toBe(true);
       const values = new Map(
@@ -1960,12 +1942,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       powerKw: 150,
     });
     const [truck, bus, construction, agriculture] = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -2031,10 +2010,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("VNM switches new heavy-duty road vehicles to QCVN 109 Level 5 on 2022-01-01", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       const before = await repository().findEffectiveByCountry({
         applicationScope,
         asOf: "2021-12-31",
@@ -2051,9 +2027,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(before).toHaveLength(0);
       expect(rows).toHaveLength(9);
       expect(
-        rows.every(
-          (row) => row.citationCode === "QCVN 109:2021/BGTVT",
-        ),
+        rows.every((row) => row.citationCode === "QCVN 109:2021/BGTVT"),
       ).toBe(true);
       const values = new Map(
         rows.map((row) => [
@@ -2085,10 +2059,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("MYS applies the DOE VTA Euro II heavy-duty diesel baseline from 2017", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       const before = await repository().findEffectiveByCountry({
         applicationScope,
         asOf: "2016-12-31",
@@ -2124,9 +2095,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         ]),
       );
       expect(
-        rows.every(
-          (row) => row.limit.testCycleCode === "UN R49-02(B) 13-mode",
-        ),
+        rows.every((row) => row.limit.testCycleCode === "UN R49-02(B) 13-mode"),
       ).toBe(true);
     }
   });
@@ -2158,10 +2127,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("ARG applies Resolution 1464/2014 B2 limits to ordinary heavy-duty trucks and buses from 2018", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       const before = await repository().findEffectiveByCountry({
         applicationScope,
         asOf: "2017-12-31",
@@ -2180,8 +2146,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(
         rows.every(
           (row) =>
-            row.citationCode ===
-            "Resolución 1464/2014 / Directive 2005/55 B2",
+            row.citationCode === "Resolución 1464/2014 / Directive 2005/55 B2",
         ),
       ).toBe(true);
       const values = new Map(
@@ -2248,10 +2213,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("NZL applies the unified Table 2B Euro VI Step C pathway to trucks and buses from 2025-11-01", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       const before = await repository().findEffectiveByCountry({
         applicationScope,
         asOf: "2025-10-31",
@@ -2344,10 +2306,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("CHL applies the D.S. 50 Euro VI road pathway from 2026-01-06", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       await expect(
         repository().findEffectiveByCountry({
           applicationScope,
@@ -2373,8 +2332,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(
         rows.every(
           (row) =>
-            row.citationCode ===
-            "D.S. 55/1994 art. 8 quater / D.S. 50/2023",
+            row.citationCode === "D.S. 55/1994 art. 8 quater / D.S. 50/2023",
         ),
       ).toBe(true);
       expect(values.get("WHSC:NOX")).toBe(400);
@@ -2429,7 +2387,10 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
     const rows = await query(150);
     const values = new Map(
-      rows.map((row) => [row.limit.pollutantCode, Number(row.limit.limitValue)]),
+      rows.map((row) => [
+        row.limit.pollutantCode,
+        Number(row.limit.limitValue),
+      ]),
     );
     expect(values).toEqual(
       new Map([
@@ -2476,8 +2437,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(tractorRegulation?.summary).toContain("其他农业机械明确排除");
     const tractorLimits = buildFixtureLimits().filter(
       (row) =>
-        row.regulationId ===
-        acceptanceFixtureIds.regulation.chileTractorStageV,
+        row.regulationId === acceptanceFixtureIds.regulation.chileTractorStageV,
     );
     expect(tractorLimits).toHaveLength(23);
     expect(tractorLimits.every((row) => row.validFrom === "2030-01-01")).toBe(
@@ -2501,10 +2461,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("COL applies Resolucion 0762 Table 22 to heavy road vehicles from 2023-01-01", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       await expect(
         repository().findEffectiveByCountry({
           applicationScope,
@@ -2523,8 +2480,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(rows).toHaveLength(12);
       expect(
         rows.every(
-          (row) =>
-            row.citationCode === "Resolucion 0762/2022 art. 18 Table 22",
+          (row) => row.citationCode === "Resolucion 0762/2022 art. 18 Table 22",
         ),
       ).toBe(true);
       const values = new Map(
@@ -2660,10 +2616,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("PER applies D.S. 029 Euro VI/A to heavy trucks and buses from 2024-10-01", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       await expect(
         repository().findEffectiveByCountry({
           applicationScope,
@@ -2747,7 +2700,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       validFrom: "2021-10-16",
     });
     const regulation = fixtureRegulations.find(
-      (row) => row.id === acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
+      (row) =>
+        row.id === acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
     );
     expect(regulation?.summary).toContain(
       "construction/agriculture 不从道路车辆规则外推",
@@ -2879,10 +2833,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("SGP applies the Euro VI heavy-vehicle alternative path from 2018-01-01", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       await expect(
         repository().findEffectiveByCountry({
           applicationScope,
@@ -2949,17 +2900,21 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     );
     expect(queries.map((rows) => rows.length)).toEqual([0, 4, 4, 4, 4, 4, 0]);
     expect(
-      queries.slice(1, 6).map((rows) =>
-        Number(
-          rows.find((row) => row.limit.pollutantCode === "NOX")?.limit
-            .limitValue,
+      queries
+        .slice(1, 6)
+        .map((rows) =>
+          Number(
+            rows.find((row) => row.limit.pollutantCode === "NOX")?.limit
+              .limitValue,
+          ),
         ),
-      ),
     ).toEqual([8, 7, 6, 6, 6]);
     expect(
-      queries.slice(1, 6).every((rows) =>
-        rows.every((row) => row.limit.testCycleCode === "ISO 8178"),
-      ),
+      queries
+        .slice(1, 6)
+        .every((rows) =>
+          rows.every((row) => row.limit.testCycleCode === "ISO 8178"),
+        ),
     ).toBe(true);
     await expect(
       repository().findEffectiveByCountry({
@@ -2980,7 +2935,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       fixtureRows.every(
         (row) =>
           row.applicationScope === "construction" &&
-          row.dataSourceId === acceptanceFixtureIds.source.singaporeOffRoad2012 &&
+          row.dataSourceId ===
+            acceptanceFixtureIds.source.singaporeOffRoad2012 &&
           row.measurementBasis?.includes("alternative") === true &&
           row.measurementBasis?.includes("not cumulative") === true,
       ),
@@ -3003,10 +2959,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("NOR applies the current Bilforskriften Euro VI path only within its modeled validity window", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       await expect(
         repository().findEffectiveByCountry({
           applicationScope,
@@ -3026,8 +2979,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(
         rows.every(
           (row) =>
-            row.citationCode ===
-            "FOR-2022-06-28-1233 § 1-4 / Vedlegg 1 G3",
+            row.citationCode === "FOR-2022-06-28-1233 § 1-4 / Vedlegg 1 G3",
         ),
       ).toBe(true);
       const values = new Map(
@@ -3040,12 +2992,12 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(values.get("WHSC:PN")).toBe(800);
       expect(values.get("WHTC:NOX")).toBe(460);
       expect(values.get("WHTC:PN")).toBe(600);
-      expect(
-        new Set(rows.map((row) => row.limit.dataSourceId)),
-      ).toEqual(new Set([acceptanceFixtureIds.source.euReg595]));
-      expect(
-        new Set(rows.map((row) => row.verifiedAt.toISOString())),
-      ).toEqual(new Set(["2026-08-08T03:00:00.000Z"]));
+      expect(new Set(rows.map((row) => row.limit.dataSourceId))).toEqual(
+        new Set([acceptanceFixtureIds.source.euReg595]),
+      );
+      expect(new Set(rows.map((row) => row.verifiedAt.toISOString()))).toEqual(
+        new Set(["2026-08-08T03:00:00.000Z"]),
+      );
     }
 
     await expect(
@@ -3067,10 +3019,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("NOR applies incorporated Stage V limits to construction and agriculture across the power boundary", async () => {
-    for (const applicationScope of [
-      "construction",
-      "agriculture",
-    ] as const) {
+    for (const applicationScope of ["construction", "agriculture"] as const) {
       await expect(
         repository().findEffectiveByCountry({
           applicationScope,
@@ -3110,11 +3059,12 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(upperBand.get("PM")).toBe(0.045);
       expect(upperBand.has("PN")).toBe(false);
       expect(
-        results.flat().every(
-          (row) =>
-            row.limit.dataSourceId ===
-            acceptanceFixtureIds.source.euReg1628,
-        ),
+        results
+          .flat()
+          .every(
+            (row) =>
+              row.limit.dataSourceId === acceptanceFixtureIds.source.euReg1628,
+          ),
       ).toBe(true);
     }
 
@@ -3158,10 +3108,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("ISL applies the nationally incorporated Euro VI path within the Euro 7 transition window", async () => {
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       await expect(
         repository().findEffectiveByCountry({
           applicationScope,
@@ -3195,12 +3142,12 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(values.get("WHSC:PN")).toBe(800);
       expect(values.get("WHTC:NOX")).toBe(460);
       expect(values.get("WHTC:PN")).toBe(600);
-      expect(
-        new Set(rows.map((row) => row.limit.dataSourceId)),
-      ).toEqual(new Set([acceptanceFixtureIds.source.euReg595]));
-      expect(
-        new Set(rows.map((row) => row.verifiedAt.toISOString())),
-      ).toEqual(new Set(["2026-08-08T03:55:43.000Z"]));
+      expect(new Set(rows.map((row) => row.limit.dataSourceId))).toEqual(
+        new Set([acceptanceFixtureIds.source.euReg595]),
+      );
+      expect(new Set(rows.map((row) => row.verifiedAt.toISOString()))).toEqual(
+        new Set(["2026-08-08T03:55:43.000Z"]),
+      );
     }
 
     await expect(
@@ -3222,10 +3169,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("ISL keeps the Stage V succession gap-free for construction and agriculture", async () => {
-    for (const applicationScope of [
-      "construction",
-      "agriculture",
-    ] as const) {
+    for (const applicationScope of ["construction", "agriculture"] as const) {
       await expect(
         repository().findEffectiveByCountry({
           applicationScope,
@@ -3283,11 +3227,12 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(upperBand.get("PM")).toBe(0.045);
       expect(upperBand.has("PN")).toBe(false);
       expect(
-        powerResults.flat().every(
-          (row) =>
-            row.limit.dataSourceId ===
-            acceptanceFixtureIds.source.euReg1628,
-        ),
+        powerResults
+          .flat()
+          .every(
+            (row) =>
+              row.limit.dataSourceId === acceptanceFixtureIds.source.euReg1628,
+          ),
       ).toBe(true);
     }
 
@@ -3362,7 +3307,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       });
       expect(rows).toHaveLength(12);
       expect(new Set(rows.map((row) => row.regulationId))).toEqual(
-        new Set([acceptanceFixtureIds.regulation.liechtensteinHeavyVehicleEuroVi]),
+        new Set([
+          acceptanceFixtureIds.regulation.liechtensteinHeavyVehicleEuroVi,
+        ]),
       );
     }
     for (const applicationScope of ["construction", "agriculture"] as const) {
@@ -3384,7 +3331,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         new Set([acceptanceFixtureIds.regulation.liechtensteinNrmmStageV]),
       );
     }
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({
+    const details = await createCountryRepository(
+      testDatabase.database,
+    ).findDetailsByIso3({
       asOf: "2026-08-08",
       iso3: "LIE",
     });
@@ -3418,7 +3367,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(new Set(nonRoad.map((row) => row.regulationId))).toEqual(
       new Set([acceptanceFixtureIds.regulation.switzerlandNrmmStageV]),
     );
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({
+    const details = await createCountryRepository(
+      testDatabase.database,
+    ).findDetailsByIso3({
       asOf: "2026-08-08",
       iso3: "CHE",
     });
@@ -3426,19 +3377,18 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       {
         code: "CH-NATIONAL",
         validFrom: "2026-07-01",
-        source: { url: "https://www.fedlex.admin.ch/eli/cc/1995/4425_4425_4425/de" },
+        source: {
+          url: "https://www.fedlex.admin.ch/eli/cc/1995/4425_4425_4425/de",
+        },
       },
     ]);
   });
 
   it("SRB preserves no-data because R49/06 lacks a binding full-coverage implementation date", async () => {
     const results = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -3470,7 +3420,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       fixtureRegulations.some(
         (regulation) =>
-          regulation.jurisdictionId === acceptanceFixtureIds.jurisdiction.serbia,
+          regulation.jurisdictionId ===
+          acceptanceFixtureIds.jurisdiction.serbia,
       ),
     ).toBe(false);
   });
@@ -3489,12 +3440,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       powerKw: 150,
     });
     const [truck, bus, construction, agriculture] = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -3528,7 +3476,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     ).toBe(true);
     const fixtureRows = buildFixtureLimits().filter(
       (row) =>
-        row.regulationId === acceptanceFixtureIds.regulation.bosniaR49Series06 &&
+        row.regulationId ===
+          acceptanceFixtureIds.regulation.bosniaR49Series06 &&
         row.applicationScope === "on-road-truck",
     );
     expect(fixtureRows).toHaveLength(12);
@@ -3566,12 +3515,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
   it("MKD preserves no-data because incorporated stage references lack complete tables and cycle mapping", async () => {
     const results = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -3634,12 +3580,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       powerKw: 15.001,
     });
     const [truck, bus, construction, agriculture] = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -3709,12 +3652,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
   it("ALB keeps non-binding Gothenburg annex tables out of effective regulations", async () => {
     const results = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -3761,7 +3701,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.thailandTis3046,
         {
           publishedOn: "2020-08-18",
-          publisher: "Thai Industrial Standards Institute, Ministry of Industry",
+          publisher:
+            "Thai Industrial Standards Institute, Ministry of Industry",
           sourceType: "official-regulation",
           url: "https://service.tisi.go.th/fulltext/TIS3046-2563p_5055.pdf",
         },
@@ -3821,8 +3762,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.uneceR49Rev6,
         {
           publishedOn: "2013-06-24",
-          publisher:
-            "United Nations Economic Commission for Europe / EUR-Lex",
+          publisher: "United Nations Economic Commission for Europe / EUR-Lex",
           sourceType: "official-regulation",
           url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:42013X0624(01)",
         },
@@ -3933,12 +3873,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       powerKw: 150,
     });
     const [truck, bus, construction, agriculture] = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -4013,7 +3950,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       fixtureSources.find(
         (source) =>
-          source.id === acceptanceFixtureIds.source.ukraineImportRegistrationLaw,
+          source.id ===
+          acceptanceFixtureIds.source.ukraineImportRegistrationLaw,
       ),
     ).toMatchObject({
       publishedOn: "2005-07-06",
@@ -4037,12 +3975,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
   it("MDA preserves no-data while its first unified type-approval system remains draft", async () => {
     const results = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -4070,7 +4005,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       fixtureRegulations.some(
         (regulation) =>
-          regulation.jurisdictionId === acceptanceFixtureIds.jurisdiction.moldova,
+          regulation.jurisdictionId ===
+          acceptanceFixtureIds.jurisdiction.moldova,
       ),
     ).toBe(false);
 
@@ -4114,12 +4050,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       powerKw: 150,
     });
     const [truck, bus, construction, agriculture] = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -4148,7 +4081,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(values.get("WNTE:PM")).toBe(16);
     const fixtureRows = buildFixtureLimits().filter(
       (row) =>
-        row.regulationId === acceptanceFixtureIds.regulation.nepalHeavyVehicle2082 &&
+        row.regulationId ===
+          acceptanceFixtureIds.regulation.nepalHeavyVehicle2082 &&
         row.applicationScope === "on-road-truck",
     );
     expect(fixtureRows).toHaveLength(16);
@@ -4183,7 +4117,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       fixtureRegulations.some(
         (regulation) =>
-          regulation.id === acceptanceFixtureIds.regulation.nepalHeavyVehicle2082,
+          regulation.id ===
+          acceptanceFixtureIds.regulation.nepalHeavyVehicle2082,
       ),
     ).toBe(true);
 
@@ -4252,8 +4187,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         sourceType: "other",
         title:
           "AZS 636:2025 Road transport — environmental classes (official metadata; M/N scope, non-reference standard, numeric pages not publicly readable)",
-        url:
-          "https://e-standart.gov.az/Standard/Details/838c95ea-0693-4ec2-afe5-808234f0748a",
+        url: "https://e-standart.gov.az/Standard/Details/838c95ea-0693-4ec2-afe5-808234f0748a",
       },
       {
         id: acceptanceFixtureIds.source.georgiaResolution238,
@@ -4262,8 +4196,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         sourceType: "official-regulation",
         title:
           "Government Resolution No. 238 of 28 June 2023 — Technical Regulation on vehicle emission standards, current publication 12",
-        url:
-          "https://www.matsne.gov.ge/ka/document/view/5845990?publication=12",
+        url: "https://www.matsne.gov.ge/ka/document/view/5845990?publication=12",
       },
       {
         id: acceptanceFixtureIds.source.georgiaResolution238Mepa,
@@ -4282,8 +4215,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         sourceType: "official-regulation",
         title:
           "TR CU 018/2011 On safety of wheeled vehicles — current official regulation page and consolidated text",
-        url:
-          "https://eec.eaeunion.org/comission/department/deptexreg/realizatsiya-soglasheniya-o-vvedenii-edinykh-form-pts/normativnaya-baza/tr-ts-018-2011.php",
+        url: "https://eec.eaeunion.org/comission/department/deptexreg/realizatsiya-soglasheniya-o-vvedenii-edinykh-form-pts/normativnaya-baza/tr-ts-018-2011.php",
       },
       {
         id: acceptanceFixtureIds.source.belarusTrCu031,
@@ -4292,16 +4224,17 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         sourceType: "official-regulation",
         title:
           "TR CU 031/2012 On safety of agricultural and forestry tractors and trailers — current official regulation page and consolidated text",
-        url:
-          "https://eec.eaeunion.org/comission/department/deptexreg/realizatsiya-soglasheniya-o-vvedenii-edinykh-form-pts/normativnaya-baza/tr-ts-031-2.php",
+        url: "https://eec.eaeunion.org/comission/department/deptexreg/realizatsiya-soglasheniya-o-vvedenii-edinykh-form-pts/normativnaya-baza/tr-ts-031-2.php",
       },
     ] as const;
 
     for (const expected of expectedSources) {
-      expect(fixtureSources.find(({ id }) => id === expected.id)).toMatchObject({
-        ...expected,
-        verifiedAt,
-      });
+      expect(fixtureSources.find(({ id }) => id === expected.id)).toMatchObject(
+        {
+          ...expected,
+          verifiedAt,
+        },
+      );
     }
   });
 
@@ -4348,7 +4281,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ],
     ] as const;
     for (const [id, jurisdictionId, effectiveFrom] of expectedRegulations) {
-      expect(fixtureRegulations.find((regulation) => regulation.id === id)).toMatchObject({
+      expect(
+        fixtureRegulations.find((regulation) => regulation.id === id),
+      ).toMatchObject({
         effectiveFrom,
         jurisdictionId,
         status: "effective",
@@ -4369,8 +4304,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         (row) => row.id === acceptanceFixtureIds.regulation.rwandaRoadEuroIv,
       ),
     ).toMatchObject({
-      dataSourceId:
-        acceptanceFixtureIds.source.rwandaEas1047Implementation,
+      dataSourceId: acceptanceFixtureIds.source.rwandaEas1047Implementation,
       effectiveFrom: "2023-01-23",
     });
     const before = await repository().findEffectiveByCountry({
@@ -4380,21 +4314,25 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       powerKw: 150,
     });
     const [truck, bus, construction, agriculture] = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map(
-        (applicationScope) =>
-          repository().findEffectiveByCountry({
-            applicationScope,
-            asOf: "2023-01-23",
-            countryIso3: "RWA",
-            powerKw: 150,
-          }),
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
+        repository().findEffectiveByCountry({
+          applicationScope,
+          asOf: "2023-01-23",
+          countryIso3: "RWA",
+          powerKw: 150,
+        }),
       ),
     );
 
     expect(before).toEqual([]);
-    expect([truck.length, bus.length, construction.length, agriculture.length]).toEqual([
-      9, 9, 0, 0,
-    ]);
+    expect([
+      truck.length,
+      bus.length,
+      construction.length,
+      agriculture.length,
+    ]).toEqual([9, 9, 0, 0]);
     expect(
       new Map(
         truck.map((row) => [
@@ -4429,8 +4367,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       buildFixtureLimits().filter(
         (row) =>
-          row.regulationId ===
-          acceptanceFixtureIds.regulation.rwandaRoadEuroIv,
+          row.regulationId === acceptanceFixtureIds.regulation.rwandaRoadEuroIv,
       ),
     ).toHaveLength(18);
 
@@ -4592,10 +4529,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   it("GEO publishes N3/M3 B2 only from 2025-01-01 and preserves both non-road scopes as no-data", async () => {
     const query = (
       applicationScope:
-        | "on-road-truck"
-        | "on-road-bus"
-        | "construction"
-        | "agriculture",
+        "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
       asOf: string,
     ) =>
       repository().findEffectiveByCountry({
@@ -4620,7 +4554,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       [...truckRows, ...busRows].every(
         (row) =>
-          row.regulationId === acceptanceFixtureIds.regulation.georgiaRoadClass5 &&
+          row.regulationId ===
+            acceptanceFixtureIds.regulation.georgiaRoadClass5 &&
           row.limit.sourceId === acceptanceFixtureIds.source.uneceR49Rev4 &&
           !["PN", "CH4", "NH3"].includes(row.limit.pollutantCode),
       ),
@@ -4633,20 +4568,17 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       rawRows.every(
         (row) =>
-          row.measurementBasis?.includes("N3 trucks and M3 buses only") === true &&
-          row.measurementBasis?.includes("older >2,610 kg") === true,
+          row.measurementBasis?.includes("N3 trucks and M3 buses only") ===
+            true && row.measurementBasis?.includes("older >2,610 kg") === true,
       ),
     ).toBe(true);
   });
 
   it("AZE keeps all four scopes no-data across its exact two-source boundary", async () => {
     const results = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2026-08-10",
@@ -4668,8 +4600,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         validFrom: "2026-08-10",
         source: { url: "https://azstand.gov.az/upload/files/avro%204.pdf" },
         membershipSource: {
-          url:
-            "https://e-standart.gov.az/Standard/Details/838c95ea-0693-4ec2-afe5-808234f0748a",
+          url: "https://e-standart.gov.az/Standard/Details/838c95ea-0693-4ec2-afe5-808234f0748a",
         },
       },
     ]);
@@ -4761,8 +4692,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         sourceType: "official-regulation",
         title:
           "TR CU 031/2012 On safety of agricultural and forestry tractors and trailers — official regulation and current text",
-        url:
-          "https://eec.eaeunion.org/comission/department/deptexreg/tr/bezopSH.php",
+        url: "https://eec.eaeunion.org/comission/department/deptexreg/tr/bezopSH.php",
       },
       {
         id: acceptanceFixtureIds.source.turkmenistanAirProtectionLaw,
@@ -4771,8 +4701,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         sourceType: "official-regulation",
         title:
           "Law of Turkmenistan on protection of atmospheric air — Article 21, with 2018 and 2021 amendments",
-        url:
-          "https://minjust.gov.tm/assets/files/law_documents/hukuknama_406_ru.pdf",
+        url: "https://minjust.gov.tm/assets/files/law_documents/hukuknama_406_ru.pdf",
       },
       {
         id: acceptanceFixtureIds.source.turkmenistanGasolineMeasurementStandard,
@@ -4790,16 +4719,17 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         sourceType: "official-regulation",
         title:
           "UN Regulation No. 49, Revision 4 — Uniform provisions concerning measures against gaseous and particulate pollutants from compression-ignition engines and positive ignition engines for use in vehicles",
-        url:
-          "https://digitallibrary.un.org/record/640040/files/E_ECE_324_Rev.1_Add.48_Rev.4_E_ECE_TRANS_505_Rev.1_Add.48_Rev.4-EN.pdf",
+        url: "https://digitallibrary.un.org/record/640040/files/E_ECE_324_Rev.1_Add.48_Rev.4_E_ECE_TRANS_505_Rev.1_Add.48_Rev.4-EN.pdf",
       },
     ] as const;
 
     for (const expected of expectedSources) {
-      expect(fixtureSources.find(({ id }) => id === expected.id)).toMatchObject({
-        ...expected,
-        verifiedAt,
-      });
+      expect(fixtureSources.find(({ id }) => id === expected.id)).toMatchObject(
+        {
+          ...expected,
+          verifiedAt,
+        },
+      );
     }
   });
 
@@ -4847,7 +4777,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ],
     ] as const;
     for (const [id, jurisdictionId, effectiveFrom] of expectedRegulations) {
-      expect(fixtureRegulations.find((regulation) => regulation.id === id)).toMatchObject({
+      expect(
+        fixtureRegulations.find((regulation) => regulation.id === id),
+      ).toMatchObject({
         effectiveFrom,
         jurisdictionId,
         status: "effective",
@@ -4897,7 +4829,13 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(truckRows).toHaveLength(9);
       expect(busRows).toHaveLength(9);
       expect(constructionRows).toEqual([]);
-      expect(cycleCounts).toEqual(new Map([["ESC", 4], ["ETC", 4], ["ELR", 1]]));
+      expect(cycleCounts).toEqual(
+        new Map([
+          ["ESC", 4],
+          ["ETC", 4],
+          ["ELR", 1],
+        ]),
+      );
       expect(
         [...truckRows, ...busRows].every(
           (row) =>
@@ -4958,7 +4896,12 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   );
 
   it("UZB publishes only the verified current H agriculture band", async () => {
-    const query = (applicationScope: "on-road-truck" | "on-road-bus" | "construction" | "agriculture", asOf: string, powerKw: number) =>
+    const query = (
+      applicationScope:
+        "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
+      asOf: string,
+      powerKw: number,
+    ) =>
       repository().findEffectiveByCountry({
         applicationScope,
         asOf,
@@ -5009,12 +4952,14 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     "%s keeps all four scopes as signed no-data",
     async (countryIso3) => {
       const results = await Promise.all(
-        ([
-          "on-road-truck",
-          "on-road-bus",
-          "construction",
-          "agriculture",
-        ] as const).map((applicationScope) =>
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
           repository().findEffectiveByCountry({
             applicationScope,
             asOf: "2026-08-10",
@@ -5058,8 +5003,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       {
         id: acceptanceFixtureIds.source.angolaVehicleInspectionRegulation,
         publishedOn: "2013-11-07",
-        publisher:
-          "President of the Republic / Diário da República de Angola",
+        publisher: "President of the Republic / Diário da República de Angola",
         sourceType: "official-regulation",
         url: "https://files.lex.ao/presidente-da-republica/2013/decreto-presidencial-n-o-185-13-de-07-de-novembro/download/decreto-presidencial-n-o-185-13-de-07-de-novembro_presidente-da-republica_lex-ao.pdf",
       },
@@ -5067,8 +5011,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         id: acceptanceFixtureIds.source
           .angolaEnvironmentalStandardizationProgram,
         publishedOn: "2020-04-13",
-        publisher:
-          "President of the Republic / Diário da República de Angola",
+        publisher: "President of the Republic / Diário da República de Angola",
         sourceType: "government-notice",
         url: "https://files.lex.ao/presidente-da-republica/2020/decreto-presidencial-n-o-99-20-de-13-de-abril/download/decreto-presidencial-n-o-99-20-de-13-de-abril_presidente-da-republica_lex-ao.pdf",
       },
@@ -5210,10 +5153,12 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     for (const expected of expectedSources) {
       const expectedVerifiedAt =
         "verifiedAt" in expected ? expected.verifiedAt : verifiedAt;
-      expect(fixtureSources.find(({ id }) => id === expected.id)).toMatchObject({
-        ...expected,
-        verifiedAt: expectedVerifiedAt,
-      });
+      expect(fixtureSources.find(({ id }) => id === expected.id)).toMatchObject(
+        {
+          ...expected,
+          verifiedAt: expectedVerifiedAt,
+        },
+      );
     }
     expect([
       acceptanceFixtureIds.source.moroccoEuro6Order2094,
@@ -5249,8 +5194,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
           acceptanceFixtureIds.source.afghanistanAirPollutionAmendment,
         membershipSourceUrl:
           "https://parse.nepa.gov.af/parse/files/nepa/tadyl_mqrrh_kahsh_w_jlwgyry_az_alwdgy_hwa_nafdh_shdh_shmarh_mslsl_1393.pdf",
-        sourceId:
-          acceptanceFixtureIds.source.afghanistanAirPollutionRegulation,
+        sourceId: acceptanceFixtureIds.source.afghanistanAirPollutionRegulation,
         sourceUrl:
           "https://parse.nepa.gov.af/parse/files/nepa/mqrrh_kahsh_w_jlwgyry_az_alwdgy_hwa.pdf",
         validFrom: "2026-08-10",
@@ -5300,8 +5244,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
           acceptanceFixtureIds.source.burkinaFasoCurrentCitation2025,
         membershipSourceUrl:
           "https://www.environnement.gov.bf/fileadmin/user_upload/storages/images/mediatheque/accueil/past_nies_garage_brigade_ziniare.pdf",
-        sourceId:
-          acceptanceFixtureIds.source.burkinaFasoAirQualityDecree2001,
+        sourceId: acceptanceFixtureIds.source.burkinaFasoAirQualityDecree2001,
         sourceUrl: "https://faolex.fao.org/docs/pdf/bkf26794.pdf",
         validFrom: "2026-08-10",
       },
@@ -5337,8 +5280,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         jurisdictionId: acceptanceFixtureIds.jurisdiction.bolivia,
         membershipSourceId:
           acceptanceFixtureIds.source.boliviaIbmetroAcceptance,
-        membershipSourceUrl:
-          "https://ibmetro.gob.bo/certificado-de-aceptacion",
+        membershipSourceUrl: "https://ibmetro.gob.bo/certificado-de-aceptacion",
         sourceId: acceptanceFixtureIds.source.boliviaRm064Regulation,
         sourceUrl:
           "https://www.oopp.gob.bo/wp-content/uploads/2022/04/RM-064-Y-REGLAMENTO.pdf",
@@ -5348,13 +5290,11 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         code: "MA-NATIONAL",
         countryIso3: "MAR",
         jurisdictionId: acceptanceFixtureIds.jurisdiction.morocco,
-        membershipSourceId:
-          acceptanceFixtureIds.source.moroccoEuro6Order2251,
+        membershipSourceId: acceptanceFixtureIds.source.moroccoEuro6Order2251,
         membershipSourceUrl:
           "https://www.sgg.gov.ma/BO/bo_fr/2021/BO_7028_Fr.pdf",
         sourceId: acceptanceFixtureIds.source.moroccoEuro6Order2094,
-        sourceUrl:
-          "https://www.sgg.gov.ma/BO/AR/3111/2024/BO_7361_Ar.pdf",
+        sourceUrl: "https://www.sgg.gov.ma/BO/AR/3111/2024/BO_7361_Ar.pdf",
         validFrom: "2026-08-10",
         verifiedAt: new Date("2026-08-10T18:48:04.000Z"),
       },
@@ -5362,7 +5302,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         code: "KE-NATIONAL",
         countryIso3: "KEN",
         jurisdictionId: acceptanceFixtureIds.jurisdiction.kenya,
-        membershipSourceId: acceptanceFixtureIds.source.kenyaInspectionRules2026,
+        membershipSourceId:
+          acceptanceFixtureIds.source.kenyaInspectionRules2026,
         membershipSourceUrl:
           "https://new.kenyalaw.org/akn/ke/act/ln/2026/13/eng@2026-02-13/source.pdf",
         sourceId: acceptanceFixtureIds.source.kenyaAirQualityRegulations2024,
@@ -5377,9 +5318,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       const expectedVerifiedAt =
         "verifiedAt" in expected ? expected.verifiedAt : verifiedAt;
       expect(
-        fixtureJurisdictions.find(
-          ({ id }) => id === expected.jurisdictionId,
-        ),
+        fixtureJurisdictions.find(({ id }) => id === expected.jurisdictionId),
       ).toMatchObject({
         countryIso3: expected.countryIso3,
         dataSourceId: expected.sourceId,
@@ -5430,12 +5369,14 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     "%s keeps all four scopes as signed no-data without a fixture regulation",
     async (countryIso3, jurisdictionId) => {
       const results = await Promise.all(
-        ([
-          "on-road-truck",
-          "on-road-bus",
-          "construction",
-          "agriculture",
-        ] as const).map((applicationScope) =>
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
           repository().findEffectiveByCountry({
             applicationScope,
             asOf: "2026-08-10",
@@ -5457,10 +5398,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   it("BGD switches to four heavy-road limits per scope on 2022-07-26", async () => {
     const query = (
       applicationScope:
-        | "on-road-truck"
-        | "on-road-bus"
-        | "construction"
-        | "agriculture",
+        "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
       asOf: string,
     ) =>
       repository().findEffectiveByCountry({
@@ -5542,8 +5480,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
           id === acceptanceFixtureIds.regulation.bangladeshHeavyDiesel2022,
       ),
     ).toMatchObject({
-      dataSourceId:
-        acceptanceFixtureIds.source.bangladeshAirPollutionRules2022,
+      dataSourceId: acceptanceFixtureIds.source.bangladeshAirPollutionRules2022,
       effectiveFrom: "2022-07-26",
       jurisdictionId: acceptanceFixtureIds.jurisdiction.bangladesh,
       status: "effective",
@@ -5554,10 +5491,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   it("BOL switches to its four-limit ECE 49 road path on 2022-04-01", async () => {
     const query = (
       applicationScope:
-        | "on-road-truck"
-        | "on-road-bus"
-        | "construction"
-        | "agriculture",
+        "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
       asOf: string,
     ) =>
       repository().findEffectiveByCountry({
@@ -5649,14 +5583,15 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
   it("NGA fails closed because Schedule VIII does not close the PM and certification-cycle gates", async () => {
     const rows = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map(
-        (applicationScope) =>
-          repository().findEffectiveByCountry({
-            applicationScope,
-            asOf: "2026-08-11",
-            countryIso3: "NGA",
-            powerKw: 150,
-          }),
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
+        repository().findEffectiveByCountry({
+          applicationScope,
+          asOf: "2026-08-11",
+          countryIso3: "NGA",
+          powerKw: 150,
+        }),
       ),
     );
 
@@ -5711,31 +5646,43 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       "https://webstore.gsa.gov.gh/detail.php?ID=1756",
       "2026-08-10",
     ],
-  ] as const)("%s preserves no-data without a publishable heavy-duty limit table", async (iso3, code, sourceUrl, membershipUrl, asOf) => {
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({
-          applicationScope,
-          asOf,
-          countryIso3: iso3,
-          powerKw: 150,
-        }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({
-      asOf,
-      iso3,
-    });
-    expect(details?.jurisdictions).toMatchObject([
-      {
-        code,
-        validFrom: asOf,
-        source: { url: sourceUrl },
-        membershipSource: { url: membershipUrl },
-      },
-    ]);
-  });
+  ] as const)(
+    "%s preserves no-data without a publishable heavy-duty limit table",
+    async (iso3, code, sourceUrl, membershipUrl, asOf) => {
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf,
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({
+        asOf,
+        iso3,
+      });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          validFrom: asOf,
+          source: { url: sourceUrl },
+          membershipSource: { url: membershipUrl },
+        },
+      ]);
+    },
+  );
 
   it("PAK applies the S.R.O. 72(KE)/2009 Pak-II ECE-R-49 truck/bus table from 2012-07-01", async () => {
     const [before, truck, bus, construction, agriculture] = await Promise.all([
@@ -5936,9 +5883,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(roadValues.get("WHTC:PN")).toBe(600);
     expect(construction150).toHaveLength(5);
     expect(
-      construction150.every(
-        (row) => row.limit.testCycleCode === "NRSC/NRTC",
-      ),
+      construction150.every((row) => row.limit.testCycleCode === "NRSC/NRTC"),
     ).toBe(true);
     expect(nonRoadValues(construction150).get("NOX")).toBe(0.4);
     expect(nonRoadValues(construction150).get("PN")).toBe(1000);
@@ -6174,12 +6119,14 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       membershipSourceId,
     ) => {
       const results = await Promise.all(
-        ([
-          "on-road-truck",
-          "on-road-bus",
-          "construction",
-          "agriculture",
-        ] as const).map((applicationScope) =>
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
           repository().findEffectiveByCountry({
             applicationScope,
             asOf: "2026-08-09",
@@ -6250,10 +6197,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     ]);
     expect(before).toEqual([[], []]);
 
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       const rows = await repository().findEffectiveByCountry({
         applicationScope,
         asOf: "2018-07-13",
@@ -6282,8 +6226,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
           (row) =>
             row.regulationId ===
               acceptanceFixtureIds.regulation.sriLankaVehicleEmission2018 &&
-            row.citationCode ===
-              "Gazette 2079/42 Third Schedule, Tables 5-6" &&
+            row.citationCode === "Gazette 2079/42 Third Schedule, Tables 5-6" &&
             row.limit.sourceUrl ===
               "https://documents.gov.lk/view/egz/2018/7/2079-42_E.pdf" &&
             row.limit.validFrom === "2018-07-13",
@@ -6311,16 +6254,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     }
 
     const constructionPowers = [
-      7.999,
-      8,
-      18.999,
-      19,
-      36.999,
-      37,
-      74.999,
-      75,
-      129.999,
-      130,
+      7.999, 8, 18.999, 19, 36.999, 37, 74.999, 75, 129.999, 130,
     ] as const;
     const constructionRows = await Promise.all(
       constructionPowers.map((powerKw) =>
@@ -6362,16 +6296,18 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       constructionRows.every(
         (rows) =>
-          rows.map((row) => row.limit.pollutantCode).sort().join(",") ===
-            "CO,HC+NOx,OPACITY,PM" &&
+          rows
+            .map((row) => row.limit.pollutantCode)
+            .sort()
+            .join(",") === "CO,HC+NOx,OPACITY,PM" &&
           rows.every(
             (row) =>
               row.limit.testCycleCode ===
-                "ISO 8178-4 C1 (variable-speed) OR D2 (constant-speed)",
+              "ISO 8178-4 C1 (variable-speed) OR D2 (constant-speed)",
           ) &&
           Number(
-            rows.find((row) => row.limit.pollutantCode === "OPACITY")
-              ?.limit.limitValue,
+            rows.find((row) => row.limit.pollutantCode === "OPACITY")?.limit
+              .limitValue,
           ) === 3.25,
       ),
     ).toBe(true);
@@ -6403,10 +6339,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(
       fixtureRows.every(
         (row) =>
-          row.measurementBasis?.includes(
-            "letter-of-credit grandfathering",
-          ) === true &&
-          row.measurementBasis.includes("2018-10-31"),
+          row.measurementBasis?.includes("letter-of-credit grandfathering") ===
+            true && row.measurementBasis.includes("2018-10-31"),
       ),
     ).toBe(true);
     expect(
@@ -6468,8 +6402,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         publisher:
           "Cambodia Ministry of Industry and Handicraft / Institute of Standards of Cambodia",
         sourceType: "official-regulation",
-        title:
-          "Prakas No. 150 MIH/2016 on 19 Automotive Technical Regulations",
+        title: "Prakas No. 150 MIH/2016 on 19 Automotive Technical Regulations",
         url: "https://res.cloudinary.com/dgvyfitu8/image/upload/v1733987381/Prakas_No_150_MIH_2016_on_19_Automotives_Technical_Regulations_bdb6d255a4.pdf",
       },
       {
@@ -6478,8 +6411,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         publisher:
           "Royal Government of Cambodia / Ministry of Environment / National Trade Repository",
         sourceType: "official-regulation",
-        title:
-          "Sub-Decree No. 042 Air Pollution and Noise Disturbance Control",
+        title: "Sub-Decree No. 042 Air Pollution and Noise Disturbance Control",
         url: "https://cambodiantr.gov.kh/en/document/?title=sub-decree-no-042-air-pollution-and-noise-disturbance-control",
       },
       {
@@ -6593,31 +6525,43 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       "https://legalinfo.mn/mn/detail?lawId=16207241573351&showType=1",
       "https://legalinfo.mn/mn/detail?lawId=16207241555111&type=3",
     ],
-  ] as const)("%s preserves no-data without a publishable heavy-duty limit table", async (iso3, code, sourceUrl, membershipUrl) => {
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({
-          applicationScope,
-          asOf: "2026-08-10",
-          countryIso3: iso3,
-          powerKw: 150,
-        }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({
-      asOf: "2026-08-10",
-      iso3,
-    });
-    expect(details?.jurisdictions).toMatchObject([
-      {
-        code,
-        validFrom: "2026-08-10",
-        source: { url: sourceUrl },
-        membershipSource: { url: membershipUrl },
-      },
-    ]);
-  });
+  ] as const)(
+    "%s preserves no-data without a publishable heavy-duty limit table",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf: "2026-08-10",
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({
+        asOf: "2026-08-10",
+        iso3,
+      });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          validFrom: "2026-08-10",
+          source: { url: sourceUrl },
+          membershipSource: { url: membershipUrl },
+        },
+      ]);
+    },
+  );
 
   it.each([
     [
@@ -6632,31 +6576,43 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       "https://ambiente.gob.do/portal-transparencia/wp/download/280/gestion-de-la-calidad-ambiental/3845/reglamento-tecnico-ambental-control-fuentes-moviles-2018.pdf",
       "https://intrant.gob.do/transparencia/phocadownload/PlanEstrategico/MemoriasInstitucionales/Memoria%20Institucional%202022.pdf",
     ],
-  ] as const)("%s preserves no-data without a publishable heavy-duty limit table", async (iso3, code, sourceUrl, membershipUrl) => {
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({
-          applicationScope,
-          asOf: "2026-08-10",
-          countryIso3: iso3,
-          powerKw: 150,
-        }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({
-      asOf: "2026-08-10",
-      iso3,
-    });
-    expect(details?.jurisdictions).toMatchObject([
-      {
-        code,
-        validFrom: "2026-08-10",
-        source: { url: sourceUrl },
-        membershipSource: { url: membershipUrl },
-      },
-    ]);
-  });
+  ] as const)(
+    "%s preserves no-data without a publishable heavy-duty limit table",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf: "2026-08-10",
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({
+        asOf: "2026-08-10",
+        iso3,
+      });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          validFrom: "2026-08-10",
+          source: { url: sourceUrl },
+          membershipSource: { url: membershipUrl },
+        },
+      ]);
+    },
+  );
 
   it("ECU applies the RTE 017 / NTE 2207 ECE-49 heavy-diesel path from 2009-02-07", async () => {
     const [before, truck, bus, construction, agriculture] = await Promise.all([
@@ -6824,31 +6780,43 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       "https://www.asn.sn/sites/default/files/ASN%20CATALOGUE%202025%20v2_0.pdf",
       "https://www.archives.sn/api/fichiers/3d690f87-c01d-49e9-8fc3-655f40c27d9b?download=1",
     ],
-  ] as const)("%s preserves four-scope no-data after five-gate source review", async (iso3, code, sourceUrl, membershipUrl) => {
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({
-          applicationScope,
-          asOf: "2026-08-11",
-          countryIso3: iso3,
-          powerKw: 150,
-        }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({
-      asOf: "2026-08-11",
-      iso3,
-    });
-    expect(details?.jurisdictions).toMatchObject([
-      {
-        code,
-        source: { url: sourceUrl },
-        membershipSource: { url: membershipUrl },
-        validFrom: "2026-08-11",
-      },
-    ]);
-  });
+  ] as const)(
+    "%s preserves four-scope no-data after five-gate source review",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf: "2026-08-11",
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({
+        asOf: "2026-08-11",
+        iso3,
+      });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          source: { url: sourceUrl },
+          membershipSource: { url: membershipUrl },
+          validFrom: "2026-08-11",
+        },
+      ]);
+    },
+  );
 
   it("keeps DZA, ETH, and NGA regulation tombstone IDs out of publishable fixtures", () => {
     const retiredRegulationIds = new Set([
@@ -6871,7 +6839,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
   it("keeps stable source IDs live and limits non-publishable regulation IDs to governance tombstones", () => {
     const fixtureSourceIds = new Set(
-      fixtureSources.map(({ id }) => id).filter((id): id is string => id !== undefined),
+      fixtureSources
+        .map(({ id }) => id)
+        .filter((id): id is string => id !== undefined),
     );
     expect(new Set(Object.values(acceptanceFixtureIds.source))).toEqual(
       fixtureSourceIds,
@@ -6902,14 +6872,16 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       {
         countryIso3: "IRN",
         jurisdictionId: acceptanceFixtureIds.jurisdiction.iran,
-        membershipSourceId: acceptanceFixtureIds.source.iranArticle4Amendment2024,
+        membershipSourceId:
+          acceptanceFixtureIds.source.iranArticle4Amendment2024,
         sourceId: acceptanceFixtureIds.source.iranTechnicalPollutionRegulation,
         websiteUrl: "https://nezamat.ir/post-41054/",
       },
       {
         countryIso3: "IRQ",
         jurisdictionId: acceptanceFixtureIds.jurisdiction.iraq,
-        membershipSourceId: acceptanceFixtureIds.source.iraqTr167ImplementationNotice2025,
+        membershipSourceId:
+          acceptanceFixtureIds.source.iraqTr167ImplementationNotice2025,
         sourceId: acceptanceFixtureIds.source.iraqTr167AmendmentDecision2024,
         websiteUrl: "https://www.iraqi-standards.org/wan/ns/p/0000018.html",
       },
@@ -6917,23 +6889,43 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         countryIso3: "LBN",
         jurisdictionId: acceptanceFixtureIds.jurisdiction.lebanon,
         membershipSourceId: acceptanceFixtureIds.source.lebanonThirdBur2019,
-        sourceId: acceptanceFixtureIds.source.lebanonEnvironmentalProtectionLaw444,
-        websiteUrl: "https://moe.gov.lb/%D8%A7%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86-%D9%88%D8%A7%D9%84%D8%A7%D9%86%D8%B8%D9%85%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-444-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9.aspx?lang=ar-LB",
+        sourceId:
+          acceptanceFixtureIds.source.lebanonEnvironmentalProtectionLaw444,
+        websiteUrl:
+          "https://moe.gov.lb/%D8%A7%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86-%D9%88%D8%A7%D9%84%D8%A7%D9%86%D8%B8%D9%85%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-444-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9.aspx?lang=ar-LB",
       },
       {
         countryIso3: "SYR",
         jurisdictionId: acceptanceFixtureIds.jurisdiction.syria,
-        membershipSourceId: acceptanceFixtureIds.source.syriaVehicleImportNotice2025,
+        membershipSourceId:
+          acceptanceFixtureIds.source.syriaVehicleImportNotice2025,
         sourceId: acceptanceFixtureIds.source.syriaEnvironmentLaw12,
         websiteUrl: "https://sana.sy/economy/2238146/",
       },
     ] as const;
 
-    expect(refreshedJurisdictions.map(({ sourceId, membershipSourceId }) => [sourceId, membershipSourceId])).toEqual([
-      ["10000000-0000-4000-8000-000000000652", "10000000-0000-4000-8000-000000000653"],
-      ["10000000-0000-4000-8000-000000000654", "10000000-0000-4000-8000-000000000655"],
-      ["10000000-0000-4000-8000-000000000658", "10000000-0000-4000-8000-000000000659"],
-      ["10000000-0000-4000-8000-000000000700", "10000000-0000-4000-8000-000000000701"],
+    expect(
+      refreshedJurisdictions.map(({ sourceId, membershipSourceId }) => [
+        sourceId,
+        membershipSourceId,
+      ]),
+    ).toEqual([
+      [
+        "10000000-0000-4000-8000-000000000652",
+        "10000000-0000-4000-8000-000000000653",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000654",
+        "10000000-0000-4000-8000-000000000655",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000658",
+        "10000000-0000-4000-8000-000000000659",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000700",
+        "10000000-0000-4000-8000-000000000701",
+      ],
     ]);
 
     for (const expected of refreshedJurisdictions) {
@@ -7034,13 +7026,30 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         membershipSourceId,
       ]),
     ).toEqual([
-      ["10000000-0000-4000-8000-000000000618", "10000000-0000-4000-8000-000000000619"],
-      ["10000000-0000-4000-8000-000000000630", "10000000-0000-4000-8000-000000000631"],
-      ["10000000-0000-4000-8000-000000000648", "10000000-0000-4000-8000-000000000649"],
-      ["10000000-0000-4000-8000-000000000650", "10000000-0000-4000-8000-000000000651"],
-      ["10000000-0000-4000-8000-000000000656", "10000000-0000-4000-8000-000000000657"],
+      [
+        "10000000-0000-4000-8000-000000000618",
+        "10000000-0000-4000-8000-000000000619",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000630",
+        "10000000-0000-4000-8000-000000000631",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000648",
+        "10000000-0000-4000-8000-000000000649",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000650",
+        "10000000-0000-4000-8000-000000000651",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000656",
+        "10000000-0000-4000-8000-000000000657",
+      ],
     ]);
-    expect(refreshedJurisdictions.map(({ jurisdictionId }) => jurisdictionId)).toEqual([
+    expect(
+      refreshedJurisdictions.map(({ jurisdictionId }) => jurisdictionId),
+    ).toEqual([
       "10000000-0000-4000-8000-000000000618",
       "10000000-0000-4000-8000-000000000624",
       "10000000-0000-4000-8000-000000000633",
@@ -7216,12 +7225,15 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         url: "https://www.archives.sn/api/fichiers/3d690f87-c01d-49e9-8fc3-655f40c27d9b?download=1",
       },
     ],
-  ] as const)("preserves exact reviewed source metadata for %s", (sourceId, expected) => {
-    expect(fixtureSources.find(({ id }) => id === sourceId)).toMatchObject({
-      ...expected,
-      verifiedAt: new Date("2026-08-10T17:12:15.000Z"),
-    });
-  });
+  ] as const)(
+    "preserves exact reviewed source metadata for %s",
+    (sourceId, expected) => {
+      expect(fixtureSources.find(({ id }) => id === sourceId)).toMatchObject({
+        ...expected,
+        verifiedAt: new Date("2026-08-10T17:12:15.000Z"),
+      });
+    },
+  );
 
   it.each([
     [
@@ -7254,30 +7266,42 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       "https://www.gacetaoficial.gob.pa/pdfTemp/26303/18123.pdf",
       "https://infojuridica.procuraduria-admon.gob.pa/norma_screen.php?numsec=58095",
     ],
-  ] as const)("%s preserves no-data without a publishable heavy-duty limit table", async (iso3, code, sourceUrl, membershipUrl) => {
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({
-          applicationScope,
-          asOf: "2026-08-10",
-          countryIso3: iso3,
-          powerKw: 150,
-        }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({
-      asOf: "2026-08-10",
-      iso3,
-    });
-    expect(details?.jurisdictions).toMatchObject([
-      {
-        code,
-        source: { url: sourceUrl },
-        membershipSource: { url: membershipUrl },
-      },
-    ]);
-  });
+  ] as const)(
+    "%s preserves no-data without a publishable heavy-duty limit table",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf: "2026-08-10",
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({
+        asOf: "2026-08-10",
+        iso3,
+      });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          source: { url: sourceUrl },
+          membershipSource: { url: membershipUrl },
+        },
+      ]);
+    },
+  );
 
   it("keeps stable IDs for the five-country Latin America review", () => {
     expect({
@@ -7334,7 +7358,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         publishedOn: "2024-07-24",
         publisher: "Honduras National Congress / La Gaceta",
         sourceType: "official-regulation",
-        title: "Decree 36-2024 — Law for the Rational and Efficient Use of Energy",
+        title:
+          "Decree 36-2024 — Law for the Rational and Efficient Use of Energy",
         url: "https://www.tsc.gob.hn/web/leyes/Decreto-36-2024.pdf",
       },
     ],
@@ -7413,12 +7438,15 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         url: "https://www.gub.uy/ministerio-ambiente/comunicacion/publicaciones/procedimiento-homologacion-emisiones-vehiculares-v5",
       },
     ],
-  ] as const)("locks exact reviewed source metadata for %s", (sourceId, expected) => {
-    expect(fixtureSources.find(({ id }) => id === sourceId)).toMatchObject({
-      ...expected,
-      verifiedAt: new Date("2026-08-10T20:09:01.000Z"),
-    });
-  });
+  ] as const)(
+    "locks exact reviewed source metadata for %s",
+    (sourceId, expected) => {
+      expect(fixtureSources.find(({ id }) => id === sourceId)).toMatchObject({
+        ...expected,
+        verifiedAt: new Date("2026-08-10T20:09:01.000Z"),
+      });
+    },
+  );
 
   it("applies one review timestamp while preserving membership validity boundaries", () => {
     const reviewedAt = new Date("2026-08-10T20:09:01.000Z");
@@ -7493,12 +7521,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       powerKw: 150,
     });
     const [truck, bus, construction, agriculture] = await Promise.all(
-      ([
-        "on-road-truck",
-        "on-road-bus",
-        "construction",
-        "agriculture",
-      ] as const).map((applicationScope) =>
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
         repository().findEffectiveByCountry({
           applicationScope,
           asOf: "2023-05-14",
@@ -7508,9 +7533,12 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     );
     expect(before).toEqual([]);
-    expect([truck.length, bus.length, construction.length, agriculture.length]).toEqual([
-      9, 9, 0, 0,
-    ]);
+    expect([
+      truck.length,
+      bus.length,
+      construction.length,
+      agriculture.length,
+    ]).toEqual([9, 9, 0, 0]);
     const values = new Map(
       truck.map((row) => [
         `${row.limit.testCycleCode}:${row.limit.pollutantCode}`,
@@ -7649,68 +7677,95 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
   it("locks the NGA/UGA/BWA/NAM/SWZ deep-review sources, signoff, and membership boundary", () => {
     const verifiedAt = new Date("2026-08-10T17:13:30.000Z");
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
 
-    expect(sourceById.get(acceptanceFixtureIds.source.nigeriaVehicularEmissions2011)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.nigeriaVehicularEmissions2011),
+    ).toMatchObject({
       publishedOn: "2011-05-17",
       sourceType: "official-regulation",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.ugandaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.ugandaEnvironment),
+    ).toMatchObject({
       publishedOn: "2024-04-26",
       sourceType: "official-regulation",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.botswanaGovernment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.botswanaGovernment),
+    ).toMatchObject({
       publishedOn: "2014-08-21",
       publisher: "Botswana Bureau of Standards",
       sourceType: "government-notice",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.botswanaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.botswanaTransport),
+    ).toMatchObject({
       publishedOn: "2024-06-24",
       publisher: "Botswana Bureau of Standards",
       title: "Botswana Standards Catalogue — June 2024",
       url: "https://bobstandards.bw/wp-content/uploads/2024/06/BOBS-Standards-Catalogue-June-2024.pdf",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.namibiaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.namibiaEnvironment),
+    ).toMatchObject({
       publishedOn: "2005-12-30",
       publisher: "Republic of Namibia / Namibian Standards Institution",
       sourceType: "official-regulation",
       title: "Standards Act, 2005 (Act No. 18 of 2005)",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.namibiaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.namibiaTransport),
+    ).toMatchObject({
       publishedOn: "2013-09-20",
       sourceType: "official-regulation",
       title: "Government Notice Nos. 248–249 of 2013 — Standards Regulations",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.eswatiniGovernment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.eswatiniGovernment),
+    ).toMatchObject({
       sourceType: "official-regulation",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.eswatiniTransport)).toMatchObject({
-      title: "Road Transportation Department — roadworthiness testing and statutory mandate",
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.eswatiniTransport),
+    ).toMatchObject({
+      title:
+        "Road Transportation Department — roadworthiness testing and statutory mandate",
       verifiedAt,
     });
 
-    const reviewedMemberships = fixtureCountryJurisdictions.filter((membership) =>
-      ["NGA", "UGA", "BWA", "NAM", "SWZ"].includes(membership.countryIso3),
+    const reviewedMemberships = fixtureCountryJurisdictions.filter(
+      (membership) =>
+        ["NGA", "UGA", "BWA", "NAM", "SWZ"].includes(membership.countryIso3),
     );
     expect(reviewedMemberships).toHaveLength(5);
-    expect(reviewedMemberships.every((membership) =>
-      membership.validFrom === "2026-08-11" &&
-      membership.verifiedAt.toISOString() === verifiedAt.toISOString(),
-    )).toBe(true);
+    expect(
+      reviewedMemberships.every(
+        (membership) =>
+          membership.validFrom === "2026-08-11" &&
+          membership.verifiedAt.toISOString() === verifiedAt.toISOString(),
+      ),
+    ).toBe(true);
   });
 
   it("locks exact primary-source metadata for TZA/ZMB/ZWE/RWA/CIV", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const verifiedAt = new Date("2026-08-10T16:55:00.000Z");
 
-    expect(sourceById.get(acceptanceFixtureIds.source.tanzaniaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.tanzaniaEnvironment),
+    ).toMatchObject({
       publishedOn: "2007-12-07",
       publisher: "Tanzania National Environment Management Council",
       sourceType: "official-regulation",
@@ -7719,16 +7774,21 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://www.nemc.or.tz/uploads/publications/sw-1645446559-Air_Quality_Standards_Regulations_2007.pdf",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.tanzaniaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.tanzaniaTransport),
+    ).toMatchObject({
       publishedOn: "2007-12-07",
-      publisher: "TanzLII / Official Gazette of the United Republic of Tanzania",
+      publisher:
+        "TanzLII / Official Gazette of the United Republic of Tanzania",
       sourceType: "official-regulation",
       title:
         "Environmental Management (Air Quality Standards) Regulations, 2007 — Government Notice No. 237",
       url: "https://tanzlii.org/akn/tz/act/gn/2007/237/eng@2007-01-01/publication",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.zambiaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.zambiaEnvironment),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "National Assembly of Zambia",
       sourceType: "official-regulation",
@@ -7736,7 +7796,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://www.parliament.gov.zm/sites/default/files/documents/acts/Environmetal%20Mangement%20Act%2012%20of%202011.pdf",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.zambiaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.zambiaTransport),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Zambia Compulsory Standards Agency",
       sourceType: "government-notice",
@@ -7744,7 +7806,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://www.zcsa.org.zm/index.php/list-of-compulsory-standards/",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.zimbabweEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.zimbabweEnvironment),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Zimbabwe Environmental Management Agency",
       sourceType: "official-regulation",
@@ -7752,7 +7816,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://ema.co.zw/wp-content/uploads/2026/03/EMA-ACT.pdf",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.zimbabweTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.zimbabweTransport),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Zimbabwe Environmental Management Agency",
       sourceType: "government-notice",
@@ -7760,16 +7826,21 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://ema.co.zw/air-emission/",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.rwandaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.rwandaEnvironment),
+    ).toMatchObject({
       publishedOn: "2018-09-24",
-      publisher: "Official Gazette of the Republic of Rwanda / Ministry of Environment",
+      publisher:
+        "Official Gazette of the Republic of Rwanda / Ministry of Environment",
       sourceType: "official-regulation",
       title:
         "Ministerial Order No. 02/2018 of 17/09/2018 Relating to Air Pollutants Emission",
       url: "https://rwandalii.org/akn/rw/act/mo/2018/2/eng@2018-09-24/source.pdf",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.rwandaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.rwandaTransport),
+    ).toMatchObject({
       publishedOn: "2023-01-23",
       publisher: "Rwanda Standards Board",
       sourceType: "official-regulation",
@@ -7779,9 +7850,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       verifiedAt,
     });
     expect(
-      sourceById.get(
-        acceptanceFixtureIds.source.rwandaEas1047Implementation,
-      ),
+      sourceById.get(acceptanceFixtureIds.source.rwandaEas1047Implementation),
     ).toMatchObject({
       publishedOn: null,
       publisher: "East African Community Secretariat",
@@ -7791,29 +7860,40 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://sustmob.org/UsedVehicles/CITA_Nairobi_harmonization.pdf",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.coteDIvoireEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.coteDIvoireEnvironment),
+    ).toMatchObject({
       publishedOn: "2017-02-22",
-      publisher: "Official Gazette of the Republic of Côte d’Ivoire / AfricanLII",
+      publisher:
+        "Official Gazette of the Republic of Côte d’Ivoire / AfricanLII",
       sourceType: "official-regulation",
-      title: "Décret n°2017-125 du 22 février 2017 relatif à la qualité de l’air",
+      title:
+        "Décret n°2017-125 du 22 février 2017 relatif à la qualité de l’air",
       url: "https://agp.africanlii.org/fr/akn/ci/act/decree/2017/125/fra@2017-09-14",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.coteDIvoireTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.coteDIvoireTransport),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Comité Ivoirien de Normalisation (CODINORM)",
       sourceType: "government-notice",
-      title: "PNI 15004 : Février 2025 — Véhicules N2 et N3 (Projet de Norme Ivoirienne)",
+      title:
+        "PNI 15004 : Février 2025 — Véhicules N2 et N3 (Projet de Norme Ivoirienne)",
       url: "https://www.codinorm.ci/doc/enquete/vehicules/PNI%2015004%20Vehic%20N2%20et%20N3%20janv%202025%20V01.pdf",
       verifiedAt,
     });
   });
 
   it("uses exact source metadata and the real verification time for Mozambique and Eswatini", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const sourceRefreshedAt = new Date("2026-08-10T20:50:58.000Z");
 
-    expect(sourceById.get(acceptanceFixtureIds.source.mozambiqueEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.mozambiqueEnvironment),
+    ).toMatchObject({
       publishedOn: "2010-12-31",
       publisher:
         "Conselho de Ministros / Boletim da República; official copy hosted by SIBMOZ",
@@ -7823,7 +7903,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://sibmoz.gov.mz/content/uploads/2022/01/Regulamento-sobre-Padroes-de-Qualidade-Ambiental-e-de-Emissao-de-Efluentes.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.mozambiqueTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.mozambiqueTransport),
+    ).toMatchObject({
       publishedOn: "2017-08-16",
       publisher:
         "Conselho de Ministros / Imprensa Nacional de Moçambique; official copy hosted by INATRO",
@@ -7833,33 +7915,44 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://inatro.gov.mz/wp-content/uploads/2019/08/Decreto-44-e-45-2017-matriculas-e-regras-de-apro-de-marcas-e-modelos.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.eswatiniGovernment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.eswatiniGovernment),
+    ).toMatchObject({
       publisher: "Eswatini Environment Authority",
       sourceType: "official-regulation",
       verifiedAt: new Date("2026-08-10T17:13:30.000Z"),
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.eswatiniTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.eswatiniTransport),
+    ).toMatchObject({
       publisher: expect.stringContaining("Road Transportation Department"),
       verifiedAt: new Date("2026-08-10T17:13:30.000Z"),
     });
   });
 
   it("uses exact source metadata and the real verification time for Lesotho, Madagascar, Mauritius, and Malawi", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const sourceRefreshedAt = new Date("2026-08-10T20:50:58.000Z");
     const malawiVerifiedAt = new Date(
       TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO,
     );
 
-    expect(sourceById.get(acceptanceFixtureIds.source.lesothoGovernment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.lesothoGovernment),
+    ).toMatchObject({
       publishedOn: "2026-02-16",
-      publisher: "Government of Lesotho / Ministry of Public Works and Transport",
+      publisher:
+        "Government of Lesotho / Ministry of Public Works and Transport",
       sourceType: "government-notice",
       title: "Roadworthiness (RW)/Fitness (F) of Motor Vehicles",
       url: "https://www.gov.ls/eservice/roadworthiness-rw-fitness-f-of-motor-vehicles/",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.lesothoTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.lesothoTransport),
+    ).toMatchObject({
       publishedOn: "2006-02-28",
       publisher:
         "Government of the Kingdom of Lesotho, Ministry of Public Works and Transport, Planning Unit",
@@ -7868,7 +7961,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://www.mopwt.gov.ls/wp-content/uploads/2018/07/Transport_Sector_Policy.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.madagascarEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.madagascarEnvironment),
+    ).toMatchObject({
       publishedOn: "2024-04-30",
       publisher:
         "Ministère de l’Agriculture et de l’Élevage, Direction Régionale de l’Agriculture et de l’Élevage Atsimo Andrefana",
@@ -7878,15 +7973,20 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://www.minae.gov.mg/wp-content/uploads/2025/05/1.0.EIES-VERSION-DEFINITIVE_FIN.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.madagascarTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.madagascarTransport),
+    ).toMatchObject({
       publishedOn: null,
-      publisher: "Direction de la Législation et du Contentieux / CNLEGIS, Madagascar",
+      publisher:
+        "Direction de la Législation et du Contentieux / CNLEGIS, Madagascar",
       sourceType: "government-notice",
       title: "CNLEGIS — Recherche directe par numéros",
       url: "https://cnlegis.gov.mg/page_cherche_dir_numeros/",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.mauritiusEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.mauritiusEnvironment),
+    ).toMatchObject({
       publishedOn: "2023-11-08",
       publisher:
         "Mauritius Ministry of Environment, Solid Waste Management and Climate Change, Environment and Climate Change Division",
@@ -7896,7 +7996,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://environment.govmu.org/Documents/communique/Returns%20on%20Enforcement%20of%20Vehicular%20Smoke%20Emissions%20%28March%202022%20to%20August%202023%29.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.mauritiusTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.mauritiusTransport),
+    ).toMatchObject({
       publishedOn: "2018-08-11",
       publisher: "Government of Mauritius / Government Gazette of Mauritius",
       sourceType: "official-regulation",
@@ -7904,7 +8006,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://landtransport.govmu.org/Documents/Legislations/act1218.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.malawiGovernment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.malawiGovernment),
+    ).toMatchObject({
       publishedOn: "1998-01-15",
       publisher: "Government of Malawi — Trade Portal",
       sourceType: "official-regulation",
@@ -7912,7 +8016,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://portal.trade.gov.mw/en-gb/site/display/62",
       verifiedAt: malawiVerifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.malawiTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.malawiTransport),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Government of Malawi — Trade Portal",
       sourceType: "official-regulation",
@@ -7923,14 +8029,16 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("uses exact source metadata and the real verification time for Fiji, Belize, Brunei, and Bhutan", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
-    const verifiedAt = new Date(
-      TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO,
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
     );
+    const verifiedAt = new Date(TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO);
     const refreshedVerifiedAt = new Date("2026-08-10T19:36:45.000Z");
     const fijiRefreshedAt = new Date("2026-08-10T20:50:58.000Z");
 
-    expect(sourceById.get(acceptanceFixtureIds.source.fijiEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.fijiEnvironment),
+    ).toMatchObject({
       publishedOn: "2025-01-28",
       publisher: "Fiji Revenue and Customs Service",
       sourceType: "government-notice",
@@ -7939,7 +8047,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://frcs.org.fj/wp-content/uploads/2025/01/SIG-2025-04-Importation-of-Motor-Vehicles-Customs-Prohibited-Imports-and-Exports-Regulations-1986.pdf",
       verifiedAt: fijiRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.fijiTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.fijiTransport),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Fiji Revenue and Customs Service",
       sourceType: "government-notice",
@@ -7947,23 +8057,31 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://frcs.org.fj/public-notice/importation-of-used-or-reconditioned-motor-vehicles-in-2026/",
       verifiedAt: fijiRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.belizeEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.belizeEnvironment),
+    ).toMatchObject({
       publishedOn: "1996-04-20",
       publisher: "Belize Department of the Environment / Government of Belize",
       sourceType: "official-regulation",
-      title: "Pollution Regulations (S.I. No. 56 of 1996), Chapter 328, Revised Edition 2020 — regulations 25–26 (PDF pp. 25–26)",
+      title:
+        "Pollution Regulations (S.I. No. 56 of 1996), Chapter 328, Revised Edition 2020 — regulations 25–26 (PDF pp. 25–26)",
       url: "https://doe.gov.bz/wp-content/uploads/2024/02/Pollution-Regulations.pdf",
       verifiedAt: refreshedVerifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.belizeTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.belizeTransport),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Government of Belize / Department of the Environment",
       sourceType: "official-regulation",
-      title: "Environmental Protection Act, Chapter 328, Revised Edition 2020 — sections 6 and 45 (PDF pp. 21 and 45)",
+      title:
+        "Environmental Protection Act, Chapter 328, Revised Edition 2020 — sections 6 and 45 (PDF pp. 21 and 45)",
       url: "https://doe.gov.bz/download/environmental-protection-act-chapter-328-re-2020/?wpdmdl=17080",
       verifiedAt: refreshedVerifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.bruneiEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.bruneiEnvironment),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Attorney General’s Chambers, Brunei Darussalam",
       sourceType: "official-regulation",
@@ -7971,7 +8089,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://www.agc.gov.bn/AGC%20Images/LAWS/ACT_PDF/R/CHAPTER%20068%20RG1%20%282022%29.pdf",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.bruneiTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.bruneiTransport),
+    ).toMatchObject({
       publishedOn: null,
       publisher:
         "Ministry of Communications & Land Transport Department, in collaboration with Brunei National Road Safety Council",
@@ -7980,7 +8100,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://www.jpd.gov.bn/SiteAssets/SitePages/Land%20Transport%20Department/Adverts/Safe%20and%20Smart%20Driving%20In%20Brunei%20Darussalam/Safe%20and%20Smart%20Driving%20in%20Brunei%20Darussalam%201st%20edition.pdf",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.bhutanEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.bhutanEnvironment),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "National Environment Commission, Royal Government of Bhutan",
       sourceType: "government-notice",
@@ -7988,7 +8110,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://www.nec.gov.bt/publications/download/environment-standards-2020",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.bhutanTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.bhutanTransport),
+    ).toMatchObject({
       publishedOn: "2026-07-03",
       publisher: "Bhutan Construction and Transport Authority",
       sourceType: "government-notice",
@@ -8103,94 +8227,145 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("uses exact source metadata and the real verification time for CAF, COD, COG, and CUB", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const sourceRefreshedAt = new Date("2026-08-10T21:00:43.000Z");
     const refreshedVerifiedAt = new Date("2026-08-10T19:36:45.000Z");
 
-    expect(sourceById.get(acceptanceFixtureIds.source.centralAfricanRepublicEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.centralAfricanRepublicEnvironment,
+      ),
+    ).toMatchObject({
       publishedOn: "2007-12-28",
-      publisher: "Présidence de la République / Journal officiel de la République centrafricaine",
+      publisher:
+        "Présidence de la République / Journal officiel de la République centrafricaine",
       sourceType: "official-regulation",
-      title: "Loi n° 07.018 du 28 décembre 2007 portant Code de l’environnement de la République centrafricaine",
+      title:
+        "Loi n° 07.018 du 28 décembre 2007 portant Code de l’environnement de la République centrafricaine",
       url: "https://faolex.fao.org/docs/pdf/caf105925.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.centralAfricanRepublicTransport)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.centralAfricanRepublicTransport,
+      ),
+    ).toMatchObject({
       publishedOn: "2026-03-09",
-      publisher: "République centrafricaine / Ministère de l’Environnement et du Développement durable / UNFCCC NDC Registry",
+      publisher:
+        "République centrafricaine / Ministère de l’Environnement et du Développement durable / UNFCCC NDC Registry",
       sourceType: "government-notice",
-      title: "Contribution déterminée au niveau national (CDN 3.0) de la République centrafricaine",
+      title:
+        "Contribution déterminée au niveau national (CDN 3.0) de la République centrafricaine",
       url: "https://unfccc.int/sites/default/files/2026-03/CDN%203.0%20CAR%202025.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.democraticRepublicOfCongoEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.democraticRepublicOfCongoEnvironment,
+      ),
+    ).toMatchObject({
       publishedOn: "2011-07-16",
-      publisher: "Journal officiel de la République démocratique du Congo / Cabinet du Président; official copy hosted by the Ministry of Environment",
+      publisher:
+        "Journal officiel de la République démocratique du Congo / Cabinet du Président; official copy hosted by the Ministry of Environment",
       sourceType: "official-regulation",
-      title: "Loi n° 11/009 du 09 juillet 2011 portant principes fondamentaux relatifs à la protection de l’environnement",
+      title:
+        "Loi n° 11/009 du 09 juillet 2011 portant principes fondamentaux relatifs à la protection de l’environnement",
       url: "https://medd.gouv.cd/wp-content/uploads/2020/07/attachment1.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.democraticRepublicOfCongoTransport)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.democraticRepublicOfCongoTransport,
+      ),
+    ).toMatchObject({
       publishedOn: "2025-11-24",
-      publisher: "Vice-Primature, Ministère des Transports, Voies de Communication et Désenclavement, République démocratique du Congo",
+      publisher:
+        "Vice-Primature, Ministère des Transports, Voies de Communication et Désenclavement, République démocratique du Congo",
       sourceType: "official-regulation",
-      title: "Arrêté ministériel n° VPM/MTVCD/CAB/085/2025 du 12 novembre 2025 portant réglementation du contrôle technique des véhicules automobiles et des remorques en circulation en République démocratique du Congo",
+      title:
+        "Arrêté ministériel n° VPM/MTVCD/CAB/085/2025 du 12 novembre 2025 portant réglementation du contrôle technique des véhicules automobiles et des remorques en circulation en République démocratique du Congo",
       url: "https://transports.gouv.cd/wp-content/uploads/2025/11/ARRETE-MINISTERIEL-N%C2%B0085-DU-12-NOV-2025-PORTANT-RE_251124_152526.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.republicOfCongoEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.republicOfCongoEnvironment),
+    ).toMatchObject({
       publishedOn: "2023-11-17",
-      publisher: "Présidence de la République / Ministère de l’Environnement, du Développement durable et du Bassin du Congo",
+      publisher:
+        "Présidence de la République / Ministère de l’Environnement, du Développement durable et du Bassin du Congo",
       sourceType: "official-regulation",
-      title: "Loi n° 33-2023 du 17 novembre 2023 portant gestion durable de l’environnement en République du Congo",
+      title:
+        "Loi n° 33-2023 du 17 novembre 2023 portant gestion durable de l’environnement en République du Congo",
       url: "https://www.developpement-durable.gouv.cg/wp-content/uploads/2023/11/Loi_n_33-2023_du_17_novembre_portant_gestion_durable_de_l_environnement_en_Republique_du_Congo_.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.republicOfCongoTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.republicOfCongoTransport),
+    ).toMatchObject({
       publishedOn: "2019-07-18",
-      publisher: "Secrétariat général du Gouvernement / Journal officiel de la République du Congo",
+      publisher:
+        "Secrétariat général du Gouvernement / Journal officiel de la République du Congo",
       sourceType: "official-regulation",
-      title: "Journal officiel n° 29 du 18 juillet 2019 — Décret n° 2019-171 du 1er juillet 2019 portant réglementation du contrôle technique des véhicules routiers",
+      title:
+        "Journal officiel n° 29 du 18 juillet 2019 — Décret n° 2019-171 du 1er juillet 2019 portant réglementation du contrôle technique des véhicules routiers",
       url: "https://www.sgg.cg/JO/2019/congo-jo-2019-29.pdf",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.cubaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.cubaEnvironment),
+    ).toMatchObject({
       publishedOn: "2023-09-13",
-      publisher: "Gaceta Oficial de la República de Cuba / Ministerio de Justicia / Asamblea Nacional del Poder Popular",
+      publisher:
+        "Gaceta Oficial de la República de Cuba / Ministerio de Justicia / Asamblea Nacional del Poder Popular",
       sourceType: "official-regulation",
-      title: "Gaceta Oficial No. 87 Ordinaria de 13 de septiembre de 2023 — Ley 150/2022 Del Sistema de los Recursos Naturales y el Medio Ambiente (GOC-2023-771-O87)",
+      title:
+        "Gaceta Oficial No. 87 Ordinaria de 13 de septiembre de 2023 — Ley 150/2022 Del Sistema de los Recursos Naturales y el Medio Ambiente (GOC-2023-771-O87)",
       url: "https://www.gacetaoficial.gob.cu/sites/default/files/goc-2023-o87.pdf",
       verifiedAt: refreshedVerifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.cubaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.cubaTransport),
+    ).toMatchObject({
       publishedOn: "2011-03-15",
-      publisher: "Gaceta Oficial de la República de Cuba / Ministerio de Justicia / Ministerio del Transporte",
+      publisher:
+        "Gaceta Oficial de la República de Cuba / Ministerio de Justicia / Ministerio del Transporte",
       sourceType: "official-regulation",
-      title: "Gaceta Oficial No. 014 Extraordinaria de 15 de marzo de 2011 — Resolución No. 151/2011, Normas Complementarias para la Seguridad Vial",
+      title:
+        "Gaceta Oficial No. 014 Extraordinaria de 15 de marzo de 2011 — Resolución No. 151/2011, Normas Complementarias para la Seguridad Vial",
       url: "https://www.gacetaoficial.gob.cu/sites/default/files/go_x_014_2011.pdf",
       verifiedAt: refreshedVerifiedAt,
     });
   });
 
   it("uses exact source metadata and the real verification time for DJI, ERI, GAB, and GIN", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const verifiedAt = new Date("2026-08-10T21:00:43.000Z");
     const sourceRefreshedAt = new Date("2026-08-10T20:39:16.000Z");
 
-    expect(sourceById.get(acceptanceFixtureIds.source.djiboutiEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.djiboutiEnvironment),
+    ).toMatchObject({
       publishedOn: "2009-07-01",
-      publisher: "Journal Officiel de la République de Djibouti / Présidence de la République",
+      publisher:
+        "Journal Officiel de la République de Djibouti / Présidence de la République",
       sourceType: "official-regulation",
       title: "Loi n° 51/AN/09/6ème L portant Code de l’Environnement",
       url: "https://www.journalofficiel.dj/texte-juridique/loi-n51-an-09-6eme-l-portant-code-de-lenvironnement/",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.djiboutiTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.djiboutiTransport),
+    ).toMatchObject({
       publishedOn: "2010-12-15",
-      publisher: "Journal Officiel de la République de Djibouti / Présidence de la République",
+      publisher:
+        "Journal Officiel de la République de Djibouti / Présidence de la République",
       sourceType: "official-regulation",
-      title: "Décret n° 2010-0230/PR/MID du 4 décembre 2010 relatif aux nouvelles dispositions réglementaires du Code de la Route",
+      title:
+        "Décret n° 2010-0230/PR/MID du 4 décembre 2010 relatif aux nouvelles dispositions réglementaires du Code de la Route",
       url: "https://www.journalofficiel.dj/texte-juridique/decret-n2010-0230-pr-mid-relatif-aux-nouvelles-dispositions-reglementaires-du-code-de-la-route/",
       verifiedAt,
     });
@@ -8215,7 +8390,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     ).toMatchObject({
       publishedOn: "2017-01-26",
-      publisher: "Government of the State of Eritrea / Gazette of Eritrean Laws",
+      publisher:
+        "Government of the State of Eritrea / Gazette of Eritrean Laws",
       sourceType: "official-regulation",
       title: "Environmental Protection and Management Regulations 127/2017",
       url: "https://tile.loc.gov/storage-services/service/ll/lleritrea/eritrean-notice-127-2017/eritrean-notice-127-2017.pdf",
@@ -8228,9 +8404,11 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     ).toMatchObject({
       publishedOn: "2002-05-13",
-      publisher: "Government of the State of Eritrea / Gazette of Eritrean Laws",
+      publisher:
+        "Government of the State of Eritrea / Gazette of Eritrean Laws",
       sourceType: "official-regulation",
-      title: "Regulations on Vehicle Technical and Related Standards Specifications 61/2002",
+      title:
+        "Regulations on Vehicle Technical and Related Standards Specifications 61/2002",
       url: "https://tile.loc.gov/storage-services/service/ll/lleritrea/eritrean-notice-61-2002/eritrean-notice-61-2002.pdf",
       verifiedAt: sourceRefreshedAt,
     });
@@ -8240,9 +8418,11 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     ).toMatchObject({
       publishedOn: "2014-09-16",
-      publisher: "Journal Officiel de la République Gabonaise / Présidence de la République",
+      publisher:
+        "Journal Officiel de la République Gabonaise / Présidence de la République",
       sourceType: "official-regulation",
-      title: "JOURNAL OFFICIEL N°222 DU 16 SEPTEMBRE 2014 — Loi N° 007/2014 du 31/07/2014 relative à la protection de l'environnement en République Gabonaise",
+      title:
+        "JOURNAL OFFICIEL N°222 DU 16 SEPTEMBRE 2014 — Loi N° 007/2014 du 31/07/2014 relative à la protection de l'environnement en République Gabonaise",
       url: "https://journal-officiel.ga/6186-007-2014/",
       verifiedAt: sourceRefreshedAt,
     });
@@ -8253,25 +8433,35 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     ).toMatchObject({
       publishedOn: "2017-04-23",
-      publisher: "Journal Officiel de la République Gabonaise / Ministère des Transports et de la Logistique",
+      publisher:
+        "Journal Officiel de la République Gabonaise / Ministère des Transports et de la Logistique",
       sourceType: "official-regulation",
-      title: "JOURNAL OFFICIEL N°345 TER DU 23 AVRIL 2017 — Arrêté N° 00097/MTL/2017 du 24/02/2017 relatif à la conduite, la certification et l'homologation des véhicules poids lourds, remorques, semi-remorques, engins et tous les équipements de levage et de manutention, les engins spéciaux et leurs agrès",
+      title:
+        "JOURNAL OFFICIEL N°345 TER DU 23 AVRIL 2017 — Arrêté N° 00097/MTL/2017 du 24/02/2017 relatif à la conduite, la certification et l'homologation des véhicules poids lourds, remorques, semi-remorques, engins et tous les équipements de levage et de manutention, les engins spéciaux et leurs agrès",
       url: "https://journal-officiel.ga/5680-00097-mtl-2017-/",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.guineaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.guineaEnvironment),
+    ).toMatchObject({
       publishedOn: "2019-07-26",
-      publisher: "Présidence de la République / Secrétariat général du Gouvernement, République de Guinée",
+      publisher:
+        "Présidence de la République / Secrétariat général du Gouvernement, République de Guinée",
       sourceType: "official-regulation",
-      title: "Décret D/2019/221/PRG/SGG portant promulgation de la Loi L/2019/0034/AN du 04 juillet 2019 portant Code de l’environnement de la République de Guinée",
+      title:
+        "Décret D/2019/221/PRG/SGG portant promulgation de la Loi L/2019/0034/AN du 04 juillet 2019 portant Code de l’environnement de la République de Guinée",
       url: "https://medd.gov.gn/file/2022/12/Code-de-lEnvironnement-du-04-juillet-2019-1.pdf",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.guineaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.guineaTransport),
+    ).toMatchObject({
       publishedOn: "2018-06-20",
-      publisher: "Assemblée nationale de la République de Guinée / official archive hosted by the Conseil national de la transition",
+      publisher:
+        "Assemblée nationale de la République de Guinée / official archive hosted by the Conseil national de la transition",
       sourceType: "official-regulation",
-      title: "Loi ordinaire n° L/2018/023/AN du 20 juin 2018 portant Code de la route de la République de Guinée",
+      title:
+        "Loi ordinaire n° L/2018/023/AN du 20 juin 2018 portant Code de la route de la République de Guinée",
       url: "https://cnt.gov.gn/archive.assemblee/www.assemblee.gov.gn/node/739.html",
       verifiedAt,
     });
@@ -8282,20 +8472,26 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     const refreshedJurisdictions = [
       {
         countryIso3: "CAF",
-        jurisdictionId: acceptanceFixtureIds.jurisdiction.centralAfricanRepublic,
-        membershipSourceId: acceptanceFixtureIds.source.centralAfricanRepublicTransport,
+        jurisdictionId:
+          acceptanceFixtureIds.jurisdiction.centralAfricanRepublic,
+        membershipSourceId:
+          acceptanceFixtureIds.source.centralAfricanRepublicTransport,
         sourceId: acceptanceFixtureIds.source.centralAfricanRepublicEnvironment,
       },
       {
         countryIso3: "COD",
-        jurisdictionId: acceptanceFixtureIds.jurisdiction.democraticRepublicOfCongo,
-        membershipSourceId: acceptanceFixtureIds.source.democraticRepublicOfCongoTransport,
-        sourceId: acceptanceFixtureIds.source.democraticRepublicOfCongoEnvironment,
+        jurisdictionId:
+          acceptanceFixtureIds.jurisdiction.democraticRepublicOfCongo,
+        membershipSourceId:
+          acceptanceFixtureIds.source.democraticRepublicOfCongoTransport,
+        sourceId:
+          acceptanceFixtureIds.source.democraticRepublicOfCongoEnvironment,
       },
       {
         countryIso3: "COG",
         jurisdictionId: acceptanceFixtureIds.jurisdiction.republicOfCongo,
-        membershipSourceId: acceptanceFixtureIds.source.republicOfCongoTransport,
+        membershipSourceId:
+          acceptanceFixtureIds.source.republicOfCongoTransport,
         sourceId: acceptanceFixtureIds.source.republicOfCongoEnvironment,
       },
       {
@@ -8318,11 +8514,26 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         membershipSourceId,
       ]),
     ).toEqual([
-      ["10000000-0000-4000-8000-000000000624", "10000000-0000-4000-8000-000000000625"],
-      ["10000000-0000-4000-8000-000000000626", "10000000-0000-4000-8000-000000000627"],
-      ["10000000-0000-4000-8000-000000000628", "10000000-0000-4000-8000-000000000629"],
-      ["10000000-0000-4000-8000-000000000638", "10000000-0000-4000-8000-000000000639"],
-      ["10000000-0000-4000-8000-000000000632", "10000000-0000-4000-8000-000000000633"],
+      [
+        "10000000-0000-4000-8000-000000000624",
+        "10000000-0000-4000-8000-000000000625",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000626",
+        "10000000-0000-4000-8000-000000000627",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000628",
+        "10000000-0000-4000-8000-000000000629",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000638",
+        "10000000-0000-4000-8000-000000000639",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000632",
+        "10000000-0000-4000-8000-000000000633",
+      ],
     ]);
     expect(
       refreshedJurisdictions.map(({ jurisdictionId }) => jurisdictionId),
@@ -8379,7 +8590,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("uses exact source metadata and the real verification time for GMB, GNB, GNQ, and GRL", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const verifiedAt = new Date("2026-08-10T06:44:56.000Z");
     const sourceRefreshedAt = new Date("2026-08-10T20:39:16.000Z");
 
@@ -8400,8 +8613,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       acceptanceFixtureIds.source.equatorialGuineaEnvironmentalLaw7_2003,
     ).toBe("10000000-0000-4000-8000-000000000644");
     expect(
-      acceptanceFixtureIds.source
-        .equatorialGuineaGeneralRoadTransportLaw4_2018,
+      acceptanceFixtureIds.source.equatorialGuineaGeneralRoadTransportLaw4_2018,
     ).toBe("10000000-0000-4000-8000-000000000645");
     expect(
       sourceById.get(
@@ -8410,7 +8622,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     ).toMatchObject({
       publishedOn: null,
-      publisher: "National Environment Management Council / National Environment Agency, The Gambia",
+      publisher:
+        "National Environment Management Council / National Environment Agency, The Gambia",
       sourceType: "official-regulation",
       title: "Environmental Quality Standards Regulations, 1999",
       url: "https://faolex.fao.org/docs/pdf/gam95812.pdf",
@@ -8424,7 +8637,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       publishedOn: "2014-01-23",
       publisher: "The Gambia Gazette / National Assembly of The Gambia",
       sourceType: "official-regulation",
-      title: "Supplement “C” to The Gambia Gazette No. 1 of 23rd January, 2014 — Motor Traffic (Amendment) Act, 2013 (No. 12 of 2013)",
+      title:
+        "Supplement “C” to The Gambia Gazette No. 1 of 23rd January, 2014 — Motor Traffic (Amendment) Act, 2013 (No. 12 of 2013)",
       url: "https://security-legislation.gm/wp-content/uploads/2022/10/Motor-Traffic-Amendment-Act-2013.pdf",
       verifiedAt: sourceRefreshedAt,
     });
@@ -8434,9 +8648,11 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     ).toMatchObject({
       publishedOn: "2011-03-02",
-      publisher: "Assembleia Nacional Popular / Boletim Oficial da República da Guiné-Bissau",
+      publisher:
+        "Assembleia Nacional Popular / Boletim Oficial da República da Guiné-Bissau",
       sourceType: "official-regulation",
-      title: "2.º Suplemento ao Boletim Oficial da República da Guiné-Bissau n.º 9 — Lei n.º 1/2011, de 2 de Março — Lei de Bases do Ambiente",
+      title:
+        "2.º Suplemento ao Boletim Oficial da República da Guiné-Bissau n.º 9 — Lei n.º 1/2011, de 2 de Março — Lei de Bases do Ambiente",
       url: "https://faolex.fao.org/docs/pdf/gbs118164.pdf",
       verifiedAt: sourceRefreshedAt,
     });
@@ -8446,9 +8662,11 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     ).toMatchObject({
       publishedOn: null,
-      publisher: "Governo da República da Guiné-Bissau / Ministério dos Transportes e Comunicações",
+      publisher:
+        "Governo da República da Guiné-Bissau / Ministério dos Transportes e Comunicações",
       sourceType: "government-notice",
-      title: "Ministério dos Transportes e Comunicações — Governo da Guiné-Bissau",
+      title:
+        "Ministério dos Transportes e Comunicações — Governo da Guiné-Bissau",
       url: "https://bissaugov.com/ministerios/transportes-comunicacoes",
       verifiedAt: sourceRefreshedAt,
     });
@@ -8458,9 +8676,11 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     ).toMatchObject({
       publishedOn: "2003-11-27",
-      publisher: "Presidencia de la República de Guinea Ecuatorial / Boletín Oficial del Estado",
+      publisher:
+        "Presidencia de la República de Guinea Ecuatorial / Boletín Oficial del Estado",
       sourceType: "official-regulation",
-      title: "Ley número 7/2003, de fecha 27 de noviembre, Reguladora del Medio Ambiente en Guinea Ecuatorial",
+      title:
+        "Ley número 7/2003, de fecha 27 de noviembre, Reguladora del Medio Ambiente en Guinea Ecuatorial",
       url: "https://faolex.fao.org/docs/pdf/eqg102892.pdf",
       verifiedAt: sourceRefreshedAt,
     });
@@ -8471,21 +8691,28 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       ),
     ).toMatchObject({
       publishedOn: "2019-03-25",
-      publisher: "Dirección General del Boletín Oficial del Estado / Presidencia del Gobierno de Guinea Ecuatorial",
+      publisher:
+        "Dirección General del Boletín Oficial del Estado / Presidencia del Gobierno de Guinea Ecuatorial",
       sourceType: "official-regulation",
-      title: "Ley General de Transporte por Carretera Nº 4 — Ley Núm. 4/2.018, de fecha 19 de Diciembre, General de Transporte por Carretera en la República de Guinea Ecuatorial",
+      title:
+        "Ley General de Transporte por Carretera Nº 4 — Ley Núm. 4/2.018, de fecha 19 de Diciembre, General de Transporte por Carretera en la República de Guinea Ecuatorial",
       url: "https://minhacienda-gob.com/media/stream/8301",
       verifiedAt: sourceRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.greenlandEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.greenlandEnvironment),
+    ).toMatchObject({
       publishedOn: "1979-03-27",
       publisher: "Government of Greenland / Nalunaarutit",
       sourceType: "official-regulation",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.greenlandTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.greenlandTransport),
+    ).toMatchObject({
       publishedOn: "2009-10-26",
-      publisher: "Danish Ministry of Justice / Official Legal Information System",
+      publisher:
+        "Danish Ministry of Justice / Official Legal Information System",
       sourceType: "official-regulation",
       verifiedAt,
     });
@@ -8614,99 +8841,146 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("uses exact source metadata and the real verification time for GUY, HTI, IRN, and IRQ", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const caribbeanRefreshedAt = new Date("2026-08-10T19:36:45.000Z");
     const levantRefreshedAt = new Date("2026-08-10T18:55:45.000Z");
 
-    expect(sourceById.get(acceptanceFixtureIds.source.guyanaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.guyanaEnvironment),
+    ).toMatchObject({
       publishedOn: "2000-12-13",
       publisher: "Ministry of Legal Affairs, Guyana",
       sourceType: "official-regulation",
-      title: "Environmental Protection (Air Quality) Regulations, 2000 (Reg. 9/2000) — regulations 18–20 (PDF pp. 167–168)",
+      title:
+        "Environmental Protection (Air Quality) Regulations, 2000 (Reg. 9/2000) — regulations 18–20 (PDF pp. 167–168)",
       url: "https://mola.gov.gy/laws/Volume%206%20Cap.%2018.01%20-%2023.011696964321.pdf",
       verifiedAt: caribbeanRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.guyanaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.guyanaTransport),
+    ).toMatchObject({
       publishedOn: "1940-12-20",
       publisher: "Ministry of Legal Affairs, Guyana",
       sourceType: "official-regulation",
-      title: "Motor Vehicles and Road Traffic Act, Chapter 51:02 — section 103(1)(xxii) (PDF p. 108)",
+      title:
+        "Motor Vehicles and Road Traffic Act, Chapter 51:02 — section 103(1)(xxii) (PDF p. 108)",
       url: "https://mola.gov.gy/laws/Volume%2011%20Cap.%2049.02%20-%2058.011696827006.pdf",
       verifiedAt: caribbeanRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.haitiEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.haitiEnvironment),
+    ).toMatchObject({
       publishedOn: "2006-01-26",
-      publisher: "Le Moniteur — Journal officiel de la République d’Haïti / Presses Nationales d’Haïti",
+      publisher:
+        "Le Moniteur — Journal officiel de la République d’Haïti / Presses Nationales d’Haïti",
       sourceType: "official-regulation",
-      title: "Décret portant sur la Gestion de l’Environnement et de Régulation de la Conduite des Citoyens et Citoyennes pour un Développement Durable — Le Moniteur No. 11",
+      title:
+        "Décret portant sur la Gestion de l’Environnement et de Régulation de la Conduite des Citoyens et Citoyennes pour un Développement Durable — Le Moniteur No. 11",
       url: "https://faolex.fao.org/docs/pdf/hai65901.pdf",
       verifiedAt: caribbeanRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.haitiTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.haitiTransport),
+    ).toMatchObject({
       publishedOn: "2025-07-18",
-      publisher: "Gouvernement de la République d’Haïti / Ministère du Commerce et de l’Industrie",
+      publisher:
+        "Gouvernement de la République d’Haïti / Ministère du Commerce et de l’Industrie",
       sourceType: "government-notice",
-      title: "Le MCI intensifie son soutien aux MPME et déploie davantage d’actions sur le territoire national",
+      title:
+        "Le MCI intensifie son soutien aux MPME et déploie davantage d’actions sur le territoire national",
       url: "https://communication.gouv.ht/communiques/le-mci-intensifie-son-soutien-aux-mpme-et-deploie-davantage-dactions-sur-le-territoire-national/",
       verifiedAt: caribbeanRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.iranTechnicalPollutionRegulation)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.iranTechnicalPollutionRegulation,
+      ),
+    ).toMatchObject({
       publishedOn: "2018-10-31",
       publisher: "Cabinet of Ministers of the Islamic Republic of Iran",
       sourceType: "official-regulation",
-      title: "آیین‌نامه فنی در زمینه کنترل و کاهش آلودگی‌ها (موضوع ماده (۲) قانون هوای پاک)",
+      title:
+        "آیین‌نامه فنی در زمینه کنترل و کاهش آلودگی‌ها (موضوع ماده (۲) قانون هوای پاک)",
       url: "https://nezamat.ir/post-41054/",
       verifiedAt: levantRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.iranArticle4Amendment2024)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.iranArticle4Amendment2024),
+    ).toMatchObject({
       publishedOn: "2024-02-18",
       publisher: "Cabinet of Ministers of the Islamic Republic of Iran",
       sourceType: "official-regulation",
-      title: "اصلاح ماده (۴) آیین‌نامه فنی در زمینه کنترل و کاهش آلودگی‌ها (موضوع ماده (۲) قانون هوای پاک)",
+      title:
+        "اصلاح ماده (۴) آیین‌نامه فنی در زمینه کنترل و کاهش آلودگی‌ها (موضوع ماده (۲) قانون هوای پاک)",
       url: "https://nezamat.ir/post-44973/",
       verifiedAt: levantRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.iraqTr167AmendmentDecision2024)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.iraqTr167AmendmentDecision2024,
+      ),
+    ).toMatchObject({
       publishedOn: "2024-04-15",
-      publisher: "Iraq Central Organization for Standardization and Quality Control (COSQC)",
+      publisher:
+        "Iraq Central Organization for Standardization and Quality Control (COSQC)",
       sourceType: "official-regulation",
-      title: "قرارات هيئة اعتماد المواصفات العراقية في اجتماعها المرقم (507) في 3/3/2024",
+      title:
+        "قرارات هيئة اعتماد المواصفات العراقية في اجتماعها المرقم (507) في 3/3/2024",
       url: "https://www.iraqi-standards.org/wan/ns/p/0000018.html",
       verifiedAt: levantRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.iraqTr167ImplementationNotice2025)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.iraqTr167ImplementationNotice2025,
+      ),
+    ).toMatchObject({
       publishedOn: "2025-12-12",
       publisher: "Iraqi News Agency (INA) / Iraq Ministry of Trade",
       sourceType: "government-notice",
-      title: "تشمل جميع المركبات.. التجارة: بدء تطبيق المواصفة العراقية للسيارات مطلع 2026",
+      title:
+        "تشمل جميع المركبات.. التجارة: بدء تطبيق المواصفة العراقية للسيارات مطلع 2026",
       url: "https://ina.iq/ar/local/250006-2026.html",
       verifiedAt: levantRefreshedAt,
     });
   });
 
   it("uses exact source metadata and the real verification time for JAM, LBN, LBR, and LBY", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const africaRefreshedAt = new Date("2026-08-10T19:46:12.000Z");
     const caribbeanRefreshedAt = new Date("2026-08-10T19:36:45.000Z");
     const levantRefreshedAt = new Date("2026-08-10T18:55:45.000Z");
 
-    expect(sourceById.get(acceptanceFixtureIds.source.jamaicaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.jamaicaEnvironment),
+    ).toMatchObject({
       publishedOn: "2022-05-20",
       publisher: "Jamaica Ministry of Energy, Transport and Telecommunications",
       sourceType: "official-regulation",
-      title: "The Road Traffic Regulations, 2022 — Regulation 66 (PDF pp. 66–68) and Eighth Schedule Part A (PDF pp. 287–289)",
+      title:
+        "The Road Traffic Regulations, 2022 — Regulation 66 (PDF pp. 66–68) and Eighth Schedule Part A (PDF pp. 287–289)",
       url: "https://mtm.gov.jm/wp-content/uploads/2023/02/Road-Traffic-Regulations-May-20-2022-complete.pdf",
       verifiedAt: caribbeanRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.jamaicaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.jamaicaTransport),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Jamaica Ministry of Energy, Transport and Telecommunications",
       sourceType: "government-notice",
-      title: "Forms and Documents – Ministry of Energy, Transport and Telecommunications",
+      title:
+        "Forms and Documents – Ministry of Energy, Transport and Telecommunications",
       url: "https://mtm.gov.jm/forms/",
       verifiedAt: caribbeanRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.lebanonEnvironmentalProtectionLaw444)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.lebanonEnvironmentalProtectionLaw444,
+      ),
+    ).toMatchObject({
       publishedOn: "2002-07-29",
       publisher: "Lebanon Ministry of Environment",
       sourceType: "official-regulation",
@@ -8714,7 +8988,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://moe.gov.lb/%D8%A7%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86-%D9%88%D8%A7%D9%84%D8%A7%D9%86%D8%B8%D9%85%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-444-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9.aspx?lang=ar-LB",
       verifiedAt: levantRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.lebanonThirdBur2019)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.lebanonThirdBur2019),
+    ).toMatchObject({
       publishedOn: "2019-12-31",
       publisher: "Lebanon Ministry of Environment / UNDP / GEF",
       sourceType: "government-notice",
@@ -8722,35 +8998,49 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://lebanon.un.org/en/download/60471/107789",
       verifiedAt: levantRefreshedAt,
     });
-    expect(acceptanceFixtureIds.source.liberiaEnvironmentalProtectionManagementLaw).toBe(
-      "10000000-0000-4000-8000-000000000660",
-    );
-    expect(acceptanceFixtureIds.source.liberiaVehicleAdministrativeRegulation2011).toBe(
-      "10000000-0000-4000-8000-000000000661",
-    );
+    expect(
+      acceptanceFixtureIds.source.liberiaEnvironmentalProtectionManagementLaw,
+    ).toBe("10000000-0000-4000-8000-000000000660");
+    expect(
+      acceptanceFixtureIds.source.liberiaVehicleAdministrativeRegulation2011,
+    ).toBe("10000000-0000-4000-8000-000000000661");
     expect(acceptanceFixtureIds.source.libyaEnvironmentalProtectionLaw15).toBe(
       "10000000-0000-4000-8000-000000000662",
     );
-    expect(acceptanceFixtureIds.source.libyaEnvironmentalExecutiveRegulation448).toBe(
-      "10000000-0000-4000-8000-000000000663",
-    );
-    expect(sourceById.get(acceptanceFixtureIds.source.liberiaEnvironmentalProtectionManagementLaw)).toMatchObject({
+    expect(
+      acceptanceFixtureIds.source.libyaEnvironmentalExecutiveRegulation448,
+    ).toBe("10000000-0000-4000-8000-000000000663");
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.liberiaEnvironmentalProtectionManagementLaw,
+      ),
+    ).toMatchObject({
       publishedOn: "2003-04-30",
-      publisher: "Republic of Liberia / Ministry of Foreign Affairs; official EPA host",
+      publisher:
+        "Republic of Liberia / Ministry of Foreign Affairs; official EPA host",
       sourceType: "official-regulation",
       title: "Environmental Protection and Management Law of Liberia",
       url: "https://epa.gov.lr/wp-content/uploads/2025/10/lbr53038.pdf",
       verifiedAt: africaRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.liberiaVehicleAdministrativeRegulation2011)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.liberiaVehicleAdministrativeRegulation2011,
+      ),
+    ).toMatchObject({
       publishedOn: "2011-06-18",
       publisher: "Liberia Ministry of Transport",
       sourceType: "official-regulation",
-      title: "Ministry of Transport Administrative Regulation PG/No.002/82997 June, 2011",
+      title:
+        "Ministry of Transport Administrative Regulation PG/No.002/82997 June, 2011",
       url: "https://mot.gov.lr/sites/default/files/documents/ADMINISTRATIVE%20REGULATION%20%20AA%20June%2017%2C%202016%20-%20Copy.pdf",
       verifiedAt: africaRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.libyaEnvironmentalProtectionLaw15)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.libyaEnvironmentalProtectionLaw15,
+      ),
+    ).toMatchObject({
       publishedOn: "2003-06-13",
       publisher: "General People's Congress / Libya Ministry of Environment",
       sourceType: "official-regulation",
@@ -8758,18 +9048,25 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       url: "https://environment.gov.ly/wp-content/uploads/2022/04/Image-to-PDF-%D8%A7%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15-%D9%A2%D9%A0%D9%A2%D9%A2-%D9%A0%D9%A4-%D9%A1%D9%A5-%D9%A1%D9%A5-%D9%A5%D9%A2-%D9%A1%D9%A0.pdf",
       verifiedAt: africaRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.libyaEnvironmentalExecutiveRegulation448)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.libyaEnvironmentalExecutiveRegulation448,
+      ),
+    ).toMatchObject({
       publishedOn: "2009-10-09",
       publisher: "General People's Committee / Libya Ministry of Environment",
       sourceType: "official-regulation",
-      title: "Decision No. 448 of 2009 — executive regulation for Law No. 15 of 2003 on Environmental Protection",
+      title:
+        "Decision No. 448 of 2009 — executive regulation for Law No. 15 of 2003 on Environmental Protection",
       url: "https://environment.gov.ly/wp-content/uploads/2022/04/%D8%A7%D9%84%D9%84%D8%A7%D8%A6%D8%AD%D8%A9-%D8%A7%D9%84%D8%AA%D9%86%D9%81%D9%8A%D8%B0%D9%8A%D8%A9-%D9%84%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15.pdf",
       verifiedAt: africaRefreshedAt,
     });
   });
 
   it("uses exact source metadata and the real verification time for MLI, MMR, MRT, and NCL", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const nclRefreshedAt = new Date("2026-08-10T20:20:37.000Z");
     const africaRefreshedAt = new Date("2026-08-10T19:46:12.000Z");
     const myanmarVerifiedAt = new Date("2026-08-10T17:38:18.000Z");
@@ -8777,160 +9074,455 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(acceptanceFixtureIds.source.maliTechnicalInspectionOrder2020).toBe(
       "10000000-0000-4000-8000-000000000664",
     );
-    expect(acceptanceFixtureIds.source.maliRoadUseVehicleCirculationDecree2023).toBe(
-      "10000000-0000-4000-8000-000000000665",
-    );
+    expect(
+      acceptanceFixtureIds.source.maliRoadUseVehicleCirculationDecree2023,
+    ).toBe("10000000-0000-4000-8000-000000000665");
     expect(acceptanceFixtureIds.source.mauritaniaAirPollutionLaw2018).toBe(
       "10000000-0000-4000-8000-000000000668",
     );
     expect(acceptanceFixtureIds.source.mauritaniaEnvironmentCode2000).toBe(
       "10000000-0000-4000-8000-000000000669",
     );
-    expect(sourceById.get(acceptanceFixtureIds.source.maliTechnicalInspectionOrder2020)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.maliTechnicalInspectionOrder2020,
+      ),
+    ).toMatchObject({
       publishedOn: "2020-03-27",
       publisher: "Republic of Mali / Secretariat General of Government",
       sourceType: "official-regulation",
-      title: "Journal officiel de la République du Mali n°08 du 27 mars 2020 — Arrêté n°2020-1080/MTMU-SG du 20 mars 2020 fixant les modalités de mise en œuvre du contrôle technique automobile",
+      title:
+        "Journal officiel de la République du Mali n°08 du 27 mars 2020 — Arrêté n°2020-1080/MTMU-SG du 20 mars 2020 fixant les modalités de mise en œuvre du contrôle technique automobile",
       url: "https://sgg-mali.ml/JO/2020/mali-jo-2020-08.pdf",
       verifiedAt: africaRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.maliRoadUseVehicleCirculationDecree2023)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.maliRoadUseVehicleCirculationDecree2023,
+      ),
+    ).toMatchObject({
       publishedOn: "2023-09-29",
       publisher: "Republic of Mali / Secretariat General of Government",
       sourceType: "official-regulation",
-      title: "Journal officiel de la République du Mali n°26 du 29 septembre 2023 — Décret n°2023-0509/PT-RM du 12 septembre 2023 fixant les conditions de l’usage des voies ouvertes à la circulation publique et de la mise en circulation des véhicules",
+      title:
+        "Journal officiel de la République du Mali n°26 du 29 septembre 2023 — Décret n°2023-0509/PT-RM du 12 septembre 2023 fixant les conditions de l’usage des voies ouvertes à la circulation publique et de la mise en circulation des véhicules",
       url: "https://sgg-mali.ml/JO/2023/mali-jo-2023-26.pdf",
       verifiedAt: africaRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.myanmarEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.myanmarEnvironment),
+    ).toMatchObject({
       publishedOn: "2015-12-29",
-      publisher: "Myanmar Ministry of Environmental Conservation and Forestry / Environmental Conservation Department",
+      publisher:
+        "Myanmar Ministry of Environmental Conservation and Forestry / Environmental Conservation Department",
       sourceType: "government-notice",
       verifiedAt: myanmarVerifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.myanmarTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.myanmarTransport),
+    ).toMatchObject({
       publishedOn: "2020-05-26",
-      publisher: "Republic of the Union of Myanmar / Ministry of Transport and Communications / Road Transport Administration Department",
+      publisher:
+        "Republic of the Union of Myanmar / Ministry of Transport and Communications / Road Transport Administration Department",
       sourceType: "official-regulation",
       verifiedAt: myanmarVerifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.mauritaniaAirPollutionLaw2018)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.mauritaniaAirPollutionLaw2018),
+    ).toMatchObject({
       publishedOn: "2018-01-02",
-      publisher: "Mauritania Ministry of Environment and Sustainable Development",
+      publisher:
+        "Mauritania Ministry of Environment and Sustainable Development",
       sourceType: "official-regulation",
       title: "Law No. 2018-002 on air-pollution prevention and control",
       url: "http://www.environnement.gov.mr/fr/images/reglementations/Loi_pollution_Air_FR.pdf",
       verifiedAt: africaRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.mauritaniaEnvironmentCode2000)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.mauritaniaEnvironmentCode2000),
+    ).toMatchObject({
       publishedOn: "2000-10-30",
       publisher: "Islamic Republic of Mauritania",
       sourceType: "official-regulation",
-      title: "Journal Officiel de la République Islamique de Mauritanie n°985 — Law No. 2000-045 of 26 July 2000 establishing the Environment Code",
+      title:
+        "Journal Officiel de la République Islamique de Mauritanie n°985 — Law No. 2000-045 of 26 July 2000 establishing the Environment Code",
       url: "http://www.environnement.gov.mr/fr/images/reglementations/LOI_Code_de_l_Environnement.pdf",
       verifiedAt: africaRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.newCaledoniaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.newCaledoniaEnvironment),
+    ).toMatchObject({
       publishedOn: "1965-09-27",
       publisher: "Congress of New Caledonia / Juridoc",
       sourceType: "official-regulation",
-      title: "Délibération n° 224 des 9, 10 et 11 juin 1965 portant règlement général sur la police de la circulation et le roulage",
+      title:
+        "Délibération n° 224 des 9, 10 et 11 juin 1965 portant règlement général sur la police de la circulation et le roulage",
       url: "https://juridoc.gouv.nc/juridoc/jdcodes.nsf/0/59295762BD9870FE4B258184001CDC1D/%24File/Code_route_NC_9-10-11-06-1965_ChG_07-10-2025.pdf?OpenElement=",
       verifiedAt: nclRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.newCaledoniaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.newCaledoniaTransport),
+    ).toMatchObject({
       publishedOn: "2019-10-03",
-      publisher: "New Caledonia Directorate of Infrastructure, Topography and Land Transport",
+      publisher:
+        "New Caledonia Directorate of Infrastructure, Topography and Land Transport",
       sourceType: "government-notice",
-      title: "Importation, transformation ou remise en circulation d'un véhicule",
+      title:
+        "Importation, transformation ou remise en circulation d'un véhicule",
       url: "https://dittt.gouv.nc/vehicule-formalites/importation-transformation-ou-remise-en-circulation-dun-vehicule",
       verifiedAt: nclRefreshedAt,
     });
   });
 
   it.each([
-    ["BWA", "BW-NATIONAL", "https://bobstandards.bw/product/bos-1342014-ed-2/", "https://bobstandards.bw/wp-content/uploads/2024/06/BOBS-Standards-Catalogue-June-2024.pdf"],
-    ["NAM", "NA-NATIONAL", "https://nsi.com.na/wp-content/uploads/2026/03/Standards-Act-18-of-2005.pdf", "https://nsi.com.na/wp-content/uploads/2026/03/5290-Gov-N248-249-Standard-Regulations.pdf"],
-    ["TZA", "TZ-NATIONAL", "https://www.nemc.or.tz/uploads/publications/sw-1645446559-Air_Quality_Standards_Regulations_2007.pdf", "https://tanzlii.org/akn/tz/act/gn/2007/237/eng@2007-01-01/publication"],
-    ["UGA", "UG-NATIONAL", "https://www.nema.go.ug/en/wp-content/uploads/2025/01/The-National-Environment-Air-Quality-Standards-Regulations-S.I.-No.-22-of-2024-1.pdf", "https://webstore.unbs.go.ug/store.php?preview=&src=5321"],
-    ["ZMB", "ZM-NATIONAL", "https://www.parliament.gov.zm/sites/default/files/documents/acts/Environmetal%20Mangement%20Act%2012%20of%202011.pdf", "https://www.zcsa.org.zm/index.php/list-of-compulsory-standards/"],
-    ["ZWE", "ZW-NATIONAL", "https://ema.co.zw/wp-content/uploads/2026/03/EMA-ACT.pdf", "https://ema.co.zw/air-emission/"],
-    ["CIV", "CI-NATIONAL", "https://agp.africanlii.org/fr/akn/ci/act/decree/2017/125/fra@2017-09-14", "https://www.codinorm.ci/doc/enquete/vehicules/PNI%2015004%20Vehic%20N2%20et%20N3%20janv%202025%20V01.pdf"],
-    ["MOZ", "MZ-NATIONAL", "https://sibmoz.gov.mz/content/uploads/2022/01/Regulamento-sobre-Padroes-de-Qualidade-Ambiental-e-de-Emissao-de-Efluentes.pdf", "https://inatro.gov.mz/wp-content/uploads/2019/08/Decreto-44-e-45-2017-matriculas-e-regras-de-apro-de-marcas-e-modelos.pdf"],
-    ["SWZ", "SZ-NATIONAL", "https://eea.org.sz/wp-content/uploads/2020/08/Air-Pollution-Regulations-2010.pdf", "https://www.gov.sz/index.php/ministry-department/road-transportation-department"],
-    ["LSO", "LS-NATIONAL", "https://www.gov.ls/eservice/roadworthiness-rw-fitness-f-of-motor-vehicles/", "https://www.mopwt.gov.ls/wp-content/uploads/2018/07/Transport_Sector_Policy.pdf"],
-    ["MDG", "MG-NATIONAL", "https://www.minae.gov.mg/wp-content/uploads/2025/05/1.0.EIES-VERSION-DEFINITIVE_FIN.pdf", "https://cnlegis.gov.mg/page_cherche_dir_numeros/"],
-    ["MUS", "MU-NATIONAL", "https://environment.govmu.org/Documents/communique/Returns%20on%20Enforcement%20of%20Vehicular%20Smoke%20Emissions%20%28March%202022%20to%20August%202023%29.pdf", "https://landtransport.govmu.org/Documents/Legislations/act1218.pdf"],
-    ["MWI", "MW-NATIONAL", "https://portal.trade.gov.mw/en-gb/site/display/62", "https://portal.trade.gov.mw/en-gb/site/display/101"],
-    ["FJI", "FJ-NATIONAL", "https://frcs.org.fj/wp-content/uploads/2025/01/SIG-2025-04-Importation-of-Motor-Vehicles-Customs-Prohibited-Imports-and-Exports-Regulations-1986.pdf", "https://frcs.org.fj/public-notice/importation-of-used-or-reconditioned-motor-vehicles-in-2026/"],
-    ["BLZ", "BZ-NATIONAL", "https://doe.gov.bz/wp-content/uploads/2024/02/Pollution-Regulations.pdf", "https://doe.gov.bz/download/environmental-protection-act-chapter-328-re-2020/?wpdmdl=17080"],
-    ["BRN", "BN-NATIONAL", "https://www.agc.gov.bn/AGC%20Images/LAWS/ACT_PDF/R/CHAPTER%20068%20RG1%20%282022%29.pdf", "https://www.jpd.gov.bn/SiteAssets/SitePages/Land%20Transport%20Department/Adverts/Safe%20and%20Smart%20Driving%20In%20Brunei%20Darussalam/Safe%20and%20Smart%20Driving%20in%20Brunei%20Darussalam%201st%20edition.pdf"],
-    ["BTN", "BT-NATIONAL", "https://www.nec.gov.bt/publications/download/environment-standards-2020", "https://bcta.gov.bt/public-notification-implementation-of-the-road-safety-and-transport-rules-and-regulations-rstrr-2026/"],
-    ["CAF", "CF-NATIONAL", "https://faolex.fao.org/docs/pdf/caf105925.pdf", "https://unfccc.int/sites/default/files/2026-03/CDN%203.0%20CAR%202025.pdf"],
-    ["COD", "CD-NATIONAL", "https://medd.gouv.cd/wp-content/uploads/2020/07/attachment1.pdf", "https://transports.gouv.cd/wp-content/uploads/2025/11/ARRETE-MINISTERIEL-N%C2%B0085-DU-12-NOV-2025-PORTANT-RE_251124_152526.pdf"],
-    ["COG", "CG-NATIONAL", "https://www.developpement-durable.gouv.cg/wp-content/uploads/2023/11/Loi_n_33-2023_du_17_novembre_portant_gestion_durable_de_l_environnement_en_Republique_du_Congo_.pdf", "https://www.sgg.cg/JO/2019/congo-jo-2019-29.pdf"],
-    ["CUB", "CU-NATIONAL", "https://www.gacetaoficial.gob.cu/sites/default/files/goc-2023-o87.pdf", "https://www.gacetaoficial.gob.cu/sites/default/files/go_x_014_2011.pdf"],
-    ["DJI", "DJ-NATIONAL", "https://www.journalofficiel.dj/texte-juridique/loi-n51-an-09-6eme-l-portant-code-de-lenvironnement/", "https://www.journalofficiel.dj/texte-juridique/decret-n2010-0230-pr-mid-relatif-aux-nouvelles-dispositions-reglementaires-du-code-de-la-route/"],
-    ["ERI", "ER-NATIONAL", "https://tile.loc.gov/storage-services/service/ll/lleritrea/eritrean-notice-127-2017/eritrean-notice-127-2017.pdf", "https://tile.loc.gov/storage-services/service/ll/lleritrea/eritrean-notice-61-2002/eritrean-notice-61-2002.pdf"],
-    ["GAB", "GA-NATIONAL", "https://journal-officiel.ga/6186-007-2014/", "https://journal-officiel.ga/5680-00097-mtl-2017-/"],
-    ["GIN", "GN-NATIONAL", "https://medd.gov.gn/file/2022/12/Code-de-lEnvironnement-du-04-juillet-2019-1.pdf", "https://cnt.gov.gn/archive.assemblee/www.assemblee.gov.gn/node/739.html"],
-    ["GMB", "GM-NATIONAL", "https://faolex.fao.org/docs/pdf/gam95812.pdf", "https://security-legislation.gm/wp-content/uploads/2022/10/Motor-Traffic-Amendment-Act-2013.pdf"],
-    ["GNB", "GW-NATIONAL", "https://faolex.fao.org/docs/pdf/gbs118164.pdf", "https://bissaugov.com/ministerios/transportes-comunicacoes"],
-    ["GNQ", "GQ-NATIONAL", "https://faolex.fao.org/docs/pdf/eqg102892.pdf", "https://minhacienda-gob.com/media/stream/8301"],
-    ["GRL", "GL-NATIONAL", "https://nalunaarutit.gl/Rigslovgivning/1979/Bekendtgoerelse-nr-141-af-27_03_1979?sc_lang=da", "https://www.retsinformation.dk/eli/lta/2009/995"],
-    ["GUY", "GY-NATIONAL", "https://mola.gov.gy/laws/Volume%206%20Cap.%2018.01%20-%2023.011696964321.pdf", "https://mola.gov.gy/laws/Volume%2011%20Cap.%2049.02%20-%2058.011696827006.pdf"],
-    ["HTI", "HT-NATIONAL", "https://faolex.fao.org/docs/pdf/hai65901.pdf", "https://communication.gouv.ht/communiques/le-mci-intensifie-son-soutien-aux-mpme-et-deploie-davantage-dactions-sur-le-territoire-national/"],
-    ["IRN", "IR-NATIONAL", "https://nezamat.ir/post-41054/", "https://nezamat.ir/post-44973/"],
-    ["IRQ", "IQ-NATIONAL", "https://www.iraqi-standards.org/wan/ns/p/0000018.html", "https://ina.iq/ar/local/250006-2026.html"],
-    ["JAM", "JM-NATIONAL", "https://mtm.gov.jm/wp-content/uploads/2023/02/Road-Traffic-Regulations-May-20-2022-complete.pdf", "https://mtm.gov.jm/forms/"],
-    ["LBN", "LB-NATIONAL", "https://moe.gov.lb/%D8%A7%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86-%D9%88%D8%A7%D9%84%D8%A7%D9%86%D8%B8%D9%85%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-444-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9.aspx?lang=ar-LB", "https://lebanon.un.org/en/download/60471/107789"],
-    ["LBR", "LR-NATIONAL", "https://epa.gov.lr/wp-content/uploads/2025/10/lbr53038.pdf", "https://mot.gov.lr/sites/default/files/documents/ADMINISTRATIVE%20REGULATION%20%20AA%20June%2017%2C%202016%20-%20Copy.pdf"],
-    ["LBY", "LY-NATIONAL", "https://environment.gov.ly/wp-content/uploads/2022/04/Image-to-PDF-%D8%A7%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15-%D9%A2%D9%A0%D9%A2%D9%A2-%D9%A0%D9%A4-%D9%A1%D9%A5-%D9%A1%D9%A5-%D9%A5%D9%A2-%D9%A1%D9%A0.pdf", "https://environment.gov.ly/wp-content/uploads/2022/04/%D8%A7%D9%84%D9%84%D8%A7%D8%A6%D8%AD%D8%A9-%D8%A7%D9%84%D8%AA%D9%86%D9%81%D9%8A%D8%B0%D9%8A%D8%A9-%D9%84%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15.pdf"],
-    ["MLI", "ML-NATIONAL", "https://sgg-mali.ml/JO/2020/mali-jo-2020-08.pdf", "https://sgg-mali.ml/JO/2023/mali-jo-2023-26.pdf"],
-    ["MMR", "MM-NATIONAL", "https://www.ecd.gov.mm/national-environmental-quality-emission-guidelines-final/", "https://www.myanmarrtad.com/?q=en%2Fnode%2F1925"],
-    ["MRT", "MR-NATIONAL", "http://www.environnement.gov.mr/fr/images/reglementations/Loi_pollution_Air_FR.pdf", "http://www.environnement.gov.mr/fr/images/reglementations/LOI_Code_de_l_Environnement.pdf"],
-    ["NCL", "NC-NATIONAL", "https://juridoc.gouv.nc/juridoc/jdcodes.nsf/0/59295762BD9870FE4B258184001CDC1D/%24File/Code_route_NC_9-10-11-06-1965_ChG_07-10-2025.pdf?OpenElement=", "https://dittt.gouv.nc/vehicule-formalites/importation-transformation-ou-remise-en-circulation-dun-vehicule"],
-  ] as const)("%s preserves no-data without a publishable heavy-duty limit table", async (iso3, code, sourceUrl, membershipUrl) => {
-    const asOf = ["BWA", "NAM", "UGA", "SWZ", "BLZ", "CAF", "COD", "COG", "CUB", "DJI", "GIN", "GUY", "HTI", "JAM", "NCL"].includes(iso3)
-      ? "2026-08-11"
-      : "2026-08-10";
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({
-          applicationScope,
-          asOf,
-          countryIso3: iso3,
-          powerKw: 150,
-        }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({
-      asOf,
-      iso3,
-    });
-    expect(details?.jurisdictions).toMatchObject([
-      {
-        code,
-        source: { url: sourceUrl },
-        membershipSource: { url: membershipUrl },
-      },
-    ]);
-  });
+    [
+      "BWA",
+      "BW-NATIONAL",
+      "https://bobstandards.bw/product/bos-1342014-ed-2/",
+      "https://bobstandards.bw/wp-content/uploads/2024/06/BOBS-Standards-Catalogue-June-2024.pdf",
+    ],
+    [
+      "NAM",
+      "NA-NATIONAL",
+      "https://nsi.com.na/wp-content/uploads/2026/03/Standards-Act-18-of-2005.pdf",
+      "https://nsi.com.na/wp-content/uploads/2026/03/5290-Gov-N248-249-Standard-Regulations.pdf",
+    ],
+    [
+      "TZA",
+      "TZ-NATIONAL",
+      "https://www.nemc.or.tz/uploads/publications/sw-1645446559-Air_Quality_Standards_Regulations_2007.pdf",
+      "https://tanzlii.org/akn/tz/act/gn/2007/237/eng@2007-01-01/publication",
+    ],
+    [
+      "UGA",
+      "UG-NATIONAL",
+      "https://www.nema.go.ug/en/wp-content/uploads/2025/01/The-National-Environment-Air-Quality-Standards-Regulations-S.I.-No.-22-of-2024-1.pdf",
+      "https://webstore.unbs.go.ug/store.php?preview=&src=5321",
+    ],
+    [
+      "ZMB",
+      "ZM-NATIONAL",
+      "https://www.parliament.gov.zm/sites/default/files/documents/acts/Environmetal%20Mangement%20Act%2012%20of%202011.pdf",
+      "https://www.zcsa.org.zm/index.php/list-of-compulsory-standards/",
+    ],
+    [
+      "ZWE",
+      "ZW-NATIONAL",
+      "https://ema.co.zw/wp-content/uploads/2026/03/EMA-ACT.pdf",
+      "https://ema.co.zw/air-emission/",
+    ],
+    [
+      "CIV",
+      "CI-NATIONAL",
+      "https://agp.africanlii.org/fr/akn/ci/act/decree/2017/125/fra@2017-09-14",
+      "https://www.codinorm.ci/doc/enquete/vehicules/PNI%2015004%20Vehic%20N2%20et%20N3%20janv%202025%20V01.pdf",
+    ],
+    [
+      "MOZ",
+      "MZ-NATIONAL",
+      "https://sibmoz.gov.mz/content/uploads/2022/01/Regulamento-sobre-Padroes-de-Qualidade-Ambiental-e-de-Emissao-de-Efluentes.pdf",
+      "https://inatro.gov.mz/wp-content/uploads/2019/08/Decreto-44-e-45-2017-matriculas-e-regras-de-apro-de-marcas-e-modelos.pdf",
+    ],
+    [
+      "SWZ",
+      "SZ-NATIONAL",
+      "https://eea.org.sz/wp-content/uploads/2020/08/Air-Pollution-Regulations-2010.pdf",
+      "https://www.gov.sz/index.php/ministry-department/road-transportation-department",
+    ],
+    [
+      "LSO",
+      "LS-NATIONAL",
+      "https://www.gov.ls/eservice/roadworthiness-rw-fitness-f-of-motor-vehicles/",
+      "https://www.mopwt.gov.ls/wp-content/uploads/2018/07/Transport_Sector_Policy.pdf",
+    ],
+    [
+      "MDG",
+      "MG-NATIONAL",
+      "https://www.minae.gov.mg/wp-content/uploads/2025/05/1.0.EIES-VERSION-DEFINITIVE_FIN.pdf",
+      "https://cnlegis.gov.mg/page_cherche_dir_numeros/",
+    ],
+    [
+      "MUS",
+      "MU-NATIONAL",
+      "https://environment.govmu.org/Documents/communique/Returns%20on%20Enforcement%20of%20Vehicular%20Smoke%20Emissions%20%28March%202022%20to%20August%202023%29.pdf",
+      "https://landtransport.govmu.org/Documents/Legislations/act1218.pdf",
+    ],
+    [
+      "MWI",
+      "MW-NATIONAL",
+      "https://portal.trade.gov.mw/en-gb/site/display/62",
+      "https://portal.trade.gov.mw/en-gb/site/display/101",
+    ],
+    [
+      "FJI",
+      "FJ-NATIONAL",
+      "https://frcs.org.fj/wp-content/uploads/2025/01/SIG-2025-04-Importation-of-Motor-Vehicles-Customs-Prohibited-Imports-and-Exports-Regulations-1986.pdf",
+      "https://frcs.org.fj/public-notice/importation-of-used-or-reconditioned-motor-vehicles-in-2026/",
+    ],
+    [
+      "BLZ",
+      "BZ-NATIONAL",
+      "https://doe.gov.bz/wp-content/uploads/2024/02/Pollution-Regulations.pdf",
+      "https://doe.gov.bz/download/environmental-protection-act-chapter-328-re-2020/?wpdmdl=17080",
+    ],
+    [
+      "BRN",
+      "BN-NATIONAL",
+      "https://www.agc.gov.bn/AGC%20Images/LAWS/ACT_PDF/R/CHAPTER%20068%20RG1%20%282022%29.pdf",
+      "https://www.jpd.gov.bn/SiteAssets/SitePages/Land%20Transport%20Department/Adverts/Safe%20and%20Smart%20Driving%20In%20Brunei%20Darussalam/Safe%20and%20Smart%20Driving%20in%20Brunei%20Darussalam%201st%20edition.pdf",
+    ],
+    [
+      "BTN",
+      "BT-NATIONAL",
+      "https://www.nec.gov.bt/publications/download/environment-standards-2020",
+      "https://bcta.gov.bt/public-notification-implementation-of-the-road-safety-and-transport-rules-and-regulations-rstrr-2026/",
+    ],
+    [
+      "CAF",
+      "CF-NATIONAL",
+      "https://faolex.fao.org/docs/pdf/caf105925.pdf",
+      "https://unfccc.int/sites/default/files/2026-03/CDN%203.0%20CAR%202025.pdf",
+    ],
+    [
+      "COD",
+      "CD-NATIONAL",
+      "https://medd.gouv.cd/wp-content/uploads/2020/07/attachment1.pdf",
+      "https://transports.gouv.cd/wp-content/uploads/2025/11/ARRETE-MINISTERIEL-N%C2%B0085-DU-12-NOV-2025-PORTANT-RE_251124_152526.pdf",
+    ],
+    [
+      "COG",
+      "CG-NATIONAL",
+      "https://www.developpement-durable.gouv.cg/wp-content/uploads/2023/11/Loi_n_33-2023_du_17_novembre_portant_gestion_durable_de_l_environnement_en_Republique_du_Congo_.pdf",
+      "https://www.sgg.cg/JO/2019/congo-jo-2019-29.pdf",
+    ],
+    [
+      "CUB",
+      "CU-NATIONAL",
+      "https://www.gacetaoficial.gob.cu/sites/default/files/goc-2023-o87.pdf",
+      "https://www.gacetaoficial.gob.cu/sites/default/files/go_x_014_2011.pdf",
+    ],
+    [
+      "DJI",
+      "DJ-NATIONAL",
+      "https://www.journalofficiel.dj/texte-juridique/loi-n51-an-09-6eme-l-portant-code-de-lenvironnement/",
+      "https://www.journalofficiel.dj/texte-juridique/decret-n2010-0230-pr-mid-relatif-aux-nouvelles-dispositions-reglementaires-du-code-de-la-route/",
+    ],
+    [
+      "ERI",
+      "ER-NATIONAL",
+      "https://tile.loc.gov/storage-services/service/ll/lleritrea/eritrean-notice-127-2017/eritrean-notice-127-2017.pdf",
+      "https://tile.loc.gov/storage-services/service/ll/lleritrea/eritrean-notice-61-2002/eritrean-notice-61-2002.pdf",
+    ],
+    [
+      "GAB",
+      "GA-NATIONAL",
+      "https://journal-officiel.ga/6186-007-2014/",
+      "https://journal-officiel.ga/5680-00097-mtl-2017-/",
+    ],
+    [
+      "GIN",
+      "GN-NATIONAL",
+      "https://medd.gov.gn/file/2022/12/Code-de-lEnvironnement-du-04-juillet-2019-1.pdf",
+      "https://cnt.gov.gn/archive.assemblee/www.assemblee.gov.gn/node/739.html",
+    ],
+    [
+      "GMB",
+      "GM-NATIONAL",
+      "https://faolex.fao.org/docs/pdf/gam95812.pdf",
+      "https://security-legislation.gm/wp-content/uploads/2022/10/Motor-Traffic-Amendment-Act-2013.pdf",
+    ],
+    [
+      "GNB",
+      "GW-NATIONAL",
+      "https://faolex.fao.org/docs/pdf/gbs118164.pdf",
+      "https://bissaugov.com/ministerios/transportes-comunicacoes",
+    ],
+    [
+      "GNQ",
+      "GQ-NATIONAL",
+      "https://faolex.fao.org/docs/pdf/eqg102892.pdf",
+      "https://minhacienda-gob.com/media/stream/8301",
+    ],
+    [
+      "GRL",
+      "GL-NATIONAL",
+      "https://nalunaarutit.gl/Rigslovgivning/1979/Bekendtgoerelse-nr-141-af-27_03_1979?sc_lang=da",
+      "https://www.retsinformation.dk/eli/lta/2009/995",
+    ],
+    [
+      "GUY",
+      "GY-NATIONAL",
+      "https://mola.gov.gy/laws/Volume%206%20Cap.%2018.01%20-%2023.011696964321.pdf",
+      "https://mola.gov.gy/laws/Volume%2011%20Cap.%2049.02%20-%2058.011696827006.pdf",
+    ],
+    [
+      "HTI",
+      "HT-NATIONAL",
+      "https://faolex.fao.org/docs/pdf/hai65901.pdf",
+      "https://communication.gouv.ht/communiques/le-mci-intensifie-son-soutien-aux-mpme-et-deploie-davantage-dactions-sur-le-territoire-national/",
+    ],
+    [
+      "IRN",
+      "IR-NATIONAL",
+      "https://nezamat.ir/post-41054/",
+      "https://nezamat.ir/post-44973/",
+    ],
+    [
+      "IRQ",
+      "IQ-NATIONAL",
+      "https://www.iraqi-standards.org/wan/ns/p/0000018.html",
+      "https://ina.iq/ar/local/250006-2026.html",
+    ],
+    [
+      "JAM",
+      "JM-NATIONAL",
+      "https://mtm.gov.jm/wp-content/uploads/2023/02/Road-Traffic-Regulations-May-20-2022-complete.pdf",
+      "https://mtm.gov.jm/forms/",
+    ],
+    [
+      "LBN",
+      "LB-NATIONAL",
+      "https://moe.gov.lb/%D8%A7%D9%84%D9%88%D8%B2%D8%A7%D8%B1%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86-%D9%88%D8%A7%D9%84%D8%A7%D9%86%D8%B8%D9%85%D8%A9/%D8%A7%D9%84%D9%82%D9%88%D8%A7%D9%86%D9%8A%D9%86/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-444-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9.aspx?lang=ar-LB",
+      "https://lebanon.un.org/en/download/60471/107789",
+    ],
+    [
+      "LBR",
+      "LR-NATIONAL",
+      "https://epa.gov.lr/wp-content/uploads/2025/10/lbr53038.pdf",
+      "https://mot.gov.lr/sites/default/files/documents/ADMINISTRATIVE%20REGULATION%20%20AA%20June%2017%2C%202016%20-%20Copy.pdf",
+    ],
+    [
+      "LBY",
+      "LY-NATIONAL",
+      "https://environment.gov.ly/wp-content/uploads/2022/04/Image-to-PDF-%D8%A7%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15-%D9%A2%D9%A0%D9%A2%D9%A2-%D9%A0%D9%A4-%D9%A1%D9%A5-%D9%A1%D9%A5-%D9%A5%D9%A2-%D9%A1%D9%A0.pdf",
+      "https://environment.gov.ly/wp-content/uploads/2022/04/%D8%A7%D9%84%D9%84%D8%A7%D8%A6%D8%AD%D8%A9-%D8%A7%D9%84%D8%AA%D9%86%D9%81%D9%8A%D8%B0%D9%8A%D8%A9-%D9%84%D9%84%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-15.pdf",
+    ],
+    [
+      "MLI",
+      "ML-NATIONAL",
+      "https://sgg-mali.ml/JO/2020/mali-jo-2020-08.pdf",
+      "https://sgg-mali.ml/JO/2023/mali-jo-2023-26.pdf",
+    ],
+    [
+      "MMR",
+      "MM-NATIONAL",
+      "https://www.ecd.gov.mm/national-environmental-quality-emission-guidelines-final/",
+      "https://www.myanmarrtad.com/?q=en%2Fnode%2F1925",
+    ],
+    [
+      "MRT",
+      "MR-NATIONAL",
+      "http://www.environnement.gov.mr/fr/images/reglementations/Loi_pollution_Air_FR.pdf",
+      "http://www.environnement.gov.mr/fr/images/reglementations/LOI_Code_de_l_Environnement.pdf",
+    ],
+    [
+      "NCL",
+      "NC-NATIONAL",
+      "https://juridoc.gouv.nc/juridoc/jdcodes.nsf/0/59295762BD9870FE4B258184001CDC1D/%24File/Code_route_NC_9-10-11-06-1965_ChG_07-10-2025.pdf?OpenElement=",
+      "https://dittt.gouv.nc/vehicule-formalites/importation-transformation-ou-remise-en-circulation-dun-vehicule",
+    ],
+  ] as const)(
+    "%s preserves no-data without a publishable heavy-duty limit table",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const asOf = [
+        "BWA",
+        "NAM",
+        "UGA",
+        "SWZ",
+        "BLZ",
+        "CAF",
+        "COD",
+        "COG",
+        "CUB",
+        "DJI",
+        "GIN",
+        "GUY",
+        "HTI",
+        "JAM",
+        "NCL",
+      ].includes(iso3)
+        ? "2026-08-11"
+        : "2026-08-10";
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf,
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({
+        asOf,
+        iso3,
+      });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          source: { url: sourceUrl },
+          membershipSource: { url: membershipUrl },
+        },
+      ]);
+    },
+  );
 
   it.each([
-    ["NER", "NE-NATIONAL", "https://hydraulique.gouv.ne/wp-content/uploads/2025/07/LoiN%C2%B098-056gestiondelEnvironnement.pdf", "https://transports.gouv.ne/e-services"],
-    ["NIC", "NI-NATIONAL", "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNormaJuridica.xsp?action=openDocument&documentId=0404E60D225D0ACF062588E2006EE9F8", "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNorma.xsp?action=openDocument&documentId=DDDCD831D507891D06258844005A7F39"],
-  ] as const)("%s preserves no-data after exact official-text review", async (iso3, code, sourceUrl, membershipUrl) => {
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({ applicationScope, asOf: "2026-08-10", countryIso3: iso3, powerKw: 150 }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({ asOf: "2026-08-10", iso3 });
-    expect(details?.jurisdictions).toMatchObject([{ code, source: { url: sourceUrl }, membershipSource: { url: membershipUrl } }]);
-  });
+    [
+      "NER",
+      "NE-NATIONAL",
+      "https://hydraulique.gouv.ne/wp-content/uploads/2025/07/LoiN%C2%B098-056gestiondelEnvironnement.pdf",
+      "https://transports.gouv.ne/e-services",
+    ],
+    [
+      "NIC",
+      "NI-NATIONAL",
+      "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNormaJuridica.xsp?action=openDocument&documentId=0404E60D225D0ACF062588E2006EE9F8",
+      "https://legislacion.asamblea.gob.ni/Normaweb.nsf/xpNorma.xsp?action=openDocument&documentId=DDDCD831D507891D06258844005A7F39",
+    ],
+  ] as const)(
+    "%s preserves no-data after exact official-text review",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf: "2026-08-10",
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({ asOf: "2026-08-10", iso3 });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          source: { url: sourceUrl },
+          membershipSource: { url: membershipUrl },
+        },
+      ]);
+    },
+  );
 
   it("PNG publishes only the ADR 80/03 representative route for 2012-and-later heavy diesel motor trucks", async () => {
     await expect(
@@ -9008,10 +9600,10 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     );
     expect(excludedScopes).toEqual([[], [], []]);
     const fixtureRows = buildFixtureLimits().filter(
-        (row) =>
-          row.regulationId ===
-          acceptanceFixtureIds.regulation.papuaNewGuineaHeavyTruckAdr803,
-      );
+      (row) =>
+        row.regulationId ===
+        acceptanceFixtureIds.regulation.papuaNewGuineaHeavyTruckAdr803,
+    );
     expect(fixtureRows).toHaveLength(9);
     expect(
       fixtureRows.every((row) =>
@@ -9037,21 +9629,51 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it.each([
-    ["PRI", "PR-NATIONAL", "https://www.drna.pr.gov/wp-content/uploads/2019/10/Reglamento-5300-Reglamento-Control-Contaminacion-Atmosferica-1995.pdf", "https://docs.pr.gov/files/DTOP/Avisos/Reglamentos%20para%20estaciones%20oficiales.pdf"],
-  ] as const)("%s preserves no-data after official portal review", async (iso3, code, sourceUrl, membershipUrl) => {
-    const asOf = "2026-08-11";
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({ applicationScope, asOf, countryIso3: iso3, powerKw: 150 }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({ asOf, iso3 });
-    expect(details?.jurisdictions).toMatchObject([{ code, source: { url: sourceUrl }, membershipSource: { url: membershipUrl } }]);
-  });
+    [
+      "PRI",
+      "PR-NATIONAL",
+      "https://www.drna.pr.gov/wp-content/uploads/2019/10/Reglamento-5300-Reglamento-Control-Contaminacion-Atmosferica-1995.pdf",
+      "https://docs.pr.gov/files/DTOP/Avisos/Reglamentos%20para%20estaciones%20oficiales.pdf",
+    ],
+  ] as const)(
+    "%s preserves no-data after official portal review",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const asOf = "2026-08-11";
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf,
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({ asOf, iso3 });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          source: { url: sourceUrl },
+          membershipSource: { url: membershipUrl },
+        },
+      ]);
+    },
+  );
 
   it("NER/NIC/PNG/PRI lock exact source metadata and actual verification time", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const verifiedAt = new Date("2026-08-10T23:00:23.000Z");
     const priRefreshedAt = new Date("2026-08-10T20:20:37.000Z");
     const latinAmericaReviewedAt = new Date("2026-08-10T20:09:01.000Z");
@@ -9060,132 +9682,215 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     expect(acceptanceFixtureIds.source.nigerEnvironmentalFrameworkLaw9856).toBe(
       "10000000-0000-4000-8000-000000000672",
     );
-    expect(acceptanceFixtureIds.source.nigerMotorVehicleHomologationEServices).toBe(
-      "10000000-0000-4000-8000-000000000673",
-    );
-    expect(sourceById.get(acceptanceFixtureIds.source.nigerEnvironmentalFrameworkLaw9856)).toMatchObject({
+    expect(
+      acceptanceFixtureIds.source.nigerMotorVehicleHomologationEServices,
+    ).toBe("10000000-0000-4000-8000-000000000673");
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.nigerEnvironmentalFrameworkLaw9856,
+      ),
+    ).toMatchObject({
       publishedOn: "1998-12-29",
       publisher: "Republic of Niger",
       sourceType: "official-regulation",
-      title: "Law No. 98-56 of 29 December 1998 — framework law on environmental management",
+      title:
+        "Law No. 98-56 of 29 December 1998 — framework law on environmental management",
       url: "https://hydraulique.gouv.ne/wp-content/uploads/2025/07/LoiN%C2%B098-056gestiondelEnvironnement.pdf",
       verifiedAt: africaRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.nigerMotorVehicleHomologationEServices)).toMatchObject({
+    expect(
+      sourceById.get(
+        acceptanceFixtureIds.source.nigerMotorVehicleHomologationEServices,
+      ),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Niger Ministry of Transport and Civil Aviation",
       sourceType: "government-notice",
-      title: "Services en Ligne — Homologation des Véhicules Terrestres à Moteur",
+      title:
+        "Services en Ligne — Homologation des Véhicules Terrestres à Moteur",
       url: "https://transports.gouv.ne/e-services",
       verifiedAt: africaRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.nicaraguaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.nicaraguaEnvironment),
+    ).toMatchObject({
       publishedOn: "1997-06-18",
       publisher: "National Assembly of Nicaragua",
       sourceType: "official-regulation",
       verifiedAt: latinAmericaReviewedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.papuaNewGuineaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.papuaNewGuineaEnvironment),
+    ).toMatchObject({
       publishedOn: "2018-11-30",
       publisher: "Papua New Guinea Road Traffic Authority",
       sourceType: "official-regulation",
       verifiedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.puertoRicoEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.puertoRicoEnvironment),
+    ).toMatchObject({
       publishedOn: null,
-      publisher: "Puerto Rico Department of Natural and Environmental Resources",
+      publisher:
+        "Puerto Rico Department of Natural and Environmental Resources",
       sourceType: "official-regulation",
-      title: "Regulation No. 5300 — Air Pollution Control Regulation, Rule 403(B)",
+      title:
+        "Regulation No. 5300 — Air Pollution Control Regulation, Rule 403(B)",
       url: "https://www.drna.pr.gov/wp-content/uploads/2019/10/Reglamento-5300-Reglamento-Control-Contaminacion-Atmosferica-1995.pdf",
       verifiedAt: priRefreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.puertoRicoTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.puertoRicoTransport),
+    ).toMatchObject({
       publishedOn: null,
       publisher: "Puerto Rico Department of Transportation and Public Works",
       sourceType: "official-regulation",
-      title: "Regulation No. 9526 — official inspection stations and motor vehicle inspection",
+      title:
+        "Regulation No. 9526 — official inspection stations and motor vehicle inspection",
       url: "https://docs.pr.gov/files/DTOP/Avisos/Reglamentos%20para%20estaciones%20oficiales.pdf",
       verifiedAt: priRefreshedAt,
     });
   });
 
   it.each([
-    ["PRK", "KP-NATIONAL", "https://faolex.fao.org/docs/pdf/prk22293.pdf", "https://unfccc.int/documents/497842"],
-    ["PRY", "PY-NATIONAL", "https://www.mades.gov.py/wp-content/uploads/2025/03/DECRETO-Nro-1269-de-fecha-13-de-febrero-de-2019.pdf", "https://www.mades.gov.py/wp-content/uploads/2025/04/RESOLUCION-N%C2%B0-605-DE-FECHA-29-DE-DICIEMBRE-DE-2021.pdf"],
-    ["PSE", "PS-NATIONAL", "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/66/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-7-%D9%84%D8%B3%D9%86%D8%A9-1999%D9%85-%D8%A8%D8%B4%D8%A3%D9%86-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86", "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/31/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%A7%D9%84%D9%85%D8%B1%D9%88%D8%B1-%D8%B1%D9%82%D9%85-5-%D9%84%D8%B3%D9%86%D8%A9-2000%D9%85-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86"],
-    ["SDN", "SD-NATIONAL", "https://hcenr.gov.sd/wp-content/uploads/2021/05/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%84%D8%B3%D9%86%D8%A9-2001.pdf", "https://unfccc.int/documents/646439"],
-  ] as const)("%s preserves no-data after exact official-text review", async (iso3, code, sourceUrl, membershipUrl) => {
-    const asOf = iso3 === "PRY" ? "2026-08-10" : "2026-08-11";
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({ applicationScope, asOf, countryIso3: iso3, powerKw: 150 }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({ asOf, iso3 });
-    expect(details?.jurisdictions).toMatchObject([
-      {
-        code,
-        membershipSource: { url: membershipUrl },
-        source: { url: sourceUrl },
-        validFrom: "2026-08-10",
-      },
-    ]);
-  });
+    [
+      "PRK",
+      "KP-NATIONAL",
+      "https://faolex.fao.org/docs/pdf/prk22293.pdf",
+      "https://unfccc.int/documents/497842",
+    ],
+    [
+      "PRY",
+      "PY-NATIONAL",
+      "https://www.mades.gov.py/wp-content/uploads/2025/03/DECRETO-Nro-1269-de-fecha-13-de-febrero-de-2019.pdf",
+      "https://www.mades.gov.py/wp-content/uploads/2025/04/RESOLUCION-N%C2%B0-605-DE-FECHA-29-DE-DICIEMBRE-DE-2021.pdf",
+    ],
+    [
+      "PSE",
+      "PS-NATIONAL",
+      "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/66/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%B1%D9%82%D9%85-7-%D9%84%D8%B3%D9%86%D8%A9-1999%D9%85-%D8%A8%D8%B4%D8%A3%D9%86-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86",
+      "https://mjr.ogb.gov.ps/MergedLegislations/ViewText/31/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%A7%D9%84%D9%85%D8%B1%D9%88%D8%B1-%D8%B1%D9%82%D9%85-5-%D9%84%D8%B3%D9%86%D8%A9-2000%D9%85-%D9%81%D9%84%D8%B3%D8%B7%D9%8A%D9%86",
+    ],
+    [
+      "SDN",
+      "SD-NATIONAL",
+      "https://hcenr.gov.sd/wp-content/uploads/2021/05/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%84%D8%B3%D9%86%D8%A9-2001.pdf",
+      "https://unfccc.int/documents/646439",
+    ],
+  ] as const)(
+    "%s preserves no-data after exact official-text review",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const asOf = iso3 === "PRY" ? "2026-08-10" : "2026-08-11";
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf,
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({ asOf, iso3 });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          membershipSource: { url: membershipUrl },
+          source: { url: sourceUrl },
+          validFrom: "2026-08-10",
+        },
+      ]);
+    },
+  );
 
   it("PRK/PRY/PSE/SDN lock exact source metadata and actual verification time", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
+    );
     const refreshedAt = new Date("2026-08-10T20:20:37.000Z");
     const latinAmericaReviewedAt = new Date("2026-08-10T20:09:01.000Z");
 
-    expect(sourceById.get(acceptanceFixtureIds.source.northKoreaEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.northKoreaEnvironment),
+    ).toMatchObject({
       publishedOn: "1986-04-09",
       publisher: "Democratic People's Republic of Korea",
       sourceType: "official-regulation",
-      title: "Law of the Democratic People's Republic of Korea on the Protection of the Environment",
+      title:
+        "Law of the Democratic People's Republic of Korea on the Protection of the Environment",
       url: "https://faolex.fao.org/docs/pdf/prk22293.pdf",
       verifiedAt: refreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.northKoreaTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.northKoreaTransport),
+    ).toMatchObject({
       publishedOn: "2022-06-02",
       publisher: "Democratic People's Republic of Korea / UNFCCC",
       sourceType: "government-notice",
-      title: "Democratic People's Republic of Korea First NDC (Updated submission)",
+      title:
+        "Democratic People's Republic of Korea First NDC (Updated submission)",
       url: "https://unfccc.int/documents/497842",
       verifiedAt: refreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.northKoreaTransport)?.url).not.toContain(".go.kr");
-    expect(sourceById.get(acceptanceFixtureIds.source.paraguayEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.northKoreaTransport)?.url,
+    ).not.toContain(".go.kr");
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.paraguayEnvironment),
+    ).toMatchObject({
       publishedOn: "2019-02-13",
       publisher: "Presidency of the Republic of Paraguay / MADES",
       sourceType: "official-regulation",
       verifiedAt: latinAmericaReviewedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.palestineEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.palestineEnvironment),
+    ).toMatchObject({
       publishedOn: "1999-12-28",
       publisher: "Palestine Bureau of Legislation and Legal Opinion",
       sourceType: "official-regulation",
-      title: "Environment Law No. 7 of 1999 — Articles 19 and 22 air standards and vehicle exhaust",
+      title:
+        "Environment Law No. 7 of 1999 — Articles 19 and 22 air standards and vehicle exhaust",
       verifiedAt: refreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.palestineTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.palestineTransport),
+    ).toMatchObject({
       publishedOn: "2000-09-17",
       publisher: "Palestine Bureau of Legislation and Legal Opinion",
       sourceType: "official-regulation",
-      title: "Traffic Law No. 5 of 2000 — vehicle specifications, first registration and periodic inspection",
+      title:
+        "Traffic Law No. 5 of 2000 — vehicle specifications, first registration and periodic inspection",
       verifiedAt: refreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.sudanEnvironment)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.sudanEnvironment),
+    ).toMatchObject({
       publishedOn: null,
-      publisher: "Republic of the Sudan / Higher Council for Environment and Natural Resources",
+      publisher:
+        "Republic of the Sudan / Higher Council for Environment and Natural Resources",
       sourceType: "official-regulation",
-      title: "قانون حماية البيئة لسنة 2001 / Environment Protection Act 2001 (Act No. 18 of 2001)",
+      title:
+        "قانون حماية البيئة لسنة 2001 / Environment Protection Act 2001 (Act No. 18 of 2001)",
       url: "https://hcenr.gov.sd/wp-content/uploads/2021/05/%D9%82%D8%A7%D9%86%D9%88%D9%86-%D8%AD%D9%85%D8%A7%D9%8A%D8%A9-%D8%A7%D9%84%D8%A8%D9%8A%D8%A6%D8%A9-%D9%84%D8%B3%D9%86%D8%A9-2001.pdf",
       verifiedAt: refreshedAt,
     });
-    expect(sourceById.get(acceptanceFixtureIds.source.sudanTransport)).toMatchObject({
+    expect(
+      sourceById.get(acceptanceFixtureIds.source.sudanTransport),
+    ).toMatchObject({
       publishedOn: "2025-04-14",
-      publisher: "Republic of the Sudan, Council of Ministers, Higher Council for Environment and Natural Resources / UNFCCC",
+      publisher:
+        "Republic of the Sudan, Council of Ministers, Higher Council for Environment and Natural Resources / UNFCCC",
       sourceType: "government-notice",
       title: "Sudan. National Communication (NC). NC 3.",
       url: "https://unfccc.int/documents/646439",
@@ -9234,11 +9939,26 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         membershipSourceId,
       ]),
     ).toEqual([
-      ["10000000-0000-4000-8000-000000000680", "10000000-0000-4000-8000-000000000681"],
-      ["10000000-0000-4000-8000-000000000684", "10000000-0000-4000-8000-000000000685"],
-      ["10000000-0000-4000-8000-000000000686", "10000000-0000-4000-8000-000000000687"],
-      ["10000000-0000-4000-8000-000000000678", "10000000-0000-4000-8000-000000000679"],
-      ["10000000-0000-4000-8000-000000000670", "10000000-0000-4000-8000-000000000671"],
+      [
+        "10000000-0000-4000-8000-000000000680",
+        "10000000-0000-4000-8000-000000000681",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000684",
+        "10000000-0000-4000-8000-000000000685",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000686",
+        "10000000-0000-4000-8000-000000000687",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000678",
+        "10000000-0000-4000-8000-000000000679",
+      ],
+      [
+        "10000000-0000-4000-8000-000000000670",
+        "10000000-0000-4000-8000-000000000671",
+      ],
     ]);
     expect(
       refreshedJurisdictions.map(({ jurisdictionId }) => jurisdictionId),
@@ -9320,35 +10040,53 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       "https://moecc.gov.so/wp-content/uploads/2024/10/Environmental-Protection-and-Management-Act-Engl_240625_145520-2.pdf",
       "https://unfccc.int/sites/default/files/2025-09/Somalia%20NDC%203.0_Official_2025.pdf",
     ],
-  ] as const)("%s preserves no-data after exact official-text review", async (iso3, code, sourceUrl, membershipUrl) => {
-    const asOf = "2026-08-10";
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({ applicationScope, asOf, countryIso3: iso3, powerKw: 150 }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({ asOf, iso3 });
-    expect(details?.jurisdictions).toMatchObject([
-      {
-        code,
-        membershipSource: { url: membershipUrl },
-        source: { url: sourceUrl },
-        validFrom: "2026-08-10",
-      },
-    ]);
-    expect(
-      fixtureRegulations.some(
-        (regulation) => regulation.jurisdictionId === details?.jurisdictions[0]?.id,
-      ),
-    ).toBe(false);
-  });
+  ] as const)(
+    "%s preserves no-data after exact official-text review",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const asOf = "2026-08-10";
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf,
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({ asOf, iso3 });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          membershipSource: { url: membershipUrl },
+          source: { url: sourceUrl },
+          validFrom: "2026-08-10",
+        },
+      ]);
+      expect(
+        fixtureRegulations.some(
+          (regulation) =>
+            regulation.jurisdictionId === details?.jurisdictions[0]?.id,
+        ),
+      ).toBe(false);
+    },
+  );
 
   it("SLB/SLE/SLV/SOM lock exact source metadata and actual verification time", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
-    const verifiedAt = new Date(
-      TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO,
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
     );
+    const verifiedAt = new Date(TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO);
     const expectedSources = [
       [
         acceptanceFixtureIds.source.solomonIslandsEnvironment,
@@ -9377,7 +10115,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.sierraLeoneEnvironment,
         {
           publishedOn: "2022-09-15",
-          publisher: "Government Printing Department / Parliament of Sierra Leone",
+          publisher:
+            "Government Printing Department / Parliament of Sierra Leone",
           sourceType: "official-regulation",
           title:
             "The Environment Protection Agency Act, 2022 (Act No. 15 of 2022)",
@@ -9411,7 +10150,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.elSalvadorTransport,
         {
           publishedOn: null,
-          publisher: "Organismo Salvadoreño de Reglamentación Técnica (OSARTEC)",
+          publisher:
+            "Organismo Salvadoreño de Reglamentación Técnica (OSARTEC)",
           sourceType: "government-notice",
           title: "Derogaciones",
           url: "https://osartec.gob.sv/servicios/derogaciones/",
@@ -9421,7 +10161,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.somaliaEnvironment,
         {
           publishedOn: null,
-          publisher: "Federal Government of Somalia / Ministry of Environment and Climate Change",
+          publisher:
+            "Federal Government of Somalia / Ministry of Environment and Climate Change",
           sourceType: "official-regulation",
           title: "Environmental Protection and Management Act",
           url: "https://moecc.gov.so/wp-content/uploads/2024/10/Environmental-Protection-and-Management-Act-Engl_240625_145520-2.pdf",
@@ -9473,35 +10214,53 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       "https://www.environnement.gouv.td/sites/default/files/inline-files/7.pdf",
       "https://unfccc.int/documents/645659",
     ],
-  ] as const)("%s preserves no-data after exact official-text review", async (iso3, code, sourceUrl, membershipUrl) => {
-    const asOf = "2026-08-10";
-    const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map((applicationScope) =>
-        repository().findEffectiveByCountry({ applicationScope, asOf, countryIso3: iso3, powerKw: 150 }),
-      ),
-    );
-    expect(results).toEqual([[], [], [], []]);
-    const details = await createCountryRepository(testDatabase.database).findDetailsByIso3({ asOf, iso3 });
-    expect(details?.jurisdictions).toMatchObject([
-      {
-        code,
-        membershipSource: { url: membershipUrl },
-        source: { url: sourceUrl },
-        validFrom: "2026-08-10",
-      },
-    ]);
-    expect(
-      fixtureRegulations.some(
-        (regulation) => regulation.jurisdictionId === details?.jurisdictions[0]?.id,
-      ),
-    ).toBe(false);
-  });
+  ] as const)(
+    "%s preserves no-data after exact official-text review",
+    async (iso3, code, sourceUrl, membershipUrl) => {
+      const asOf = "2026-08-10";
+      const results = await Promise.all(
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
+          repository().findEffectiveByCountry({
+            applicationScope,
+            asOf,
+            countryIso3: iso3,
+            powerKw: 150,
+          }),
+        ),
+      );
+      expect(results).toEqual([[], [], [], []]);
+      const details = await createCountryRepository(
+        testDatabase.database,
+      ).findDetailsByIso3({ asOf, iso3 });
+      expect(details?.jurisdictions).toMatchObject([
+        {
+          code,
+          membershipSource: { url: membershipUrl },
+          source: { url: sourceUrl },
+          validFrom: "2026-08-10",
+        },
+      ]);
+      expect(
+        fixtureRegulations.some(
+          (regulation) =>
+            regulation.jurisdictionId === details?.jurisdictions[0]?.id,
+        ),
+      ).toBe(false);
+    },
+  );
 
   it("SSD/SUR/SYR/TCD lock exact source metadata and actual verification time", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
-    const verifiedAt = new Date(
-      TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO,
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
     );
+    const verifiedAt = new Date(TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO);
     const refreshedVerifiedAt = new Date("2026-08-10T18:55:45.000Z");
     const expectedSources = [
       [
@@ -9518,7 +10277,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.southSudanTransport,
         {
           publishedOn: "2022-06-02",
-          publisher: "South Sudan Ministry of Environment and Forestry / UNFCCC",
+          publisher:
+            "South Sudan Ministry of Environment and Forestry / UNFCCC",
           sourceType: "government-notice",
           title: "South Sudan's Second Nationally Determined Contribution",
           url: "https://unfccc.int/documents/497930",
@@ -9528,7 +10288,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.surinameEnvironment,
         {
           publishedOn: "2020-05-14",
-          publisher: "De Nationale Assemblée / Staatsblad van de Republiek Suriname",
+          publisher:
+            "De Nationale Assemblée / Staatsblad van de Republiek Suriname",
           sourceType: "official-regulation",
           title:
             "WET van 07 mei 2020, houdende regels voor duurzaam milieumanagement (Milieu Raamwet), S.B. 2020 no. 97",
@@ -9562,9 +10323,11 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.syriaVehicleImportNotice2025,
         {
           publishedOn: "2025-06-30",
-          publisher: "Syrian Arab News Agency (SANA) / Ministry of Economy and Industry",
+          publisher:
+            "Syrian Arab News Agency (SANA) / Ministry of Economy and Industry",
           sourceType: "government-notice",
-          title: "وزارة الاقتصاد والصناعة توضح أسباب منع استيراد السيارات المستعملة",
+          title:
+            "وزارة الاقتصاد والصناعة توضح أسباب منع استيراد السيارات المستعملة",
           url: "https://sana.sy/economy/2238146/",
           verifiedAt: refreshedVerifiedAt,
         },
@@ -9573,7 +10336,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.chadEnvironment,
         {
           publishedOn: "2009-08-06",
-          publisher: "Republic of Chad / Ministry of Environment and Fisheries Resources",
+          publisher:
+            "Republic of Chad / Ministry of Environment and Fisheries Resources",
           sourceType: "official-regulation",
           title:
             "Décret n° 904/PR/PM/MERH/2009 portant réglementation des pollutions et des nuisances à l'environnement",
@@ -9626,12 +10390,14 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     async (iso3, code, sourceUrl, membershipUrl) => {
       const asOf = "2026-08-10";
       const results = await Promise.all(
-        ([
-          "on-road-truck",
-          "on-road-bus",
-          "construction",
-          "agriculture",
-        ] as const).map((applicationScope) =>
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
           repository().findEffectiveByCountry({
             applicationScope,
             asOf,
@@ -9659,7 +10425,6 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
             regulation.jurisdictionId === details?.jurisdictions[0]?.id,
         ),
       ).toBe(false);
-
     },
   );
 
@@ -9783,10 +10548,10 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("TGO/TLS/TTO/TWN lock exact source metadata and actual verification time", () => {
-    const sourceById = new Map(fixtureSources.map((source) => [source.id, source]));
-    const verifiedAt = new Date(
-      TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO,
+    const sourceById = new Map(
+      fixtureSources.map((source) => [source.id, source]),
     );
+    const verifiedAt = new Date(TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO);
     const legacyVerifiedAt = new Date("2026-08-10T11:21:32.000Z");
     const expectedSources = [
       [
@@ -9830,8 +10595,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
           publisher:
             "Jornal da República / Ministério da Justiça, República Democrática de Timor-Leste",
           sourceType: "official-regulation",
-          title:
-            "Decreto-Lei n.º 6/2003, de 3 de Abril — Código da Estrada",
+          title: "Decreto-Lei n.º 6/2003, de 3 de Abril — Código da Estrada",
           url: "https://www.mj.gov.tl/jornal/public/docs/2002_2005/decreto_lei_governo/6_2003.pdf",
         },
       ],
@@ -9895,18 +10659,78 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO,
     );
     const graphs = [
-      ["BRN", acceptanceFixtureIds.jurisdiction.brunei, acceptanceFixtureIds.source.bruneiEnvironment, acceptanceFixtureIds.source.bruneiTransport],
-      ["BTN", acceptanceFixtureIds.jurisdiction.bhutan, acceptanceFixtureIds.source.bhutanEnvironment, acceptanceFixtureIds.source.bhutanTransport],
-      ["SLB", acceptanceFixtureIds.jurisdiction.solomonIslands, acceptanceFixtureIds.source.solomonIslandsEnvironment, acceptanceFixtureIds.source.solomonIslandsTransport],
-      ["TLS", acceptanceFixtureIds.jurisdiction.timorLeste, acceptanceFixtureIds.source.timorLesteEnvironment, acceptanceFixtureIds.source.timorLesteTransport],
-      ["MWI", acceptanceFixtureIds.jurisdiction.malawi, acceptanceFixtureIds.source.malawiGovernment, acceptanceFixtureIds.source.malawiTransport],
-      ["SLE", acceptanceFixtureIds.jurisdiction.sierraLeone, acceptanceFixtureIds.source.sierraLeoneEnvironment, acceptanceFixtureIds.source.sierraLeoneTransport],
-      ["SOM", acceptanceFixtureIds.jurisdiction.somalia, acceptanceFixtureIds.source.somaliaEnvironment, acceptanceFixtureIds.source.somaliaTransport],
-      ["SSD", acceptanceFixtureIds.jurisdiction.southSudan, acceptanceFixtureIds.source.southSudanEnvironment, acceptanceFixtureIds.source.southSudanTransport],
-      ["TCD", acceptanceFixtureIds.jurisdiction.chad, acceptanceFixtureIds.source.chadEnvironment, acceptanceFixtureIds.source.chadTransport],
-      ["SLV", acceptanceFixtureIds.jurisdiction.elSalvador, acceptanceFixtureIds.source.elSalvadorEnvironment, acceptanceFixtureIds.source.elSalvadorTransport],
-      ["SUR", acceptanceFixtureIds.jurisdiction.suriname, acceptanceFixtureIds.source.surinameEnvironment, acceptanceFixtureIds.source.surinameTransport],
-      ["TTO", acceptanceFixtureIds.jurisdiction.trinidadTobago, acceptanceFixtureIds.source.trinidadTobagoEnvironment, acceptanceFixtureIds.source.trinidadTobagoTransport],
+      [
+        "BRN",
+        acceptanceFixtureIds.jurisdiction.brunei,
+        acceptanceFixtureIds.source.bruneiEnvironment,
+        acceptanceFixtureIds.source.bruneiTransport,
+      ],
+      [
+        "BTN",
+        acceptanceFixtureIds.jurisdiction.bhutan,
+        acceptanceFixtureIds.source.bhutanEnvironment,
+        acceptanceFixtureIds.source.bhutanTransport,
+      ],
+      [
+        "SLB",
+        acceptanceFixtureIds.jurisdiction.solomonIslands,
+        acceptanceFixtureIds.source.solomonIslandsEnvironment,
+        acceptanceFixtureIds.source.solomonIslandsTransport,
+      ],
+      [
+        "TLS",
+        acceptanceFixtureIds.jurisdiction.timorLeste,
+        acceptanceFixtureIds.source.timorLesteEnvironment,
+        acceptanceFixtureIds.source.timorLesteTransport,
+      ],
+      [
+        "MWI",
+        acceptanceFixtureIds.jurisdiction.malawi,
+        acceptanceFixtureIds.source.malawiGovernment,
+        acceptanceFixtureIds.source.malawiTransport,
+      ],
+      [
+        "SLE",
+        acceptanceFixtureIds.jurisdiction.sierraLeone,
+        acceptanceFixtureIds.source.sierraLeoneEnvironment,
+        acceptanceFixtureIds.source.sierraLeoneTransport,
+      ],
+      [
+        "SOM",
+        acceptanceFixtureIds.jurisdiction.somalia,
+        acceptanceFixtureIds.source.somaliaEnvironment,
+        acceptanceFixtureIds.source.somaliaTransport,
+      ],
+      [
+        "SSD",
+        acceptanceFixtureIds.jurisdiction.southSudan,
+        acceptanceFixtureIds.source.southSudanEnvironment,
+        acceptanceFixtureIds.source.southSudanTransport,
+      ],
+      [
+        "TCD",
+        acceptanceFixtureIds.jurisdiction.chad,
+        acceptanceFixtureIds.source.chadEnvironment,
+        acceptanceFixtureIds.source.chadTransport,
+      ],
+      [
+        "SLV",
+        acceptanceFixtureIds.jurisdiction.elSalvador,
+        acceptanceFixtureIds.source.elSalvadorEnvironment,
+        acceptanceFixtureIds.source.elSalvadorTransport,
+      ],
+      [
+        "SUR",
+        acceptanceFixtureIds.jurisdiction.suriname,
+        acceptanceFixtureIds.source.surinameEnvironment,
+        acceptanceFixtureIds.source.surinameTransport,
+      ],
+      [
+        "TTO",
+        acceptanceFixtureIds.jurisdiction.trinidadTobago,
+        acceptanceFixtureIds.source.trinidadTobagoEnvironment,
+        acceptanceFixtureIds.source.trinidadTobagoTransport,
+      ],
     ] as const;
 
     for (const [
@@ -9976,10 +10800,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       status: "effective",
     });
 
-    for (const applicationScope of [
-      "on-road-truck",
-      "on-road-bus",
-    ] as const) {
+    for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
       await expect(
         repository().findEffectiveByCountry({
           applicationScope,
@@ -10026,9 +10847,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         expect(new Set(rows.map((row) => row.limit.testCycleCode))).toEqual(
           new Set(["Directive 91/542/EEC"]),
         );
-        expect(rows.every((row) => row.limit.unitCode === "g/kWh")).toBe(
-          true,
-        );
+        expect(rows.every((row) => row.limit.unitCode === "g/kWh")).toBe(true);
         expect(
           new Map(
             rows.map((row) => [
@@ -10109,12 +10928,14 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     "%s preserves four-scope no-data after exact boundary review",
     async (iso3, code, sourceUrl, membershipUrl) => {
       const results = await Promise.all(
-        ([
-          "on-road-truck",
-          "on-road-bus",
-          "construction",
-          "agriculture",
-        ] as const).map((applicationScope) =>
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
           repository().findEffectiveByCountry({
             applicationScope,
             asOf: "2026-08-10",
@@ -10146,8 +10967,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       if (iso3 !== "VUT") {
         expect(
           fixtureJurisdictions.find(
-            (jurisdiction) =>
-              jurisdiction.id === details?.jurisdictions[0]?.id,
+            (jurisdiction) => jurisdiction.id === details?.jurisdictions[0]?.id,
           ),
         ).toMatchObject({
           countryIso3: null,
@@ -10159,14 +10979,15 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
   it("YEM preserves four-scope no-data without inventing a regulation", async () => {
     const results = await Promise.all(
-      (["on-road-truck", "on-road-bus", "construction", "agriculture"] as const).map(
-        (applicationScope) =>
-          repository().findEffectiveByCountry({
-            applicationScope,
-            asOf: "2026-08-10",
-            countryIso3: "YEM",
-            powerKw: 150,
-          }),
+      (
+        ["on-road-truck", "on-road-bus", "construction", "agriculture"] as const
+      ).map((applicationScope) =>
+        repository().findEffectiveByCountry({
+          applicationScope,
+          asOf: "2026-08-10",
+          countryIso3: "YEM",
+          powerKw: 150,
+        }),
       ),
     );
     expect(results).toEqual([[], [], [], []]);
@@ -10310,7 +11131,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         acceptanceFixtureIds.source.falklandIslandsBoundary,
         {
           publishedOn: "2017-07-31",
-          publisher: "Falkland Islands Government / Falkland Islands Legislation",
+          publisher:
+            "Falkland Islands Government / Falkland Islands Legislation",
           sourceType: "official-regulation",
           title:
             "Road Traffic (Provisional) Regulations Order 1986 — silencers and vehicle inspection",
@@ -10390,10 +11212,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         )
         .every(
           (row) =>
-            row.measurementBasis?.includes(
-              "normalized model-year boundary",
-            ) === true &&
-            row.measurementBasis?.includes("not cumulative") === true,
+            row.measurementBasis?.includes("normalized model-year boundary") ===
+              true && row.measurementBasis?.includes("not cumulative") === true,
         ),
     ).toBe(true);
   });
@@ -10471,49 +11291,54 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
   });
 
   it("ZAF publishes the SANS/ECE R49.02B road path with the exact 85 kW particulate split", async () => {
-    const [before, truckAt85, truckAbove85, busAbove85, construction, agriculture] =
-      await Promise.all([
-        repository().findEffectiveByCountry({
-          applicationScope: "on-road-truck",
-          asOf: "2009-12-31",
-          countryIso3: "ZAF",
-          powerKw: 150,
-        }),
-        repository().findEffectiveByCountry({
-          applicationScope: "on-road-truck",
-          asOf: "2010-01-01",
-          countryIso3: "ZAF",
-          powerKw: 85,
-        }),
-        repository().findEffectiveByCountry({
-          applicationScope: "on-road-truck",
-          asOf: "2010-01-01",
-          countryIso3: "ZAF",
-          powerKw: 85.001,
-        }),
-        repository().findEffectiveByCountry({
-          applicationScope: "on-road-bus",
-          asOf: "2010-01-01",
-          countryIso3: "ZAF",
-          powerKw: 85.001,
-        }),
-        repository().findEffectiveByCountry({
-          applicationScope: "construction",
-          asOf: "2026-08-10",
-          countryIso3: "ZAF",
-          powerKw: 150,
-        }),
-        repository().findEffectiveByCountry({
-          applicationScope: "agriculture",
-          asOf: "2026-08-10",
-          countryIso3: "ZAF",
-          powerKw: 150,
-        }),
-      ]);
+    const [
+      before,
+      truckAt85,
+      truckAbove85,
+      busAbove85,
+      construction,
+      agriculture,
+    ] = await Promise.all([
+      repository().findEffectiveByCountry({
+        applicationScope: "on-road-truck",
+        asOf: "2009-12-31",
+        countryIso3: "ZAF",
+        powerKw: 150,
+      }),
+      repository().findEffectiveByCountry({
+        applicationScope: "on-road-truck",
+        asOf: "2010-01-01",
+        countryIso3: "ZAF",
+        powerKw: 85,
+      }),
+      repository().findEffectiveByCountry({
+        applicationScope: "on-road-truck",
+        asOf: "2010-01-01",
+        countryIso3: "ZAF",
+        powerKw: 85.001,
+      }),
+      repository().findEffectiveByCountry({
+        applicationScope: "on-road-bus",
+        asOf: "2010-01-01",
+        countryIso3: "ZAF",
+        powerKw: 85.001,
+      }),
+      repository().findEffectiveByCountry({
+        applicationScope: "construction",
+        asOf: "2026-08-10",
+        countryIso3: "ZAF",
+        powerKw: 150,
+      }),
+      repository().findEffectiveByCountry({
+        applicationScope: "agriculture",
+        asOf: "2026-08-10",
+        countryIso3: "ZAF",
+        powerKw: 150,
+      }),
+    ]);
     const pm = (rows: typeof truckAt85) =>
       Number(
-        rows.find((row) => row.limit.pollutantCode === "PM")?.limit
-          .limitValue,
+        rows.find((row) => row.limit.pollutantCode === "PM")?.limit.limitValue,
       );
     expect(before).toEqual([]);
     expect(truckAt85).toHaveLength(4);
@@ -10651,8 +11476,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       },
       validFrom: "2004-05-01",
     });
-    expect(maltaAfterAccession?.jurisdictions[0]?.membershipSource.verifiedAt)
-      .toEqual(new Date("2026-08-11T04:27:59.000Z"));
+    expect(
+      maltaAfterAccession?.jurisdictions[0]?.membershipSource.verifiedAt,
+    ).toEqual(new Date("2026-08-11T04:27:59.000Z"));
   });
 
   it("applies signed EU limits to member countries without crossing accession dates", async () => {

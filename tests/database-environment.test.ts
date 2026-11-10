@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  getDatabaseMode,
-  getDatabaseUrl,
-} from "@/server/db/environment";
+import { getDatabaseMode, getDatabaseUrl } from "@/server/db/environment";
 
 describe("database runtime environment", () => {
   it("defaults to postgres and permits the explicit local demo outside production", () => {
@@ -68,9 +65,12 @@ describe("database runtime environment", () => {
     "postgresql://die\nsel@example.test/app",
     "postgresql://diesel@example.test/ap\rp",
     "postgresql://diesel@example.test/app?application_na\tme=diesel",
-  ])("rejects raw URL control characters before parser normalization %s", (url) => {
-    expect(() => getDatabaseUrl({ DATABASE_URL: url })).toThrow(
-      "DATABASE_URL must not contain control characters",
-    );
-  });
+  ])(
+    "rejects raw URL control characters before parser normalization %s",
+    (url) => {
+      expect(() => getDatabaseUrl({ DATABASE_URL: url })).toThrow(
+        "DATABASE_URL must not contain control characters",
+      );
+    },
+  );
 });

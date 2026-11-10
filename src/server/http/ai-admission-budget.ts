@@ -110,7 +110,9 @@ export function getAiChatAdmissionWindow(nowMs: number): {
     nowMs < 0 ||
     nowMs > MAX_DATE_MS - UTC_DAY_MS
   ) {
-    throw new Error("Admission clock must be a non-negative epoch millisecond.");
+    throw new Error(
+      "Admission clock must be a non-negative epoch millisecond.",
+    );
   }
   const windowStartMs = Math.floor(nowMs / UTC_DAY_MS) * UTC_DAY_MS;
   const resetAtMs = windowStartMs + UTC_DAY_MS;
@@ -160,10 +162,8 @@ export function createInMemoryAiChatAdmissionBudget(
         currentClientBucket?.windowStartMs === windowStartMs
           ? currentClientBucket.count
           : 0;
-      const nextGlobalCount =
-        globalCount + AI_CHAT_ADMISSION_UNITS_PER_REQUEST;
-      const nextClientCount =
-        clientCount + AI_CHAT_ADMISSION_UNITS_PER_REQUEST;
+      const nextGlobalCount = globalCount + AI_CHAT_ADMISSION_UNITS_PER_REQUEST;
+      const nextClientCount = clientCount + AI_CHAT_ADMISSION_UNITS_PER_REQUEST;
 
       if (
         nextGlobalCount > config.globalUnitsPerDay ||
@@ -221,10 +221,7 @@ export function createPostgresAiChatAdmissionBudget(input: {
       const allowed =
         await input.repository.reserveAiChatAdmissionProviderCallUnits({
           client: {
-            keyHash: sha256DomainValue(
-              CLIENT_HASH_DOMAIN,
-              clientIdentifier,
-            ),
+            keyHash: sha256DomainValue(CLIENT_HASH_DOMAIN, clientIdentifier),
             limit: input.config.clientUnitsPerDay,
             scope: CLIENT_SCOPE,
           },
@@ -268,10 +265,8 @@ function resolveRuntimeConfiguration(): {
   config: AiChatAdmissionBudgetConfig;
 } {
   const config = resolveAiChatAdmissionBudgetConfig({
-    clientUnitsPerDay:
-      env.AI_CHAT_ADMISSION_CLIENT_PROVIDER_CALL_UNITS_PER_DAY,
-    globalUnitsPerDay:
-      env.AI_CHAT_ADMISSION_GLOBAL_PROVIDER_CALL_UNITS_PER_DAY,
+    clientUnitsPerDay: env.AI_CHAT_ADMISSION_CLIENT_PROVIDER_CALL_UNITS_PER_DAY,
+    globalUnitsPerDay: env.AI_CHAT_ADMISSION_GLOBAL_PROVIDER_CALL_UNITS_PER_DAY,
     nodeEnv: env.NODE_ENV,
   });
   const backend = resolveAiChatRateLimitBackend({

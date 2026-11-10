@@ -48,4 +48,3 @@ export function createLocalHashEmbedding(value: string): number[] {
 
   return vector.map((component) => component / magnitude);
 }
-

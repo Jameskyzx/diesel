@@ -97,16 +97,19 @@ describe("public product publication policy", () => {
     ["unlisted entity", { id: "unlisted-product" }, false],
     ["source drift", { sourceId: "changed-source" }, false],
     ["specification drift", { specificationVersion: "2026-08-v2" }, false],
-  ] as const)("fails closed for real products on %s", (_label, overrides, expected) => {
-    expect(
-      isProductApprovedByManifest(productCandidate(overrides), {
-        [productId]: {
-          sourceId,
-          specificationVersion: "2026-08-v1",
-        },
-      }),
-    ).toBe(expected);
-  });
+  ] as const)(
+    "fails closed for real products on %s",
+    (_label, overrides, expected) => {
+      expect(
+        isProductApprovedByManifest(productCandidate(overrides), {
+          [productId]: {
+            sourceId,
+            specificationVersion: "2026-08-v1",
+          },
+        }),
+      ).toBe(expected);
+    },
+  );
 
   it.each([
     ["matching Demo certification and source", true, true, true],
@@ -129,12 +132,9 @@ describe("public product publication policy", () => {
     "fails closed for real certifications on %s",
     (_label, overrides, expected) => {
       expect(
-        isCertificationApprovedByManifest(
-          certificationCandidate(overrides),
-          {
-            [certificationId]: { sourceId },
-          },
-        ),
+        isCertificationApprovedByManifest(certificationCandidate(overrides), {
+          [certificationId]: { sourceId },
+        }),
       ).toBe(expected);
     },
   );

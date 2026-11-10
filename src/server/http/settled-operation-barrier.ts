@@ -7,11 +7,9 @@ import "server-only";
  */
 export async function awaitStartedOperationsInOrder<
   TValues extends readonly unknown[],
->(
-  operations: {
-    [TIndex in keyof TValues]: Promise<TValues[TIndex]>;
-  },
-): Promise<TValues> {
+>(operations: {
+  [TIndex in keyof TValues]: Promise<TValues[TIndex]>;
+}): Promise<TValues> {
   const outcomes = await Promise.allSettled(operations);
   const values: unknown[] = [];
 

@@ -3,39 +3,71 @@ import { sql } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { resolveKnowledgeCandidateConstraint, resolveKnowledgeConstraintKey } from "@/server/repositories/knowledge-text-query";
+import {
+  resolveKnowledgeCandidateConstraint,
+  resolveKnowledgeConstraintKey,
+} from "@/server/repositories/knowledge-text-query";
 import { knowledgeQueryConstraintKey } from "@/domain/knowledge/query-constraints";
 import { appendKnowledgeQueryTerms } from "@/domain/knowledge/query-literal-spans";
 
 let database: PGlite;
 const dialect = new PgDialect();
-beforeAll(async () => { database = new PGlite(); await database.waitReady; }, 15_000);
-afterAll(async () => { await database?.close(); });
-const parseNative = async (queries: readonly string[]) => (await database.query(
-  "SELECT (ordinality - 1)::integer AS index, websearch_to_tsquery('simple', value)::text AS query FROM jsonb_array_elements_text($1::jsonb) WITH ORDINALITY ORDER BY ordinality",
-  [JSON.stringify(queries)],
-)).rows;
+beforeAll(async () => {
+  database = new PGlite();
+  await database.waitReady;
+}, 15_000);
+afterAll(async () => {
+  await database?.close();
+});
+const parseNative = async (queries: readonly string[]) =>
+  (
+    await database.query(
+      "SELECT (ordinality - 1)::integer AS index, websearch_to_tsquery('simple', value)::text AS query FROM jsonb_array_elements_text($1::jsonb) WITH ORDINALITY ORDER BY ordinality",
+      [JSON.stringify(queries)],
+    )
+  ).rows;
 
 async function eligible(query: string, content: string): Promise<boolean> {
-  const constraint = await resolveKnowledgeCandidateConstraint(query, parseNative);
+  const constraint = await resolveKnowledgeCandidateConstraint(
+    query,
+    parseNative,
+  );
   if (!constraint) return true;
-  const compiled = dialect.sqlToQuery(sql`SELECT to_tsvector('simple', ${content}) @@ ${constraint} AS matches`);
-  const result = await database.query<{ matches: boolean }>(compiled.sql, compiled.params);
+  const compiled = dialect.sqlToQuery(
+    sql`SELECT to_tsvector('simple', ${content}) @@ ${constraint} AS matches`,
+  );
+  const result = await database.query<{ matches: boolean }>(
+    compiled.sql,
+    compiled.params,
+  );
   return result.rows[0]!.matches;
 }
 
-const constraintKey = (query: string) => resolveKnowledgeConstraintKey(query, parseNative, async (expression) => {
-  const compiled = dialect.sqlToQuery(sql`SELECT (${expression})::text AS query`);
-  return (await database.query(compiled.sql, compiled.params)).rows;
-});
+const constraintKey = (query: string) =>
+  resolveKnowledgeConstraintKey(query, parseNative, async (expression) => {
+    const compiled = dialect.sqlToQuery(
+      sql`SELECT (${expression})::text AS query`,
+    );
+    return (await database.query(compiled.sql, compiled.params)).rows;
+  });
 
 describe("native query constraint equivalence", () => {
-  it.each(["source -", "source --", "source - \n", 'source -""', "source - ( )"])("does not manufacture a native operand in %s", async (query) => {
-    expect(await constraintKey(appendKnowledgeQueryTerms(query, ["non-road"]))).toBe(await constraintKey(query));
+  it.each([
+    "source -",
+    "source --",
+    "source - \n",
+    'source -""',
+    "source - ( )",
+  ])("does not manufacture a native operand in %s", async (query) => {
+    expect(
+      await constraintKey(appendKnowledgeQueryTerms(query, ["non-road"])),
+    ).toBe(await constraintKey(query));
   });
   it("adds a metadata keyword without changing an unfinished excluded phrase", async () => {
     const query = 'source -"China non-road';
-    expect(await constraintKey(appendKnowledgeQueryTerms(query, ["non-road"]))).toBe(await constraintKey(query));
+    expect(
+      await constraintKey(appendKnowledgeQueryTerms(query, ["non-road"])),
+    ).toBe(await constraintKey(query));
   });
   it.each([
     ["foo -fictional", "foo fictional", false],
@@ -59,15 +91,26 @@ describe("native query constraint equivalence", () => {
     ["foo –fictional", "foo fictional", true],
     ["foo -non road", "foo -non-road", false],
     ["foo non-road", "foo nonroad", true],
-  ] as const)("%s / %s equivalence -> %s", async (expected, actual, matches) => {
-    expect(await constraintKey(expected) === await constraintKey(actual)).toBe(matches);
-  });
+  ] as const)(
+    "%s / %s equivalence -> %s",
+    async (expected, actual, matches) => {
+      expect(
+        (await constraintKey(expected)) === (await constraintKey(actual)),
+      ).toBe(matches);
+    },
+  );
 
   it("preserves positions and rejects unsupported or oversized canonical syntax", () => {
-    expect(knowledgeQueryConstraintKey("'a' <-> 'b'")).not.toBe(knowledgeQueryConstraintKey("'a' <2> 'b'"));
-    expect(() => knowledgeQueryConstraintKey("'a':*" )).toThrow();
-    expect(() => knowledgeQueryConstraintKey("!".repeat(200) + "'a'" )).toThrow();
-    expect(knowledgeQueryConstraintKey("!".repeat(100) + "'a'" )).toBe(knowledgeQueryConstraintKey("'a'"));
+    expect(knowledgeQueryConstraintKey("'a' <-> 'b'")).not.toBe(
+      knowledgeQueryConstraintKey("'a' <2> 'b'"),
+    );
+    expect(() => knowledgeQueryConstraintKey("'a':*")).toThrow();
+    expect(() =>
+      knowledgeQueryConstraintKey("!".repeat(200) + "'a'"),
+    ).toThrow();
+    expect(knowledgeQueryConstraintKey("!".repeat(100) + "'a'")).toBe(
+      knowledgeQueryConstraintKey("'a'"),
+    );
   });
 });
 
@@ -127,7 +170,10 @@ describe("hard query constraints before hybrid ranking", () => {
   });
 
   it("keeps a native negative atom without turning soft positive terms into requirements", async () => {
-    const { rows } = await database.query<{ negative: boolean; whole: boolean }>(
+    const { rows } = await database.query<{
+      negative: boolean;
+      whole: boolean;
+    }>(
       "SELECT to_tsvector('simple', 'nonroad') @@ websearch_to_tsquery('simple', '-non') AS negative, to_tsvector('simple', 'nonroad') @@ websearch_to_tsquery('simple', '-non road') AS whole",
     );
     expect(rows[0]).toEqual({ negative: true, whole: false });
@@ -136,22 +182,48 @@ describe("hard query constraints before hybrid ranking", () => {
   });
 
   it("checks cancellation and rejects reordered or malformed native responses", async () => {
-    for (const rows of [[], [{ index: 1, query: "'x'" }], [{ index: 0, query: null }]]) {
-      await expect(resolveKnowledgeCandidateConstraint("-x", async () => rows)).rejects.toThrow();
+    for (const rows of [
+      [],
+      [{ index: 1, query: "'x'" }],
+      [{ index: 0, query: null }],
+    ]) {
+      await expect(
+        resolveKnowledgeCandidateConstraint("-x", async () => rows),
+      ).rejects.toThrow();
     }
     const controller = new AbortController();
-    const parser = vi.fn(async () => { controller.abort(); return [{ index: 0, query: "!'x'" }]; });
-    await expect(resolveKnowledgeCandidateConstraint("-x", parser, { signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
+    const parser = vi.fn(async () => {
+      controller.abort();
+      return [{ index: 0, query: "!'x'" }];
+    });
+    await expect(
+      resolveKnowledgeCandidateConstraint("-x", parser, {
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: "AbortError" });
     parser.mockClear();
-    await expect(resolveKnowledgeCandidateConstraint("-x", parser, { signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
+    await expect(
+      resolveKnowledgeCandidateConstraint("-x", parser, {
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: "AbortError" });
     expect(parser).not.toHaveBeenCalled();
   });
 
   it("does not parse ordinary text or swallow native database errors", async () => {
     const error = new Error("native parse failed");
-    const parser = vi.fn(async () => { throw error; });
-    expect(await resolveKnowledgeCandidateConstraint("emissions regulations", parser)).toBeNull();
+    const parser = vi.fn(async () => {
+      throw error;
+    });
+    expect(
+      await resolveKnowledgeCandidateConstraint(
+        "emissions regulations",
+        parser,
+      ),
+    ).toBeNull();
     expect(parser).not.toHaveBeenCalled();
-    await expect(resolveKnowledgeCandidateConstraint("-fictional", parser)).rejects.toBe(error);
+    await expect(
+      resolveKnowledgeCandidateConstraint("-fictional", parser),
+    ).rejects.toBe(error);
   });
 });

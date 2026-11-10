@@ -44,10 +44,7 @@ function skipJsonWhitespace(serialized: string, start: number): number {
   return index;
 }
 
-function findJsonStringEnd(
-  serialized: string,
-  start: number,
-): number | null {
+function findJsonStringEnd(serialized: string, start: number): number | null {
   if (serialized[start] !== '"') return null;
 
   for (let index = start + 1; index < serialized.length; index += 1) {
@@ -68,9 +65,7 @@ function findJsonStringEnd(
  * The input has already passed JSON.parse, so this scanner only identifies
  * member boundaries; it does not replace JSON validation.
  */
-function readTopLevelJsonObjectKeys(
-  serialized: string,
-): string[] | null {
+function readTopLevelJsonObjectKeys(serialized: string): string[] | null {
   let index = skipJsonWhitespace(serialized, 0);
   if (serialized[index] !== "{") return null;
   index += 1;
@@ -83,9 +78,7 @@ function readTopLevelJsonObjectKeys(
     const keyEnd = findJsonStringEnd(serialized, index);
     if (keyEnd === null) return null;
 
-    const decodedKey: unknown = JSON.parse(
-      serialized.slice(index, keyEnd),
-    );
+    const decodedKey: unknown = JSON.parse(serialized.slice(index, keyEnd));
     if (typeof decodedKey !== "string") return null;
     keys.push(decodedKey);
 

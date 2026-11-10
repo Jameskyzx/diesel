@@ -105,10 +105,7 @@ function normalizeJsonWireValue(
         if (!descriptor || !("value" in descriptor)) {
           throw new AdminDashboardResponseContractError();
         }
-        normalized[index] = normalizeJsonWireValue(
-          descriptor.value,
-          ancestors,
-        );
+        normalized[index] = normalizeJsonWireValue(descriptor.value, ancestors);
       }
       return normalized;
     }
@@ -128,17 +125,10 @@ function normalizeJsonWireValue(
         throw new AdminDashboardResponseContractError();
       }
       const descriptor = descriptors[key];
-      if (
-        !descriptor ||
-        !("value" in descriptor) ||
-        !descriptor.enumerable
-      ) {
+      if (!descriptor || !("value" in descriptor) || !descriptor.enumerable) {
         throw new AdminDashboardResponseContractError();
       }
-      normalized[key] = normalizeJsonWireValue(
-        descriptor.value,
-        ancestors,
-      );
+      normalized[key] = normalizeJsonWireValue(descriptor.value, ancestors);
     }
     return normalized;
   } finally {

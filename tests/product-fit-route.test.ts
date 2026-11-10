@@ -20,7 +20,8 @@ describe("POST /api/product-fit request limits", () => {
     await expect(response.json()).resolves.toEqual({
       error: {
         code: "PAYLOAD_TOO_LARGE",
-        message: "The product-fit request is too large. Reduce it and try again.",
+        message:
+          "The product-fit request is too large. Reduce it and try again.",
       },
     });
   });

@@ -111,12 +111,14 @@ const unexpectedOptionalArgumentCases: readonly {
     extraKey: "productModelCode",
     tool: "generateSalesBrief",
   },
-  ...([
-    ["applicationScope", "non-road"],
-    ["asOf", "2026-08-13"],
-    ["jurisdictionId", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"],
-    ["limit", 8],
-  ] as const).map(([extraKey, extraValue]) => ({
+  ...(
+    [
+      ["applicationScope", "non-road"],
+      ["asOf", "2026-08-13"],
+      ["jurisdictionId", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"],
+      ["limit", 8],
+    ] as const
+  ).map(([extraKey, extraValue]) => ({
     args: {
       countryIso3: "CHN",
       query: "non-road source evidence",
@@ -132,10 +134,7 @@ const unexpectedOptionalArgumentCases: readonly {
 describe("live eval v10 report-argument boundary", () => {
   it("evaluates bounded English and Chinese query terms without partial-token matches", () => {
     expect(
-      evaluateLiveEvalKnowledgeQuery(
-        "NON‑ROAD   source evidence",
-        contract,
-      ),
+      evaluateLiveEvalKnowledgeQuery("NON‑ROAD   source evidence", contract),
     ).toEqual({
       expectationPassed: true,
       matchedForbiddenTermIds: [],
@@ -150,10 +149,8 @@ describe("live eval v10 report-argument boundary", () => {
         .expectationPassed,
     ).toBe(true);
     expect(
-      evaluateLiveEvalKnowledgeQuery(
-        "broad source evidence",
-        contract,
-      ).expectationPassed,
+      evaluateLiveEvalKnowledgeQuery("broad source evidence", contract)
+        .expectationPassed,
     ).toBe(false);
     expect(
       evaluateLiveEvalKnowledgeQuery(
@@ -162,10 +159,8 @@ describe("live eval v10 report-argument boundary", () => {
       ).expectationPassed,
     ).toBe(true);
     expect(
-      evaluateLiveEvalKnowledgeQuery(
-        "CHN 非道路法规source evidence",
-        contract,
-      ).expectationPassed,
+      evaluateLiveEvalKnowledgeQuery("CHN 非道路法规source evidence", contract)
+        .expectationPassed,
     ).toBe(true);
     expect(
       evaluateLiveEvalKnowledgeQuery(
@@ -300,9 +295,7 @@ describe("live eval v10 report-argument boundary", () => {
       },
     });
     expect(calls[1]).toMatchObject({
-      metricCodes: [
-        { algorithm: "sha256", characterCount: marker.length },
-      ],
+      metricCodes: [{ algorithm: "sha256", characterCount: marker.length }],
     });
     expect(calls[2]).toMatchObject({
       jurisdictionId: { algorithm: "sha256", characterCount: 36 },

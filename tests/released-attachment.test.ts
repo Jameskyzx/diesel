@@ -36,9 +36,9 @@ describe("released chat attachment presentation", () => {
     expect(formatReleasedAttachment(attachment!, getDictionary("en"))).toBe(
       "Sent attachment: evidence.pdf; upload it again for follow-up questions",
     );
-    expect(
-      formatReleasedAttachment(attachment!, getDictionary("zh-CN")),
-    ).toBe("已发送附件：evidence.pdf；后续追问请重新上传");
+    expect(formatReleasedAttachment(attachment!, getDictionary("zh-CN"))).toBe(
+      "已发送附件：evidence.pdf；后续追问请重新上传",
+    );
   });
 
   it("fails closed for malformed client-only data instead of rendering it", () => {
@@ -56,9 +56,9 @@ describe("released chat attachment presentation", () => {
     );
 
     expect(attachment).not.toBeNull();
-    expect(formatReleasedAttachment(attachment!, getDictionary("en"))).toContain(
-      "Unnamed attachment",
-    );
+    expect(
+      formatReleasedAttachment(attachment!, getDictionary("en")),
+    ).toContain("Unnamed attachment");
     expect(
       formatReleasedAttachment(attachment!, getDictionary("zh-CN")),
     ).toContain("未命名附件");
@@ -101,10 +101,7 @@ describe("released chat attachment presentation", () => {
       },
       {
         id: "current-user",
-        parts: [
-          { text: "Current question", type: "text" },
-          currentFile,
-        ],
+        parts: [{ text: "Current question", type: "text" }, currentFile],
         role: "user",
       },
     ] satisfies SalesChatUiMessage[];

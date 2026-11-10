@@ -69,7 +69,9 @@ export function resolveChatAttachmentMediaType(file: {
     return null;
   }
 
-  const normalizedName = normalizeChatAttachmentFilename(file.name).toLowerCase();
+  const normalizedName = normalizeChatAttachmentFilename(
+    file.name,
+  ).toLowerCase();
   const extension = Object.keys(EXTENSION_MEDIA_TYPES).find((candidate) =>
     normalizedName.endsWith(candidate),
   );

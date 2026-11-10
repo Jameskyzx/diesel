@@ -1,4 +1,8 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 
 import { z } from "zod";
 
@@ -9,10 +13,7 @@ import {
   restoreRecordedNextEnvironmentAfterFailure,
   restoreRecordedNextEnvironmentAfterOperation,
 } from "../next-environment-file";
-import {
-  correctedFdeMarketCsv,
-  invalidFdeMarketCsv,
-} from "./fde-fixtures";
+import { correctedFdeMarketCsv, invalidFdeMarketCsv } from "./fde-fixtures";
 
 const environmentSchema = z
   .object({
@@ -60,17 +61,26 @@ function cookies(request: IncomingMessage): Map<string, string> {
         const separator = item.indexOf("=");
         return separator < 0
           ? [item, ""]
-          : [item.slice(0, separator), decodeURIComponent(item.slice(separator + 1))];
+          : [
+              item.slice(0, separator),
+              decodeURIComponent(item.slice(separator + 1)),
+            ];
       }),
   );
 }
 
 function activePersona(request: IncomingMessage): Persona {
-  const parsed = personaSchema.safeParse(cookies(request).get("fde_demo_persona"));
+  const parsed = personaSchema.safeParse(
+    cookies(request).get("fde_demo_persona"),
+  );
   return parsed.success ? parsed.data : "editor";
 }
 
-function serveCsv(response: ServerResponse, contents: string, name: string): void {
+function serveCsv(
+  response: ServerResponse,
+  contents: string,
+  name: string,
+): void {
   response.writeHead(200, {
     "Cache-Control": "no-store",
     "Content-Disposition": `attachment; filename="${name}"`,
@@ -180,9 +190,13 @@ async function startFdeDemoServer(): Promise<void> {
     }
 
     if (requestUrl.pathname === "/__fde/persona") {
-      const persona = personaSchema.safeParse(requestUrl.searchParams.get("role"));
+      const persona = personaSchema.safeParse(
+        requestUrl.searchParams.get("role"),
+      );
       if (!persona.success) {
-        response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+        response.writeHead(400, {
+          "Content-Type": "text/plain; charset=utf-8",
+        });
         response.end("Invalid local demo persona.");
         return;
       }
@@ -225,9 +239,7 @@ async function startFdeDemoServer(): Promise<void> {
           closeError,
         );
       }
-      await restoreRecordedNextEnvironmentAfterOperation(
-        nextEnvironmentGuard,
-      );
+      await restoreRecordedNextEnvironmentAfterOperation(nextEnvironmentGuard);
     })();
     return shutdownPromise;
   };
@@ -261,10 +273,7 @@ async function startFdeDemoServer(): Promise<void> {
       };
       server.once("error", handleListenError);
       server.once("listening", handleListening);
-      server.listen(
-        serverEnvironment.DEMO_PORT,
-        serverEnvironment.DEMO_HOST,
-      );
+      server.listen(serverEnvironment.DEMO_PORT, serverEnvironment.DEMO_HOST);
     });
   } catch (listenError: unknown) {
     let operationError = listenError;

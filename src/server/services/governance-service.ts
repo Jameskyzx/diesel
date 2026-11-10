@@ -34,6 +34,7 @@ import {
   GovernanceConflictError,
 } from "@/server/repositories/governance-repository";
 import type { KnowledgeDocumentReprocessingAccessScope } from "@/server/repositories/knowledge-repository";
+import { clearCountryReadCache } from "@/server/services/country-read-cache";
 import {
   createKnowledgeDocumentImportResponse,
   prepareKnowledgeDocument,
@@ -117,6 +118,16 @@ function normalizeDraft(input: GovernanceDraftCreate): {
   };
 }
 
+// Public country reads are cached in this process (ADR-277). A write that can
+// change published facts clears that cache, whether or not it succeeded.
+async function afterPublishedFactWrite<T>(write: Promise<T>): Promise<T> {
+  try {
+    return await write;
+  } finally {
+    clearCountryReadCache();
+  }
+}
+
 export async function archiveGovernedEntity(input: {
   actor: AdminPrincipal;
   entityKey: string;
@@ -133,12 +144,14 @@ export async function archiveGovernedEntity(input: {
   });
   const repository = await getGovernanceRepository();
 
-  await repository.archiveEntity({
-    actor: input.actor,
-    entityKey: entity.entityKey,
-    entityType: entity.entityType,
-    reason: action.reason,
-  });
+  await afterPublishedFactWrite(
+    repository.archiveEntity({
+      actor: input.actor,
+      entityKey: entity.entityKey,
+      entityType: entity.entityType,
+      reason: action.reason,
+    }),
+  );
 
   return { status: "archived" as const };
 }
@@ -155,11 +168,13 @@ export async function confirmMarketCsvImport(input: {
   const batchId = z.uuid().parse(input.batchId);
   const repository = await getGovernanceRepository();
 
-  return repository.confirmMarketImport({
-    actor: input.actor,
-    batchId,
-    reason: action.reason,
-  });
+  return afterPublishedFactWrite(
+    repository.confirmMarketImport({
+      actor: input.actor,
+      batchId,
+      reason: action.reason,
+    }),
+  );
 }
 
 export const MAX_CATALOG_SPREADSHEET_BYTES = 2_000_000;
@@ -379,11 +394,13 @@ export async function publishGovernanceDraft(input: {
   const draftId = z.uuid().parse(input.draftId);
   const repository = await getGovernanceRepository();
 
-  return repository.publishDraft({
-    actor: input.actor,
-    draftId,
-    reason: action.reason,
-  });
+  return afterPublishedFactWrite(
+    repository.publishDraft({
+      actor: input.actor,
+      draftId,
+      reason: action.reason,
+    }),
+  );
 }
 
 export async function reviewGovernanceDraft(input: {
@@ -508,10 +525,12 @@ export async function verifyDataSource(input: {
   const sourceId = z.uuid().parse(input.sourceId);
 
   const repository = await getGovernanceRepository();
-  return repository.updateSourceVerifiedAt({
-    actor: input.actor,
-    reason: action.reason,
-    sourceId,
-    verifiedAt: action.verifiedAt,
-  });
+  return afterPublishedFactWrite(
+    repository.updateSourceVerifiedAt({
+      actor: input.actor,
+      reason: action.reason,
+      sourceId,
+      verifiedAt: action.verifiedAt,
+    }),
+  );
 }

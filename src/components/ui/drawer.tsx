@@ -46,7 +46,7 @@ function DrawerContent({
     <DrawerPortal>
       <DrawerPrimitive.Content
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex h-dvh w-[34rem] flex-col border-l bg-background shadow-2xl outline-none",
+          "fixed inset-y-0 right-0 z-50 flex h-dvh w-[min(100vw,34rem)] flex-col border-l bg-background shadow-2xl outline-none",
           className,
         )}
         data-slot="drawer-content"

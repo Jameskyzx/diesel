@@ -10,7 +10,7 @@ import { getErrorCode } from "@/lib/api-error";
 import { getDictionary, type Dictionary } from "@/i18n/dictionaries";
 import { localeFromRequest } from "@/i18n/locale";
 import { isKnownCountryIso3 } from "@/server/services/country-directory";
-import { getCountryDetails } from "@/server/services/country-service";
+import { getCachedCountryDetails } from "@/server/services/country-read-cache";
 import { createPublicApiRequestObserver } from "@/server/http/public-api-response";
 import { runPublicDataOperation } from "@/server/http/public-data-admission";
 
@@ -124,7 +124,7 @@ export async function GET(request: Request, context: CountryRouteContext) {
     const operation = await runPublicDataOperation({
       request,
       route: "/api/countries/:iso3",
-      work: (signal) => getCountryDetails(input, { signal }),
+      work: (signal) => getCachedCountryDetails(input, { signal }),
     });
     if (operation.status === "failed") {
       throw operation.error;

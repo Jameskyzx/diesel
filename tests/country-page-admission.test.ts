@@ -359,8 +359,8 @@ describe("country page public-data admission", () => {
       1,
     );
     expect(pageSource).toContain("Promise.allSettled([");
-    expect(pageSource).toContain("listCountryMapSummaries({ signal })");
-    expect(pageSource).toContain("getCountryDetails(input, { signal })");
+    expect(pageSource).toContain("listCachedCountryMapSummaries({ signal })");
+    expect(pageSource).toContain("getCachedCountryDetails(input, { signal })");
     expect(pageSource).not.toContain("await Promise.all([");
 
     const lowerLayerPaths = [

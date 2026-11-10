@@ -4,7 +4,7 @@ import { countryApiErrorSchema } from "@/features/countries/schemas";
 import { getErrorCode } from "@/lib/api-error";
 import { getDictionary } from "@/i18n/dictionaries";
 import { localeFromRequest } from "@/i18n/locale";
-import { listCountryMapSummaries } from "@/server/services/country-service";
+import { listCachedCountryMapSummaries } from "@/server/services/country-read-cache";
 import { createPublicApiRequestObserver } from "@/server/http/public-api-response";
 import { runPublicDataOperation } from "@/server/http/public-data-admission";
 
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     const operation = await runPublicDataOperation({
       request,
       route: "/api/countries",
-      work: (signal) => listCountryMapSummaries({ signal }),
+      work: (signal) => listCachedCountryMapSummaries({ signal }),
     });
     if (operation.status === "failed") {
       throw operation.error;

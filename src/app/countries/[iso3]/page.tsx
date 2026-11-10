@@ -22,9 +22,9 @@ import {
   isKnownCountryIso3,
 } from "@/server/services/country-directory";
 import {
-  getCountryDetails,
-  listCountryMapSummaries,
-} from "@/server/services/country-service";
+  getCachedCountryDetails,
+  listCachedCountryMapSummaries,
+} from "@/server/services/country-read-cache";
 
 const COUNTRY_PAGE_DATA_ROUTE = "/countries/:iso3";
 const COUNTRY_PAGE_DATA_UNAVAILABLE =
@@ -83,8 +83,8 @@ async function loadCountryPageData(
   signal: AbortSignal,
 ) {
   const [mapResult, detailResult] = await Promise.allSettled([
-    listCountryMapSummaries({ signal }),
-    getCountryDetails(input, { signal }),
+    listCachedCountryMapSummaries({ signal }),
+    getCachedCountryDetails(input, { signal }),
   ]);
 
   // Do not let one rejected branch release the outer admission lease while

@@ -99,7 +99,7 @@ export function AppHeader() {
       </Link>
 
       <div className="app-toolbar">
-        <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground max-lg:hidden">
           <Database aria-hidden="true" className="size-4" />
           <span>{dictionary.workspace.name}</span>
           <ChevronRight aria-hidden="true" className="size-3" />

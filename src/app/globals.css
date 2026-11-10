@@ -61,7 +61,7 @@
   }
 
   body {
-    @apply min-h-screen min-w-[1024px] bg-background text-foreground antialiased;
+    @apply min-h-screen bg-background text-foreground antialiased;
   }
 
   ::selection {
@@ -207,6 +207,53 @@
     font-size: 0.6875rem;
     padding-inline: 0.25rem;
   }
+
+  /* Below the desktop width the sidebar becomes a horizontal bar under the header. */
+  @media (max-width: 1023px) {
+    .page-shell {
+      padding-inline: 1rem;
+    }
+    .app-frame {
+      padding-left: 0;
+    }
+    .app-sidebar-surface {
+      display: none;
+    }
+    .app-header {
+      height: auto;
+      flex-wrap: wrap;
+      background: #182433;
+    }
+    .app-brand {
+      position: static;
+      width: auto;
+      height: 3.5rem;
+      padding-left: 1rem;
+    }
+    .app-toolbar {
+      width: auto;
+      padding-inline: 1rem;
+    }
+    .app-navigation {
+      position: static;
+      width: 100%;
+      flex-direction: row;
+      gap: 0.25rem;
+      padding: 0 0.5rem 0.5rem;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+    .sidebar-link {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .sidebar-section-label,
+    .sidebar-evidence-note,
+    .sidebar-footnote {
+      display: none;
+    }
+  }
+
   @media (min-width: 1280px) {
     .chat-workbench {
       height: max(38rem, calc(100dvh - 16rem));

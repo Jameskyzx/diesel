@@ -2424,7 +2424,8 @@ Migration `0015_engine_feedback.sql` 新增 `engine_feedback`、`feedback_source
 ### CI 构建产物交付
 
 Linux handoff 在与 VPS 一致的 Ubuntu 22.04 / x64 / Node 22.22.3 上完成真实构建、
-root 接管和非特权解包验证，上传 `diesel-runtime-<sha>-<attempt>`（保留七天）。
+root 接管和非特权解包验证；仅 master 的 push 运行上传 `diesel-runtime-<sha>-<attempt>`
+（保留七天），PR 和手动运行只构建验证、不上传，因为发布授权只接受 master push 运行。
 不包含环境变量、数据或 `.next/cache`；归档只包含 `.next`、`node_modules` 和真实
 `.build-complete`。常规质量、浏览器、数据库与 Required CI gate 均保持不变。
 

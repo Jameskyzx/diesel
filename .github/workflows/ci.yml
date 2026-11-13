@@ -564,7 +564,10 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" "${handoff_temp}/runtime-artifact"
           printf 'path=%s\n' "${handoff_temp}/runtime-artifact" >> "$GITHUB_OUTPUT"
 
+      # 发布授权只接受 master 上 push 触发的运行（verify-release-authorization.ts），
+      # PR 和手动运行的产物永远不会被部署，只构建验证、不上传，节省 Actions 存储。
       - name: Upload verified production runtime
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: diesel-runtime-${{ github.sha }}-${{ github.run_attempt }}

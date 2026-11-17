@@ -407,6 +407,14 @@ shadcn 属于生产依赖，不能把整条依赖图称为仅开发依赖；当�
 已审阅提交、冻结安装、无生产密钥的非特权隔离构建、全部 CI 与发布验收继续强制。
 原失败记录保留；此豁免不等于部署完成或零漏洞。
 
+2026-11-18：[GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
+（picomatch 单分支重复 extglob ReDoS，high，影响全部 `<=4.0.7`，无官方修复版本）
+使 PR 131 的供应链审计失败。经维护者明确批准，仅为该 ID 登记七个 UTC 自然日的工具链豁免，
+至 11 月 24 日含当日有效，11 月 25 日起原门禁自动失败，不自动续期。`picomatch@4.0.7` 只经
+tinyglobby/fdir 进入 ESLint 与 Vite/Vitest 开发依赖，`pnpm why picomatch --prod` 无生产路径；
+glob 模式来自已审阅的仓库配置而非用户输入。恶意配置仍可能拖慢工具进程；其余门禁不变。
+原失败记录保留；此豁免不等于漏洞已修复。
+
 ## Earlier advisory review (2026-09-30)
 
 The post-merge CI run for `cd81849473fccdf63ad365436a603755ed74ab80`

@@ -322,7 +322,9 @@ describe("Playwright server contracts", () => {
     const e2eStart = workflow.indexOf("\n  e2e:\n");
     const e2eEnd = workflow.indexOf("\n  portfolio-demo-e2e:\n", e2eStart);
     const e2eJob = workflow.slice(e2eStart, e2eEnd);
-    const developmentTestIndex = e2eJob.indexOf("run: pnpm test:e2e\n");
+    const developmentTestIndex = e2eJob.indexOf(
+      "pnpm test:e2e --shard=${{ matrix.shard }}/2\n",
+    );
     const productionBuildIndex = e2eJob.indexOf("run: pnpm build\n");
     const productionTestIndex = e2eJob.indexOf(
       "run: pnpm test:e2e:csp:production\n",
@@ -332,5 +334,20 @@ describe("Playwright server contracts", () => {
     expect(e2eEnd).toBeGreaterThan(e2eStart);
     expect(productionBuildIndex).toBeGreaterThan(developmentTestIndex);
     expect(productionTestIndex).toBeGreaterThan(productionBuildIndex);
+    expect(developmentTestIndex).toBeGreaterThanOrEqual(0);
+    expect(e2eJob).toContain("        shard: [1, 2]\n");
+    expect(e2eJob).toContain("      fail-fast: false\n");
+    // The production contract runs once, in the first shard.
+    expect(e2eJob.match(/if: \$\{\{ matrix\.shard == 1 \}\}\n/gu)).toHaveLength(
+      2,
+    );
+    // --shard keeps a dependency chain in one shard, so both shards split the
+    // independent projects and the knowledge flow runs alone in the second.
+    expect(e2eJob).toContain(
+      "          --project=desktop-chromium --project=core-webkit\n          --project=global-error-chromium\n",
+    );
+    expect(e2eJob).toContain(
+      "        if: ${{ matrix.shard == 2 }}\n        run: pnpm test:e2e --project=knowledge-chromium --no-deps\n",
+    );
   });
 });

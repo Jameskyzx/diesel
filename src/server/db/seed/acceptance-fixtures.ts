@@ -319,7 +319,9 @@ const recordTimestamps = {
   updatedAt: signoffTimestamp,
   verifiedAt: signoffTimestamp,
 } as const;
-const chinaNonroadVerificationTimestamp = new Date("2026-08-11T04:38:07.000Z");
+// 2026-11-17：CHN 全部官方来源（GB 20891-2014/XG1-2020、GB 17691-2018 含 2026 修改单、
+// HJ 1014-2020）复核，事实无变化；GB 17691 记录同时并入此核验时间。
+const chinaNonroadVerificationTimestamp = new Date("2026-11-17T08:38:02.000Z");
 const chinaNonroadRecordTimestamps = {
   ...recordTimestamps,
   updatedAt: chinaNonroadVerificationTimestamp,
@@ -1945,7 +1947,7 @@ export const acceptedLimitUnavailableRegulationIds = [
 
 export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
   {
-    ...recordTimestamps,
+    ...chinaNonroadRecordTimestamps,
     id: acceptanceFixtureIds.source.cnGb17691,
     isDemo: false,
     publishedOn: "2018-06-22",
@@ -8640,7 +8642,7 @@ export const fixtureCountryJurisdictions: (typeof countryJurisdictions.$inferIns
 
 export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
   {
-    ...recordTimestamps,
+    ...chinaNonroadRecordTimestamps,
     adoptedOn: "2018-06-22",
     canonicalName:
       "GB 17691-2018 重型柴油车污染物排放限值及测量方法（中国第六阶段）",
@@ -10053,6 +10055,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
             applicationScope: scope,
             testCycleCode: "WHTC",
             validFrom: "2023-07-01",
+            verifiedAt: chinaNonroadVerificationTimestamp,
           },
         ),
       );

@@ -12,6 +12,7 @@ export default defineConfig({
   // The full single-worker matrix exceeded 25 minutes on hosted Linux with no
   // failed assertions. Keep per-case limits unchanged and reserve ten minutes
   // in the 60-minute job for setup, production CSP and diagnostic uploads.
+  // CI splits the suite into two shards (ci.yml e2e matrix); the limit is per shard.
   globalTimeout: process.env.CI ? 50 * 60_000 : 0,
   reporter: process.env.CI
     ? [["github"], ["list"], ["html", { open: "never" }]]

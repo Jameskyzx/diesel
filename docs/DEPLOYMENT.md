@@ -1422,6 +1422,12 @@ global timeout 设为 25 分钟，给框架 teardown、失败收据和 artifact 
 CSP 和诊断上传余量；每例 60 秒、两次 retry、单 worker、所有项目与断言不变。
 此预算调整必须经完整远端运行证明，不能将未运行用例当作跳过或成功。
 
+2026-11-18：同一提交两次在 50 分钟时限内只跑到约 250/273 例（无失败断言），e2e job
+改为两片矩阵，每片各有独立 dev server 和 50 分钟预算。`--shard` 会把依赖链整体放进
+一片，因此两片只平分 desktop-chromium、core-webkit、global-error-chromium，
+knowledge-chromium 在第二片单独以 `--no-deps` 运行；生产 CSP 只在第一片构建运行一次。
+每例时限、retry、单 worker 和断言不变，任一片失败即 `needs.e2e.result` 非 success。
+
 工作站完整门禁通过后，normal path 不再由运维人员分别拼接 environment backup、
 begin、prepare、activation 与 governance 命令。下文只从 clean environment 前台调用
 目标 release 的版本化 `host-release-orchestrator.sh`；该单一 root 进程拥有

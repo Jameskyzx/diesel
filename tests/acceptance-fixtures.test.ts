@@ -293,7 +293,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
               row.regulationId === acceptanceFixtureIds.regulation.cnGb20891 &&
               row.limit.testCycleCode === "NRSC AND applicable NRTC" &&
               row.limit.verifiedAt?.toISOString() ===
-                "2026-08-11T04:38:07.000Z",
+                "2026-11-17T08:38:02.000Z",
           ),
         ).toBe(true);
         expect(values.has("NH3")).toBe(false);
@@ -322,7 +322,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       sourceType: "official-regulation",
       title: "HJ 1014-2020 非道路柴油移动机械污染物排放控制技术要求",
       url: "https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqydywrwpfbz/202012/t20201231_815684.shtml",
-      verifiedAt: new Date("2026-08-11T04:38:07.000Z"),
+      verifiedAt: new Date("2026-11-17T08:38:02.000Z"),
     });
     expect(
       fixtureJurisdictions.find(
@@ -469,7 +469,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       acceptanceFixtureIds.source.cnHj1014,
     );
     expect(cnMeeJurisdiction?.source.verifiedAt.toISOString()).toBe(
-      "2026-08-11T04:38:07.000Z",
+      "2026-11-17T08:38:02.000Z",
     );
     const currentEffectiveRegulations = details?.regulations.filter(
       (regulation) =>

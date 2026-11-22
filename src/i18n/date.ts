@@ -14,7 +14,8 @@ const englishDateFormatter = new Intl.DateTimeFormat("en-US", {
 function parseUtcDate(value: string): Date | null {
   if (isoDatePattern.test(value)) {
     const date = new Date(`${value}T00:00:00.000Z`);
-    return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value
+    return Number.isNaN(date.getTime()) ||
+      date.toISOString().slice(0, 10) !== value
       ? null
       : date;
   }

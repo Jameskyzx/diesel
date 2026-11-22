@@ -12,25 +12,38 @@ export const capacityPolicy = {
   databaseBackupDeletion: "never",
   incidentRecordDeletion: "never",
 } as const;
-const capacitySchema = z.strictObject({
-  totalBytes: z.number().int().positive().safe(),
-  freeBytes: z.number().int().nonnegative().safe(),
-  totalInodes: z.number().int().positive().safe(),
-  freeInodes: z.number().int().nonnegative().safe(),
-}).refine((input) => input.freeBytes <= input.totalBytes && input.freeInodes <= input.totalInodes);
+const capacitySchema = z
+  .strictObject({
+    totalBytes: z.number().int().positive().safe(),
+    freeBytes: z.number().int().nonnegative().safe(),
+    totalInodes: z.number().int().positive().safe(),
+    freeInodes: z.number().int().nonnegative().safe(),
+  })
+  .refine(
+    (input) =>
+      input.freeBytes <= input.totalBytes &&
+      input.freeInodes <= input.totalInodes,
+  );
 
 export function evaluateCapacity(value: unknown) {
   const input = capacitySchema.parse(value);
-  const usedPercent = 100 * (input.totalBytes - input.freeBytes) / input.totalBytes;
-  const releaseAllowed = input.freeBytes >= capacityPolicy.minimumReleaseFreeBytes &&
-    input.freeInodes >= capacityPolicy.minimumFreeInodes && usedPercent < capacityPolicy.maximumReleaseUsedPercent;
+  const usedPercent =
+    (100 * (input.totalBytes - input.freeBytes)) / input.totalBytes;
+  const releaseAllowed =
+    input.freeBytes >= capacityPolicy.minimumReleaseFreeBytes &&
+    input.freeInodes >= capacityPolicy.minimumFreeInodes &&
+    usedPercent < capacityPolicy.maximumReleaseUsedPercent;
   return {
     policy: capacityPolicy,
     ...input,
     usedPercent: Math.round(usedPercent * 100) / 100,
     releaseAllowed,
-    warning: !releaseAllowed || input.freeBytes < capacityPolicy.warningFreeBytes || usedPercent >= capacityPolicy.warningUsedPercent,
-    remedy: "Only reviewed inactive build-cache cleanup is permitted automatically; preserve current/rollback releases, all database backups and incident records. Archive to approved external storage or expand capacity before the next release if necessary.",
+    warning:
+      !releaseAllowed ||
+      input.freeBytes < capacityPolicy.warningFreeBytes ||
+      usedPercent >= capacityPolicy.warningUsedPercent,
+    remedy:
+      "Only reviewed inactive build-cache cleanup is permitted automatically; preserve current/rollback releases, all database backups and incident records. Archive to approved external storage or expand capacity before the next release if necessary.",
   };
 }
 
@@ -41,6 +54,7 @@ export function readDeploymentCapacity() {
   return evaluateCapacity({
     totalBytes: Number(filesystem.blocks * filesystem.bsize),
     freeBytes: Number(filesystem.bavail * filesystem.bsize),
-    totalInodes: Number(filesystem.files), freeInodes: Number(filesystem.ffree),
+    totalInodes: Number(filesystem.files),
+    freeInodes: Number(filesystem.ffree),
   });
 }

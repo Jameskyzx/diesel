@@ -61,10 +61,7 @@ test("opens a shareable country URL by clicking the map polygon", async ({
   const worldSize = 512 * 2 ** zoom;
   const mercatorY = (latitude: number) =>
     (1 -
-      Math.log(
-        Math.tan(Math.PI / 4 + (latitude * Math.PI) / 360),
-      ) /
-        Math.PI) /
+      Math.log(Math.tan(Math.PI / 4 + (latitude * Math.PI) / 360)) / Math.PI) /
     2;
 
   await mapContainer.click({
@@ -93,8 +90,6 @@ test("includes a country snapshot in the server-rendered share-page HTML", async
   expect(html).toContain("country-server-fallback");
   expect(html).toContain("2026-01-20");
 });
-
-
 
 test("uses governed Demo classification in both country selectors and locales", async ({
   context,
@@ -160,8 +155,6 @@ test("does not infer Demo country copy from a name when classification is real",
   await expect(option).not.toHaveText("中国（演示数据） · CHN");
 });
 
-
-
 test("updates the tooltip across consecutive country hovers", async ({
   page,
 }, testInfo) => {
@@ -181,10 +174,7 @@ test("updates the tooltip across consecutive country hovers", async ({
   const worldSize = 512 * 2 ** zoom;
   const mercatorY = (latitude: number) =>
     (1 -
-      Math.log(
-        Math.tan(Math.PI / 4 + (latitude * Math.PI) / 360),
-      ) /
-        Math.PI) /
+      Math.log(Math.tan(Math.PI / 4 + (latitude * Math.PI) / 360)) / Math.PI) /
     2;
   const countryPosition = (longitude: number, latitude: number) => ({
     x: (mapBox?.width ?? 0) / 2 + ((longitude - 8) / 360) * worldSize,
@@ -238,9 +228,7 @@ test("localizes a map tooltip when the valid summary response omits that country
     const worldSize = 512 * 2 ** zoom;
     const mercatorY = (latitude: number) =>
       (1 -
-        Math.log(
-          Math.tan(Math.PI / 4 + (latitude * Math.PI) / 360),
-        ) /
+        Math.log(Math.tan(Math.PI / 4 + (latitude * Math.PI) / 360)) /
           Math.PI) /
       2;
     await mapContainer.hover({
@@ -272,25 +260,22 @@ test("opens, restores, switches, and shows an explicit no-data country", async (
 }) => {
   await page.goto("/map");
 
-  await page
-    .getByRole("button", { name: /中国（演示数据） · CHN/ })
-    .click();
+  await page.getByRole("button", { name: /中国（演示数据） · CHN/ }).click();
   await expect(page).toHaveURL(/\/countries\/CHN$/);
   await expect(page.getByTestId("country-detail")).toBeVisible();
   await expect(
     page.getByRole("heading", { exact: true, name: "中国（演示数据）" }),
   ).toBeVisible();
-  await expect(
-    page.getByText("国家基础记录或其来源为虚构 Demo"),
-  ).toBeVisible();
+  await expect(page.getByText("国家基础记录或其来源为虚构 Demo")).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "适用司法辖区" }),
   ).toBeVisible();
   const jurisdictionSection = page.locator(
     'section[aria-labelledby="country-jurisdictions"]',
   );
-  await expect(jurisdictionSection.getByText(/成员关系来源：/).first())
-    .toBeVisible();
+  await expect(
+    jurisdictionSection.getByText(/成员关系来源：/).first(),
+  ).toBeVisible();
   await expect(
     jurisdictionSection
       .getByText(/Fictional emissions bulletin（虚构证据，无外部链接）/)
@@ -306,17 +291,13 @@ test("opens, restores, switches, and shows an explicit no-data country", async (
     page.getByRole("heading", { exact: true, name: "中国（演示数据）" }),
   ).toBeVisible();
 
-  await page
-    .getByLabel("切换国家")
-    .selectOption({ value: "BRA" });
+  await page.getByLabel("切换国家").selectOption({ value: "BRA" });
   await expect(page).toHaveURL(/\/countries\/BRA$/);
   await expect(
     page.getByRole("heading", { exact: true, name: "巴西（演示数据）" }),
   ).toBeVisible();
 
-  await page
-    .getByLabel("切换国家")
-    .selectOption({ value: "USA" });
+  await page.getByLabel("切换国家").selectOption({ value: "USA" });
   await expect(page).toHaveURL(/\/countries\/USA$/);
   await expect(page.getByTestId("country-no-data")).toBeVisible();
   await expect(
@@ -332,17 +313,19 @@ test("preserves the complete decision context when switching countries", async (
   await page.goto(`/countries/CHN?${query}`);
 
   await expect(page.getByLabel("应用场景")).toHaveValue("marine");
-  await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue("321.5");
+  await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue(
+    "321.5",
+  );
   await expect(page.getByLabel("评估日期")).toHaveValue("2024-02-03");
   await expect(page.getByTestId("product-fit-result")).toBeVisible();
 
-  await page
-    .getByLabel("切换国家")
-    .selectOption({ value: "BRA" });
+  await page.getByLabel("切换国家").selectOption({ value: "BRA" });
 
   await expect(page).toHaveURL(`/countries/BRA?${query}`);
   await expect(page.getByLabel("应用场景")).toHaveValue("marine");
-  await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue("321.5");
+  await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue(
+    "321.5",
+  );
   await expect(page.getByLabel("评估日期")).toHaveValue("2024-02-03");
 });
 
@@ -353,23 +336,15 @@ test("localizes the no-data country name in server-rendered HTML", async ({
     headers: { cookie: "diesel_locale=en" },
   });
   expect(englishResponse.ok()).toBe(true);
-  const englishHtml = (await englishResponse.text()).replaceAll(
-    "<!-- -->",
-    "",
-  );
+  const englishHtml = (await englishResponse.text()).replaceAll("<!-- -->", "");
   expect(englishHtml).toContain("country-server-fallback");
-  expect(englishHtml).toContain(
-    "United States of America (USA) has no data",
-  );
+  expect(englishHtml).toContain("United States of America (USA) has no data");
 
   const chineseResponse = await request.get("/countries/USA", {
     headers: { cookie: "diesel_locale=zh-CN" },
   });
   expect(chineseResponse.ok()).toBe(true);
-  const chineseHtml = (await chineseResponse.text()).replaceAll(
-    "<!-- -->",
-    "",
-  );
+  const chineseHtml = (await chineseResponse.text()).replaceAll("<!-- -->", "");
   expect(chineseHtml).toContain("country-server-fallback");
   expect(chineseHtml).toContain("美国（USA）暂无数据");
 });
@@ -416,9 +391,7 @@ test("keeps AI access in the dedicated chat workspace", async ({ page }) => {
   await expect(
     assistant.getByText("信息参考，不替代正式认证或法律意见"),
   ).toHaveCount(0);
-  const chatInput = assistant.getByPlaceholder(
-    "输入问题，可附上文件或图片…",
-  );
+  const chatInput = assistant.getByPlaceholder("输入问题，可附上文件或图片…");
   await expect(chatInput).toBeEditable();
   await expect(chatInput).not.toBeFocused();
   await expect(
@@ -516,9 +489,7 @@ test("uses a newly committed fit query in chat before the URL refresh completes"
   await page.goto("/countries/CHN");
   await expect(page.getByTestId("country-detail")).toBeVisible();
 
-  await page
-    .getByRole("radio", { name: /^DEMO-ENG-200/ })
-    .check();
+  await page.getByRole("radio", { name: /^DEMO-ENG-200/ }).check();
   await page.getByLabel("应用场景").selectOption("agriculture");
   await page.getByLabel("功率（kW）", { exact: true }).fill("150");
   await page.getByLabel("评估日期").fill("2026-01-20");
@@ -712,9 +683,7 @@ test("shared filter URLs reproduce the product-fit evaluation", async ({
     /\/countries\/CHN\?applicationScope=non-road&asOf=2026-01-20&powerKw=100&productModelCode=DEMO-ENG-100&utm_source=e2e$/,
   );
   await expect(page.getByTestId("product-fit-status-fit")).toBeVisible();
-  await expect(
-    page.getByTestId("country-applicability-summary"),
-  ).toBeVisible();
+  await expect(page.getByTestId("country-applicability-summary")).toBeVisible();
   await expect(page.getByText("DEMO-CERT-CHN-100")).toBeVisible();
   await expect(page).toHaveURL(/utm_source=e2e$/);
 
@@ -767,8 +736,12 @@ test("keeps every product-fit control interactive inside the country drawer", as
   await expect(applicationScope).toHaveValue("agriculture");
   await expect(powerKw).toHaveValue("150");
   await expect(evaluationDate).toHaveValue("2026-01-20");
-  await expect(page.getByRole("button", { name: "运行确定性匹配" })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "关闭国家详情" })).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "运行确定性匹配" }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "关闭国家详情" }),
+  ).toBeEnabled();
 });
 
 test("moves focus into the country drawer and restores it after close", async ({
@@ -921,12 +894,16 @@ test("does not restore a previous country after a pending fit evaluation", async
   ).toBeVisible();
 });
 
-test("canonicalizes and strips invalid filter params", async ({ page }, testInfo) => {
+test("canonicalizes and strips invalid filter params", async ({
+  page,
+}, testInfo) => {
   await checkBrowserRuntimeErrors(page, testInfo, async () => {
     await page.goto("/countries/CHN?powerKw=abc&applicationScope=non-road");
 
     // 无效 powerKw 被剔除，有效参数保留。
-    await expect(page).toHaveURL(/\/countries\/CHN\?applicationScope=non-road$/);
+    await expect(page).toHaveURL(
+      /\/countries\/CHN\?applicationScope=non-road$/,
+    );
 
     await page.goto("/countries/CHN?powerKw=300.0");
     // 规范化数值并重定向。
@@ -951,7 +928,6 @@ test("shows a stale verification badge under a small threshold", async ({
   await expect(page.getByTestId("country-stale-badge")).toBeVisible();
 });
 
-
 test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   page,
 }) => {
@@ -960,11 +936,18 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   // by an unsolicited evaluation of the old 100 kW form.
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
-  const requestedFits: Array<{ powerKw: unknown; productModelCode: unknown }> = [];
+  const requestedFits: Array<{ powerKw: unknown; productModelCode: unknown }> =
+    [];
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/api/product-fit" && request.method() === "POST") {
+    if (
+      new URL(request.url()).pathname === "/api/product-fit" &&
+      request.method() === "POST"
+    ) {
       const body = request.postDataJSON() as Record<string, unknown>;
-      requestedFits.push({ powerKw: body.powerKw, productModelCode: body.productModelCode });
+      requestedFits.push({
+        powerKw: body.powerKw,
+        productModelCode: body.productModelCode,
+      });
     }
   });
   await page.goto("/countries/CHN");
@@ -991,9 +974,7 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await countryRegulationCard.getByText("完整追溯信息").click();
   await expect(countryRegulationCard.getByText(/适用辖区：/)).toBeVisible();
   await expect(countryRegulationCard.getByText(/辖区来源：/)).toBeVisible();
-  await expect(
-    countryRegulationCard.getByText(/成员关系来源：/),
-  ).toBeVisible();
+  await expect(countryRegulationCard.getByText(/成员关系来源：/)).toBeVisible();
 
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   await expect(page.getByTestId("product-fit-status-fit")).toHaveAttribute(
@@ -1051,9 +1032,10 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await expect(page.getByTestId("product-fit-result")).toBeHidden();
   await page.getByRole("button", { name: "运行确定性匹配" }).click();
   const notFitResult = page.getByTestId("product-fit-status-not_fit");
-  await expect(page).toHaveURL((url) =>
-    url.searchParams.get("powerKw") === "150" &&
-    url.searchParams.get("productModelCode") === "DEMO-ENG-100",
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get("powerKw") === "150" &&
+      url.searchParams.get("productModelCode") === "DEMO-ENG-100",
   );
   await expect(notFitResult).toBeVisible();
   await expect(
@@ -1062,7 +1044,9 @@ test("explains deterministic fit, unknown, and upper-bound mismatch", async ({
   await expect(page.getByTestId("product-record-trace")).toContainText(
     "[50, 150) kW",
   );
-  await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue("150");
+  await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue(
+    "150",
+  );
   expect(requestedFits).toEqual([
     { powerKw: "100", productModelCode: "DEMO-ENG-100" },
     { powerKw: "100", productModelCode: "DEMO-ENG-200" },

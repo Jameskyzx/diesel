@@ -45,8 +45,12 @@ describe("POST /api/chat stream boundary", () => {
       model: {},
       modelId: "mock/stream-boundary",
     });
-    mocks.catalogHarnessResponse.mockImplementation(() =>
-      new Response("没有足够证据", { headers: { "content-type": "text/event-stream" } }));
+    mocks.catalogHarnessResponse.mockImplementation(
+      () =>
+        new Response("没有足够证据", {
+          headers: { "content-type": "text/event-stream" },
+        }),
+    );
   });
 
   it("returns the harness stream with private no-store headers", async () => {
@@ -58,8 +62,7 @@ describe("POST /api/chat stream boundary", () => {
               id: "stream-boundary-message",
               parts: [
                 {
-                  text:
-                    "核对 CHN non-road 100 kW 在 2026-08-13 的法规与限值。",
+                  text: "核对 CHN non-road 100 kW 在 2026-08-13 的法规与限值。",
                   type: "text",
                 },
               ],
@@ -115,7 +118,8 @@ describe("POST /api/chat stream boundary", () => {
         method: "POST",
       }),
     );
-    const signal = mocks.catalogHarnessResponse.mock.calls.at(-1)?.[0].signal as AbortSignal;
+    const signal = mocks.catalogHarnessResponse.mock.calls.at(-1)?.[0]
+      .signal as AbortSignal;
 
     expect(signal.aborted).toBe(false);
     await response.body?.cancel("client-disconnected");
@@ -290,7 +294,8 @@ describe("POST /api/chat stream boundary", () => {
         method: "POST",
       }),
     );
-    const signal = mocks.catalogHarnessResponse.mock.calls.at(-1)?.[0].signal as AbortSignal;
+    const signal = mocks.catalogHarnessResponse.mock.calls.at(-1)?.[0]
+      .signal as AbortSignal;
 
     await expect(response.body?.getReader().read()).rejects.toBe(readFailure);
     expect(signal.aborted).toBe(true);
@@ -328,7 +333,8 @@ describe("POST /api/chat stream boundary", () => {
           method: "POST",
         }),
       );
-      const signal = mocks.catalogHarnessResponse.mock.calls.at(-1)?.[0].signal as AbortSignal;
+      const signal = mocks.catalogHarnessResponse.mock.calls.at(-1)?.[0]
+        .signal as AbortSignal;
 
       expect(signal.aborted).toBe(false);
       await vi.advanceTimersByTimeAsync(MAX_CHAT_RESPONSE_LEASE_MS);

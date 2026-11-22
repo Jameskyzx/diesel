@@ -1,7 +1,10 @@
 import { selectPortfolioDemoTool } from "./helpers/portfolio-demo";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { buildConversationBusinessContext, countryIso3sIn } from "@/server/ai/conversation-context";
+import {
+  buildConversationBusinessContext,
+  countryIso3sIn,
+} from "@/server/ai/conversation-context";
 
 import { resolvePortfolioDemoMode } from "@/server/config/portfolio-demo";
 
@@ -20,7 +23,6 @@ afterAll(() => {
 });
 
 describe("portfolio demo runtime", () => {
-
   it("only enables the simulation for development + pglite-demo", () => {
     expect(
       resolvePortfolioDemoMode({
@@ -55,25 +57,65 @@ describe("portfolio demo runtime", () => {
 
 describe("portfolio demo deterministic tool routing", () => {
   it.each([
-    ["compareMarkets", "Compare CHN and BRA market metric DEMO_ADDRESSABLE_UNITS."],
+    [
+      "compareMarkets",
+      "Compare CHN and BRA market metric DEMO_ADDRESSABLE_UNITS.",
+    ],
     ["compareMarkets", "比较 CHN 和 BRA 的 DEMO_ADDRESSABLE_UNITS 市场指标。"],
-    ["calculateOpportunityScore", "Calculate opportunity scores for CHN and BRA non-road 100 kW as of 2026-08-20 using DEMO_ADDRESSABLE_UNITS."],
-    ["calculateOpportunityScore", "为 CHN 和 BRA 非道路 100 kW 做 2026-08-20 机会评分，使用 DEMO_ADDRESSABLE_UNITS。"],
-    ["generateSalesBrief", "Generate a sales brief targeting CHN with BRA as a benchmark, non-road 100 kW, as of 2026-08-20 using DEMO_ADDRESSABLE_UNITS."],
-    ["generateSalesBrief", "以 CHN 为目标、BRA 为对照，生成非道路 100 kW、2026-08-20 的销售简报，使用 DEMO_ADDRESSABLE_UNITS。"],
-  ] as const)("preserves requested metric codes for %s: %s", (toolName, text) => {
-    expect(selectPortfolioDemoTool(text)).toMatchObject({ toolName, input: { metricCodes: ["DEMO_ADDRESSABLE_UNITS"] } });
-    expect(selectPortfolioDemoTool("Continue.", [text, "Continue."])).toMatchObject({ toolName, input: { metricCodes: ["DEMO_ADDRESSABLE_UNITS"] } });
-    expect(selectPortfolioDemoTool("Use DEMO_METRIC_REPLACEMENT.", [text, "Use DEMO_METRIC_REPLACEMENT."]))
-      .toMatchObject({ toolName, input: { metricCodes: ["DEMO_METRIC_REPLACEMENT"] } });
-  });
+    [
+      "calculateOpportunityScore",
+      "Calculate opportunity scores for CHN and BRA non-road 100 kW as of 2026-08-20 using DEMO_ADDRESSABLE_UNITS.",
+    ],
+    [
+      "calculateOpportunityScore",
+      "为 CHN 和 BRA 非道路 100 kW 做 2026-08-20 机会评分，使用 DEMO_ADDRESSABLE_UNITS。",
+    ],
+    [
+      "generateSalesBrief",
+      "Generate a sales brief targeting CHN with BRA as a benchmark, non-road 100 kW, as of 2026-08-20 using DEMO_ADDRESSABLE_UNITS.",
+    ],
+    [
+      "generateSalesBrief",
+      "以 CHN 为目标、BRA 为对照，生成非道路 100 kW、2026-08-20 的销售简报，使用 DEMO_ADDRESSABLE_UNITS。",
+    ],
+  ] as const)(
+    "preserves requested metric codes for %s: %s",
+    (toolName, text) => {
+      expect(selectPortfolioDemoTool(text)).toMatchObject({
+        toolName,
+        input: { metricCodes: ["DEMO_ADDRESSABLE_UNITS"] },
+      });
+      expect(
+        selectPortfolioDemoTool("Continue.", [text, "Continue."]),
+      ).toMatchObject({
+        toolName,
+        input: { metricCodes: ["DEMO_ADDRESSABLE_UNITS"] },
+      });
+      expect(
+        selectPortfolioDemoTool("Use DEMO_METRIC_REPLACEMENT.", [
+          text,
+          "Use DEMO_METRIC_REPLACEMENT.",
+        ]),
+      ).toMatchObject({
+        toolName,
+        input: { metricCodes: ["DEMO_METRIC_REPLACEMENT"] },
+      });
+    },
+  );
 
   it("does not invent a metric filter or transfer it to a different task", () => {
     const market = "Compare CHN and BRA market metrics.";
-    expect(selectPortfolioDemoTool(market).input).not.toHaveProperty("metricCodes");
-    const score = "Calculate opportunity scores for CHN and BRA non-road 100 kW as of 2026-08-20.";
-    expect(selectPortfolioDemoTool(score, ["Compare CHN and BRA DEMO_ADDRESSABLE_UNITS market metrics.", score]).input)
-      .not.toHaveProperty("metricCodes");
+    expect(selectPortfolioDemoTool(market).input).not.toHaveProperty(
+      "metricCodes",
+    );
+    const score =
+      "Calculate opportunity scores for CHN and BRA non-road 100 kW as of 2026-08-20.";
+    expect(
+      selectPortfolioDemoTool(score, [
+        "Compare CHN and BRA DEMO_ADDRESSABLE_UNITS market metrics.",
+        score,
+      ]).input,
+    ).not.toHaveProperty("metricCodes");
   });
 
   it("preserves country order from the user's text", () => {
@@ -163,17 +205,16 @@ describe("portfolio demo deterministic tool routing", () => {
     ).toBeNull();
   });
 
-  it.each([
-    "as of Aug 12, 2026",
-    "截止 2026年8月12日",
-    "asOf 2026-08-12",
-  ])("normalizes the localized explicit date in %s", (text) => {
-    expect(
-      buildConversationBusinessContext([
-        `CHN 的 non-road 100 kW 产品 DEMO-ENG-100，${text}`,
-      ]).asOf,
-    ).toBe("2026-08-12");
-  });
+  it.each(["as of Aug 12, 2026", "截止 2026年8月12日", "asOf 2026-08-12"])(
+    "normalizes the localized explicit date in %s",
+    (text) => {
+      expect(
+        buildConversationBusinessContext([
+          `CHN 的 non-road 100 kW 产品 DEMO-ENG-100，${text}`,
+        ]).asOf,
+      ).toBe("2026-08-12");
+    },
+  );
 
   it("fails closed on multiple distinct powers and recovers on a single-power correction", () => {
     const ambiguousTurns = [
@@ -224,9 +265,7 @@ describe("portfolio demo deterministic tool routing", () => {
   });
 
   it("routes a regulation question to the country profile", () => {
-    expect(
-      selectPortfolioDemoTool("CHN 目前有哪些有效法规？"),
-    ).toMatchObject({
+    expect(selectPortfolioDemoTool("CHN 目前有哪些有效法规？")).toMatchObject({
       input: { countryIso3: "CHN", topics: ["regulations"] },
       toolName: "getCountryProfile",
     });
@@ -266,9 +305,7 @@ describe("portfolio demo deterministic tool routing", () => {
   it("inherits a regulation profile topic for a country follow-up", () => {
     const turns = ["CHN 目前有哪些有效法规？", "BRA 呢？"];
 
-    expect(
-      buildConversationBusinessContext(turns),
-    ).toMatchObject({
+    expect(buildConversationBusinessContext(turns)).toMatchObject({
       activeTask: "country_profile",
       focusedCountryIso3: "BRA",
       profileTopics: ["regulations"],
@@ -282,9 +319,7 @@ describe("portfolio demo deterministic tool routing", () => {
   it("inherits a market profile topic for a country follow-up", () => {
     const turns = ["CHN 目前有哪些市场数据？", "BRA 呢？"];
 
-    expect(
-      buildConversationBusinessContext(turns),
-    ).toMatchObject({
+    expect(buildConversationBusinessContext(turns)).toMatchObject({
       activeTask: "country_profile",
       focusedCountryIso3: "BRA",
       profileTopics: ["market"],
@@ -357,19 +392,22 @@ describe("portfolio demo deterministic tool routing", () => {
     "为 CHN 和 BRA 生成 non-road 100 kW 销售简报，目标市场 BRA。",
     "Generate a non-road 100 kW sales brief for CHN and BRA, target market BRA.",
     "Generate a non-road 100 kW sales brief for CHN and BRA with BRA as the target market.",
-  ])("uses the explicitly named target market in a multi-country turn", (text) => {
-    expect(buildConversationBusinessContext([text])).toMatchObject({
-      countryIso3s: ["CHN", "BRA"],
-      targetCountryIso3: "BRA",
-    });
-    expect(selectPortfolioDemoTool(text)).toMatchObject({
-      input: {
+  ])(
+    "uses the explicitly named target market in a multi-country turn",
+    (text) => {
+      expect(buildConversationBusinessContext([text])).toMatchObject({
         countryIso3s: ["CHN", "BRA"],
         targetCountryIso3: "BRA",
-      },
-      toolName: "generateSalesBrief",
-    });
-  });
+      });
+      expect(selectPortfolioDemoTool(text)).toMatchObject({
+        input: {
+          countryIso3s: ["CHN", "BRA"],
+          targetCountryIso3: "BRA",
+        },
+        toolName: "generateSalesBrief",
+      });
+    },
+  );
 
   it("updates only the target country in a follow-up", () => {
     const turns = [
@@ -402,14 +440,11 @@ describe("portfolio demo deterministic tool routing", () => {
 
   it("uses the most recent complete comparison when earlier history conflicts", () => {
     expect(
-      selectPortfolioDemoTool(
+      selectPortfolioDemoTool("基于上面的比较生成销售简报。", [
+        "比较 DEU 和 JPN 的 on-road 200 kW 法规，日期 2026-01-01。",
+        "比较 CHN 和 BRA 的 non-road 100 kW 法规，日期 2026-08-09。",
         "基于上面的比较生成销售简报。",
-        [
-          "比较 DEU 和 JPN 的 on-road 200 kW 法规，日期 2026-01-01。",
-          "比较 CHN 和 BRA 的 non-road 100 kW 法规，日期 2026-08-09。",
-          "基于上面的比较生成销售简报。",
-        ],
-      ),
+      ]),
     ).toEqual({
       input: {
         applicationScope: "non-road",

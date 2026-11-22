@@ -25,9 +25,7 @@ describe("Playwright TypeScript configuration", () => {
     expect(source.compilerOptions.tsBuildInfoFile).toBe(
       ".next/cache/tsconfig.tsbuildinfo",
     );
-    expect(E2E_TS_BUILD_INFO_FILE).toBe(
-      ".next-e2e/cache/tsconfig.tsbuildinfo",
-    );
+    expect(E2E_TS_BUILD_INFO_FILE).toBe(".next-e2e/cache/tsconfig.tsbuildinfo");
   });
 
   it.each([null, {}, { compilerOptions: [] }])(

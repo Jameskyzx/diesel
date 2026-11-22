@@ -23,8 +23,7 @@ export async function GET(): Promise<Response> {
     aiChatRateLimitReady = false;
   }
   const databaseReady = await checkDatabaseReadiness();
-  const ready =
-    aiChatAdmissionReady && aiChatRateLimitReady && databaseReady;
+  const ready = aiChatAdmissionReady && aiChatRateLimitReady && databaseReady;
   const failedCheckCount = [
     aiChatAdmissionReady,
     aiChatRateLimitReady,

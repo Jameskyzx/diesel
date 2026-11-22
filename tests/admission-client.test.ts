@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("postgres", () => ({ default: mocks.postgres }));
 vi.mock("drizzle-orm/postgres-js", () => ({ drizzle: mocks.drizzle }));
 vi.mock("@/server/db/environment", async (importOriginal) => ({
-  ...await importOriginal<typeof import("@/server/db/environment")>(),
+  ...(await importOriginal<typeof import("@/server/db/environment")>()),
   getDatabaseUrl: mocks.url,
 }));
 
@@ -82,7 +82,9 @@ describe("dedicated PostgreSQL admission pool", () => {
   });
 
   it("propagates configuration and client creation failures without a cached fallback", () => {
-    mocks.postgres.mockImplementationOnce(() => { throw new Error("offline"); });
+    mocks.postgres.mockImplementationOnce(() => {
+      throw new Error("offline");
+    });
     expect(() => getAdmissionDatabase()).toThrow("offline");
     expect(getAdmissionDatabase()).toBe(mocks.database);
     expect(mocks.postgres).toHaveBeenCalledTimes(2);

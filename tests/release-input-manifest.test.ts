@@ -104,9 +104,9 @@ async function createReleaseFixture(): Promise<ReleaseFixture> {
 
 afterEach(async () => {
   await Promise.all(
-    temporaryRoots.splice(0).map((path) =>
-      rm(path, { force: true, recursive: true })
-    ),
+    temporaryRoots
+      .splice(0)
+      .map((path) => rm(path, { force: true, recursive: true })),
   );
 });
 
@@ -123,9 +123,9 @@ describe("release input manifest", () => {
       { cwd: fixture.sourceRoot },
     );
 
-    await expect(
-      readFile(secondManifestPath, "utf8"),
-    ).resolves.toBe(await readFile(fixture.manifestPath, "utf8"));
+    await expect(readFile(secondManifestPath, "utf8")).resolves.toBe(
+      await readFile(fixture.manifestPath, "utf8"),
+    );
 
     const result = await execFileAsync(
       process.execPath,
@@ -168,29 +168,29 @@ describe("release input manifest", () => {
       path: "scripts/deploy/executable-check.sh",
       transition: "100755 to 100644",
     },
-  ])("fails closed when a tracked mode drifts from $transition", async ({
-    mode,
-    path,
-  }) => {
-    const fixture = await createReleaseFixture();
-    await chmod(join(fixture.buildRoot, ...path.split("/")), mode);
+  ])(
+    "fails closed when a tracked mode drifts from $transition",
+    async ({ mode, path }) => {
+      const fixture = await createReleaseFixture();
+      await chmod(join(fixture.buildRoot, ...path.split("/")), mode);
 
-    const result = await execFileAsync(
-      process.execPath,
-      [
-        join("scripts", "deploy", "release-input-manifest.mjs"),
-        "verify",
-        fixture.commit,
-        ".release-input-manifest.json",
-      ],
-      { cwd: fixture.buildRoot },
-    ).catch((error: unknown) => error);
+      const result = await execFileAsync(
+        process.execPath,
+        [
+          join("scripts", "deploy", "release-input-manifest.mjs"),
+          "verify",
+          fixture.commit,
+          ".release-input-manifest.json",
+        ],
+        { cwd: fixture.buildRoot },
+      ).catch((error: unknown) => error);
 
-    expect(result).toMatchObject({ code: 1 });
-    expect(String((result as { stderr?: unknown }).stderr)).toContain(
-      `Build input mode drifted from the release manifest: ${path}`,
-    );
-  });
+      expect(result).toMatchObject({ code: 1 });
+      expect(String((result as { stderr?: unknown }).stderr)).toContain(
+        `Build input mode drifted from the release manifest: ${path}`,
+      );
+    },
+  );
 
   it("binds each Git mode into the manifest input digest", async () => {
     const fixture = await createReleaseFixture();
@@ -201,7 +201,8 @@ describe("release input manifest", () => {
     };
     const readme = manifest.files.find(({ path }) => path === "README.md");
     expect(readme?.mode).toBe("100644");
-    if (!readme) throw new Error("README.md is missing from the fixture manifest");
+    if (!readme)
+      throw new Error("README.md is missing from the fixture manifest");
     readme.mode = "100755";
     await writeFile(
       join(fixture.buildRoot, ".release-input-manifest.json"),
@@ -260,7 +261,11 @@ describe("release input manifest", () => {
 
   it("recognizes generated release control files during verification", async () => {
     const fixture = await createReleaseFixture();
-    await writeFile(join(fixture.buildRoot, ".deploy-ready"), "ready\n", "utf8");
+    await writeFile(
+      join(fixture.buildRoot, ".deploy-ready"),
+      "ready\n",
+      "utf8",
+    );
 
     await expect(
       execFileAsync(
@@ -279,7 +284,11 @@ describe("release input manifest", () => {
   it("rejects a tracked reserved .deploy-ready control file", async () => {
     const fixture = await createReleaseFixture();
     const reservedName = ".deploy-ready";
-    await writeFile(join(fixture.sourceRoot, reservedName), "reserved\n", "utf8");
+    await writeFile(
+      join(fixture.sourceRoot, reservedName),
+      "reserved\n",
+      "utf8",
+    );
     await git(fixture.sourceRoot, ["add", "--", reservedName]);
     await git(fixture.sourceRoot, [
       "commit",
@@ -321,39 +330,42 @@ describe("release input manifest", () => {
     "playwright-report/index.html",
     "test-results/result.json",
     "tmp/upload.bin",
-  ])("rejects a tracked forbidden release root before export: %s", async (forbiddenPath) => {
-    const fixture = await createReleaseFixture();
-    const absolutePath = join(
-      fixture.sourceRoot,
-      ...forbiddenPath.split("/"),
-    );
-    await mkdir(resolve(absolutePath, ".."), { recursive: true });
-    await writeFile(absolutePath, "must not be released\n", "utf8");
-    await git(fixture.sourceRoot, ["add", "--force", "--", forbiddenPath]);
-    await git(fixture.sourceRoot, [
-      "commit",
-      "--quiet",
-      "-m",
-      `track forbidden root ${forbiddenPath}`,
-    ]);
-    const commit = await git(fixture.sourceRoot, ["rev-parse", "HEAD"]);
+  ])(
+    "rejects a tracked forbidden release root before export: %s",
+    async (forbiddenPath) => {
+      const fixture = await createReleaseFixture();
+      const absolutePath = join(
+        fixture.sourceRoot,
+        ...forbiddenPath.split("/"),
+      );
+      await mkdir(resolve(absolutePath, ".."), { recursive: true });
+      await writeFile(absolutePath, "must not be released\n", "utf8");
+      await git(fixture.sourceRoot, ["add", "--force", "--", forbiddenPath]);
+      await git(fixture.sourceRoot, [
+        "commit",
+        "--quiet",
+        "-m",
+        `track forbidden root ${forbiddenPath}`,
+      ]);
+      const commit = await git(fixture.sourceRoot, ["rev-parse", "HEAD"]);
 
-    const result = await execFileAsync(
-      process.execPath,
-      [
-        manifestScript,
-        "create",
-        commit,
-        join(fixture.sourceRoot, "forbidden-output.json"),
-      ],
-      { cwd: fixture.sourceRoot },
-    ).catch((error: unknown) => error);
+      const result = await execFileAsync(
+        process.execPath,
+        [
+          manifestScript,
+          "create",
+          commit,
+          join(fixture.sourceRoot, "forbidden-output.json"),
+        ],
+        { cwd: fixture.sourceRoot },
+      ).catch((error: unknown) => error);
 
-    expect(result).toMatchObject({ code: 1 });
-    expect(String((result as { stderr?: unknown }).stderr)).toContain(
-      `unsafe or reserved path: ${forbiddenPath}`,
-    );
-  });
+      expect(result).toMatchObject({ code: 1 });
+      expect(String((result as { stderr?: unknown }).stderr)).toContain(
+        `unsafe or reserved path: ${forbiddenPath}`,
+      );
+    },
+  );
 
   it("keeps the public .env.example template in release inputs", async () => {
     const fixture = await createReleaseFixture();
@@ -416,7 +428,11 @@ describe("release input manifest", () => {
 
   it("rejects an unexpected file even when every manifested file is intact", async () => {
     const fixture = await createReleaseFixture();
-    await writeFile(join(fixture.buildRoot, "untracked.txt"), "extra\n", "utf8");
+    await writeFile(
+      join(fixture.buildRoot, "untracked.txt"),
+      "extra\n",
+      "utf8",
+    );
 
     const result = await execFileAsync(
       process.execPath,

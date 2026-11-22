@@ -94,10 +94,9 @@ describe("admin route path validation", () => {
   });
 
   it("returns 400 for a malformed draft UUID before querying the database", async () => {
-    const response = await reviewDraft(
-      adminRequest("reviewer@example.test"),
-      { params: Promise.resolve({ draftId: "not-a-uuid" }) },
-    );
+    const response = await reviewDraft(adminRequest("reviewer@example.test"), {
+      params: Promise.resolve({ draftId: "not-a-uuid" }),
+    });
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
@@ -106,10 +105,9 @@ describe("admin route path validation", () => {
   });
 
   it("validates the publish route UUID before querying the database", async () => {
-    const response = await publishDraft(
-      adminRequest("reviewer@example.test"),
-      { params: Promise.resolve({ draftId: "not-a-uuid" }) },
-    );
+    const response = await publishDraft(adminRequest("reviewer@example.test"), {
+      params: Promise.resolve({ draftId: "not-a-uuid" }),
+    });
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
@@ -211,15 +209,12 @@ describe("admin route path validation", () => {
   });
 
   it("returns 400 when an entity key does not match its entity type", async () => {
-    const response = await archiveEntity(
-      adminRequest("admin@example.test"),
-      {
-        params: Promise.resolve({
-          entityKey: "CHN",
-          entityType: "regulation",
-        }),
-      },
-    );
+    const response = await archiveEntity(adminRequest("admin@example.test"), {
+      params: Promise.resolve({
+        entityKey: "CHN",
+        entityType: "regulation",
+      }),
+    });
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
@@ -356,9 +351,9 @@ describe("admin route path validation", () => {
 
     expect(response.status).toBe(204);
     expectPrivateAdminResponse(response);
-    expect(
-      response.headers.get(ADMIN_PRINCIPAL_EMAIL_RESPONSE_HEADER),
-    ).toBe("editor@example.test");
+    expect(response.headers.get(ADMIN_PRINCIPAL_EMAIL_RESPONSE_HEADER)).toBe(
+      "editor@example.test",
+    );
     expect(response.headers.get(ADMIN_PRINCIPAL_ROLE_RESPONSE_HEADER)).toBe(
       "editor",
     );
@@ -405,9 +400,7 @@ describe("admin route path validation", () => {
     async ({ configure }) => {
       const headers = adminHeaders("editor-b@example.test");
       configure(headers);
-      const handler = vi.fn(
-        async () => new Response(null, { status: 204 }),
-      );
+      const handler = vi.fn(async () => new Response(null, { status: 204 }));
 
       const response = await handleAdminRoute(
         new Request("http://localhost/api/admin/test", {
@@ -422,12 +415,12 @@ describe("admin route path validation", () => {
       expect(response.status).toBe(409);
       expectPrivateAdminResponse(response);
       expect(handler).not.toHaveBeenCalled();
-      expect(
-        response.headers.get(ADMIN_PRINCIPAL_EMAIL_RESPONSE_HEADER),
-      ).toBe("editor-b@example.test");
-      expect(
-        response.headers.get(ADMIN_PRINCIPAL_ROLE_RESPONSE_HEADER),
-      ).toBe("editor");
+      expect(response.headers.get(ADMIN_PRINCIPAL_EMAIL_RESPONSE_HEADER)).toBe(
+        "editor-b@example.test",
+      );
+      expect(response.headers.get(ADMIN_PRINCIPAL_ROLE_RESPONSE_HEADER)).toBe(
+        "editor",
+      );
       await expect(response.json()).resolves.toEqual({
         error: {
           code: "PRINCIPAL_CHANGED",
@@ -438,8 +431,8 @@ describe("admin route path validation", () => {
   );
 
   it("invokes an admin write handler when the expected principal matches", async () => {
-    const handler = vi.fn(
-      async (principal) => Response.json({ principal }, { status: 201 }),
+    const handler = vi.fn(async (principal) =>
+      Response.json({ principal }, { status: 201 }),
     );
 
     const response = await handleAdminRoute(
@@ -502,9 +495,7 @@ describe("admin route path validation", () => {
       new Request("http://localhost/api/admin/documents", {
         body: "x",
         headers: adminHeaders("editor@example.test", {
-          "content-length": String(
-            MAX_DOCUMENT_UPLOAD_REQUEST_BYTES + 1,
-          ),
+          "content-length": String(MAX_DOCUMENT_UPLOAD_REQUEST_BYTES + 1),
           "content-type": "multipart/form-data; boundary=oversized",
         }),
         method: "POST",
@@ -555,9 +546,7 @@ describe("admin route path validation", () => {
       new Request("http://localhost/api/admin/imports/market/preview", {
         body: "x",
         headers: adminHeaders("editor@example.test", {
-          "content-length": String(
-            MAX_MARKET_CSV_UPLOAD_REQUEST_BYTES + 1,
-          ),
+          "content-length": String(MAX_MARKET_CSV_UPLOAD_REQUEST_BYTES + 1),
           "content-type": "multipart/form-data; boundary=oversized",
         }),
         method: "POST",
@@ -598,7 +587,11 @@ describe("admin route path validation", () => {
     body.set(
       "file",
       new File(
-        [Uint8Array.from([0x63, 0x6f, 0x75, 0x6e, 0x74, 0x72, 0x79, 0xc3, 0x28])],
+        [
+          Uint8Array.from([
+            0x63, 0x6f, 0x75, 0x6e, 0x74, 0x72, 0x79, 0xc3, 0x28,
+          ]),
+        ],
         "market.csv",
         { type: "text/csv" },
       ),
@@ -625,11 +618,9 @@ describe("admin route path validation", () => {
     const body = new FormData();
     body.set(
       "file",
-      new File(
-        [new Uint8Array(MAX_MARKET_CSV_FILE_BYTES + 1)],
-        "market.csv",
-        { type: "text/csv" },
-      ),
+      new File([new Uint8Array(MAX_MARKET_CSV_FILE_BYTES + 1)], "market.csv", {
+        type: "text/csv",
+      }),
     );
 
     const response = await previewMarketImport(
@@ -712,9 +703,7 @@ describe("admin route path validation", () => {
     });
 
     try {
-      const handler = vi.fn(
-        async () => new Response(null, { status: 204 }),
-      );
+      const handler = vi.fn(async () => new Response(null, { status: 204 }));
       const response = await handleAdminRoute(
         new Request("http://localhost/api/admin/test", {
           headers: {
@@ -782,9 +771,9 @@ describe("admin route path validation", () => {
 
       expect(response.status).toBe(500);
       expectPrivateAdminResponse(response);
-      expect(
-        response.headers.get(ADMIN_PRINCIPAL_EMAIL_RESPONSE_HEADER),
-      ).toBe("admin@example.test");
+      expect(response.headers.get(ADMIN_PRINCIPAL_EMAIL_RESPONSE_HEADER)).toBe(
+        "admin@example.test",
+      );
       expect(response.headers.get(ADMIN_PRINCIPAL_ROLE_RESPONSE_HEADER)).toBe(
         "admin",
       );

@@ -70,8 +70,9 @@ import {
   type RequestSignalOptions,
 } from "@/server/http/request-signal";
 
-const knowledgeDocumentReprocessingAccessScopeSchema =
-  z.discriminatedUnion("kind", [
+const knowledgeDocumentReprocessingAccessScopeSchema = z.discriminatedUnion(
+  "kind",
+  [
     z
       .object({
         createdBy: z.email(),
@@ -83,7 +84,8 @@ const knowledgeDocumentReprocessingAccessScopeSchema =
         kind: z.literal("global"),
       })
       .strict(),
-  ]);
+  ],
+);
 
 export class KnowledgeInputError extends Error {
   constructor(
@@ -110,9 +112,7 @@ function downloadUrl(
   documentId: string,
   storagePath: string | null,
 ): string | null {
-  return storagePath
-    ? `/api/dev/knowledge/documents/${documentId}/file`
-    : null;
+  return storagePath ? `/api/dev/knowledge/documents/${documentId}/file` : null;
 }
 
 function toDocumentSummary(
@@ -152,15 +152,21 @@ async function getKnowledgeRepository(options: RequestSignalOptions = {}) {
 function isExpectedProcessingError(
   error: unknown,
 ): error is DocumentProcessingError | KnowledgeChunkingError {
-  return error instanceof DocumentProcessingError || error instanceof KnowledgeChunkingError;
+  return (
+    error instanceof DocumentProcessingError ||
+    error instanceof KnowledgeChunkingError
+  );
 }
 
 function processingMessage(error: unknown): string {
   if (error instanceof KnowledgeChunkingError) {
     const messages = {
-      HEADING_PATH_LIMIT: "文档标题路径超过 2048 个 UTF-16 单元的处理上限，请缩短标题或拆分文档。",
-      CHUNK_COUNT_LIMIT: "文档超过 5000 个分块的处理上限，请拆分文档后重新导入。",
-      GENERATED_TEXT_LIMIT: "文档分块及定位文本超过 16 Mi 个 UTF-16 单元的生成上限，请拆分文档后重新导入。",
+      HEADING_PATH_LIMIT:
+        "文档标题路径超过 2048 个 UTF-16 单元的处理上限，请缩短标题或拆分文档。",
+      CHUNK_COUNT_LIMIT:
+        "文档超过 5000 个分块的处理上限，请拆分文档后重新导入。",
+      GENERATED_TEXT_LIMIT:
+        "文档分块及定位文本超过 16 Mi 个 UTF-16 单元的生成上限，请拆分文档后重新导入。",
     } as const;
     return messages[error.code];
   }
@@ -197,10 +203,7 @@ function assertDocumentFileSize(bytes: Uint8Array): void {
     throw new KnowledgeInputError("EMPTY_FILE", "上传文件不能为空。");
   }
   if (bytes.byteLength > MAX_KNOWLEDGE_DOCUMENT_BYTES) {
-    throw new KnowledgeInputError(
-      "FILE_TOO_LARGE",
-      "上传文件不得超过 5 MiB。",
-    );
+    throw new KnowledgeInputError("FILE_TOO_LARGE", "上传文件不得超过 5 MiB。");
   }
 }
 
@@ -245,7 +248,10 @@ export async function prepareKnowledgeDocument(input: {
   mimeType: string;
 }): Promise<PreparedKnowledgeDocumentUpload> {
   assertDocumentFileSize(input.bytes);
-  documentFileDescriptorSchema.parse({ fileName: input.fileName, mimeType: input.mimeType });
+  documentFileDescriptorSchema.parse({
+    fileName: input.fileName,
+    mimeType: input.mimeType,
+  });
   const metadata = documentImportMetadataSchema.parse(input.metadata);
   const contentSha256 = sha256(input.bytes);
   const savedFile = await saveDocumentFile({
@@ -287,13 +293,10 @@ export async function prepareKnowledgeDocumentReprocessing(input: {
   documentId: string;
   metadata: unknown;
 }): Promise<PreparedKnowledgeDocumentReprocessing> {
-  const accessScope =
-    knowledgeDocumentReprocessingAccessScopeSchema.parse(
-      input.accessScope,
-    );
-  const metadataPatch = z
-    .record(z.string(), z.unknown())
-    .parse(input.metadata);
+  const accessScope = knowledgeDocumentReprocessingAccessScopeSchema.parse(
+    input.accessScope,
+  );
+  const metadataPatch = z.record(z.string(), z.unknown()).parse(input.metadata);
   const repository = await getKnowledgeRepository();
   const document = await repository.findDocumentForReprocessing({
     accessScope,
@@ -410,8 +413,7 @@ export async function prepareKnowledgeDocumentReprocessing(input: {
     applicationScope:
       document.applicationScope ?? governanceMetadata.applicationScope,
     canonicalUrl: document.canonicalUrl,
-    countryIso3:
-      document.countryIso3 ?? governanceMetadata.countryIso3,
+    countryIso3: document.countryIso3 ?? governanceMetadata.countryIso3,
     demoNotice: document.demoNotice,
     documentType: document.documentType,
     isDemo: document.isDemo,
@@ -599,13 +601,13 @@ export async function importKnowledgeDocument(input: {
     throw new KnowledgeInputError("EMPTY_FILE", "上传文件不能为空。");
   }
   if (input.bytes.byteLength > MAX_KNOWLEDGE_DOCUMENT_BYTES) {
-    throw new KnowledgeInputError(
-      "FILE_TOO_LARGE",
-      "上传文件不得超过 5 MiB。",
-    );
+    throw new KnowledgeInputError("FILE_TOO_LARGE", "上传文件不得超过 5 MiB。");
   }
 
-  documentFileDescriptorSchema.parse({ fileName: input.fileName, mimeType: input.mimeType });
+  documentFileDescriptorSchema.parse({
+    fileName: input.fileName,
+    mimeType: input.mimeType,
+  });
   const metadata = documentImportMetadataSchema.parse(input.metadata);
   const repository = await getKnowledgeRepository();
   const contentSha256 = sha256(input.bytes);
@@ -649,9 +651,7 @@ export async function importKnowledgeDocument(input: {
     throw error;
   }
   if (!creation.created) {
-    const summary = await repository.getDocumentSummary(
-      creation.documentId,
-    );
+    const summary = await repository.getDocumentSummary(creation.documentId);
     if (!summary) {
       throw new Error("Concurrent duplicate document summary was not found.");
     }
@@ -719,8 +719,8 @@ export async function findKnowledgeStorageOrphans(input?: {
 }): Promise<string[]> {
   const repository = await getKnowledgeRepository();
   const referencedStoragePaths = new Set(
-    (await repository.listDocumentStoragePaths()).flatMap(
-      ({ storagePath }) => (storagePath ? [storagePath] : []),
+    (await repository.listDocumentStoragePaths()).flatMap(({ storagePath }) =>
+      storagePath ? [storagePath] : [],
     ),
   );
 
@@ -744,18 +744,32 @@ export async function getKnowledgeOptions(): Promise<KnowledgeOptionsResponse> {
   });
 }
 
-const knowledgeQueryComparisonSchema = z.object({
-  expected: hybridSearchQuerySchema.shape.query,
-  actual: hybridSearchQuerySchema.shape.query,
-}).strict();
+const knowledgeQueryComparisonSchema = z
+  .object({
+    expected: hybridSearchQuerySchema.shape.query,
+    actual: hybridSearchQuerySchema.shape.query,
+  })
+  .strict();
 
-export async function knowledgeQueryConstraintsMatch(input: unknown, options: RequestSignalOptions = {}): Promise<boolean> {
+export async function knowledgeQueryConstraintsMatch(
+  input: unknown,
+  options: RequestSignalOptions = {},
+): Promise<boolean> {
   throwIfRequestAborted(options.signal);
   const { expected, actual } = knowledgeQueryComparisonSchema.parse(input);
-  if (expected === actual || (!knowledgeQueryMayHaveConstraints(expected) && !knowledgeQueryMayHaveConstraints(actual))) return true;
+  if (
+    expected === actual ||
+    (!knowledgeQueryMayHaveConstraints(expected) &&
+      !knowledgeQueryMayHaveConstraints(actual))
+  )
+    return true;
   const repository = await getKnowledgeRepository(options);
   throwIfRequestAborted(options.signal);
-  const matches = await repository.knowledgeQueryConstraintsMatch(expected, actual, options);
+  const matches = await repository.knowledgeQueryConstraintsMatch(
+    expected,
+    actual,
+    options,
+  );
   throwIfRequestAborted(options.signal);
   return matches;
 }
@@ -777,8 +791,8 @@ export async function hybridSearchKnowledge(
   );
   throwIfRequestAborted(options.signal);
 
-  const ranked = selectKnowledgeRankingCandidates(candidates
-    .map((candidate) => {
+  const ranked = selectKnowledgeRankingCandidates(
+    candidates.map((candidate) => {
       const keywordScore = Math.max(Number(candidate.keywordScore), 0);
       const vectorScore = Math.max(
         0,
@@ -803,7 +817,8 @@ export async function hybridSearchKnowledge(
         vectorScore: publicVectorScore,
         warnings,
       };
-    }))
+    }),
+  )
     .sort(
       (left, right) =>
         right.finalScore - left.finalScore ||
@@ -873,9 +888,7 @@ export async function hybridSearchKnowledge(
   });
 }
 
-export async function getKnowledgeDocumentFile(input: {
-  documentId: string;
-}) {
+export async function getKnowledgeDocumentFile(input: { documentId: string }) {
   const repository = await getKnowledgeRepository();
   const document = await repository.findDocumentForDownload(input.documentId);
 
@@ -885,7 +898,9 @@ export async function getKnowledgeDocumentFile(input: {
 
   const bytes = await readDocumentFile(document.storagePath);
   if (sha256(bytes) !== document.contentSha256) {
-    throw new Error("The original document does not match its registered content hash.");
+    throw new Error(
+      "The original document does not match its registered content hash.",
+    );
   }
 
   return {

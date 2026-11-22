@@ -32,8 +32,10 @@ function isInHalfOpenNumberRange(
   minimum: number | null,
   maximum: number | null,
 ): boolean {
-  return (minimum === null || value >= minimum) &&
-    (maximum === null || value < maximum);
+  return (
+    (minimum === null || value >= minimum) &&
+    (maximum === null || value < maximum)
+  );
 }
 
 function isInHalfOpenDateRange(
@@ -141,10 +143,7 @@ function evaluateCertification(
     );
   }
 
-  if (
-    certification.validTo !== null &&
-    query.asOf >= certification.validTo
-  ) {
+  if (certification.validTo !== null && query.asOf >= certification.validTo) {
     reasons.push(
       check(
         "fail",

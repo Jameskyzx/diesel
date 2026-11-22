@@ -4,16 +4,20 @@ const requestContext = vi.hoisted(() => ({ cookieHeader: "" }));
 
 vi.mock("next/headers", async () => {
   const { NextRequest } = await import("next/server");
-  const requestHeaders = () => new Headers(
-    requestContext.cookieHeader ? { cookie: requestContext.cookieHeader } : {},
-  );
+  const requestHeaders = () =>
+    new Headers(
+      requestContext.cookieHeader
+        ? { cookie: requestContext.cookieHeader }
+        : {},
+    );
   return {
     headers: async () => requestHeaders(),
     // Use Next's real cookie parser so this regression also exercises its
     // decoding and duplicate-name behavior before the shared-parser fix.
-    cookies: async () => new NextRequest("http://localhost", {
-      headers: requestHeaders(),
-    }).cookies,
+    cookies: async () =>
+      new NextRequest("http://localhost", {
+        headers: requestHeaders(),
+      }).cookies,
   };
 });
 
@@ -35,18 +39,18 @@ describe("shared locale Cookie semantics", () => {
     { cookie: "diesel_locale=fr; diesel_locale=zh-CN", locale: "en" },
     { cookie: "diesel_locale=%E0%A4%A; diesel_locale=zh-CN", locale: "en" },
     { cookie: "diesel_locale=zh-CN; diesel_locale=%E0%A4%A", locale: "zh-CN" },
-  ] as const)("keeps server, public API and browser locale $locale for $cookie", async ({
-    cookie,
-    locale,
-  }) => {
-    requestContext.cookieHeader = cookie;
-    const request = new Request("http://localhost", {
-      headers: cookie ? { cookie } : {},
-    });
+  ] as const)(
+    "keeps server, public API and browser locale $locale for $cookie",
+    async ({ cookie, locale }) => {
+      requestContext.cookieHeader = cookie;
+      const request = new Request("http://localhost", {
+        headers: cookie ? { cookie } : {},
+      });
 
-    expect(localeFromRequest(request)).toBe(locale);
-    expect(localeFromBrowserCookie(() => cookie)).toBe(locale);
-    expect(await getRequestLocale()).toBe(locale);
-    expect(await getRequestDictionary()).toBe(getDictionary(locale));
-  });
+      expect(localeFromRequest(request)).toBe(locale);
+      expect(localeFromBrowserCookie(() => cookie)).toBe(locale);
+      expect(await getRequestLocale()).toBe(locale);
+      expect(await getRequestDictionary()).toBe(getDictionary(locale));
+    },
+  );
 });

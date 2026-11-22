@@ -34,14 +34,17 @@ function createDeferredSelectDatabase() {
   const select = vi.fn(() => {
     const deferred = createDeferred<unknown[]>();
     queries.push(deferred);
-    const query: object = new Proxy({}, {
-      get(_target, property) {
-        if (property === "then") {
-          return deferred.promise.then.bind(deferred.promise);
-        }
-        return () => query;
+    const query: object = new Proxy(
+      {},
+      {
+        get(_target, property) {
+          if (property === "then") {
+            return deferred.promise.then.bind(deferred.promise);
+          }
+          return () => query;
+        },
       },
-    });
+    );
     return query;
   });
   const database = { select } as unknown as Parameters<
@@ -66,9 +69,12 @@ describe("public data admission", () => {
     { globalLimit: 1, perClientLimit: 0 },
     { globalLimit: 1.5, perClientLimit: 1 },
     { globalLimit: 1, perClientLimit: Number.MAX_SAFE_INTEGER + 1 },
-  ])("rejects invalid in-flight limits: $globalLimit/$perClientLimit", (limits) => {
-    expect(() => createPublicDataAdmissionGate(limits)).toThrow(RangeError);
-  });
+  ])(
+    "rejects invalid in-flight limits: $globalLimit/$perClientLimit",
+    (limits) => {
+      expect(() => createPublicDataAdmissionGate(limits)).toThrow(RangeError);
+    },
+  );
 
   it("enforces global and per-client limits with idempotent release", () => {
     const gate = createPublicDataAdmissionGate({
@@ -332,10 +338,11 @@ describe("public data admission", () => {
     const firstPending = runPublicDataOperation({
       request: request(undefined, "192.0.2.30"),
       route: "/api/countries/:iso3",
-      work: () => repository.findDetailsByIso3({
-        asOf: "2026-08-30",
-        iso3: "CHN",
-      }),
+      work: () =>
+        repository.findDetailsByIso3({
+          asOf: "2026-08-30",
+          iso3: "CHN",
+        }),
     });
 
     await vi.waitFor(() => expect(fake.select).toHaveBeenCalledOnce());
@@ -424,11 +431,9 @@ describe("public data admission", () => {
   it("still releases admission when the late-failure logger throws", async () => {
     const abortController = new AbortController();
     const deferred = createDeferred<string>();
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {
-        throw new Error("logger unavailable");
-      });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {
+      throw new Error("logger unavailable");
+    });
     const pending = runPublicDataOperation({
       request: request(abortController.signal),
       route: "/api/products",

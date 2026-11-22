@@ -21,16 +21,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function captureStreamingRequestBody(
-  options: {
-    baseUrl?: string;
-    costProfile?: unknown;
-    enableThinking?: boolean;
-    includeUsage: boolean;
-    model?: string;
-    toolChoice?: "required" | "none" | "auto";
-  },
-) {
+async function captureStreamingRequestBody(options: {
+  baseUrl?: string;
+  costProfile?: unknown;
+  enableThinking?: boolean;
+  includeUsage: boolean;
+  model?: string;
+  toolChoice?: "required" | "none" | "auto";
+}) {
   let requestBody: unknown;
   const fetchStub: typeof fetch = async (_input, init) => {
     requestBody = JSON.parse(String(init?.body));
@@ -61,13 +59,19 @@ async function captureStreamingRequestBody(
       includeUsage: options.includeUsage,
     }).model,
     prompt: "usage request contract",
-    ...(options.toolChoice ? {
-      toolChoice: options.toolChoice,
-      tools: {
-        firstEvidence: tool({ inputSchema: z.object({ query: z.string() }) }),
-        secondEvidence: tool({ inputSchema: z.object({ country: z.string() }) }),
-      },
-    } : {}),
+    ...(options.toolChoice
+      ? {
+          toolChoice: options.toolChoice,
+          tools: {
+            firstEvidence: tool({
+              inputSchema: z.object({ query: z.string() }),
+            }),
+            secondEvidence: tool({
+              inputSchema: z.object({ country: z.string() }),
+            }),
+          },
+        }
+      : {}),
   });
   await result.text;
 
@@ -116,7 +120,10 @@ describe("server AI configuration", () => {
 
     expect(first.endpointSha256).not.toBe(second.endpointSha256);
     expect(first).toMatchObject({ enableThinking: true, includeUsage: true });
-    expect(second).toMatchObject({ enableThinking: false, includeUsage: false });
+    expect(second).toMatchObject({
+      enableThinking: false,
+      includeUsage: false,
+    });
     expect(JSON.stringify([first, second])).not.toMatch(
       /user-secret-key|api\.example\.com|other\.example\.com/u,
     );
@@ -159,10 +166,7 @@ describe("server AI configuration", () => {
       if (enableThinking === undefined) {
         expect(requestBody).not.toHaveProperty("enable_thinking");
       } else {
-        expect(requestBody).toHaveProperty(
-          "enable_thinking",
-          enableThinking,
-        );
+        expect(requestBody).toHaveProperty("enable_thinking", enableThinking);
       }
       expect(JSON.stringify(requestBody)).not.toMatch(
         /send_reasoning|include_reasoning|reasoning_effort|reasoning_output/u,
@@ -174,69 +178,118 @@ describe("server AI configuration", () => {
     { baseUrl: "https://api.deepseek.com/", enableThinking: false },
     { baseUrl: "https://api.deepseek.com/v1/", enableThinking: false },
     { baseUrl: "https://api.deepseek.com", enableThinking: undefined },
-  ])("uses the explicit non-thinking DeepSeek contract for $baseUrl", async (config) => {
-    const body = await captureStreamingRequestBody({
-      ...config,
-      includeUsage: true,
-      model: "deepseek-flash",
-    });
-    expect(body).toMatchObject({
-      model: "deepseek-flash",
-      thinking: { type: "disabled" },
-      stream_options: { include_usage: true },
-    });
-    expect(body).not.toHaveProperty("enable_thinking");
-    expect(JSON.stringify(body)).not.toMatch(/send_reasoning|include_reasoning/u);
-    const { providerProfile } = getConfiguredAiModel({
-      ...userAiConfigSchema.parse({ ...validConfig, ...config, model: "deepseek-flash" }),
-      includeUsage: true,
-    });
-    expect(providerProfile).toMatchObject({
-      adapterContractVersion: 5,
-      enableThinking: false,
-      includeUsage: true,
-    });
-  });
+  ])(
+    "uses the explicit non-thinking DeepSeek contract for $baseUrl",
+    async (config) => {
+      const body = await captureStreamingRequestBody({
+        ...config,
+        includeUsage: true,
+        model: "deepseek-flash",
+      });
+      expect(body).toMatchObject({
+        model: "deepseek-flash",
+        thinking: { type: "disabled" },
+        stream_options: { include_usage: true },
+      });
+      expect(body).not.toHaveProperty("enable_thinking");
+      expect(JSON.stringify(body)).not.toMatch(
+        /send_reasoning|include_reasoning/u,
+      );
+      const { providerProfile } = getConfiguredAiModel({
+        ...userAiConfigSchema.parse({
+          ...validConfig,
+          ...config,
+          model: "deepseek-flash",
+        }),
+        includeUsage: true,
+      });
+      expect(providerProfile).toMatchObject({
+        adapterContractVersion: 5,
+        enableThinking: false,
+        includeUsage: true,
+      });
+    },
+  );
 
   it("rejects incompatible DeepSeek thinking before making any request", () => {
     const fetchStub = vi.fn<typeof fetch>();
     vi.stubGlobal("fetch", fetchStub);
-    expect(() => getConfiguredAiModel({
-      ...validConfig,
-      baseUrl: "https://api.deepseek.com",
-      model: "deepseek-flash",
-      enableThinking: true,
-    })).toThrow(AiConfigurationError);
+    expect(() =>
+      getConfiguredAiModel({
+        ...validConfig,
+        baseUrl: "https://api.deepseek.com",
+        model: "deepseek-flash",
+        enableThinking: true,
+      }),
+    ).toThrow(AiConfigurationError);
     expect(fetchStub).not.toHaveBeenCalled();
   });
 
   it("names only the first currently permitted DeepSeek tool without changing its schema", async () => {
     const body = await captureStreamingRequestBody({
-      baseUrl: "https://api.deepseek.com", includeUsage: true, toolChoice: "required",
+      baseUrl: "https://api.deepseek.com",
+      includeUsage: true,
+      toolChoice: "required",
     });
-    expect(body).toMatchObject({ tool_choice: { type: "function", function: { name: "firstEvidence" } } });
+    expect(body).toMatchObject({
+      tool_choice: { type: "function", function: { name: "firstEvidence" } },
+    });
     expect((body as { tools: unknown[] }).tools).toHaveLength(1);
-    expect(body).toMatchObject({ tools: [{ function: { parameters: { required: ["query"], additionalProperties: false } } }] });
+    expect(body).toMatchObject({
+      tools: [
+        {
+          function: {
+            parameters: { required: ["query"], additionalProperties: false },
+          },
+        },
+      ],
+    });
     expect(body).not.toHaveProperty("parallel_tool_calls");
-    expect(body).toMatchObject({ messages: [
-      { role: "system", content: expect.stringContaining("invoke the named tool exactly once") },
-      { role: "user", content: "usage request contract" },
-    ] });
-    expect(body).toMatchObject({ messages: [
-      { role: "system", content: expect.stringContaining("Function arguments must be a single valid JSON object.") },
-      { role: "user", content: "usage request contract" },
-    ] });
+    expect(body).toMatchObject({
+      messages: [
+        {
+          role: "system",
+          content: expect.stringContaining(
+            "invoke the named tool exactly once",
+          ),
+        },
+        { role: "user", content: "usage request contract" },
+      ],
+    });
+    expect(body).toMatchObject({
+      messages: [
+        {
+          role: "system",
+          content: expect.stringContaining(
+            "Function arguments must be a single valid JSON object.",
+          ),
+        },
+        { role: "user", content: "usage request contract" },
+      ],
+    });
   });
 
-  it.each(["none", "auto"] as const)("preserves DeepSeek %s tool choice", async (toolChoice) => {
-    const body = await captureStreamingRequestBody({ baseUrl: "https://api.deepseek.com", includeUsage: true, toolChoice });
-    expect(body).toHaveProperty("tool_choice", toolChoice);
-    expect((body as { tools: unknown[] }).tools).toHaveLength(2);
-    expect(JSON.stringify(body)).not.toContain("invoke the named tool exactly once");
-  });
+  it.each(["none", "auto"] as const)(
+    "preserves DeepSeek %s tool choice",
+    async (toolChoice) => {
+      const body = await captureStreamingRequestBody({
+        baseUrl: "https://api.deepseek.com",
+        includeUsage: true,
+        toolChoice,
+      });
+      expect(body).toHaveProperty("tool_choice", toolChoice);
+      expect((body as { tools: unknown[] }).tools).toHaveLength(2);
+      expect(JSON.stringify(body)).not.toContain(
+        "invoke the named tool exactly once",
+      );
+    },
+  );
 
   it("does not serialize required tools for generic compatible endpoints", async () => {
-    const body = await captureStreamingRequestBody({ includeUsage: true, toolChoice: "required" });
+    const body = await captureStreamingRequestBody({
+      includeUsage: true,
+      toolChoice: "required",
+    });
     expect(body).toHaveProperty("tool_choice", "required");
     expect((body as { tools: unknown[] }).tools).toHaveLength(2);
   });
@@ -248,11 +301,17 @@ describe("server AI configuration", () => {
     "https://api.deepseek.com/other",
   ])("does not infer the DeepSeek wire contract for %s", async (baseUrl) => {
     const body = await captureStreamingRequestBody({
-      baseUrl, enableThinking: false, includeUsage: true, model: "deepseek-flash",
+      baseUrl,
+      enableThinking: false,
+      includeUsage: true,
+      model: "deepseek-flash",
     });
     expect(body).toHaveProperty("enable_thinking", false);
     expect(body).not.toHaveProperty("thinking");
-    expect(getConfiguredAiModel({ ...validConfig, baseUrl }).providerProfile.adapterContractVersion).toBe(1);
+    expect(
+      getConfiguredAiModel({ ...validConfig, baseUrl }).providerProfile
+        .adapterContractVersion,
+    ).toBe(1);
   });
 
   it.each([
@@ -264,14 +323,18 @@ describe("server AI configuration", () => {
     "https://api.example.com/v1?api_key=private-value",
     "https://api.example.com/v1#private-value",
   ])("rejects unsafe endpoint %s", (baseUrl) => {
-    expect(() => userAiConfigSchema.parse({ ...validConfig, baseUrl })).toThrow();
+    expect(() =>
+      userAiConfigSchema.parse({ ...validConfig, baseUrl }),
+    ).toThrow();
   });
 
   it("requires a key and does not put it in the model identity", () => {
-    expect(() => userAiConfigSchema.parse({ ...validConfig, apiKey: "" })).toThrow();
-    expect(getConfiguredAiModel(userAiConfigSchema.parse(validConfig)).modelId).not.toContain(
-      validConfig.apiKey,
-    );
+    expect(() =>
+      userAiConfigSchema.parse({ ...validConfig, apiKey: "" }),
+    ).toThrow();
+    expect(
+      getConfiguredAiModel(userAiConfigSchema.parse(validConfig)).modelId,
+    ).not.toContain(validConfig.apiKey);
   });
 
   it("rejects an unsafe model name before provider construction", () => {
@@ -326,8 +389,7 @@ describe("server AI configuration", () => {
     };
 
     expect(
-      getConfiguredAiModel(config, { requiresMultimodalModel: true })
-        .modelId,
+      getConfiguredAiModel(config, { requiresMultimodalModel: true }).modelId,
     ).toBe("server-openai-compatible/qwen3.7-plus");
     expect(() =>
       getConfiguredAiModel(userAiConfigSchema.parse(validConfig), {

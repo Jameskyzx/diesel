@@ -59,9 +59,7 @@ export function parseGovernanceRestoreOptions(
     if (argument.startsWith("--input=")) {
       inputPath = inputPathSchema.parse(argument.slice("--input=".length));
     } else if (argument.startsWith("--sha256=")) {
-      expectedSha256 = sha256Schema.parse(
-        argument.slice("--sha256=".length),
-      );
+      expectedSha256 = sha256Schema.parse(argument.slice("--sha256=".length));
     } else if (argument === "--apply") {
       apply = true;
     } else {

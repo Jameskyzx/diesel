@@ -15,7 +15,12 @@ function spend(budget: ProjectionBudget, amount: number): boolean {
   return budget.remaining >= 0;
 }
 
-function replaceTitleSpans(text: string, start: number, end: number, spans: readonly Span[]): string {
+function replaceTitleSpans(
+  text: string,
+  start: number,
+  end: number,
+  spans: readonly Span[],
+): string {
   let cursor = start;
   const output: string[] = [];
   for (const span of spans) {
@@ -33,8 +38,15 @@ function sourceContainerAt(
   titles: readonly string[],
   budget: ProjectionBudget,
 ): { end: number; titleSpans: Span[] } | null {
-  if (!/(?:^|\n)[ \t]{0,3}(?:[-*+][ \t]{1,4})?$|[。.;；!?][ \t]{0,4}$/u.test(text.slice(Math.max(0, start - 12), start))) return null;
-  const label = /^(?:来源|sources?)[ \t]*[:：][ \t]*/iu.exec(text.slice(start, start + 32));
+  if (
+    !/(?:^|\n)[ \t]{0,3}(?:[-*+][ \t]{1,4})?$|[。.;；!?][ \t]{0,4}$/u.test(
+      text.slice(Math.max(0, start - 12), start),
+    )
+  )
+    return null;
+  const label = /^(?:来源|sources?)[ \t]*[:：][ \t]*/iu.exec(
+    text.slice(start, start + 32),
+  );
   if (!label) return null;
   let cursor = start + label[0].length;
   const titleSpans: Span[] = [];
@@ -72,12 +84,21 @@ function sourceContainerAt(
       const annotation = text.slice(cursor + 1, end);
       // These are bounded locator-shaped containers, not arbitrary quoted
       // English or parenthesized prose. Their contents remain in text scoring.
-      if (!/^(?:locator[ \t]*:[ \t]*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}|locatorDescriptor[ \t]+kind=product_availability,[ \t]*availableFrom=\d{4}-\d{2}-\d{2},[ \t]*availableTo=(?:\d{4}-\d{2}-\d{2}|null))$/u.test(annotation)) return null;
+      if (
+        !/^(?:locator[ \t]*:[ \t]*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}|locatorDescriptor[ \t]+kind=product_availability,[ \t]*availableFrom=\d{4}-\d{2}-\d{2},[ \t]*availableTo=(?:\d{4}-\d{2}-\d{2}|null))$/u.test(
+          annotation,
+        )
+      )
+        return null;
       cursor = end + 1;
       annotated = true;
       skipSpace();
     }
-    if (text[cursor] === "," || text[cursor] === "，" || text[cursor] === "、") {
+    if (
+      text[cursor] === "," ||
+      text[cursor] === "，" ||
+      text[cursor] === "、"
+    ) {
       cursor += 1;
       skipSpace();
       continue;
@@ -88,8 +109,11 @@ function sourceContainerAt(
         return { end: after, titleSpans };
       }
     }
-    return cursor === text.length || text[cursor] === "\n" || text[cursor] === "\r"
-      ? { end: cursor, titleSpans } : null;
+    return cursor === text.length ||
+      text[cursor] === "\n" ||
+      text[cursor] === "\r"
+      ? { end: cursor, titleSpans }
+      : null;
   }
   // An oversized list must not be partially neutralized.
   budget.remaining = -1;
@@ -109,14 +133,21 @@ function boundedCitationTitles(titles: readonly string[]): ReadonlySet<string> {
   for (const title of titles) {
     const bytes = encoder.encode(title).length;
     totalBytes += bytes;
-    if (bytes > maximumCitationTitleBytes || totalBytes > maximumCitationTitleTotalBytes) {
+    if (
+      bytes > maximumCitationTitleBytes ||
+      totalBytes > maximumCitationTitleTotalBytes
+    ) {
       return new Set();
     }
     // A short status word is not a title-shaped citation. Do not remove raw
     // business values such as ready/effective, even if repeated in metadata.
-    if ((title.match(/\p{L}/gu)?.length ?? 0) >= 8 &&
-        (/\s/u.test(title) || (title.match(/\p{Script=Han}/gu)?.length ?? 0) >= 8) &&
-        !/^(?:not[ _-]+ready|not[ _-]+fit)$/iu.test(title) && !/[\r\n]/u.test(title)) {
+    if (
+      (title.match(/\p{L}/gu)?.length ?? 0) >= 8 &&
+      (/\s/u.test(title) ||
+        (title.match(/\p{Script=Han}/gu)?.length ?? 0) >= 8) &&
+      !/^(?:not[ _-]+ready|not[ _-]+fit)$/iu.test(title) &&
+      !/[\r\n]/u.test(title)
+    ) {
       candidates.add(title);
     }
   }
@@ -129,12 +160,22 @@ export function liveEvalLocaleCitationTitles(input: {
   evidenceAllowed: boolean;
   toolResults: readonly LocaleCitationEnvelope[];
 }): readonly string[] {
-  if (!input.evidenceAllowed || input.toolResults.length === 0 ||
-      input.toolResults.some((result) => result.status !== "ok" || !result.evidenceSufficient)) {
+  if (
+    !input.evidenceAllowed ||
+    input.toolResults.length === 0 ||
+    input.toolResults.some(
+      (result) => result.status !== "ok" || !result.evidenceSufficient,
+    )
+  ) {
     return [];
   }
-  return [...boundedCitationTitles(input.toolResults.flatMap(({ citations }) =>
-    citations.flatMap(({ sourceTitle, title }) => [sourceTitle, title])))];
+  return [
+    ...boundedCitationTitles(
+      input.toolResults.flatMap(({ citations }) =>
+        citations.flatMap(({ sourceTitle, title }) => [sourceTitle, title]),
+      ),
+    ),
+  ];
 }
 
 export function projectLiveEvalLocaleText(
@@ -151,8 +192,11 @@ export function projectLiveEvalLocaleResponse(
 ): LocaleProjection {
   const unchanged = { text: responseText, nonCitationText: responseText };
   const titles = boundedCitationTitles(evidenceTitles);
-  if (titles.size === 0 || responseText.length > maximumResponseCharacters) return unchanged;
-  const orderedTitles = [...titles].sort((left, right) => right.length - left.length);
+  if (titles.size === 0 || responseText.length > maximumResponseCharacters)
+    return unchanged;
+  const orderedTitles = [...titles].sort(
+    (left, right) => right.length - left.length,
+  );
   const budget = { remaining: maximumProjectionWork };
   const fencedSpans: Array<{ start: number; end: number }> = [];
   let fence: { character: string; length: number; start: number } | null = null;
@@ -160,21 +204,35 @@ export function projectLiveEvalLocaleResponse(
   for (const line of responseText.split("\n")) {
     const fenceMarker = /^ {0,3}(`{3,}|~{3,})(.*)$/u.exec(line);
     if (fence !== null) {
-      if (fenceMarker !== null && fenceMarker[1][0] === fence.character &&
-          fenceMarker[1].length >= fence.length && fenceMarker[2].trim() === "") {
+      if (
+        fenceMarker !== null &&
+        fenceMarker[1][0] === fence.character &&
+        fenceMarker[1].length >= fence.length &&
+        fenceMarker[2].trim() === ""
+      ) {
         fencedSpans.push({ start: fence.start, end: lineOffset + line.length });
         fence = null;
       }
     } else if (fenceMarker !== null) {
-      fence = { character: fenceMarker[1][0], length: fenceMarker[1].length, start: lineOffset };
+      fence = {
+        character: fenceMarker[1][0],
+        length: fenceMarker[1].length,
+        start: lineOffset,
+      };
     }
     lineOffset += line.length + 1;
   }
-  if (fence !== null) fencedSpans.push({ start: fence.start, end: responseText.length });
+  if (fence !== null)
+    fencedSpans.push({ start: fence.start, end: responseText.length });
 
   const escaped = (position: number): boolean => {
     let slashes = 0;
-    for (let index = position - 1; index >= 0 && responseText[index] === "\\"; index -= 1) slashes += 1;
+    for (
+      let index = position - 1;
+      index >= 0 && responseText[index] === "\\";
+      index -= 1
+    )
+      slashes += 1;
     return slashes % 2 === 1;
   };
   const output: string[] = [];
@@ -192,16 +250,31 @@ export function projectLiveEvalLocaleResponse(
     }
     const opening = responseText[cursor];
     if (opening === "来" || opening === "s" || opening === "S") {
-      const source = sourceContainerAt(responseText, cursor, orderedTitles, budget);
+      const source = sourceContainerAt(
+        responseText,
+        cursor,
+        orderedTitles,
+        budget,
+      );
       if (budget.remaining < 0) return unchanged;
       if (source !== null) {
-        output.push(replaceTitleSpans(responseText, cursor, source.end, source.titleSpans));
+        output.push(
+          replaceTitleSpans(
+            responseText,
+            cursor,
+            source.end,
+            source.titleSpans,
+          ),
+        );
         nonCitationOutput.push(" ");
         cursor = source.end;
         continue;
       }
     }
-    if ((opening !== "`" && opening !== '"' && opening !== "“") || escaped(cursor)) {
+    if (
+      (opening !== "`" && opening !== '"' && opening !== "“") ||
+      escaped(cursor)
+    ) {
       output.push(opening);
       nonCitationOutput.push(opening);
       cursor += 1;
@@ -209,12 +282,18 @@ export function projectLiveEvalLocaleResponse(
     }
     let delimiterLength = 1;
     if (opening === "`") {
-      while (responseText[cursor + delimiterLength] === "`") delimiterLength += 1;
+      while (responseText[cursor + delimiterLength] === "`")
+        delimiterLength += 1;
     }
     const closing = opening === "“" ? "”" : opening.repeat(delimiterLength);
     let end = responseText.indexOf(closing, cursor + delimiterLength);
-    while (end !== -1 && (escaped(end) ||
-        (opening === "`" && (responseText[end - 1] === "`" || responseText[end + delimiterLength] === "`")))) {
+    while (
+      end !== -1 &&
+      (escaped(end) ||
+        (opening === "`" &&
+          (responseText[end - 1] === "`" ||
+            responseText[end + delimiterLength] === "`")))
+    ) {
       end = responseText.indexOf(closing, end + closing.length);
     }
     if (end === -1) {
@@ -226,8 +305,10 @@ export function projectLiveEvalLocaleResponse(
     }
     const content = responseText.slice(cursor + delimiterLength, end);
     const literalEnd = end + closing.length;
-    const projected = delimiterLength === 1 && !/[\r\n]/u.test(content) && titles.has(content)
-      ? " " : responseText.slice(cursor, literalEnd);
+    const projected =
+      delimiterLength === 1 && !/[\r\n]/u.test(content) && titles.has(content)
+        ? " "
+        : responseText.slice(cursor, literalEnd);
     output.push(projected);
     nonCitationOutput.push(projected);
     cursor = literalEnd;

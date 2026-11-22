@@ -46,7 +46,8 @@
 ## 技术说明
 
 基于 Next.js、TypeScript、PostgreSQL 和兼容 OpenAI 接口的大模型构建，每次改动都有自动化
-测试和 CI 检查。用演示数据在本地运行（不需要数据库或 API key）：
+测试和 CI 检查。文档检索由 PostgreSQL 全文检索和本地哈希向量组成，属于词法匹配，不是语义
+检索，没有使用 embedding 模型。用演示数据在本地运行（不需要数据库或 API key）：
 
 ```bash
 pnpm install

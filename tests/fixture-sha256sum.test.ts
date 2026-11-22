@@ -77,12 +77,7 @@ async function writeShim(
   return path;
 }
 
-function execute(
-  file: string,
-  args: string[],
-  cwd: string,
-  input?: string,
-) {
+function execute(file: string, args: string[], cwd: string, input?: string) {
   const result = spawnSync(file, args, {
     cwd,
     encoding: "utf8",
@@ -171,23 +166,31 @@ process.stdout.write(output);
   };
 }
 
-async function readInvocations(logPath: string): Promise<
-  Array<{ args: string[]; inputBase64: string }>
-> {
+async function readInvocations(
+  logPath: string,
+): Promise<Array<{ args: string[]; inputBase64: string }>> {
   const text = await readFile(logPath, "utf8");
   if (!text) return [];
-  return text.trimEnd().split("\n").map((line) => {
-    const value: unknown = JSON.parse(line);
-    if (
-      typeof value !== "object" || value === null ||
-      !("args" in value) || !Array.isArray(value.args) ||
-      !value.args.every((argument: unknown) => typeof argument === "string") ||
-      !("inputBase64" in value) || typeof value.inputBase64 !== "string"
-    ) {
-      throw new Error("Invalid native fixture invocation record.");
-    }
-    return { args: value.args as string[], inputBase64: value.inputBase64 };
-  });
+  return text
+    .trimEnd()
+    .split("\n")
+    .map((line) => {
+      const value: unknown = JSON.parse(line);
+      if (
+        typeof value !== "object" ||
+        value === null ||
+        !("args" in value) ||
+        !Array.isArray(value.args) ||
+        !value.args.every(
+          (argument: unknown) => typeof argument === "string",
+        ) ||
+        !("inputBase64" in value) ||
+        typeof value.inputBase64 !== "string"
+      ) {
+        throw new Error("Invalid native fixture invocation record.");
+      }
+      return { args: value.args as string[], inputBase64: value.inputBase64 };
+    });
 }
 
 const nativeCapabilityInputs = [
@@ -199,11 +202,13 @@ const converterCapabilityDigest = createHash("sha256")
   .digest();
 
 function expectedNativeCapabilityCalls(executable: string, count: 1 | 2) {
-  return nativeCapabilityInputs.slice(0, count).map((input) => [
-    executable,
-    ["dgst", "-sha256", "-binary"],
-    { input, maxBuffer: 4_096, timeout: 2_000 },
-  ]);
+  return nativeCapabilityInputs
+    .slice(0, count)
+    .map((input) => [
+      executable,
+      ["dgst", "-sha256", "-binary"],
+      { input, maxBuffer: 4_096, timeout: 2_000 },
+    ]);
 }
 
 function nativeCapabilityResult(
@@ -212,20 +217,44 @@ function nativeCapabilityResult(
 ): ReturnType<FixtureSha256CapabilityProbe> {
   const digest = createHash("sha256").update(input).digest();
   switch (mode) {
-    case "nonzero": return { status: 73, stdout: digest.subarray(0, 17) };
-    case "valid-digest-nonzero": return { status: 73, stdout: digest };
-    case "wrong-digest": return { status: 0, stdout: Buffer.alloc(32) };
+    case "nonzero":
+      return { status: 73, stdout: digest.subarray(0, 17) };
+    case "valid-digest-nonzero":
+      return { status: 73, stdout: digest };
+    case "wrong-digest":
+      return { status: 0, stdout: Buffer.alloc(32) };
     case "wrong-binary-digest":
-      return { status: 0, stdout: input.length === 0 ? digest : Buffer.alloc(32) };
-    case "short-digest": return { status: 0, stdout: digest.subarray(0, 31) };
-    case "long-digest": return { status: 0, stdout: Buffer.concat([digest, Buffer.from([1])]) };
-    case "extra-nul": return { status: 0, stdout: Buffer.concat([digest, Buffer.from([0])]) };
-    case "text-hex": return { status: 0, stdout: Buffer.from(digest.toString("hex")) };
-    case "multiline-hex": return { status: 0, stdout: Buffer.from(`${digest.toString("hex")}\n\n`) };
-    case "empty-output": return { status: 0, stdout: Buffer.alloc(0) };
-    case "prefix": return { status: 0, stdout: Buffer.concat([Buffer.from(backendMarker), digest]) };
-    case "suffix": return { status: 0, stdout: Buffer.concat([digest, Buffer.from(backendMarker)]) };
-    case "valid-binary": return { status: 0, stdout: digest };
+      return {
+        status: 0,
+        stdout: input.length === 0 ? digest : Buffer.alloc(32),
+      };
+    case "short-digest":
+      return { status: 0, stdout: digest.subarray(0, 31) };
+    case "long-digest":
+      return { status: 0, stdout: Buffer.concat([digest, Buffer.from([1])]) };
+    case "extra-nul":
+      return { status: 0, stdout: Buffer.concat([digest, Buffer.from([0])]) };
+    case "text-hex":
+      return { status: 0, stdout: Buffer.from(digest.toString("hex")) };
+    case "multiline-hex":
+      return {
+        status: 0,
+        stdout: Buffer.from(`${digest.toString("hex")}\n\n`),
+      };
+    case "empty-output":
+      return { status: 0, stdout: Buffer.alloc(0) };
+    case "prefix":
+      return {
+        status: 0,
+        stdout: Buffer.concat([Buffer.from(backendMarker), digest]),
+      };
+    case "suffix":
+      return {
+        status: 0,
+        stdout: Buffer.concat([digest, Buffer.from(backendMarker)]),
+      };
+    case "valid-binary":
+      return { status: 0, stdout: digest };
   }
 }
 
@@ -250,18 +279,17 @@ async function expectRejectedCapabilityFallback(
 
 afterEach(async () => {
   await Promise.all(
-    directories.splice(0).map((directory) =>
-      rm(directory, { recursive: true, force: true }),
-    ),
+    directories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
   );
 });
 
 describe.each(["default selection", "captured Node fallback"] as const)(
   "fresh fixture SHA-256 through %s",
   (mode) => {
-    const options = mode === "captured Node fallback"
-      ? { nativeExecutable: null }
-      : {};
+    const options =
+      mode === "captured Node fallback" ? { nativeExecutable: null } : {};
 
     it.each([
       { name: "empty file", bytes: Buffer.alloc(0) },
@@ -269,7 +297,10 @@ describe.each(["default selection", "captured Node fallback"] as const)(
         name: "binary data including NUL and invalid UTF-8",
         bytes: Buffer.from([0, 0xff, 0xc3, 0x28, 1, 0, 0xfe, 0x80, 0x7f]),
       },
-      { name: "UTF-8 and CRLF", bytes: Buffer.from("中文🙂\r\nsecond line\r\n") },
+      {
+        name: "UTF-8 and CRLF",
+        bytes: Buffer.from("中文🙂\r\nsecond line\r\n"),
+      },
       { name: "large binary file", bytes: Buffer.alloc(1_048_593, 0xa5) },
     ])("hashes the exact bytes of $name", async ({ bytes }) => {
       const fixture = await createFixture();
@@ -309,8 +340,15 @@ describe.each(["default selection", "captured Node fallback"] as const)(
       const path = join(fixture.directory, name);
       await writeFile(path, "literal pathname fixture\0\r\n");
 
-      expectDigest(shim, path, "literal pathname fixture\0\r\n", fixture.directory);
-      await expect(stat(join(fixture.directory, "injected"))).rejects.toMatchObject({
+      expectDigest(
+        shim,
+        path,
+        "literal pathname fixture\0\r\n",
+        fixture.directory,
+      );
+      await expect(
+        stat(join(fixture.directory, "injected")),
+      ).rejects.toMatchObject({
         code: "ENOENT",
       });
     });
@@ -392,18 +430,24 @@ describe.each(["default selection", "captured Node fallback"] as const)(
       const descriptorPath = join(fixture.directory, "descriptor-eight");
       await writeFile(path, Buffer.from([0, 1, 0xff]));
       await writeFile(descriptorPath, "fd-eight-preserved\n");
-      const result = execute("/bin/bash", [
-        "-c",
-        'set -euo pipefail\nexec 8< "$3"\n"$1" -- "$2"\nIFS= read -r caller_input\nIFS= read -r descriptor_input <&8\nprintf "stdin:%s\\nfd8:%s\\n" "$caller_input" "$descriptor_input"\n',
-        "fixture-parent",
-        shim,
-        path,
-        descriptorPath,
-      ], fixture.directory, "caller-input-preserved\n");
+      const result = execute(
+        "/bin/bash",
+        [
+          "-c",
+          'set -euo pipefail\nexec 8< "$3"\n"$1" -- "$2"\nIFS= read -r caller_input\nIFS= read -r descriptor_input <&8\nprintf "stdin:%s\\nfd8:%s\\n" "$caller_input" "$descriptor_input"\n',
+          "fixture-parent",
+          shim,
+          path,
+          descriptorPath,
+        ],
+        fixture.directory,
+        "caller-input-preserved\n",
+      );
 
       expect(result).toEqual({
         code: 0,
-        stdout: `${sha256(Buffer.from([0, 1, 0xff]))}  ${path}\n` +
+        stdout:
+          `${sha256(Buffer.from([0, 1, 0xff]))}  ${path}\n` +
           "stdin:caller-input-preserved\nfd8:fd-eight-preserved\n",
         stderr: "",
       });
@@ -436,36 +480,39 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
     expect(result.stderr).toBe("");
   });
 
-  it(
-    "accepts exact binary digests using the fixed argv and stdin capability probes",
-    async () => {
-      const fixture = await createFixture();
-      const backend = await createBackend(fixture, "valid-binary");
-      const shim = await writeShim(fixture, { nativeExecutable: backend.executable });
-      const probes = await readInvocations(backend.logPath);
-      expect(probes).toHaveLength(2);
-      for (const probe of probes) {
-        expect(probe.args).toEqual(["dgst", "-sha256", "-binary"]);
-      }
-      expect(probes[0]?.inputBase64).toBe("");
-      expect(Buffer.from(probes[1]?.inputBase64 ?? "", "base64").length).toBeGreaterThan(0);
-      const path = join(fixture.directory, "payload");
-      const bytes = Buffer.from([0xff, 0, 0xc3, 0x28, 0x0d, 0x0a]);
-      await writeFile(path, bytes);
+  it("accepts exact binary digests using the fixed argv and stdin capability probes", async () => {
+    const fixture = await createFixture();
+    const backend = await createBackend(fixture, "valid-binary");
+    const shim = await writeShim(fixture, {
+      nativeExecutable: backend.executable,
+    });
+    const probes = await readInvocations(backend.logPath);
+    expect(probes).toHaveLength(2);
+    for (const probe of probes) {
+      expect(probe.args).toEqual(["dgst", "-sha256", "-binary"]);
+    }
+    expect(probes[0]?.inputBase64).toBe("");
+    expect(
+      Buffer.from(probes[1]?.inputBase64 ?? "", "base64").length,
+    ).toBeGreaterThan(0);
+    const path = join(fixture.directory, "payload");
+    const bytes = Buffer.from([0xff, 0, 0xc3, 0x28, 0x0d, 0x0a]);
+    await writeFile(path, bytes);
 
-      expectDigest(shim, path, bytes, fixture.directory);
+    expectDigest(shim, path, bytes, fixture.directory);
 
-      const invocations = await readInvocations(backend.logPath);
-      expect(invocations).toHaveLength(3);
-      expect(invocations[2]).toEqual({
-        args: ["dgst", "-sha256", "-binary"],
-        inputBase64: bytes.toString("base64"),
-      });
-      await expect(stat(join(fixture.directory, "injected"))).rejects.toMatchObject({
-        code: "ENOENT",
-      });
-    },
-  );
+    const invocations = await readInvocations(backend.logPath);
+    expect(invocations).toHaveLength(3);
+    expect(invocations[2]).toEqual({
+      args: ["dgst", "-sha256", "-binary"],
+      inputBase64: bytes.toString("base64"),
+    });
+    await expect(
+      stat(join(fixture.directory, "injected")),
+    ).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
 
   it("falls back when the native executable is unavailable", async () => {
     const fixture = await createFixture();
@@ -481,7 +528,9 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
   it("preserves NUL bytes inside a valid raw digest instead of losing them in shell substitution", async () => {
     const fixture = await createFixture();
     const backend = await createBackend(fixture, "valid-binary");
-    const shim = await writeShim(fixture, { nativeExecutable: backend.executable });
+    const shim = await writeShim(fixture, {
+      nativeExecutable: backend.executable,
+    });
     let bytes: Buffer | undefined;
     for (let index = 0; index < 4_096; index += 1) {
       const candidate = Buffer.from(`payload with a binary digest ${index}`);
@@ -490,7 +539,8 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
         break;
       }
     }
-    if (bytes === undefined) throw new Error("No NUL-containing digest fixture found.");
+    if (bytes === undefined)
+      throw new Error("No NUL-containing digest fixture found.");
     const path = join(fixture.directory, "nul-digest-payload");
     await writeFile(path, bytes);
 
@@ -502,12 +552,19 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
   it("falls back silently if a previously accepted native executable disappears", async () => {
     const fixture = await createFixture();
     const backend = await createBackend(fixture, "valid-binary");
-    const shim = await writeShim(fixture, { nativeExecutable: backend.executable });
+    const shim = await writeShim(fixture, {
+      nativeExecutable: backend.executable,
+    });
     await rm(backend.executable);
     const path = join(fixture.directory, "payload");
     await writeFile(path, "fresh fallback after executable removal");
 
-    expectDigest(shim, path, "fresh fallback after executable removal", fixture.directory);
+    expectDigest(
+      shim,
+      path,
+      "fresh fallback after executable removal",
+      fixture.directory,
+    );
 
     expect(await readInvocations(backend.logPath)).toHaveLength(2);
   });
@@ -525,24 +582,27 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
     "empty-output",
     "prefix",
     "suffix",
-  ] as const)("decision unit rejects incompatible native capability: %s", async (mode) => {
-    const fixture = await createFixture();
-    const backend = await createBackend(fixture, mode);
-    const runCapabilityProbe = vi.fn<FixtureSha256CapabilityProbe>(
-      (_command, _args, { input }) => nativeCapabilityResult(mode, input),
-    );
-    const shim = await writeShim(fixture, {
-      nativeExecutable: backend.executable,
-      runCapabilityProbe,
-    });
-    const expectedCount = mode === "wrong-binary-digest" ? 2 : 1;
-    expect(runCapabilityProbe).toHaveBeenCalledTimes(expectedCount);
-    expect(runCapabilityProbe.mock.calls).toStrictEqual(
-      expectedNativeCapabilityCalls(backend.executable, expectedCount),
-    );
+  ] as const)(
+    "decision unit rejects incompatible native capability: %s",
+    async (mode) => {
+      const fixture = await createFixture();
+      const backend = await createBackend(fixture, mode);
+      const runCapabilityProbe = vi.fn<FixtureSha256CapabilityProbe>(
+        (_command, _args, { input }) => nativeCapabilityResult(mode, input),
+      );
+      const shim = await writeShim(fixture, {
+        nativeExecutable: backend.executable,
+        runCapabilityProbe,
+      });
+      const expectedCount = mode === "wrong-binary-digest" ? 2 : 1;
+      expect(runCapabilityProbe).toHaveBeenCalledTimes(expectedCount);
+      expect(runCapabilityProbe.mock.calls).toStrictEqual(
+        expectedNativeCapabilityCalls(backend.executable, expectedCount),
+      );
 
-    await expectRejectedCapabilityFallback(fixture, backend, shim);
-  });
+      await expectRejectedCapabilityFallback(fixture, backend, shim);
+    },
+  );
 
   it.each(["error", "throw", "null output", "text output"] as const)(
     "decision unit rejects native probe %s without claiming backend execution",
@@ -554,9 +614,16 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
           const digest = createHash("sha256").update(input).digest();
           if (failure === "throw") throw new Error(backendMarker);
           if (failure === "error") {
-            return { error: new Error(backendMarker), status: 0, stdout: digest };
+            return {
+              error: new Error(backendMarker),
+              status: 0,
+              stdout: digest,
+            };
           }
-          return { status: 0, stdout: failure === "null output" ? null : digest.toString("hex") };
+          return {
+            status: 0,
+            stdout: failure === "null output" ? null : digest.toString("hex"),
+          };
         },
       );
       const shim = await writeShim(fixture, {
@@ -579,50 +646,60 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
     "wrong digest",
     "trailing NUL",
     "buffer output",
-  ] as const)("decision unit rejects fixed od converter %s", async (failure) => {
-    const fixture = await createFixture();
-    const backend = await createBackend(fixture, "valid-binary");
-    const runCapabilityProbe = vi.fn<FixtureSha256CapabilityProbe>(
-      (command, _args, { input }) => {
-        if (command === backend.executable) {
-          return nativeCapabilityResult("valid-binary", input);
-        }
-        const validText = `${Array.from(input, (byte) => byte.toString(16).padStart(2, "0")).join(" ")}\n`;
-        if (failure === "throw") throw new Error(backendMarker);
-        if (failure === "error") {
-          return { error: new Error(backendMarker), status: 0, stdout: validText };
-        }
-        if (failure === "nonzero") return { status: 73, stdout: validText };
-        if (failure === "wrong digest") {
-          return { status: 0, stdout: `${"00 ".repeat(32).trimEnd()}\n` };
-        }
-        return {
-          status: 0,
-          stdout: failure === "buffer output" ? Buffer.from(validText) : `${validText}\0`,
-        };
-      },
-    );
-    const shim = await writeShim(fixture, {
-      nativeExecutable: backend.executable,
-      runCapabilityProbe,
-    });
-    expect(runCapabilityProbe).toHaveBeenCalledTimes(3);
-    expect(runCapabilityProbe.mock.calls).toStrictEqual([
-      ...expectedNativeCapabilityCalls(backend.executable, 2),
-      [
-        "/usr/bin/od",
-        ["-An", "-v", "-tx1"],
-        {
-          encoding: "utf8",
-          input: converterCapabilityDigest,
-          maxBuffer: 4_096,
-          timeout: 2_000,
+  ] as const)(
+    "decision unit rejects fixed od converter %s",
+    async (failure) => {
+      const fixture = await createFixture();
+      const backend = await createBackend(fixture, "valid-binary");
+      const runCapabilityProbe = vi.fn<FixtureSha256CapabilityProbe>(
+        (command, _args, { input }) => {
+          if (command === backend.executable) {
+            return nativeCapabilityResult("valid-binary", input);
+          }
+          const validText = `${Array.from(input, (byte) => byte.toString(16).padStart(2, "0")).join(" ")}\n`;
+          if (failure === "throw") throw new Error(backendMarker);
+          if (failure === "error") {
+            return {
+              error: new Error(backendMarker),
+              status: 0,
+              stdout: validText,
+            };
+          }
+          if (failure === "nonzero") return { status: 73, stdout: validText };
+          if (failure === "wrong digest") {
+            return { status: 0, stdout: `${"00 ".repeat(32).trimEnd()}\n` };
+          }
+          return {
+            status: 0,
+            stdout:
+              failure === "buffer output"
+                ? Buffer.from(validText)
+                : `${validText}\0`,
+          };
         },
-      ],
-    ]);
+      );
+      const shim = await writeShim(fixture, {
+        nativeExecutable: backend.executable,
+        runCapabilityProbe,
+      });
+      expect(runCapabilityProbe).toHaveBeenCalledTimes(3);
+      expect(runCapabilityProbe.mock.calls).toStrictEqual([
+        ...expectedNativeCapabilityCalls(backend.executable, 2),
+        [
+          "/usr/bin/od",
+          ["-An", "-v", "-tx1"],
+          {
+            encoding: "utf8",
+            input: converterCapabilityDigest,
+            maxBuffer: 4_096,
+            timeout: 2_000,
+          },
+        ],
+      ]);
 
-    await expectRejectedCapabilityFallback(fixture, backend, shim);
-  });
+      await expectRejectedCapabilityFallback(fixture, backend, shim);
+    },
+  );
 
   it.each([
     "nonzero",
@@ -640,7 +717,8 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
     async (mode) => {
       const fixture = await createFixture();
       const path = join(fixture.directory, "payload");
-      const changedContent = "changed after native read; fallback must rehash\0\r\n";
+      const changedContent =
+        "changed after native read; fallback must rehash\0\r\n";
       // A complete correct digest plus nonzero exit otherwise looks identical to
       // fallback output. Changing the file proves fallback actually read it anew.
       const backend = await createBackend(
@@ -650,7 +728,9 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
           ? { path, content: changedContent }
           : undefined,
       );
-      const shim = await writeShim(fixture, { nativeExecutable: backend.executable });
+      const shim = await writeShim(fixture, {
+        nativeExecutable: backend.executable,
+      });
       expect(await readInvocations(backend.logPath)).toHaveLength(2);
       await backend.setMode(mode);
       const originalContent = "fresh runtime fallback\0\r\n";
@@ -665,14 +745,18 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
 
       const invocations = await readInvocations(backend.logPath);
       expect(invocations).toHaveLength(3);
-      expect(invocations[2]?.inputBase64).toBe(Buffer.from(originalContent).toString("base64"));
+      expect(invocations[2]?.inputBase64).toBe(
+        Buffer.from(originalContent).toString("base64"),
+      );
     },
   );
 
   it("uses Node for a relative regular file even after a native backend was accepted", async () => {
     const fixture = await createFixture();
     const backend = await createBackend(fixture, "valid-binary");
-    const shim = await writeShim(fixture, { nativeExecutable: backend.executable });
+    const shim = await writeShim(fixture, {
+      nativeExecutable: backend.executable,
+    });
     await writeFile(join(fixture.directory, "relative-file"), "relative bytes");
 
     expectDigest(shim, "relative-file", "relative bytes", fixture.directory);
@@ -685,7 +769,9 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
     async (kind) => {
       const fixture = await createFixture();
       const backend = await createBackend(fixture, "valid-binary");
-      const shim = await writeShim(fixture, { nativeExecutable: backend.executable });
+      const shim = await writeShim(fixture, {
+        nativeExecutable: backend.executable,
+      });
       const path = join(fixture.directory, "invalid-target");
       if (kind === "directory") await mkdir(path);
       if (kind === "dangling symlink") await symlink("missing-target", path);
@@ -701,7 +787,9 @@ describe("fixture SHA-256 native capability and runtime fallback", () => {
   it("uses native stdin for a symlink to a regular file without changing the reported pathname", async () => {
     const fixture = await createFixture();
     const backend = await createBackend(fixture, "valid-binary");
-    const shim = await writeShim(fixture, { nativeExecutable: backend.executable });
+    const shim = await writeShim(fixture, {
+      nativeExecutable: backend.executable,
+    });
     const path = join(fixture.directory, "symbolic-link");
     await writeFile(join(fixture.directory, "target"), "target bytes\0");
     await symlink("target", path);

@@ -18,7 +18,9 @@ const snapshotPattern =
 export function parseProductionVersion(value: string): string {
   const parsed = productionVersionSchema.safeParse(value);
   if (!parsed.success) {
-    throw new Error("Expected production version must be a full lowercase Git SHA.");
+    throw new Error(
+      "Expected production version must be a full lowercase Git SHA.",
+    );
   }
   return parsed.data;
 }
@@ -26,16 +28,16 @@ export function parseProductionVersion(value: string): string {
 export function productionVersionFromStatus(markdown: string): string {
   const match = snapshotPattern.exec(markdown);
   if (!match?.[1]) {
-    throw new Error(
-      "STATUS.md is missing the production release block.",
-    );
+    throw new Error("STATUS.md is missing the production release block.");
   }
 
   let value: unknown;
   try {
     value = JSON.parse(match[1]);
   } catch {
-    throw new Error("STATUS.md contains an invalid production release JSON block.");
+    throw new Error(
+      "STATUS.md contains an invalid production release JSON block.",
+    );
   }
 
   const parsed = snapshotSchema.safeParse(value);

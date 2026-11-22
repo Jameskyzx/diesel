@@ -123,8 +123,7 @@ describe("POST /api/chat production admission configuration", () => {
                 id: "missing-budget-config",
                 parts: [
                   {
-                    text:
-                      "Compare CHN and BRA non-road regulations at 100 kW.",
+                    text: "Compare CHN and BRA non-road regulations at 100 kW.",
                     type: "text",
                   },
                 ],

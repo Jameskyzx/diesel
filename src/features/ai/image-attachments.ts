@@ -18,9 +18,7 @@ function readUint16LittleEndian(bytes: Uint8Array, offset: number): number {
 
 function readUint24LittleEndian(bytes: Uint8Array, offset: number): number {
   return (
-    bytes[offset]! +
-    bytes[offset + 1]! * 0x100 +
-    bytes[offset + 2]! * 0x1_0000
+    bytes[offset]! + bytes[offset + 1]! * 0x100 + bytes[offset + 2]! * 0x1_0000
   );
 }
 
@@ -106,8 +104,7 @@ function isStructurallyValidPng(bytes: Uint8Array): boolean {
 }
 
 const jpegStartOfFrameMarkers = new Set([
-  0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd,
-  0xce, 0xcf,
+  0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
 ]);
 
 function isStructurallyValidJpeg(bytes: Uint8Array): boolean {
@@ -212,9 +209,7 @@ function isStructurallyValidWebp(bytes: Uint8Array): boolean {
             ((bytes[dataStart + 4]! & 0x0f) << 10)) +
           1,
         width:
-          (bytes[dataStart + 1]! |
-            ((bytes[dataStart + 2]! & 0x3f) << 8)) +
-          1,
+          (bytes[dataStart + 1]! | ((bytes[dataStart + 2]! & 0x3f) << 8)) + 1,
       };
       hasImagePayload = true;
     } else if (chunkType === "ANMF" && chunkLength > 16) {

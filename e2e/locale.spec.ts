@@ -7,22 +7,26 @@ import {
 } from "../src/features/product-fit/schemas";
 
 function chatTextStream(text: string, id: string): string {
-  return [
-    { type: "start" },
-    { id, type: "text-start" },
-    { delta: text, id, type: "text-delta" },
-    { id, type: "text-end" },
-    { finishReason: "stop", type: "finish" },
-  ]
-    .map((event) => `data: ${JSON.stringify(event)}\n\n`)
-    .join("") + "data: [DONE]\n\n";
+  return (
+    [
+      { type: "start" },
+      { id, type: "text-start" },
+      { delta: text, id, type: "text-delta" },
+      { id, type: "text-end" },
+      { finishReason: "stop", type: "finish" },
+    ]
+      .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+      .join("") + "data: [DONE]\n\n"
+  );
 }
 
 test.beforeEach(async ({ context }) => {
   await context.clearCookies();
 });
 
-test("defaults to English without a locale cookie even when legacy storage is Chinese", async ({ page }) => {
+test("defaults to English without a locale cookie even when legacy storage is Chinese", async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     window.localStorage.setItem("diesel_locale", "zh-CN");
   });
@@ -41,10 +45,14 @@ test("defaults to English without a locale cookie even when legacy storage is Ch
   await expect(
     page.getByText("Regulatory Intelligence", { exact: true }),
   ).toHaveCount(1);
-  await expect(page.getByText("REGULATORY SCAN", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("REGULATORY SCAN", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("PRODUCT FIT", { exact: true })).toBeVisible();
   await expect(page.getByText("MARKET BRIEF", { exact: true })).toBeVisible();
-  await expect(page.getByText("Demo fixture", { exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByText("Demo fixture", { exact: true }).first(),
+  ).toBeVisible();
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
     "content",
     "Global Diesel Intelligence",
@@ -124,9 +132,7 @@ test("localizes the public 404 without losing the unknown path", async ({
     "content",
     "Page not found",
   );
-  await expect(
-    page.locator('meta[property="og:description"]'),
-  ).toHaveAttribute(
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
     "content",
     "This path does not exist or is no longer available. Check the link or return to the map.",
   );
@@ -149,9 +155,7 @@ test("localizes the public 404 without losing the unknown path", async ({
     "content",
     "页面不存在",
   );
-  await expect(
-    page.locator('meta[property="og:description"]'),
-  ).toHaveAttribute(
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
     "content",
     "访问的路径不存在或已下线。请检查链接，或返回地图。",
   );
@@ -217,8 +221,9 @@ test("retires active chat streams in both locale directions", async ({
   await englishChat.getByRole("button", { name: "Send question" }).click();
   await staleRequestStarted;
 
-  const requestFailed = page.waitForEvent("requestfailed", (request) =>
-    new URL(request.url()).pathname === "/api/chat",
+  const requestFailed = page.waitForEvent(
+    "requestfailed",
+    (request) => new URL(request.url()).pathname === "/api/chat",
   );
   await page
     .getByTestId("locale-toggle")
@@ -281,8 +286,9 @@ test("retires active chat streams in both locale directions", async ({
   await chineseChat.getByRole("button", { name: "发送问题" }).click();
   await staleChineseRequestStarted;
 
-  const chineseRequestFailed = page.waitForEvent("requestfailed", (request) =>
-    new URL(request.url()).pathname === "/api/chat",
+  const chineseRequestFailed = page.waitForEvent(
+    "requestfailed",
+    (request) => new URL(request.url()).pathname === "/api/chat",
   );
   await page
     .getByTestId("locale-toggle")
@@ -295,9 +301,9 @@ test("retires active chat streams in both locale directions", async ({
   releaseStaleChineseResponse();
   await staleChineseHandlerSettled;
   await page.waitForTimeout(100);
-  await expect(
-    page.getByText(staleChineseMarker, { exact: true }),
-  ).toHaveCount(0);
+  await expect(page.getByText(staleChineseMarker, { exact: true })).toHaveCount(
+    0,
+  );
 
   const currentMarker = "Current English request completed";
   let currentLocale: unknown;
@@ -330,9 +336,9 @@ test("retires active chat streams in both locale directions", async ({
   ).toBeVisible();
   expect(currentLocale).toBe("en");
   await expect(page.getByText(staleMarker, { exact: true })).toHaveCount(0);
-  await expect(
-    page.getByText(staleChineseMarker, { exact: true }),
-  ).toHaveCount(0);
+  await expect(page.getByText(staleChineseMarker, { exact: true })).toHaveCount(
+    0,
+  );
 });
 
 test("offers a localized keyboard shortcut to the main content", async ({
@@ -363,7 +369,9 @@ test("offers a localized keyboard shortcut to the main content", async ({
   await expect(page.getByRole("link", { name: "跳到主要内容" })).toBeFocused();
 });
 
-test("announces the asynchronous country-summary load", async ({ page }, testInfo) => {
+test("announces the asynchronous country-summary load", async ({
+  page,
+}, testInfo) => {
   test.skip(
     testInfo.project.name !== "desktop-chromium",
     "The live-region contract only needs one browser project.",
@@ -396,12 +404,18 @@ test("switches to Chinese without losing the path or query and persists it", asy
   const hydrationErrors: string[] = [];
   const chunkLoadErrors: string[] = [];
   page.on("console", (message) => {
-    if (message.type() === "error" && message.text().includes("Hydration failed")) {
+    if (
+      message.type() === "error" &&
+      message.text().includes("Hydration failed")
+    ) {
       hydrationErrors.push(message.text());
     }
   });
   page.on("pageerror", (error) => {
-    if (error.name === "ChunkLoadError" || error.message.includes("ChunkLoadError")) {
+    if (
+      error.name === "ChunkLoadError" ||
+      error.message.includes("ChunkLoadError")
+    ) {
       chunkLoadErrors.push(error.message);
     }
   });
@@ -446,9 +460,13 @@ test("switches to Chinese without losing the path or query and persists it", asy
   ).toBeVisible();
   await expect(page.getByText("法规情报", { exact: true })).toHaveCount(1);
   await expect(page.getByText("法规扫描", { exact: true })).toBeVisible();
-  await expect(page.getByText("产品适配", { exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByText("产品适配", { exact: true }).first(),
+  ).toBeVisible();
   await expect(page.getByText("市场简报", { exact: true })).toBeVisible();
-  await expect(page.getByText("演示数据", { exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByText("演示数据", { exact: true }).first(),
+  ).toBeVisible();
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
     "content",
     "全球柴油机法规情报",
@@ -625,18 +643,20 @@ test("shows locale-change failures and preserves state until a retry succeeds", 
     hasText: "Language change failed.",
   });
   await expect(englishAlert).toBeVisible();
-  await expect.poll(async () => {
-    const bounds = await englishAlert.evaluate((element) => {
-      const rectangle = element.getBoundingClientRect();
-      return {
-        bottom: rectangle.bottom <= window.innerHeight,
-        left: rectangle.left >= 0,
-        right: rectangle.right <= window.innerWidth,
-        top: rectangle.top >= 0,
-      };
-    });
-    return bounds;
-  }).toEqual({ bottom: true, left: true, right: true, top: true });
+  await expect
+    .poll(async () => {
+      const bounds = await englishAlert.evaluate((element) => {
+        const rectangle = element.getBoundingClientRect();
+        return {
+          bottom: rectangle.bottom <= window.innerHeight,
+          left: rectangle.left >= 0,
+          right: rectangle.right <= window.innerWidth,
+          top: rectangle.top >= 0,
+        };
+      });
+      return bounds;
+    })
+    .toEqual({ bottom: true, left: true, right: true, top: true });
   await expect(englishButton).toHaveAttribute("aria-pressed", "true");
   await expect(chineseButton).toHaveAttribute("aria-pressed", "false");
   await expect(chineseButton).toBeEnabled();
@@ -761,8 +781,7 @@ test("fully reloads when a timed-out locale RSC settles before rollback responds
     "The controlled RSC recovery path only needs one browser project.",
   );
 
-  const expectedUrl =
-    "/map?utm_source=locale-refresh-recovery#main-content";
+  const expectedUrl = "/map?utm_source=locale-refresh-recovery#main-content";
   await page.goto(expectedUrl);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   const historyLength = await page.evaluate(() => window.history.length);
@@ -823,12 +842,18 @@ test("fully reloads when a timed-out locale RSC settles before rollback responds
     "aria-busy",
     "false",
   );
-  await expect.poll(() =>
-    page.evaluate(() =>
-      (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming)
-        .type,
-    ),
-  ).toBe("reload");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (
+            performance.getEntriesByType(
+              "navigation",
+            )[0] as PerformanceNavigationTiming
+          ).type,
+      ),
+    )
+    .toBe("reload");
   expect(await page.evaluate(() => window.history.length)).toBe(historyLength);
   expect(
     (await context.cookies()).find(({ name }) => name === "diesel_locale")
@@ -893,18 +918,23 @@ test("ignores a locale failure that settles after the active locale changed", as
   await expect(
     page.getByText("DO NOT RENDER stale locale error", { exact: true }),
   ).toHaveCount(0);
-  await expect(
-    page.getByText("语言切换失败。", { exact: true }),
-  ).toHaveCount(0);
+  await expect(page.getByText("语言切换失败。", { exact: true })).toHaveCount(
+    0,
+  );
   await expect(
     page.getByText("Language change failed.", { exact: true }),
   ).toHaveCount(0);
 });
 
-test("does not depend on browser storage when saving the locale cookie", async ({ page }) => {
+test("does not depend on browser storage when saving the locale cookie", async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     Storage.prototype.setItem = () => {
-      throw new DOMException("Storage disabled by privacy policy.", "SecurityError");
+      throw new DOMException(
+        "Storage disabled by privacy policy.",
+        "SecurityError",
+      );
     };
   });
   await page.goto("/");
@@ -950,60 +980,106 @@ test("relocalizes an untouched deep-link prompt without overwriting an edit", as
   await expect(input).toHaveValue("保留这条用户编辑的内容");
 });
 
-
 for (const locale of ["en", "zh-CN"] as const) {
-  test(`fully exposes labeled header navigation at desktop widths in ${locale}`, async ({ page }) => {
-    const response = await page.request.post("/api/preferences/locale", { data: { locale } });
+  test(`fully exposes labeled header navigation at desktop widths in ${locale}`, async ({
+    page,
+  }) => {
+    const response = await page.request.post("/api/preferences/locale", {
+      data: { locale },
+    });
     expect(response.ok()).toBe(true);
     // This checks header layout and navigation, not on-demand compilation.
     // Load the real destinations without clicking or warming the browser router;
     // every original click, URL, active-link and layout assertion still runs.
-    await test.step("Prepare real navigation destinations before header assertions", async () => {
-      for (const pathname of ["/", "/chat", "/map", "/compare", "/products", "/analyses"]) {
-        const destination = await page.request.get(pathname, { timeout: 30_000 });
-        expect(destination.status()).toBe(200);
-        expect(new URL(destination.url()).pathname).toBe(pathname);
-      }
-    }, { timeout: 30_000 });
+    await test.step(
+      "Prepare real navigation destinations before header assertions",
+      async () => {
+        for (const pathname of [
+          "/",
+          "/chat",
+          "/map",
+          "/compare",
+          "/products",
+          "/analyses",
+        ]) {
+          const destination = await page.request.get(pathname, {
+            timeout: 30_000,
+          });
+          expect(destination.status()).toBe(200);
+          expect(new URL(destination.url()).pathname).toBe(pathname);
+        }
+      },
+      { timeout: 30_000 },
+    );
     await page.goto("/chat");
-    const navigation = page.getByRole("navigation", { name: locale === "en" ? "Primary navigation" : "主导航" });
-    const labels = locale === "en" ? ["Home", "Chat", "Map", "Compare", "Products", "Saved"] : ["首页", "对话", "地图", "比较", "产品库", "已保存"];
+    const navigation = page.getByRole("navigation", {
+      name: locale === "en" ? "Primary navigation" : "主导航",
+    });
+    const labels =
+      locale === "en"
+        ? ["Home", "Chat", "Map", "Compare", "Products", "Saved"]
+        : ["首页", "对话", "地图", "比较", "产品库", "已保存"];
     await expect(navigation.getByRole("link")).toHaveText(labels);
 
     const expectHeaderFits = async (width: number) => {
       // Visibility alone does not prove a link is fully inside its scrollport.
       // Check before any click can automatically scroll it into view.
-      await expect.poll(() => navigation.evaluate((element) => {
-        const bounds = element.getBoundingClientRect();
-        const toggle = document.querySelector<HTMLElement>('[data-testid="locale-toggle"]');
-        if (!toggle) throw new Error("Missing the header language control.");
-        const toggleBounds = toggle.getBoundingClientRect();
-        const links = Array.from(element.querySelectorAll("a"));
-        const controls = [...links, ...toggle.querySelectorAll("button")];
-        return {
-          clippedLabels: links.filter((link) => {
-            const rect = link.getBoundingClientRect();
-            return rect.left < bounds.left + element.clientLeft - 1 ||
-              rect.right > bounds.right - element.clientLeft + 1 ||
-              rect.top < 0 || rect.bottom > window.innerHeight;
-          }).map((link) => link.textContent?.trim()),
-          documentOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
-          languageControlOutside: toggleBounds.left < 0 || toggleBounds.right > window.innerWidth,
-          navigationOverflow: element.scrollWidth > element.clientWidth + 1,
-          // Navigation and language controls occupy different header rows.
-          overlap: bounds.left < toggleBounds.right - 1 &&
-            bounds.right > toggleBounds.left + 1 &&
-            bounds.top < toggleBounds.bottom - 1 &&
-            bounds.bottom > toggleBounds.top + 1,
-          undersizedControls: controls.filter((control) => {
-            const rect = control.getBoundingClientRect();
-            return rect.width < 32 || rect.height < 32;
-          }).map((control) => control.textContent?.trim()),
-        };
-      }), { message: `${locale} header at ${width}px` }).toEqual({
-        clippedLabels: [], documentOverflow: false, languageControlOutside: false,
-        navigationOverflow: false, overlap: false, undersizedControls: [],
-      });
+      await expect
+        .poll(
+          () =>
+            navigation.evaluate((element) => {
+              const bounds = element.getBoundingClientRect();
+              const toggle = document.querySelector<HTMLElement>(
+                '[data-testid="locale-toggle"]',
+              );
+              if (!toggle)
+                throw new Error("Missing the header language control.");
+              const toggleBounds = toggle.getBoundingClientRect();
+              const links = Array.from(element.querySelectorAll("a"));
+              const controls = [...links, ...toggle.querySelectorAll("button")];
+              return {
+                clippedLabels: links
+                  .filter((link) => {
+                    const rect = link.getBoundingClientRect();
+                    return (
+                      rect.left < bounds.left + element.clientLeft - 1 ||
+                      rect.right > bounds.right - element.clientLeft + 1 ||
+                      rect.top < 0 ||
+                      rect.bottom > window.innerHeight
+                    );
+                  })
+                  .map((link) => link.textContent?.trim()),
+                documentOverflow:
+                  document.documentElement.scrollWidth > window.innerWidth + 1,
+                languageControlOutside:
+                  toggleBounds.left < 0 ||
+                  toggleBounds.right > window.innerWidth,
+                navigationOverflow:
+                  element.scrollWidth > element.clientWidth + 1,
+                // Navigation and language controls occupy different header rows.
+                overlap:
+                  bounds.left < toggleBounds.right - 1 &&
+                  bounds.right > toggleBounds.left + 1 &&
+                  bounds.top < toggleBounds.bottom - 1 &&
+                  bounds.bottom > toggleBounds.top + 1,
+                undersizedControls: controls
+                  .filter((control) => {
+                    const rect = control.getBoundingClientRect();
+                    return rect.width < 32 || rect.height < 32;
+                  })
+                  .map((control) => control.textContent?.trim()),
+              };
+            }),
+          { message: `${locale} header at ${width}px` },
+        )
+        .toEqual({
+          clippedLabels: [],
+          documentOverflow: false,
+          languageControlOutside: false,
+          navigationOverflow: false,
+          overlap: false,
+          undersizedControls: [],
+        });
     };
 
     for (const width of [1024, 1280, 1440]) {
@@ -1017,18 +1093,27 @@ for (const locale of ["en", "zh-CN"] as const) {
     }
 
     await page.setViewportSize({ height: 720, width: 1024 });
-    for (const [index, pathname] of ["/", "/chat", "/map", "/compare", "/products", "/analyses"].entries()) {
+    for (const [index, pathname] of [
+      "/",
+      "/chat",
+      "/map",
+      "/compare",
+      "/products",
+      "/analyses",
+    ].entries()) {
       await expectHeaderFits(1024);
-      await navigation.getByRole("link", { exact: true, name: labels[index]! }).click();
+      await navigation
+        .getByRole("link", { exact: true, name: labels[index]! })
+        .click();
       await expect.poll(() => new URL(page.url()).pathname).toBe(pathname);
-      await expect(navigation.getByRole("link", { exact: true, name: labels[index]! }))
-        .toHaveAttribute("aria-current", "page");
+      await expect(
+        navigation.getByRole("link", { exact: true, name: labels[index]! }),
+      ).toHaveAttribute("aria-current", "page");
       await expectHeaderFits(1024);
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
     }
   });
 }
-
 
 test("localizes visible country names and dates while preserving the ISO query", async ({
   page,
@@ -1036,33 +1121,41 @@ test("localizes visible country names and dates while preserving the ISO query",
   // This case verifies localized UI, not Next development compilation speed.
   // Compile the real read-only routes in a separately bounded preparation step
   // so the original 10-second UI assertions do not include their cold builds.
-  await test.step("Prepare the real catalog and fit routes before locale assertions", async () => {
-    const products = await page.request.get("/api/products", { timeout: 30_000 });
-    expect(products.status()).toBe(200);
-    const catalog = productListResponseSchema.parse(await products.json());
-    expect(catalog.products.some(
-      (product) => product.modelCode === "DEMO-ENG-100",
-    )).toBe(true);
-    const fit = await page.request.post("/api/product-fit", {
-      data: {
+  await test.step(
+    "Prepare the real catalog and fit routes before locale assertions",
+    async () => {
+      const products = await page.request.get("/api/products", {
+        timeout: 30_000,
+      });
+      expect(products.status()).toBe(200);
+      const catalog = productListResponseSchema.parse(await products.json());
+      expect(
+        catalog.products.some(
+          (product) => product.modelCode === "DEMO-ENG-100",
+        ),
+      ).toBe(true);
+      const fit = await page.request.post("/api/product-fit", {
+        data: {
+          applicationScope: "non-road",
+          asOf: "2026-08-12",
+          countryIso3: "CHN",
+          powerKw: 100,
+          productModelCode: "DEMO-ENG-100",
+        },
+        timeout: 30_000,
+      });
+      expect(fit.status()).toBe(200);
+      const evaluation = productFitEvaluationSchema.parse(await fit.json());
+      expect(evaluation.input).toMatchObject({
         applicationScope: "non-road",
-        asOf: "2026-08-12",
         countryIso3: "CHN",
         powerKw: 100,
         productModelCode: "DEMO-ENG-100",
-      },
-      timeout: 30_000,
-    });
-    expect(fit.status()).toBe(200);
-    const evaluation = productFitEvaluationSchema.parse(await fit.json());
-    expect(evaluation.input).toMatchObject({
-      applicationScope: "non-road",
-      countryIso3: "CHN",
-      powerKw: 100,
-      productModelCode: "DEMO-ENG-100",
-    });
-    expect(evaluation.asOf).toBe("2026-08-12");
-  }, { timeout: 30_000 });
+      });
+      expect(evaluation.asOf).toBe("2026-08-12");
+    },
+    { timeout: 30_000 },
+  );
   await page.goto(
     "/countries/CHN?applicationScope=non-road&asOf=2026-08-12&powerKw=100&productModelCode=DEMO-ENG-100",
   );
@@ -1149,25 +1242,22 @@ test("localizes visible country names and dates while preserving the ISO query",
     .locator("details");
   await applicabilitySources.locator("summary").click();
   await expect(applicabilitySources).toContainText("Jan 1, 2000 → Open");
-  await expect(applicabilitySources).toContainText(
-    "NOX · Jan 1, 2025 → Open",
-  );
+  await expect(applicabilitySources).toContainText("NOX · Jan 1, 2025 → Open");
   await expect(applicabilitySources).toContainText("DEMO-CHN-NR-A");
   await expect(applicabilitySources).toContainText("DEMO-CHN-AUTHORITY");
   await expect(applicabilitySources).toContainText(
     "DEMO ONLY — Fictional emissions bulletin",
   );
   await expect(applicabilitySources).not.toContainText("2000-01-01–open");
-  await expect(applicabilitySources).not.toContainText(
-    "NOX 2025-01-01–open",
-  );
+  await expect(applicabilitySources).not.toContainText("NOX 2025-01-01–open");
 
   // Exercise the browser's real locale flow, including the cookie and refresh,
   // instead of reusing the preparation step's idle API request connection.
   const [response] = await Promise.all([
-    page.waitForResponse((response) =>
-      new URL(response.url()).pathname === "/api/preferences/locale"
-      && response.request().method() === "POST",
+    page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/preferences/locale" &&
+        response.request().method() === "POST",
     ),
     detail
       .getByTestId("country-drawer-locale-toggle")
@@ -1252,25 +1342,41 @@ test("localizes visible country names and dates while preserving the ISO query",
   await expect(detail).toContainText("DEMO ONLY — Fictional market report");
   await applicabilitySources.locator("summary").click();
   await expect(applicabilitySources).toContainText("2000年1月1日 → 开放");
-  await expect(applicabilitySources).toContainText(
-    "NOX · 2025年1月1日 → 开放",
-  );
+  await expect(applicabilitySources).toContainText("NOX · 2025年1月1日 → 开放");
   await expect(applicabilitySources).toContainText("DEMO-CHN-NR-A");
   await expect(applicabilitySources).toContainText("DEMO-CHN-AUTHORITY");
   await expect(applicabilitySources).toContainText(
     "DEMO ONLY — Fictional emissions bulletin",
   );
   await expect(applicabilitySources).not.toContainText("2000-01-01–open");
-  await expect(applicabilitySources).not.toContainText(
-    "NOX 2025-01-01–open",
-  );
+  await expect(applicabilitySources).not.toContainText("NOX 2025-01-01–open");
 });
 
 for (const scenario of [
-  { name: "encoded Chinese", first: "%7Ah-CN", fallback: null, locale: "zh-CN" },
-  { name: "Chinese before English", first: "zh-CN", fallback: "en", locale: "zh-CN" },
-  { name: "English before Chinese", first: "en", fallback: "zh-CN", locale: "en" },
-  { name: "malformed before Chinese", first: "%E0%A4%A", fallback: "zh-CN", locale: "en" },
+  {
+    name: "encoded Chinese",
+    first: "%7Ah-CN",
+    fallback: null,
+    locale: "zh-CN",
+  },
+  {
+    name: "Chinese before English",
+    first: "zh-CN",
+    fallback: "en",
+    locale: "zh-CN",
+  },
+  {
+    name: "English before Chinese",
+    first: "en",
+    fallback: "zh-CN",
+    locale: "en",
+  },
+  {
+    name: "malformed before Chinese",
+    first: "%E0%A4%A",
+    fallback: "zh-CN",
+    locale: "en",
+  },
 ] as const) {
   test(`keeps locale Cookie parsing consistent for ${scenario.name}`, async ({
     baseURL,
@@ -1280,12 +1386,16 @@ for (const scenario of [
     if (!baseURL) throw new Error("The locale test requires a local base URL.");
     const domain = new URL(baseURL).hostname;
     await context.addCookies([
-      ...(scenario.fallback === null ? [] : [{
-        domain,
-        name: "diesel_locale",
-        path: "/",
-        value: scenario.fallback,
-      }]),
+      ...(scenario.fallback === null
+        ? []
+        : [
+            {
+              domain,
+              name: "diesel_locale",
+              path: "/",
+              value: scenario.fallback,
+            },
+          ]),
       {
         domain,
         name: "diesel_locale",
@@ -1314,9 +1424,13 @@ for (const scenario of [
     });
     expect(documentResponse.status()).toBe(200);
     const serverHtml = await documentResponse.text();
-    const serverLanguage = serverHtml.match(/<html\b[^>]*\blang="([^"]+)"/u)?.[1];
+    const serverLanguage = serverHtml.match(
+      /<html\b[^>]*\blang="([^"]+)"/u,
+    )?.[1];
     expect.soft(serverLanguage).toBe(scenario.locale);
-    await expect.soft(page.locator("html")).toHaveAttribute("lang", scenario.locale);
+    await expect
+      .soft(page.locator("html"))
+      .toHaveAttribute("lang", scenario.locale);
 
     // The capability response is deterministic and must never call a model.
     // Forward the exact browser Cookie header to compare the same input even
@@ -1324,19 +1438,23 @@ for (const scenario of [
     const chatResponse = await page.request.post("/api/chat", {
       headers: { cookie: browserCookie },
       data: {
-        messages: [{
-          id: "locale-cookie-capability",
-          parts: [{ text: "What can you do?", type: "text" }],
-          role: "user",
-        }],
+        messages: [
+          {
+            id: "locale-cookie-capability",
+            parts: [{ text: "What can you do?", type: "text" }],
+            role: "user",
+          },
+        ],
         sessionId: crypto.randomUUID(),
       },
     });
     expect(chatResponse.status()).toBe(200);
-    expect.soft(await chatResponse.text()).toContain(
-      scenario.locale === "en"
-        ? "structured facts and traceable sources"
-        : "结构化事实和可追溯来源",
-    );
+    expect
+      .soft(await chatResponse.text())
+      .toContain(
+        scenario.locale === "en"
+          ? "structured facts and traceable sources"
+          : "结构化事实和可追溯来源",
+      );
   });
 }

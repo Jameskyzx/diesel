@@ -23,12 +23,7 @@ const jurisdictionTypeKeys = {
 } as const satisfies Record<JurisdictionType, keyof Dictionary["country"]>;
 
 type CountryRegionCode =
-  | "AFRICA"
-  | "AMERICAS"
-  | "ANTARCTICA"
-  | "ASIA"
-  | "EUROPE"
-  | "OCEANIA";
+  "AFRICA" | "AMERICAS" | "ANTARCTICA" | "ASIA" | "EUROPE" | "OCEANIA";
 
 const countryRegionKeys = {
   AFRICA: "regionAfrica",
@@ -86,10 +81,7 @@ const countrySubregionKeys = {
   WESTERN_AFRICA: "subregionWesternAfrica",
   WESTERN_ASIA: "subregionWesternAsia",
   WESTERN_EUROPE: "subregionWesternEurope",
-} as const satisfies Record<
-  CountrySubregionCode,
-  keyof Dictionary["country"]
->;
+} as const satisfies Record<CountrySubregionCode, keyof Dictionary["country"]>;
 
 const certificationStatusKeys = {
   active: "certificationStatusActive",
@@ -217,9 +209,7 @@ type MarketMetricDisplayIdentity = {
   metricName: string;
 };
 
-function isKnownDemoMarketMetric(
-  input: MarketMetricDisplayIdentity,
-): boolean {
+function isKnownDemoMarketMetric(input: MarketMetricDisplayIdentity): boolean {
   return (
     input.isDemo &&
     input.metricCode === demoMarketMetricCode &&
@@ -273,9 +263,7 @@ export function countryRegionLabel(
   code: string | null | undefined,
   dictionary: Dictionary,
 ): string {
-  const key = code
-    ? countryRegionKeys[code as CountryRegionCode]
-    : undefined;
+  const key = code ? countryRegionKeys[code as CountryRegionCode] : undefined;
   return key ? dictionary.country[key] : dictionary.common.notRecorded;
 }
 
@@ -308,9 +296,8 @@ export function jurisdictionDisplayName(
     return input.name;
   }
 
-  const fixture = demoJurisdictionFixtures[
-    input.id as keyof typeof demoJurisdictionFixtures
-  ];
+  const fixture =
+    demoJurisdictionFixtures[input.id as keyof typeof demoJurisdictionFixtures];
   if (
     !fixture ||
     !input.sourceIsDemo ||
@@ -357,9 +344,8 @@ export function productDisplayName(
     return input.name;
   }
 
-  const fixture = demoProductFixtures[
-    input.id as keyof typeof demoProductFixtures
-  ];
+  const fixture =
+    demoProductFixtures[input.id as keyof typeof demoProductFixtures];
   if (
     !fixture ||
     !input.source.isDemo ||
@@ -416,9 +402,8 @@ export function regulationDisplayName(
     return input.canonicalName;
   }
 
-  const fixture = demoRegulationFixtures[
-    input.id as keyof typeof demoRegulationFixtures
-  ];
+  const fixture =
+    demoRegulationFixtures[input.id as keyof typeof demoRegulationFixtures];
   if (!fixture || fixture.canonicalName !== input.canonicalName) {
     return input.canonicalName;
   }
@@ -450,20 +435,17 @@ export function countryApplicabilityMissingDataMessages(
 
   const values = { iso3: input.countryIso3 };
   if (input.countryName === null) {
-    return [interpolate(dictionary.country.applicabilityMissingCountry, values)];
+    return [
+      interpolate(dictionary.country.applicabilityMissingCountry, values),
+    ];
   }
   if (
     input.currentEffectiveRegulationCount === 0 &&
     input.futureAdoptedRegulationCount === 0
   ) {
     return [
-      interpolate(
-        dictionary.country.applicabilityMissingRegulations,
-        values,
-      ),
+      interpolate(dictionary.country.applicabilityMissingRegulations, values),
     ];
   }
-  return [
-    interpolate(dictionary.country.applicabilityMissingEvidence, values),
-  ];
+  return [interpolate(dictionary.country.applicabilityMissingEvidence, values)];
 }

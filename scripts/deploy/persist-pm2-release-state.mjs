@@ -33,9 +33,11 @@ function fail() {
 }
 
 function hasExactMetadata(metadata, mode) {
-  return metadata.uid === 0n &&
+  return (
+    metadata.uid === 0n &&
     metadata.gid === 0n &&
-    Number(metadata.mode & 0o7777n) === mode;
+    Number(metadata.mode & 0o7777n) === mode
+  );
 }
 
 function sameInode(left, right) {
@@ -60,10 +62,7 @@ function normalizeNumericIdentity(identity) {
   ) {
     return identity;
   }
-  if (
-    typeof identity !== "string" ||
-    !numericIdentityPattern.test(identity)
-  ) {
+  if (typeof identity !== "string" || !numericIdentityPattern.test(identity)) {
     fail();
   }
   const normalized = Number(identity);
@@ -86,9 +85,11 @@ function isRecord(value) {
 }
 
 function hasExactStringArray(actual, expected) {
-  return Array.isArray(actual) &&
+  return (
+    Array.isArray(actual) &&
     actual.length === expected.length &&
-    actual.every((value, index) => value === expected[index]);
+    actual.every((value, index) => value === expected[index])
+  );
 }
 
 function expectedLaunchArguments(expectedReleaseId) {
@@ -133,7 +134,7 @@ export function validatePm2DumpDocument(
   }
 
   const matchingApplications = document.filter((application) =>
-    visibleApplicationName(application).includes("diesel-demo")
+    visibleApplicationName(application).includes("diesel-demo"),
   );
   if (matchingApplications.length !== 1) fail();
   const matchingApplication = matchingApplications[0];
@@ -177,7 +178,9 @@ function parseAndValidateDump(
 ) {
   let document;
   try {
-    document = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(contents));
+    document = JSON.parse(
+      new TextDecoder("utf-8", { fatal: true }).decode(contents),
+    );
   } catch {
     fail();
   }
@@ -441,8 +444,10 @@ export function persistPm2ReleaseState(
 function isMainModule() {
   if (!process.argv[1]) return false;
   try {
-    return realpathSync(resolve(process.argv[1])) ===
-      realpathSync(fileURLToPath(import.meta.url));
+    return (
+      realpathSync(resolve(process.argv[1])) ===
+      realpathSync(fileURLToPath(import.meta.url))
+    );
   } catch {
     return false;
   }

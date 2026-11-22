@@ -2,10 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 
-import {
-  getDictionary,
-  type Dictionary,
-} from "@/i18n/dictionaries";
+import { getDictionary, type Dictionary } from "@/i18n/dictionaries";
 import { defaultLocale, type Locale } from "@/i18n/locale";
 import { configureBrowserZodRuntime } from "@/lib/browser-zod-runtime";
 

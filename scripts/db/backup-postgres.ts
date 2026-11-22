@@ -4,20 +4,20 @@ import { basename, dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { getDatabaseUrl } from "../../src/server/db/environment";
-import {
-  createPostgresBackupConnection,
-  sha256File,
-} from "./postgres-backup";
+import { createPostgresBackupConnection, sha256File } from "./postgres-backup";
 
 const execFileAsync = promisify(execFile);
 
 function outputArgument(): string {
   const prefix = "--output=";
-  const output = process.argv.slice(2).find((argument) =>
-    argument.startsWith(prefix)
-  )?.slice(prefix.length);
+  const output = process.argv
+    .slice(2)
+    .find((argument) => argument.startsWith(prefix))
+    ?.slice(prefix.length);
   if (!output) {
-    throw new Error("Usage: pnpm db:backup --output=/absolute/path/release.dump");
+    throw new Error(
+      "Usage: pnpm db:backup --output=/absolute/path/release.dump",
+    );
   }
   return resolve(process.cwd(), output);
 }
@@ -31,7 +31,11 @@ async function main(): Promise<void> {
     await stat(outputPath);
     throw new Error("Backup output already exists; refusing to overwrite it.");
   } catch (error) {
-    if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") {
+    if (
+      !(error instanceof Error) ||
+      !("code" in error) ||
+      error.code !== "ENOENT"
+    ) {
       throw error;
     }
   }
@@ -50,7 +54,9 @@ async function main(): Promise<void> {
       timeout: 10 * 60 * 1_000,
     });
   } catch {
-    throw new Error("pg_dump failed; the database URL and stderr were not printed.");
+    throw new Error(
+      "pg_dump failed; the database URL and stderr were not printed.",
+    );
   } finally {
     process.umask(previousUmask);
   }
@@ -66,7 +72,9 @@ async function main(): Promise<void> {
       throw new Error("empty catalog");
     }
   } catch {
-    throw new Error("pg_restore --list did not validate the custom-format backup.");
+    throw new Error(
+      "pg_restore --list did not validate the custom-format backup.",
+    );
   }
 
   const digest = await sha256File(outputPath);

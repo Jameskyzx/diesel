@@ -170,11 +170,7 @@ export function createRegulationRepository<
               isNull(countryJurisdictions.validTo),
               gt(countryJurisdictions.validTo, query.asOf),
             ),
-            inArray(regulations.status, [
-              "adopted",
-              "effective",
-              "superseded",
-            ]),
+            inArray(regulations.status, ["adopted", "effective", "superseded"]),
             or(
               and(
                 or(

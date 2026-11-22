@@ -18,9 +18,7 @@ const maximumGeneratedTextCodeUnits = 16 * 1024 * 1024;
 export class KnowledgeChunkingError extends Error {
   constructor(
     readonly code:
-      | "HEADING_PATH_LIMIT"
-      | "CHUNK_COUNT_LIMIT"
-      | "GENERATED_TEXT_LIMIT",
+      "HEADING_PATH_LIMIT" | "CHUNK_COUNT_LIMIT" | "GENERATED_TEXT_LIMIT",
   ) {
     super(`Knowledge chunking limit exceeded: ${code}.`);
     this.name = "KnowledgeChunkingError";
@@ -28,7 +26,8 @@ export class KnowledgeChunkingError extends Error {
 }
 
 function assertHeadingPathBudget(headings: readonly { text: string }[]): void {
-  const pathLength = headings.reduce((length, heading) => length + heading.text.length, 0) +
+  const pathLength =
+    headings.reduce((length, heading) => length + heading.text.length, 0) +
     Math.max(0, headings.length - 1) * " > ".length;
   if (pathLength > maximumHeadingPathCodeUnits) {
     throw new KnowledgeChunkingError("HEADING_PATH_LIMIT");
@@ -98,7 +97,10 @@ export function chunkStructuredText(
       paragraphNumber += 1;
       const headingPath = headingStack.map((heading) => heading.text);
       const heading = headingPath.join(" > ");
-      const headingFieldCodeUnits = headingPath.reduce((length, text) => length + text.length, 0);
+      const headingFieldCodeUnits = headingPath.reduce(
+        (length, text) => length + text.length,
+        0,
+      );
       const sectionLocator = `${heading} · paragraph ${paragraphNumber}`;
       for (const part of splitLongParagraph(paragraph)) {
         if (chunks.length >= maximumChunks) {
@@ -107,9 +109,16 @@ export function chunkStructuredText(
         // Count every generated text field, including repeated metadata, before
         // allocating/tokenizing the next content value. This is an output budget,
         // not a process-RSS limit or permission to truncate source evidence.
-        const nextTextCodeUnits = heading.length + 1 + part.length +
-          headingFieldCodeUnits + sectionLocator.length;
-        if (generatedTextCodeUnits + nextTextCodeUnits > maximumGeneratedTextCodeUnits) {
+        const nextTextCodeUnits =
+          heading.length +
+          1 +
+          part.length +
+          headingFieldCodeUnits +
+          sectionLocator.length;
+        if (
+          generatedTextCodeUnits + nextTextCodeUnits >
+          maximumGeneratedTextCodeUnits
+        ) {
           throw new KnowledgeChunkingError("GENERATED_TEXT_LIMIT");
         }
         generatedTextCodeUnits += nextTextCodeUnits;

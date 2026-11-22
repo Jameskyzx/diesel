@@ -262,8 +262,12 @@ describe("regulation comparison deterministic consistency", () => {
     current.effectiveTo = "2027-01-01";
 
     expect(
-      [baseline, lowerPowerBoundary, effectiveDateBoundary, historicalEffective]
-        .every(regulationComparisonMatchesDeterministicRules),
+      [
+        baseline,
+        lowerPowerBoundary,
+        effectiveDateBoundary,
+        historicalEffective,
+      ].every(regulationComparisonMatchesDeterministicRules),
     ).toBe(true);
   });
 
@@ -289,8 +293,7 @@ describe("regulation comparison deterministic consistency", () => {
   }> = [
     {
       mutate: (comparison) => {
-        const future =
-          comparison.countries[1]!.futureAdoptedRegulations.pop()!;
+        const future = comparison.countries[1]!.futureAdoptedRegulations.pop()!;
         future.status = "effective";
         comparison.countries[1]!.currentEffectiveRegulations.push(future);
       },
@@ -328,8 +331,7 @@ describe("regulation comparison deterministic consistency", () => {
     },
     {
       mutate: (comparison) => {
-        comparison.countries[0]!.currentEffectiveRegulations[0]!.limits[0]!.powerMinKw =
-          101;
+        comparison.countries[0]!.currentEffectiveRegulations[0]!.limits[0]!.powerMinKw = 101;
       },
       name: "limit power lower boundary",
     },
@@ -577,9 +579,7 @@ describe("market comparison deterministic consistency", () => {
     },
     {
       mutate: (comparison) => {
-        const older = structuredClone(
-          comparison.metrics[0]!.observations[0]!,
-        );
+        const older = structuredClone(comparison.metrics[0]!.observations[0]!);
         older.id = "00000000-0000-4000-8000-000000000398";
         older.periodStart = "2024-01-01";
         older.periodEnd = "2025-01-01";

@@ -93,7 +93,8 @@ export const trustedUserFilePartSchema = z
     if (!part.url.startsWith(prefix)) {
       context.addIssue({
         code: "custom",
-        message: "Attachment must be an inline data URL matching its media type.",
+        message:
+          "Attachment must be an inline data URL matching its media type.",
         path: ["url"],
       });
       return;
@@ -142,14 +143,13 @@ export function selectTrustedUserMessages<
     return null;
   }
 
-  const validatedMessages: Array<{ message: TMessage; textLength: number }> = [];
+  const validatedMessages: Array<{ message: TMessage; textLength: number }> =
+    [];
   for (const [messageIndex, message] of userMessages.entries()) {
     const isLatestUserMessage = messageIndex === userMessages.length - 1;
     const parts = z
       .array(
-        isLatestUserMessage
-          ? trustedUserPartSchema
-          : trustedUserTextPartSchema,
+        isLatestUserMessage ? trustedUserPartSchema : trustedUserTextPartSchema,
       )
       .min(1)
       .safeParse(message.parts);

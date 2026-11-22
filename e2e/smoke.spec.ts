@@ -1,6 +1,12 @@
 import { readFile } from "node:fs/promises";
 
-import { expect, test, type Page, type Request as BrowserRequest, type Route } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Page,
+  type Request as BrowserRequest,
+  type Route,
+} from "@playwright/test";
 
 import { checkBrowserRuntimeErrors } from "./browser-runtime-errors";
 
@@ -54,8 +60,9 @@ async function holdNextChatRequest(page: Page): Promise<{
 }
 
 function waitForChatRequestFailure(page: Page) {
-  return page.waitForEvent("requestfailed", (request) =>
-    new URL(request.url()).pathname === "/api/chat"
+  return page.waitForEvent(
+    "requestfailed",
+    (request) => new URL(request.url()).pathname === "/api/chat",
   );
 }
 
@@ -69,7 +76,9 @@ test.beforeEach(async ({ baseURL, context }) => {
   ]);
 });
 
-test("renders the operational home entry and primary navigation", async ({ page }) => {
+test("renders the operational home entry and primary navigation", async ({
+  page,
+}) => {
   await page.goto("/");
 
   await expect(
@@ -94,9 +103,15 @@ test("renders the operational home entry and primary navigation", async ({ page 
   await expect(page.getByText("结构化覆盖率")).toHaveCount(0);
   await expect(page.getByText("EVIDENCE CONTRACT")).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible();
-  await expect(page.getByRole("link", { exact: true, name: "首页" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("link", { exact: true, name: "对话" })).toBeVisible();
-  await expect(page.getByRole("link", { exact: true, name: "地图" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { exact: true, name: "首页" }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.getByRole("link", { exact: true, name: "对话" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { exact: true, name: "地图" }),
+  ).toBeVisible();
   await expect(
     page.locator('button[aria-label="打开 AI 营销分析助手"]'),
   ).toHaveCount(0);
@@ -142,12 +157,17 @@ for (const cpuRate of [1, 8]) {
     });
     const heldRequests: BrowserRequest[] = [];
     let settledRequests = 0;
-    const requestsFor = (path: string) => heldRequests.filter(
-      (request) => new URL(request.url()).pathname === path,
-    );
+    const requestsFor = (path: string) =>
+      heldRequests.filter(
+        (request) => new URL(request.url()).pathname === path,
+      );
     const activeRequests = () => ({
-      countries: requestsFor("/api/countries").filter((request) => request.failure() === null).length,
-      locale: requestsFor("/api/preferences/locale").filter((request) => request.failure() === null).length,
+      countries: requestsFor("/api/countries").filter(
+        (request) => request.failure() === null,
+      ).length,
+      locale: requestsFor("/api/preferences/locale").filter(
+        (request) => request.failure() === null,
+      ).length,
     });
     const holdRequest = async (route: Route) => {
       heldRequests.push(route.request());
@@ -175,7 +195,9 @@ for (const cpuRate of [1, 8]) {
       ).toBeVisible();
 
       const localeToggle = page.getByTestId("locale-toggle");
-      await localeToggle.getByRole("button", { name: "EN", exact: true }).click();
+      await localeToggle
+        .getByRole("button", { name: "EN", exact: true })
+        .click();
       // Strict Mode cancels the first mount's GET. On a slower browser it may
       // reach interception before cancellation. Count live work, not obsolete
       // requests; never tolerate duplicate language preference writes.
@@ -220,16 +242,26 @@ for (const cpuRate of [1, 8]) {
   });
 }
 
-test("opens the dedicated chat workspace from primary navigation", async ({ page }) => {
+test("opens the dedicated chat workspace from primary navigation", async ({
+  page,
+}) => {
   await page.goto("/");
   await page.getByRole("link", { exact: true, name: "对话" }).click();
   await expect(page).toHaveURL(/\/chat$/);
-  await expect(page.getByRole("heading", { name: "和数据一起讨论下一步" })).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "AI 营销分析助手" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "和数据一起讨论下一步" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("complementary", { name: "AI 营销分析助手" }),
+  ).toBeVisible();
   await expect(page.getByText("连接你的 AI 接口")).toHaveCount(0);
   await expect(page.getByText("服务端 AI 已配置")).toBeVisible();
-  await expect(page.getByPlaceholder("输入问题，可附上文件或图片…")).toBeEditable();
-  await expect(page.getByRole("button", { name: "添加文件或图片" })).toBeEnabled();
+  await expect(
+    page.getByPlaceholder("输入问题，可附上文件或图片…"),
+  ).toBeEditable();
+  await expect(
+    page.getByRole("button", { name: "添加文件或图片" }),
+  ).toBeEnabled();
   await expect(page.getByText("先选国家，也可以直接指定国家。")).toHaveCount(0);
   await expect(
     page.getByText("信息参考，不替代正式认证或法律意见"),
@@ -253,13 +285,15 @@ test("preserves valid chat context while removing one invalid shared parameter",
     await expect(page).toHaveURL(
       /\/chat\?applicationScope=non-road&countryIso3=CHN&powerKw=100&productModelCode=DEMO-ENG-100&utm_source=e2e$/,
     );
-    await expect(page.getByPlaceholder("输入问题，可附上文件或图片…")).toHaveValue(
-      /CHN.*非道路 100 kW.*DEMO-ENG-100/,
-    );
+    await expect(
+      page.getByPlaceholder("输入问题，可附上文件或图片…"),
+    ).toHaveValue(/CHN.*非道路 100 kW.*DEMO-ENG-100/);
   });
 });
 
-test("answers a capability question without forcing a fact tool", async ({ page }) => {
+test("answers a capability question without forcing a fact tool", async ({
+  page,
+}) => {
   await page.goto("/chat");
 
   const assistant = page.getByRole("complementary", {
@@ -337,9 +371,11 @@ test("previews, removes, and validates chat attachments", async ({ page }) => {
             created: Array<{ name: string; url: string }>;
           };
         };
-        return browserGlobal.__chatAttachmentObjectUrls?.created.some(
-          ({ name }) => name === "engine-plate.png",
-        ) ?? false;
+        return (
+          browserGlobal.__chatAttachmentObjectUrls?.created.some(
+            ({ name }) => name === "engine-plate.png",
+          ) ?? false
+        );
       }),
     )
     .toBe(true);
@@ -406,11 +442,13 @@ test("lets the user stop a held chat request without showing a retry error", asy
 
     const stopButton = assistant.getByRole("button", { name: "停止生成" });
     await expect(stopButton).toBeVisible();
-    await expect.poll(() =>
-      page.evaluate(() =>
-        document.documentElement.scrollWidth <= window.innerWidth
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
       )
-    ).toBe(true);
+      .toBe(true);
     const requestFailed = waitForChatRequestFailure(page);
     await stopButton.click();
 
@@ -528,10 +566,7 @@ test("keeps a failed question and attachment for explicit retry or editing", asy
   });
   await prompt.fill("描述这张铭牌图片");
   const sendButton = assistant.getByRole("button", { name: "发送问题" });
-  await Promise.all([
-    expect(sendButton).toBeDisabled(),
-    sendButton.dblclick(),
-  ]);
+  await Promise.all([expect(sendButton).toBeDisabled(), sendButton.dblclick()]);
 
   await expect.poll(() => chatRequestBodies.length).toBe(1);
   expect(chatRequestBodies[0]).toContain("data:text/plain;base64,");
@@ -549,11 +584,15 @@ test("keeps a failed question and attachment for explicit retry or editing", asy
       "[已发送附件：failed-engine-note.txt；后续追问请重新上传]",
     ),
   ).toBeVisible();
-  await expect(assistant.getByText("失败的问题和附件已在本页保留。")).toBeVisible();
+  await expect(
+    assistant.getByText("失败的问题和附件已在本页保留。"),
+  ).toBeVisible();
   await expect(
     assistant.getByText("附件：failed-engine-note.txt", { exact: true }),
   ).toBeVisible();
-  await expect(assistant.getByRole("button", { name: "原样重试" })).toBeVisible();
+  await expect(
+    assistant.getByRole("button", { name: "原样重试" }),
+  ).toBeVisible();
   await expect(
     assistant.getByRole("button", { name: "编辑后重试" }),
   ).toBeVisible();
@@ -739,9 +778,14 @@ test("returns a structured health response", async ({ request }) => {
   );
 });
 
-test("serves the engine favicon selected by the page", async ({ page, request }) => {
+test("serves the engine favicon selected by the page", async ({
+  page,
+  request,
+}) => {
   await page.goto("/map");
-  const faviconHref = await page.locator('link[rel="icon"][type="image/svg+xml"]').getAttribute("href");
+  const faviconHref = await page
+    .locator('link[rel="icon"][type="image/svg+xml"]')
+    .getAttribute("href");
   // Next's content-versioned URL must select the new artwork, not a stale W asset.
   expect(faviconHref).toMatch(/^\/icon\.svg\?[^\s]+$/u);
   const response = await request.get(faviconHref!);

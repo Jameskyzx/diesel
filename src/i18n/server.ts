@@ -11,8 +11,10 @@ import {
 
 export async function getRequestLocale(): Promise<Locale> {
   const requestHeaders = await headers();
-  return localePreferenceFromCookieHeader(requestHeaders.get("cookie")) ??
-    defaultLocale;
+  return (
+    localePreferenceFromCookieHeader(requestHeaders.get("cookie")) ??
+    defaultLocale
+  );
 }
 
 export async function getRequestDictionary() {

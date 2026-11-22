@@ -34,9 +34,7 @@ import {
   type RegulationComparisonItem,
 } from "@/features/marketing/schemas";
 import type { ProductFitEvaluation } from "@/features/product-fit/schemas";
-import {
-  getOpportunityScoreWeights,
-} from "@/server/config/opportunity-score-config";
+import { getOpportunityScoreWeights } from "@/server/config/opportunity-score-config";
 import { getDatabase } from "@/server/db/client";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { getDatabaseMode } from "@/server/db/environment";
@@ -192,9 +190,7 @@ export async function compareRegulationsFromRepositories(
 
   const countries = query.countryIso3s.map((countryIso3, countryIndex) => {
     const countryRecord = countryRecords[countryIndex] ?? null;
-    const countryRows = rows.filter(
-      (row) => row.countryIso3 === countryIso3,
-    );
+    const countryRows = rows.filter((row) => row.countryIso3 === countryIso3);
     const regulations = new Map<string, RegulationComparisonItem>();
 
     for (const row of countryRows) {
@@ -359,29 +355,33 @@ export async function compareRegulationsFromRepositories(
     const items = Array.from(regulations.values())
       .map((regulation) => ({
         ...regulation,
-        limits: regulation.limits.toSorted((left, right) => compareCanonicalText(
-          [
-            left.pollutantCode,
-            left.powerMinKw ?? -1,
-            left.powerMaxKw ?? -1,
-            left.validFrom,
-            left.validTo ?? "",
-            left.id,
-          ].join("\u0000"),
-          [
-            right.pollutantCode,
-            right.powerMinKw ?? -1,
-            right.powerMaxKw ?? -1,
-            right.validFrom,
-            right.validTo ?? "",
-            right.id,
-          ].join("\u0000"),
-        )),
+        limits: regulation.limits.toSorted((left, right) =>
+          compareCanonicalText(
+            [
+              left.pollutantCode,
+              left.powerMinKw ?? -1,
+              left.powerMaxKw ?? -1,
+              left.validFrom,
+              left.validTo ?? "",
+              left.id,
+            ].join("\u0000"),
+            [
+              right.pollutantCode,
+              right.powerMinKw ?? -1,
+              right.powerMaxKw ?? -1,
+              right.validFrom,
+              right.validTo ?? "",
+              right.id,
+            ].join("\u0000"),
+          ),
+        ),
       }))
-      .toSorted((left, right) => compareCanonicalText(
-        `${left.canonicalName}\u0000${left.id}`,
-        `${right.canonicalName}\u0000${right.id}`,
-      ));
+      .toSorted((left, right) =>
+        compareCanonicalText(
+          `${left.canonicalName}\u0000${left.id}`,
+          `${right.canonicalName}\u0000${right.id}`,
+        ),
+      );
     return {
       countryIsDemo: countryRecord?.isDemo ?? false,
       countryIso3,
@@ -492,8 +492,9 @@ export async function compareMarkets(
   throwIfRequestAborted(options.signal);
   const rows = await repository.findForComparison(query, options);
   throwIfRequestAborted(options.signal);
-  const observations = rows.filter(row => observationInReportingPeriod(row, query.marketPeriod)).map(
-    (row): MarketObservation => ({
+  const observations = rows
+    .filter((row) => observationInReportingPeriod(row, query.marketPeriod))
+    .map((row): MarketObservation => ({
       applicationScope: row.applicationScope,
       countryIso3: row.countryIso3,
       countryName: row.countryName,
@@ -537,40 +538,40 @@ export async function compareMarkets(
       unitCode: row.unitCode,
       valueNumeric: row.valueNumeric,
       verifiedAt: serializeTimestamp(row.verifiedAt),
-    }),
-  );
+    }));
   const metricCodes =
     query.metricCodes ??
-    Array.from(new Set(observations.map(({ metricCode }) => metricCode))).sort();
-  const metrics: MarketComparison["metrics"] = metricCodes.map(
-    (metricCode) => {
-      const countryOrder = new Map(
-        query.countryIso3s.map((countryIso3, index) => [countryIso3, index]),
-      );
-      const metricObservations = latestObservationsByCountry(
-        observations.filter(
-          (observation) => observation.metricCode === metricCode,
-        ),
-      ).toSorted(
-        (left, right) =>
-          (countryOrder.get(left.countryIso3) ?? Number.MAX_SAFE_INTEGER) -
-            (countryOrder.get(right.countryIso3) ??
-              Number.MAX_SAFE_INTEGER) ||
-          compareCanonicalText(right.periodEnd, left.periodEnd) ||
-          compareCanonicalText(right.periodStart, left.periodStart) ||
-          compareCanonicalText(left.id, right.id),
-      );
-      const issues = marketComparisonIssues(metricObservations, query.countryIso3s);
-      return {
-        comparisonStatus: marketComparisonStatus(issues),
-        issues,
-        metricCode,
-        metricName:
-          metricObservations[0]?.metricName ?? metricCode,
-        observations: metricObservations,
-      };
-    },
-  );
+    Array.from(
+      new Set(observations.map(({ metricCode }) => metricCode)),
+    ).sort();
+  const metrics: MarketComparison["metrics"] = metricCodes.map((metricCode) => {
+    const countryOrder = new Map(
+      query.countryIso3s.map((countryIso3, index) => [countryIso3, index]),
+    );
+    const metricObservations = latestObservationsByCountry(
+      observations.filter(
+        (observation) => observation.metricCode === metricCode,
+      ),
+    ).toSorted(
+      (left, right) =>
+        (countryOrder.get(left.countryIso3) ?? Number.MAX_SAFE_INTEGER) -
+          (countryOrder.get(right.countryIso3) ?? Number.MAX_SAFE_INTEGER) ||
+        compareCanonicalText(right.periodEnd, left.periodEnd) ||
+        compareCanonicalText(right.periodStart, left.periodStart) ||
+        compareCanonicalText(left.id, right.id),
+    );
+    const issues = marketComparisonIssues(
+      metricObservations,
+      query.countryIso3s,
+    );
+    return {
+      comparisonStatus: marketComparisonStatus(issues),
+      issues,
+      metricCode,
+      metricName: metricObservations[0]?.metricName ?? metricCode,
+      observations: metricObservations,
+    };
+  });
   const missingData = metrics.flatMap((metric) => {
     if (metric.comparisonStatus === "comparable") {
       return [];
@@ -614,8 +615,7 @@ export function productAnalysisSources(
             countryIso3,
             entityId: product.id,
             entityType: "product",
-            isDemo:
-              product.isDemo || product.source.isDemo,
+            isDemo: product.isDemo || product.source.isDemo,
             locator: `${product.modelCode}; availability ${product.availableFrom ?? "unknown"}–${product.availableTo ?? "unknown"}`,
             locatorDescriptor: {
               availableFrom: product.availableFrom,
@@ -638,31 +638,31 @@ export function productAnalysisSources(
     const certificationSources = product
       ? evaluation.regulationChecks.flatMap((regulationCheck) =>
           regulationCheck.certifications.map(({ certification }) => ({
-          countryIso3,
-          entityId: certification.id,
-          entityType: "product_certification" as const,
-          isDemo: certification.isDemo || certification.source.isDemo,
-          locator: certification.certificateNumber,
-          publishedOn: certification.source.publishedOn,
-          productId: certification.productId,
-          productModelCode: certification.productModelCode,
-          regulationId: certification.regulationId,
-          regulationStatus: regulationCheck.regulation.recordStatus,
-          sourceId: certification.source.id,
-          sourceTitle: certification.source.title,
-          sourceUrl: certification.source.url,
-          title:
-            certification.certificateNumber ??
-            `${certification.productModelCode}认证`,
-          ...(certification.certificateNumber === null
-            ? {
-                titleDescriptor: {
-                  kind: "product_certification_record" as const,
-                  productModelCode: certification.productModelCode,
-                },
-              }
-            : {}),
-          verifiedAt: certification.source.verifiedAt,
+            countryIso3,
+            entityId: certification.id,
+            entityType: "product_certification" as const,
+            isDemo: certification.isDemo || certification.source.isDemo,
+            locator: certification.certificateNumber,
+            publishedOn: certification.source.publishedOn,
+            productId: certification.productId,
+            productModelCode: certification.productModelCode,
+            regulationId: certification.regulationId,
+            regulationStatus: regulationCheck.regulation.recordStatus,
+            sourceId: certification.source.id,
+            sourceTitle: certification.source.title,
+            sourceUrl: certification.source.url,
+            title:
+              certification.certificateNumber ??
+              `${certification.productModelCode}认证`,
+            ...(certification.certificateNumber === null
+              ? {
+                  titleDescriptor: {
+                    kind: "product_certification_record" as const,
+                    productModelCode: certification.productModelCode,
+                  },
+                }
+              : {}),
+            verifiedAt: certification.source.verifiedAt,
           })),
         )
       : [];
@@ -762,8 +762,7 @@ export async function calculateOpportunityScore(
         status: check.status,
       })),
     );
-    const regulatoryCoverage =
-      calculateRegulatoryCoverage(regulationChecks);
+    const regulatoryCoverage = calculateRegulatoryCoverage(regulationChecks);
     const readinessUnknownCount = evaluations.filter(
       ({ commercialReadiness }) => commercialReadiness === "unknown",
     ).length;
@@ -880,10 +879,9 @@ export async function generateSalesBrief(
     );
   }
   const regulationComparison = scorecard.provenance.regulationComparison;
-  const targetProductEvaluations =
-    scorecard.provenance.productEvaluations.find(
-      ({ countryIso3 }) => countryIso3 === query.targetCountryIso3,
-    );
+  const targetProductEvaluations = scorecard.provenance.productEvaluations.find(
+    ({ countryIso3 }) => countryIso3 === query.targetCountryIso3,
+  );
   if (!targetProductEvaluations) {
     throw new Error("Target country product provenance was not produced.");
   }
@@ -936,9 +934,10 @@ export async function generateSalesBrief(
   const futureRegulationFacts =
     targetRegulations?.futureAdoptedRegulations ?? [];
   const futureRegulationIds = futureRegulationFacts.map(({ id }) => id);
-  const targetEvaluationProvenance = scorecard.provenance.productEvaluations.find(
-    ({ countryIso3 }) => countryIso3 === query.targetCountryIso3,
-  )?.evaluations ?? [];
+  const targetEvaluationProvenance =
+    scorecard.provenance.productEvaluations.find(
+      ({ countryIso3 }) => countryIso3 === query.targetCountryIso3,
+    )?.evaluations ?? [];
   const productIdsMatching = (
     matches: (evaluation: ProductFitEvaluation) => boolean,
   ) =>
@@ -964,13 +963,14 @@ export async function generateSalesBrief(
   const marketComponent = marketScore.components.find(
     ({ key }) => key === "marketPotential",
   );
-  const contributingMetricCodes = scorecard.provenance.marketComparison.metrics.flatMap(
-    ({ comparisonStatus, metricCode }) =>
-      comparisonStatus === "comparable" &&
-      opportunityMetricDirection(metricCode) !== null
-        ? [metricCode]
-        : [],
-  );
+  const contributingMetricCodes =
+    scorecard.provenance.marketComparison.metrics.flatMap(
+      ({ comparisonStatus, metricCode }) =>
+        comparisonStatus === "comparable" &&
+        opportunityMetricDirection(metricCode) !== null
+          ? [metricCode]
+          : [],
+    );
   const opportunities = [
     ...(marketComponent?.score !== null &&
     marketComponent?.score !== undefined &&

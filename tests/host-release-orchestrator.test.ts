@@ -64,8 +64,7 @@ async function execute(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -83,42 +82,42 @@ function scenarioHarness(): string {
     'HOST_RELEASE_ORCHESTRATOR_ENVIRONMENT_TEMP=""',
     'orchestrator_test_log() { printf "%s\\n" "$1" >>"${ORCHESTRATOR_LOG}"; }',
     'host_release_orchestrator_preflight_candidate() { orchestrator_test_log preflight; return "${PREFLIGHT_STATUS}"; }',
-    'host_release_orchestrator_acquire_lock() {',
-    '  orchestrator_test_log acquire',
-    '  exec 8<>/dev/null',
-    '  HOST_RELEASE_ORCHESTRATOR_LOCK_OPEN=1',
-    '  export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8',
+    "host_release_orchestrator_acquire_lock() {",
+    "  orchestrator_test_log acquire",
+    "  exec 8<>/dev/null",
+    "  HOST_RELEASE_ORCHESTRATOR_LOCK_OPEN=1",
+    "  export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8",
     '  return "${ACQUIRE_STATUS}"',
-    '}',
+    "}",
     'host_release_orchestrator_persist_basis() { orchestrator_test_log basis; return "${PERSIST_STATUS}"; }',
     'host_release_orchestrator_begin_activation() { orchestrator_test_log begin; return "${BEGIN_STATUS}"; }',
-    'ORCHESTRATOR_READ_COUNT=0',
-    'host_release_orchestrator_read_strict_state() {',
-    '  ORCHESTRATOR_READ_COUNT=$((ORCHESTRATOR_READ_COUNT + 1))',
+    "ORCHESTRATOR_READ_COUNT=0",
+    "host_release_orchestrator_read_strict_state() {",
+    "  ORCHESTRATOR_READ_COUNT=$((ORCHESTRATOR_READ_COUNT + 1))",
     '  if [[ "${READ_STATUS_AT}" == "${ORCHESTRATOR_READ_COUNT}" ]]; then',
     '    orchestrator_test_log "state:error"',
-    '    return 70',
-    '  fi',
-    '  local -a fixture_states=()',
-    '  local state_index',
+    "    return 70",
+    "  fi",
+    "  local -a fixture_states=()",
+    "  local state_index",
     '  IFS="|" read -r -a fixture_states <<<"${STRICT_STATES}"',
-    '  state_index=$((ORCHESTRATOR_READ_COUNT - 1))',
-    '  if (( state_index >= ${#fixture_states[@]} )); then state_index=$((${#fixture_states[@]} - 1)); fi',
+    "  state_index=$((ORCHESTRATOR_READ_COUNT - 1))",
+    "  if (( state_index >= ${#fixture_states[@]} )); then state_index=$((${#fixture_states[@]} - 1)); fi",
     '  HOST_RELEASE_ORCHESTRATOR_STRICT_STATE="${fixture_states[${state_index}]}"',
     '  orchestrator_test_log "state:${HOST_RELEASE_ORCHESTRATOR_STRICT_STATE}"',
-    '}',
+    "}",
     'host_release_orchestrator_install_candidate() { orchestrator_test_log install; return "${INSTALL_STATUS}"; }',
     'host_release_orchestrator_readback_environment() { orchestrator_test_log readback; return "${READBACK_STATUS}"; }',
     'host_release_orchestrator_run_controller() { orchestrator_test_log controller; return "${CONTROLLER_STATUS}"; }',
-    'host_release_orchestrator_cleanup_environment_temp() { orchestrator_test_log cleanup; }',
-    'host_release_orchestrator_close_lock() {',
+    "host_release_orchestrator_cleanup_environment_temp() { orchestrator_test_log cleanup; }",
+    "host_release_orchestrator_close_lock() {",
     '  if [[ "${HOST_RELEASE_ORCHESTRATOR_LOCK_OPEN:-0}" -eq 1 ]]; then',
-    '    orchestrator_test_log close',
-    '    exec 8>&-',
-    '    unset DIESEL_RELEASE_LIFECYCLE_LOCK_FD',
-    '    HOST_RELEASE_ORCHESTRATOR_LOCK_OPEN=0',
-    '  fi',
-    '}',
+    "    orchestrator_test_log close",
+    "    exec 8>&-",
+    "    unset DIESEL_RELEASE_LIFECYCLE_LOCK_FD",
+    "    HOST_RELEASE_ORCHESTRATOR_LOCK_OPEN=0",
+    "  fi",
+    "}",
     'host_release_orchestrator_run_direct_abort() { orchestrator_test_log rollback; return "${DIRECT_ABORT_STATUS}"; }',
     'host_release_orchestrator_run_governance_recovery() { orchestrator_test_log recovery; return "${GOVERNANCE_RECOVERY_STATUS}"; }',
     'host_release_orchestrator_run_main "$2" "${HOST_RELEASE_ORCHESTRATOR_CANDIDATE_PATH}"',
@@ -210,21 +209,21 @@ async function runInvalidConfigurationPreflight(
     'HOST_RELEASE_ORCHESTRATOR_RUNTIME_ENVIRONMENT_CONTRACT="${ORCHESTRATOR_CONTRACT}"',
     'HOST_RELEASE_ORCHESTRATOR_ENVIRONMENT_TEMP=""',
     'preflight_log() { printf "%s\\n" "$1" >>"${ORCHESTRATOR_LOG}"; }',
-    'host_release_orchestrator_preflight_candidate() {',
-    '  preflight_log preflight',
+    "host_release_orchestrator_preflight_candidate() {",
+    "  preflight_log preflight",
     '  "${HOST_RELEASE_ORCHESTRATOR_NODE_BINARY}" -e "${ORCHESTRATOR_PREFLIGHT_PROBE}" -- "${HOST_RELEASE_ORCHESTRATOR_CANDIDATE_PATH}" "${HOST_RELEASE_ORCHESTRATOR_RUNTIME_ENVIRONMENT_CONTRACT}"',
-    '}',
-    'host_release_orchestrator_acquire_lock() { preflight_log acquire; }',
-    'host_release_orchestrator_persist_basis() { preflight_log basis; }',
-    'host_release_orchestrator_begin_activation() { preflight_log begin; }',
-    'host_release_orchestrator_read_strict_state() { preflight_log state; }',
-    'host_release_orchestrator_install_candidate() { preflight_log install; }',
-    'host_release_orchestrator_readback_environment() { preflight_log readback; }',
-    'host_release_orchestrator_run_controller() { preflight_log controller; }',
-    'host_release_orchestrator_run_direct_abort() { preflight_log rollback; }',
-    'host_release_orchestrator_run_governance_recovery() { preflight_log recovery; }',
-    'host_release_orchestrator_cleanup_environment_temp() { preflight_log cleanup; }',
-    'host_release_orchestrator_close_lock() { preflight_log close; }',
+    "}",
+    "host_release_orchestrator_acquire_lock() { preflight_log acquire; }",
+    "host_release_orchestrator_persist_basis() { preflight_log basis; }",
+    "host_release_orchestrator_begin_activation() { preflight_log begin; }",
+    "host_release_orchestrator_read_strict_state() { preflight_log state; }",
+    "host_release_orchestrator_install_candidate() { preflight_log install; }",
+    "host_release_orchestrator_readback_environment() { preflight_log readback; }",
+    "host_release_orchestrator_run_controller() { preflight_log controller; }",
+    "host_release_orchestrator_run_direct_abort() { preflight_log rollback; }",
+    "host_release_orchestrator_run_governance_recovery() { preflight_log recovery; }",
+    "host_release_orchestrator_cleanup_environment_temp() { preflight_log cleanup; }",
+    "host_release_orchestrator_close_lock() { preflight_log close; }",
     'host_release_orchestrator_run_main "$2" "${HOST_RELEASE_ORCHESTRATOR_CANDIDATE_PATH}"',
   ].join("\n");
 
@@ -295,49 +294,49 @@ async function runSignalScenario(
     'HOST_RELEASE_ORCHESTRATOR_STATE_DIR="${ORCHESTRATOR_FIXTURE_ROOT}/backups/$2"',
     'HOST_RELEASE_ORCHESTRATOR_ENVIRONMENT_TEMP=""',
     'signal_log() { printf "%s\\n" "$1" >>"${ORCHESTRATOR_LOG}"; }',
-    'host_release_orchestrator_preflight_candidate() { signal_log preflight; }',
-    'host_release_orchestrator_acquire_lock() { signal_log acquire; exec 8<>/dev/null; HOST_RELEASE_ORCHESTRATOR_LOCK_OPEN=1; export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8; }',
-    'host_release_orchestrator_persist_basis() { signal_log basis; }',
-    'signal_block() {',
-    '  trap \'signal_log child:HUP; exit "${SIGNAL_CONTROLLER_STATUS}"\' HUP',
-    '  trap \'signal_log child:INT; exit "${SIGNAL_CONTROLLER_STATUS}"\' INT',
-    '  trap \'signal_log child:TERM; exit "${SIGNAL_CONTROLLER_STATUS}"\' TERM',
+    "host_release_orchestrator_preflight_candidate() { signal_log preflight; }",
+    "host_release_orchestrator_acquire_lock() { signal_log acquire; exec 8<>/dev/null; HOST_RELEASE_ORCHESTRATOR_LOCK_OPEN=1; export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8; }",
+    "host_release_orchestrator_persist_basis() { signal_log basis; }",
+    "signal_block() {",
+    "  trap 'signal_log child:HUP; exit \"${SIGNAL_CONTROLLER_STATUS}\"' HUP",
+    "  trap 'signal_log child:INT; exit \"${SIGNAL_CONTROLLER_STATUS}\"' INT",
+    "  trap 'signal_log child:TERM; exit \"${SIGNAL_CONTROLLER_STATUS}\"' TERM",
     '  exec 9<>"${ORCHESTRATOR_BLOCK}"',
     '  printf "ready\\n" >"${ORCHESTRATOR_READY}"',
-    '  IFS= read -r _ <&9',
+    "  IFS= read -r _ <&9",
     '  return "${SIGNAL_CONTROLLER_STATUS}"',
-    '}',
+    "}",
     'host_release_orchestrator_begin_activation() { signal_log begin; if [[ "${SIGNAL_PHASE}" == begin ]]; then signal_block; fi; }',
-    'host_release_orchestrator_read_strict_state() { HOST_RELEASE_ORCHESTRATOR_STRICT_STATE=PENDING:none; signal_log state:PENDING:none; }',
-    'host_release_orchestrator_install_candidate() { signal_log install; }',
-    'host_release_orchestrator_readback_environment() { signal_log readback; }',
-    'host_release_orchestrator_run_controller() {',
-    '  signal_log controller',
-    '  signal_block',
-    '}',
-    'host_release_orchestrator_cleanup_environment_temp() { signal_log cleanup; }',
+    "host_release_orchestrator_read_strict_state() { HOST_RELEASE_ORCHESTRATOR_STRICT_STATE=PENDING:none; signal_log state:PENDING:none; }",
+    "host_release_orchestrator_install_candidate() { signal_log install; }",
+    "host_release_orchestrator_readback_environment() { signal_log readback; }",
+    "host_release_orchestrator_run_controller() {",
+    "  signal_log controller",
+    "  signal_block",
+    "}",
+    "host_release_orchestrator_cleanup_environment_temp() { signal_log cleanup; }",
     'host_release_orchestrator_close_lock() { if [[ "${HOST_RELEASE_ORCHESTRATOR_LOCK_OPEN:-0}" -eq 1 ]]; then signal_log close; exec 8>&-; unset DIESEL_RELEASE_LIFECYCLE_LOCK_FD; HOST_RELEASE_ORCHESTRATOR_LOCK_OPEN=0; fi; }',
-    'host_release_orchestrator_run_direct_abort() { signal_log rollback; }',
-    'host_release_orchestrator_run_governance_recovery() { signal_log recovery; }',
-    'host_release_orchestrator_forward_signal_to_active_child() {',
+    "host_release_orchestrator_run_direct_abort() { signal_log rollback; }",
+    "host_release_orchestrator_run_governance_recovery() { signal_log recovery; }",
+    "host_release_orchestrator_forward_signal_to_active_child() {",
     '  signal_log "forward:$1"',
     '  builtin kill -s "$1" -- "-${HOST_RELEASE_ORCHESTRATOR_ACTIVE_CHILD_PID}" 2>/dev/null ||',
     '    builtin kill -s "$1" "${HOST_RELEASE_ORCHESTRATOR_ACTIVE_CHILD_PID}" 2>/dev/null || true',
-    '}',
-    'SIGNAL_SPAWN_COUNT=0',
-    'host_release_orchestrator_after_child_spawn_before_registration() {',
-    '  SIGNAL_SPAWN_COUNT=$((SIGNAL_SPAWN_COUNT + 1))',
+    "}",
+    "SIGNAL_SPAWN_COUNT=0",
+    "host_release_orchestrator_after_child_spawn_before_registration() {",
+    "  SIGNAL_SPAWN_COUNT=$((SIGNAL_SPAWN_COUNT + 1))",
     '  if [[ "${SIGNAL_REGISTRATION_RACE}" == before-registration && "${SIGNAL_SPAWN_COUNT}" -eq 2 ]]; then',
     '    while [[ ! -f "${ORCHESTRATOR_READY}" ]]; do /bin/sleep 0.01; done',
     '    builtin kill -TERM "$$"',
-    '  fi',
-    '}',
-    'host_release_orchestrator_after_child_registration_before_signal_replay() {',
+    "  fi",
+    "}",
+    "host_release_orchestrator_after_child_registration_before_signal_replay() {",
     '  if [[ "${SIGNAL_REGISTRATION_RACE}" == after-registration && "${SIGNAL_SPAWN_COUNT}" -eq 2 ]]; then',
     '    while [[ ! -f "${ORCHESTRATOR_READY}" ]]; do /bin/sleep 0.01; done',
     '    builtin kill -TERM "$$"',
-    '  fi',
-    '}',
+    "  fi",
+    "}",
     'host_release_orchestrator_run_main "$2" "${HOST_RELEASE_ORCHESTRATOR_CANDIDATE_PATH}"',
   ].join("\n");
   await writeFile(logPath, "", "utf8");
@@ -379,13 +378,18 @@ async function runSignalScenario(
   child.stdout.on("data", (chunk: string) => {
     stdout += chunk;
   });
-  const completion = new Promise<number>((resolveCompletion, rejectCompletion) => {
-    child.once("error", rejectCompletion);
-    child.once("close", (code, childSignal) => {
-      if (code !== null) resolveCompletion(code);
-      else rejectCompletion(new Error(`fixture exited by ${childSignal ?? "unknown"}`));
-    });
-  });
+  const completion = new Promise<number>(
+    (resolveCompletion, rejectCompletion) => {
+      child.once("error", rejectCompletion);
+      child.once("close", (code, childSignal) => {
+        if (code !== null) resolveCompletion(code);
+        else
+          rejectCompletion(
+            new Error(`fixture exited by ${childSignal ?? "unknown"}`),
+          );
+      });
+    },
+  );
   let completionTimeout: ReturnType<typeof setTimeout> | undefined;
 
   try {
@@ -424,16 +428,12 @@ async function runSignalScenario(
 describe("host-release-orchestrator.sh", () => {
   it("validates the production AI admission contract before mutation and after installation", async () => {
     const source = await readFile(orchestratorScript, "utf8");
-    const validationCalls = source.match(
-      /validateProductionAiAdmissionConfiguration\(/gu,
-    ) ?? [];
-    const hourlyValidationCalls = source.match(
-      /validateProductionAiChatRateLimitConfiguration\(/gu,
-    ) ?? [];
+    const validationCalls =
+      source.match(/validateProductionAiAdmissionConfiguration\(/gu) ?? [];
+    const hourlyValidationCalls =
+      source.match(/validateProductionAiChatRateLimitConfiguration\(/gu) ?? [];
 
-    expect(source).toContain(
-      "scripts/deploy/runtime-environment-contract.cjs",
-    );
+    expect(source).toContain("scripts/deploy/runtime-environment-contract.cjs");
     expect(validationCalls).toHaveLength(2);
     expect(hourlyValidationCalls).toHaveLength(2);
     expect(source).toContain(
@@ -442,9 +442,7 @@ describe("host-release-orchestrator.sh", () => {
     expect(source).toContain(
       "validateProductionAiChatRateLimitConfiguration(candidate.values);",
     );
-    expect(source).toContain(
-      "validateInstalledProductionEnvironmentFiles({",
-    );
+    expect(source).toContain("validateInstalledProductionEnvironmentFiles({");
   });
 
   it.each([
@@ -487,30 +485,31 @@ describe("host-release-orchestrator.sh", () => {
       ].join("\n"),
       label: "an hourly client limit above the global limit",
     },
-  ])("rejects $label before every orchestration mutation", async ({
-    environment,
-  }) => {
-    const result = await runInvalidConfigurationPreflight(environment);
+  ])(
+    "rejects $label before every orchestration mutation",
+    async ({ environment }) => {
+      const result = await runInvalidConfigurationPreflight(environment);
 
-    expect(result.exitCode).toBe(70);
-    expect(result.stderr).toBe("environment candidate validation failed\n");
-    expect(result.stdout).toBe("");
-    expect(result.events).toEqual(["preflight", "cleanup", "close"]);
-    for (const forbiddenEvent of [
-      "acquire",
-      "basis",
-      "begin",
-      "state",
-      "install",
-      "readback",
-      "controller",
-      "rollback",
-      "recovery",
-    ]) {
-      expect(result.events).not.toContain(forbiddenEvent);
-    }
-    expect(`${result.stderr}${result.stdout}`).not.toContain(environment);
-  });
+      expect(result.exitCode).toBe(70);
+      expect(result.stderr).toBe("environment candidate validation failed\n");
+      expect(result.stdout).toBe("");
+      expect(result.events).toEqual(["preflight", "cleanup", "close"]);
+      for (const forbiddenEvent of [
+        "acquire",
+        "basis",
+        "begin",
+        "state",
+        "install",
+        "readback",
+        "controller",
+        "rollback",
+        "recovery",
+      ]) {
+        expect(result.events).not.toContain(forbiddenEvent);
+      }
+      expect(`${result.stderr}${result.stdout}`).not.toContain(environment);
+    },
+  );
 
   it("is Bash syntax-valid and sourceable without changing options or traps", async () => {
     await expect(
@@ -524,7 +523,7 @@ describe("host-release-orchestrator.sh", () => {
       'source -- "$1"',
       '[[ "${before_options}" == "$(set +o)" ]] || exit 91',
       '[[ "${before_trap}" == "$(trap -p USR1)" ]] || exit 92',
-      'declare -F host_release_orchestrator_run_main >/dev/null || exit 93',
+      "declare -F host_release_orchestrator_run_main >/dev/null || exit 93",
     ].join("\n");
     const result = await execute("/bin/bash", [
       "--noprofile",
@@ -550,7 +549,9 @@ describe("host-release-orchestrator.sh", () => {
 
       expect(result.exitCode).toBe(77);
       expect(result.stdout).toBe("");
-      expect(result.stderr).toBe("host release orchestrator must run as root\n");
+      expect(result.stderr).toBe(
+        "host release orchestrator must run as root\n",
+      );
       expect(result.stderr).not.toContain("bootstrap validation failed");
     },
   );
@@ -575,11 +576,7 @@ describe("host-release-orchestrator.sh", () => {
           directoryLink,
           "0:0:700",
         ],
-        [
-          "host_release_orchestrator_require_exact_file",
-          fileLink,
-          "0:0:600:1",
-        ],
+        ["host_release_orchestrator_require_exact_file", fileLink, "0:0:600:1"],
       ] as const) {
         const result = await execute("/bin/bash", [
           "--noprofile",
@@ -636,7 +633,9 @@ describe("host-release-orchestrator.sh", () => {
 
     expect(result.exitCode).toBe(143);
     expect(result.events).toContain("child:TERM");
-    expect(result.events.filter((event) => event === "rollback")).toHaveLength(1);
+    expect(result.events.filter((event) => event === "rollback")).toHaveLength(
+      1,
+    );
     expect(result.events).not.toContain("controller");
     expect(result.events.indexOf("close")).toBeLessThan(
       result.events.indexOf("rollback"),
@@ -717,15 +716,18 @@ describe("host-release-orchestrator.sh", () => {
     expectedStatus: number;
     name: string;
     scenario: Scenario;
-  }>)("fails closed at $name", async ({ expectedEvents, expectedStatus, scenario }) => {
-    const result = await runScenario(scenario);
+  }>)(
+    "fails closed at $name",
+    async ({ expectedEvents, expectedStatus, scenario }) => {
+      const result = await runScenario(scenario);
 
-    expect(result.exitCode).toBe(expectedStatus);
-    expect(result.events).toEqual(expectedEvents);
-    expect(result.events.filter((event) => event === "rollback")).toHaveLength(
-      expectedEvents.includes("rollback") ? 1 : 0,
-    );
-  });
+      expect(result.exitCode).toBe(expectedStatus);
+      expect(result.events).toEqual(expectedEvents);
+      expect(
+        result.events.filter((event) => event === "rollback"),
+      ).toHaveLength(expectedEvents.includes("rollback") ? 1 : 0);
+    },
+  );
 
   it("preserves an unclassifiable begin failure without rollback", async () => {
     const result = await runScenario({ beginStatus: 23, readStatusAt: 1 });
@@ -811,7 +813,9 @@ describe("host-release-orchestrator.sh", () => {
     });
 
     expect(result.exitCode).toBe(70);
-    expect(result.events.filter((event) => event === "recovery")).toHaveLength(1);
+    expect(result.events.filter((event) => event === "recovery")).toHaveLength(
+      1,
+    );
     expect(result.events.indexOf("close")).toBeLessThan(
       result.events.indexOf("recovery"),
     );
@@ -841,19 +845,21 @@ describe("host-release-orchestrator.sh", () => {
     });
 
     expect(result.exitCode).toBe(70);
-    expect(result.events.filter((event) => event === "rollback")).toHaveLength(1);
+    expect(result.events.filter((event) => event === "rollback")).toHaveLength(
+      1,
+    );
   });
 
   it("uses the EXIT terminalizer once after an armed parent exits unexpectedly", async () => {
     const root = await mkdtemp(join(tmpdir(), "diesel-host-exit-"));
     const logPath = join(root, "events.log");
     await writeFile(logPath, "", "utf8");
-    const harness = [
-      scenarioHarness(),
-    ].join("\n").replace(
-      'host_release_orchestrator_install_candidate() { orchestrator_test_log install; return "${INSTALL_STATUS}"; }',
-      "host_release_orchestrator_install_candidate() { orchestrator_test_log install; exit 23; }",
-    );
+    const harness = [scenarioHarness()]
+      .join("\n")
+      .replace(
+        'host_release_orchestrator_install_candidate() { orchestrator_test_log install; return "${INSTALL_STATUS}"; }',
+        "host_release_orchestrator_install_candidate() { orchestrator_test_log install; exit 23; }",
+      );
     try {
       const result = await execute(
         "/bin/bash",
@@ -904,7 +910,9 @@ describe("host-release-orchestrator.sh", () => {
 
       expect(result.exitCode).toBe(expectedStatus);
       expect(result.events).toContain(`child:${signal.slice(3)}`);
-      expect(result.events.filter((event) => event === "rollback")).toHaveLength(1);
+      expect(
+        result.events.filter((event) => event === "rollback"),
+      ).toHaveLength(1);
       expect(result.events.indexOf("close")).toBeLessThan(
         result.events.indexOf("rollback"),
       );
@@ -934,10 +942,12 @@ describe("host-release-orchestrator.sh", () => {
 
     expect(result.exitCode).toBe(143);
     expect(result.events).toContain("child:TERM");
-    expect(result.events.filter((event) => event === "forward:TERM")).toHaveLength(
+    expect(
+      result.events.filter((event) => event === "forward:TERM"),
+    ).toHaveLength(1);
+    expect(result.events.filter((event) => event === "rollback")).toHaveLength(
       1,
     );
-    expect(result.events.filter((event) => event === "rollback")).toHaveLength(1);
   }, 10_000);
 
   it("does not double-forward a signal arriving before missed-signal replay", async () => {
@@ -950,10 +960,12 @@ describe("host-release-orchestrator.sh", () => {
 
     expect(result.exitCode).toBe(143);
     expect(result.events).toContain("child:TERM");
-    expect(result.events.filter((event) => event === "forward:TERM")).toHaveLength(
+    expect(
+      result.events.filter((event) => event === "forward:TERM"),
+    ).toHaveLength(1);
+    expect(result.events.filter((event) => event === "rollback")).toHaveLength(
       1,
     );
-    expect(result.events.filter((event) => event === "rollback")).toHaveLength(1);
   }, 10_000);
 
   it("ignores poisoned orchestration variables and never prints secret values", async () => {

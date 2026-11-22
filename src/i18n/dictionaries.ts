@@ -2,36 +2,77 @@ import type { Locale } from "@/i18n/locale";
 
 const englishDictionary = {
   analysis: {
-    library: "Saved analyses", comparisonTitle: "Compare countries", titleLabel: "Analysis title",
-    save: "Save analysis", exportJson: "Export data (JSON)", exportHtml: "Export readable report",
-    localNotice: "Saved only in this browser, not an account or cloud backup. Up to 10 analyses / 4 MB. Clearing site data removes them. Export important work; attachments are not retained.",
-    saved: "Analysis saved. Open Saved analyses to review or export the readable report.",
-    storageError: "Could not read or save this archive. Browser storage may be blocked, full or invalid. Existing data was not overwritten. Export JSON directly from the result if needed.",
-    empty: "No saved analyses yet. Save a completed chat or country comparison.",
-    savedReport: "Saved analysis report", savedAt: "Saved at", historicalNotice: "Historical, locally saved snapshot — not a fresh query or certified report. Dates and sources refer to the original results. Local records can be edited; re-query and verify sources before making decisions.",
-    exportHelp: "The readable HTML report opens without this website. Use your browser’s Print / Save as PDF to share it. JSON preserves the structured evidence. Review the content for sensitive information before sharing.",
-    delete: "Delete", deleteConfirm: "Delete this saved analysis from this browser? Export a copy first if you need it.",
-    confirmDelete: "Confirm deletion", cancel: "Cancel", rerun: "Re-query these conditions",
-    comparisonHelp: "Compare two or three countries using the same application, power and date. Uses recorded regulatory evidence, without AI or product selection.",
-    countrySlot: "Country {number}", optional: "Optional", chooseCountry: "Select a country", runComparison: "Compare regulations",
-    invalidComparison: "Choose two or three different known countries and a valid application, power and date.",
-    comparisonError: "The complete comparison could not be loaded or verified. No partial result is presented as complete. Check your connection and retry.",
-    comparisonEmpty: "Select countries and submit the form to compare their recorded requirements.",
-    comparisonNotice: "Recorded evidence only, not a certification or market-entry decision. Missing records do not mean no requirements. Different units, test cycles or legal scopes must not be ranked as equivalent.",
-    dimension: "Comparison item", evidenceState: "Evidence and gaps", gaps: "Evidence gaps remain", recordedEvidence: "Recorded evidence for these conditions",
-    noCountryData: "No published country evidence for this query.", stale: "Recorded country evidence is marked stale; check the original sources.",
-    currentLimits: "Effective regulations and limits", noLimits: "No applicable limits recorded. This does not establish an exemption.", noneRecorded: "None recorded — not proof that none exist.",
+    library: "Saved analyses",
+    comparisonTitle: "Compare countries",
+    titleLabel: "Analysis title",
+    save: "Save analysis",
+    exportJson: "Export data (JSON)",
+    exportHtml: "Export readable report",
+    localNotice:
+      "Saved only in this browser, not an account or cloud backup. Up to 10 analyses / 4 MB. Clearing site data removes them. Export important work; attachments are not retained.",
+    saved:
+      "Analysis saved. Open Saved analyses to review or export the readable report.",
+    storageError:
+      "Could not read or save this archive. Browser storage may be blocked, full or invalid. Existing data was not overwritten. Export JSON directly from the result if needed.",
+    empty:
+      "No saved analyses yet. Save a completed chat or country comparison.",
+    savedReport: "Saved analysis report",
+    savedAt: "Saved at",
+    historicalNotice:
+      "Historical, locally saved snapshot — not a fresh query or certified report. Dates and sources refer to the original results. Local records can be edited; re-query and verify sources before making decisions.",
+    exportHelp:
+      "The readable HTML report opens without this website. Use your browser’s Print / Save as PDF to share it. JSON preserves the structured evidence. Review the content for sensitive information before sharing.",
+    delete: "Delete",
+    deleteConfirm:
+      "Delete this saved analysis from this browser? Export a copy first if you need it.",
+    confirmDelete: "Confirm deletion",
+    cancel: "Cancel",
+    rerun: "Re-query these conditions",
+    comparisonHelp:
+      "Compare two or three countries using the same application, power and date. Uses recorded regulatory evidence, without AI or product selection.",
+    countrySlot: "Country {number}",
+    optional: "Optional",
+    chooseCountry: "Select a country",
+    runComparison: "Compare regulations",
+    invalidComparison:
+      "Choose two or three different known countries and a valid application, power and date.",
+    comparisonError:
+      "The complete comparison could not be loaded or verified. No partial result is presented as complete. Check your connection and retry.",
+    comparisonEmpty:
+      "Select countries and submit the form to compare their recorded requirements.",
+    comparisonNotice:
+      "Recorded evidence only, not a certification or market-entry decision. Missing records do not mean no requirements. Different units, test cycles or legal scopes must not be ranked as equivalent.",
+    dimension: "Comparison item",
+    evidenceState: "Evidence and gaps",
+    gaps: "Evidence gaps remain",
+    recordedEvidence: "Recorded evidence for these conditions",
+    noCountryData: "No published country evidence for this query.",
+    stale:
+      "Recorded country evidence is marked stale; check the original sources.",
+    currentLimits: "Effective regulations and limits",
+    noLimits:
+      "No applicable limits recorded. This does not establish an exemption.",
+    noneRecorded: "None recorded — not proof that none exist.",
     comparisonSummary: "What differs in the recorded evidence",
     sharedMetrics: "Recorded for every selected country",
     partialMetrics: "Not recorded for every selected country",
-    metricAlignmentNotice: "Rows match pollutant and unit only. HC, NOx and HC+NOx stay separate. Matching rows do not establish identical test cycles or legal scope, or which country is stricter.",
-    missingMetric: "Not returned for this pollutant and unit — not an exemption.",
-    scopeHelp: "Non-road is a broad category. What does your engine power? Choose its actual application below to run a new query, not simply to obtain a result. These choices do not guarantee coverage; the current evidence gap remains unchanged.",
+    metricAlignmentNotice:
+      "Rows match pollutant and unit only. HC, NOx and HC+NOx stay separate. Matching rows do not establish identical test cycles or legal scope, or which country is stricter.",
+    missingMetric:
+      "Not returned for this pollutant and unit — not an exemption.",
+    scopeHelp:
+      "Non-road is a broad category. What does your engine power? Choose its actual application below to run a new query, not simply to obtain a result. These choices do not guarantee coverage; the current evidence gap remains unchanged.",
     refineScope: "Confirm the actual application",
     applicabilityDetails: "Regulation and source",
-    originalEvidence: "Check original evidence", noExcerpt: "No original-text excerpt is included in this result. Use the recorded source to verify it; structured dates and IDs are not original page or section locators.",
-    excerptNotice: "Retrieved source excerpt, not AI explanation. It may be incomplete; check the full original and its applicability. Source text keeps its original language.",
-    openPage: "Open recorded PDF page", sourceValidity: "Recorded source validity", scrollHint: "Swipe the table horizontally to see the other countries. Keyboard users can focus the table and use the arrow keys.",
+    originalEvidence: "Check original evidence",
+    noExcerpt:
+      "No original-text excerpt is included in this result. Use the recorded source to verify it; structured dates and IDs are not original page or section locators.",
+    excerptNotice:
+      "Retrieved source excerpt, not AI explanation. It may be incomplete; check the full original and its applicability. Source text keeps its original language.",
+    openPage: "Open recorded PDF page",
+    sourceValidity: "Recorded source validity",
+    scrollHint:
+      "Swipe the table horizontally to see the other countries. Keyboard users can focus the table and use the arrow keys.",
   },
   common: {
     allScopes: "All applications",
@@ -81,30 +122,42 @@ const englishDictionary = {
     power: "Regulatory power (kW)",
     date: "Regulatory as-of date",
     regulationTitle: "Check applicable regulations",
-    regulationHelp: "Choose the application, power and date. No product selection or AI request is needed. Results describe recorded evidence, not a certification decision.",
-    chatHelp: "Edit the starting context and prepare a new question. Applying changes starts a separate conversation. Your question can override these defaults; each result card shows the conditions actually used.",
-    productHelp: "Optional. Leave blank for regulation-only research. Published demo models are fictional, not approved real products.",
+    regulationHelp:
+      "Choose the application, power and date. No product selection or AI request is needed. Results describe recorded evidence, not a certification decision.",
+    chatHelp:
+      "Edit the starting context and prepare a new question. Applying changes starts a separate conversation. Your question can override these defaults; each result card shows the conditions actually used.",
+    productHelp:
+      "Optional. Leave blank for regulation-only research. Published demo models are fictional, not approved real products.",
     optional: "Not specified",
     runRegulations: "Query regulations",
     applyChat: "Apply and prepare question",
     invalid: "Check the application, power and date before continuing.",
     nextSteps: "What to do next",
-    checkQuery: "Check the country, application, power and date. Change them only if they were entered incorrectly, not to obtain a passing result.",
-    regulationEvidence: "Ask a regulatory reviewer for the official text and limit table covering these exact conditions, including effective dates and sources. Missing records do not mean no requirements.",
-    certificationEvidence: "Ask the manufacturer for a valid certificate linked to this model and regulation, with its application, power range, validity dates and source.",
-    productEvidence: "Ask the manufacturer for the model specification/version and availability dates. A fictional demo model cannot establish real product readiness.",
-    marketEvidence: "Obtain observations for the same metric, unit, application and reporting period before comparing markets.",
-    knowledgeEvidence: "Check the search terms and filters, then obtain the original document and its applicable dates from the source owner.",
-    reviewEvidence: "Have the relevant data owner verify the missing records and sources before using this result for a sales commitment.",
+    checkQuery:
+      "Check the country, application, power and date. Change them only if they were entered incorrectly, not to obtain a passing result.",
+    regulationEvidence:
+      "Ask a regulatory reviewer for the official text and limit table covering these exact conditions, including effective dates and sources. Missing records do not mean no requirements.",
+    certificationEvidence:
+      "Ask the manufacturer for a valid certificate linked to this model and regulation, with its application, power range, validity dates and source.",
+    productEvidence:
+      "Ask the manufacturer for the model specification/version and availability dates. A fictional demo model cannot establish real product readiness.",
+    marketEvidence:
+      "Obtain observations for the same metric, unit, application and reporting period before comparing markets.",
+    knowledgeEvidence:
+      "Check the search terms and filters, then obtain the original document and its applicable dates from the source owner.",
+    reviewEvidence:
+      "Have the relevant data owner verify the missing records and sources before using this result for a sales commitment.",
     editConditions: "Review query conditions",
     reviewSources: "Review recorded sources",
-    demoOnly: "The published product catalogue currently contains fictional demo models only. Use the independent regulation query above for real regulatory research.",
+    demoOnly:
+      "The published product catalogue currently contains fictional demo models only. Use the independent regulation query above for real regulatory research.",
   },
   workspace: {
     name: "Intelligence workspace",
     navigation: "Workspace",
     readOnly: "Read-only evidence",
-    boundaryNote: "Regulations, dates and sources stay traceable. Missing evidence stays visible.",
+    boundaryNote:
+      "Regulations, dates and sources stay traceable. Missing evidence stays visible.",
     evidenceFirst: "Sources before conclusions",
     overview: "Overview",
     country: "Country / ISO3",
@@ -117,7 +170,8 @@ const englishDictionary = {
     clearSearch: "Clear search",
     queryContext: "Query context",
     parameters: "Applicability parameters",
-    noContext: "Ask a question directly, or set a country and query conditions below.",
+    noContext:
+      "Ask a question directly, or set a country and query conditions below.",
     evidenceWorkflow: "Evidence workflow",
     contextCountry: "Country",
     contextPower: "Power",
@@ -130,25 +184,39 @@ const englishDictionary = {
     sources: "Sources",
   },
   apiErrors: {
-    chatAiNotConfigured: "The AI assistant is not enabled yet. Please try again later.",
-    chatInvalidInput: "The chat request is invalid. Check the question and attachments, then try again.",
-    chatPayloadTooLarge: "The chat request is too large. Reduce the question or attachments and try again.",
-    chatRateLimited: "Too many chat requests are in progress. Wait a moment and try again.",
-    chatRequestTimeout: "The chat request timed out or was canceled. Please try again.",
-    chatUnavailable: "The AI service is temporarily unavailable. Please try again later.",
-    countryDetailUnavailable: "Country details are temporarily unavailable. Please try again later.",
-    countryNotFound: "No country-directory record was found for that ISO3 code.",
-    countrySummariesUnavailable: "Country summaries are temporarily unavailable. Please try again later.",
+    chatAiNotConfigured:
+      "The AI assistant is not enabled yet. Please try again later.",
+    chatInvalidInput:
+      "The chat request is invalid. Check the question and attachments, then try again.",
+    chatPayloadTooLarge:
+      "The chat request is too large. Reduce the question or attachments and try again.",
+    chatRateLimited:
+      "Too many chat requests are in progress. Wait a moment and try again.",
+    chatRequestTimeout:
+      "The chat request timed out or was canceled. Please try again.",
+    chatUnavailable:
+      "The AI service is temporarily unavailable. Please try again later.",
+    countryDetailUnavailable:
+      "Country details are temporarily unavailable. Please try again later.",
+    countryNotFound:
+      "No country-directory record was found for that ISO3 code.",
+    countrySummariesUnavailable:
+      "Country summaries are temporarily unavailable. Please try again later.",
     invalidAsOf: "The as-of date must be an ISO date in YYYY-MM-DD format.",
     invalidCountryFilter: "The application or power filter is invalid.",
     invalidIso3: "The country code must be a three-letter ISO3 code.",
-    invalidProductFit: "The product-fit input is invalid. Check the country, application, power, date, and model.",
-    productFitPayloadTooLarge: "The product-fit request is too large. Reduce it and try again.",
-    productFitUnavailable: "Product-fit evaluation is temporarily unavailable. Please try again later.",
-    productListUnavailable: "The product list is temporarily unavailable. Please try again later.",
+    invalidProductFit:
+      "The product-fit input is invalid. Check the country, application, power, date, and model.",
+    productFitPayloadTooLarge:
+      "The product-fit request is too large. Reduce it and try again.",
+    productFitUnavailable:
+      "Product-fit evaluation is temporarily unavailable. Please try again later.",
+    productListUnavailable:
+      "The product list is temporarily unavailable. Please try again later.",
   },
   footer: {
-    tagline: "A traceable workspace for regulations, product fit, and market analysis",
+    tagline:
+      "A traceable workspace for regulations, product fit, and market analysis",
   },
   globalError: {
     body: "Try again later. Unverified data will not be shown while the service is recovering.",
@@ -173,7 +241,8 @@ const englishDictionary = {
     coverageRate: "Evidence-boundary review rate",
     coverageTitle: "Global evidence network",
     publicationTitle: "Published evidence snapshot",
-    publicationExplanation: "Versioned publication records, not a live database count. Jurisdiction and source coverage does not mean every application has numerical limits.",
+    publicationExplanation:
+      "Versioned publication records, not a live database count. Jurisdiction and source coverage does not mean every application has numerical limits.",
     publicationJurisdictions: "Jurisdictions",
     publicationRegulations: "Regulations",
     publicationLimits: "Emission limit records",
@@ -187,7 +256,8 @@ const englishDictionary = {
       "The public dataset currently has no country summaries to feature. Open the map to see the complete catalog and explicit no-data states.",
     emptyCountriesTitle: "No reviewed country entry yet",
     enterAi: "Open the AI workspace",
-    errorCountries: "Country coverage could not be loaded. Open the map to retry.",
+    errorCountries:
+      "Country coverage could not be loaded. Open the map to retry.",
     featuredAria: "Featured country shortcuts",
     fresh: "Verification is still fresh",
     freshDemo: "Demo records are within the configured review window",
@@ -278,8 +348,7 @@ const englishDictionary = {
     applicabilitySummaryLoading:
       "Refreshing the country decision summary for the new application and power…",
     applicabilitySummaryQuery: "Query",
-    applicabilityMissingCountry:
-      "{iso3} has no structured country record.",
+    applicabilityMissingCountry: "{iso3} has no structured country record.",
     applicabilityMissingEvidence:
       "{iso3} has an unclassified applicability evidence gap for the selected query.",
     applicabilityMissingRegulations:
@@ -310,7 +379,8 @@ const englishDictionary = {
     dataSources: "Data sources and verification",
     decisionNoCurrent:
       "No current-effective regulation can be proven to cover this application, power, and date. The system does not infer that no requirement exists.",
-    decisionSummaryErrorFallback: "The country decision summary could not be refreshed.",
+    decisionSummaryErrorFallback:
+      "The country decision summary could not be refreshed.",
     decisionSummaryRequestError: "Country decision summary request failed",
     demoBadge: "Fictional demo",
     demoCountryBody:
@@ -323,19 +393,17 @@ const englishDictionary = {
     demoMarketMetricName: "DEMO ONLY — Fictional addressable units",
     demoNoExternalLink: "fictional evidence, no external link",
     demoNoExternalSuffix: " (fictional evidence, no external link)",
-    demoRegulationBrazilStageA:
-      "DEMO ONLY — Fictional Brazil Non-road Stage A",
-    demoRegulationChinaStageA:
-      "DEMO ONLY — Fictional China Non-road Stage A",
+    demoRegulationBrazilStageA: "DEMO ONLY — Fictional Brazil Non-road Stage A",
+    demoRegulationChinaStageA: "DEMO ONLY — Fictional China Non-road Stage A",
     demoRegulationChinaStageBProposal:
       "DEMO ONLY — Fictional China Non-road Stage B Proposal",
     demoRegulationChinaStageCAdopted:
       "DEMO ONLY — Fictional China Non-road Stage C Adopted",
-    demoRegulationChinaStageZ:
-      "DEMO ONLY — Fictional China Non-road Stage Z",
+    demoRegulationChinaStageZ: "DEMO ONLY — Fictional China Non-road Stage Z",
     detailAsOf: "Detail as-of date",
     detailError: "Country details failed to load",
-    detailErrorFallback: "Country details are temporarily unavailable. Close the panel and retry.",
+    detailErrorFallback:
+      "Country details are temporarily unavailable. Close the panel and retry.",
     detailRequestError: "Country detail request failed",
     detailsLoading: "Loading details from the country API…",
     effectiveDate: "Effective date",
@@ -349,7 +417,8 @@ const englishDictionary = {
     geometryNoData:
       "This country has a map boundary, but the database has no public structured details yet. The system does not fill the gap with model inference.",
     jurisdiction: "Applicable jurisdictions",
-    jurisdictionEmpty: "No applicable jurisdiction is available for this as-of date.",
+    jurisdictionEmpty:
+      "No applicable jurisdiction is available for this as-of date.",
     jurisdictionId: "Jurisdiction record ID",
     jurisdictionSource: "Jurisdiction source",
     jurisdictionTypeCountry: "Country",
@@ -391,7 +460,8 @@ const englishDictionary = {
     serverSnapshot: "SERVER-RENDERED COUNTRY SNAPSHOT",
     sourceAndVerification: "Sources and verification",
     sourceCount: "Sources and verification ({count})",
-    staleBadge: "Verification may be stale; check the latest source before citing it",
+    staleBadge:
+      "Verification may be stale; check the latest source before citing it",
     statusAdopted: "Adopted",
     statusEffective: "Effective",
     statusProposed: "Proposed",
@@ -446,7 +516,8 @@ const englishDictionary = {
     commercialUnknown: "Commercial readiness unknown",
     copied: "Data-gap summary copied",
     copy: "Copy data-gap summary",
-    copyDenied: "The browser denied clipboard access. Check permissions and retry.",
+    copyDenied:
+      "The browser denied clipboard access. Check permissions and retry.",
     dataGapBody:
       "This only copies text to the local clipboard. It does not create, send, or submit a ticket.",
     dataGapTitle: "Structured evidence is required",
@@ -473,8 +544,10 @@ const englishDictionary = {
     demoProductEngine100Name: "DEMO ONLY — Fictional Engine 100",
     demoProductEngine200Name: "DEMO ONLY — Fictional Engine 200",
     emptyCatalog: "The product catalog is empty",
-    emptyCatalogBody: "Product fit cannot run because the product catalog is empty.",
-    errorFallback: "Product fit is temporarily unavailable. Check the inputs and retry.",
+    emptyCatalogBody:
+      "Product fit cannot run because the product catalog is empty.",
+    errorFallback:
+      "Product fit is temporarily unavailable. Check the inputs and retry.",
     fit: "Confirmed fit",
     fitAxis: "Regulation/certification fit",
     formDescription:
@@ -522,7 +595,8 @@ const englishDictionary = {
     scopeBus: "Bus power",
     scopeTruck: "Truck power",
     selected: "Selected",
-    selectionHelp: "Choose a model, then run deterministic fit to update the result.",
+    selectionHelp:
+      "Choose a model, then run deterministic fit to update the result.",
     specification: "Specification version",
     status: "Status",
     traceApplication: "Application",
@@ -546,8 +620,7 @@ const englishDictionary = {
       "Facts come from deterministic tools. Explanations and recommendations are presented separately from the evidence layer.",
     sidebarHeading: "Try asking",
     sidebarKicker: "Conversation starters",
-    starterMarket:
-      "Show CHN market metrics and their reporting periods.",
+    starterMarket: "Show CHN market metrics and their reporting periods.",
     starterCompare:
       "Compare construction equipment 120 kW emissions requirements in CHN and JPN.",
     starterCurrent: "Which regulations are currently effective in CHN?",
@@ -563,7 +636,8 @@ const englishDictionary = {
     aiNotConfigured: "Server AI not configured",
     assistant: "Assistant",
     attachment: "Attachments",
-    attachmentFailedBody: "The failed question and attachments remain on this page.",
+    attachmentFailedBody:
+      "The failed question and attachments remain on this page.",
     attachmentInput: "Choose file",
     attachmentInputImage: "Choose file or image",
     attachmentList: "Attachments ready to send",
@@ -616,13 +690,18 @@ const englishDictionary = {
     roleLabel: "AI conversation",
     send: "Send question",
     scope: "Application",
-    sentAttachment: "Sent attachment: {name}; upload it again for follow-up questions",
+    sentAttachment:
+      "Sent attachment: {name}; upload it again for follow-up questions",
     statusComplete: "Answer complete.",
     newConversation: "New chat",
-    historyNotice: "Completed chats stay in this tab for 24 hours. Uploaded files are not saved.",
-    historyRestored: "Conversation restored in this tab. Evidence retains its original query dates; new questions fetch fresh evidence.",
-    historyUnavailable: "This chat could not be saved in this tab. Copy any answers you need before refreshing.",
-    historyWindowed: "Reload restores the latest complete exchanges only; earlier messages are outside the recovery window. Query conditions continue in signed context, not as stored facts.",
+    historyNotice:
+      "Completed chats stay in this tab for 24 hours. Uploaded files are not saved.",
+    historyRestored:
+      "Conversation restored in this tab. Evidence retains its original query dates; new questions fetch fresh evidence.",
+    historyUnavailable:
+      "This chat could not be saved in this tab. Copy any answers you need before refreshing.",
+    historyWindowed:
+      "Reload restores the latest complete exchanges only; earlier messages are outside the recovery window. Query conditions continue in signed context, not as stored facts.",
     statusGenerating: "Generating the answer.",
     statusSubmitted: "Question sent. Selecting deterministic tools.",
     stopGenerating: "Stop generating",
@@ -661,7 +740,8 @@ const englishDictionary = {
     commercialReadiness: "Commercial readiness",
     citationCertificationRecord: "{product} certification record",
     citationCountryProfile: "{country} country profile",
-    citationJurisdiction: "{regulation} · Applicable jurisdiction: {jurisdiction}",
+    citationJurisdiction:
+      "{regulation} · Applicable jurisdiction: {jurisdiction}",
     citationLimits: "{regulation} applicable limits",
     citationMembership: "{jurisdiction} membership for {country}",
     citationPollutantLimit: "{regulation} {pollutant} limit",
@@ -696,7 +776,8 @@ const englishDictionary = {
     marketComparable: "Comparable",
     marketIncomparable: "Not comparable",
     marketInsufficientData: "Insufficient data",
-    marketComparisonBasisBody: "Comparability checks the recorded definitions, applications, periods, units, currencies, and methods. No unit or currency conversion or extrapolation is performed.",
+    marketComparisonBasisBody:
+      "Comparability checks the recorded definitions, applications, periods, units, currencies, and methods. No unit or currency conversion or extrapolation is performed.",
     marketComparisonIssues: "Comparison evidence gaps",
     marketCurrency: "Currency",
     marketDefinition: "Metric definition",
@@ -704,18 +785,28 @@ const englishDictionary = {
     marketObservation: "{country} · {metric} observation",
     marketPeriodStart: "Period start (inclusive)",
     marketPeriodEnd: "Period end (exclusive)",
-    marketHistoricalNotice: "These are historical observations for the displayed periods, not current sales or a market forecast.",
-    marketIssueMissingCountry: "At least one requested country has no observation for this metric.",
-    marketIssueAmbiguousLatest: "A country has multiple latest observations; no single value can be selected.",
-    marketIssueMissingUnit: "At least one observation has no recorded unit; this metric cannot be compared or used in market scoring.",
+    marketHistoricalNotice:
+      "These are historical observations for the displayed periods, not current sales or a market forecast.",
+    marketIssueMissingCountry:
+      "At least one requested country has no observation for this metric.",
+    marketIssueAmbiguousLatest:
+      "A country has multiple latest observations; no single value can be selected.",
+    marketIssueMissingUnit:
+      "At least one observation has no recorded unit; this metric cannot be compared or used in market scoring.",
     marketUnitNotRecorded: "(unit not recorded)",
-    marketIssueMissingDefinition: "At least one observation has no recorded metric definition; this metric cannot be compared or used in market scoring.",
-    marketIssueMissingMethodology: "At least one observation has no recorded methodology version; this metric cannot be compared or used in market scoring.",
-    marketIssueApplication: "The observations use different application scopes.",
-    marketIssueUnit: "The observations use different units; no conversion was applied.",
-    marketIssueCurrency: "The observations record different currencies or currency coverage; no exchange-rate conversion was applied.",
+    marketIssueMissingDefinition:
+      "At least one observation has no recorded metric definition; this metric cannot be compared or used in market scoring.",
+    marketIssueMissingMethodology:
+      "At least one observation has no recorded methodology version; this metric cannot be compared or used in market scoring.",
+    marketIssueApplication:
+      "The observations use different application scopes.",
+    marketIssueUnit:
+      "The observations use different units; no conversion was applied.",
+    marketIssueCurrency:
+      "The observations record different currencies or currency coverage; no exchange-rate conversion was applied.",
     marketIssueDefinition: "The observations use different metric definitions.",
-    marketIssueMethodology: "The observations use different methodology versions.",
+    marketIssueMethodology:
+      "The observations use different methodology versions.",
     marketIssuePeriod: "The observations cover different statistical periods.",
     missing: "missing",
     noCitations: "This tool returned no citable source.",
@@ -765,7 +856,8 @@ const englishDictionary = {
     errorHeading: "This page is temporarily unavailable",
     errorKicker: "Page failed to load",
     loading: "Loading page",
-    notFoundBody: "This path does not exist or is no longer available. Check the link or return to the map.",
+    notFoundBody:
+      "This path does not exist or is no longer available. Check the link or return to the map.",
     notFoundHeading: "Page not found",
     reload: "Reload",
     returnMap: "Return to map",
@@ -780,36 +872,69 @@ export type Dictionary = DeepString<typeof englishDictionary>;
 
 const chineseDictionary: Dictionary = {
   analysis: {
-    library: "已保存的分析", comparisonTitle: "国家比较", titleLabel: "分析名称",
-    save: "保存分析", exportJson: "导出数据（JSON）", exportHtml: "导出阅读报告",
-    localNotice: "仅保存在本机浏览器，不是账号云备份。最多 10 份、共 4 MB；清除网站数据会丢失，请导出重要资料。不会保存附件内容。",
+    library: "已保存的分析",
+    comparisonTitle: "国家比较",
+    titleLabel: "分析名称",
+    save: "保存分析",
+    exportJson: "导出数据（JSON）",
+    exportHtml: "导出阅读报告",
+    localNotice:
+      "仅保存在本机浏览器，不是账号云备份。最多 10 份、共 4 MB；清除网站数据会丢失，请导出重要资料。不会保存附件内容。",
     saved: "分析已保存。可在“已保存的分析”中查看或导出阅读报告。",
-    storageError: "无法读取或保存分析：浏览器存储可能被禁用、已满或数据无效。原有数据未被覆盖；需要时可从结果直接导出 JSON。",
+    storageError:
+      "无法读取或保存分析：浏览器存储可能被禁用、已满或数据无效。原有数据未被覆盖；需要时可从结果直接导出 JSON。",
     empty: "尚未保存分析。请在完成的对话或国家比较结果中保存。",
-    savedReport: "已保存的分析报告", savedAt: "保存时间", historicalNotice: "这是本地保存的历史快照，不是最新查询或认证报告。日期和来源对应原始结果；本地记录可被修改，作决策前请重新查询并核对来源。",
-    exportHelp: "HTML 阅读报告无需本网站即可打开，可使用浏览器“打印／另存为 PDF”分享。JSON 保留结构化证据；分享前请检查敏感内容。",
-    delete: "删除", deleteConfirm: "确定从本机浏览器删除这份分析？如需保留，请先导出。",
-    confirmDelete: "确认删除", cancel: "取消", rerun: "按原条件重新查询",
-    comparisonHelp: "用统一的用途、功率和日期比较两到三个国家。直接查询已收录法规证据，无需 AI 或选择产品。",
-    countrySlot: "国家 {number}", optional: "可选", chooseCountry: "请选择国家", runComparison: "比较法规",
-    invalidComparison: "请选择两到三个不同的有效国家，并填写有效用途、功率和日期。",
-    comparisonError: "未能完整加载或核验比较结果，不会把部分结果当成完整结论。请检查网络后重试。",
+    savedReport: "已保存的分析报告",
+    savedAt: "保存时间",
+    historicalNotice:
+      "这是本地保存的历史快照，不是最新查询或认证报告。日期和来源对应原始结果；本地记录可被修改，作决策前请重新查询并核对来源。",
+    exportHelp:
+      "HTML 阅读报告无需本网站即可打开，可使用浏览器“打印／另存为 PDF”分享。JSON 保留结构化证据；分享前请检查敏感内容。",
+    delete: "删除",
+    deleteConfirm: "确定从本机浏览器删除这份分析？如需保留，请先导出。",
+    confirmDelete: "确认删除",
+    cancel: "取消",
+    rerun: "按原条件重新查询",
+    comparisonHelp:
+      "用统一的用途、功率和日期比较两到三个国家。直接查询已收录法规证据，无需 AI 或选择产品。",
+    countrySlot: "国家 {number}",
+    optional: "可选",
+    chooseCountry: "请选择国家",
+    runComparison: "比较法规",
+    invalidComparison:
+      "请选择两到三个不同的有效国家，并填写有效用途、功率和日期。",
+    comparisonError:
+      "未能完整加载或核验比较结果，不会把部分结果当成完整结论。请检查网络后重试。",
     comparisonEmpty: "选择国家并提交表单，即可比较已收录的要求。",
-    comparisonNotice: "仅展示已收录证据，不代表认证或市场准入结论。缺少记录不等于没有要求；单位、测试循环或法律适用范围不同的数值不能直接排名。",
-    dimension: "比较项目", evidenceState: "证据状态与缺口", gaps: "仍有证据缺口", recordedEvidence: "已收录这些条件下的证据",
-    noCountryData: "本次查询没有已发布的国家证据。", stale: "国家证据已标记为过期，请核对原始来源。",
-    currentLimits: "现行法规与限值", noLimits: "未收录适用限值，不代表豁免。", noneRecorded: "未收录，不代表不存在。",
+    comparisonNotice:
+      "仅展示已收录证据，不代表认证或市场准入结论。缺少记录不等于没有要求；单位、测试循环或法律适用范围不同的数值不能直接排名。",
+    dimension: "比较项目",
+    evidenceState: "证据状态与缺口",
+    gaps: "仍有证据缺口",
+    recordedEvidence: "已收录这些条件下的证据",
+    noCountryData: "本次查询没有已发布的国家证据。",
+    stale: "国家证据已标记为过期，请核对原始来源。",
+    currentLimits: "现行法规与限值",
+    noLimits: "未收录适用限值，不代表豁免。",
+    noneRecorded: "未收录，不代表不存在。",
     comparisonSummary: "已收录证据的差异",
     sharedMetrics: "所选国家均有记录",
     partialMetrics: "并非所有所选国家都有记录",
-    metricAlignmentNotice: "每行只对齐污染物和单位。HC、NOx 与 HC+NOx 分开显示；同一行不代表测试循环或法律适用范围相同，也不能据此判定哪个国家更严格。",
+    metricAlignmentNotice:
+      "每行只对齐污染物和单位。HC、NOx 与 HC+NOx 分开显示；同一行不代表测试循环或法律适用范围相同，也不能据此判定哪个国家更严格。",
     missingMetric: "未返回该污染物、该单位的记录，不代表豁免。",
-    scopeHelp: "“非道路”是宽泛类别。这台发动机实际用于什么设备？请按真实用途选择下方选项重新查询，不要为了得到结果改变条件。选项不保证有数据，也不改变本次证据不足的结论。",
+    scopeHelp:
+      "“非道路”是宽泛类别。这台发动机实际用于什么设备？请按真实用途选择下方选项重新查询，不要为了得到结果改变条件。选项不保证有数据，也不改变本次证据不足的结论。",
     refineScope: "确认实际用途",
     applicabilityDetails: "法规与来源",
-    originalEvidence: "核对原始证据", noExcerpt: "本结果未包含原文片段，请打开所列来源核实。结构化日期和编号不等于原文页码或章节定位。",
-    excerptNotice: "这是检索到的来源片段，不是 AI 解释；内容可能不完整，请核对完整原文及适用范围。来源文字保留原始语言。",
-    openPage: "打开已记录的 PDF 页码", sourceValidity: "来源记录的有效期", scrollHint: "横向滑动表格可查看其他国家；键盘用户可聚焦表格后使用方向键。",
+    originalEvidence: "核对原始证据",
+    noExcerpt:
+      "本结果未包含原文片段，请打开所列来源核实。结构化日期和编号不等于原文页码或章节定位。",
+    excerptNotice:
+      "这是检索到的来源片段，不是 AI 解释；内容可能不完整，请核对完整原文及适用范围。来源文字保留原始语言。",
+    openPage: "打开已记录的 PDF 页码",
+    sourceValidity: "来源记录的有效期",
+    scrollHint: "横向滑动表格可查看其他国家；键盘用户可聚焦表格后使用方向键。",
   },
   common: {
     allScopes: "全场景",
@@ -829,7 +954,8 @@ const chineseDictionary: Dictionary = {
   },
   metadata: {
     description: "面向柴油机销售人员的全球法规、产品适配与市场分析平台。",
-    openGraphDescription: "查法规、验产品、比市场。每个结论都能回到日期、状态与来源。",
+    openGraphDescription:
+      "查法规、验产品、比市场。每个结论都能回到日期、状态与来源。",
     openGraphImageAlt: "全球柴油机法规证据网络",
     openGraphTitle: "全球柴油机法规情报",
     siteTitle: "全球法规与市场分析平台",
@@ -857,24 +983,35 @@ const chineseDictionary: Dictionary = {
     power: "法规查询功率（kW）",
     date: "法规查询日期",
     regulationTitle: "查询适用法规",
-    regulationHelp: "选择用途、功率和日期即可查询，无需选择产品，也不调用 AI。结果说明已收录证据，不代表认证结论。",
-    chatHelp: "修改起始条件并准备新问题；应用后会进入独立对话。问题正文可以覆盖这些默认条件，每张结果卡会显示实际执行条件。",
-    productHelp: "可选。只查法规时留空。已发布的演示型号为虚构产品，不是已获批准的真实产品。",
+    regulationHelp:
+      "选择用途、功率和日期即可查询，无需选择产品，也不调用 AI。结果说明已收录证据，不代表认证结论。",
+    chatHelp:
+      "修改起始条件并准备新问题；应用后会进入独立对话。问题正文可以覆盖这些默认条件，每张结果卡会显示实际执行条件。",
+    productHelp:
+      "可选。只查法规时留空。已发布的演示型号为虚构产品，不是已获批准的真实产品。",
     optional: "未指定",
     runRegulations: "查询法规",
     applyChat: "应用并准备问题",
     invalid: "请检查用途、功率和日期后再继续。",
     nextSteps: "下一步怎么做",
-    checkQuery: "核对国家、用途、功率和日期。仅在输入有误时修改条件，不要为了得到通过结果而更改条件。",
-    regulationEvidence: "请法规审核人员补充覆盖本次条件的官方原文、限值表、生效日期和来源。缺少记录不等于没有要求。",
-    certificationEvidence: "向制造商索取与该型号、法规对应的有效证书，包含用途、功率范围、有效期和来源。",
-    productEvidence: "向制造商索取型号规格、规格版本和供应日期。虚构演示产品不能证明真实产品已经就绪。",
-    marketEvidence: "先补齐相同指标、单位、用途和统计周期的观测数据，再比较市场。",
-    knowledgeEvidence: "核对检索词与筛选条件，再向来源负责人索取原始文件及其适用日期。",
-    reviewEvidence: "请相关数据负责人核验缺失记录和来源，再将结果用于销售承诺。",
+    checkQuery:
+      "核对国家、用途、功率和日期。仅在输入有误时修改条件，不要为了得到通过结果而更改条件。",
+    regulationEvidence:
+      "请法规审核人员补充覆盖本次条件的官方原文、限值表、生效日期和来源。缺少记录不等于没有要求。",
+    certificationEvidence:
+      "向制造商索取与该型号、法规对应的有效证书，包含用途、功率范围、有效期和来源。",
+    productEvidence:
+      "向制造商索取型号规格、规格版本和供应日期。虚构演示产品不能证明真实产品已经就绪。",
+    marketEvidence:
+      "先补齐相同指标、单位、用途和统计周期的观测数据，再比较市场。",
+    knowledgeEvidence:
+      "核对检索词与筛选条件，再向来源负责人索取原始文件及其适用日期。",
+    reviewEvidence:
+      "请相关数据负责人核验缺失记录和来源，再将结果用于销售承诺。",
     editConditions: "核对查询条件",
     reviewSources: "查看已收录来源",
-    demoOnly: "目前已发布的产品目录仅包含虚构演示型号。真实法规调研请使用上方独立法规查询。",
+    demoOnly:
+      "目前已发布的产品目录仅包含虚构演示型号。真实法规调研请使用上方独立法规查询。",
   },
   workspace: {
     name: "情报工作台",
@@ -936,25 +1073,30 @@ const chineseDictionary: Dictionary = {
     audience: "面向海外销售与产品团队",
     catalog: "国家目录",
     coverageAria: "覆盖概览",
-    coverageDemoExplanation: "仅表示虚构演示数据可运行完整流程，不代表真实法规覆盖或外部来源核验。",
+    coverageDemoExplanation:
+      "仅表示虚构演示数据可运行完整流程，不代表真实法规覆盖或外部来源核验。",
     coverageDemoKicker: "虚构演示切片",
     coverageDemoRate: "虚构演示切片率",
     coverageDemoTitle: "虚构演示切片",
-    coverageExplanation: "已核验表示来源边界和数据缺口经过审阅，不代表该国存在数值法规。",
+    coverageExplanation:
+      "已核验表示来源边界和数据缺口经过审阅，不代表该国存在数值法规。",
     coverageKicker: "证据边界",
     coverageRate: "证据边界核验率",
     coverageTitle: "全球证据网络",
     publicationTitle: "已发布证据快照",
-    publicationExplanation: "以下为随版本记录的发布快照，不是实时数据库计数。辖区与来源覆盖不代表每种应用场景都有数值限值。",
+    publicationExplanation:
+      "以下为随版本记录的发布快照，不是实时数据库计数。辖区与来源覆盖不代表每种应用场景都有数值限值。",
     publicationJurisdictions: "辖区",
     publicationRegulations: "法规",
     publicationLimits: "排放限值记录",
     publicationSources: "来源",
     publicationProducts: "获准公开的真实产品",
-    description: "查询各国排放法规和适用日期，核对发动机产品适配，比较市场数据。结果保留来源与核验时间。",
+    description:
+      "查询各国排放法规和适用日期，核对发动机产品适配，比较市场数据。结果保留来源与核验时间。",
     demoFixture: "演示数据",
     directStart: "直接开始",
-    emptyCountriesBody: "当前公开数据没有可展示的国家摘要。可进入地图查看完整目录与明确的无数据状态。",
+    emptyCountriesBody:
+      "当前公开数据没有可展示的国家摘要。可进入地图查看完整目录与明确的无数据状态。",
     emptyCountriesTitle: "暂无已核验国家入口",
     enterAi: "进入 AI 工作区",
     errorCountries: "国家覆盖摘要暂时无法加载，请进入地图重试。",
@@ -966,7 +1108,8 @@ const chineseDictionary: Dictionary = {
     heroLine1: "全球柴油机法规",
     heroLine2: "与产品数据库",
     latestVerification: "最近核验",
-    missionDescription: "从国家、产品或市场任意一端进入，同一套证据结构贯穿判断与交接。",
+    missionDescription:
+      "从国家、产品或市场任意一端进入，同一套证据结构贯穿判断与交接。",
     missionMarket: "生成有证据的市场简报",
     missionMarketEyebrow: "市场简报",
     missionProduct: "运行确定性产品适配",
@@ -989,13 +1132,17 @@ const chineseDictionary: Dictionary = {
     threeWays: "三种入口",
   },
   map: {
-    boundaryAttribution: "边界数据：Natural Earth 1:110m（公共领域）。国家详情以 ISO3 与数据库连接。",
-    boundaryErrorBody: "当前画布不能用于判断国家是否有数据，请重试加载边界资源。",
+    boundaryAttribution:
+      "边界数据：Natural Earth 1:110m（公共领域）。国家详情以 ISO3 与数据库连接。",
+    boundaryErrorBody:
+      "当前画布不能用于判断国家是否有数据，请重试加载边界资源。",
     boundaryErrorTitle: "国家边界加载失败",
     gpuErrorTitle: "交互地图暂不可用",
-    gpuErrorBody: "地图需要 WebGL2，但当前无法使用或图形上下文已丢失。你仍可通过国家选择器打开详情；图形支持恢复后可重试。",
+    gpuErrorBody:
+      "地图需要 WebGL2，但当前无法使用或图形上下文已丢失。你仍可通过国家选择器打开详情；图形支持恢复后可重试。",
     boundaryMissingOption: "暂无地图边界",
-    boundaryMissingSelection: "该目录国家暂缺地图边界，仍可通过选择器打开结构化详情。",
+    boundaryMissingSelection:
+      "该目录国家暂缺地图边界，仍可通过选择器打开结构化详情。",
     closeCountry: "关闭国家详情",
     countrySelect: "选择国家",
     currentSelection: "当前选择：{name}。",
@@ -1036,18 +1183,23 @@ const chineseDictionary: Dictionary = {
     applicabilityEvidence: "适用性证据",
     applicableJurisdiction: "适用辖区",
     applicabilitySummary: "国家决策摘要",
-    applicabilitySummaryEmpty: "使用上方法规查询查看命中法规、功率带、限值和来源，无需选择产品。",
+    applicabilitySummaryEmpty:
+      "使用上方法规查询查看命中法规、功率带、限值和来源，无需选择产品。",
     applicabilitySummaryLoading: "正在按新场景与功率刷新国家决策摘要…",
     applicabilitySummaryQuery: "查询条件",
     applicabilityMissingCountry: "{iso3} 没有国家结构化记录。",
-    applicabilityMissingEvidence: "{iso3} 在所选查询下存在尚未分类的适用性证据缺口。",
-    applicabilityMissingRegulations: "{iso3} 在所选场景、功率和日期下没有可比较法规记录。",
+    applicabilityMissingEvidence:
+      "{iso3} 在所选查询下存在尚未分类的适用性证据缺口。",
+    applicabilityMissingRegulations:
+      "{iso3} 在所选场景、功率和日期下没有可比较法规记录。",
     archiveCurrent: "当前记录",
     asOf: "查询截止日期",
-    baselineDescription: "按查询日期展示结构化事实与来源；本页不会把 Demo 记录描述为真实法规。",
+    baselineDescription:
+      "按查询日期展示结构化事实与来源；本页不会把 Demo 记录描述为真实法规。",
     basics: "国家概览",
     chatAction: "在对话中分析",
-    chatBody: "将当前国家、用途、功率、日期及已选择的产品型号带入对话；对话结果仍需复核来源，不能替代正式认证或销售审批。",
+    chatBody:
+      "将当前国家、用途、功率、日期及已选择的产品型号带入对话；对话结果仍需复核来源，不能替代正式认证或销售审批。",
     chatTitle: "继续形成销售分析",
     citationMissing: "无引用编号",
     code: "编码",
@@ -1057,16 +1209,19 @@ const chineseDictionary: Dictionary = {
     coverageNoData: "暂无详情数据",
     coverageNone: "未设置",
     coveragePlanned: "计划覆盖",
-    coverageSemantics: "“已发布证据边界”只表示存在经治理发布、可追溯的资料，不保证每个应用场景都有数值；“最近核验”表示来源核对时间，不等于外部法规专家或法律签核。虚构 Demo 仅用于验证流程。",
+    coverageSemantics:
+      "“已发布证据边界”只表示存在经治理发布、可追溯的资料，不保证每个应用场景都有数值；“最近核验”表示来源核对时间，不等于外部法规专家或法律签核。虚构 Demo 仅用于验证流程。",
     currentApplicable: "当前适用",
     currentRegulations: "当前有效法规",
     currentRegulationsEmpty: "在本次截止日期没有结构化的当前有效法规。",
     dataSources: "数据来源与核验",
-    decisionNoCurrent: "没有可证明覆盖本次场景、功率和日期的当前有效法规；系统不会据此推断“没有要求”。",
+    decisionNoCurrent:
+      "没有可证明覆盖本次场景、功率和日期的当前有效法规；系统不会据此推断“没有要求”。",
     decisionSummaryErrorFallback: "国家决策摘要暂时无法刷新。",
     decisionSummaryRequestError: "决策摘要请求失败",
     demoBadge: "虚构 Demo",
-    demoCountryBody: "国家名称与基础资料用于测试交互；法规、市场、产品和来源请以每条卡片的分类徽标与核验日期为准。",
+    demoCountryBody:
+      "国家名称与基础资料用于测试交互；法规、市场、产品和来源请以每条卡片的分类徽标与核验日期为准。",
     demoCountryTitle: "国家基础记录或其来源为虚构 Demo",
     demoJurisdictionName: "仅限 Demo — {country}的虚构排放主管机构",
     demoMarketMetricDefinition:
@@ -1092,8 +1247,10 @@ const chineseDictionary: Dictionary = {
     formalTrace: "完整追溯信息",
     futureAdopted: "未来已通过",
     futureRegulations: "未来已通过法规",
-    futureRegulationsEmpty: "没有已通过且将在未来生效的结构化法规。拟议法规不会列入此处。",
-    geometryNoData: "地图中包含该国家边界，但数据库尚未录入可公开详情。系统不会用空白内容或模型推测代替事实。",
+    futureRegulationsEmpty:
+      "没有已通过且将在未来生效的结构化法规。拟议法规不会列入此处。",
+    geometryNoData:
+      "地图中包含该国家边界，但数据库尚未录入可公开详情。系统不会用空白内容或模型推测代替事实。",
     jurisdiction: "适用司法辖区",
     jurisdictionEmpty: "当前截止日期没有可展示的适用司法辖区。",
     jurisdictionId: "辖区记录 ID",
@@ -1110,7 +1267,8 @@ const chineseDictionary: Dictionary = {
     membershipSource: "成员关系来源",
     methodology: "方法版本",
     metricPublished: "指标发布",
-    missingGeometryNoData: "该国家属于目录，但当前地图资源暂缺其边界，数据库也尚未录入可公开详情。系统不会用空白内容或模型推测代替事实。",
+    missingGeometryNoData:
+      "该国家属于目录，但当前地图资源暂缺其边界，数据库也尚未录入可公开详情。系统不会用空白内容或模型推测代替事实。",
     noDataSuffix: "暂无数据",
     noLocator: "未提供章节定位",
     noPublisher: "发布机构未提供",
@@ -1182,7 +1340,8 @@ const chineseDictionary: Dictionary = {
     certificationStatusUnknown: "未知",
     certificationStatusWithdrawn: "已撤销",
     certificationId: "认证记录 ID",
-    certificationMissing: "没有可追溯的产品认证记录，因此不会将“缺记录”解释为“不合规”。",
+    certificationMissing:
+      "没有可追溯的产品认证记录，因此不会将“缺记录”解释为“不合规”。",
     certificationSource: "认证来源",
     commercialNotReady: "商业未就绪",
     commercialReady: "商业就绪",
@@ -1200,12 +1359,16 @@ const chineseDictionary: Dictionary = {
     dataGapSummaryReasons: "原因",
     dataGapSummaryRequiredFields: "所需字段",
     dataGapSummaryTitle: "产品适配补数摘要（本地生成，尚未创建工单）",
-    requiredCertificationFields: "认证编号、关联法规、认证状态、应用场景、功率范围、有效期、来源链接、发布日期、最近核验时间",
-    requiredProductFields: "产品型号、产品名称、规格版本、应用场景、功率范围、供应期、来源链接、发布日期、最近核验时间",
-    requiredRegulationFields: "法规名称、法规状态、适用国家或司法辖区、应用场景、功率区间、有效期、法规与限值来源、发布日期、最近核验时间",
+    requiredCertificationFields:
+      "认证编号、关联法规、认证状态、应用场景、功率范围、有效期、来源链接、发布日期、最近核验时间",
+    requiredProductFields:
+      "产品型号、产品名称、规格版本、应用场景、功率范围、供应期、来源链接、发布日期、最近核验时间",
+    requiredRegulationFields:
+      "法规名称、法规状态、适用国家或司法辖区、应用场景、功率区间、有效期、法规与限值来源、发布日期、最近核验时间",
     date: "评估日期",
     dateOpen: "开放",
-    demoEvidenceWarning: "包含虚构 Demo 证据；不可用于报价、认证声明或销售承诺。",
+    demoEvidenceWarning:
+      "包含虚构 Demo 证据；不可用于报价、认证声明或销售承诺。",
     demoFit: "演示匹配",
     demoProductEngine100Name: "仅限 Demo — 虚构发动机 100",
     demoProductEngine200Name: "仅限 Demo — 虚构发动机 200",
@@ -1214,7 +1377,8 @@ const chineseDictionary: Dictionary = {
     errorFallback: "适配评估暂时无法完成，请检查输入后重试。",
     fit: "明确匹配",
     fitAxis: "法规/认证适配",
-    formDescription: "由 product-fit-v2 确定性规则分别计算法规/认证适配与查询日供应状态；大模型不参与判断。",
+    formDescription:
+      "由 product-fit-v2 确定性规则分别计算法规/认证适配与查询日供应状态；大模型不参与判断。",
     heading: "产品适配结果",
     jurisdictionId: "辖区记录 ID",
     jurisdictionSource: "辖区来源",
@@ -1226,7 +1390,8 @@ const chineseDictionary: Dictionary = {
     pass: "通过",
     fail: "不通过",
     power: "功率（kW）",
-    powerBandHelp: "功率范围采用下限包含、上限不包含；例如 [50, 150) kW 表示 50 kW 在范围内，150 kW 不在范围内。",
+    powerBandHelp:
+      "功率范围采用下限包含、上限不包含；例如 [50, 150) kW 表示 50 kW 在范围内，150 kW 不在范围内。",
     powerRangeMissing: "功率上下限均未记录",
     productId: "产品记录 ID",
     productLoadError: "产品加载失败",
@@ -1269,12 +1434,14 @@ const chineseDictionary: Dictionary = {
     validPeriod: "有效期",
   },
   chatPage: {
-    description: "通过服务端配置的模型，围绕法规、市场、产品适配与机会评分展开可追溯分析。",
+    description:
+      "通过服务端配置的模型，围绕法规、市场、产品适配与机会评分展开可追溯分析。",
     exampleCountry: "示例国家资料",
     heading: "和数据一起讨论下一步",
     kicker: "销售情报",
     mapFirst: "先看地图",
-    sidebarBody: "从左侧的快捷问题一键预填，也可以从国家详情把刚完成的查询带入对话。",
+    sidebarBody:
+      "从左侧的快捷问题一键预填，也可以从国家详情把刚完成的查询带入对话。",
     sidebarFoot: "事实来自确定性工具；解释与建议会与证据层分开呈现。",
     sidebarHeading: "可以这样问",
     sidebarKicker: "问题示例",
@@ -1309,8 +1476,10 @@ const chineseDictionary: Dictionary = {
     deterministicFacts: "确定性事实层",
     deterministicQuery: "正在执行确定性查询…",
     editRetry: "编辑后重试",
-    emptyDemo: "离线 Demo 可尝试：“CHN 目前有哪些有效法规？”或“CHN 的非道路 100 kW 产品是否适配？”；只查询明确标记的虚构演示数据。",
-    emptyLive: "点击问题即可发送。你可以查询有效法规、比较具体应用场景，或查看市场指标及来源。缺少证据时会明确说明；目前没有获准公开推荐的真实产品。",
+    emptyDemo:
+      "离线 Demo 可尝试：“CHN 目前有哪些有效法规？”或“CHN 的非道路 100 kW 产品是否适配？”；只查询明确标记的虚构演示数据。",
+    emptyLive:
+      "点击问题即可发送。你可以查询有效法规、比较具体应用场景，或查看市场指标及来源。缺少证据时会明确说明；目前没有获准公开推荐的真实产品。",
     failedQuestion: "问题",
     emptyFile: "{name} 是空文件，无法上传。",
     filePreview: "{name} 预览",
@@ -1346,9 +1515,11 @@ const chineseDictionary: Dictionary = {
     statusComplete: "回答已完成。",
     newConversation: "新对话",
     historyNotice: "已完成对话在本标签页保留 24 小时，上传文件不保存。",
-    historyRestored: "已恢复本标签页的对话。证据保留原查询日期；新问题会重新取证。",
+    historyRestored:
+      "已恢复本标签页的对话。证据保留原查询日期；新问题会重新取证。",
     historyUnavailable: "本标签页无法保存这段对话，刷新前请复制需要的回答。",
-    historyWindowed: "刷新仅恢复最近的完整对话，较早消息不在恢复窗口内。查询条件由签名上下文继续保留，不将旧回答当作事实。",
+    historyWindowed:
+      "刷新仅恢复最近的完整对话，较早消息不在恢复窗口内。查询条件由签名上下文继续保留，不将旧回答当作事实。",
     statusGenerating: "正在生成回答。",
     statusSubmitted: "问题已发送，正在选择确定性工具。",
     stopGenerating: "停止生成",
@@ -1371,12 +1542,16 @@ const chineseDictionary: Dictionary = {
       "{name} 的格式不受支持。请选择 PNG、JPEG、WebP、PDF、TXT、Markdown 或 CSV。",
     user: "你",
     validating: "正在验证附件",
-    additionalEvidenceWarnings: "工具还返回了 {count} 项证据告警；使用前请复核结构化结果与引用来源。",
-    briefAction: "行动 {index}（{priority}优先级）：规则生成建议；使用前请结合结构化证据与引用来源复核。",
+    additionalEvidenceWarnings:
+      "工具还返回了 {count} 项证据告警；使用前请复核结构化结果与引用来源。",
+    briefAction:
+      "行动 {index}（{priority}优先级）：规则生成建议；使用前请结合结构化证据与引用来源复核。",
     briefOpportunity: "机会 {index}：确定性信号关联 {count} 条证据记录。",
     briefRisk: "风险 {index}：确定性风险关联 {count} 条证据记录。",
-    briefSummaryAvailable: "{country} 在 {ruleset} 下的确定性机会分为 {score}/100，数据覆盖率 {coverage}%。简报包含 {products} 个商业就绪产品、{risks} 项风险、{opportunities} 项机会信号和 {actions} 项规则生成行动。",
-    briefSummaryMissing: "{country} 在 {ruleset} 下当前证据不足，未生成确定性总分（数据覆盖率 {coverage}%）。简报包含 {products} 个商业就绪产品、{risks} 项风险、{opportunities} 项机会信号和 {actions} 项规则生成行动。",
+    briefSummaryAvailable:
+      "{country} 在 {ruleset} 下的确定性机会分为 {score}/100，数据覆盖率 {coverage}%。简报包含 {products} 个商业就绪产品、{risks} 项风险、{opportunities} 项机会信号和 {actions} 项规则生成行动。",
+    briefSummaryMissing:
+      "{country} 在 {ruleset} 下当前证据不足，未生成确定性总分（数据覆盖率 {coverage}%）。简报包含 {products} 个商业就绪产品、{risks} 项风险、{opportunities} 项机会信号和 {actions} 项规则生成行动。",
     commerciallyReady: "商业就绪",
     commercialReadiness: "商业准备度",
     citationCertificationRecord: "{product}认证记录",
@@ -1386,11 +1561,11 @@ const chineseDictionary: Dictionary = {
     citationMembership: "{jurisdiction} 对 {country} 的成员关系",
     citationPollutantLimit: "{regulation} {pollutant} 限值",
     comparisonBasis: "比较口径",
-    comparisonBasisBody: "差异只反映本次同场景、功率和日期下返回的结构化记录；未返回某项不能解释为当地没有该要求。",
+    comparisonBasisBody:
+      "差异只反映本次同场景、功率和日期下返回的结构化记录；未返回某项不能解释为当地没有该要求。",
     contribution: "贡献",
     countryNoData: "该国家暂无结构化资料。",
-    countryProfileMissingMarketWarning:
-      "所请求国家没有结构化市场指标证据。",
+    countryProfileMissingMarketWarning: "所请求国家没有结构化市场指标证据。",
     countryProfileMissingRegulationsWarning:
       "所请求国家没有可见的当前生效或未来已采纳法规证据。",
     countryProfileTopicCountry: "国家概览",
@@ -1403,15 +1578,20 @@ const chineseDictionary: Dictionary = {
     finalScore: "最终得分",
     futureAdoptedCount: "查询日已采纳",
     inputFacts: "输入",
-    insufficientEvidenceWarning: "没有足够证据支持肯定结论；请补充结构化事实或可追溯来源。",
-    knowledgeMissingApplicationScopeWarning: "{count} 条知识片段未记录应用场景；使用前请确认场景适用性。",
-    knowledgeMissingCountryWarning: "{count} 条知识片段未记录国家；使用前请确认辖区适用性。",
-    knowledgeMissingValidFromWarning: "{count} 条知识片段未记录生效日期；使用前请确认日期适用性。",
+    insufficientEvidenceWarning:
+      "没有足够证据支持肯定结论；请补充结构化事实或可追溯来源。",
+    knowledgeMissingApplicationScopeWarning:
+      "{count} 条知识片段未记录应用场景；使用前请确认场景适用性。",
+    knowledgeMissingCountryWarning:
+      "{count} 条知识片段未记录国家；使用前请确认辖区适用性。",
+    knowledgeMissingValidFromWarning:
+      "{count} 条知识片段未记录生效日期；使用前请确认日期适用性。",
     listSeparator: "；",
     marketComparable: "可比较",
     marketIncomparable: "不可比较",
     marketInsufficientData: "数据不足",
-    marketComparisonBasisBody: "可比性核对已记录的口径、用途、统计期间、单位、币种和方法；不进行单位或汇率换算，也不做外推。",
+    marketComparisonBasisBody:
+      "可比性核对已记录的口径、用途、统计期间、单位、币种和方法；不进行单位或汇率换算，也不做外推。",
     marketComparisonIssues: "比较证据缺口",
     marketCurrency: "币种",
     marketDefinition: "指标口径",
@@ -1419,13 +1599,17 @@ const chineseDictionary: Dictionary = {
     marketObservation: "{country} · {metric} 观测值",
     marketPeriodStart: "统计期起点（包含）",
     marketPeriodEnd: "统计期终点（不含）",
-    marketHistoricalNotice: "以下为所示统计期间的历史观测，不代表当前销量或市场预测。",
+    marketHistoricalNotice:
+      "以下为所示统计期间的历史观测，不代表当前销量或市场预测。",
     marketIssueMissingCountry: "至少一个请求国家没有该指标的观测值。",
     marketIssueAmbiguousLatest: "某个国家存在多条最新观测，无法选定唯一数值。",
-    marketIssueMissingUnit: "至少一条观测未记录单位；该指标不能参与比较或市场评分。",
+    marketIssueMissingUnit:
+      "至少一条观测未记录单位；该指标不能参与比较或市场评分。",
     marketUnitNotRecorded: "（单位未记录）",
-    marketIssueMissingDefinition: "至少一条观测未记录指标口径；该指标不能参与比较或市场评分。",
-    marketIssueMissingMethodology: "至少一条观测未记录方法版本；该指标不能参与比较或市场评分。",
+    marketIssueMissingDefinition:
+      "至少一条观测未记录指标口径；该指标不能参与比较或市场评分。",
+    marketIssueMissingMethodology:
+      "至少一条观测未记录方法版本；该指标不能参与比较或市场评分。",
     marketIssueApplication: "观测值的应用场景不同。",
     marketIssueUnit: "观测值的单位不同；未进行单位换算。",
     marketIssueCurrency: "观测值的币种或币种记录完整性不同；未进行汇率换算。",
@@ -1446,21 +1630,27 @@ const chineseDictionary: Dictionary = {
     priorityLow: "低",
     priorityMedium: "中",
     queryDate: "查询日",
-    regulationMissingLimits: "当前结果未返回结构化 {pollutants} 限值；不能解释为当地没有相关要求。",
+    regulationMissingLimits:
+      "当前结果未返回结构化 {pollutants} 限值；不能解释为当地没有相关要求。",
     regulationStatus: "法规状态",
     risk: "风险",
     ruleGeneratedAdvice: "规则生成建议（非事实层）",
     scoreMarketPotential: "市场潜力",
     scoreProductReadiness: "产品准备度",
     scoreRegulatoryCoverage: "法规覆盖",
-    scoreComponentAvailable: "{component} 基于类型化证据投影得到确定性评分 {score}/100。",
-    scoreComponentMissing: "{component} 因类型化证据投影不足，未生成确定性评分。",
+    scoreComponentAvailable:
+      "{component} 基于类型化证据投影得到确定性评分 {score}/100。",
+    scoreComponentMissing:
+      "{component} 因类型化证据投影不足，未生成确定性评分。",
     sourcePage: "第 {pages} 页",
-    structuredGapsWarning: "结构化结果包含 {count} 项数据缺口；使用前请复核查询输入与引用来源。",
+    structuredGapsWarning:
+      "结构化结果包含 {count} 项数据缺口；使用前请复核查询输入与引用来源。",
     toolErrorExecution: "确定性查询失败，未生成事实结果。请重试本轮问题。",
-    toolErrorInvalidResult: "确定性查询返回了无法验证的结果，已停止展示该结果。",
+    toolErrorInvalidResult:
+      "确定性查询返回了无法验证的结果，已停止展示该结果。",
     toolErrorPermissionDenied: "确定性查询未获执行许可，本轮没有可用事实结果。",
-    toolQueryFailedWarning: "工具查询失败，不能据此生成法规或产品结论。请稍后重试。",
+    toolQueryFailedWarning:
+      "工具查询失败，不能据此生成法规或产品结论。请稍后重试。",
     unknownProductsWarning: "{count} 个产品因当前可见证据不足而保持未知状态。",
     viewSources: "查看来源与定位（{count}）",
   },

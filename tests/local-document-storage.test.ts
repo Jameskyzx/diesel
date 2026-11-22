@@ -3,7 +3,15 @@ import { randomUUID } from "node:crypto";
 import { mkdir, open, readdir, rm, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { sha256 } from "@/server/knowledge/document-file";
 
@@ -56,14 +64,16 @@ describe("local document storage", () => {
     `;
     // A separate child gives this kernel-level regression a real termination
     // bound if nonblocking open is ever removed and the FIFO read hangs.
-    const result = await execFileAsync(process.execPath, [
-      "--conditions=react-server", "--import", "tsx", "-e", script,
-    ], {
-      cwd: process.cwd(),
-      env: { ...process.env, KNOWLEDGE_STORAGE_ROOT: storageRoot },
-      maxBuffer: 64 * 1024,
-      timeout: 5_000,
-    });
+    const result = await execFileAsync(
+      process.execPath,
+      ["--conditions=react-server", "--import", "tsx", "-e", script],
+      {
+        cwd: process.cwd(),
+        env: { ...process.env, KNOWLEDGE_STORAGE_ROOT: storageRoot },
+        maxBuffer: 64 * 1024,
+        timeout: 5_000,
+      },
+    );
     expect(result.stdout.trim()).toBe("NON_REGULAR_FILE_REJECTED");
   }, 10_000);
 
@@ -75,8 +85,11 @@ describe("local document storage", () => {
     const stored = await storage.readDocumentFile(saved.storagePath);
     expect(stored.length).toBe(bytes.length);
     expect(stored.equals(bytes)).toBe(true);
-    await expect(storage.saveDocumentFile({ bytes, contentSha256 })).resolves.toEqual({
-      created: false, storagePath: saved.storagePath,
+    await expect(
+      storage.saveDocumentFile({ bytes, contentSha256 }),
+    ).resolves.toEqual({
+      created: false,
+      storagePath: saved.storagePath,
     });
   });
 
@@ -84,15 +97,26 @@ describe("local document storage", () => {
     const bytes = Buffer.alloc(5 * 1024 * 1024 + 1, 0x62);
     const contentSha256 = sha256(bytes);
 
-    await expect(storage.saveDocumentFile({ bytes, contentSha256 })).rejects.toThrow("5 MiB");
-    await expect(readdir(resolve(process.cwd(), ".data", storageRoot, contentSha256))).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(
+      storage.saveDocumentFile({ bytes, contentSha256 }),
+    ).rejects.toThrow("5 MiB");
+    await expect(
+      readdir(resolve(process.cwd(), ".data", storageRoot, contentSha256)),
+    ).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("rejects an oversized stored original on both reads and reuse without repairing it", async () => {
-    const bytes = Buffer.from("DEMO ONLY — a bounded original that later grows");
+    const bytes = Buffer.from(
+      "DEMO ONLY — a bounded original that later grows",
+    );
     const contentSha256 = sha256(bytes);
     const saved = await storage.saveDocumentFile({ bytes, contentSha256 });
-    const target = resolve(process.cwd(), ".data", storageRoot, saved.storagePath);
+    const target = resolve(
+      process.cwd(),
+      ".data",
+      storageRoot,
+      saved.storagePath,
+    );
     const file = await open(target, "r+");
     try {
       await file.truncate(5 * 1024 * 1024 + 1);
@@ -100,10 +124,18 @@ describe("local document storage", () => {
       await file.close();
     }
 
-    await expect(storage.readDocumentFile(saved.storagePath).then(() => undefined)).rejects.toThrow("5 MiB");
-    await expect(storage.saveDocumentFile({ bytes, contentSha256 })).rejects.toThrow("5 MiB");
+    await expect(
+      storage.readDocumentFile(saved.storagePath).then(() => undefined),
+    ).rejects.toThrow("5 MiB");
+    await expect(
+      storage.saveDocumentFile({ bytes, contentSha256 }),
+    ).rejects.toThrow("5 MiB");
     expect((await stat(target)).size).toBe(5 * 1024 * 1024 + 1);
-    expect(await readdir(resolve(process.cwd(), ".data", storageRoot, contentSha256))).toEqual(["content"]);
+    expect(
+      await readdir(
+        resolve(process.cwd(), ".data", storageRoot, contentSha256),
+      ),
+    ).toEqual(["content"]);
   });
 
   it("atomically reuses one content-addressed file under concurrent writes", async () => {
@@ -199,12 +231,14 @@ describe("local document storage", () => {
     ).resolves.toEqual([orphaned.storagePath]);
 
     await storage.removeDocumentFile(orphaned.storagePath);
-    await expect(storage.readDocumentFile(orphaned.storagePath)).rejects.toThrow();
-    await expect(storage.readDocumentFile(referenced.storagePath)).resolves.toEqual(
-      Buffer.from(referencedBytes),
-    );
-    await expect(storage.removeDocumentFile("../outside/content")).rejects.toThrow(
-      "content-addressed",
-    );
+    await expect(
+      storage.readDocumentFile(orphaned.storagePath),
+    ).rejects.toThrow();
+    await expect(
+      storage.readDocumentFile(referenced.storagePath),
+    ).resolves.toEqual(Buffer.from(referencedBytes));
+    await expect(
+      storage.removeDocumentFile("../outside/content"),
+    ).rejects.toThrow("content-addressed");
   });
 });

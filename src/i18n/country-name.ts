@@ -97,9 +97,8 @@ function trustedLocalName({
 function demoCountryFixture(
   country: CountryDisplayNameInput,
 ): (typeof demoCountryFixtures)[keyof typeof demoCountryFixtures] | null {
-  const fixture = demoCountryFixtures[
-    country.iso3 as keyof typeof demoCountryFixtures
-  ];
+  const fixture =
+    demoCountryFixtures[country.iso3 as keyof typeof demoCountryFixtures];
   if (
     !fixture ||
     country.iso2 !== fixture.iso2 ||
@@ -112,9 +111,7 @@ function demoCountryFixture(
   return fixture;
 }
 
-function knownDemoCountryName(
-  country: CountryDisplayNameInput,
-): string | null {
+function knownDemoCountryName(country: CountryDisplayNameInput): string | null {
   if (!country.isDemo) {
     return null;
   }

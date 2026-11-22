@@ -46,16 +46,18 @@ function exactSequence(
   );
 }
 
-function sourceKey(source: Pick<
-  AnalysisSource,
-  | "countryIso3"
-  | "entityId"
-  | "entityType"
-  | "productId"
-  | "productModelCode"
-  | "regulationId"
-  | "sourceId"
->): string {
+function sourceKey(
+  source: Pick<
+    AnalysisSource,
+    | "countryIso3"
+    | "entityId"
+    | "entityType"
+    | "productId"
+    | "productModelCode"
+    | "regulationId"
+    | "sourceId"
+  >,
+): string {
   return `${source.countryIso3 ?? "global"}:${source.entityType}:${source.entityId}:${source.productId ?? "none"}:${source.productModelCode ?? "none"}:${source.regulationId ?? "none"}:${source.sourceId}`;
 }
 
@@ -113,7 +115,8 @@ function certificationSourceMatches(input: {
     input.source.publishedOn === certification.source.publishedOn &&
     certification.productId === product.id &&
     certification.productModelCode === product.modelCode &&
-    certification.regulationId === input.regulationCheck.regulation.regulationId &&
+    certification.regulationId ===
+      input.regulationCheck.regulation.regulationId &&
     input.source.productId === certification.productId &&
     input.source.productModelCode === certification.productModelCode &&
     input.source.regulationId === certification.regulationId &&
@@ -175,8 +178,8 @@ function limitSourcesMatch(
     const fitSource = fitSourcesById.get(sourceId);
     if (!fitSource || limits.length === 0) return false;
     const representative = limits[0]!.source;
-    const expectedIsDemo = limits.some(({ isDemo, source }) =>
-      isDemo || source.isDemo,
+    const expectedIsDemo = limits.some(
+      ({ isDemo, source }) => isDemo || source.isDemo,
     );
     return (
       limits.every(
@@ -368,8 +371,9 @@ function evaluationSetMatchesQuery(
   const productOrder = evaluations.map(({ product }) =>
     product === null ? null : `${product.modelCode}\u0000${product.id}`,
   );
-  const canonicalProductOrder = productOrder
-    .toSorted((left, right) => compareCanonicalText(left ?? "", right ?? ""));
+  const canonicalProductOrder = productOrder.toSorted((left, right) =>
+    compareCanonicalText(left ?? "", right ?? ""),
+  );
   return (
     new Set(identityKeys).size === identityKeys.length &&
     new Set(productIds).size === productIds.length &&
@@ -591,10 +595,7 @@ export function countryScoreMatchesTrustedProvenance(input: {
     ) {
       return false;
     }
-    const expected = dimensionScores(
-      input.provenance,
-      input.score.countryIso3,
-    );
+    const expected = dimensionScores(input.provenance, input.score.countryIso3);
     return (
       exactSequence(
         input.score.components.map(({ key }) => key),

@@ -19,16 +19,13 @@ import {
 import { groupApplicableRegulationRows } from "@/server/repositories/applicable-regulations";
 import { createRegulationRepository } from "@/server/repositories/regulation-repository";
 
-export function createProductRepository<
-  TQueryResult extends PgQueryResultHKT,
->(database: PgDatabase<TQueryResult, typeof schema>) {
+export function createProductRepository<TQueryResult extends PgQueryResultHKT>(
+  database: PgDatabase<TQueryResult, typeof schema>,
+) {
   const regulationRepository = createRegulationRepository(database);
 
   return {
-    async findFitEvidence(
-      input: unknown,
-      options: RequestSignalOptions = {},
-    ) {
+    async findFitEvidence(input: unknown, options: RequestSignalOptions = {}) {
       const query = productFitQuerySchema.parse(input);
       throwIfRequestAborted(options.signal);
 
@@ -181,12 +178,7 @@ export function createProductRepository<
         })
         .from(products)
         .innerJoin(dataSources, eq(products.dataSourceId, dataSources.id))
-        .where(
-          and(
-            isNull(products.archivedAt),
-            isNull(dataSources.archivedAt),
-          ),
-        )
+        .where(and(isNull(products.archivedAt), isNull(dataSources.archivedAt)))
         .orderBy(asc(products.modelCode));
       throwIfRequestAborted(options.signal);
 

@@ -24,15 +24,34 @@ export function createFeedbackDemoModel() {
     provider: "portfolio-demo",
     doGenerate: async (options) => {
       const text = (options.prompt as readonly unknown[])
-        .flatMap(message => isRecord(message) && message.role === "user" && Array.isArray(message.content) ? message.content : [])
-        .flatMap((part: unknown) => isRecord(part) && part.type === "text" && typeof part.text === "string" ? [part.text] : [])
+        .flatMap((message) =>
+          isRecord(message) &&
+          message.role === "user" &&
+          Array.isArray(message.content)
+            ? message.content
+            : [],
+        )
+        .flatMap((part: unknown) =>
+          isRecord(part) &&
+          part.type === "text" &&
+          typeof part.text === "string"
+            ? [part.text]
+            : [],
+        )
         .join("\n")
         .replace(/^\[(?:BEGIN|END) [^\]]*\]$/gmu, "");
       return {
         warnings: [],
         usage,
         finishReason: { unified: "tool-calls" as const, raw: undefined },
-        content: [{ type: "tool-call" as const, toolCallId: "feedback-demo-1", toolName: "record_feedback", input: JSON.stringify(demoExtractFeedback(text)) }],
+        content: [
+          {
+            type: "tool-call" as const,
+            toolCallId: "feedback-demo-1",
+            toolName: "record_feedback",
+            input: JSON.stringify(demoExtractFeedback(text)),
+          },
+        ],
       };
     },
   });

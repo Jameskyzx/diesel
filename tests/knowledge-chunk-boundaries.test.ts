@@ -30,12 +30,21 @@ describe("knowledge long-paragraph boundaries", () => {
       });
 
       expect(bodies[0]?.length).toBe(prefixLength === 1199 ? 1199 : 1200);
-      expect(bodies.every((body) => body.length > 0 && body.length <= 1200)).toBe(true);
+      expect(
+        bodies.every((body) => body.length > 0 && body.length <= 1200),
+      ).toBe(true);
       const encodedBodies = bodies.map((body) => Buffer.from(body, "utf8"));
-      expect(encodedBodies.map((bytes, index) => bytes.toString("utf8") === bodies[index]))
-        .toEqual(bodies.map(() => true));
-      expect(Buffer.concat(encodedBodies).equals(Buffer.from(paragraph, "utf8"))).toBe(true);
-      expect(chunkStructuredText(title, `# Scope\f${paragraph}`)).toEqual(chunks);
+      expect(
+        encodedBodies.map(
+          (bytes, index) => bytes.toString("utf8") === bodies[index],
+        ),
+      ).toEqual(bodies.map(() => true));
+      expect(
+        Buffer.concat(encodedBodies).equals(Buffer.from(paragraph, "utf8")),
+      ).toBe(true);
+      expect(chunkStructuredText(title, `# Scope\f${paragraph}`)).toEqual(
+        chunks,
+      );
     },
   );
 
@@ -63,11 +72,18 @@ describe("knowledge long-paragraph boundaries", () => {
     {
       name: "a short-prefix boundary that does not replace the hard split",
       paragraph: `${"a".repeat(500)} ${"b".repeat(800)}`,
-      expectedBodies: [`${"a".repeat(500)} ${"b".repeat(699)}`, "b".repeat(101)],
+      expectedBodies: [
+        `${"a".repeat(500)} ${"b".repeat(699)}`,
+        "b".repeat(101),
+      ],
     },
-  ])("retains the existing policy for $name", ({ paragraph, expectedBodies }) => {
-    const chunks = chunkStructuredText("DEMO ONLY", paragraph);
-    expect(chunks.map((chunk) => chunk.content.slice("DEMO ONLY\n".length)))
-      .toEqual(expectedBodies);
-  });
+  ])(
+    "retains the existing policy for $name",
+    ({ paragraph, expectedBodies }) => {
+      const chunks = chunkStructuredText("DEMO ONLY", paragraph);
+      expect(
+        chunks.map((chunk) => chunk.content.slice("DEMO ONLY\n".length)),
+      ).toEqual(expectedBodies);
+    },
+  );
 });

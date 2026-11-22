@@ -13,30 +13,32 @@ vi.mock("@/server/db/demo-client", () => ({
   getDemoDatabase: vi.fn(async () => ({})),
 }));
 
-vi.mock("@/server/repositories/knowledge-repository", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("@/server/repositories/knowledge-repository")
-  >();
-  return {
-    ...actual,
-    createKnowledgeRepository: () => ({
-      findDocumentForReprocessing: mocks.findDocumentForReprocessing,
-    }),
-  };
-});
-
 vi.mock(
-  "@/server/knowledge/local-document-storage",
+  "@/server/repositories/knowledge-repository",
   async (importOriginal) => {
-    const actual = await importOriginal<
-      typeof import("@/server/knowledge/local-document-storage")
-    >();
+    const actual =
+      await importOriginal<
+        typeof import("@/server/repositories/knowledge-repository")
+      >();
     return {
       ...actual,
-      readDocumentFile: mocks.readDocumentFile,
+      createKnowledgeRepository: () => ({
+        findDocumentForReprocessing: mocks.findDocumentForReprocessing,
+      }),
     };
   },
 );
+
+vi.mock("@/server/knowledge/local-document-storage", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/server/knowledge/local-document-storage")
+    >();
+  return {
+    ...actual,
+    readDocumentFile: mocks.readDocumentFile,
+  };
+});
 
 import { sha256 } from "@/server/knowledge/document-file";
 import {
@@ -178,49 +180,55 @@ describe("knowledge document reprocessing preparation", () => {
     { name: "one leading empty page", prefix: "\f", pageOffset: 1 },
     { name: "two leading empty pages", prefix: "\f\f", pageOffset: 2 },
     { name: "a BOM and an empty page", prefix: "\uFEFF\f", pageOffset: 1 },
-  ])("rebuilds hash-verified source locators with $name", async ({ prefix, pageOffset }) => {
-    const sourceBytes = new TextEncoder().encode(
-      `${prefix}# Scope\n### First subsection\nFirst body.\f### Second subsection\nSecond body.`,
-    );
-    const contentSha256 = sha256(sourceBytes);
-    const stored = storedDocument();
-    mocks.readDocumentFile.mockResolvedValue(sourceBytes);
-    mocks.findDocumentForReprocessing.mockResolvedValue({
-      ...stored,
-      contentSha256,
-      auditMarkers: stored.auditMarkers.map((audit) => ({
-        ...audit,
-        afterData: { ...audit.afterData, contentSha256 },
-      })),
-    });
-
-    const prepared = await prepareKnowledgeDocumentReprocessing({
-      accessScope: creatorAccessScope,
-      documentId,
-      metadata: {},
-    });
-
-    expect(prepared.expected.contentSha256).toBe(contentSha256);
-    expect(prepared.outcome.processingStatus).toBe("ready");
-    expect(prepared.outcome.chunks).toHaveLength(2);
-    for (const [index, subsection] of ["First subsection", "Second subsection"].entries()) {
-      const headingPath = [stored.title, "Scope", subsection];
-      const chunk = prepared.outcome.chunks[index]!;
-      expect(chunk).toMatchObject({
-        applicationScope: "non-road",
-        chunkIndex: index,
-        countryIso3: "CHN",
-        headingPath,
-        jurisdictionId,
-        pageFrom: index + pageOffset + 1,
-        pageTo: index + pageOffset + 1,
-        sectionLocator: `${headingPath.join(" > ")} · paragraph 1`,
-        validFrom: stored.validFrom,
-        validTo: stored.validTo,
+  ])(
+    "rebuilds hash-verified source locators with $name",
+    async ({ prefix, pageOffset }) => {
+      const sourceBytes = new TextEncoder().encode(
+        `${prefix}# Scope\n### First subsection\nFirst body.\f### Second subsection\nSecond body.`,
+      );
+      const contentSha256 = sha256(sourceBytes);
+      const stored = storedDocument();
+      mocks.readDocumentFile.mockResolvedValue(sourceBytes);
+      mocks.findDocumentForReprocessing.mockResolvedValue({
+        ...stored,
+        contentSha256,
+        auditMarkers: stored.auditMarkers.map((audit) => ({
+          ...audit,
+          afterData: { ...audit.afterData, contentSha256 },
+        })),
       });
-      expect(chunk.contentHash).toBe(sha256(chunk.content));
-    }
-  });
+
+      const prepared = await prepareKnowledgeDocumentReprocessing({
+        accessScope: creatorAccessScope,
+        documentId,
+        metadata: {},
+      });
+
+      expect(prepared.expected.contentSha256).toBe(contentSha256);
+      expect(prepared.outcome.processingStatus).toBe("ready");
+      expect(prepared.outcome.chunks).toHaveLength(2);
+      for (const [index, subsection] of [
+        "First subsection",
+        "Second subsection",
+      ].entries()) {
+        const headingPath = [stored.title, "Scope", subsection];
+        const chunk = prepared.outcome.chunks[index]!;
+        expect(chunk).toMatchObject({
+          applicationScope: "non-road",
+          chunkIndex: index,
+          countryIso3: "CHN",
+          headingPath,
+          jurisdictionId,
+          pageFrom: index + pageOffset + 1,
+          pageTo: index + pageOffset + 1,
+          sectionLocator: `${headingPath.join(" > ")} · paragraph 1`,
+          validFrom: stored.validFrom,
+          validTo: stored.validTo,
+        });
+        expect(chunk.contentHash).toBe(sha256(chunk.content));
+      }
+    },
+  );
 
   it("preserves supplementary source characters through prepared chunk encoding and hashes", async () => {
     const paragraph = `${"甲".repeat(1199)}𠮷${"乙".repeat(1201)}`;
@@ -263,7 +271,9 @@ describe("knowledge document reprocessing preparation", () => {
       expect(body.length).toBeLessThanOrEqual(1200);
       return Buffer.from(body, "utf8");
     });
-    expect(Buffer.concat(encodedBodies).equals(Buffer.from(paragraph, "utf8"))).toBe(true);
+    expect(
+      Buffer.concat(encodedBodies).equals(Buffer.from(paragraph, "utf8")),
+    ).toBe(true);
   });
 
   it("recovers chunk-only metadata from the active draft audit after a failed upload", async () => {
@@ -306,19 +316,31 @@ describe("knowledge document reprocessing preparation", () => {
       const sourceBytes = Buffer.from(`# ${"H".repeat(3000)}\n\nbody`);
       const contentSha256 = sha256(sourceBytes);
       const stored = storedDocument();
-      const chunkSetFingerprint = processingStatus === "ready"
-        ? readyChunkSetFingerprint : failedChunkSetFingerprint;
+      const chunkSetFingerprint =
+        processingStatus === "ready"
+          ? readyChunkSetFingerprint
+          : failedChunkSetFingerprint;
       mocks.readDocumentFile.mockResolvedValue(sourceBytes);
       mocks.findDocumentForReprocessing.mockResolvedValue({
-        ...stored, contentSha256, chunkSetFingerprint, processingStatus,
+        ...stored,
+        contentSha256,
+        chunkSetFingerprint,
+        processingStatus,
         auditMarkers: stored.auditMarkers.map((audit) => ({
           ...audit,
-          afterData: { ...audit.afterData, contentSha256, chunkSetFingerprint, processingStatus },
+          afterData: {
+            ...audit.afterData,
+            contentSha256,
+            chunkSetFingerprint,
+            processingStatus,
+          },
         })),
       });
 
       const preparation = prepareKnowledgeDocumentReprocessing({
-        accessScope: creatorAccessScope, documentId, metadata: {},
+        accessScope: creatorAccessScope,
+        documentId,
+        metadata: {},
       });
       if (processingStatus === "ready") {
         await expect(preparation).rejects.toThrow("未修改现有 ready 文档");
@@ -359,40 +381,71 @@ describe("knowledge document reprocessing preparation", () => {
     expect(mocks.readDocumentFile).not.toHaveBeenCalled();
   });
 
-  it.each(["title", "sourceUrl"])("rejects non-persistable %s patches before reading the original file", async (field) => {
-    for (const character of ["\0", "\ud800", "\udc00"]) {
-      const value = field === "sourceUrl" ? `https://example.test/${character}demo` : `DEMO ONLY ${character} title`;
-      await expect(prepareKnowledgeDocumentReprocessing({
-        accessScope: creatorAccessScope, documentId, metadata: { [field]: value },
-      })).rejects.toMatchObject({ name: "ZodError" });
-    }
-    expect(mocks.readDocumentFile).not.toHaveBeenCalled();
-  });
+  it.each(["title", "sourceUrl"])(
+    "rejects non-persistable %s patches before reading the original file",
+    async (field) => {
+      for (const character of ["\0", "\ud800", "\udc00"]) {
+        const value =
+          field === "sourceUrl"
+            ? `https://example.test/${character}demo`
+            : `DEMO ONLY ${character} title`;
+        await expect(
+          prepareKnowledgeDocumentReprocessing({
+            accessScope: creatorAccessScope,
+            documentId,
+            metadata: { [field]: value },
+          }),
+        ).rejects.toMatchObject({ name: "ZodError" });
+      }
+      expect(mocks.readDocumentFile).not.toHaveBeenCalled();
+    },
+  );
 
-  it.each(["ready", "failed"] as const)("does not prepare partial NUL text for a %s document", async (processingStatus) => {
-    const sourceBytes = Buffer.from("DEMO ONLY — preserved before\0after");
-    const contentSha256 = sha256(sourceBytes);
-    const stored = storedDocument();
-    const chunkSetFingerprint = processingStatus === "ready" ? readyChunkSetFingerprint : failedChunkSetFingerprint;
-    mocks.readDocumentFile.mockResolvedValue(sourceBytes);
-    mocks.findDocumentForReprocessing.mockResolvedValue({
-      ...stored, contentSha256, chunkSetFingerprint, processingStatus,
-      auditMarkers: stored.auditMarkers.map((audit) => ({
-        ...audit,
-        afterData: { ...audit.afterData, contentSha256, chunkSetFingerprint, processingStatus },
-      })),
-    });
-    const preparation = prepareKnowledgeDocumentReprocessing({ accessScope: creatorAccessScope, documentId, metadata: {} });
-    if (processingStatus === "ready") {
-      await expect(preparation).rejects.toThrow("未修改现有 ready 文档");
-    } else {
-      const prepared = await preparation;
-      expect(prepared.outcome).toMatchObject({ chunks: [], processingStatus: "failed" });
-      expect(prepared.outcome.processingError).toContain("U+0000");
-      expect(prepared.outcome.processingError).not.toContain("before");
-      expect(prepared.expected.contentSha256).toBe(contentSha256);
-    }
-  });
+  it.each(["ready", "failed"] as const)(
+    "does not prepare partial NUL text for a %s document",
+    async (processingStatus) => {
+      const sourceBytes = Buffer.from("DEMO ONLY — preserved before\0after");
+      const contentSha256 = sha256(sourceBytes);
+      const stored = storedDocument();
+      const chunkSetFingerprint =
+        processingStatus === "ready"
+          ? readyChunkSetFingerprint
+          : failedChunkSetFingerprint;
+      mocks.readDocumentFile.mockResolvedValue(sourceBytes);
+      mocks.findDocumentForReprocessing.mockResolvedValue({
+        ...stored,
+        contentSha256,
+        chunkSetFingerprint,
+        processingStatus,
+        auditMarkers: stored.auditMarkers.map((audit) => ({
+          ...audit,
+          afterData: {
+            ...audit.afterData,
+            contentSha256,
+            chunkSetFingerprint,
+            processingStatus,
+          },
+        })),
+      });
+      const preparation = prepareKnowledgeDocumentReprocessing({
+        accessScope: creatorAccessScope,
+        documentId,
+        metadata: {},
+      });
+      if (processingStatus === "ready") {
+        await expect(preparation).rejects.toThrow("未修改现有 ready 文档");
+      } else {
+        const prepared = await preparation;
+        expect(prepared.outcome).toMatchObject({
+          chunks: [],
+          processingStatus: "failed",
+        });
+        expect(prepared.outcome.processingError).toContain("U+0000");
+        expect(prepared.outcome.processingError).not.toContain("before");
+        expect(prepared.expected.contentSha256).toBe(contentSha256);
+      }
+    },
+  );
 
   it("fails closed when a failed document has no provenance audit", async () => {
     mocks.findDocumentForReprocessing.mockResolvedValue({
@@ -520,28 +573,40 @@ describe("knowledge document reprocessing preparation", () => {
   it.each([
     "Document files must not exceed 5 MiB.",
     "A stored document must be a regular file.",
-  ])("does not prepare replacement evidence after a bounded-read rejection: %s", async (message) => {
-    const stored = storedDocument();
-    const before = structuredClone(stored);
-    mocks.findDocumentForReprocessing.mockResolvedValue(stored);
-    mocks.readDocumentFile.mockRejectedValue(new Error(message));
-    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    try {
-      await expect(prepareKnowledgeDocumentReprocessing({
-        accessScope: creatorAccessScope,
-        documentId,
-        metadata: {},
-      })).rejects.toMatchObject({
-        code: "EMPTY_FILE",
-        message: "文档原文件不可读，未修改现有文档。",
-      });
-      expect(mocks.readDocumentFile).toHaveBeenCalledTimes(1);
-      expect(stored).toEqual(before);
-      expect(log.mock.calls).toEqual([["Knowledge document reprocessing file read failed", { errorCode: "Error" }]]);
-    } finally {
-      log.mockRestore();
-    }
-  });
+  ])(
+    "does not prepare replacement evidence after a bounded-read rejection: %s",
+    async (message) => {
+      const stored = storedDocument();
+      const before = structuredClone(stored);
+      mocks.findDocumentForReprocessing.mockResolvedValue(stored);
+      mocks.readDocumentFile.mockRejectedValue(new Error(message));
+      const log = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      try {
+        await expect(
+          prepareKnowledgeDocumentReprocessing({
+            accessScope: creatorAccessScope,
+            documentId,
+            metadata: {},
+          }),
+        ).rejects.toMatchObject({
+          code: "EMPTY_FILE",
+          message: "文档原文件不可读，未修改现有文档。",
+        });
+        expect(mocks.readDocumentFile).toHaveBeenCalledTimes(1);
+        expect(stored).toEqual(before);
+        expect(log.mock.calls).toEqual([
+          [
+            "Knowledge document reprocessing file read failed",
+            { errorCode: "Error" },
+          ],
+        ]);
+      } finally {
+        log.mockRestore();
+      }
+    },
+  );
 
   it("fails closed when the repository returns another editor's active draft", async () => {
     const victimEmail = "victim-editor@example.test";

@@ -41,7 +41,10 @@ describe("PostgreSQL row-set assertions", () => {
     [[{ count: 2 }], [{ count: 1 }]],
     [[{ count: "1" }], [{ count: 1 }]],
     [[{ count: 1, unexpected: true }], [{ count: 1 }]],
-    [[{ count: 1 }, { count: 2 }], [{ count: 2 }, { count: 1 }]],
+    [
+      [{ count: 1 }, { count: 2 }],
+      [{ count: 2 }, { count: 1 }],
+    ],
     [
       [{ verifiedAt: "2026-03-01T00:00:00.123456Z" }],
       [{ verifiedAt: "2026-03-01T00:00:00.123789Z" }],
@@ -76,14 +79,11 @@ describe("PostgreSQL governance concurrency smoke safety gate", () => {
         ),
         "utf8",
       ),
-      readFile(
-        new URL("../src/server/db/client.ts", import.meta.url),
-        "utf8",
-      ),
+      readFile(new URL("../src/server/db/client.ts", import.meta.url), "utf8"),
     ]);
 
     expect(source).toContain(
-      'import(\n      "../../src/app/api/admin/documents/[documentId]/reprocess/route"',
+      'import("../../src/app/api/admin/documents/[documentId]/reprocess/route")',
     );
     expect(source).toContain(
       "waitForDocumentDraftLockWaiters(\n        input.monitor,\n        input.abortSignal,\n        2,\n        input.routeApplicationName,",
@@ -93,8 +93,9 @@ describe("PostgreSQL governance concurrency smoke safety gate", () => {
     );
     // Bind as text so postgres.js never converts six-digit fixture precision
     // through its millisecond Date serializer before the server-side cast.
-    expect(source.match(/\$\{smokeInitialSourceVerifiedAt\}::text::timestamptz/gu))
-      .toHaveLength(2);
+    expect(
+      source.match(/\$\{smokeInitialSourceVerifiedAt\}::text::timestamptz/gu),
+    ).toHaveLength(2);
     expect(source).toContain("and application_name = ${applicationName}");
     expect(source).toContain("assert.equal(driftedResponse.status, 409)");
     expect(databaseClientSource).toContain(
@@ -127,7 +128,7 @@ describe("PostgreSQL governance concurrency smoke safety gate", () => {
       '.orderBy(asc(dataGovernanceDrafts.version))\n          .for("update");',
     );
     const provenanceValidation = reviewSource.indexOf(
-      "await requireCanonicalDocumentProvenance(transaction, draft)",
+      "await requireCanonicalDocumentProvenance(",
     );
 
     expect(identityRead).toBeGreaterThanOrEqual(0);

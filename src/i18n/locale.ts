@@ -7,13 +7,9 @@ export const localeCookieName = "diesel_locale";
 export const localeCookieMaxAgeSeconds = 60 * 60 * 24 * 365;
 
 export type BrowserLocalePreferenceRead =
-  | { locale: Locale | null; status: "available" }
-  | { status: "unavailable" };
+  { locale: Locale | null; status: "available" } | { status: "unavailable" };
 
-export type LocaleRefreshRecoveryAction =
-  | "complete"
-  | "recover"
-  | "show_error";
+export type LocaleRefreshRecoveryAction = "complete" | "recover" | "show_error";
 export type LocaleRollbackRecoveryAction = "reload" | "show_error";
 
 export function isLocale(value: unknown): value is Locale {
@@ -115,7 +111,8 @@ export function localeRefreshRecoveryAction(input: {
   if (input.browserPreference.status === "unavailable") {
     return "recover";
   }
-  const effectiveBrowserLocale = input.browserPreference.locale ?? defaultLocale;
+  const effectiveBrowserLocale =
+    input.browserPreference.locale ?? defaultLocale;
   return effectiveBrowserLocale === input.refreshedLocale
     ? "show_error"
     : "recover";
@@ -134,6 +131,8 @@ export function localeRollbackRecoveryAction(input: {
 }
 
 export function localeFromRequest(request?: Request): Locale {
-  return localePreferenceFromCookieHeader(request?.headers.get("cookie")) ??
-    defaultLocale;
+  return (
+    localePreferenceFromCookieHeader(request?.headers.get("cookie")) ??
+    defaultLocale
+  );
 }

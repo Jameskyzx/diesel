@@ -17,6 +17,15 @@ updates:
       # reviewed MapLibre build (scripts/maplibre-worker-assets.ts). 6.14.0
       # ships no shared-chunk source map, so upgrades are a deliberate task.
       - dependency-name: "maplibre-gl"
+      # These carry pnpm patches tied to one exact version (patchedDependencies
+      # in pnpm-workspace.yaml); vitest and eslint-config-next pin the patched
+      # @vitest/runner and @next/eslint-plugin-next. Dependabot cannot move a
+      # patch, so a bump fails the whole group. Upgrade them with the patch.
+      - dependency-name: "next"
+      - dependency-name: "postgres"
+      - dependency-name: "vaul"
+      - dependency-name: "vitest"
+      - dependency-name: "eslint-config-next"
     groups:
       production-dependencies:
         dependency-type: production

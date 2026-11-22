@@ -54,10 +54,12 @@ const productNotFoundCheck = {
 const routeCases = [
   {
     invoke: (signal?: AbortSignal) =>
-      getCountries(new Request("http://localhost/api/countries", {
-        headers: { "x-forwarded-for": "192.0.2.10" },
-        signal,
-      })),
+      getCountries(
+        new Request("http://localhost/api/countries", {
+          headers: { "x-forwarded-for": "192.0.2.10" },
+          signal,
+        }),
+      ),
     name: "country summaries",
     service: "listCountryMapSummaries" as const,
     value: { countries: [], status: "ok" },
@@ -77,25 +79,29 @@ const routeCases = [
   },
   {
     invoke: (signal?: AbortSignal) =>
-      getProducts(new Request("http://localhost/api/products", {
-        headers: { "x-forwarded-for": "192.0.2.10" },
-        signal,
-      })),
+      getProducts(
+        new Request("http://localhost/api/products", {
+          headers: { "x-forwarded-for": "192.0.2.10" },
+          signal,
+        }),
+      ),
     name: "product list",
     service: "listProducts" as const,
     value: { products: [], status: "ok" },
   },
   {
     invoke: (signal?: AbortSignal) =>
-      evaluateProduct(new Request("http://localhost/api/product-fit", {
-        body: JSON.stringify(productFitInput),
-        headers: {
-          "content-type": "application/json",
-          "x-forwarded-for": "192.0.2.10",
-        },
-        method: "POST",
-        signal,
-      })),
+      evaluateProduct(
+        new Request("http://localhost/api/product-fit", {
+          body: JSON.stringify(productFitInput),
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-for": "192.0.2.10",
+          },
+          method: "POST",
+          signal,
+        }),
+      ),
     name: "product fit",
     service: "evaluateProductFit" as const,
     value: {
@@ -124,7 +130,9 @@ describe("public data route admission", () => {
   beforeEach(() => {
     Object.values(mocks).forEach((mock) => mock.mockReset());
     resetPublicDataAdmissionForTests();
-    consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     consoleInfo = vi.spyOn(console, "info").mockImplementation(() => undefined);
   });
 
@@ -171,90 +179,95 @@ describe("public data route admission", () => {
     "100000.000000000001",
     "-1e-999",
     "1e-999",
-  ])("rejects power string %s before country or product-fit service access", async (powerKw) => {
-    const countryQuery = new URLSearchParams({
-      applicationScope: productFitInput.applicationScope,
-      asOf: productFitInput.asOf,
-      powerKw,
-    });
-    const country = await getCountry(
-      new Request(`http://localhost/api/countries/CHN?${countryQuery}`),
-      { params: Promise.resolve({ iso3: "CHN" }) },
-    );
-    // Preserve the string on the wire: raw JSON numbers have already lost their
-    // lexical precision after JSON.parse and are outside this input contract.
-    const productFit = await evaluateProduct(new Request(
-      "http://localhost/api/product-fit",
-      {
-        body: JSON.stringify({ ...productFitInput, powerKw }),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      },
-    ));
+  ])(
+    "rejects power string %s before country or product-fit service access",
+    async (powerKw) => {
+      const countryQuery = new URLSearchParams({
+        applicationScope: productFitInput.applicationScope,
+        asOf: productFitInput.asOf,
+        powerKw,
+      });
+      const country = await getCountry(
+        new Request(`http://localhost/api/countries/CHN?${countryQuery}`),
+        { params: Promise.resolve({ iso3: "CHN" }) },
+      );
+      // Preserve the string on the wire: raw JSON numbers have already lost their
+      // lexical precision after JSON.parse and are outside this input contract.
+      const productFit = await evaluateProduct(
+        new Request("http://localhost/api/product-fit", {
+          body: JSON.stringify({ ...productFitInput, powerKw }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+      );
 
-    expect(country.status).toBe(400);
-    await expect(country.json()).resolves.toMatchObject({
-      error: { code: "INVALID_FILTER" },
-    });
-    expect(productFit.status).toBe(400);
-    await expect(productFit.json()).resolves.toMatchObject({
-      error: { code: "INVALID_INPUT" },
-    });
-    for (const response of [country, productFit]) {
-      expect(response.headers.get("Cache-Control")).toBe(PUBLIC_API_CACHE_CONTROL);
-      expect(response.headers.get("X-Request-Id")).toBeTruthy();
-    }
-    expect(mocks.getCountryDetails).not.toHaveBeenCalled();
-    expect(mocks.evaluateProductFit).not.toHaveBeenCalled();
-  });
+      expect(country.status).toBe(400);
+      await expect(country.json()).resolves.toMatchObject({
+        error: { code: "INVALID_FILTER" },
+      });
+      expect(productFit.status).toBe(400);
+      await expect(productFit.json()).resolves.toMatchObject({
+        error: { code: "INVALID_INPUT" },
+      });
+      for (const response of [country, productFit]) {
+        expect(response.headers.get("Cache-Control")).toBe(
+          PUBLIC_API_CACHE_CONTROL,
+        );
+        expect(response.headers.get("X-Request-Id")).toBeTruthy();
+      }
+      expect(mocks.getCountryDetails).not.toHaveBeenCalled();
+      expect(mocks.evaluateProductFit).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     ["5.6e1", 56],
     ["0.0010", 0.001],
     ["300.0", 300],
-  ] as const)("preserves exact power string %s in both public API paths", async (rawPower, powerKw) => {
-    const input = { ...productFitInput, powerKw };
-    const countryValue = routeCases[1].value;
-    const productFitValue = { ...routeCases[3].value, input };
-    mocks.getCountryDetails.mockResolvedValue(countryValue);
-    mocks.evaluateProductFit.mockResolvedValue(productFitValue);
-    const countryQuery = new URLSearchParams({
-      applicationScope: input.applicationScope,
-      asOf: input.asOf,
-      powerKw: rawPower,
-    });
-
-    const country = await getCountry(
-      new Request(`http://localhost/api/countries/CHN?${countryQuery}`),
-      { params: Promise.resolve({ iso3: "CHN" }) },
-    );
-    const productFit = await evaluateProduct(new Request(
-      "http://localhost/api/product-fit",
-      {
-        body: JSON.stringify({ ...input, powerKw: rawPower }),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      },
-    ));
-
-    expect(country.status).toBe(200);
-    await expect(country.json()).resolves.toEqual(countryValue);
-    expect(productFit.status).toBe(200);
-    await expect(productFit.json()).resolves.toEqual(productFitValue);
-    expect(mocks.getCountryDetails).toHaveBeenCalledExactlyOnceWith(
-      {
+  ] as const)(
+    "preserves exact power string %s in both public API paths",
+    async (rawPower, powerKw) => {
+      const input = { ...productFitInput, powerKw };
+      const countryValue = routeCases[1].value;
+      const productFitValue = { ...routeCases[3].value, input };
+      mocks.getCountryDetails.mockResolvedValue(countryValue);
+      mocks.evaluateProductFit.mockResolvedValue(productFitValue);
+      const countryQuery = new URLSearchParams({
         applicationScope: input.applicationScope,
         asOf: input.asOf,
-        iso3: input.countryIso3,
-        powerKw,
-      },
-      { signal: expect.any(AbortSignal) },
-    );
-    expect(mocks.evaluateProductFit).toHaveBeenCalledExactlyOnceWith(
-      input,
-      { signal: expect.any(AbortSignal) },
-    );
-  });
+        powerKw: rawPower,
+      });
+
+      const country = await getCountry(
+        new Request(`http://localhost/api/countries/CHN?${countryQuery}`),
+        { params: Promise.resolve({ iso3: "CHN" }) },
+      );
+      const productFit = await evaluateProduct(
+        new Request("http://localhost/api/product-fit", {
+          body: JSON.stringify({ ...input, powerKw: rawPower }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+      );
+
+      expect(country.status).toBe(200);
+      await expect(country.json()).resolves.toEqual(countryValue);
+      expect(productFit.status).toBe(200);
+      await expect(productFit.json()).resolves.toEqual(productFitValue);
+      expect(mocks.getCountryDetails).toHaveBeenCalledExactlyOnceWith(
+        {
+          applicationScope: input.applicationScope,
+          asOf: input.asOf,
+          iso3: input.countryIso3,
+          powerKw,
+        },
+        { signal: expect.any(AbortSignal) },
+      );
+      expect(mocks.evaluateProductFit).toHaveBeenCalledExactlyOnceWith(input, {
+        signal: expect.any(AbortSignal),
+      });
+    },
+  );
 
   it("validates the product-fit body before attempting database admission", async () => {
     const deferreds = [createDeferred<unknown>(), createDeferred<unknown>()];
@@ -265,14 +278,13 @@ describe("public data route admission", () => {
     const second = routeCases[2].invoke();
     await vi.waitFor(() => expect(mocks.listProducts).toHaveBeenCalledTimes(2));
 
-    const invalid = await evaluateProduct(new Request(
-      "http://localhost/api/product-fit",
-      {
+    const invalid = await evaluateProduct(
+      new Request("http://localhost/api/product-fit", {
         body: "{}",
         headers: { "content-type": "application/json" },
         method: "POST",
-      },
-    ));
+      }),
+    );
     expect(invalid.status).toBe(400);
     await expect(invalid.json()).resolves.toMatchObject({
       error: { code: "INVALID_INPUT" },
@@ -301,7 +313,9 @@ describe("public data route admission", () => {
     const first = routeCases[2].invoke(controllers[0]!.signal);
     const second = routeCases[2].invoke(controllers[1]!.signal);
     await vi.waitFor(() => expect(mocks.listProducts).toHaveBeenCalledTimes(2));
-    controllers.forEach((controller) => controller.abort("client-disconnected"));
+    controllers.forEach((controller) =>
+      controller.abort("client-disconnected"),
+    );
 
     const abortedResponses = await Promise.all([first, second]);
     expect(abortedResponses.map(({ status }) => status)).toEqual([503, 503]);
@@ -326,7 +340,9 @@ describe("public data route admission", () => {
     await vi.waitFor(() => expect(mocks.listProducts).toHaveBeenCalledTimes(3));
     deferreds[1]!.resolve(routeCases[2].value);
     deferreds[2]!.resolve(routeCases[2].value);
-    await expect(admittedAfterSettlement).resolves.toMatchObject({ status: 200 });
+    await expect(admittedAfterSettlement).resolves.toMatchObject({
+      status: 200,
+    });
   });
 
   it("returns at the 15 second server deadline without releasing pending work", async () => {
@@ -347,8 +363,9 @@ describe("public data route admission", () => {
     await vi.advanceTimersByTimeAsync(PUBLIC_DATA_OPERATION_TIMEOUT_MS);
     const timedOut = await Promise.all([first, second]);
     expect(timedOut.map(({ status }) => status)).toEqual([503, 503]);
-    expect(timedOut.every((response) => response.headers.get("Retry-After") === "1"))
-      .toBe(true);
+    expect(
+      timedOut.every((response) => response.headers.get("Retry-After") === "1"),
+    ).toBe(true);
 
     const rejected = await routeCases[0].invoke();
     expect(rejected.status).toBe(503);

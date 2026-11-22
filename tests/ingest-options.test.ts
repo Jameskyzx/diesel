@@ -29,12 +29,12 @@ describe("accepted fixture ingest options", () => {
         marketOnly: false,
       }),
     ).toEqual([]);
-    expect(
-      selectMarketFixturesForIngestion(rows, { marketOnly: false }),
-    ).toBe(rows);
-    expect(
-      selectMarketFixturesForIngestion(rows, { marketOnly: true }),
-    ).toBe(rows);
+    expect(selectMarketFixturesForIngestion(rows, { marketOnly: false })).toBe(
+      rows,
+    );
+    expect(selectMarketFixturesForIngestion(rows, { marketOnly: true })).toBe(
+      rows,
+    );
   });
 
   it.each([

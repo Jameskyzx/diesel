@@ -13,9 +13,7 @@ describe("public API request deadline", () => {
   it("aborts a short public request at the shared deadline", () => {
     vi.useFakeTimers();
     const lifecycleController = new AbortController();
-    const deadline = createPublicApiRequestDeadline(
-      lifecycleController.signal,
-    );
+    const deadline = createPublicApiRequestDeadline(lifecycleController.signal);
 
     vi.advanceTimersByTime(PUBLIC_API_REQUEST_TIMEOUT_MS - 1);
     expect(deadline.signal.aborted).toBe(false);
@@ -31,9 +29,7 @@ describe("public API request deadline", () => {
   it("propagates lifecycle cancellation without waiting for the deadline", () => {
     vi.useFakeTimers();
     const lifecycleController = new AbortController();
-    const deadline = createPublicApiRequestDeadline(
-      lifecycleController.signal,
-    );
+    const deadline = createPublicApiRequestDeadline(lifecycleController.signal);
     const reason = new DOMException("Navigation changed.", "AbortError");
 
     lifecycleController.abort(reason);

@@ -310,15 +310,12 @@ describe("deterministic product-fit rules", () => {
 
   it("excludes the certification valid-to date", () => {
     const validTo = certification.validTo ?? query.asOf;
-    const result = evaluate(
-      { ...query, asOf: validTo },
-      [{ ...certification, validTo }],
-    );
+    const result = evaluate({ ...query, asOf: validTo }, [
+      { ...certification, validTo },
+    ]);
 
     expect(result.status).toBe("not_fit");
-    expect(
-      result.regulationChecks[0]?.certifications[0]?.reasons,
-    ).toEqual(
+    expect(result.regulationChecks[0]?.certifications[0]?.reasons).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           code: "CERTIFICATION_EXPIRED",
@@ -384,10 +381,9 @@ describe("deterministic product-fit rules", () => {
   });
 
   it("keeps an explicit certification upper-bound mismatch not-fit", () => {
-    const result = evaluate(
-      { ...query, powerKw: 149 },
-      [{ ...certification, powerMinKw: null, powerMaxKw: 149 }],
-    );
+    const result = evaluate({ ...query, powerKw: 149 }, [
+      { ...certification, powerMinKw: null, powerMaxKw: 149 },
+    ]);
 
     expect(result.status).toBe("not_fit");
     expect(result.productChecks.power.status).toBe("pass");
@@ -416,9 +412,7 @@ describe("deterministic product-fit rules", () => {
   });
 
   it("keeps an unknown certification status unknown", () => {
-    const result = evaluate(query, [
-      { ...certification, status: "unknown" },
-    ]);
+    const result = evaluate(query, [{ ...certification, status: "unknown" }]);
 
     expect(result.status).toBe("unknown");
     expect(result.regulationChecks[0]).toMatchObject({

@@ -27,9 +27,7 @@ type PublicDataSettlement<T> =
   | { status: "not_started" }
   | { error: unknown; status: "rejected" };
 
-type PublicDataTermination =
-  | { status: "aborted" }
-  | { status: "timed_out" };
+type PublicDataTermination = { status: "aborted" } | { status: "timed_out" };
 
 type PublicDataRequestHeaders = Pick<Headers, "get">;
 
@@ -111,7 +109,9 @@ export function resetPublicDataAdmissionForTests(): void {
   getPublicDataAdmissionGate().reset();
 }
 
-function clientIdentifierFromHeaders(headers: PublicDataRequestHeaders): string {
+function clientIdentifierFromHeaders(
+  headers: PublicDataRequestHeaders,
+): string {
   const forwarded = headers.get("x-forwarded-for");
   const firstAddress = forwarded?.split(",", 1)[0]?.trim();
   return firstAddress && firstAddress.length > 0
@@ -119,13 +119,11 @@ function clientIdentifierFromHeaders(headers: PublicDataRequestHeaders): string 
     : "unknown-client";
 }
 
-function observeSettlement<T>(
-  options: {
-    onStart: () => void;
-    signal: AbortSignal;
-    work: () => Promise<T>;
-  },
-): Promise<PublicDataSettlement<T>> {
+function observeSettlement<T>(options: {
+  onStart: () => void;
+  signal: AbortSignal;
+  work: () => Promise<T>;
+}): Promise<PublicDataSettlement<T>> {
   return Promise.resolve().then<PublicDataSettlement<T>>(() => {
     // The signal can abort after the initial admission precheck but before
     // this work microtask runs. Check and invoke work without an await between
@@ -186,7 +184,10 @@ async function runPublicDataOperationWithContext<T>(
     }
     timeoutId = setTimeout(() => {
       timeoutController.abort(
-        new DOMException("Public data operation deadline exceeded.", "TimeoutError"),
+        new DOMException(
+          "Public data operation deadline exceeded.",
+          "TimeoutError",
+        ),
       );
     }, timeoutMs);
   });

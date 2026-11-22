@@ -119,17 +119,20 @@ async function main(): Promise<void> {
       "products_power_check",
     );
     if (!legacyProductConstraint.includes("power_max_kw>=power_min_kw")) {
-      throw new Error("failed 0011 attempt partially replaced the legacy constraint");
+      throw new Error(
+        "failed 0011 attempt partially replaced the legacy constraint",
+      );
     }
     const legacyMembershipPrimaryKey = await constraintDefinition(
       client,
       "country_jurisdictions_pk",
     );
     if (
-      legacyMembershipPrimaryKey !==
-      "primarykeycountry_iso3,jurisdiction_id"
+      legacyMembershipPrimaryKey !== "primarykeycountry_iso3,jurisdiction_id"
     ) {
-      throw new Error("failed 0011 attempt partially changed the membership key");
+      throw new Error(
+        "failed 0011 attempt partially changed the membership key",
+      );
     }
     const dirtyRows = await client<{ count: number }[]>`
       select count(*)::int as count
@@ -204,14 +207,18 @@ async function main(): Promise<void> {
         and valid_from = '2025-01-01'
     `;
     if (duplicateRows[0]?.count !== 2) {
-      throw new Error("duplicate-blocked 0011 attempt did not preserve both rows");
+      throw new Error(
+        "duplicate-blocked 0011 attempt did not preserve both rows",
+      );
     }
     if (
       (await constraintDefinition(client, "products_power_check")).includes(
         "power_max_kw>power_min_kw",
       )
     ) {
-      throw new Error("duplicate-blocked 0011 attempt partially changed products");
+      throw new Error(
+        "duplicate-blocked 0011 attempt partially changed products",
+      );
     }
 
     await client`
@@ -254,7 +261,9 @@ async function main(): Promise<void> {
         "power_max_kw>power_min_kw",
       )
     ) {
-      throw new Error("overlap-blocked 0011 attempt partially changed products");
+      throw new Error(
+        "overlap-blocked 0011 attempt partially changed products",
+      );
     }
     if (
       (await constraintDefinition(client, "country_jurisdictions_pk")) !==
@@ -295,7 +304,9 @@ async function main(): Promise<void> {
         and power_min_kw = power_max_kw
     `;
     if (archivedDirtyRows[0]?.count !== 1) {
-      throw new Error("0011 did not preserve the archived legacy product verbatim");
+      throw new Error(
+        "0011 did not preserve the archived legacy product verbatim",
+      );
     }
     let activeDirtyProductBlocked = false;
     try {

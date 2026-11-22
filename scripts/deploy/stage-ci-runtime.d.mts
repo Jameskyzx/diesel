@@ -1,7 +1,10 @@
-export function selectRuntimeArtifact(response: unknown, authorization: {
-  commit: string;
-  workflow: { runId: number; runAttempt: number };
-}): {
+export function selectRuntimeArtifact(
+  response: unknown,
+  authorization: {
+    commit: string;
+    workflow: { runId: number; runAttempt: number };
+  },
+): {
   id: number;
   digest: string;
   size_in_bytes: number;

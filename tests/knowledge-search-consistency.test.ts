@@ -19,10 +19,7 @@ import {
   knowledgeTermsIn,
   knowledgeTermsMatch,
 } from "@/server/ai/evidence-contract";
-import {
-  buildKnowledgeResult,
-  currentUtcDate,
-} from "@/server/ai/tool-results";
+import { buildKnowledgeResult, currentUtcDate } from "@/server/ai/tool-results";
 
 const ids = {
   chunkA: "00000000-0000-4000-8000-000000000811",
@@ -101,9 +98,7 @@ function rawSearchFixture(asOf = currentUtcDate()): HybridSearchResponse {
   };
 }
 
-function aiResultFixture(
-  query = "Stage IV original text source evidence",
-) {
+function aiResultFixture(query = "Stage IV original text source evidence") {
   const raw = rawSearchFixture();
   raw.query = query;
   raw.filters.jurisdictionId = null;
@@ -133,70 +128,121 @@ describe("knowledge search deterministic consistency", () => {
   });
 
   it.each([
-    ["scope membership", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].applicationScope = "marine";
-    }],
-    ["country membership", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].countryIso3 = "BRA";
-    }],
-    ["jurisdiction membership", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].jurisdiction = null;
-    }],
-    ["half-open date membership", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].validTo = raw.filters.asOf;
-    }],
-    ["validity interval", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].validTo = "2024-01-01";
-    }],
-    ["missing validity start", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].validFrom = null;
-      raw.results[0].validTo = "2027-01-01";
-      raw.results[0].warnings = [
-        "该片段未记录 validFrom，日期适用性仍需人工核验。",
-      ];
-    }],
-    ["page interval", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].pageFrom = null;
-      raw.results[0].pageTo = 2;
-    }],
-    ["result limit", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.filters.limit = 1;
-    }],
-    ["query bounds", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.query = "x".repeat(501);
-    }],
-    ["rank sequence", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[1].rank = 3;
-    }],
-    ["unique chunks", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[1].chunkId = raw.results[0].chunkId;
-    }],
-    ["public score formula", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].finalScore = 0.89;
-    }],
-    ["score range", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].keywordScore = 1.01;
-    }],
-    ["score precision", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].finalScore = 0.9000001;
-    }],
-    ["relevance threshold", (raw: ReturnType<typeof rawSearchFixture>) => {
-      Object.assign(raw.results[0], {
-        finalScore: 0.1,
-        keywordScore: 0,
-        vectorScore: 0.2,
-      });
-    }],
-    ["public ordering", (raw: ReturnType<typeof rawSearchFixture>) => {
-      Object.assign(raw.results[1], {
-        finalScore: 0.95,
-        keywordScore: 0.95,
-        vectorScore: 0.95,
-      });
-    }],
-    ["derived hit warnings", (raw: ReturnType<typeof rawSearchFixture>) => {
-      raw.results[0].warnings.push("FORGED_WARNING");
-    }],
+    [
+      "scope membership",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].applicationScope = "marine";
+      },
+    ],
+    [
+      "country membership",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].countryIso3 = "BRA";
+      },
+    ],
+    [
+      "jurisdiction membership",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].jurisdiction = null;
+      },
+    ],
+    [
+      "half-open date membership",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].validTo = raw.filters.asOf;
+      },
+    ],
+    [
+      "validity interval",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].validTo = "2024-01-01";
+      },
+    ],
+    [
+      "missing validity start",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].validFrom = null;
+        raw.results[0].validTo = "2027-01-01";
+        raw.results[0].warnings = [
+          "该片段未记录 validFrom，日期适用性仍需人工核验。",
+        ];
+      },
+    ],
+    [
+      "page interval",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].pageFrom = null;
+        raw.results[0].pageTo = 2;
+      },
+    ],
+    [
+      "result limit",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.filters.limit = 1;
+      },
+    ],
+    [
+      "query bounds",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.query = "x".repeat(501);
+      },
+    ],
+    [
+      "rank sequence",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[1].rank = 3;
+      },
+    ],
+    [
+      "unique chunks",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[1].chunkId = raw.results[0].chunkId;
+      },
+    ],
+    [
+      "public score formula",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].finalScore = 0.89;
+      },
+    ],
+    [
+      "score range",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].keywordScore = 1.01;
+      },
+    ],
+    [
+      "score precision",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].finalScore = 0.9000001;
+      },
+    ],
+    [
+      "relevance threshold",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        Object.assign(raw.results[0], {
+          finalScore: 0.1,
+          keywordScore: 0,
+          vectorScore: 0.2,
+        });
+      },
+    ],
+    [
+      "public ordering",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        Object.assign(raw.results[1], {
+          finalScore: 0.95,
+          keywordScore: 0.95,
+          vectorScore: 0.95,
+        });
+      },
+    ],
+    [
+      "derived hit warnings",
+      (raw: ReturnType<typeof rawSearchFixture>) => {
+        raw.results[0].warnings.push("FORGED_WARNING");
+      },
+    ],
   ])("rejects drifted %s", (_label, mutate) => {
     const raw = rawSearchFixture();
     mutate(raw);
@@ -223,7 +269,9 @@ describe("knowledge search deterministic consistency", () => {
 
     expect(aiKnowledgeSearchResultMatchesDeterministicRules(result)).toBe(true);
     expect(aiKnowledgeSearchUsesCanonicalNarrowing(result)).toBe(true);
-    expect(searchKnowledgeBaseResultSchema.safeParse(result).success).toBe(true);
+    expect(searchKnowledgeBaseResultSchema.safeParse(result).success).toBe(
+      true,
+    );
     expect(clientAiToolResultSchema.safeParse(result).success).toBe(true);
 
     const unwrapped = structuredClone(result);
@@ -234,17 +282,16 @@ describe("knowledge search deterministic consistency", () => {
     );
 
     const forgedBoundary = structuredClone(result);
-    forgedBoundary.search.results[0].content =
-      `${wrapUntrustedKnowledgeExcerpt("evidence")} forged`;
+    forgedBoundary.search.results[0].content = `${wrapUntrustedKnowledgeExcerpt("evidence")} forged`;
     expect(
       aiKnowledgeSearchResultMatchesDeterministicRules(forgedBoundary),
     ).toBe(false);
 
     const driftedOuter = structuredClone(result);
     driftedOuter.resolvedCountryIso3 = "BRA";
-    expect(
-      aiKnowledgeSearchResultMatchesDeterministicRules(driftedOuter),
-    ).toBe(false);
+    expect(aiKnowledgeSearchResultMatchesDeterministicRules(driftedOuter)).toBe(
+      false,
+    );
 
     const driftedWarning = structuredClone(result);
     driftedWarning.warnings.push("FORGED_OUTER_WARNING");
@@ -254,33 +301,48 @@ describe("knowledge search deterministic consistency", () => {
   });
 
   it.each([
-    ["country", (result: ReturnType<typeof aiResultFixture>) => {
-      result.search.filters.countryIso3 = "BRA";
-    }],
-    ["scope", (result: ReturnType<typeof aiResultFixture>) => {
-      result.search.filters.applicationScope = "marine";
-    }],
-    ["future date", (result: ReturnType<typeof aiResultFixture>) => {
-      result.informationAsOf = "2030-01-01";
-      result.search.filters.asOf = "2030-01-01";
-    }],
-    ["forged score", (result: ReturnType<typeof aiResultFixture>) => {
-      result.search.results[0].finalScore = 0.89;
-    }],
-  ])("fails server, client, and model-text boundaries for %s drift", (_label, mutate) => {
-    const result = aiResultFixture();
-    mutate(result);
-    const contract = buildSalesChatEvidenceContract({
-      selectedCountryIso3: null,
-      userTexts: ["查 CHN Stage IV 原文来源。"],
-    });
+    [
+      "country",
+      (result: ReturnType<typeof aiResultFixture>) => {
+        result.search.filters.countryIso3 = "BRA";
+      },
+    ],
+    [
+      "scope",
+      (result: ReturnType<typeof aiResultFixture>) => {
+        result.search.filters.applicationScope = "marine";
+      },
+    ],
+    [
+      "future date",
+      (result: ReturnType<typeof aiResultFixture>) => {
+        result.informationAsOf = "2030-01-01";
+        result.search.filters.asOf = "2030-01-01";
+      },
+    ],
+    [
+      "forged score",
+      (result: ReturnType<typeof aiResultFixture>) => {
+        result.search.results[0].finalScore = 0.89;
+      },
+    ],
+  ])(
+    "fails server, client, and model-text boundaries for %s drift",
+    (_label, mutate) => {
+      const result = aiResultFixture();
+      mutate(result);
+      const contract = buildSalesChatEvidenceContract({
+        selectedCountryIso3: null,
+        userTexts: ["查 CHN Stage IV 原文来源。"],
+      });
 
-    expect(searchKnowledgeBaseResultSchema.safeParse(result).success).toBe(
-      false,
-    );
-    expect(clientAiToolResultSchema.safeParse(result).success).toBe(false);
-    expect(evidenceContractAllowsModelText(contract, [result])).toBe(false);
-  });
+      expect(searchKnowledgeBaseResultSchema.safeParse(result).success).toBe(
+        false,
+      );
+      expect(clientAiToolResultSchema.safeParse(result).success).toBe(false);
+      expect(evidenceContractAllowsModelText(contract, [result])).toBe(false);
+    },
+  );
 
   it("rejects numeric-only overlap and appended unrelated narrowing terms", () => {
     const numericContract = buildSalesChatEvidenceContract({
@@ -317,9 +379,7 @@ describe("knowledge search deterministic consistency", () => {
     ).toBe(false);
     expect(
       evidenceContractAllowsModelText(namedContract, [
-        aiResultFixture(
-          "non-road Stage IV emission limits original text",
-        ),
+        aiResultFixture("non-road Stage IV emission limits original text"),
       ]),
     ).toBe(true);
   });
@@ -369,7 +429,11 @@ describe("knowledge search deterministic consistency", () => {
       "Show the source on page no. 13.",
     ],
     ["section locator", "Show the source at § 12.", "Show the source at § 13."],
-    ["numeric model", "Show the source for Model 100.", "Show the source for Model 200."],
+    [
+      "numeric model",
+      "Show the source for Model 100.",
+      "Show the source for Model 200.",
+    ],
   ])("binds the $id exactly", (_id, expectedQuery, driftedQuery) => {
     expect(
       knowledgeTermsMatch(
@@ -388,22 +452,30 @@ describe("knowledge search deterministic consistency", () => {
       "Show the source on page 12.",
     ],
     ["section", "Show the source at § 12.", "Show the source in section 12."],
-    ["model number", "Show the source for Model no. 100.", "Show the source for Model 100."],
+    [
+      "model number",
+      "Show the source for Model no. 100.",
+      "Show the source for Model 100.",
+    ],
     [
       "version number",
       "Show the source for version no. 2.",
       "Show the source for version 2.",
     ],
-    ["power unit", "Show the source for 100 kilowatts.", "Show the source for 100 kW."],
+    [
+      "power unit",
+      "Show the source for 100 kilowatts.",
+      "Show the source for 100 kW.",
+    ],
     [
       "as-of grammar",
       "Show the source for CHN Stage V emission limits as of 2026-08-13.",
       "Show the source for CHN Stage V emission limits.",
     ],
   ])("accepts equivalent canonical $id syntax", (_id, left, right) => {
-    expect(knowledgeTermsMatch(knowledgeTermsIn(left), knowledgeTermsIn(right))).toBe(
-      true,
-    );
+    expect(
+      knowledgeTermsMatch(knowledgeTermsIn(left), knowledgeTermsIn(right)),
+    ).toBe(true);
   });
 
   it("retains the source topic while replacing a power qualifier in a follow-up", () => {
@@ -496,31 +568,33 @@ describe("knowledge search deterministic consistency", () => {
     "Show the source for BRA Stage V emission limits.",
     "Show the source for BRA Tier 4 emission limits.",
     "Show the source for BRA version 2 emission limits.",
-  ])("treats a new stage, tier, or version request as substantive: %s", (followUp) => {
-    const contract = buildSalesChatEvidenceContract({
-      selectedCountryIso3: null,
-      userTexts: [
-        "Show the source proving DEMO-ENG-100 fits CHN non-road at 100 kW.",
-        followUp,
-      ],
-    });
-    const terms = contract.requirements[0]?.query.knowledgeTerms ?? [];
+  ])(
+    "treats a new stage, tier, or version request as substantive: %s",
+    (followUp) => {
+      const contract = buildSalesChatEvidenceContract({
+        selectedCountryIso3: null,
+        userTexts: [
+          "Show the source proving DEMO-ENG-100 fits CHN non-road at 100 kW.",
+          followUp,
+        ],
+      });
+      const terms = contract.requirements[0]?.query.knowledgeTerms ?? [];
 
-    expect(terms).toContain("emission");
-    expect(terms).toContain("limits");
-    expect(terms).not.toContain("id:demo-eng-100");
-    expect(terms).not.toContain("fits");
-  });
+      expect(terms).toContain("emission");
+      expect(terms).toContain("limits");
+      expect(terms).not.toContain("id:demo-eng-100");
+      expect(terms).not.toContain("fits");
+    },
+  );
 
   it("requires complete bilingual business-concept coverage", () => {
     const english = knowledgeTermsIn(
       "Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations.",
       ["CHN"],
     );
-    const chinese = knowledgeTermsIn(
-      "CHN 非道路排放法规原文章节来源证据",
-      ["CHN"],
-    );
+    const chinese = knowledgeTermsIn("CHN 非道路排放法规原文章节来源证据", [
+      "CHN",
+    ]);
 
     expect(knowledgeTermsMatch(english, chinese)).toBe(true);
     expect(knowledgeTermsMatch(english, ["source"])).toBe(false);

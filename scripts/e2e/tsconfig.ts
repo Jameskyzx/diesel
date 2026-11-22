@@ -1,5 +1,4 @@
-export const E2E_TS_BUILD_INFO_FILE =
-  ".next-e2e/cache/tsconfig.tsbuildinfo";
+export const E2E_TS_BUILD_INFO_FILE = ".next-e2e/cache/tsconfig.tsbuildinfo";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

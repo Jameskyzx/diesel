@@ -8,9 +8,7 @@ import postgres, { type Sql } from "../../src/server/db/postgres";
 import * as schema from "../../src/server/db/schema";
 import { createCountryRepository } from "../../src/server/repositories/country-repository";
 import { createRegulationRepository } from "../../src/server/repositories/regulation-repository";
-import {
-  COUNTRY_DETAIL_READ_TRANSACTION_CONFIG,
-} from "../../src/server/services/country-service";
+import { COUNTRY_DETAIL_READ_TRANSACTION_CONFIG } from "../../src/server/services/country-service";
 import { compareRegulationsFromRepositories } from "../../src/server/services/marketing-analysis-service";
 import { validatePostgresConcurrencySmokeTarget } from "./postgres-governance-concurrency-smoke";
 
@@ -195,15 +193,12 @@ export async function runPostgresCountryDetailConsistencySmoke(): Promise<void> 
 
     let readOnlyRejected = false;
     try {
-      await readerDatabase.transaction(
-        async (transaction) => {
-          await transaction
-            .update(schema.countries)
-            .set({ nameEn: "Read-only transaction must reject this write" })
-            .where(eq(schema.countries.iso3, smokeCountryIso3));
-        },
-        COUNTRY_DETAIL_READ_TRANSACTION_CONFIG,
-      );
+      await readerDatabase.transaction(async (transaction) => {
+        await transaction
+          .update(schema.countries)
+          .set({ nameEn: "Read-only transaction must reject this write" })
+          .where(eq(schema.countries.iso3, smokeCountryIso3));
+      }, COUNTRY_DETAIL_READ_TRANSACTION_CONFIG);
     } catch (error: unknown) {
       if (postgresErrorCode(error) !== "25006") {
         throw error;

@@ -16,8 +16,7 @@ type GlobalErrorProps = {
 };
 
 const subscribeToBrowserLocale = () => () => undefined;
-const readBrowserLocale = () =>
-  localeFromBrowserCookie(() => document.cookie);
+const readBrowserLocale = () => localeFromBrowserCookie(() => document.cookie);
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   // Next.js global-error is a Client Component without request headers. Keep
@@ -68,7 +67,9 @@ export function GlobalErrorDocument({
             </p>
             {error.digest ? (
               <p className="mt-2 font-mono text-xs text-muted-foreground">
-                {copy.code}{dictionary.common.labelSeparator}{error.digest}
+                {copy.code}
+                {dictionary.common.labelSeparator}
+                {error.digest}
               </p>
             ) : null}
             <Button className="mt-6" onClick={reset} type="button">

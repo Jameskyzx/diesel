@@ -4,7 +4,8 @@ import { pathToFileURL } from "node:url";
 
 const immutableGithubActionReference =
   /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+(?:\/[^@\s]+)*@[a-f0-9]{40}$/;
-const immutableDockerActionReference = /^docker:\/\/[^\s@]+@sha256:[a-f0-9]{64}$/;
+const immutableDockerActionReference =
+  /^docker:\/\/[^\s@]+@sha256:[a-f0-9]{64}$/;
 const immutableContainerImageReference = /^[^\s@]+@sha256:[a-f0-9]{64}$/;
 const immutableContainerReason =
   "Service and job container images must use an immutable sha256 digest";
@@ -92,9 +93,10 @@ type YamlMappingLine = {
 };
 
 function parseYamlMappingLine(line: string): YamlMappingLine | null {
-  const match = /^([ \t]*)(?:-[ \t]*)?((?:"[^"]*"|'[^']*'|<<|[A-Za-z0-9_.-]+))[ \t]*:[ \t]*(.*?)[ \t]*$/u.exec(
-    line,
-  );
+  const match =
+    /^([ \t]*)(?:-[ \t]*)?((?:"[^"]*"|'[^']*'|<<|[A-Za-z0-9_.-]+))[ \t]*:[ \t]*(.*?)[ \t]*$/u.exec(
+      line,
+    );
   if (!match) return null;
 
   const rawKey = match[2] ?? "";
@@ -176,17 +178,11 @@ export function findUnpinnedWorkflowUses(
         structuralParent === "container" ||
         structuralGrandparent === "jobs" ||
         structuralGrandparent === "services";
-      const startsOpaqueStructure = /^(?:-|[\[\]{\}*&$!:])/u.test(
-        trimmedStart,
-      );
+      const startsOpaqueStructure = /^(?:-|[\[\]{\}*&$!:])/u.test(trimmedStart);
       const isBareDocumentMarker = line === "---" || line === "...";
-      const isOpaqueRoot =
-        mappingStack.length === 0 && !isBareDocumentMarker;
+      const isOpaqueRoot = mappingStack.length === 0 && !isBareDocumentMarker;
 
-      if (
-        (isProtectedStructure && startsOpaqueStructure) ||
-        isOpaqueRoot
-      ) {
+      if ((isProtectedStructure && startsOpaqueStructure) || isOpaqueRoot) {
         findings.push({
           file,
           line: index + 1,
@@ -267,12 +263,9 @@ export function findUnpinnedWorkflowUses(
       mapping.key === "jobs" &&
       mapping.value !== "" &&
       mappingStack.length === 0;
-    const isNonBlockJobDefinition =
-      parent === "jobs" && mapping.value !== "";
+    const isNonBlockJobDefinition = parent === "jobs" && mapping.value !== "";
     const isNonBlockJobSteps =
-      mapping.key === "steps" &&
-      mapping.value !== "" &&
-      grandparent === "jobs";
+      mapping.key === "steps" && mapping.value !== "" && grandparent === "jobs";
     const isWorkflowMerge =
       mapping.key === "<<" &&
       (mappingStack.length === 0 ||
@@ -405,7 +398,10 @@ async function main(): Promise<void> {
   );
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   main().catch((error: unknown) => {
     process.stderr.write(
       `${error instanceof Error ? error.message : String(error)}\n`,

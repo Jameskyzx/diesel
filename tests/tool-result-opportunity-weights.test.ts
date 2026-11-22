@@ -24,10 +24,7 @@ const runtimeWeightEnvironmentKeys = [
 ] as const;
 const originalRuntimeWeightEnvironment = Object.fromEntries(
   runtimeWeightEnvironmentKeys.map((key) => [key, process.env[key]]),
-) as Record<
-  (typeof runtimeWeightEnvironmentKeys)[number],
-  string | undefined
->;
+) as Record<(typeof runtimeWeightEnvironmentKeys)[number], string | undefined>;
 
 const defaultWeights: OpportunityScoreWeights = {
   marketPotential: 0.5,
@@ -57,9 +54,7 @@ function setRuntimeWeights(weights?: OpportunityScoreWeights): void {
     return;
   }
 
-  process.env.OPPORTUNITY_SCORE_MARKET_WEIGHT = String(
-    weights.marketPotential,
-  );
+  process.env.OPPORTUNITY_SCORE_MARKET_WEIGHT = String(weights.marketPotential);
   process.env.OPPORTUNITY_SCORE_PRODUCT_WEIGHT = String(
     weights.productReadiness,
   );
@@ -245,11 +240,10 @@ describe("server tool-result runtime opportunity weights", () => {
       query.asOf,
       query,
     );
-    const briefResult = buildToolErrorResult(
-      "generateSalesBrief",
-      query.asOf,
-      { ...query, targetCountryIso3: "CHN" },
-    );
+    const briefResult = buildToolErrorResult("generateSalesBrief", query.asOf, {
+      ...query,
+      targetCountryIso3: "CHN",
+    });
 
     if (scoreResult.tool !== "calculateOpportunityScore") {
       throw new Error("Expected an opportunity-score error result.");

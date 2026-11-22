@@ -16,15 +16,17 @@ const defaultPerformance: ModelStepPerformanceSource = {
   timeToFirstOutputMs: 40,
 };
 
-function usage(input: {
-  cacheReadTokens?: number;
-  cacheWriteTokens?: number;
-  inputTokens?: number;
-  noCacheTokens?: number;
-  outputTokens?: number;
-  raw?: unknown;
-  totalTokens?: number;
-} = {}): ModelStepUsageSource {
+function usage(
+  input: {
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
+    inputTokens?: number;
+    noCacheTokens?: number;
+    outputTokens?: number;
+    raw?: unknown;
+    totalTokens?: number;
+  } = {},
+): ModelStepUsageSource {
   return {
     inputTokenDetails: {
       cacheReadTokens: input.cacheReadTokens,
@@ -38,23 +40,27 @@ function usage(input: {
   };
 }
 
-function normalize(input: {
-  performance?: ModelStepPerformanceSource;
-  usage?: ModelStepUsageSource;
-} = {}): NormalizedModelStepObservation {
+function normalize(
+  input: {
+    performance?: ModelStepPerformanceSource;
+    usage?: ModelStepUsageSource;
+  } = {},
+): NormalizedModelStepObservation {
   return normalizeModelStepObservation({
     performance: input.performance ?? defaultPerformance,
     usage: input.usage ?? usage(),
   });
 }
 
-function explicitlyCachedStep(input: {
-  cacheReadTokens?: number;
-  cacheWriteTokens?: number;
-  inputTokens?: number;
-  outputTokens?: number;
-  performance?: ModelStepPerformanceSource;
-} = {}): NormalizedModelStepObservation {
+function explicitlyCachedStep(
+  input: {
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
+    inputTokens?: number;
+    outputTokens?: number;
+    performance?: ModelStepPerformanceSource;
+  } = {},
+): NormalizedModelStepObservation {
   const inputTokens = input.inputTokens ?? 100;
   const outputTokens = input.outputTokens ?? 20;
   const cacheReadTokens = input.cacheReadTokens ?? 25;
@@ -241,23 +247,22 @@ describe("model step observability normalization", () => {
       noCacheTokens: 80,
       rawCacheReadTokens: 25,
     },
-  ])("rejects a conflicting $label", ({
-    cacheReadTokens,
-    noCacheTokens,
-    rawCacheReadTokens,
-  }) => {
-    const result = normalize({
-      usage: usage({
-        cacheReadTokens,
-        noCacheTokens,
-        raw: {
-          prompt_tokens_details: { cached_tokens: rawCacheReadTokens },
-        },
-      }),
-    });
+  ])(
+    "rejects a conflicting $label",
+    ({ cacheReadTokens, noCacheTokens, rawCacheReadTokens }) => {
+      const result = normalize({
+        usage: usage({
+          cacheReadTokens,
+          noCacheTokens,
+          raw: {
+            prompt_tokens_details: { cached_tokens: rawCacheReadTokens },
+          },
+        }),
+      });
 
-    expect(result.cacheStatus).toBe("inconsistent");
-  });
+      expect(result.cacheStatus).toBe("inconsistent");
+    },
+  );
 
   it("marks an invalid explicitly supplied cache-write count inconsistent", () => {
     const result = explicitlyCachedStep({ cacheWriteTokens: 101 });
@@ -283,7 +288,9 @@ describe("model step observability normalization", () => {
       modelStepTimeMs: { reported: true, value: 180.25 },
       modelTimeToFirstOutputMs: { reported: true, value: 42.75 },
     });
-    expect(Object.hasOwn(result.performance, "timeToFirstOutputMs")).toBe(false);
+    expect(Object.hasOwn(result.performance, "timeToFirstOutputMs")).toBe(
+      false,
+    );
   });
 
   it("keeps missing and invalid performance distinguishable", () => {
@@ -490,10 +497,7 @@ describe("model step observability aggregation", () => {
       const result = aggregateModelStepObservability({
         expectedStepCount: 2,
         modelStreamCompleted: true,
-        steps: [
-          explicitlyCachedStep(),
-          explicitlyCachedStep({ performance }),
-        ],
+        steps: [explicitlyCachedStep(), explicitlyCachedStep({ performance })],
       });
 
       expect(result.incomplete).toBe(false);
@@ -659,7 +663,9 @@ describe("retained model-step invariants", () => {
   it("rejects cache statuses that contradict retained metric coverage", () => {
     const unavailable = normalize();
     const reported = explicitlyCachedStep({ cacheWriteTokens: 0 });
-    expect(normalizedModelStepCacheStatusMatchesMetrics(unavailable)).toBe(true);
+    expect(normalizedModelStepCacheStatusMatchesMetrics(unavailable)).toBe(
+      true,
+    );
     expect(normalizedModelStepCacheStatusMatchesMetrics(reported)).toBe(true);
 
     reported.cacheStatus = "unavailable";

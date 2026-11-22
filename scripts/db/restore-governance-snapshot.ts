@@ -107,7 +107,9 @@ main().catch((error: unknown) => {
       "Snapshot is not valid JSON",
     ].includes(error.message)
   ) {
-    process.stderr.write(`Governance snapshot restore rejected: ${error.message}\n`);
+    process.stderr.write(
+      `Governance snapshot restore rejected: ${error.message}\n`,
+    );
   } else {
     process.stderr.write(
       "Governance snapshot restore failed; no database changes were committed. Use --help to verify the command.\n",

@@ -40,21 +40,24 @@ describe("POST /api/preferences/locale", () => {
     JSON.stringify({ locale: "zh" }),
     JSON.stringify({ locale: "en", unexpected: true }),
     "not-json",
-  ])("rejects malformed or unsupported input without setting a cookie", async (body) => {
-    const response = await POST(localeRequest(body));
+  ])(
+    "rejects malformed or unsupported input without setting a cookie",
+    async (body) => {
+      const response = await POST(localeRequest(body));
 
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: {
-        code: "INVALID_LOCALE",
-        message: "Locale must be either en or zh-CN.",
-      },
-    });
-    expect(response.headers.get("set-cookie")).toBeNull();
-    expect(response.headers.get("cache-control")).toBe(
-      "private, no-store, max-age=0",
-    );
-  });
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({
+        error: {
+          code: "INVALID_LOCALE",
+          message: "Locale must be either en or zh-CN.",
+        },
+      });
+      expect(response.headers.get("set-cookie")).toBeNull();
+      expect(response.headers.get("cache-control")).toBe(
+        "private, no-store, max-age=0",
+      );
+    },
+  );
 
   it("localizes invalid-input errors from the existing locale cookie", async () => {
     const response = await POST(localeRequest("not-json", "zh-CN"));

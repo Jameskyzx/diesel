@@ -39,9 +39,7 @@ import { GET as getProducts } from "@/app/api/products/route";
 import { PUBLIC_API_CACHE_CONTROL } from "@/server/http/public-api-response";
 
 function expectPublicNoStore(response: Response): void {
-  expect(response.headers.get("Cache-Control")).toBe(
-    PUBLIC_API_CACHE_CONTROL,
-  );
+  expect(response.headers.get("Cache-Control")).toBe(PUBLIC_API_CACHE_CONTROL);
   expect(response.headers.get("Pragma")).toBe("no-cache");
 }
 
@@ -68,7 +66,9 @@ describe("public API route cache policy", () => {
     mocks.validateAiChatAdmissionBudgetConfiguration.mockImplementation(
       () => undefined,
     );
-    consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     consoleInfo = vi.spyOn(console, "info").mockImplementation(() => undefined);
   });
 
@@ -113,19 +113,18 @@ describe("public API route cache policy", () => {
         params: Promise.resolve({ iso3: "CHN" }),
       }),
       await getProducts(new Request("http://localhost/api/products")),
-      await evaluateProduct(new Request("http://localhost/api/product-fit", {
-        body: JSON.stringify(productFitInput),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      })),
+      await evaluateProduct(
+        new Request("http://localhost/api/product-fit", {
+          body: JSON.stringify(productFitInput),
+          headers: { "content-type": "application/json" },
+          method: "POST",
+        }),
+      ),
     ];
 
     responses.forEach(expectPublicNoStore);
     expect(responses.map((response) => response.status)).toEqual([
-      200,
-      200,
-      200,
-      200,
+      200, 200, 200, 200,
     ]);
   });
 
@@ -138,21 +137,21 @@ describe("public API route cache policy", () => {
       }),
       { params: Promise.resolve({ iso3: "CN" }) },
     );
-    const failedProducts = await getProducts(new Request(
-      "http://localhost/api/products",
-      { headers: { cookie: "diesel_locale=zh-CN" } },
-    ));
-    const invalidProductFit = await evaluateProduct(new Request(
-      "http://localhost/api/product-fit",
-      {
+    const failedProducts = await getProducts(
+      new Request("http://localhost/api/products", {
+        headers: { cookie: "diesel_locale=zh-CN" },
+      }),
+    );
+    const invalidProductFit = await evaluateProduct(
+      new Request("http://localhost/api/product-fit", {
         body: "{}",
         headers: {
           "content-type": "application/json",
           cookie: "diesel_locale=zh-CN",
         },
         method: "POST",
-      },
-    ));
+      }),
+    );
 
     [invalidCountry, failedProducts, invalidProductFit].forEach(
       expectPublicNoStore,
@@ -163,25 +162,23 @@ describe("public API route cache policy", () => {
   });
 
   it("prevents caching locale success and error responses", async () => {
-    const success = await updateLocale(new Request(
-      "http://localhost/api/preferences/locale",
-      {
+    const success = await updateLocale(
+      new Request("http://localhost/api/preferences/locale", {
         body: JSON.stringify({ locale: "zh-CN" }),
         headers: { "content-type": "application/json" },
         method: "POST",
-      },
-    ));
-    const error = await updateLocale(new Request(
-      "http://localhost/api/preferences/locale",
-      {
+      }),
+    );
+    const error = await updateLocale(
+      new Request("http://localhost/api/preferences/locale", {
         body: "not-json",
         headers: {
           "content-type": "application/json",
           cookie: "diesel_locale=zh-CN",
         },
         method: "POST",
-      },
-    ));
+      }),
+    );
 
     expectPublicNoStore(success);
     expectPublicNoStore(error);
@@ -203,10 +200,7 @@ describe("public API route cache policy", () => {
 
     responses.forEach(expectPublicNoStore);
     expect(responses.map((response) => response.status)).toEqual([
-      200,
-      200,
-      200,
-      503,
+      200, 200, 200, 503,
     ]);
   });
 });

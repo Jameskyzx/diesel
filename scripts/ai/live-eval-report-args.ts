@@ -153,7 +153,7 @@ function expectedPersistedValue(key: string, value: unknown): unknown {
     value.every((item) => typeof item === "string")
   ) {
     return value.map((item) =>
-      fingerprintLiveEvalString(item.trim().toUpperCase())
+      fingerprintLiveEvalString(item.trim().toUpperCase()),
     );
   }
   if (key === "jurisdictionId" && typeof value === "string") {
@@ -163,8 +163,9 @@ function expectedPersistedValue(key: string, value: unknown): unknown {
 }
 
 function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) &&
-    value.every((item) => typeof item === "string");
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
 }
 
 export function liveEvalQueryObservationMatchesContract(
@@ -193,10 +194,11 @@ export function liveEvalQueryObservationMatchesContract(
   const expectedPass =
     missingRequired.length === 0 && matchedForbidden.length === 0;
 
-  return sameJsonValue(
-    matchedRequired,
-    requiredIds.filter((id) => matchedRequiredSet.has(id)),
-  ) &&
+  return (
+    sameJsonValue(
+      matchedRequired,
+      requiredIds.filter((id) => matchedRequiredSet.has(id)),
+    ) &&
     sameJsonValue(
       missingRequired,
       requiredIds.filter((id) => missingRequiredSet.has(id)),
@@ -206,7 +208,8 @@ export function liveEvalQueryObservationMatchesContract(
       matchedForbidden,
       forbiddenIds.filter((id) => matchedForbiddenSet.has(id)),
     ) &&
-    value.expectationPassed === expectedPass;
+    value.expectationPassed === expectedPass
+  );
 }
 
 export function matchesExpectedLiveEvalReportArgs(input: {
@@ -225,8 +228,11 @@ export function matchesExpectedLiveEvalReportArgs(input: {
   if (input.runtimeContext !== undefined) {
     const runtime = chatRuntimeContextSchema.safeParse(input.runtimeContext);
     if (!runtime.success) return false;
-    if (!Object.hasOwn(expected, "asOf") && (input.tool === "getCountryProfile" ||
-      (input.tool === "searchKnowledgeBase" && Object.hasOwn(actual, "asOf")))) {
+    if (
+      !Object.hasOwn(expected, "asOf") &&
+      (input.tool === "getCountryProfile" ||
+        (input.tool === "searchKnowledgeBase" && Object.hasOwn(actual, "asOf")))
+    ) {
       // The server inserts this date: the profile Zod transform always, and
       // the harness compiles its working date (today by default) into every
       // source search, where an absent date also means today. It is not an
@@ -243,20 +249,11 @@ export function matchesExpectedLiveEvalReportArgs(input: {
     // has to be declared by the case or the call changes the evidence scope.
     allowedKeys.add("query");
   }
-  if (
-    !sameJsonValue(
-      Object.keys(actual).sort(),
-      [...allowedKeys].sort(),
-    )
-  ) {
+  if (!sameJsonValue(Object.keys(actual).sort(), [...allowedKeys].sort())) {
     return false;
   }
-  const expectedFieldsMatch = Object.entries(expected).every(
-    ([key, value]) =>
-      sameJsonValue(
-        actual[key],
-        expectedPersistedValue(key, value),
-      ),
+  const expectedFieldsMatch = Object.entries(expected).every(([key, value]) =>
+    sameJsonValue(actual[key], expectedPersistedValue(key, value)),
   );
   if (!expectedFieldsMatch) {
     return false;
@@ -264,13 +261,15 @@ export function matchesExpectedLiveEvalReportArgs(input: {
   if (input.tool !== "searchKnowledgeBase") {
     return true;
   }
-  return input.knowledgeQueryContract !== undefined &&
+  return (
+    input.knowledgeQueryContract !== undefined &&
     liveEvalQueryObservationMatchesContract(
       actual.query,
       input.knowledgeQueryContract,
     ) &&
     isRecord(actual.query) &&
-    actual.query.expectationPassed === true;
+    actual.query.expectationPassed === true
+  );
 }
 
 export function liveEvalKnowledgeQueryContractPassed(input: {
@@ -281,7 +280,9 @@ export function liveEvalKnowledgeQueryContractPassed(input: {
     return false;
   }
   const parsed = salesChatKnowledgeSearchInputSchema.safeParse(input.args);
-  return parsed.success &&
+  return (
+    parsed.success &&
     evaluateLiveEvalKnowledgeQuery(parsed.data.query, input.contract)
-      .expectationPassed;
+      .expectationPassed
+  );
 }

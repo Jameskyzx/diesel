@@ -2,59 +2,107 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { getDictionary } from "@/i18n/dictionaries";
 
-import { salesChatLiveCases, type SalesChatLiveCase } from "../evals/sales-chat-live-cases";
-import { aiToolResultSchema, findCompatibleProductsInputSchema, findCompatibleProductsResultSchema, type AiToolResult } from "@/features/ai/schemas";
+import {
+  salesChatLiveCases,
+  type SalesChatLiveCase,
+} from "../evals/sales-chat-live-cases";
+import {
+  aiToolResultSchema,
+  findCompatibleProductsInputSchema,
+  findCompatibleProductsResultSchema,
+  type AiToolResult,
+} from "@/features/ai/schemas";
 import { clientAiToolResultSchema } from "@/features/ai/client-schemas";
-import { buildSalesChatEvidenceContract, evidenceContractAllowsModelText, remainingEvidenceTools } from "@/server/ai/evidence-contract";
+import {
+  buildSalesChatEvidenceContract,
+  evidenceContractAllowsModelText,
+  remainingEvidenceTools,
+} from "@/server/ai/evidence-contract";
 import { createSalesChatTools } from "@/server/ai/sales-chat";
 
-import { buildCompatibleProductsResult, buildCountryProfileResult, buildKnowledgeResult, buildMarketComparisonResult, buildOpportunityScoreResult, buildRegulationComparisonResult, buildSalesBriefResult, buildToolErrorResult, currentUtcDate } from "@/server/ai/tool-results";
+import {
+  buildCompatibleProductsResult,
+  buildCountryProfileResult,
+  buildKnowledgeResult,
+  buildMarketComparisonResult,
+  buildOpportunityScoreResult,
+  buildRegulationComparisonResult,
+  buildSalesBriefResult,
+  buildToolErrorResult,
+  currentUtcDate,
+} from "@/server/ai/tool-results";
 import { getDemoDatabase } from "@/server/db/demo-client";
 import { createProductRepository } from "@/server/repositories/product-repository";
 import { evaluateProductFit } from "@/server/services/product-fit-service";
 import { getCountryDetails } from "@/server/services/country-service";
-import { calculateOpportunityScore, compareMarkets, compareRegulations, generateSalesBrief } from "@/server/services/marketing-analysis-service";
+import {
+  calculateOpportunityScore,
+  compareMarkets,
+  compareRegulations,
+  generateSalesBrief,
+} from "@/server/services/marketing-analysis-service";
 import { hybridSearchResponseSchema } from "@/features/knowledge/schemas";
-import { latestVerifiedAtFromCitations, latestVerifiedAtMatchesCitations, marketComparisonSourcesMatchFacts } from "@/features/ai/evidence-semantics";
+import {
+  latestVerifiedAtFromCitations,
+  latestVerifiedAtMatchesCitations,
+  marketComparisonSourcesMatchFacts,
+} from "@/features/ai/evidence-semantics";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
 
 it.each([
   "CHN 目前有哪些有效法规？",
   "Which regulations are currently effective in CHN?",
-])("routes the regulation starter to structured country evidence: %s", (text) => {
-  const contract = buildSalesChatEvidenceContract({
-    selectedCountryIso3: null,
-    userTexts: [text],
-  });
-  expect(contract.missingRequiredParameters).toEqual([]);
-  expect(remainingEvidenceTools(contract, [])).toEqual(["getCountryProfile"]);
-  expect(contract.requirements).toEqual([
-    expect.objectContaining({
-      acceptedTools: ["getCountryProfile"],
-      requiredProfileTopics: ["regulations"],
-      query: expect.objectContaining({ countryIso3s: ["CHN"] }),
-    }),
-  ]);
-});
+])(
+  "routes the regulation starter to structured country evidence: %s",
+  (text) => {
+    const contract = buildSalesChatEvidenceContract({
+      selectedCountryIso3: null,
+      userTexts: [text],
+    });
+    expect(contract.missingRequiredParameters).toEqual([]);
+    expect(remainingEvidenceTools(contract, [])).toEqual(["getCountryProfile"]);
+    expect(contract.requirements).toEqual([
+      expect.objectContaining({
+        acceptedTools: ["getCountryProfile"],
+        requiredProfileTopics: ["regulations"],
+        query: expect.objectContaining({ countryIso3s: ["CHN"] }),
+      }),
+    ]);
+  },
+);
 
 let demoDatabase: Awaited<ReturnType<typeof getDemoDatabase>>;
 
-it.each(["en", "zh-CN"] as const)("keeps the %s public starters on their intended evidence paths", (locale) => {
-  const copy = getDictionary(locale).chatPage;
-  for (const [text, tools, query] of [
-    [copy.starterCurrent, ["getCountryProfile"], { countryIso3s: ["CHN"] }],
-    [copy.starterCompare, ["compareRegulations"], { countryIso3s: ["CHN", "JPN"], applicationScope: "construction", powerKw: 120 }],
-    [copy.starterMarket, ["getCountryProfile"], { countryIso3s: ["CHN"] }],
-  ] as const) {
-    const contract = buildSalesChatEvidenceContract({ selectedCountryIso3: null, userTexts: [text] });
-    expect(contract.missingRequiredParameters, text).toEqual([]);
-    expect(remainingEvidenceTools(contract, []), text).toEqual(tools);
-    expect(contract.requirements, text).toEqual([
-      expect.objectContaining({ query: expect.objectContaining(query) }),
-    ]);
-  }
-});
+it.each(["en", "zh-CN"] as const)(
+  "keeps the %s public starters on their intended evidence paths",
+  (locale) => {
+    const copy = getDictionary(locale).chatPage;
+    for (const [text, tools, query] of [
+      [copy.starterCurrent, ["getCountryProfile"], { countryIso3s: ["CHN"] }],
+      [
+        copy.starterCompare,
+        ["compareRegulations"],
+        {
+          countryIso3s: ["CHN", "JPN"],
+          applicationScope: "construction",
+          powerKw: 120,
+        },
+      ],
+      [copy.starterMarket, ["getCountryProfile"], { countryIso3s: ["CHN"] }],
+    ] as const) {
+      const contract = buildSalesChatEvidenceContract({
+        selectedCountryIso3: null,
+        userTexts: [text],
+      });
+      expect(contract.missingRequiredParameters, text).toEqual([]);
+      expect(remainingEvidenceTools(contract, []), text).toEqual(tools);
+      expect(contract.requirements, text).toEqual([
+        expect.objectContaining({ query: expect.objectContaining(query) }),
+      ]);
+    }
+  },
+);
 
 beforeAll(async () => {
   process.env.DATABASE_MODE = "pglite-demo";
@@ -82,8 +130,7 @@ const regressionCaseIds = [
 ] as const;
 
 type RegressionCaseId =
-  | (typeof regressionCaseIds)[number]
-  | "product-outside-supply-period";
+  (typeof regressionCaseIds)[number] | "product-outside-supply-period";
 
 function liveCase(id: RegressionCaseId): SalesChatLiveCase {
   const testCase = salesChatLiveCases.find((candidate) => candidate.id === id);
@@ -290,8 +337,7 @@ const evidenceByCaseId: Record<
     countryProfileEvidence({ asOf: "2026-08-13", topic: "country" }),
   "single-country-market-profile": () =>
     countryProfileEvidence({ asOf: currentUtcDate(), topic: "market" }),
-  "product-ready-dual-axis": () =>
-    compatibleProductEvidence("2026-08-13"),
+  "product-ready-dual-axis": () => compatibleProductEvidence("2026-08-13"),
   "comparable-market-metric": marketEvidence,
   "opportunity-score": opportunityEvidence,
   "sales-brief": salesBriefEvidence,
@@ -445,7 +491,6 @@ function recomputeLatestVerifiedAt(result: AiToolResult): string | null {
 }
 
 describe("live-eval evidence-contract regressions", () => {
-
   it("orders latest citation freshness by instant rather than timestamp text", () => {
     const citations = [
       { verifiedAt: "2026-01-02T00:30:00+01:00" },
@@ -570,13 +615,15 @@ describe("live-eval evidence-contract regressions", () => {
       result.latestVerifiedAt = "2099-01-01T00:00:00.000Z";
 
       expect(aiToolResultSchema.safeParse(result).success).toBe(false);
-      expect(evidenceContractAllowsModelText(
-        buildSalesChatEvidenceContract({
-          selectedCountryIso3: liveCase(id).selectedCountryIso3,
-          userTexts: liveCase(id).userTexts,
-        }),
-        [result],
-      )).toBe(false);
+      expect(
+        evidenceContractAllowsModelText(
+          buildSalesChatEvidenceContract({
+            selectedCountryIso3: liveCase(id).selectedCountryIso3,
+            userTexts: liveCase(id).userTexts,
+          }),
+          [result],
+        ),
+      ).toBe(false);
     },
   );
 
@@ -600,13 +647,15 @@ describe("live-eval evidence-contract regressions", () => {
 
       expect(aiToolResultSchema.safeParse(result).success).toBe(false);
       expect(clientAiToolResultSchema.safeParse(result).success).toBe(false);
-      expect(evidenceContractAllowsModelText(
-        buildSalesChatEvidenceContract({
-          selectedCountryIso3: liveCase(id).selectedCountryIso3,
-          userTexts: liveCase(id).userTexts,
-        }),
-        [result],
-      )).toBe(false);
+      expect(
+        evidenceContractAllowsModelText(
+          buildSalesChatEvidenceContract({
+            selectedCountryIso3: liveCase(id).selectedCountryIso3,
+            userTexts: liveCase(id).userTexts,
+          }),
+          [result],
+        ),
+      ).toBe(false);
     },
   );
 
@@ -622,13 +671,15 @@ describe("live-eval evidence-contract regressions", () => {
 
       expect(aiToolResultSchema.safeParse(result).success).toBe(true);
       expect(clientAiToolResultSchema.safeParse(result).success).toBe(true);
-      expect(evidenceContractAllowsModelText(
-        buildSalesChatEvidenceContract({
-          selectedCountryIso3: liveCase(id).selectedCountryIso3,
-          userTexts: liveCase(id).userTexts,
-        }),
-        [result],
-      )).toBe(true);
+      expect(
+        evidenceContractAllowsModelText(
+          buildSalesChatEvidenceContract({
+            selectedCountryIso3: liveCase(id).selectedCountryIso3,
+            userTexts: liveCase(id).userTexts,
+          }),
+          [result],
+        ),
+      ).toBe(true);
     },
   );
 
@@ -696,20 +747,20 @@ describe("live-eval evidence-contract regressions", () => {
       },
       tool: "generateSalesBrief",
     },
-  ] as const)("keeps an empty-citation $tool error result valid", ({
-    input,
-    tool,
-  }) => {
-    const result = buildToolErrorResult(tool, "2026-08-13", input);
+  ] as const)(
+    "keeps an empty-citation $tool error result valid",
+    ({ input, tool }) => {
+      const result = buildToolErrorResult(tool, "2026-08-13", input);
 
-    expect(result).toMatchObject({
-      citations: [],
-      latestVerifiedAt: null,
-      status: "error",
-    });
-    expect(aiToolResultSchema.safeParse(result).success).toBe(true);
-    expect(clientAiToolResultSchema.safeParse(result).success).toBe(true);
-  });
+      expect(result).toMatchObject({
+        citations: [],
+        latestVerifiedAt: null,
+        status: "error",
+      });
+      expect(aiToolResultSchema.safeParse(result).success).toBe(true);
+      expect(clientAiToolResultSchema.safeParse(result).success).toBe(true);
+    },
+  );
 
   it("keeps a legitimate no_data result valid without citations", () => {
     const result = buildCompatibleProductsResult({
@@ -905,9 +956,7 @@ describe("live-eval evidence-contract regressions", () => {
         testCase.expectedEvidenceAllowed,
       );
       expect(remainingEvidenceTools(contract, [result])).toEqual(
-        id === "unknown-product-fails-closed"
-          ? ["findCompatibleProducts"]
-          : [],
+        id === "unknown-product-fails-closed" ? ["findCompatibleProducts"] : [],
       );
     },
   );
@@ -928,25 +977,25 @@ describe("live-eval evidence-contract regressions", () => {
       id: "negated comparison with a partial single-country filter",
       userTexts: ["不做跨国比较，只看 CHN non-road 当前法规。"],
     },
-  ])("fails closed before tools for $id", async ({
-    expectedMissing,
-    userTexts,
-  }) => {
-    const contract = buildSalesChatEvidenceContract({
-      selectedCountryIso3: null,
-      userTexts,
-    });
-    const broadProfile = await countryProfileEvidence({
-      asOf: currentUtcDate(),
-      topic: "regulations",
-    });
+  ])(
+    "fails closed before tools for $id",
+    async ({ expectedMissing, userTexts }) => {
+      const contract = buildSalesChatEvidenceContract({
+        selectedCountryIso3: null,
+        userTexts,
+      });
+      const broadProfile = await countryProfileEvidence({
+        asOf: currentUtcDate(),
+        topic: "regulations",
+      });
 
-    expect(contract.missingRequiredParameters).toEqual(expectedMissing);
-    expect(remainingEvidenceTools(contract, [])).toEqual([]);
-    expect(evidenceContractAllowsModelText(contract, [broadProfile])).toBe(
-      false,
-    );
-  });
+      expect(contract.missingRequiredParameters).toEqual(expectedMissing);
+      expect(remainingEvidenceTools(contract, [])).toEqual([]);
+      expect(evidenceContractAllowsModelText(contract, [broadProfile])).toBe(
+        false,
+      );
+    },
+  );
 
   it.each([
     {
@@ -982,9 +1031,7 @@ describe("live-eval evidence-contract regressions", () => {
         requiredProfileTopics: ["market"],
       }),
     ]);
-    expect(remainingEvidenceTools(contract, [])).toEqual([
-      "getCountryProfile",
-    ]);
+    expect(remainingEvidenceTools(contract, [])).toEqual(["getCountryProfile"]);
   });
 
   it.each([
@@ -1097,29 +1144,31 @@ describe("live-eval evidence-contract regressions", () => {
       id: "retrieved-prompt-injection-is-data" as const,
       query: "CHN 非道路排放法规原文章节来源证据",
     },
-  ])("$id preserves its evidence boundary even when retrieval returns a hit", ({
-    expected,
-    id,
-    query,
-  }) => {
-    const testCase = salesChatLiveCases.find((candidate) => candidate.id === id);
-    if (!testCase) {
-      throw new Error(`Missing live-eval source case: ${id}`);
-    }
-    const contract = buildSalesChatEvidenceContract({
-      selectedCountryIso3: testCase.selectedCountryIso3,
-      userTexts: testCase.userTexts,
-    });
-    const result = knowledgeEvidence({
-      applicationScope: id === "irrelevant-source-query-fails-closed"
-        ? null
-        : "non-road",
-      query,
-    });
+  ])(
+    "$id preserves its evidence boundary even when retrieval returns a hit",
+    ({ expected, id, query }) => {
+      const testCase = salesChatLiveCases.find(
+        (candidate) => candidate.id === id,
+      );
+      if (!testCase) {
+        throw new Error(`Missing live-eval source case: ${id}`);
+      }
+      const contract = buildSalesChatEvidenceContract({
+        selectedCountryIso3: testCase.selectedCountryIso3,
+        userTexts: testCase.userTexts,
+      });
+      const result = knowledgeEvidence({
+        applicationScope:
+          id === "irrelevant-source-query-fails-closed" ? null : "non-road",
+        query,
+      });
 
-    expect(testCase.expectedEvidenceAllowed).toBe(expected);
-    expect(evidenceContractAllowsModelText(contract, [result])).toBe(expected);
-  });
+      expect(testCase.expectedEvidenceAllowed).toBe(expected);
+      expect(evidenceContractAllowsModelText(contract, [result])).toBe(
+        expected,
+      );
+    },
+  );
 
   it.each([
     {
@@ -1387,31 +1436,31 @@ describe("live-eval evidence-contract regressions", () => {
       userText:
         "Retrieve the original text for CHN non-road emission regulations at 100 kW as of 2026-08-13.",
     },
-  ])("treats an English $id request as source-only", ({
-    expectedTerms,
-    userText,
-  }) => {
-    const contract = buildSalesChatEvidenceContract({
-      selectedCountryIso3: null,
-      userTexts: [userText],
-    });
+  ])(
+    "treats an English $id request as source-only",
+    ({ expectedTerms, userText }) => {
+      const contract = buildSalesChatEvidenceContract({
+        selectedCountryIso3: null,
+        userTexts: [userText],
+      });
 
-    expect(contract.missingRequiredParameters).toEqual([]);
-    expect(contract.requirements).toEqual([
-      expect.objectContaining({
-        acceptedTools: ["searchKnowledgeBase"],
-        query: expect.objectContaining({
-          applicationScope: "non-road",
-          asOf: "2026-08-13",
-          countryIso3s: ["CHN"],
-          knowledgeTerms: expect.arrayContaining(expectedTerms),
+      expect(contract.missingRequiredParameters).toEqual([]);
+      expect(contract.requirements).toEqual([
+        expect.objectContaining({
+          acceptedTools: ["searchKnowledgeBase"],
+          query: expect.objectContaining({
+            applicationScope: "non-road",
+            asOf: "2026-08-13",
+            countryIso3s: ["CHN"],
+            knowledgeTerms: expect.arrayContaining(expectedTerms),
+          }),
         }),
-      }),
-    ]);
-    expect(remainingEvidenceTools(contract, [])).toEqual([
-      "searchKnowledgeBase",
-    ]);
-  });
+      ]);
+      expect(remainingEvidenceTools(contract, [])).toEqual([
+        "searchKnowledgeBase",
+      ]);
+    },
+  );
 
   it.each([
     {
@@ -1457,7 +1506,8 @@ describe("live-eval evidence-contract regressions", () => {
       evidenceContractAllowsModelText(contract, [
         knowledgeEvidence({
           applicationScope: "non-road",
-          query: "non-road emissions regulation original text section source evidence",
+          query:
+            "non-road emissions regulation original text section source evidence",
         }),
       ]),
     ).toBe(true);
@@ -1484,18 +1534,21 @@ describe("live-eval evidence-contract regressions", () => {
     }
 
     expect(
-      result.comparison.metrics.flatMap(({ observations }) => observations)
+      result.comparison.metrics
+        .flatMap(({ observations }) => observations)
         .every(({ applicationScope }) => applicationScope === null),
     ).toBe(true);
     expect(marketComparisonSourcesMatchFacts(result.comparison)).toBe(true);
     expect(aiToolResultSchema.safeParse(result).success).toBe(true);
-    expect(evidenceContractAllowsModelText(
-      buildSalesChatEvidenceContract({
-        selectedCountryIso3: null,
-        userTexts: ["比较 CHN 和 BRA 的 non-road 市场指标。"],
-      }),
-      [result],
-    )).toBe(true);
+    expect(
+      evidenceContractAllowsModelText(
+        buildSalesChatEvidenceContract({
+          selectedCountryIso3: null,
+          userTexts: ["比较 CHN 和 BRA 的 non-road 市场指标。"],
+        }),
+        [result],
+      ),
+    ).toBe(true);
   });
 
   it.each(explicitMetricCodeCases)(
@@ -1559,12 +1612,8 @@ describe("live-eval evidence-contract regressions", () => {
     });
 
     expect(contract.requirements).toHaveLength(1);
-    expect(contract.requirements[0]?.acceptedTools).toEqual([
-      "compareMarkets",
-    ]);
-    expect(contract.requirements[0]?.query).not.toHaveProperty(
-        "metricCodes",
-    );
+    expect(contract.requirements[0]?.acceptedTools).toEqual(["compareMarkets"]);
+    expect(contract.requirements[0]?.query).not.toHaveProperty("metricCodes");
 
     const colonCodeContract = buildSalesChatEvidenceContract({
       selectedCountryIso3: null,

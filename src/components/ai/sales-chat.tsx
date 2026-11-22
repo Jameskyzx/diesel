@@ -18,11 +18,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import {
-  DefaultChatTransport,
-  isToolUIPart,
-  type FileUIPart,
-} from "ai";
+import { DefaultChatTransport, isToolUIPart, type FileUIPart } from "ai";
 import {
   ChangeEvent,
   FormEvent,
@@ -56,9 +52,7 @@ import {
   validateChatAttachments,
   type ChatAttachmentErrorDescriptor,
 } from "@/features/ai/attachment-errors";
-import {
-  hasStructurallyValidChatImage,
-} from "@/features/ai/image-attachments";
+import { hasStructurallyValidChatImage } from "@/features/ai/image-attachments";
 import {
   formatReleasedAttachment,
   parseReleasedAttachmentPart,
@@ -93,7 +87,12 @@ import {
 } from "@/features/ai/tool-card-summary";
 import { toolDisplayEvidence } from "@/features/ai/tool-display-evidence";
 import { MAX_CHAT_USER_MESSAGE_CHARACTERS } from "@/features/ai/constants";
-import { CHAT_HISTORY_STORAGE_KEY, chatHistorySnapshotSchema, parseChatHistory, serializeChatHistory } from "@/features/ai/chat-history";
+import {
+  CHAT_HISTORY_STORAGE_KEY,
+  chatHistorySnapshotSchema,
+  parseChatHistory,
+  serializeChatHistory,
+} from "@/features/ai/chat-history";
 import {
   parseSerializedApiErrorCode,
   type SafeApiErrorCode,
@@ -204,7 +203,11 @@ function fileToUiPart({
   });
 }
 
-function PendingImagePreview({ attachment }: { attachment: PendingAttachment }) {
+function PendingImagePreview({
+  attachment,
+}: {
+  attachment: PendingAttachment;
+}) {
   const { dictionary } = useLocale();
   const [previewUrl] = useState(() =>
     attachment.mediaType.startsWith("image/")
@@ -243,10 +246,7 @@ function PendingImagePreview({ attachment }: { attachment: PendingAttachment }) 
  * 服务端返回 schema 校验的 `{error:{code,message}}` 信封（ADR-041），
  * 这里解出通用消息展示，解不出时退回固定文案，不把 JSON 直接给用户。
  */
-export function chatErrorMessage(
-  error: Error,
-  dictionary: Dictionary,
-): string {
+export function chatErrorMessage(error: Error, dictionary: Dictionary): string {
   // Parse on every render so a retained failed submission immediately follows
   // the active locale. Unknown envelopes never expose their raw text.
   const code = parseSerializedApiErrorCode(error.message);
@@ -331,85 +331,101 @@ function CitationList({
         {interpolate(copy.viewSources, { count: citations.length })}
       </summary>
       <div className="mt-2 space-y-2">
-      {citations.map((citation, index) => {
-        const hit = result.tool === "searchKnowledgeBase" ? result.search.results.find(item => item.chunkId === citation.chunkId && item.document.id === citation.documentId && item.document.source.id === citation.sourceId) : undefined;
-        return (
-        <article
-          className="rounded-lg border bg-background/70 p-2.5 text-xs"
-          key={[
-            citation.sourceId,
-            citation.chunkId,
-            citation.regulationId,
-            citation.productCertificationId,
-            index,
-          ].join(":")}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-medium">
-                {localizedCitationTitle(
-                  citation,
-                  locale,
-                  dictionary,
-                )}
-              </p>
-              <p className="mt-0.5 text-muted-foreground">
-                {citation.sourceTitle} ·{" "}
-                {localizedCitationLocator(citation, locale, dictionary)}
-              </p>
-            </div>
-            {isNavigableEvidenceUrl(citation.sourceUrl) ? (
-              <a
-                aria-label={interpolate(copy.openSource, {
-                  title: citation.sourceTitle,
-                })}
-                className="shrink-0 text-primary hover:underline"
-                href={citation.sourceUrl}
-                rel="noreferrer"
-                target="_blank"
-              >
-                <ExternalLink aria-hidden="true" className="size-3.5" />
-              </a>
-            ) : citation.isDemo ? (
-              <span className="shrink-0 text-[10px] text-amber-800">
-                {dictionary.country.demoNoExternalLink}
-              </span>
-            ) : null}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-            {citation.regulationStatus ? (
-              <span>
-                {copy.regulationStatus}{dictionary.common.labelSeparator}
-                {statusCopy[citation.regulationStatus]}
-              </span>
-            ) : null}
-            <span>
-              {dictionary.common.verified}{dictionary.common.labelSeparator}
-              {formatOptionalUtcDate(
-                citation.verifiedAt,
-                locale,
-                dictionary.common.notRecorded,
-              )}
-            </span>
-            {citation.publishedOn ? (
-              <span>
-                {copy.published}{dictionary.common.labelSeparator}
-                {formatUtcDate(citation.publishedOn, locale)}
-              </span>
-            ) : null}
-            {citation.isDemo ? (
-              <span className="font-semibold text-amber-700">
-                {dictionary.common.demo}
-              </span>
-            ) : null}
-          </div>
-          <SourceExcerpt
-            pageFrom={citation.pageFrom} pageTo={citation.pageTo} section={citation.sectionLocator} url={citation.sourceUrl}
-            excerpt={hit ? unwrapUntrustedKnowledgeExcerpt(hit.content) : undefined}
-            countryIso3={hit?.countryIso3} scope={hit?.applicationScope} validFrom={hit?.validFrom} validTo={hit?.validTo}
-          />
-        </article>
-      ); })}
+        {citations.map((citation, index) => {
+          const hit =
+            result.tool === "searchKnowledgeBase"
+              ? result.search.results.find(
+                  (item) =>
+                    item.chunkId === citation.chunkId &&
+                    item.document.id === citation.documentId &&
+                    item.document.source.id === citation.sourceId,
+                )
+              : undefined;
+          return (
+            <article
+              className="rounded-lg border bg-background/70 p-2.5 text-xs"
+              key={[
+                citation.sourceId,
+                citation.chunkId,
+                citation.regulationId,
+                citation.productCertificationId,
+                index,
+              ].join(":")}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-medium">
+                    {localizedCitationTitle(citation, locale, dictionary)}
+                  </p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    {citation.sourceTitle} ·{" "}
+                    {localizedCitationLocator(citation, locale, dictionary)}
+                  </p>
+                </div>
+                {isNavigableEvidenceUrl(citation.sourceUrl) ? (
+                  <a
+                    aria-label={interpolate(copy.openSource, {
+                      title: citation.sourceTitle,
+                    })}
+                    className="shrink-0 text-primary hover:underline"
+                    href={citation.sourceUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <ExternalLink aria-hidden="true" className="size-3.5" />
+                  </a>
+                ) : citation.isDemo ? (
+                  <span className="shrink-0 text-[10px] text-amber-800">
+                    {dictionary.country.demoNoExternalLink}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                {citation.regulationStatus ? (
+                  <span>
+                    {copy.regulationStatus}
+                    {dictionary.common.labelSeparator}
+                    {statusCopy[citation.regulationStatus]}
+                  </span>
+                ) : null}
+                <span>
+                  {dictionary.common.verified}
+                  {dictionary.common.labelSeparator}
+                  {formatOptionalUtcDate(
+                    citation.verifiedAt,
+                    locale,
+                    dictionary.common.notRecorded,
+                  )}
+                </span>
+                {citation.publishedOn ? (
+                  <span>
+                    {copy.published}
+                    {dictionary.common.labelSeparator}
+                    {formatUtcDate(citation.publishedOn, locale)}
+                  </span>
+                ) : null}
+                {citation.isDemo ? (
+                  <span className="font-semibold text-amber-700">
+                    {dictionary.common.demo}
+                  </span>
+                ) : null}
+              </div>
+              <SourceExcerpt
+                pageFrom={citation.pageFrom}
+                pageTo={citation.pageTo}
+                section={citation.sectionLocator}
+                url={citation.sourceUrl}
+                excerpt={
+                  hit ? unwrapUntrustedKnowledgeExcerpt(hit.content) : undefined
+                }
+                countryIso3={hit?.countryIso3}
+                scope={hit?.applicationScope}
+                validFrom={hit?.validFrom}
+                validTo={hit?.validTo}
+              />
+            </article>
+          );
+        })}
       </div>
     </details>
   );
@@ -453,8 +469,8 @@ function ScoreBreakdown({ score }: { score: ClientOpportunityScore }) {
                 <span className="font-medium">{components[component.key]}</span>
                 <span>
                   {component.score ?? copy.missing} · {copy.effectiveWeight}{" "}
-                  {(component.effectiveWeight * 100).toFixed(0)}% · {copy.contribution}{" "}
-                  {component.contribution ?? "—"}
+                  {(component.effectiveWeight * 100).toFixed(0)}% ·{" "}
+                  {copy.contribution} {component.contribution ?? "—"}
                 </span>
               </p>
               <p className="mt-1 leading-4 text-muted-foreground">
@@ -462,7 +478,8 @@ function ScoreBreakdown({ score }: { score: ClientOpportunityScore }) {
               </p>
               {content.inputSummary ? (
                 <p className="mt-1 text-[10px] text-muted-foreground">
-                  {copy.inputFacts}{dictionary.common.labelSeparator}
+                  {copy.inputFacts}
+                  {dictionary.common.labelSeparator}
                   {content.inputSummary}
                 </p>
               ) : null}
@@ -523,96 +540,139 @@ export function ToolFacts({
       <div className="space-y-2 text-xs">
         {result.requestedTopics.includes("market") ? (
           <div className="space-y-2" data-testid="profile-market-facts">
-            {result.profile.country.marketMetrics.length === 0 ? <p>{dictionary.country.marketEmpty}</p> : null}
+            {result.profile.country.marketMetrics.length === 0 ? (
+              <p>{dictionary.country.marketEmpty}</p>
+            ) : null}
             {result.profile.country.marketMetrics.map((metric) => (
-              <div className="min-w-0 space-y-1 rounded-md bg-background/70 p-2" key={metric.id}>
-                <p className="font-medium">{marketMetricDisplayName({
-                  isDemo: metric.isDemo, metricCode: metric.metricCode,
-                  metricIds: [metric.id], metricName: metric.metricName,
-                }, dictionary, locale)}</p>
-                <p className="text-base font-semibold tabular-nums">{formatDecimalForDisplay(metric.valueNumeric)} {metric.unitCode || copy.marketUnitNotRecorded}</p>
-                <p>{metric.applicationScope ? applicationScopeLabel(metric.applicationScope, dictionary) : dictionary.common.notRecorded}</p>
-                <p className="text-muted-foreground">{copy.marketPeriodStart}{dictionary.common.labelSeparator}{formatUtcDate(metric.periodStart, locale)} · {copy.marketPeriodEnd}{dictionary.common.labelSeparator}{formatUtcDate(metric.periodEnd, locale)}</p>
-                <p className="text-muted-foreground">{dictionary.common.source}{dictionary.common.labelSeparator}{metric.source.title} · {copy.latestVerified}{dictionary.common.labelSeparator}{formatUtcDate(metric.verifiedAt, locale)}</p>
+              <div
+                className="min-w-0 space-y-1 rounded-md bg-background/70 p-2"
+                key={metric.id}
+              >
+                <p className="font-medium">
+                  {marketMetricDisplayName(
+                    {
+                      isDemo: metric.isDemo,
+                      metricCode: metric.metricCode,
+                      metricIds: [metric.id],
+                      metricName: metric.metricName,
+                    },
+                    dictionary,
+                    locale,
+                  )}
+                </p>
+                <p className="text-base font-semibold tabular-nums">
+                  {formatDecimalForDisplay(metric.valueNumeric)}{" "}
+                  {metric.unitCode || copy.marketUnitNotRecorded}
+                </p>
+                <p>
+                  {metric.applicationScope
+                    ? applicationScopeLabel(metric.applicationScope, dictionary)
+                    : dictionary.common.notRecorded}
+                </p>
+                <p className="text-muted-foreground">
+                  {copy.marketPeriodStart}
+                  {dictionary.common.labelSeparator}
+                  {formatUtcDate(metric.periodStart, locale)} ·{" "}
+                  {copy.marketPeriodEnd}
+                  {dictionary.common.labelSeparator}
+                  {formatUtcDate(metric.periodEnd, locale)}
+                </p>
+                <p className="text-muted-foreground">
+                  {dictionary.common.source}
+                  {dictionary.common.labelSeparator}
+                  {metric.source.title} · {copy.latestVerified}
+                  {dictionary.common.labelSeparator}
+                  {formatUtcDate(metric.verifiedAt, locale)}
+                </p>
               </div>
             ))}
-            <p className="text-muted-foreground">{copy.marketHistoricalNotice}</p>
+            <p className="text-muted-foreground">
+              {copy.marketHistoricalNotice}
+            </p>
           </div>
         ) : null}
         {result.requestedTopics.includes("country") ? (
-          <p>{copy.countryProfileTopicCountry}{dictionary.common.labelSeparator}{result.profile.country.iso3}</p>
-        ) : null}
-        {result.requestedTopics.includes("regulations") ? <>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg bg-background/70 p-2">
-            <span className="text-muted-foreground">
-              {copy.currentEffectiveCount}
-            </span>
-            <strong className="mt-1 block text-base">
-              {result.profile.country.currentEffectiveRegulations.length}
-            </strong>
-          </div>
-          <div className="rounded-lg bg-background/70 p-2">
-            <span className="text-muted-foreground">
-              {copy.futureAdoptedCount}
-            </span>
-            <strong className="mt-1 block text-base">
-              {result.profile.country.futureAdoptedRegulations.length}
-            </strong>
-          </div>
-        </div>
-        {[
-          ...result.profile.country.currentEffectiveRegulations,
-          ...result.profile.country.futureAdoptedRegulations,
-        ].map((regulation) => (
-          <p
-            className="rounded-lg bg-background/70 p-2 text-muted-foreground"
-            key={regulation.id}
-          >
-            {regulationDisplayName(regulation, dictionary, locale)} ·{" "}
-            {copy.queryDate}
+          <p>
+            {copy.countryProfileTopicCountry}
             {dictionary.common.labelSeparator}
-            {regulationCopy[regulation.statusAtAsOf]}
-            {regulation.status !== regulation.statusAtAsOf
-              ? ` · ${dictionary.country.archiveCurrent}${dictionary.common.labelSeparator}${regulationCopy[regulation.status]}`
-              : ""}
-            {" · "}{dictionary.country.applicableJurisdiction}
-            {dictionary.common.labelSeparator}
-            {nameWithCode(
-              jurisdictionDisplayName(
-                {
-                  code: regulation.applicability.jurisdiction.code,
-                  countryIso3: regulation.applicability.countryIso3,
-                  id: regulation.applicability.jurisdiction.id,
-                  isDemo: regulation.applicability.jurisdiction.isDemo,
-                  name: regulation.applicability.jurisdiction.name,
-                  sourceId: regulation.applicability.jurisdiction.source.id,
-                  sourceIsDemo:
-                    regulation.applicability.jurisdiction.source.isDemo,
-                  sourceTitle:
-                    regulation.applicability.jurisdiction.source.title,
-                  type: "country",
-                },
-                dictionary,
-                locale,
-              ),
-              regulation.applicability.jurisdiction.code,
-              locale,
-            )} ·
-            {dictionary.country.membershipPeriod}
-            {dictionary.common.labelSeparator}
-            {formatUtcDate(
-              regulation.applicability.membership.validFrom,
-              locale,
-            )} →{" "}
-            {formatOptionalUtcDate(
-              regulation.applicability.membership.validTo,
-              locale,
-              dictionary.common.open,
-            )}
+            {result.profile.country.iso3}
           </p>
-        ))}
-        </> : null}
+        ) : null}
+        {result.requestedTopics.includes("regulations") ? (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-background/70 p-2">
+                <span className="text-muted-foreground">
+                  {copy.currentEffectiveCount}
+                </span>
+                <strong className="mt-1 block text-base">
+                  {result.profile.country.currentEffectiveRegulations.length}
+                </strong>
+              </div>
+              <div className="rounded-lg bg-background/70 p-2">
+                <span className="text-muted-foreground">
+                  {copy.futureAdoptedCount}
+                </span>
+                <strong className="mt-1 block text-base">
+                  {result.profile.country.futureAdoptedRegulations.length}
+                </strong>
+              </div>
+            </div>
+            {[
+              ...result.profile.country.currentEffectiveRegulations,
+              ...result.profile.country.futureAdoptedRegulations,
+            ].map((regulation) => (
+              <p
+                className="rounded-lg bg-background/70 p-2 text-muted-foreground"
+                key={regulation.id}
+              >
+                {regulationDisplayName(regulation, dictionary, locale)} ·{" "}
+                {copy.queryDate}
+                {dictionary.common.labelSeparator}
+                {regulationCopy[regulation.statusAtAsOf]}
+                {regulation.status !== regulation.statusAtAsOf
+                  ? ` · ${dictionary.country.archiveCurrent}${dictionary.common.labelSeparator}${regulationCopy[regulation.status]}`
+                  : ""}
+                {" · "}
+                {dictionary.country.applicableJurisdiction}
+                {dictionary.common.labelSeparator}
+                {nameWithCode(
+                  jurisdictionDisplayName(
+                    {
+                      code: regulation.applicability.jurisdiction.code,
+                      countryIso3: regulation.applicability.countryIso3,
+                      id: regulation.applicability.jurisdiction.id,
+                      isDemo: regulation.applicability.jurisdiction.isDemo,
+                      name: regulation.applicability.jurisdiction.name,
+                      sourceId: regulation.applicability.jurisdiction.source.id,
+                      sourceIsDemo:
+                        regulation.applicability.jurisdiction.source.isDemo,
+                      sourceTitle:
+                        regulation.applicability.jurisdiction.source.title,
+                      type: "country",
+                    },
+                    dictionary,
+                    locale,
+                  ),
+                  regulation.applicability.jurisdiction.code,
+                  locale,
+                )}{" "}
+                ·{dictionary.country.membershipPeriod}
+                {dictionary.common.labelSeparator}
+                {formatUtcDate(
+                  regulation.applicability.membership.validFrom,
+                  locale,
+                )}{" "}
+                →{" "}
+                {formatOptionalUtcDate(
+                  regulation.applicability.membership.validTo,
+                  locale,
+                  dictionary.common.open,
+                )}
+              </p>
+            ))}
+          </>
+        ) : null}
       </div>
     );
   }
@@ -653,11 +713,7 @@ export function ToolFacts({
             <div className="flex items-center justify-between gap-2">
               <p className="font-medium">
                 {evaluation.product
-                  ? productDisplayName(
-                      evaluation.product,
-                      dictionary,
-                      locale,
-                    )
+                  ? productDisplayName(evaluation.product, dictionary, locale)
                   : evaluation.input.productModelCode}
               </p>
               <span
@@ -676,7 +732,8 @@ export function ToolFacts({
             </div>
             <p className="mt-1 font-medium">
               {dictionary.productFit.fitAxis}
-              {dictionary.common.labelSeparator}{fitCopy[evaluation.status]} ·{" "}
+              {dictionary.common.labelSeparator}
+              {fitCopy[evaluation.status]} ·{" "}
               {readinessCopy[evaluation.commercialReadiness]}
             </p>
             <p className="mt-1 text-muted-foreground">
@@ -735,15 +792,18 @@ export function ToolFacts({
             key={country.countryIso3}
           >
             <p className="font-semibold">
-              {country.countryIso3} · {localizedRegulationComparisonCountryName(
+              {country.countryIso3} ·{" "}
+              {localizedRegulationComparisonCountryName(
                 country,
                 locale,
                 countryIso2ByIso3,
               ) ?? copy.noCountryRecord}
             </p>
             <p className="mt-1 text-muted-foreground">
-              {copy.currentEffectiveCount} {country.currentEffectiveRegulations.length} ·{" "}
-              {copy.futureAdoptedCount} {country.futureAdoptedRegulations.length}
+              {copy.currentEffectiveCount}{" "}
+              {country.currentEffectiveRegulations.length} ·{" "}
+              {copy.futureAdoptedCount}{" "}
+              {country.futureAdoptedRegulations.length}
             </p>
             {(() => {
               const available = new Set(
@@ -808,7 +868,8 @@ export function ToolFacts({
                   {regulation.limits.map((limit) => (
                     <p className="pl-2 text-[11px]" key={limit.id}>
                       {limit.pollutantCode} ≤ {formatDecimal(limit.limitValue)}{" "}
-                      {limit.unitCode} · {formatUtcDate(limit.validFrom, locale)} →{" "}
+                      {limit.unitCode} ·{" "}
+                      {formatUtcDate(limit.validFrom, locale)} →{" "}
                       {formatOptionalUtcDate(
                         limit.validTo,
                         locale,
@@ -826,7 +887,9 @@ export function ToolFacts({
   }
 
   if (result.tool === "compareMarkets") {
-    return <MarketComparisonFacts comparison={result.comparison} locale={locale} />;
+    return (
+      <MarketComparisonFacts comparison={result.comparison} locale={locale} />
+    );
   }
 
   if (result.tool === "calculateOpportunityScore") {
@@ -850,14 +913,13 @@ export function ToolFacts({
         <div className="mt-2 space-y-1">
           {brief.recommendedProducts.map((product) => (
             <p key={product.modelCode}>
-              {copy.commerciallyReady}{dictionary.common.labelSeparator}
-              {product.modelCode} · {productDisplayName(
-                product,
-                dictionary,
-                locale,
-              )} · {dictionary.productFit.fitAxis}{" "}
-              {dictionary.productFit.fit} · {dictionary.productFit.availability}{" "}
-              {dictionary.productFit.pass} · {dictionary.productFit.availablePeriod}
+              {copy.commerciallyReady}
+              {dictionary.common.labelSeparator}
+              {product.modelCode} ·{" "}
+              {productDisplayName(product, dictionary, locale)} ·{" "}
+              {dictionary.productFit.fitAxis} {dictionary.productFit.fit} ·{" "}
+              {dictionary.productFit.availability} {dictionary.productFit.pass}{" "}
+              · {dictionary.productFit.availablePeriod}
               {dictionary.common.labelSeparator}
               {formatProductAvailabilityDateRange(
                 product.availableFrom,
@@ -869,14 +931,9 @@ export function ToolFacts({
           ))}
           {brief.risks.map((risk, index) => (
             <p key={`${risk.ruleCode}:${index}`}>
-              {copy.risk}{dictionary.common.labelSeparator}
-              {localizedSalesBriefItem(
-                risk,
-                index,
-                "risk",
-                locale,
-                copy,
-              )}
+              {copy.risk}
+              {dictionary.common.labelSeparator}
+              {localizedSalesBriefItem(risk, index, "risk", locale, copy)}
             </p>
           ))}
         </div>
@@ -891,7 +948,8 @@ export function ToolFacts({
         <div className="mt-2 space-y-1">
           {brief.opportunities.map((opportunity, index) => (
             <p key={`${opportunity.ruleCode}:${index}`}>
-              {copy.opportunity}{dictionary.common.labelSeparator}
+              {copy.opportunity}
+              {dictionary.common.labelSeparator}
               {localizedSalesBriefItem(
                 opportunity,
                 index,
@@ -903,12 +961,7 @@ export function ToolFacts({
           ))}
           {brief.salesActions.map((action, index) => (
             <p key={`${action.ruleCode}:${index}`}>
-              {localizedSalesBriefAction(
-                action,
-                index,
-                locale,
-                copy,
-              )}
+              {localizedSalesBriefAction(action, index, locale, copy)}
             </p>
           ))}
         </div>
@@ -952,20 +1005,32 @@ export function ToolResultCard({
     >
       <header className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
         <div className="flex min-w-0 items-center gap-2">
-          <FileText aria-hidden="true" className="size-4 shrink-0 text-primary" />
+          <FileText
+            aria-hidden="true"
+            className="size-4 shrink-0 text-primary"
+          />
           <div className="min-w-0 break-words">
             <p className="text-xs font-semibold">{label}</p>
             <p className="text-[11px] text-muted-foreground">
               {mayRenderFacts ? (
                 <>
-                  {copy.deterministicFacts} · {result.tool === "compareMarkets" ? copy.resultGeneratedOn : copy.queryAsOf}{dictionary.common.labelSeparator}{formatUtcDate(result.informationAsOf, locale)} · {copy.latestVerified}{dictionary.common.labelSeparator}
+                  {copy.deterministicFacts} ·{" "}
+                  {result.tool === "compareMarkets"
+                    ? copy.resultGeneratedOn
+                    : copy.queryAsOf}
+                  {dictionary.common.labelSeparator}
+                  {formatUtcDate(result.informationAsOf, locale)} ·{" "}
+                  {copy.latestVerified}
+                  {dictionary.common.labelSeparator}
                   {formatOptionalUtcDate(
                     displayEvidence.latestVerifiedAt,
                     locale,
                     dictionary.common.notRecorded,
                   )}
                 </>
-              ) : copy.queryConditions}
+              ) : (
+                copy.queryConditions
+              )}
             </p>
           </div>
         </div>
@@ -1007,10 +1072,19 @@ export function ToolResultCard({
         </div>
       ) : null}
 
-      {nextSteps.length ? <div className="rounded-md border border-amber-300 p-3 text-xs leading-5" data-testid="evidence-next-steps">
-        <p className="font-semibold">{dictionary.queryEditor.nextSteps}</p>
-        <ul className="mt-2 list-disc space-y-2 pl-4">{nextSteps.map((step) => <li key={step}>{step}</li>)}</ul>
-      </div> : null}
+      {nextSteps.length ? (
+        <div
+          className="rounded-md border border-amber-300 p-3 text-xs leading-5"
+          data-testid="evidence-next-steps"
+        >
+          <p className="font-semibold">{dictionary.queryEditor.nextSteps}</p>
+          <ul className="mt-2 list-disc space-y-2 pl-4">
+            {nextSteps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {mayRenderFacts ? (
         <CitationList citations={displayEvidence.citations} result={result} />
       ) : null}
@@ -1077,9 +1151,7 @@ function AttachmentPart({ part }: { part: FileUIPart }) {
 function ReleasedAttachmentPart({
   attachment,
 }: {
-  attachment: NonNullable<
-    ReturnType<typeof parseReleasedAttachmentPart>
-  >;
+  attachment: NonNullable<ReturnType<typeof parseReleasedAttachmentPart>>;
 }) {
   const { dictionary } = useLocale();
 
@@ -1116,7 +1188,10 @@ function ToolPart({
         className="my-2 flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs text-destructive"
         role="alert"
       >
-        <AlertTriangle aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+        <AlertTriangle
+          aria-hidden="true"
+          className="mt-0.5 size-3.5 shrink-0"
+        />
         {toolPartErrorMessage(presentation.code, dictionary.chat)}
       </div>
     );
@@ -1130,13 +1205,21 @@ function ToolPart({
   );
 }
 
-function hasCompletedAnalysis(message: Pick<SalesChatUiMessage, "role" | "parts">): boolean {
-  return message.role === "assistant" && message.parts.some(part => {
-    if (part.type === "data-productCatalog") return catalogResultSchema.safeParse(part.data).success;
-    if (!isToolUIPart(part)) return false;
-    const presentation = toolPartPresentation(part);
-    return presentation.kind === "result" && presentation.result.status !== "error";
-  });
+function hasCompletedAnalysis(
+  message: Pick<SalesChatUiMessage, "role" | "parts">,
+): boolean {
+  return (
+    message.role === "assistant" &&
+    message.parts.some((part) => {
+      if (part.type === "data-productCatalog")
+        return catalogResultSchema.safeParse(part.data).success;
+      if (!isToolUIPart(part)) return false;
+      const presentation = toolPartPresentation(part);
+      return (
+        presentation.kind === "result" && presentation.result.status !== "error"
+      );
+    })
+  );
 }
 
 export function SalesChat({
@@ -1156,7 +1239,9 @@ export function SalesChat({
   const [historyRestored, setHistoryRestored] = useState(false);
   const [historyUnavailable, setHistoryUnavailable] = useState(false);
   const restoredOmittedTurnsRef = useRef(0);
-  const [completedSnapshot, setCompletedSnapshot] = useState<Extract<AnalysisPayload, { kind: "chat" }>["history"] | null>(null);
+  const [completedSnapshot, setCompletedSnapshot] = useState<
+    Extract<AnalysisPayload, { kind: "chat" }>["history"] | null
+  >(null);
   const historyRestoreAttemptedRef = useRef(false);
   const [input, setInput] = useState(initialPrompt);
   const initialPromptPristineRef = useRef(true);
@@ -1197,14 +1282,20 @@ export function SalesChat({
           trigger,
         }) => {
           const requestMessages = prepareSalesChatRequestMessages(messages);
-          const previousConversation = readConversationMetadata(messages.findLast(message => message.role === "assistant")?.metadata);
+          const previousConversation = readConversationMetadata(
+            messages.findLast((message) => message.role === "assistant")
+              ?.metadata,
+          );
           attachmentMessageRelease.run();
 
           return {
             body: {
               ...body,
-              conversation: { version: 2,
-                ...(previousConversation ? { receipt: previousConversation.conversation.receipt } : {}),
+              conversation: {
+                version: 2,
+                ...(previousConversation
+                  ? { receipt: previousConversation.conversation.receipt }
+                  : {}),
               },
               id,
               messageId,
@@ -1247,18 +1338,26 @@ export function SalesChat({
 
       if (historyKey && !isAbort && !isError) {
         try {
-          const serialized = serializeChatHistory({ contextKey: historyKey,
-            sessionId, messages: finishedMessages, omittedUserTurns: restoredOmittedTurnsRef.current });
+          const serialized = serializeChatHistory({
+            contextKey: historyKey,
+            sessionId,
+            messages: finishedMessages,
+            omittedUserTurns: restoredOmittedTurnsRef.current,
+          });
           if (serialized === null) {
             setCompletedSnapshot(null);
             window.sessionStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
             setHistoryUnavailable(true);
           } else {
-            setCompletedSnapshot(chatHistorySnapshotSchema.parse(JSON.parse(serialized)));
+            setCompletedSnapshot(
+              chatHistorySnapshotSchema.parse(JSON.parse(serialized)),
+            );
             window.sessionStorage.setItem(CHAT_HISTORY_STORAGE_KEY, serialized);
             setHistoryUnavailable(false);
           }
-        } catch { setHistoryUnavailable(true); }
+        } catch {
+          setHistoryUnavailable(true);
+        }
       }
 
       if (!isError) {
@@ -1287,11 +1386,15 @@ export function SalesChat({
     const frame = requestAnimationFrame(() => {
       historyRestoreAttemptedRef.current = true;
       try {
-        const serialized = window.sessionStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+        const serialized = window.sessionStorage.getItem(
+          CHAT_HISTORY_STORAGE_KEY,
+        );
         const snapshot = parseChatHistory(serialized, historyKey);
         if (snapshot) {
           restoredOmittedTurnsRef.current = snapshot.omittedUserTurns;
-          setCompletedSnapshot(chatHistorySnapshotSchema.parse(JSON.parse(serialized!)));
+          setCompletedSnapshot(
+            chatHistorySnapshotSchema.parse(JSON.parse(serialized!)),
+          );
           setSessionId(snapshot.sessionId);
           setSettledChatMessages(snapshot.messages);
           setMessages(snapshot.messages);
@@ -1301,7 +1404,9 @@ export function SalesChat({
         } else if (serialized !== null) {
           window.sessionStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
         }
-      } catch { setHistoryUnavailable(true); }
+      } catch {
+        setHistoryUnavailable(true);
+      }
       setHistoryLoaded(true);
     });
     return () => cancelAnimationFrame(frame);
@@ -1357,10 +1462,7 @@ export function SalesChat({
       return;
     }
 
-    if (
-      validatingAttachmentsRef.current ||
-      submissionPendingRef.current
-    ) {
+    if (validatingAttachmentsRef.current || submissionPendingRef.current) {
       return;
     }
     validatingAttachmentsRef.current = true;
@@ -1434,10 +1536,7 @@ export function SalesChat({
   }
 
   function removeAttachment(id: string) {
-    if (
-      validatingAttachmentsRef.current ||
-      submissionPendingRef.current
-    ) {
+    if (validatingAttachmentsRef.current || submissionPendingRef.current) {
       return;
     }
 
@@ -1578,7 +1677,13 @@ export function SalesChat({
   }
 
   function startNewConversation() {
-    if (waiting || submissionPendingRef.current || validatingAttachmentsRef.current || !historyLoaded) return;
+    if (
+      waiting ||
+      submissionPendingRef.current ||
+      validatingAttachmentsRef.current ||
+      !historyLoaded
+    )
+      return;
     attachmentMessageRelease.run();
     activeSubmissionRef.current = null;
     clearError();
@@ -1596,7 +1701,9 @@ export function SalesChat({
     try {
       window.sessionStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
       setHistoryUnavailable(false);
-    } catch { setHistoryUnavailable(true); }
+    } catch {
+      setHistoryUnavailable(true);
+    }
   }
 
   return (
@@ -1613,7 +1720,10 @@ export function SalesChat({
             <Bot aria-hidden="true" className="size-4" />
           </span>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-foreground" id="sales-chat-heading">
+            <h2
+              className="text-sm font-semibold text-foreground"
+              id="sales-chat-heading"
+            >
               {copy.title}
             </h2>
             <p className="mt-0.5 text-[11px] text-slate-500">
@@ -1621,37 +1731,112 @@ export function SalesChat({
                 ? copy.demoAi
                 : aiConfigured
                   ? copy.aiConfigured
-                  : copy.aiNotConfigured} · {copy.mapCountry}{dictionary.common.labelSeparator}
+                  : copy.aiNotConfigured}{" "}
+              · {copy.mapCountry}
+              {dictionary.common.labelSeparator}
               {selectedCountryIso3 ?? copy.noSelection}
             </p>
           </div>
         </div>
-        {historyKey ? <Button className="ml-3 shrink-0 text-xs" disabled={!historyLoaded || waiting || submissionPending || validatingAttachments} onClick={startNewConversation} size="sm" type="button" variant="outline">{copy.newConversation}</Button> : null}
+        {historyKey ? (
+          <Button
+            className="ml-3 shrink-0 text-xs"
+            disabled={
+              !historyLoaded ||
+              waiting ||
+              submissionPending ||
+              validatingAttachments
+            }
+            onClick={startNewConversation}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {copy.newConversation}
+          </Button>
+        ) : null}
       </header>
 
-      {messages.at(-1)?.role === "assistant" && readConversationMetadata(messages.at(-1)?.metadata)?.conversation.state.tasks.length ? <div className="flex flex-wrap gap-2 border-b px-5 py-2 text-xs" data-testid="chat-active-tasks">
-        {(readConversationMetadata(messages.at(-1)?.metadata)?.conversation.state.tasks ?? []).map(task => {
-          const labels = { country_profile: copy.toolGetCountryProfile, regulations: copy.toolCompareRegulations,
-            market: copy.toolCompareMarkets, product_fit: copy.toolFindCompatibleProducts,
-            opportunity_score: copy.toolCalculateOpportunityScore, sales_brief: copy.toolGenerateSalesBrief,
-            knowledge: copy.toolSearchKnowledgeBase };
-          return <span className="rounded bg-muted px-2 py-1" key={task}>{labels[task]}</span>;
-        })}
-      </div> : null}
+      {messages.at(-1)?.role === "assistant" &&
+      readConversationMetadata(messages.at(-1)?.metadata)?.conversation.state
+        .tasks.length ? (
+        <div
+          className="flex flex-wrap gap-2 border-b px-5 py-2 text-xs"
+          data-testid="chat-active-tasks"
+        >
+          {(
+            readConversationMetadata(messages.at(-1)?.metadata)?.conversation
+              .state.tasks ?? []
+          ).map((task) => {
+            const labels = {
+              country_profile: copy.toolGetCountryProfile,
+              regulations: copy.toolCompareRegulations,
+              market: copy.toolCompareMarkets,
+              product_fit: copy.toolFindCompatibleProducts,
+              opportunity_score: copy.toolCalculateOpportunityScore,
+              sales_brief: copy.toolGenerateSalesBrief,
+              knowledge: copy.toolSearchKnowledgeBase,
+            };
+            return (
+              <span className="rounded bg-muted px-2 py-1" key={task}>
+                {labels[task]}
+              </span>
+            );
+          })}
+        </div>
+      ) : null}
 
-      {completedSnapshot?.messages.some(hasCompletedAnalysis) ? <SaveAnalysis
-        key={completedSnapshot.messages.at(-1)?.id}
-        defaultTitle={completedSnapshot.messages.find((message, index, all) => message.role === "user" && all[index + 1] && hasCompletedAnalysis(all[index + 1]!))?.parts.flatMap(part => part.type === "text" ? [part.text] : []).join(" ") || dictionary.analysis.savedReport}
-        disabled={waiting || submissionPending || error !== undefined || messages.at(-1)?.id !== completedSnapshot.messages.at(-1)?.id}
-        createPayload={() => ({ kind: "chat", history: { ...completedSnapshot,
-          messages: completedSnapshot.messages.map(message => { const saved = { ...message }; delete saved.metadata; return saved; }),
-        } })}
-      /> : null}
+      {completedSnapshot?.messages.some(hasCompletedAnalysis) ? (
+        <SaveAnalysis
+          key={completedSnapshot.messages.at(-1)?.id}
+          defaultTitle={
+            completedSnapshot.messages
+              .find(
+                (message, index, all) =>
+                  message.role === "user" &&
+                  all[index + 1] &&
+                  hasCompletedAnalysis(all[index + 1]!),
+              )
+              ?.parts.flatMap((part) =>
+                part.type === "text" ? [part.text] : [],
+              )
+              .join(" ") || dictionary.analysis.savedReport
+          }
+          disabled={
+            waiting ||
+            submissionPending ||
+            error !== undefined ||
+            messages.at(-1)?.id !== completedSnapshot.messages.at(-1)?.id
+          }
+          createPayload={() => ({
+            kind: "chat",
+            history: {
+              ...completedSnapshot,
+              messages: completedSnapshot.messages.map((message) => {
+                const saved = { ...message };
+                delete saved.metadata;
+                return saved;
+              }),
+            },
+          })}
+        />
+      ) : null}
 
-      {historyKey ? <p className="border-b px-5 py-2 text-[11px] leading-5 text-muted-foreground" role={historyRestored || historyUnavailable ? "status" : undefined}>
-        {historyUnavailable ? copy.historyUnavailable : historyRestored ? copy.historyRestored : copy.historyNotice}
-        {!historyUnavailable && (completedSnapshot?.omittedUserTurns ?? 0) > 0 ? ` ${copy.historyWindowed}` : null}
-      </p> : null}
+      {historyKey ? (
+        <p
+          className="border-b px-5 py-2 text-[11px] leading-5 text-muted-foreground"
+          role={historyRestored || historyUnavailable ? "status" : undefined}
+        >
+          {historyUnavailable
+            ? copy.historyUnavailable
+            : historyRestored
+              ? copy.historyRestored
+              : copy.historyNotice}
+          {!historyUnavailable && (completedSnapshot?.omittedUserTurns ?? 0) > 0
+            ? ` ${copy.historyWindowed}`
+            : null}
+        </p>
+      ) : null}
 
       <p
         aria-busy={status === "submitted" || status === "streaming"}
@@ -1685,19 +1870,31 @@ export function SalesChat({
       >
         {messages.length === 0 ? (
           <div className="mx-auto max-w-xl py-8 text-sm sm:py-12">
-            <div aria-hidden="true" className="mb-5 grid size-14 place-items-center rounded-xl border bg-card text-primary"><Bot className="size-7" /></div>
-            <h3 className="mb-3 text-lg font-semibold">{dictionary.chatPage.sidebarHeading}</h3>
+            <div
+              aria-hidden="true"
+              className="mb-5 grid size-14 place-items-center rounded-xl border bg-card text-primary"
+            >
+              <Bot className="size-7" />
+            </div>
+            <h3 className="mb-3 text-lg font-semibold">
+              {dictionary.chatPage.sidebarHeading}
+            </h3>
             <p className="text-xs leading-6 text-muted-foreground">
-              {demoMode
-                ? copy.emptyDemo
-                : copy.emptyLive}
+              {demoMode ? copy.emptyDemo : copy.emptyLive}
             </p>
             {suggestedPrompts.length > 0 ? (
               <div className="mt-5 grid gap-2">
                 {suggestedPrompts.map((prompt) => (
                   <button
                     className="rounded-md border bg-card px-4 py-3 text-left text-sm leading-5 font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={!aiConfigured || !historyLoaded || waiting || recoveryPending || submissionPending || validatingAttachments}
+                    disabled={
+                      !aiConfigured ||
+                      !historyLoaded ||
+                      waiting ||
+                      recoveryPending ||
+                      submissionPending ||
+                      validatingAttachments
+                    }
                     key={prompt}
                     onClick={() => void submitText(prompt)}
                     type="button"
@@ -1718,80 +1915,86 @@ export function SalesChat({
 
           return (
             <article
-            className={cn(
-              "rounded-md px-4 py-3 text-sm shadow-sm",
-              message.role === "user"
-                ? "ml-8 bg-primary text-primary-foreground sm:ml-24"
-                : "mr-2 border border-black/[0.06] bg-white sm:mr-12",
-            )}
-            key={message.id}
-          >
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider opacity-70">
-              {message.role === "user" ? copy.user : copy.assistant}
-            </p>
-            {message.parts.map((part, index) => {
-              if (part.type === "text") {
-                return (
-                  <div
-                    className="space-y-1"
-                    key={`${message.id}-text-${index}`}
-                  >
-                    {message.role === "assistant" ? (
-                      <p className="text-[10px] font-semibold tracking-wide text-violet-700">
-                        {copy.aiExplanation}
-                      </p>
-                    ) : null}
-                    {message.role === "assistant" ? (
-                      <AssistantMarkdown
-                        allowedExternalUrls={allowedExternalUrls}
-                        content={part.text}
-                        hiddenImage={copy.hiddenModelImage}
-                        hiddenImageWithAlt={copy.hiddenModelImageWithAlt}
-                      />
-                    ) : (
-                      <p className="whitespace-pre-wrap leading-6">
-                        {part.text}
-                      </p>
-                    )}
-                  </div>
-                );
-              }
+              className={cn(
+                "rounded-md px-4 py-3 text-sm shadow-sm",
+                message.role === "user"
+                  ? "ml-8 bg-primary text-primary-foreground sm:ml-24"
+                  : "mr-2 border border-black/[0.06] bg-white sm:mr-12",
+              )}
+              key={message.id}
+            >
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider opacity-70">
+                {message.role === "user" ? copy.user : copy.assistant}
+              </p>
+              {message.parts.map((part, index) => {
+                if (part.type === "text") {
+                  return (
+                    <div
+                      className="space-y-1"
+                      key={`${message.id}-text-${index}`}
+                    >
+                      {message.role === "assistant" ? (
+                        <p className="text-[10px] font-semibold tracking-wide text-violet-700">
+                          {copy.aiExplanation}
+                        </p>
+                      ) : null}
+                      {message.role === "assistant" ? (
+                        <AssistantMarkdown
+                          allowedExternalUrls={allowedExternalUrls}
+                          content={part.text}
+                          hiddenImage={copy.hiddenModelImage}
+                          hiddenImageWithAlt={copy.hiddenModelImageWithAlt}
+                        />
+                      ) : (
+                        <p className="whitespace-pre-wrap leading-6">
+                          {part.text}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
 
-              if (part.type === "file") {
+                if (part.type === "file") {
+                  return (
+                    <AttachmentPart
+                      key={`${message.id}-file-${index}`}
+                      part={part}
+                    />
+                  );
+                }
+
+                const releasedAttachment = parseReleasedAttachmentPart(part);
+                if (releasedAttachment) {
+                  return (
+                    <ReleasedAttachmentPart
+                      attachment={releasedAttachment}
+                      key={`${message.id}-released-file-${index}`}
+                    />
+                  );
+                }
+
+                if (part.type === "data-releasedAttachment") {
+                  return null;
+                }
+                if (part.type === "data-productCatalog") {
+                  const parsed = catalogResultSchema.safeParse(part.data);
+                  return parsed.success ? (
+                    <CatalogResults
+                      key={`${message.id}-catalog-${index}`}
+                      result={parsed.data}
+                      locale={locale}
+                    />
+                  ) : null;
+                }
+
                 return (
-                  <AttachmentPart
-                    key={`${message.id}-file-${index}`}
+                  <ToolPart
+                    countryIso2ByIso3={countryIso2ByIso3}
+                    key={`${message.id}-part-${index}`}
                     part={part}
                   />
                 );
-              }
-
-              const releasedAttachment = parseReleasedAttachmentPart(part);
-              if (releasedAttachment) {
-                return (
-                  <ReleasedAttachmentPart
-                    attachment={releasedAttachment}
-                    key={`${message.id}-released-file-${index}`}
-                  />
-                );
-              }
-
-              if (part.type === "data-releasedAttachment") {
-                return null;
-              }
-              if (part.type === "data-productCatalog") {
-                const parsed = catalogResultSchema.safeParse(part.data);
-                return parsed.success ? <CatalogResults key={`${message.id}-catalog-${index}`} result={parsed.data} locale={locale} /> : null;
-              }
-
-              return (
-                <ToolPart
-                  countryIso2ByIso3={countryIso2ByIso3}
-                  key={`${message.id}-part-${index}`}
-                  part={part}
-                />
-              );
-            })}
+              })}
             </article>
           );
         })}
@@ -1801,7 +2004,10 @@ export function SalesChat({
             aria-hidden="true"
             className="flex items-center gap-2 px-2 text-xs text-muted-foreground"
           >
-            <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+            <LoaderCircle
+              aria-hidden="true"
+              className="size-3.5 animate-spin"
+            />
             {copy.pendingTools}
           </div>
         ) : null}
@@ -1816,11 +2022,14 @@ export function SalesChat({
               <div className="space-y-2 rounded-lg border border-destructive/20 bg-background/70 p-2.5 text-foreground">
                 <p className="font-semibold">{copy.attachmentFailedBody}</p>
                 <p className="line-clamp-3 text-muted-foreground">
-                  {copy.failedQuestion}{dictionary.common.labelSeparator}{failedSubmission.text}
+                  {copy.failedQuestion}
+                  {dictionary.common.labelSeparator}
+                  {failedSubmission.text}
                 </p>
                 {failedSubmission.attachments.length > 0 ? (
                   <p className="break-words text-muted-foreground">
-                    {copy.attachment}{dictionary.common.labelSeparator}
+                    {copy.attachment}
+                    {dictionary.common.labelSeparator}
                     {failedSubmission.attachments
                       .map(({ filename }) => filename)
                       .join(locale === "en" ? ", " : "、")}
@@ -1906,11 +2115,7 @@ export function SalesChat({
               className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2 text-xs text-destructive"
               role="alert"
             >
-              {formatChatAttachmentError(
-                attachmentError,
-                dictionary,
-                locale,
-              )}
+              {formatChatAttachmentError(attachmentError, dictionary, locale)}
             </p>
           ) : null}
 
@@ -2005,9 +2210,7 @@ export function SalesChat({
                 }
               }}
               placeholder={
-                imageUploadsEnabled
-                  ? copy.placeholderImage
-                  : copy.placeholder
+                imageUploadsEnabled ? copy.placeholderImage : copy.placeholder
               }
               readOnly={recoveryPending || submissionPending}
               rows={2}

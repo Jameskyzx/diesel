@@ -1,11 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import {
-  lstat,
-  readFile,
-  readdir,
-  writeFile,
-} from "node:fs/promises";
+import { lstat, readFile, readdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const MANIFEST_FORMAT = "diesel-release-input-v2";
@@ -40,11 +35,7 @@ function fail(message) {
 }
 
 function assertExactKeys(value, keys, label) {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    Array.isArray(value)
-  ) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
     fail(`${label} must be an object.`);
   }
   const actual = Object.keys(value).sort();
@@ -61,11 +52,15 @@ function assertCommit(value, label) {
 }
 
 function isSafeRelativePath(path) {
-  return path.length > 0 &&
+  return (
+    path.length > 0 &&
     !path.startsWith("/") &&
     !path.includes("\\") &&
     !unsafePathCharacterPattern.test(path) &&
-    !path.split("/").some((segment) => segment === "" || segment === "." || segment === "..");
+    !path
+      .split("/")
+      .some((segment) => segment === "" || segment === "." || segment === "..")
+  );
 }
 
 function isForbiddenReleasePath(path) {
@@ -111,31 +106,35 @@ function computeManifestDigest(commit, files) {
 }
 
 function runGit(args, options = {}) {
-  const result = spawnSync("git", [
-    "-c",
-    "core.fsmonitor=false",
-    "-c",
-    "core.hooksPath=/dev/null",
-    "-c",
-    "diff.external=",
-    ...args,
-  ], {
-    cwd: process.cwd(),
-    encoding: options.encoding ?? "utf8",
-    env: {
-      HOME: "/nonexistent",
-      LANG: "C",
-      LC_ALL: "C",
-      PATH: process.env.PATH,
-      GIT_CONFIG_GLOBAL: "/dev/null",
-      GIT_CONFIG_NOSYSTEM: "1",
-      GIT_NO_REPLACE_OBJECTS: "1",
-      GIT_OPTIONAL_LOCKS: "0",
-      GIT_TERMINAL_PROMPT: "0",
-      NO_COLOR: "1",
+  const result = spawnSync(
+    "git",
+    [
+      "-c",
+      "core.fsmonitor=false",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "-c",
+      "diff.external=",
+      ...args,
+    ],
+    {
+      cwd: process.cwd(),
+      encoding: options.encoding ?? "utf8",
+      env: {
+        HOME: "/nonexistent",
+        LANG: "C",
+        LC_ALL: "C",
+        PATH: process.env.PATH,
+        GIT_CONFIG_GLOBAL: "/dev/null",
+        GIT_CONFIG_NOSYSTEM: "1",
+        GIT_NO_REPLACE_OBJECTS: "1",
+        GIT_OPTIONAL_LOCKS: "0",
+        GIT_TERMINAL_PROMPT: "0",
+        NO_COLOR: "1",
+      },
+      maxBuffer: 64 * 1024 * 1024,
     },
-    maxBuffer: 64 * 1024 * 1024,
-  });
+  );
   if (result.error || result.status !== 0) {
     fail(`git ${args.join(" ")} failed while creating the release manifest.`);
   }
@@ -154,10 +153,9 @@ async function readRegularFile(path, label) {
 }
 
 async function captureTrackedFiles(commit) {
-  const output = runGit(
-    ["ls-tree", "-r", "-z", commit],
-    { encoding: "buffer" },
-  );
+  const output = runGit(["ls-tree", "-r", "-z", commit], {
+    encoding: "buffer",
+  });
   const entries = output
     .toString("utf8")
     .split("\0")
@@ -165,7 +163,9 @@ async function captureTrackedFiles(commit) {
     .map((record) => {
       const match = /^(100644|100755) blob ([0-9a-f]{40})\t(.+)$/u.exec(record);
       if (!match?.[2] || !match[3]) {
-        fail("The release commit contains a symlink, submodule, or malformed tree entry.");
+        fail(
+          "The release commit contains a symlink, submodule, or malformed tree entry.",
+        );
       }
       return { mode: match[1], objectId: match[2], path: match[3] };
     })
@@ -186,10 +186,9 @@ async function captureTrackedFiles(commit) {
     ) {
       fail(`Tracked release input has an unsafe or reserved path: ${path}.`);
     }
-    const content = runGit(
-      ["show", `${commit}:${path}`],
-      { encoding: "buffer" },
-    );
+    const content = runGit(["show", `${commit}:${path}`], {
+      encoding: "buffer",
+    });
     const computedObjectId = createHash("sha1")
       .update(`blob ${content.byteLength}\0`, "utf8")
       .update(content)
@@ -220,22 +219,14 @@ function assertCleanTrackedWorktree() {
 
 async function createManifest(expectedCommit, outputPath) {
   assertCommit(expectedCommit, "Expected release commit");
-  const headBefore = runGit([
-    "rev-parse",
-    "--verify",
-    "HEAD^{commit}",
-  ]).trim();
+  const headBefore = runGit(["rev-parse", "--verify", "HEAD^{commit}"]).trim();
   if (headBefore !== expectedCommit) {
     fail("Expected release commit does not match the current Git HEAD.");
   }
   assertCleanTrackedWorktree();
   const files = await captureTrackedFiles(expectedCommit);
   assertCleanTrackedWorktree();
-  const headAfter = runGit([
-    "rev-parse",
-    "--verify",
-    "HEAD^{commit}",
-  ]).trim();
+  const headAfter = runGit(["rev-parse", "--verify", "HEAD^{commit}"]).trim();
   if (headAfter !== headBefore) {
     fail("Git HEAD changed while the release manifest was being created.");
   }
@@ -270,7 +261,10 @@ function parseManifest(contents) {
     fail("Release input manifest has an unsupported format.");
   }
   assertCommit(parsed.commit, "Manifest commit");
-  if (typeof parsed.inputDigest !== "string" || !sha256Pattern.test(parsed.inputDigest)) {
+  if (
+    typeof parsed.inputDigest !== "string" ||
+    !sha256Pattern.test(parsed.inputDigest)
+  ) {
     fail("Manifest inputDigest must be a lowercase SHA-256 digest.");
   }
   if (!Array.isArray(parsed.files) || parsed.files.length === 0) {
@@ -312,7 +306,8 @@ function parseManifest(contents) {
   const sortedPaths = files.map(({ path }) => path).toSorted(comparePaths);
   if (
     new Set(sortedPaths).size !== sortedPaths.length ||
-    JSON.stringify(files.map(({ path }) => path)) !== JSON.stringify(sortedPaths)
+    JSON.stringify(files.map(({ path }) => path)) !==
+      JSON.stringify(sortedPaths)
   ) {
     fail("Manifest file paths must be unique and bytewise sorted.");
   }
@@ -329,10 +324,7 @@ async function listBuildInputFiles(directory, prefix = "") {
   entries.sort((left, right) => comparePaths(left.name, right.name));
   for (const entry of entries) {
     const path = prefix.length > 0 ? `${prefix}/${entry.name}` : entry.name;
-    if (
-      prefix.length === 0 &&
-      excludedBuildDirectories.has(entry.name)
-    ) {
+    if (prefix.length === 0 && excludedBuildDirectories.has(entry.name)) {
       if (!entry.isDirectory() || entry.isSymbolicLink()) {
         fail(`${entry.name} must be a regular build-output directory.`);
       }
@@ -348,7 +340,9 @@ async function listBuildInputFiles(directory, prefix = "") {
       fail(`Build input contains an unsafe path or symlink: ${path}.`);
     }
     if (entry.isDirectory()) {
-      paths.push(...await listBuildInputFiles(resolve(directory, entry.name), path));
+      paths.push(
+        ...(await listBuildInputFiles(resolve(directory, entry.name), path)),
+      );
     } else if (entry.isFile()) {
       paths.push(path);
     } else {
@@ -362,7 +356,9 @@ async function verifyManifest(expectedCommit, manifestPath) {
   assertCommit(expectedCommit, "Expected release commit");
   const absoluteManifestPath = resolve(manifestPath);
   if (absoluteManifestPath !== resolve(process.cwd(), MANIFEST_NAME)) {
-    fail(`Release input manifest must be named ${MANIFEST_NAME} at the build root.`);
+    fail(
+      `Release input manifest must be named ${MANIFEST_NAME} at the build root.`,
+    );
   }
   const metadata = await lstat(absoluteManifestPath).catch(() => null);
   if (
@@ -370,13 +366,17 @@ async function verifyManifest(expectedCommit, manifestPath) {
     metadata.isSymbolicLink() ||
     metadata.size > MAX_MANIFEST_BYTES
   ) {
-    fail("Release input manifest must be a bounded regular file, not a symlink.");
+    fail(
+      "Release input manifest must be a bounded regular file, not a symlink.",
+    );
   }
   const manifest = parseManifest(await readFile(absoluteManifestPath, "utf8"));
   if (manifest.commit !== expectedCommit) {
     fail("Release input manifest commit does not match BUILD_RELEASE_ID.");
   }
-  const actualPaths = (await listBuildInputFiles(process.cwd())).sort(comparePaths);
+  const actualPaths = (await listBuildInputFiles(process.cwd())).sort(
+    comparePaths,
+  );
   const expectedPaths = manifest.files.map(({ path }) => path);
   if (JSON.stringify(actualPaths) !== JSON.stringify(expectedPaths)) {
     fail("Build input paths do not exactly match the release input manifest.");
@@ -393,7 +393,9 @@ async function verifyManifest(expectedCommit, manifestPath) {
       content.byteLength !== file.size ||
       contentSha256(content) !== file.sha256
     ) {
-      fail(`Build input content drifted from the release manifest: ${file.path}.`);
+      fail(
+        `Build input content drifted from the release manifest: ${file.path}.`,
+      );
     }
   }
   process.stdout.write(`${manifest.inputDigest}\n`);

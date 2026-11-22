@@ -125,7 +125,9 @@ describe("invalid unpublished product maintenance", () => {
 
     expect(manifest.products).toHaveLength(8);
     expect(manifest.products[0]).toMatchObject({
-      certifications: [expect.objectContaining({ certificateNumber: "CERT-1" })],
+      certifications: [
+        expect.objectContaining({ certificateNumber: "CERT-1" }),
+      ],
       isDemo: false,
       modelCode: "WP-DEMO-1",
       powerMaxKw: "101",
@@ -142,19 +144,26 @@ describe("invalid unpublished product maintenance", () => {
       client,
       expectedManifest: manifest,
       now: new Date("2026-08-15T01:00:00Z"),
-      reason: "Archive unsigned invalid production rows after exact dry-run review.",
+      reason:
+        "Archive unsigned invalid production rows after exact dry-run review.",
     });
 
     expect(result).toEqual({ archivedCertifications: 1, archivedProducts: 8 });
-    const [counts] = (await database.query<{
-      activeCertifications: number;
-      activeProducts: number;
-      audits: number;
-    }>(`select
+    const [counts] = (
+      await database.query<{
+        activeCertifications: number;
+        activeProducts: number;
+        audits: number;
+      }>(`select
       (select count(*)::int from products where archived_at is null) as "activeProducts",
       (select count(*)::int from product_certifications where archived_at is null) as "activeCertifications",
-      (select count(*)::int from data_change_logs) as "audits"`)).rows;
-    expect(counts).toEqual({ activeCertifications: 0, activeProducts: 0, audits: 9 });
+      (select count(*)::int from data_change_logs) as "audits"`)
+    ).rows;
+    expect(counts).toEqual({
+      activeCertifications: 0,
+      activeProducts: 0,
+      audits: 9,
+    });
   });
 
   it("rolls back when the live rows drift from the reviewed manifest", async () => {
@@ -165,35 +174,35 @@ describe("invalid unpublished product maintenance", () => {
       [sourceId],
     );
 
-    await expect(applyInvalidProductManifest({
-      actorEmail: "operator@example.com",
-      client,
-      expectedManifest: manifest,
-      reason: "Expected to fail.",
-    })).rejects.toThrow(/do not exactly match/);
-    const [counts] = (await database.query<{ active: number; audits: number }>(
-      `select
+    await expect(
+      applyInvalidProductManifest({
+        actorEmail: "operator@example.com",
+        client,
+        expectedManifest: manifest,
+        reason: "Expected to fail.",
+      }),
+    ).rejects.toThrow(/do not exactly match/);
+    const [counts] = (
+      await database.query<{ active: number; audits: number }>(
+        `select
          (select count(*)::int from products where archived_at is null) as active,
          (select count(*)::int from data_change_logs) as audits`,
-    )).rows;
+      )
+    ).rows;
     expect(counts).toEqual({ active: 8, audits: 0 });
   });
 
-  it(
-    "fails closed on count or manifest hash drift",
-    async () => {
-      const { client } = await createDatabase(7);
-      await expect(readInvalidProductManifest(client)).rejects.toThrow(
-        /Expected exactly 8/,
-      );
+  it("fails closed on count or manifest hash drift", async () => {
+    const { client } = await createDatabase(7);
+    await expect(readInvalidProductManifest(client)).rejects.toThrow(
+      /Expected exactly 8/,
+    );
 
-      const valid = await readInvalidProductManifest(
-        (await createDatabase()).client,
-      );
-      const changed = structuredClone(valid);
-      changed.products[0]!.modelCode = "CHANGED";
-      expect(() => assertValidInvalidProductManifest(changed)).toThrow(/SHA256/);
-    },
-    15_000,
-  );
+    const valid = await readInvalidProductManifest(
+      (await createDatabase()).client,
+    );
+    const changed = structuredClone(valid);
+    changed.products[0]!.modelCode = "CHANGED";
+    expect(() => assertValidInvalidProductManifest(changed)).toThrow(/SHA256/);
+  }, 15_000);
 });

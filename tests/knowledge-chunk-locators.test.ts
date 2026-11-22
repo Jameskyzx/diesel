@@ -34,16 +34,19 @@ const cases: {
   {
     name: "carries a heading on an otherwise empty page into its body",
     text: "# Scope\fBody.",
-    expected: [
-      { body: "Body.", headings: ["Scope"], page: 2, paragraph: 1 },
-    ],
+    expected: [{ body: "Body.", headings: ["Scope"], page: 2, paragraph: 1 }],
   },
   {
     name: "retains the parent of a child heading introduced after a page break",
     text: "# Scope\nFirst.\f## Requirements\nSecond.",
     expected: [
       { body: "First.", headings: ["Scope"], page: 1, paragraph: 1 },
-      { body: "Second.", headings: ["Scope", "Requirements"], page: 2, paragraph: 1 },
+      {
+        body: "Second.",
+        headings: ["Scope", "Requirements"],
+        page: 2,
+        paragraph: 1,
+      },
     ],
   },
   {
@@ -75,8 +78,18 @@ const cases: {
     name: "unwinds skipped child levels while retaining only real ancestors",
     text: "# 范围\r\n## 限值\r\n###### 细则\r\n甲。\r\n### 条件\r\n乙。\r\n# 附录\r\n丙。",
     expected: [
-      { body: "甲。", headings: ["范围", "限值", "细则"], page: 1, paragraph: 1 },
-      { body: "乙。", headings: ["范围", "限值", "条件"], page: 1, paragraph: 2 },
+      {
+        body: "甲。",
+        headings: ["范围", "限值", "细则"],
+        page: 1,
+        paragraph: 1,
+      },
+      {
+        body: "乙。",
+        headings: ["范围", "限值", "条件"],
+        page: 1,
+        paragraph: 2,
+      },
       { body: "丙。", headings: ["附录"], page: 1, paragraph: 3 },
     ],
   },
@@ -87,20 +100,22 @@ describe("knowledge chunk source locators", () => {
     const title = "DEMO ONLY — Locator fixture";
     const chunks = chunkStructuredText(title, text);
 
-    expect(chunks).toEqual(expected.map((chunk, chunkIndex) => {
-      const headingPath = [title, ...chunk.headings];
-      const heading = headingPath.join(" > ");
-      const content = `${heading}\n${chunk.body}`;
-      return {
-        chunkIndex,
-        content,
-        headingPath,
-        pageFrom: chunk.page,
-        pageTo: chunk.page,
-        sectionLocator: `${heading} · paragraph ${chunk.paragraph}`,
-        tokenCount: tokenizeKnowledgeText(content).length,
-      };
-    }));
+    expect(chunks).toEqual(
+      expected.map((chunk, chunkIndex) => {
+        const headingPath = [title, ...chunk.headings];
+        const heading = headingPath.join(" > ");
+        const content = `${heading}\n${chunk.body}`;
+        return {
+          chunkIndex,
+          content,
+          headingPath,
+          pageFrom: chunk.page,
+          pageTo: chunk.page,
+          sectionLocator: `${heading} · paragraph ${chunk.paragraph}`,
+          tokenCount: tokenizeKnowledgeText(content).length,
+        };
+      }),
+    );
     expect(chunkStructuredText(title, text)).toEqual(chunks);
   });
 });

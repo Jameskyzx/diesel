@@ -51,16 +51,16 @@ export function createNextBuildSignalController(): NextBuildSignalController {
   };
 }
 
-export async function runNextBuildWithEnvironmentGuard(input: Readonly<{
-  nextEnvironmentPath?: string;
-  runner: NextBuildRunner;
-}>): Promise<number> {
-  const guard = await createNextEnvironmentFileGuard(
-    {
-      allowedGeneratedRouteImports: ["./.next/types/routes.d.ts"],
-      path: input.nextEnvironmentPath,
-    },
-  );
+export async function runNextBuildWithEnvironmentGuard(
+  input: Readonly<{
+    nextEnvironmentPath?: string;
+    runner: NextBuildRunner;
+  }>,
+): Promise<number> {
+  const guard = await createNextEnvironmentFileGuard({
+    allowedGeneratedRouteImports: ["./.next/types/routes.d.ts"],
+    path: input.nextEnvironmentPath,
+  });
   let exitCode: number;
   try {
     exitCode = await input.runner();
@@ -84,15 +84,11 @@ function spawnNextBuild(
   const require = createRequire(import.meta.url);
   const nextCli = require.resolve("next/dist/bin/next");
   return new Promise((resolveExitCode, reject) => {
-    const child = spawn(
-      process.execPath,
-      [nextCli, "build", "--webpack"],
-      {
-        cwd: process.cwd(),
-        env: createNextBuildChildEnvironment(process.env),
-        stdio: "inherit",
-      },
-    );
+    const child = spawn(process.execPath, [nextCli, "build", "--webpack"], {
+      cwd: process.cwd(),
+      env: createNextBuildChildEnvironment(process.env),
+      stdio: "inherit",
+    });
     signalController.attachChild(child);
     let settled = false;
     const childErrors: unknown[] = [];
@@ -118,10 +114,12 @@ function spawnNextBuild(
         return;
       }
       if (terminalErrors.length > 1) {
-        reject(new AggregateError(
-          terminalErrors,
-          "Next.js build child failed and reported multiple terminal errors.",
-        ));
+        reject(
+          new AggregateError(
+            terminalErrors,
+            "Next.js build child failed and reported multiple terminal errors.",
+          ),
+        );
         return;
       }
       if (code === null) {

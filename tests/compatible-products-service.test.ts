@@ -60,9 +60,7 @@ describe("compatible products service", () => {
     });
     serviceMocks.evaluateProductFit.mockImplementation(
       ({ productModelCode }: { productModelCode: string }) =>
-        productModelCode === "MODEL-A"
-          ? Promise.reject(firstError)
-          : sibling,
+        productModelCode === "MODEL-A" ? Promise.reject(firstError) : sibling,
     );
 
     let settled = false;

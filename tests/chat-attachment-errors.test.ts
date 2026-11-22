@@ -78,7 +78,8 @@ const formattingCases = {
     descriptor: { kind: "image_model_unavailable" },
     expected: {
       en: "The server has no vision model configured. Upload PDF, TXT, Markdown, or CSV, or ask an administrator to enable image analysis.",
-      "zh-CN": "当前服务端未配置视觉模型；请上传 PDF、TXT、Markdown 或 CSV，或联系管理员启用图片分析。",
+      "zh-CN":
+        "当前服务端未配置视觉模型；请上传 PDF、TXT、Markdown 或 CSV，或联系管理员启用图片分析。",
     },
   },
   image_read_failed: {
@@ -125,7 +126,8 @@ const formattingCases = {
     },
     expected: {
       en: "<img onerror=alert(1)>{name}.exe has an unsupported format. Choose PNG, JPEG, WebP, PDF, TXT, Markdown, or CSV.",
-      "zh-CN": "<img onerror=alert(1)>{name}.exe 的格式不受支持。请选择 PNG、JPEG、WebP、PDF、TXT、Markdown 或 CSV。",
+      "zh-CN":
+        "<img onerror=alert(1)>{name}.exe 的格式不受支持。请选择 PNG、JPEG、WebP、PDF、TXT、Markdown 或 CSV。",
     },
   },
 } satisfies AttachmentFormattingCaseByKind;
@@ -149,11 +151,7 @@ describe("chat attachment error descriptors", () => {
 
   it("keeps filename template markers inert while localizing numeric limits", () => {
     const descriptor = formattingCases.image_invalid.descriptor;
-    const englishMessage = formatChatAttachmentError(
-      descriptor,
-      english,
-      "en",
-    );
+    const englishMessage = formatChatAttachmentError(descriptor, english, "en");
     const chineseMessage = formatChatAttachmentError(
       descriptor,
       chinese,
@@ -194,8 +192,9 @@ describe("chat attachment error descriptors", () => {
 describe("chat attachment validation", () => {
   it.each([
     {
-      attachments: Array.from({ length: MAX_CHAT_ATTACHMENTS + 1 }, (_, index) =>
-        attachment(`report-${index}.pdf`, 1),
+      attachments: Array.from(
+        { length: MAX_CHAT_ATTACHMENTS + 1 },
+        (_, index) => attachment(`report-${index}.pdf`, 1),
       ),
       expected: {
         kind: "too_many_attachments",
@@ -217,9 +216,7 @@ describe("chat attachment validation", () => {
       name: "empty file",
     },
     {
-      attachments: [
-        attachment("oversize.pdf", MAX_CHAT_ATTACHMENT_BYTES + 1),
-      ],
+      attachments: [attachment("oversize.pdf", MAX_CHAT_ATTACHMENT_BYTES + 1)],
       expected: {
         kind: "file_too_large",
         maxBytes: MAX_CHAT_ATTACHMENT_BYTES,

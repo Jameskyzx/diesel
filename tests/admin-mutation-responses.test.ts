@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 const mocks = vi.hoisted(() => ({
   archiveGovernedEntity: vi.fn(),
@@ -9,9 +17,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/server/services/governance-service", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("@/server/services/governance-service")
-  >();
+  const actual =
+    await importOriginal<
+      typeof import("@/server/services/governance-service")
+    >();
   return { ...actual, ...mocks };
 });
 
@@ -154,12 +163,15 @@ describe("admin mutation response minimization", () => {
         ),
       name: "entity archival",
     },
-  ])("returns an exact DTO for $name", async ({ expectedBody, expectedStatus, invoke }) => {
-    const response = await invoke();
-    const responseBody = await response.text();
+  ])(
+    "returns an exact DTO for $name",
+    async ({ expectedBody, expectedStatus, invoke }) => {
+      const response = await invoke();
+      const responseBody = await response.text();
 
-    expect(response.status).toBe(expectedStatus);
-    expect(JSON.parse(responseBody)).toEqual(expectedBody);
-    expect(responseBody).not.toContain("PRIVATE_CANARY");
-  });
+      expect(response.status).toBe(expectedStatus);
+      expect(JSON.parse(responseBody)).toEqual(expectedBody);
+      expect(responseBody).not.toContain("PRIVATE_CANARY");
+    },
+  );
 });

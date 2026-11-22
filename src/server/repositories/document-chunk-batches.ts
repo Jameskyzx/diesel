@@ -15,10 +15,16 @@ export function* documentChunkInsertBatches(
   if (chunks.length === 0) {
     throw new Error("Cannot insert an empty document chunk set.");
   }
-  for (let offset = 0; offset < chunks.length; offset += documentChunkInsertBatchSize) {
-    yield chunks.slice(offset, offset + documentChunkInsertBatchSize).map((chunk) => ({
-      ...chunk,
-      documentId,
-    }));
+  for (
+    let offset = 0;
+    offset < chunks.length;
+    offset += documentChunkInsertBatchSize
+  ) {
+    yield chunks
+      .slice(offset, offset + documentChunkInsertBatchSize)
+      .map((chunk) => ({
+        ...chunk,
+        documentId,
+      }));
   }
 }

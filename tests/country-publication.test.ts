@@ -15,9 +15,12 @@ describe("public country-data classification", () => {
     [{ dataCoverageStatus: "demo", isDemo: false }, true],
     [{ dataCoverageStatus: "covered", isDemo: true }, true],
     [{ dataCoverageStatus: "covered", isDemo: false }, false],
-  ])("classifies map summaries without trusting only one flag", (input, expected) => {
-    expect(isDemoCountrySummary(input)).toBe(expected);
-  });
+  ])(
+    "classifies map summaries without trusting only one flag",
+    (input, expected) => {
+      expect(isDemoCountrySummary(input)).toBe(expected);
+    },
+  );
 
   it("treats a Demo country source as a Demo profile", () => {
     expect(
@@ -57,15 +60,19 @@ describe("public country-data classification", () => {
   });
 
   it.each<
-    [
-      string,
-      (regulation: Parameters<typeof isDemoRegulation>[0]) => void,
-    ]
+    [string, (regulation: Parameters<typeof isDemoRegulation>[0]) => void]
   >([
-    ["regulation", (regulation) => { regulation.isDemo = true; }],
+    [
+      "regulation",
+      (regulation) => {
+        regulation.isDemo = true;
+      },
+    ],
     [
       "regulation source",
-      (regulation) => { regulation.source.isDemo = true; },
+      (regulation) => {
+        regulation.source.isDemo = true;
+      },
     ],
     [
       "jurisdiction",
@@ -91,25 +98,30 @@ describe("public country-data classification", () => {
         regulation.applicability.membershipSourceIsDemo = true;
       },
     ],
-  ])("rejects a regulation with a Demo-classified %s", (_label, classifyAsDemo) => {
-    const regulation = {
-      applicability: {
-        jurisdictionIsDemo: false,
-        jurisdictionSourceIsDemo: false,
-        membershipIsDemo: false,
-        membershipSourceIsDemo: false,
-      },
-      isDemo: false,
-      source: { isDemo: false },
-    };
-    classifyAsDemo(regulation);
+  ])(
+    "rejects a regulation with a Demo-classified %s",
+    (_label, classifyAsDemo) => {
+      const regulation = {
+        applicability: {
+          jurisdictionIsDemo: false,
+          jurisdictionSourceIsDemo: false,
+          membershipIsDemo: false,
+          membershipSourceIsDemo: false,
+        },
+        isDemo: false,
+        source: { isDemo: false },
+      };
+      classifyAsDemo(regulation);
 
-    expect(isDemoRegulation(regulation)).toBe(true);
-    expect(isDemoRegulationComparisonRow({
-      ...regulation,
-      limit: { isDemo: false, sourceIsDemo: false },
-    })).toBe(true);
-  });
+      expect(isDemoRegulation(regulation)).toBe(true);
+      expect(
+        isDemoRegulationComparisonRow({
+          ...regulation,
+          limit: { isDemo: false, sourceIsDemo: false },
+        }),
+      ).toBe(true);
+    },
+  );
 
   it("keeps a regulation whose complete evidence chain is non-Demo", () => {
     expect(
@@ -140,16 +152,18 @@ describe("public country-data classification", () => {
     [{ isDemo: true, sourceIsDemo: true }, true],
     [{ isDemo: false, sourceIsDemo: false }, false],
   ])("classifies comparison limits and their sources", (limit, expected) => {
-    expect(isDemoRegulationComparisonRow({
-      applicability: {
-        jurisdictionIsDemo: false,
-        jurisdictionSourceIsDemo: false,
-        membershipIsDemo: false,
-        membershipSourceIsDemo: false,
-      },
-      isDemo: false,
-      source: { isDemo: false },
-      limit,
-    })).toBe(expected);
+    expect(
+      isDemoRegulationComparisonRow({
+        applicability: {
+          jurisdictionIsDemo: false,
+          jurisdictionSourceIsDemo: false,
+          membershipIsDemo: false,
+          membershipSourceIsDemo: false,
+        },
+        isDemo: false,
+        source: { isDemo: false },
+        limit,
+      }),
+    ).toBe(expected);
   });
 });

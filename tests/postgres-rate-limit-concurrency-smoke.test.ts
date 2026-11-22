@@ -114,10 +114,7 @@ describe("PostgreSQL AI chat rate-limit concurrency smoke", () => {
   it("runs inside the required PostgreSQL migration job", async () => {
     const [packageSource, workflowSource] = await Promise.all([
       readFile(new URL("../package.json", import.meta.url), "utf8"),
-      readFile(
-        new URL("../.github/workflows/ci.yml", import.meta.url),
-        "utf8",
-      ),
+      readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8"),
     ]);
 
     expect(packageSource).toContain(
@@ -135,31 +132,46 @@ describe("PostgreSQL AI chat rate-limit concurrency smoke", () => {
     "postgresql://postgres:postgres@127.0.0.1:5432/diesel_ci",
     "postgres://postgres:postgres@localhost:5432/diesel_ci",
     "postgresql://postgres:postgres@[::1]:5432/diesel_ci",
-  ])("accepts only the opted-in dedicated loopback database: %s", (databaseUrl) => {
-    expect(
-      validatePostgresRateLimitConcurrencySmokeTarget({
-        DATABASE_URL: databaseUrl,
-        ...optIn,
-      }),
-    ).toBeInstanceOf(URL);
-  });
+  ])(
+    "accepts only the opted-in dedicated loopback database: %s",
+    (databaseUrl) => {
+      expect(
+        validatePostgresRateLimitConcurrencySmokeTarget({
+          DATABASE_URL: databaseUrl,
+          ...optIn,
+        }),
+      ).toBeInstanceOf(URL);
+    },
+  );
 
   it.each([
-    ["missing opt-in", {
-      DATABASE_URL: "postgresql://postgres@127.0.0.1/diesel_ci",
-    }],
-    ["remote host", {
-      DATABASE_URL: "postgresql://postgres@example.test/diesel_ci",
-      ...optIn,
-    }],
-    ["wrong database", {
-      DATABASE_URL: "postgresql://postgres@127.0.0.1/postgres",
-      ...optIn,
-    }],
-    ["lookalike database", {
-      DATABASE_URL: "postgresql://postgres@127.0.0.1/diesel_ci_backup",
-      ...optIn,
-    }],
+    [
+      "missing opt-in",
+      {
+        DATABASE_URL: "postgresql://postgres@127.0.0.1/diesel_ci",
+      },
+    ],
+    [
+      "remote host",
+      {
+        DATABASE_URL: "postgresql://postgres@example.test/diesel_ci",
+        ...optIn,
+      },
+    ],
+    [
+      "wrong database",
+      {
+        DATABASE_URL: "postgresql://postgres@127.0.0.1/postgres",
+        ...optIn,
+      },
+    ],
+    [
+      "lookalike database",
+      {
+        DATABASE_URL: "postgresql://postgres@127.0.0.1/diesel_ci_backup",
+        ...optIn,
+      },
+    ],
   ])("rejects $0 before opening a connection", (_label, environment) => {
     expect(() =>
       validatePostgresRateLimitConcurrencySmokeTarget(environment),
@@ -178,9 +190,7 @@ describe("PostgreSQL AI chat rate-limit concurrency smoke", () => {
       validatePostgresRateLimitScenarioReadback({
         ...valid,
         rows: valid.rows.map((row) =>
-          row.scope === valid.globalScope
-            ? { ...row, requestCount: 3 }
-            : row,
+          row.scope === valid.globalScope ? { ...row, requestCount: 3 } : row,
         ),
       }),
     ).toThrow();

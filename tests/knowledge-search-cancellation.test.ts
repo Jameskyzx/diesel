@@ -18,7 +18,10 @@ vi.mock("@/server/repositories/knowledge-repository", () => ({
   createKnowledgeRepository: knowledgeMocks.createKnowledgeRepository,
 }));
 
-import { hybridSearchKnowledge, knowledgeQueryConstraintsMatch } from "@/server/services/knowledge-service";
+import {
+  hybridSearchKnowledge,
+  knowledgeQueryConstraintsMatch,
+} from "@/server/services/knowledge-service";
 
 const searchInput = {
   applicationScope: "non-road",
@@ -36,7 +39,8 @@ describe("knowledge search cancellation", () => {
     knowledgeMocks.knowledgeQueryConstraintsMatch.mockReset();
     knowledgeMocks.createKnowledgeRepository.mockReturnValue({
       searchCandidates: knowledgeMocks.searchCandidates,
-      knowledgeQueryConstraintsMatch: knowledgeMocks.knowledgeQueryConstraintsMatch,
+      knowledgeQueryConstraintsMatch:
+        knowledgeMocks.knowledgeQueryConstraintsMatch,
     });
     knowledgeMocks.searchCandidates.mockResolvedValue([]);
   });
@@ -46,24 +50,50 @@ describe("knowledge search cancellation", () => {
     const controller = new AbortController();
     knowledgeMocks.createKnowledgeRepository.mockImplementationOnce(() => {
       controller.abort();
-      return { knowledgeQueryConstraintsMatch: knowledgeMocks.knowledgeQueryConstraintsMatch };
+      return {
+        knowledgeQueryConstraintsMatch:
+          knowledgeMocks.knowledgeQueryConstraintsMatch,
+      };
     });
-    await expect(knowledgeQueryConstraintsMatch(input, { signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
-    expect(knowledgeMocks.knowledgeQueryConstraintsMatch).not.toHaveBeenCalled();
+    await expect(
+      knowledgeQueryConstraintsMatch(input, { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(
+      knowledgeMocks.knowledgeQueryConstraintsMatch,
+    ).not.toHaveBeenCalled();
     const duringRead = new AbortController();
-    knowledgeMocks.knowledgeQueryConstraintsMatch.mockImplementationOnce(async () => {
-      duringRead.abort(); return true;
-    });
-    await expect(knowledgeQueryConstraintsMatch(input, { signal: duringRead.signal })).rejects.toMatchObject({ name: "AbortError" });
-    expect(knowledgeMocks.knowledgeQueryConstraintsMatch).toHaveBeenCalledWith(input.expected, input.actual, { signal: duringRead.signal });
+    knowledgeMocks.knowledgeQueryConstraintsMatch.mockImplementationOnce(
+      async () => {
+        duringRead.abort();
+        return true;
+      },
+    );
+    await expect(
+      knowledgeQueryConstraintsMatch(input, { signal: duringRead.signal }),
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(knowledgeMocks.knowledgeQueryConstraintsMatch).toHaveBeenCalledWith(
+      input.expected,
+      input.actual,
+      { signal: duringRead.signal },
+    );
   });
 
   it("does not open the repository for unconstrained text, or swallow its failure", async () => {
-    expect(await knowledgeQueryConstraintsMatch({ expected: "non-road source evidence", actual: "非道路来源" })).toBe(true);
+    expect(
+      await knowledgeQueryConstraintsMatch({
+        expected: "non-road source evidence",
+        actual: "非道路来源",
+      }),
+    ).toBe(true);
     expect(knowledgeMocks.createKnowledgeRepository).not.toHaveBeenCalled();
     const error = new Error("native parse failed");
     knowledgeMocks.knowledgeQueryConstraintsMatch.mockRejectedValueOnce(error);
-    await expect(knowledgeQueryConstraintsMatch({ expected: "source -fictional", actual: "source fictional" })).rejects.toBe(error);
+    await expect(
+      knowledgeQueryConstraintsMatch({
+        expected: "source -fictional",
+        actual: "source fictional",
+      }),
+    ).rejects.toBe(error);
   });
 
   it("does not start the repository search when cancellation arrives during initialization", async () => {

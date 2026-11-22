@@ -23,7 +23,10 @@ import {
 import Link from "next/link";
 import { z } from "zod";
 
-import { FeedbackCapturePanel, type AdminJsonRequest } from "@/components/admin/feedback-capture-panel";
+import {
+  FeedbackCapturePanel,
+  type AdminJsonRequest,
+} from "@/components/admin/feedback-capture-panel";
 import { Button } from "@/components/ui/button";
 import {
   appendDocumentMetadata,
@@ -346,19 +349,22 @@ function adminActionFetch(
   init: RequestInit,
 ): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set(
-    ADMIN_EXPECTED_PRINCIPAL_EMAIL_REQUEST_HEADER,
-    principal.email,
-  );
-  headers.set(
-    ADMIN_EXPECTED_PRINCIPAL_ROLE_REQUEST_HEADER,
-    principal.role,
-  );
+  headers.set(ADMIN_EXPECTED_PRINCIPAL_EMAIL_REQUEST_HEADER, principal.email);
+  headers.set(ADMIN_EXPECTED_PRINCIPAL_ROLE_REQUEST_HEADER, principal.role);
   return fetch(input, { ...init, headers });
 }
 
-const adminJsonRequest: AdminJsonRequest = async (principal, url, init, schema) =>
-  responseJsonAs(await adminActionFetch(principal, url, init), schema, principal);
+const adminJsonRequest: AdminJsonRequest = async (
+  principal,
+  url,
+  init,
+  schema,
+) =>
+  responseJsonAs(
+    await adminActionFetch(principal, url, init),
+    schema,
+    principal,
+  );
 
 class AdminResponseError extends Error {
   readonly code: string | null;
@@ -445,7 +451,10 @@ function FieldLabel({
   htmlFor: string;
 }) {
   return (
-    <label className="text-xs font-semibold text-muted-foreground" htmlFor={htmlFor}>
+    <label
+      className="text-xs font-semibold text-muted-foreground"
+      htmlFor={htmlFor}
+    >
       {children}
     </label>
   );
@@ -509,7 +518,6 @@ function payloadDiff(
     }));
 }
 
-
 export function AdminDashboard({
   fdeDemoMode = false,
   initialPrincipal,
@@ -517,8 +525,9 @@ export function AdminDashboard({
 }: AdminDashboardProps) {
   const [currentPrincipal, setCurrentPrincipal] =
     useState<AdminPrincipal | null>(initialPrincipal);
-  const [dashboard, setDashboard] =
-    useState<AdminDashboardResponse | null>(null);
+  const [dashboard, setDashboard] = useState<AdminDashboardResponse | null>(
+    null,
+  );
   const [entityType, setEntityType] =
     useState<(typeof governedEntityTypes)[number]>("country");
   const [payload, setPayload] = useState(() => initialPayload("country"));
@@ -647,9 +656,7 @@ export function AdminDashboard({
     const timer = setTimeout(() => {
       void loadDashboard().catch((loadError: unknown) => {
         setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "无法加载管理数据。",
+          loadError instanceof Error ? loadError.message : "无法加载管理数据。",
         );
       });
     }, 0);
@@ -709,9 +716,7 @@ export function AdminDashboard({
       }
       applyAdminFailureBoundary(actionError);
       setError(
-        actionError instanceof Error
-          ? actionError.message
-          : "管理操作失败。",
+        actionError instanceof Error ? actionError.message : "管理操作失败。",
       );
       finishAction();
       return;
@@ -730,9 +735,7 @@ export function AdminDashboard({
           : "刷新失败，请重试。";
       setError(
         `操作已完成，但管理数据刷新失败：${message}${
-          dashboardRef.current
-            ? " 当前显示的是上一次成功加载的快照。"
-            : ""
+          dashboardRef.current ? " 当前显示的是上一次成功加载的快照。" : ""
         }`,
       );
     } finally {
@@ -766,36 +769,38 @@ export function AdminDashboard({
     action: "publish" | "review",
     reason: string,
   ) {
-    await runAction(async (principal) => {
-      await responseJsonAs(
-        await adminActionFetch(
+    await runAction(
+      async (principal) => {
+        await responseJsonAs(
+          await adminActionFetch(
+            principal,
+            `/api/admin/drafts/${draftId}/${action}`,
+            {
+              body: JSON.stringify({
+                reason,
+              }),
+              headers: { "content-type": "application/json" },
+              method: "POST",
+            },
+          ),
+          z
+            .object({
+              status: z.literal(action === "review" ? "reviewed" : "published"),
+            })
+            .strict(),
           principal,
-          `/api/admin/drafts/${draftId}/${action}`,
-          {
-          body: JSON.stringify({
-            reason,
-          }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-          },
-        ),
-        z
-          .object({
-            status: z.literal(
-              action === "review" ? "reviewed" : "published",
-            ),
-          })
-          .strict(),
-        principal,
-      );
-      return action === "review" ? "草稿已审核。" : "版本已发布。";
-    }, undefined, () => {
-      setDraftActionReasons((current) => ({ ...current, [draftId]: "" }));
-      setPublishConfirmations((current) => ({
-        ...current,
-        [draftId]: false,
-      }));
-    });
+        );
+        return action === "review" ? "草稿已审核。" : "版本已发布。";
+      },
+      undefined,
+      () => {
+        setDraftActionReasons((current) => ({ ...current, [draftId]: "" }));
+        setPublishConfirmations((current) => ({
+          ...current,
+          [draftId]: false,
+        }));
+      },
+    );
   }
 
   async function previewCsv(event: FormEvent<HTMLFormElement>) {
@@ -804,51 +809,60 @@ export function AdminDashboard({
     const previewGeneration = csvSelectionGenerationRef.current + 1;
     csvSelectionGenerationRef.current = previewGeneration;
     setPreview(null);
-    await runAction(async (principal) => {
-      const body = new FormData(form);
-      return responseJsonAs(
-        await adminActionFetch(
+    await runAction(
+      async (principal) => {
+        const body = new FormData(form);
+        return responseJsonAs(
+          await adminActionFetch(
+            principal,
+            "/api/admin/imports/market/preview",
+            {
+              body,
+              method: "POST",
+            },
+          ),
+          previewResponseSchema,
           principal,
-          "/api/admin/imports/market/preview",
-          {
-          body,
-          method: "POST",
-          },
-        ),
-        previewResponseSchema,
-        principal,
-      );
-    }, "CSV 只完成预览；尚未写入市场指标或草稿。", (parsed) => {
-      setPreview(parsed);
-    }, () => csvSelectionGenerationRef.current === previewGeneration);
+        );
+      },
+      "CSV 只完成预览；尚未写入市场指标或草稿。",
+      (parsed) => {
+        setPreview(parsed);
+      },
+      () => csvSelectionGenerationRef.current === previewGeneration,
+    );
   }
 
   async function confirmCsv() {
     if (!preview) {
       return;
     }
-    await runAction(async (principal) => {
-      return responseJsonAs(
-        await adminActionFetch(
+    await runAction(
+      async (principal) => {
+        return responseJsonAs(
+          await adminActionFetch(
+            principal,
+            `/api/admin/imports/market/${preview.batchId}/confirm`,
+            {
+              body: JSON.stringify({
+                reason: "确认 CSV 预览并创建待审核市场指标草稿。",
+              }),
+              headers: { "content-type": "application/json" },
+              method: "POST",
+            },
+          ),
+          marketImportConfirmationResponseSchema,
           principal,
-          `/api/admin/imports/market/${preview.batchId}/confirm`,
-          {
-            body: JSON.stringify({
-              reason: "确认 CSV 预览并创建待审核市场指标草稿。",
-            }),
-            headers: { "content-type": "application/json" },
-            method: "POST",
-          },
-        ),
-        marketImportConfirmationResponseSchema,
-        principal,
-      );
-    }, undefined, (parsed) => {
-      setPreview(null);
-      return parsed.status === "committed"
-        ? `已原子创建 ${parsed.createdDrafts} 条草稿，尚未发布。`
-        : "预览包含错误，批次已拒绝且未写入任何草稿或市场事实。";
-    });
+        );
+      },
+      undefined,
+      (parsed) => {
+        setPreview(null);
+        return parsed.status === "committed"
+          ? `已原子创建 ${parsed.createdDrafts} 条草稿，尚未发布。`
+          : "预览包含错误，批次已拒绝且未写入任何草稿或市场事实。";
+      },
+    );
   }
 
   const activeWorkflowTotal = dashboard
@@ -873,12 +887,16 @@ export function AdminDashboard({
             FDE 本地实施向导
           </h1>
           <p className="mt-2 text-sm leading-6">
-            此模式只运行在 loopback + development + PGlite。每次启动都是新的进程内数据库；不会连接或修改 jamesky.site 的生产数据。
+            此模式只运行在 loopback + development +
+            PGlite。每次启动都是新的进程内数据库；不会连接或修改 jamesky.site
+            的生产数据。
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             {(["editor", "reviewer", "admin"] as const).map((role) => (
               <a
-                aria-current={currentPrincipal?.role === role ? "page" : undefined}
+                aria-current={
+                  currentPrincipal?.role === role ? "page" : undefined
+                }
                 className={cn(
                   "rounded-full border px-3 py-1.5 font-semibold",
                   currentPrincipal?.role === role
@@ -895,20 +913,27 @@ export function AdminDashboard({
           <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-6">
             <li>
               Editor 下载并上传
-              <a className="mx-1 font-semibold underline" href="/__fde/fixtures/invalid.csv">
+              <a
+                className="mx-1 font-semibold underline"
+                href="/__fde/fixtures/invalid.csv"
+              >
                 错误 CSV
               </a>
               ，点击“预览并校验”，确认 value_numeric 与期间字段错误可见。
             </li>
             <li>
               再上传
-              <a className="mx-1 font-semibold underline" href="/__fde/fixtures/corrected.csv">
+              <a
+                className="mx-1 font-semibold underline"
+                href="/__fde/fixtures/corrected.csv"
+              >
                 修正版 FDE_DEMO_PIPELINE_INDEX
               </a>
               ，预览后确认批次，生成 Draft。
             </li>
             <li>
-              切换 Reviewer，展开 Draft，核对 payload、diff、依赖和来源，填写理由后 Review，再确认 Publish。
+              切换 Reviewer，展开 Draft，核对
+              payload、diff、依赖和来源，填写理由后 Review，再确认 Publish。
             </li>
             <li>
               打开
@@ -921,7 +946,9 @@ export function AdminDashboard({
               ，在市场指标区确认新指标已进入正式查询。
             </li>
             <li>
-              切换 Admin，从发布队列复制该市场指标 UUID，在“软归档已发布实体”选择 market_metric 并归档；刷新深链确认恢复原状态。
+              切换 Admin，从发布队列复制该市场指标
+              UUID，在“软归档已发布实体”选择 market_metric
+              并归档；刷新深链确认恢复原状态。
             </li>
           </ol>
         </section>
@@ -956,12 +983,18 @@ export function AdminDashboard({
       </header>
 
       {error ? (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
+        <div
+          className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+          role="alert"
+        >
           {error}
         </div>
       ) : null}
       {notice ? (
-        <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900" role="status">
+        <div
+          className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900"
+          role="status"
+        >
           {notice}
         </div>
       ) : null}
@@ -1002,606 +1035,664 @@ export function AdminDashboard({
           </section>
 
           <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <section className="rounded-2xl border bg-card p-5">
-          <div className="flex items-center gap-2">
-            <Database className="size-5 text-primary" aria-hidden="true" />
-            <div>
-              <h2 className="font-semibold">结构化数据修订</h2>
-              <p className="text-xs text-muted-foreground">
-                国家、法规版本、产品、认证、市场指标与来源
-              </p>
-            </div>
-          </div>
-          <form className="mt-5 space-y-4" onSubmit={createDraft}>
-            <div className="space-y-1.5">
-              <FieldLabel htmlFor="admin-entity-type">数据类型</FieldLabel>
-              <select
-                className={inputClass}
-                id="admin-entity-type"
-                onChange={(event) => {
-                  const next = event.target
-                    .value as (typeof governedEntityTypes)[number];
-                  setEntityType(next);
-                  setPayload(initialPayload(next));
-                }}
-                value={entityType}
-              >
-                {governedEntityTypes
-                  .filter((value) => value !== "document")
-                  .map((value) => (
-                    <option key={value} value={value}>
-                      {entityLabels[value]}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <FieldLabel htmlFor="admin-change-reason">变更原因</FieldLabel>
-              <input
-                className={inputClass}
-                id="admin-change-reason"
-                onChange={(event) => setChangeReason(event.target.value)}
-                required
-                value={changeReason}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <FieldLabel htmlFor="admin-payload">结构化 JSON</FieldLabel>
-              <textarea
-                className={cn(inputClass, "min-h-80 font-mono text-xs")}
-                id="admin-payload"
-                onChange={(event) => setPayload(event.target.value)}
-                spellCheck={false}
-                value={payload}
-              />
-            </div>
-            <Button disabled={busy} type="submit">
-              {busy ? <LoaderCircle className="size-4 animate-spin" /> : <FileCheck2 className="size-4" />}
-              保存 Draft
-            </Button>
-          </form>
-        </section>
-
-        <section className="space-y-6">
-          <div className="rounded-2xl border bg-card p-5">
-            <div className="flex items-center gap-2">
-              <Upload className="size-5 text-primary" aria-hidden="true" />
-              <div>
-                <h2 className="font-semibold">市场指标 CSV</h2>
-                <p className="text-xs text-muted-foreground">
-                  预览和校验不会写入事实；确认只原子创建草稿
-                </p>
-              </div>
-            </div>
-            <form className="mt-4 space-y-3" onSubmit={previewCsv}>
-              <FieldLabel htmlFor="market-csv-file">CSV 文件</FieldLabel>
-              <input
-                accept=".csv,text/csv"
-                className={inputClass}
-                id="market-csv-file"
-                name="file"
-                onChange={() => {
-                  csvSelectionGenerationRef.current += 1;
-                  setPreview(null);
-                  setNotice(null);
-                  setError(null);
-                }}
-                required
-                type="file"
-              />
-              <Button disabled={busy} type="submit" variant="outline">
-                预览并校验
-              </Button>
-            </form>
-            {preview ? (
-              <div className="mt-4 rounded-xl border bg-muted/30 p-3 text-sm">
-                <p>
-                  总行数 {preview.totalRows} · 有效 {preview.validRows} · 错误{" "}
-                  {preview.invalidRows}
-                </p>
-                {preview.errors.map((item) => (
-                  <p className="mt-1 text-xs text-destructive" key={`${item.rowNumber}:${item.field}:${item.message}`}>
-                    第 {item.rowNumber} 行 {item.field ?? "整行"}：{item.message}
+            <section className="rounded-2xl border bg-card p-5">
+              <div className="flex items-center gap-2">
+                <Database className="size-5 text-primary" aria-hidden="true" />
+                <div>
+                  <h2 className="font-semibold">结构化数据修订</h2>
+                  <p className="text-xs text-muted-foreground">
+                    国家、法规版本、产品、认证、市场指标与来源
                   </p>
-                ))}
-                <div className="mt-3 max-h-56 overflow-auto rounded-lg border bg-background">
-                  <table className="w-full min-w-[620px] text-left text-xs">
-                    <thead className="sticky top-0 border-b bg-background">
-                      <tr>
-                        <th className="px-2 py-2">行</th>
-                        <th className="px-2 py-2">校验后的预览</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.rows.slice(0, 20).map((row) => (
-                        <tr className="border-b align-top" key={row.rowNumber}>
-                          <td className="px-2 py-2">{row.rowNumber}</td>
-                          <td className="px-2 py-2 font-mono">
-                            {row.parsed
-                              ? JSON.stringify(row.parsed)
-                              : "无有效记录；请根据上方错误修正 CSV"}
+                </div>
+              </div>
+              <form className="mt-5 space-y-4" onSubmit={createDraft}>
+                <div className="space-y-1.5">
+                  <FieldLabel htmlFor="admin-entity-type">数据类型</FieldLabel>
+                  <select
+                    className={inputClass}
+                    id="admin-entity-type"
+                    onChange={(event) => {
+                      const next = event.target
+                        .value as (typeof governedEntityTypes)[number];
+                      setEntityType(next);
+                      setPayload(initialPayload(next));
+                    }}
+                    value={entityType}
+                  >
+                    {governedEntityTypes
+                      .filter((value) => value !== "document")
+                      .map((value) => (
+                        <option key={value} value={value}>
+                          {entityLabels[value]}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel htmlFor="admin-change-reason">
+                    变更原因
+                  </FieldLabel>
+                  <input
+                    className={inputClass}
+                    id="admin-change-reason"
+                    onChange={(event) => setChangeReason(event.target.value)}
+                    required
+                    value={changeReason}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <FieldLabel htmlFor="admin-payload">结构化 JSON</FieldLabel>
+                  <textarea
+                    className={cn(inputClass, "min-h-80 font-mono text-xs")}
+                    id="admin-payload"
+                    onChange={(event) => setPayload(event.target.value)}
+                    spellCheck={false}
+                    value={payload}
+                  />
+                </div>
+                <Button disabled={busy} type="submit">
+                  {busy ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <FileCheck2 className="size-4" />
+                  )}
+                  保存 Draft
+                </Button>
+              </form>
+            </section>
+
+            <section className="space-y-6">
+              <div className="rounded-2xl border bg-card p-5">
+                <div className="flex items-center gap-2">
+                  <Upload className="size-5 text-primary" aria-hidden="true" />
+                  <div>
+                    <h2 className="font-semibold">市场指标 CSV</h2>
+                    <p className="text-xs text-muted-foreground">
+                      预览和校验不会写入事实；确认只原子创建草稿
+                    </p>
+                  </div>
+                </div>
+                <form className="mt-4 space-y-3" onSubmit={previewCsv}>
+                  <FieldLabel htmlFor="market-csv-file">CSV 文件</FieldLabel>
+                  <input
+                    accept=".csv,text/csv"
+                    className={inputClass}
+                    id="market-csv-file"
+                    name="file"
+                    onChange={() => {
+                      csvSelectionGenerationRef.current += 1;
+                      setPreview(null);
+                      setNotice(null);
+                      setError(null);
+                    }}
+                    required
+                    type="file"
+                  />
+                  <Button disabled={busy} type="submit" variant="outline">
+                    预览并校验
+                  </Button>
+                </form>
+                {preview ? (
+                  <div className="mt-4 rounded-xl border bg-muted/30 p-3 text-sm">
+                    <p>
+                      总行数 {preview.totalRows} · 有效 {preview.validRows} ·
+                      错误 {preview.invalidRows}
+                    </p>
+                    {preview.errors.map((item) => (
+                      <p
+                        className="mt-1 text-xs text-destructive"
+                        key={`${item.rowNumber}:${item.field}:${item.message}`}
+                      >
+                        第 {item.rowNumber} 行 {item.field ?? "整行"}：
+                        {item.message}
+                      </p>
+                    ))}
+                    <div className="mt-3 max-h-56 overflow-auto rounded-lg border bg-background">
+                      <table className="w-full min-w-[620px] text-left text-xs">
+                        <thead className="sticky top-0 border-b bg-background">
+                          <tr>
+                            <th className="px-2 py-2">行</th>
+                            <th className="px-2 py-2">校验后的预览</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {preview.rows.slice(0, 20).map((row) => (
+                            <tr
+                              className="border-b align-top"
+                              key={row.rowNumber}
+                            >
+                              <td className="px-2 py-2">{row.rowNumber}</td>
+                              <td className="px-2 py-2 font-mono">
+                                {row.parsed
+                                  ? JSON.stringify(row.parsed)
+                                  : "无有效记录；请根据上方错误修正 CSV"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Button
+                      className="mt-3"
+                      disabled={busy || preview.invalidRows > 0}
+                      onClick={confirmCsv}
+                      type="button"
+                    >
+                      确认批次
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+
+              <CatalogImportForm busy={busy} runAction={runAction} />
+              <FeedbackCapturePanel
+                busy={busy}
+                canPublish={
+                  currentPrincipal?.role === "reviewer" ||
+                  currentPrincipal?.role === "admin"
+                }
+                request={adminJsonRequest}
+                runAction={runAction}
+              />
+              <DocumentAdminForms busy={busy} runAction={runAction} />
+              <SourceVerificationForm
+                busy={busy}
+                initialUtcNow={initialUtcNow}
+                runAction={runAction}
+              />
+              {currentPrincipal?.role === "admin" ? (
+                <ArchiveEntityForm busy={busy} runAction={runAction} />
+              ) : null}
+            </section>
+          </div>
+
+          <section className="rounded-2xl border bg-card p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck
+                  className="size-5 text-primary"
+                  aria-hidden="true"
+                />
+                <div>
+                  <h2 className="font-semibold">发布队列</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {currentPrincipal.role === "editor"
+                      ? "统计仅包含你创建的未归档修订；队列只列 Draft/Reviewed，审核与发布须由其他 reviewer 或 admin 完成"
+                      : currentPrincipal.role === "reviewer"
+                        ? "全局统计；队列只列 Draft/Reviewed，非 admin 创建者不能审核或发布自己的修订"
+                        : "全局统计；队列只列 Draft/Reviewed，admin 的职责分离紧急覆盖会写入审计记录"}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() =>
+                  void loadDashboard().catch((refreshError: unknown) => {
+                    const message =
+                      refreshError instanceof Error
+                        ? refreshError.message
+                        : "刷新失败，请重试。";
+                    setError(
+                      `管理数据刷新失败：${message}${
+                        dashboardRef.current
+                          ? " 当前显示的是上一次成功加载的快照。"
+                          : ""
+                      }`,
+                    );
+                  })
+                }
+                size="sm"
+                variant="outline"
+              >
+                <RefreshCw className="size-4" />
+                刷新
+              </Button>
+            </div>
+            {activeQueueTruncated ? (
+              <p
+                className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950"
+                data-testid="admin-active-queue-truncated"
+                role="status"
+              >
+                当前显示最新 {dashboard.drafts.length} / {activeWorkflowTotal}
+                条活跃修订；单次最多返回 100 条。请先处理当前队列或刷新后继续。
+              </p>
+            ) : null}
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead className="border-b text-xs text-muted-foreground">
+                  <tr>
+                    <th className="py-2 pr-3">类型 / Key</th>
+                    <th className="py-2 pr-3">版本</th>
+                    <th className="py-2 pr-3">状态</th>
+                    <th className="py-2 pr-3">创建人</th>
+                    <th className="py-2 pr-3">原因</th>
+                    <th className="py-2">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboard && dashboard.drafts.length === 0 ? (
+                    <tr>
+                      <td
+                        className="py-6 text-center text-sm text-muted-foreground"
+                        colSpan={6}
+                      >
+                        当前可见范围内暂无活跃 Draft 或 Reviewed 修订
+                      </td>
+                    </tr>
+                  ) : null}
+                  {(dashboard?.drafts ?? []).map((draft) => {
+                    const baseline = draft.reviewContext.publishedBaseline;
+                    const differences = baseline
+                      ? payloadDiff(baseline.payload, draft.payload)
+                      : [];
+                    const dependencies = draft.reviewContext.dependencies;
+                    const actionReason = draftActionReasons[draft.id] ?? "";
+                    const reasonId = `draft-action-reason-${draft.id}`;
+                    const isOwnDraft =
+                      draft.createdBy === currentPrincipal.email;
+                    const canTransitionDraft =
+                      currentPrincipal.role === "admin" ||
+                      (currentPrincipal.role === "reviewer" && !isOwnDraft);
+                    const reviewerOwnDraft =
+                      currentPrincipal.role === "reviewer" && isOwnDraft;
+                    const adminOwnDraft =
+                      currentPrincipal.role === "admin" && isOwnDraft;
+
+                    return (
+                      <Fragment key={draft.id}>
+                        <tr className="border-b align-top">
+                          <td className="py-3 pr-3">
+                            <p className="font-medium">
+                              {entityLabels[draft.entityType]}
+                            </p>
+                            <p className="max-w-60 truncate text-xs text-muted-foreground">
+                              {draft.entityKey}
+                            </p>
+                          </td>
+                          <td className="py-3 pr-3">v{draft.version}</td>
+                          <td className="py-3 pr-3">
+                            <span className="rounded-full border px-2 py-1 text-xs">
+                              {draft.workflowStatus}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-3 text-xs">
+                            {draft.createdBy}
+                          </td>
+                          <td className="max-w-60 py-3 pr-3 text-xs">
+                            {draft.changeReason}
+                          </td>
+                          <td className="py-3 text-xs text-muted-foreground">
+                            展开详情后操作
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <Button
-                  className="mt-3"
-                  disabled={busy || preview.invalidRows > 0}
-                  onClick={confirmCsv}
-                  type="button"
-                >
-                  确认批次
-                </Button>
-              </div>
-            ) : null}
-          </div>
+                        <tr className="border-b bg-muted/15">
+                          <td className="py-3" colSpan={6}>
+                            <details className="group rounded-xl border bg-background p-3">
+                              <summary className="cursor-pointer font-semibold text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40">
+                                查看 v{draft.version} payload、发布差异与依赖
+                              </summary>
 
-          <CatalogImportForm busy={busy} runAction={runAction} />
-          <FeedbackCapturePanel
-            busy={busy}
-            canPublish={currentPrincipal?.role === "reviewer" || currentPrincipal?.role === "admin"}
-            request={adminJsonRequest}
-            runAction={runAction}
-          />
-          <DocumentAdminForms busy={busy} runAction={runAction} />
-          <SourceVerificationForm
-            busy={busy}
-            initialUtcNow={initialUtcNow}
-            runAction={runAction}
-          />
-          {currentPrincipal?.role === "admin" ? (
-            <ArchiveEntityForm busy={busy} runAction={runAction} />
-          ) : null}
-        </section>
-      </div>
+                              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                                <section
+                                  aria-label={`v${draft.version} 完整 payload`}
+                                >
+                                  <h3 className="text-sm font-semibold">
+                                    完整 payload
+                                  </h3>
+                                  <pre className="mt-2 max-h-96 overflow-auto rounded-lg border bg-slate-950 p-3 text-xs leading-5 text-slate-100">
+                                    {JSON.stringify(draft.payload, null, 2)}
+                                  </pre>
+                                </section>
 
-      <section className="rounded-2xl border bg-card p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="size-5 text-primary" aria-hidden="true" />
-            <div>
-              <h2 className="font-semibold">发布队列</h2>
-              <p className="text-xs text-muted-foreground">
-                {currentPrincipal.role === "editor"
-                  ? "统计仅包含你创建的未归档修订；队列只列 Draft/Reviewed，审核与发布须由其他 reviewer 或 admin 完成"
-                  : currentPrincipal.role === "reviewer"
-                    ? "全局统计；队列只列 Draft/Reviewed，非 admin 创建者不能审核或发布自己的修订"
-                    : "全局统计；队列只列 Draft/Reviewed，admin 的职责分离紧急覆盖会写入审计记录"}
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={() =>
-              void loadDashboard().catch((refreshError: unknown) => {
-                const message =
-                  refreshError instanceof Error
-                    ? refreshError.message
-                    : "刷新失败，请重试。";
-                setError(
-                  `管理数据刷新失败：${message}${
-                    dashboardRef.current
-                      ? " 当前显示的是上一次成功加载的快照。"
-                      : ""
-                  }`,
-                );
-              })
-            }
-            size="sm"
-            variant="outline"
-          >
-            <RefreshCw className="size-4" />
-            刷新
-          </Button>
-        </div>
-        {activeQueueTruncated ? (
-          <p
-            className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950"
-            data-testid="admin-active-queue-truncated"
-            role="status"
-          >
-            当前显示最新 {dashboard.drafts.length} / {activeWorkflowTotal}
-            条活跃修订；单次最多返回 100 条。请先处理当前队列或刷新后继续。
-          </p>
-        ) : null}
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="border-b text-xs text-muted-foreground">
-              <tr>
-                <th className="py-2 pr-3">类型 / Key</th>
-                <th className="py-2 pr-3">版本</th>
-                <th className="py-2 pr-3">状态</th>
-                <th className="py-2 pr-3">创建人</th>
-                <th className="py-2 pr-3">原因</th>
-                <th className="py-2">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboard && dashboard.drafts.length === 0 ? (
-                <tr>
-                  <td
-                    className="py-6 text-center text-sm text-muted-foreground"
-                    colSpan={6}
-                  >
-                    当前可见范围内暂无活跃 Draft 或 Reviewed 修订
-                  </td>
-                </tr>
-              ) : null}
-              {(dashboard?.drafts ?? []).map((draft) => {
-                const baseline = draft.reviewContext.publishedBaseline;
-                const differences = baseline
-                  ? payloadDiff(baseline.payload, draft.payload)
-                  : [];
-                const dependencies = draft.reviewContext.dependencies;
-                const actionReason = draftActionReasons[draft.id] ?? "";
-                const reasonId = `draft-action-reason-${draft.id}`;
-                const isOwnDraft =
-                  draft.createdBy === currentPrincipal.email;
-                const canTransitionDraft =
-                  currentPrincipal.role === "admin" ||
-                  (currentPrincipal.role === "reviewer" && !isOwnDraft);
-                const reviewerOwnDraft =
-                  currentPrincipal.role === "reviewer" && isOwnDraft;
-                const adminOwnDraft =
-                  currentPrincipal.role === "admin" && isOwnDraft;
-
-                return (
-                  <Fragment key={draft.id}>
-                    <tr className="border-b align-top">
-                      <td className="py-3 pr-3">
-                        <p className="font-medium">
-                          {entityLabels[draft.entityType]}
-                        </p>
-                        <p className="max-w-60 truncate text-xs text-muted-foreground">
-                          {draft.entityKey}
-                        </p>
-                      </td>
-                      <td className="py-3 pr-3">v{draft.version}</td>
-                      <td className="py-3 pr-3">
-                        <span className="rounded-full border px-2 py-1 text-xs">
-                          {draft.workflowStatus}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-3 text-xs">
-                        {draft.createdBy}
-                      </td>
-                      <td className="max-w-60 py-3 pr-3 text-xs">
-                        {draft.changeReason}
-                      </td>
-                      <td className="py-3 text-xs text-muted-foreground">
-                        展开详情后操作
-                      </td>
-                    </tr>
-                    <tr className="border-b bg-muted/15">
-                      <td className="py-3" colSpan={6}>
-                        <details className="group rounded-xl border bg-background p-3">
-                          <summary className="cursor-pointer font-semibold text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40">
-                            查看 v{draft.version} payload、发布差异与依赖
-                          </summary>
-
-                          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                            <section aria-label={`v${draft.version} 完整 payload`}>
-                              <h3 className="text-sm font-semibold">
-                                完整 payload
-                              </h3>
-                              <pre className="mt-2 max-h-96 overflow-auto rounded-lg border bg-slate-950 p-3 text-xs leading-5 text-slate-100">
-                                {JSON.stringify(draft.payload, null, 2)}
-                              </pre>
-                            </section>
-
-                            <section aria-label={`v${draft.version} 发布版本差异`}>
-                              <h3 className="text-sm font-semibold">
-                                当前发布版本 diff
-                              </h3>
-                              {baseline ? (
-                                <>
-                                  <p className="mt-1 text-xs text-muted-foreground">
-                                    基线：v{baseline.version}
-                                    {currentPrincipal.role !== "editor" ? (
-                                      <>
-                                        {" "}· 发布人
-                                        {baseline.publishedBy ?? "未知"}
-                                      </>
-                                    ) : null}
-                                    {" "}·
-                                    {baseline.publishedAt ?? "发布时间未知"}
-                                  </p>
-                                  {draft.reviewContext.baselineStatus !==
-                                  "active" ? (
-                                    <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950">
-                                      最近发布 payload 已找到，但正式实体当前为
-                                      {draft.reviewContext.baselineStatus ===
-                                      "archived"
-                                        ? "归档状态"
-                                        : "不可核验状态"}
-                                      ，因此禁止直接发布。
-                                    </p>
-                                  ) : null}
-                                  {differences.length === 0 ? (
+                                <section
+                                  aria-label={`v${draft.version} 发布版本差异`}
+                                >
+                                  <h3 className="text-sm font-semibold">
+                                    当前发布版本 diff
+                                  </h3>
+                                  {baseline ? (
+                                    <>
+                                      <p className="mt-1 text-xs text-muted-foreground">
+                                        基线：v{baseline.version}
+                                        {currentPrincipal.role !== "editor" ? (
+                                          <>
+                                            {" "}
+                                            · 发布人
+                                            {baseline.publishedBy ?? "未知"}
+                                          </>
+                                        ) : null}{" "}
+                                        ·
+                                        {baseline.publishedAt ?? "发布时间未知"}
+                                      </p>
+                                      {draft.reviewContext.baselineStatus !==
+                                      "active" ? (
+                                        <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950">
+                                          最近发布 payload
+                                          已找到，但正式实体当前为
+                                          {draft.reviewContext
+                                            .baselineStatus === "archived"
+                                            ? "归档状态"
+                                            : "不可核验状态"}
+                                          ，因此禁止直接发布。
+                                        </p>
+                                      ) : null}
+                                      {differences.length === 0 ? (
+                                        <p className="mt-3 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                                          payload
+                                          与服务端查询到的当前发布基线一致。
+                                        </p>
+                                      ) : (
+                                        <div className="mt-2 max-h-96 overflow-auto rounded-lg border">
+                                          <table className="w-full min-w-[620px] text-left text-xs">
+                                            <thead className="sticky top-0 bg-muted">
+                                              <tr>
+                                                <th className="p-2">
+                                                  字段路径
+                                                </th>
+                                                <th className="p-2">已发布</th>
+                                                <th className="p-2">草稿</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody>
+                                              {differences
+                                                .slice(0, 250)
+                                                .map((item) => (
+                                                  <tr
+                                                    className="border-t align-top"
+                                                    key={item.path}
+                                                  >
+                                                    <td className="p-2 font-mono">
+                                                      {item.path}
+                                                    </td>
+                                                    <td className="max-w-72 break-all p-2 font-mono text-rose-800">
+                                                      {item.before}
+                                                    </td>
+                                                    <td className="max-w-72 break-all p-2 font-mono text-emerald-800">
+                                                      {item.after}
+                                                    </td>
+                                                  </tr>
+                                                ))}
+                                            </tbody>
+                                          </table>
+                                          {differences.length > 250 ? (
+                                            <p className="border-t p-2 text-xs text-amber-800">
+                                              共 {differences.length}{" "}
+                                              项差异；此处显示前 250
+                                              项，请结合完整 payload 复核。
+                                            </p>
+                                          ) : null}
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : draft.reviewContext.baselineStatus ===
+                                    "first_revision" ? (
                                     <p className="mt-3 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                                      payload 与服务端查询到的当前发布基线一致。
+                                      {draft.version === 1
+                                        ? "服务端已确认这是 v1 首个治理修订：它可能建立新实体，也可能把现有 active 种子数据纳入治理基线。首次发布将以此 payload 建立可审计基线。"
+                                        : `服务端已确认这是重处理生成的 v${draft.version} 首次可发布修订：更早的未发布修订已失效，首次发布将以当前文档证据建立可审计基线。`}
                                     </p>
                                   ) : (
-                                    <div className="mt-2 max-h-96 overflow-auto rounded-lg border">
-                                      <table className="w-full min-w-[620px] text-left text-xs">
-                                        <thead className="sticky top-0 bg-muted">
-                                          <tr>
-                                            <th className="p-2">字段路径</th>
-                                            <th className="p-2">已发布</th>
-                                            <th className="p-2">草稿</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {differences.slice(0, 250).map((item) => (
-                                            <tr className="border-t align-top" key={item.path}>
-                                              <td className="p-2 font-mono">{item.path}</td>
-                                              <td className="max-w-72 break-all p-2 font-mono text-rose-800">
-                                                {item.before}
-                                              </td>
-                                              <td className="max-w-72 break-all p-2 font-mono text-emerald-800">
-                                                {item.after}
-                                              </td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                      {differences.length > 250 ? (
-                                        <p className="border-t p-2 text-xs text-amber-800">
-                                          共 {differences.length} 项差异；此处显示前 250 项，请结合完整 payload 复核。
-                                        </p>
-                                      ) : null}
-                                    </div>
+                                    <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
+                                      服务端无法核验该实体的当前发布基线。为避免覆盖未知正式数据，发布已被禁止。
+                                    </p>
                                   )}
-                                </>
-                              ) : draft.reviewContext.baselineStatus ===
-                                "first_revision" ? (
-                                <p className="mt-3 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                                  {draft.version === 1
-                                    ? "服务端已确认这是 v1 首个治理修订：它可能建立新实体，也可能把现有 active 种子数据纳入治理基线。首次发布将以此 payload 建立可审计基线。"
-                                    : `服务端已确认这是重处理生成的 v${draft.version} 首次可发布修订：更早的未发布修订已失效，首次发布将以当前文档证据建立可审计基线。`}
-                                </p>
-                              ) : (
-                                <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
-                                  服务端无法核验该实体的当前发布基线。为避免覆盖未知正式数据，发布已被禁止。
-                                </p>
-                              )}
-                            </section>
-                          </div>
+                                </section>
+                              </div>
 
-                          <section className="mt-4" aria-label="来源与实体依赖">
-                            <h3 className="text-sm font-semibold">
-                              来源与实体依赖
-                            </h3>
-                            {dependencies.length === 0 ? (
-                              <p className="mt-2 text-xs text-muted-foreground">
-                                payload 未声明可识别的来源或父实体引用。
-                              </p>
-                            ) : (
-                              <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-                                {dependencies.map((reference) => (
-                                    <li
-                                      className="rounded-lg border p-3 text-xs"
-                                      key={`${reference.kind}:${reference.value}`}
-                                    >
-                                      <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <p className="font-semibold">
-                                          {reference.kind} · {reference.value}
+                              <section
+                                className="mt-4"
+                                aria-label="来源与实体依赖"
+                              >
+                                <h3 className="text-sm font-semibold">
+                                  来源与实体依赖
+                                </h3>
+                                {dependencies.length === 0 ? (
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    payload 未声明可识别的来源或父实体引用。
+                                  </p>
+                                ) : (
+                                  <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                                    {dependencies.map((reference) => (
+                                      <li
+                                        className="rounded-lg border p-3 text-xs"
+                                        key={`${reference.kind}:${reference.value}`}
+                                      >
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                          <p className="font-semibold">
+                                            {reference.kind} · {reference.value}
+                                          </p>
+                                          <span
+                                            className={cn(
+                                              "rounded-full border px-2 py-0.5 text-[11px]",
+                                              reference.state === "active"
+                                                ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                                                : "border-amber-300 bg-amber-50 text-amber-950",
+                                            )}
+                                          >
+                                            {reference.state === "active"
+                                              ? "有效"
+                                              : reference.state === "archived"
+                                                ? "已归档"
+                                                : "缺失"}
+                                          </span>
+                                        </div>
+                                        <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                                          {reference.path}
                                         </p>
-                                        <span
-                                          className={cn(
-                                            "rounded-full border px-2 py-0.5 text-[11px]",
-                                            reference.state === "active"
-                                              ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-                                              : "border-amber-300 bg-amber-50 text-amber-950",
-                                          )}
-                                        >
-                                          {reference.state === "active"
-                                            ? "有效"
-                                            : reference.state === "archived"
-                                              ? "已归档"
-                                              : "缺失"}
-                                        </span>
-                                      </div>
-                                      <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                                        {reference.path}
-                                      </p>
-                                      {reference.label ? (
-                                        <p className="mt-1 text-muted-foreground">
-                                          {reference.label}
-                                          {reference.isDemo === null
-                                            ? ""
-                                            : reference.isDemo
-                                              ? " · Demo"
-                                              : " · 正式数据"}
-                                        </p>
-                                      ) : null}
-                                      {reference.verifiedAt ? (
-                                        <p className="mt-1 text-muted-foreground">
-                                          最近核验：{reference.verifiedAt}
-                                        </p>
-                                      ) : null}
-                                      {reference.url &&
-                                      isNavigableEvidenceUrl(reference.url) ? (
-                                        <a
-                                          className="mt-1 inline-flex text-primary underline"
-                                          href={reference.url}
-                                          rel="noreferrer"
-                                          target="_blank"
-                                        >
-                                          打开来源证据
-                                        </a>
-                                      ) : null}
-                                    </li>
-                                  ))}
-                              </ul>
-                            )}
-                          </section>
-
-                          {draft.reviewContext.blockingReasons.length > 0 ? (
-                            <section
-                              aria-label="发布阻塞项"
-                              className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950"
-                            >
-                              <h3 className="font-semibold">发布阻塞项</h3>
-                              <ul className="mt-2 list-disc space-y-1 pl-5">
-                                {draft.reviewContext.blockingReasons.map(
-                                  (reason) => (
-                                    <li key={reason}>{reason}</li>
-                                  ),
+                                        {reference.label ? (
+                                          <p className="mt-1 text-muted-foreground">
+                                            {reference.label}
+                                            {reference.isDemo === null
+                                              ? ""
+                                              : reference.isDemo
+                                                ? " · Demo"
+                                                : " · 正式数据"}
+                                          </p>
+                                        ) : null}
+                                        {reference.verifiedAt ? (
+                                          <p className="mt-1 text-muted-foreground">
+                                            最近核验：{reference.verifiedAt}
+                                          </p>
+                                        ) : null}
+                                        {reference.url &&
+                                        isNavigableEvidenceUrl(
+                                          reference.url,
+                                        ) ? (
+                                          <a
+                                            className="mt-1 inline-flex text-primary underline"
+                                            href={reference.url}
+                                            rel="noreferrer"
+                                            target="_blank"
+                                          >
+                                            打开来源证据
+                                          </a>
+                                        ) : null}
+                                      </li>
+                                    ))}
+                                  </ul>
                                 )}
-                              </ul>
-                            </section>
-                          ) : null}
+                              </section>
 
-                          {reviewerOwnDraft &&
-                          (draft.workflowStatus === "draft" ||
-                            draft.workflowStatus === "reviewed") ? (
-                            <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs leading-5 text-amber-950">
-                              职责分离：Reviewer 不能审核或发布自己创建的修订；请由其他 reviewer 或 admin 处理。
-                            </p>
-                          ) : null}
+                              {draft.reviewContext.blockingReasons.length >
+                              0 ? (
+                                <section
+                                  aria-label="发布阻塞项"
+                                  className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950"
+                                >
+                                  <h3 className="font-semibold">发布阻塞项</h3>
+                                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                                    {draft.reviewContext.blockingReasons.map(
+                                      (reason) => (
+                                        <li key={reason}>{reason}</li>
+                                      ),
+                                    )}
+                                  </ul>
+                                </section>
+                              ) : null}
 
-                          {canTransitionDraft &&
-                          (draft.workflowStatus === "draft" ||
-                            draft.workflowStatus === "reviewed") ? (
-                            <fieldset className="mt-4 rounded-xl border border-primary/20 p-4">
-                              <legend className="px-2 text-sm font-semibold">
-                                {draft.workflowStatus === "draft"
-                                  ? "审核决定"
-                                  : "发布决定"}
-                              </legend>
-                              {adminOwnDraft ? (
-                                <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
-                                  Admin 紧急覆盖：当前修订由你创建，仍可继续审核或发布；该例外、理由与操作者身份会写入审计记录。
+                              {reviewerOwnDraft &&
+                              (draft.workflowStatus === "draft" ||
+                                draft.workflowStatus === "reviewed") ? (
+                                <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs leading-5 text-amber-950">
+                                  职责分离：Reviewer
+                                  不能审核或发布自己创建的修订；请由其他
+                                  reviewer 或 admin 处理。
                                 </p>
                               ) : null}
-                              <FieldLabel htmlFor={reasonId}>
-                                {draft.workflowStatus === "draft"
-                                  ? "审核理由"
-                                  : "发布理由"}
-                              </FieldLabel>
-                              <textarea
-                                className={cn(inputClass, "mt-1 min-h-20")}
-                                id={reasonId}
-                                onChange={(event) =>
-                                  setDraftActionReasons((current) => ({
-                                    ...current,
-                                    [draft.id]: event.target.value,
-                                  }))
-                                }
-                                placeholder="记录核对了哪些字段、来源和依赖（至少 3 个字符）"
-                                value={actionReason}
-                              />
-                              {draft.workflowStatus === "reviewed" ? (
-                                <label className="mt-3 flex items-start gap-2 text-xs leading-5">
-                                  <input
-                                    checked={
-                                      publishConfirmations[draft.id] ?? false
-                                    }
-                                    className="mt-0.5 size-4"
+
+                              {canTransitionDraft &&
+                              (draft.workflowStatus === "draft" ||
+                                draft.workflowStatus === "reviewed") ? (
+                                <fieldset className="mt-4 rounded-xl border border-primary/20 p-4">
+                                  <legend className="px-2 text-sm font-semibold">
+                                    {draft.workflowStatus === "draft"
+                                      ? "审核决定"
+                                      : "发布决定"}
+                                  </legend>
+                                  {adminOwnDraft ? (
+                                    <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
+                                      Admin
+                                      紧急覆盖：当前修订由你创建，仍可继续审核或发布；该例外、理由与操作者身份会写入审计记录。
+                                    </p>
+                                  ) : null}
+                                  <FieldLabel htmlFor={reasonId}>
+                                    {draft.workflowStatus === "draft"
+                                      ? "审核理由"
+                                      : "发布理由"}
+                                  </FieldLabel>
+                                  <textarea
+                                    className={cn(inputClass, "mt-1 min-h-20")}
+                                    id={reasonId}
                                     onChange={(event) =>
-                                      setPublishConfirmations((current) => ({
+                                      setDraftActionReasons((current) => ({
                                         ...current,
-                                        [draft.id]: event.target.checked,
+                                        [draft.id]: event.target.value,
                                       }))
                                     }
-                                    type="checkbox"
+                                    placeholder="记录核对了哪些字段、来源和依赖（至少 3 个字符）"
+                                    value={actionReason}
                                   />
-                                  我已核对完整 payload、服务端发布基线和上方来源/依赖快照；确认发布会在事务内再次校验并立即改变正式查询结果。
-                                </label>
+                                  {draft.workflowStatus === "reviewed" ? (
+                                    <label className="mt-3 flex items-start gap-2 text-xs leading-5">
+                                      <input
+                                        checked={
+                                          publishConfirmations[draft.id] ??
+                                          false
+                                        }
+                                        className="mt-0.5 size-4"
+                                        onChange={(event) =>
+                                          setPublishConfirmations(
+                                            (current) => ({
+                                              ...current,
+                                              [draft.id]: event.target.checked,
+                                            }),
+                                          )
+                                        }
+                                        type="checkbox"
+                                      />
+                                      我已核对完整
+                                      payload、服务端发布基线和上方来源/依赖快照；确认发布会在事务内再次校验并立即改变正式查询结果。
+                                    </label>
+                                  ) : null}
+                                  <Button
+                                    className="mt-3"
+                                    disabled={
+                                      busy ||
+                                      actionReason.trim().length < 3 ||
+                                      (draft.workflowStatus === "reviewed" &&
+                                        (!publishConfirmations[draft.id] ||
+                                          !draft.reviewContext.publishReady))
+                                    }
+                                    onClick={() =>
+                                      void transitionDraft(
+                                        draft.id,
+                                        draft.workflowStatus === "draft"
+                                          ? "review"
+                                          : "publish",
+                                        actionReason.trim(),
+                                      )
+                                    }
+                                    size="sm"
+                                    type="button"
+                                    variant={
+                                      draft.workflowStatus === "draft"
+                                        ? "outline"
+                                        : "default"
+                                    }
+                                  >
+                                    {draft.workflowStatus === "draft"
+                                      ? "提交审核确认"
+                                      : "确认发布版本"}
+                                  </Button>
+                                </fieldset>
                               ) : null}
-                              <Button
-                                className="mt-3"
-                                disabled={
-                                  busy ||
-                                  actionReason.trim().length < 3 ||
-                                  (draft.workflowStatus === "reviewed" &&
-                                    (!publishConfirmations[draft.id] ||
-                                      !draft.reviewContext.publishReady))
-                                }
-                                onClick={() =>
-                                  void transitionDraft(
-                                    draft.id,
-                                    draft.workflowStatus === "draft"
-                                      ? "review"
-                                      : "publish",
-                                    actionReason.trim(),
-                                  )
-                                }
-                                size="sm"
-                                type="button"
-                                variant={
-                                  draft.workflowStatus === "draft"
-                                    ? "outline"
-                                    : "default"
-                                }
-                              >
-                                {draft.workflowStatus === "draft"
-                                  ? "提交审核确认"
-                                  : "确认发布版本"}
-                              </Button>
-                            </fieldset>
-                          ) : null}
-                        </details>
-                      </td>
-                    </tr>
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                            </details>
+                          </td>
+                        </tr>
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-      {currentPrincipal.role === "editor" ? (
-        <section
-          className="rounded-2xl border bg-card p-5"
-          data-testid="admin-editor-audit-scope"
-        >
-          <div className="flex items-center gap-2">
-            <History className="size-5 text-primary" aria-hidden="true" />
-            <div>
-              <h2 className="font-semibold">审计范围</h2>
-              <p className="text-xs leading-5 text-muted-foreground">
-                Editor 视图不加载全局变更记录或其他操作者身份；所有写入仍由服务端追加审计。
-              </p>
-            </div>
-          </div>
-        </section>
-      ) : (
-        <section className="rounded-2xl border bg-card p-5">
-          <div className="flex items-center gap-2">
-            <History className="size-5 text-primary" aria-hidden="true" />
-            <div>
-              <h2 className="font-semibold">数据变更记录</h2>
-              <p className="text-xs text-muted-foreground">
-                Reviewer/Admin 视图展示最近 30 条全局记录：操作者、角色、实体、动作、原因和时间
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 space-y-2">
-            {dashboard.auditLogs.length === 0 ? (
-              <p className="rounded-xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-                当前全局范围内暂无变更记录
-              </p>
-            ) : null}
-            {dashboard.auditLogs.slice(0, 30).map((log) => (
-              <article className="rounded-xl border bg-muted/20 p-3 text-xs" key={log.id}>
-                <div className="flex flex-wrap justify-between gap-2">
-                  <p className="font-medium">
-                    {log.action} · {entityLabels[log.entityType]} · {log.entityKey}
+          {currentPrincipal.role === "editor" ? (
+            <section
+              className="rounded-2xl border bg-card p-5"
+              data-testid="admin-editor-audit-scope"
+            >
+              <div className="flex items-center gap-2">
+                <History className="size-5 text-primary" aria-hidden="true" />
+                <div>
+                  <h2 className="font-semibold">审计范围</h2>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    Editor
+                    视图不加载全局变更记录或其他操作者身份；所有写入仍由服务端追加审计。
                   </p>
-                  <p className="text-muted-foreground">{log.createdAt.slice(0, 19)}</p>
                 </div>
-                <p className="mt-1 text-muted-foreground">
-                  {log.actorEmail} ({log.actorRole}) · {log.reason}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-2xl border bg-card p-5">
+              <div className="flex items-center gap-2">
+                <History className="size-5 text-primary" aria-hidden="true" />
+                <div>
+                  <h2 className="font-semibold">数据变更记录</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Reviewer/Admin 视图展示最近 30
+                    条全局记录：操作者、角色、实体、动作、原因和时间
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                {dashboard.auditLogs.length === 0 ? (
+                  <p className="rounded-xl border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
+                    当前全局范围内暂无变更记录
+                  </p>
+                ) : null}
+                {dashboard.auditLogs.slice(0, 30).map((log) => (
+                  <article
+                    className="rounded-xl border bg-muted/20 p-3 text-xs"
+                    key={log.id}
+                  >
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <p className="font-medium">
+                        {log.action} · {entityLabels[log.entityType]} ·{" "}
+                        {log.entityKey}
+                      </p>
+                      <p className="text-muted-foreground">
+                        {log.createdAt.slice(0, 19)}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-muted-foreground">
+                      {log.actorEmail} ({log.actorRole}) · {log.reason}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
         </Fragment>
       ) : null}
     </main>
@@ -1623,7 +1714,9 @@ function CatalogImportForm({
   busy: boolean;
   runAction: ActionRunner;
 }) {
-  const [preview, setPreview] = useState<z.infer<typeof previewResponseSchema> | null>(null);
+  const [preview, setPreview] = useState<z.infer<
+    typeof previewResponseSchema
+  > | null>(null);
   const selectionGeneration = useRef(0);
 
   async function previewWorkbook(event: FormEvent<HTMLFormElement>) {
@@ -1632,35 +1725,59 @@ function CatalogImportForm({
     const generation = selectionGeneration.current + 1;
     selectionGeneration.current = generation;
     setPreview(null);
-    await runAction(async (principal) => responseJsonAs(
-      await adminActionFetch(principal, "/api/admin/imports/catalog/preview", { body: new FormData(form), method: "POST" }),
-      previewResponseSchema,
-      principal,
-    ), "工作簿只完成预览；尚未写入目录或草稿。", (parsed) => {
-      setPreview(parsed);
-    }, () => selectionGeneration.current === generation);
+    await runAction(
+      async (principal) =>
+        responseJsonAs(
+          await adminActionFetch(
+            principal,
+            "/api/admin/imports/catalog/preview",
+            { body: new FormData(form), method: "POST" },
+          ),
+          previewResponseSchema,
+          principal,
+        ),
+      "工作簿只完成预览；尚未写入目录或草稿。",
+      (parsed) => {
+        setPreview(parsed);
+      },
+      () => selectionGeneration.current === generation,
+    );
   }
 
   async function confirmWorkbook() {
     if (!preview) return;
-    await runAction(async (principal) => responseJsonAs(
-      await adminActionFetch(principal, `/api/admin/imports/catalog/${preview.batchId}/confirm`, {
-        body: JSON.stringify({ reason: "确认目录工作簿预览并创建待审核目录发动机草稿。" }),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      }),
-      marketImportConfirmationResponseSchema,
-      principal,
-    ), undefined, (parsed) => {
-      setPreview(null);
-      return parsed.status === "committed"
-        ? `已原子创建 ${parsed.createdDrafts} 条目录草稿，尚未发布。`
-        : "预览包含错误，批次已拒绝且未写入任何草稿或目录记录。";
-    });
+    await runAction(
+      async (principal) =>
+        responseJsonAs(
+          await adminActionFetch(
+            principal,
+            `/api/admin/imports/catalog/${preview.batchId}/confirm`,
+            {
+              body: JSON.stringify({
+                reason: "确认目录工作簿预览并创建待审核目录发动机草稿。",
+              }),
+              headers: { "content-type": "application/json" },
+              method: "POST",
+            },
+          ),
+          marketImportConfirmationResponseSchema,
+          principal,
+        ),
+      undefined,
+      (parsed) => {
+        setPreview(null);
+        return parsed.status === "committed"
+          ? `已原子创建 ${parsed.createdDrafts} 条目录草稿，尚未发布。`
+          : "预览包含错误，批次已拒绝且未写入任何草稿或目录记录。";
+      },
+    );
   }
 
   return (
-    <div className="rounded-2xl border bg-card p-5" data-testid="catalog-import">
+    <div
+      className="rounded-2xl border bg-card p-5"
+      data-testid="catalog-import"
+    >
       <div className="flex items-center gap-2">
         <Upload className="size-5 text-primary" aria-hidden="true" />
         <div>
@@ -1677,36 +1794,61 @@ function CatalogImportForm({
           className={inputClass}
           id="catalog-xlsx-file"
           name="file"
-          onChange={() => { selectionGeneration.current += 1; setPreview(null); }}
+          onChange={() => {
+            selectionGeneration.current += 1;
+            setPreview(null);
+          }}
           required
           type="file"
         />
-        <Button disabled={busy} type="submit" variant="outline">预览目录工作簿</Button>
+        <Button disabled={busy} type="submit" variant="outline">
+          预览目录工作簿
+        </Button>
       </form>
       {preview ? (
         <div className="mt-4 rounded-xl border bg-muted/30 p-3 text-sm">
-          <p>总行数 {preview.totalRows} · 有效 {preview.validRows} · 错误 {preview.invalidRows}</p>
+          <p>
+            总行数 {preview.totalRows} · 有效 {preview.validRows} · 错误{" "}
+            {preview.invalidRows}
+          </p>
           {preview.errors.map((item) => (
-            <p className="mt-1 text-xs text-destructive" key={`${item.rowNumber}:${item.field}:${item.message}`}>
+            <p
+              className="mt-1 text-xs text-destructive"
+              key={`${item.rowNumber}:${item.field}:${item.message}`}
+            >
               第 {item.rowNumber} 行 {item.field ?? "整表"}：{item.message}
             </p>
           ))}
           <div className="mt-3 max-h-56 overflow-auto rounded-lg border bg-background">
             <table className="w-full min-w-[620px] text-left text-xs">
               <thead className="sticky top-0 border-b bg-background">
-                <tr><th className="px-2 py-2">行</th><th className="px-2 py-2">校验后的预览</th></tr>
+                <tr>
+                  <th className="px-2 py-2">行</th>
+                  <th className="px-2 py-2">校验后的预览</th>
+                </tr>
               </thead>
               <tbody>
                 {preview.rows.slice(0, 20).map((row) => (
                   <tr className="border-b align-top" key={row.rowNumber}>
                     <td className="px-2 py-2">{row.rowNumber}</td>
-                    <td className="px-2 py-2 font-mono">{row.parsed ? JSON.stringify(row.parsed) : "无有效记录；请根据上方错误修正工作簿"}</td>
+                    <td className="px-2 py-2 font-mono">
+                      {row.parsed
+                        ? JSON.stringify(row.parsed)
+                        : "无有效记录；请根据上方错误修正工作簿"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <Button className="mt-3" disabled={busy || preview.invalidRows > 0 || preview.validRows === 0} onClick={confirmWorkbook} type="button">
+          <Button
+            className="mt-3"
+            disabled={
+              busy || preview.invalidRows > 0 || preview.validRows === 0
+            }
+            onClick={confirmWorkbook}
+            type="button"
+          >
             确认目录批次
           </Button>
         </div>
@@ -1758,8 +1900,8 @@ function DocumentAdminForms({
           principal,
           `/api/admin/documents/${documentId}/reprocess`,
           {
-          body: formData,
-          method: "POST",
+            body: formData,
+            method: "POST",
           },
         ),
         documentReprocessResponseSchema,
@@ -1788,7 +1930,13 @@ function DocumentAdminForms({
           <legend className="px-2 text-sm font-semibold">上传新文档</legend>
           <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
             原始文件
-            <input accept=".txt,.md,.markdown" className={inputClass} name="file" required type="file" />
+            <input
+              accept=".txt,.md,.markdown"
+              className={inputClass}
+              name="file"
+              required
+              type="file"
+            />
           </label>
           <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
             文档标题
@@ -1813,14 +1961,21 @@ function DocumentAdminForms({
           <input name="documentType" type="hidden" value="other" />
           <input name="languageCode" type="hidden" value="en" />
           <input name="sourceType" type="hidden" value="other" />
-          <Button className="sm:col-span-2" disabled={busy} type="submit" variant="outline">
+          <Button
+            className="sm:col-span-2"
+            disabled={busy}
+            type="submit"
+            variant="outline"
+          >
             上传为 Draft
           </Button>
         </fieldset>
       </form>
       <form className="mt-5" onSubmit={reprocess}>
         <fieldset className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2">
-          <legend className="px-2 text-sm font-semibold">重新处理 Draft 文档</legend>
+          <legend className="px-2 text-sm font-semibold">
+            重新处理 Draft 文档
+          </legend>
           <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
             Draft 文档 UUID
             <input className={inputClass} name="documentId" required />
@@ -1831,16 +1986,26 @@ function DocumentAdminForms({
           </label>
           <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
             来源标题
-            <input className={inputClass} name="reprocesssourceTitle" required />
+            <input
+              className={inputClass}
+              name="reprocesssourceTitle"
+              required
+            />
           </label>
           <label className="grid gap-1.5 text-xs font-semibold text-muted-foreground">
             重新处理原因
             <input className={inputClass} name="reason" required />
           </label>
           <p className="rounded-lg border border-dashed bg-muted/30 p-3 text-xs leading-5 text-muted-foreground sm:col-span-2">
-            此处只更新文档标题和来源标题；类型、语言、Demo 分类及其他已存元数据保持不变。
+            此处只更新文档标题和来源标题；类型、语言、Demo
+            分类及其他已存元数据保持不变。
           </p>
-          <Button className="sm:col-span-2" disabled={busy} type="submit" variant="outline">
+          <Button
+            className="sm:col-span-2"
+            disabled={busy}
+            type="submit"
+            variant="outline"
+          >
             重新处理 Draft 文档
           </Button>
         </fieldset>
@@ -1859,7 +2024,9 @@ function SourceVerificationForm({
   runAction: ActionRunner;
 }) {
   const [verifiedAt, setVerifiedAt] = useState(initialUtcNow);
-  const parsedVerifiedAt = z.iso.datetime({ offset: true }).safeParse(verifiedAt);
+  const parsedVerifiedAt = z.iso
+    .datetime({ offset: true })
+    .safeParse(verifiedAt);
   const verifiedAtPreview = parsedVerifiedAt.success
     ? parsedVerifiedAt.data
     : null;
@@ -1877,12 +2044,12 @@ function SourceVerificationForm({
           principal,
           `/api/admin/sources/${sourceId}/verify`,
           {
-          body: JSON.stringify({
-            reason: formData.get("reason"),
-            verifiedAt: verifiedAtInput,
-          }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
+            body: JSON.stringify({
+              reason: formData.get("reason"),
+              verifiedAt: verifiedAtInput,
+            }),
+            headers: { "content-type": "application/json" },
+            method: "POST",
           },
         ),
         sourceVerificationResponseSchema,
@@ -1897,7 +2064,9 @@ function SourceVerificationForm({
         <CheckCircle2 className="size-5 text-primary" aria-hidden="true" />
         <div>
           <h2 className="font-semibold">来源最近核验时间</h2>
-          <p className="text-xs text-muted-foreground">每次更新均写入变更审计</p>
+          <p className="text-xs text-muted-foreground">
+            每次更新均写入变更审计
+          </p>
         </div>
       </div>
       <form className="mt-4" onSubmit={verify}>
@@ -1922,9 +2091,7 @@ function SourceVerificationForm({
           <p
             className={cn(
               "text-xs sm:col-span-2",
-              verifiedAtPreview
-                ? "text-muted-foreground"
-                : "text-destructive",
+              verifiedAtPreview ? "text-muted-foreground" : "text-destructive",
             )}
             id="source-verified-at-preview"
             role="status"

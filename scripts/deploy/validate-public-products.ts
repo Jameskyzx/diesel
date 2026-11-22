@@ -32,9 +32,7 @@ export function validatePublicProductReleasePayload(
 
   const products = parsed.data.products;
   const expectedModelCodes = Object.keys(expectedDemoProducts).sort();
-  const actualModelCodes = products
-    .map(({ modelCode }) => modelCode)
-    .sort();
+  const actualModelCodes = products.map(({ modelCode }) => modelCode).sort();
   if (
     products.length !== expectedModelCodes.length ||
     JSON.stringify(actualModelCodes) !== JSON.stringify(expectedModelCodes)
@@ -43,9 +41,10 @@ export function validatePublicProductReleasePayload(
   }
 
   for (const product of products) {
-    const expectation = expectedDemoProducts[
-      product.modelCode as keyof typeof expectedDemoProducts
-    ];
+    const expectation =
+      expectedDemoProducts[
+        product.modelCode as keyof typeof expectedDemoProducts
+      ];
     if (
       expectation === undefined ||
       product.id !== expectation.id ||

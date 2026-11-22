@@ -5,7 +5,10 @@ import { z } from "zod";
 
 import { readSheet } from "read-excel-file/node";
 
-import { parseCatalogSheet, type CatalogSheetPreview } from "@/domain/admin/parse-catalog-sheet";
+import {
+  parseCatalogSheet,
+  type CatalogSheetPreview,
+} from "@/domain/admin/parse-catalog-sheet";
 import { parseMarketCsv } from "@/domain/admin/parse-market-csv";
 import {
   governanceActionInputSchema,
@@ -31,6 +34,7 @@ import {
   GovernanceConflictError,
 } from "@/server/repositories/governance-repository";
 import type { KnowledgeDocumentReprocessingAccessScope } from "@/server/repositories/knowledge-repository";
+import { clearCountryReadCache } from "@/server/services/country-read-cache";
 import {
   createKnowledgeDocumentImportResponse,
   prepareKnowledgeDocument,
@@ -114,6 +118,16 @@ function normalizeDraft(input: GovernanceDraftCreate): {
   };
 }
 
+// Public country reads are cached in this process (ADR-277). A write that can
+// change published facts clears that cache, whether or not it succeeded.
+async function afterPublishedFactWrite<T>(write: Promise<T>): Promise<T> {
+  try {
+    return await write;
+  } finally {
+    clearCountryReadCache();
+  }
+}
+
 export async function archiveGovernedEntity(input: {
   actor: AdminPrincipal;
   entityKey: string;
@@ -130,12 +144,14 @@ export async function archiveGovernedEntity(input: {
   });
   const repository = await getGovernanceRepository();
 
-  await repository.archiveEntity({
-    actor: input.actor,
-    entityKey: entity.entityKey,
-    entityType: entity.entityType,
-    reason: action.reason,
-  });
+  await afterPublishedFactWrite(
+    repository.archiveEntity({
+      actor: input.actor,
+      entityKey: entity.entityKey,
+      entityType: entity.entityType,
+      reason: action.reason,
+    }),
+  );
 
   return { status: "archived" as const };
 }
@@ -152,29 +168,56 @@ export async function confirmMarketCsvImport(input: {
   const batchId = z.uuid().parse(input.batchId);
   const repository = await getGovernanceRepository();
 
-  return repository.confirmMarketImport({
-    actor: input.actor,
-    batchId,
-    reason: action.reason,
-  });
+  return afterPublishedFactWrite(
+    repository.confirmMarketImport({
+      actor: input.actor,
+      batchId,
+      reason: action.reason,
+    }),
+  );
 }
 
 export const MAX_CATALOG_SPREADSHEET_BYTES = 2_000_000;
-const catalogSpreadsheetPreviewInputSchema = z.object({
-  content: z.instanceof(Uint8Array).refine(bytes => bytes.byteLength > 0 && bytes.byteLength <= MAX_CATALOG_SPREADSHEET_BYTES,
-    "The workbook must be between 1 byte and 2 MB."),
-  fileName: z.string().trim().min(1).max(255).regex(/\.xlsx$/iu, "Upload an .xlsx workbook."),
-}).strict();
+const catalogSpreadsheetPreviewInputSchema = z
+  .object({
+    content: z
+      .instanceof(Uint8Array)
+      .refine(
+        (bytes) =>
+          bytes.byteLength > 0 &&
+          bytes.byteLength <= MAX_CATALOG_SPREADSHEET_BYTES,
+        "The workbook must be between 1 byte and 2 MB.",
+      ),
+    fileName: z
+      .string()
+      .trim()
+      .min(1)
+      .max(255)
+      .regex(/\.xlsx$/iu, "Upload an .xlsx workbook."),
+  })
+  .strict();
 
 /** Reads the first worksheet of an .xlsx file; no catalogue record is written. */
-export async function previewCatalogSpreadsheet(rawInput: unknown, actor: AdminPrincipal) {
+export async function previewCatalogSpreadsheet(
+  rawInput: unknown,
+  actor: AdminPrincipal,
+) {
   requireEditor(actor);
   const input = catalogSpreadsheetPreviewInputSchema.parse(rawInput);
   let preview: CatalogSheetPreview;
   try {
     preview = parseCatalogSheet(await readSheet(Buffer.from(input.content)));
   } catch {
-    preview = { rows: [], errors: [{ field: null, rowNumber: 1, message: "The file is not a readable .xlsx workbook." }] };
+    preview = {
+      rows: [],
+      errors: [
+        {
+          field: null,
+          rowNumber: 1,
+          message: "The file is not a readable .xlsx workbook.",
+        },
+      ],
+    };
   }
   const repository = await getGovernanceRepository();
   const batch = await repository.createMarketImportPreview({
@@ -183,7 +226,10 @@ export async function previewCatalogSpreadsheet(rawInput: unknown, actor: AdminP
     entityType: "catalog_engine",
     errors: preview.errors,
     fileName: input.fileName,
-    rows: preview.rows.map((row) => ({ parsed: row.parsed ? { ...row.parsed } : null, rowNumber: row.rowNumber })),
+    rows: preview.rows.map((row) => ({
+      parsed: row.parsed ? { ...row.parsed } : null,
+      rowNumber: row.rowNumber,
+    })),
   });
 
   return {
@@ -198,13 +244,22 @@ export async function previewCatalogSpreadsheet(rawInput: unknown, actor: AdminP
 }
 
 /** Turns a clean preview batch into one catalogue draft per row. */
-export async function confirmCatalogImport(input: { actor: AdminPrincipal; batchId: string; reason: unknown }) {
+export async function confirmCatalogImport(input: {
+  actor: AdminPrincipal;
+  batchId: string;
+  reason: unknown;
+}) {
   requireEditor(input.actor);
   const action = governanceActionInputSchema.parse({ reason: input.reason });
   const batchId = z.uuid().parse(input.batchId);
   const repository = await getGovernanceRepository();
 
-  return repository.confirmMarketImport({ actor: input.actor, batchId, entityType: "catalog_engine", reason: action.reason });
+  return repository.confirmMarketImport({
+    actor: input.actor,
+    batchId,
+    entityType: "catalog_engine",
+    reason: action.reason,
+  });
 }
 
 export async function createGovernanceDraft(
@@ -257,8 +312,7 @@ export async function getGovernanceDashboardFromRepository(
       (draft) =>
         (draft.workflowStatus !== "draft" &&
           draft.workflowStatus !== "reviewed") ||
-        (principal.role === "editor" &&
-          draft.createdBy !== principal.email),
+        (principal.role === "editor" && draft.createdBy !== principal.email),
     )
   ) {
     throw new Error(
@@ -283,8 +337,7 @@ export async function getGovernanceDashboardFromRepository(
       return {
         ...draft,
         reviewContext:
-          principal.role === "editor" &&
-          reviewContext.publishedBaseline
+          principal.role === "editor" && reviewContext.publishedBaseline
             ? {
                 ...reviewContext,
                 publishedBaseline: {
@@ -341,11 +394,13 @@ export async function publishGovernanceDraft(input: {
   const draftId = z.uuid().parse(input.draftId);
   const repository = await getGovernanceRepository();
 
-  return repository.publishDraft({
-    actor: input.actor,
-    draftId,
-    reason: action.reason,
-  });
+  return afterPublishedFactWrite(
+    repository.publishDraft({
+      actor: input.actor,
+      draftId,
+      reason: action.reason,
+    }),
+  );
 }
 
 export async function reviewGovernanceDraft(input: {
@@ -402,17 +457,12 @@ export async function uploadGovernedDocument(input: {
     throw error;
   }
   const imported = createKnowledgeDocumentImportResponse({
-    status: committed.created
-      ? prepared.outcome.processingStatus
-      : "duplicate",
+    status: committed.created ? prepared.outcome.processingStatus : "duplicate",
     summary: committed.summary,
   });
 
   return {
-    draft:
-      committed.created || committed.draftCreated
-        ? committed.draft
-        : null,
+    draft: committed.created || committed.draftCreated ? committed.draft : null,
     import: imported,
   };
 }
@@ -475,10 +525,12 @@ export async function verifyDataSource(input: {
   const sourceId = z.uuid().parse(input.sourceId);
 
   const repository = await getGovernanceRepository();
-  return repository.updateSourceVerifiedAt({
-    actor: input.actor,
-    reason: action.reason,
-    sourceId,
-    verifiedAt: action.verifiedAt,
-  });
+  return afterPublishedFactWrite(
+    repository.updateSourceVerifiedAt({
+      actor: input.actor,
+      reason: action.reason,
+      sourceId,
+      verifiedAt: action.verifiedAt,
+    }),
+  );
 }

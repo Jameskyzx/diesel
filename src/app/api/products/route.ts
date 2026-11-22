@@ -49,14 +49,17 @@ export async function GET(request: Request) {
     console.error("Product list request failed", {
       errorCode: getErrorCode(error),
     });
-    return observer.finish(NextResponse.json(
-      productFitApiErrorSchema.parse({
-        error: {
-          code: "INTERNAL_ERROR",
-          message: messages.productListUnavailable,
-        },
-      }),
-      { status: 500 },
-    ), "INTERNAL_ERROR");
+    return observer.finish(
+      NextResponse.json(
+        productFitApiErrorSchema.parse({
+          error: {
+            code: "INTERNAL_ERROR",
+            message: messages.productListUnavailable,
+          },
+        }),
+        { status: 500 },
+      ),
+      "INTERNAL_ERROR",
+    );
   }
 }

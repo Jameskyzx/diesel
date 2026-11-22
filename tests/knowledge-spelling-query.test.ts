@@ -1,20 +1,35 @@
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { expandKnowledgeSpellingQuery, prepareKnowledgeSpellingQuery } from "@/domain/knowledge/knowledge-spelling-query";
+import {
+  expandKnowledgeSpellingQuery,
+  prepareKnowledgeSpellingQuery,
+} from "@/domain/knowledge/knowledge-spelling-query";
 
 let database: PGlite;
-beforeAll(async () => { database = new PGlite(); await database.waitReady; }, 15_000);
-afterAll(async () => { await database?.close(); });
+beforeAll(async () => {
+  database = new PGlite();
+  await database.waitReady;
+}, 15_000);
+afterAll(async () => {
+  await database?.close();
+});
 
 async function expanded(query: string): Promise<string | null> {
   const prepared = prepareKnowledgeSpellingQuery(query);
   if (!prepared) return null;
-  const { rows } = await database.query<{ query: string }>("SELECT websearch_to_tsquery('simple', $1)::text AS query", [prepared.query]);
+  const { rows } = await database.query<{ query: string }>(
+    "SELECT websearch_to_tsquery('simple', $1)::text AS query",
+    [prepared.query],
+  );
   return expandKnowledgeSpellingQuery(prepared, rows[0]!.query);
 }
 
-async function matches(query: string, content: string, nativeOnly = false): Promise<boolean> {
+async function matches(
+  query: string,
+  content: string,
+  nativeOnly = false,
+): Promise<boolean> {
   const canonical = nativeOnly ? null : await expanded(query);
   const { rows } = await database.query<{ matches: boolean }>(
     "SELECT to_tsvector('simple', $1) @@ COALESCE($2::tsquery, websearch_to_tsquery('simple', $3)) AS matches",
@@ -26,28 +41,47 @@ async function matches(query: string, content: string, nativeOnly = false): Prom
 const spellings = ["nonroad", "non-road", "non road"];
 
 describe("scope spelling expansion against native PostgreSQL", () => {
-  it.each(spellings)("matches every standalone spelling for %s", async (query) => {
-    expect(await expanded(query)).not.toBeNull();
-    for (const content of spellings) expect(await matches(query, content)).toBe(true);
-    for (const content of ["road", "non", "marine", "nonroadside"]) expect(await matches(query, content)).toBe(false);
-  });
+  it.each(spellings)(
+    "matches every standalone spelling for %s",
+    async (query) => {
+      expect(await expanded(query)).not.toBeNull();
+      for (const content of spellings)
+        expect(await matches(query, content)).toBe(true);
+      for (const content of ["road", "non", "marine", "nonroadside"])
+        expect(await matches(query, content)).toBe(false);
+    },
+  );
 
-  it.each(spellings)("keeps whole phrase positions and negation for %s", async (scope) => {
-    for (const variant of spellings) {
-      for (const [query, content] of [
-        [`"${scope} emissions"`, `${variant} emissions`],
-        [`"emissions ${scope}"`, `emissions ${variant}`],
-        [`"new ${scope} emissions"`, `new ${variant} emissions`],
-      ]) {
-        expect(await matches(query!, content!)).toBe(true);
-        expect(await matches(`regulations -${query}`, `regulations ${content}`)).toBe(false);
+  it.each(spellings)(
+    "keeps whole phrase positions and negation for %s",
+    async (scope) => {
+      for (const variant of spellings) {
+        for (const [query, content] of [
+          [`"${scope} emissions"`, `${variant} emissions`],
+          [`"emissions ${scope}"`, `emissions ${variant}`],
+          [`"new ${scope} emissions"`, `new ${variant} emissions`],
+        ]) {
+          expect(await matches(query!, content!)).toBe(true);
+          expect(
+            await matches(`regulations -${query}`, `regulations ${content}`),
+          ).toBe(false);
+        }
+        for (const content of [
+          `${variant} unrelated emissions`,
+          `emissions unrelated ${variant}`,
+          `emissions ${variant}`,
+        ]) {
+          expect(await matches(`"${scope} emissions"`, content)).toBe(false);
+          expect(
+            await matches(
+              `regulations -"${scope} emissions"`,
+              `regulations ${content}`,
+            ),
+          ).toBe(true);
+        }
       }
-      for (const content of [`${variant} unrelated emissions`, `emissions unrelated ${variant}`, `emissions ${variant}`]) {
-        expect(await matches(`"${scope} emissions"`, content)).toBe(false);
-        expect(await matches(`regulations -"${scope} emissions"`, `regulations ${content}`)).toBe(true);
-      }
-    }
-  });
+    },
+  );
 
   it.each([
     ["nonroad emissions", "non-road emissions", true],
@@ -70,20 +104,39 @@ describe("scope spelling expansion against native PostgreSQL", () => {
     ['"nonroad and emissions"', "non road and emissions", true],
     ['"nonroad non-road non road"', "non road nonroad non-road", true],
     ['"nonroad non-road non road"', "non road nonroad gap non-road", false],
-  ] as const)("preserves native operators: %s / %s", async (query, content, expected) => {
-    expect(await matches(query, content)).toBe(expected);
-  });
+  ] as const)(
+    "preserves native operators: %s / %s",
+    async (query, content, expected) => {
+      expect(await matches(query, content)).toBe(expected);
+    },
+  );
 
   it.each([
-    "EU_NONROAD_2026", "EU-NONROAD-2026", "nonroad-2026", "EU.NONROAD.2026",
-    "EU/NONROAD/2026", "EU:NONROAD:2026", "https://example.test/nonroad",
-    "https://nonroad.example.test", "?scope=nonroad", "nonroad@example.test",
-    "foo–nonroad", "nonroad–2026", "préNonroad", "nonroad型", "nonroadside",
-    "𠮷nonroad", "nonroad𠮷", "𝒜nonroad", "nonroad𝒜",
+    "EU_NONROAD_2026",
+    "EU-NONROAD-2026",
+    "nonroad-2026",
+    "EU.NONROAD.2026",
+    "EU/NONROAD/2026",
+    "EU:NONROAD:2026",
+    "https://example.test/nonroad",
+    "https://nonroad.example.test",
+    "?scope=nonroad",
+    "nonroad@example.test",
+    "foo–nonroad",
+    "nonroad–2026",
+    "préNonroad",
+    "nonroad型",
+    "nonroadside",
+    "𠮷nonroad",
+    "nonroad𠮷",
+    "𝒜nonroad",
+    "nonroad𝒜",
   ])("does not expand identifier or URL %s", async (query) => {
     expect(prepareKnowledgeSpellingQuery(query)).toBeNull();
     for (const content of [query, query.replace(/nonroad/giu, "non-road")]) {
-      expect(await matches(query, content)).toBe(await matches(query, content, true));
+      expect(await matches(query, content)).toBe(
+        await matches(query, content, true),
+      );
     }
   });
 
@@ -94,7 +147,14 @@ describe("scope spelling expansion against native PostgreSQL", () => {
     expect(await matches(query, "nonroad EU_NONROAD_2027")).toBe(false);
   });
 
-  it.each(["nonroad.", "nonroad?", "nonroad:", "nonroad,", "(nonroad)", '"nonroad."'])("keeps prose punctuation eligible: %s", async (query) => {
+  it.each([
+    "nonroad.",
+    "nonroad?",
+    "nonroad:",
+    "nonroad,",
+    "(nonroad)",
+    '"nonroad."',
+  ])("keeps prose punctuation eligible: %s", async (query) => {
     expect(await expanded(query)).not.toBeNull();
     expect(await matches(query, "non-road")).toBe(true);
   });
@@ -118,7 +178,14 @@ describe("scope spelling expansion against native PostgreSQL", () => {
 
   it("rejects unsupported native syntax without publishing markers", () => {
     const prepared = prepareKnowledgeSpellingQuery("nonroad")!;
-    expect(expandKnowledgeSpellingQuery(prepared, `'${prepared.bindings.keys().next().value}':*`)).toBeNull();
-    expect(expandKnowledgeSpellingQuery(prepared, `'${prepared.prefix}unknown'`)).toBeNull();
+    expect(
+      expandKnowledgeSpellingQuery(
+        prepared,
+        `'${prepared.bindings.keys().next().value}':*`,
+      ),
+    ).toBeNull();
+    expect(
+      expandKnowledgeSpellingQuery(prepared, `'${prepared.prefix}unknown'`),
+    ).toBeNull();
   });
 });

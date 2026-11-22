@@ -61,10 +61,7 @@ function analysisSource(input: {
   countryIso3: "BRA" | "CHN";
   entityId: string;
   entityType:
-    | "market_metric"
-    | "product"
-    | "product_certification"
-    | "regulation";
+    "market_metric" | "product" | "product_certification" | "regulation";
   regulationId?: string;
   sourceId: string;
 }) {
@@ -102,9 +99,7 @@ function citationForSource(source: ReturnType<typeof analysisSource>) {
     isDemo: source.isDemo,
     locatorDescriptor: source.locatorDescriptor,
     productCertificationId:
-      source.entityType === "product_certification"
-        ? source.entityId
-        : null,
+      source.entityType === "product_certification" ? source.entityId : null,
     regulationId: source.regulationId,
     regulationStatus: source.regulationStatus,
     sourceId: source.sourceId,
@@ -174,9 +169,7 @@ const validKnowledgeResult = {
   },
   status: "no_data",
   tool: "searchKnowledgeBase",
-  warnings: [
-    "没有足够证据支持肯定结论；请补充结构化事实或可追溯来源。",
-  ],
+  warnings: ["没有足够证据支持肯定结论；请补充结构化事实或可追溯来源。"],
 } as const;
 
 const validKnowledgeWithCitation = {
@@ -199,9 +192,7 @@ const validKnowledgeWithCitation = {
       {
         applicationScope: "non-road",
         chunkId: knowledgeIds.chunk,
-        content: wrapUntrustedKnowledgeExcerpt(
-          "Original knowledge excerpt.",
-        ),
+        content: wrapUntrustedKnowledgeExcerpt("Original knowledge excerpt."),
         countryIso3: "CHN",
         document: {
           downloadUrl: null,
@@ -771,7 +762,10 @@ describe("AI tool-part presentation", () => {
 
   it("fails closed when a completed output does not match the client schema", () => {
     expect(
-      toolPartPresentation({ output: { status: "ok" }, state: "output-available" }),
+      toolPartPresentation({
+        output: { status: "ok" },
+        state: "output-available",
+      }),
     ).toMatchObject({ kind: "error" });
   });
 
@@ -823,9 +817,12 @@ describe("AI tool-part presentation", () => {
     { label: "market comparison", output: partialMarketResult },
     { label: "opportunity score", output: partialScoreResult },
     { label: "sales brief", output: partialSalesBriefResult },
-  ])("rejects cited $label facts with stripped source metadata", ({ output }) => {
-    expectInvalidResult(output);
-  });
+  ])(
+    "rejects cited $label facts with stripped source metadata",
+    ({ output }) => {
+      expectInvalidResult(output);
+    },
+  );
 
   it.each([
     { label: "knowledge", output: validKnowledgeWithCitation },
@@ -993,10 +990,7 @@ describe("AI tool-part presentation", () => {
         latestVerifiedAt: null,
         scorecard: {
           ...partialScoreResult.scorecard,
-          scores: [
-            missingCountryScore("BRA"),
-            missingCountryScore("CHN"),
-          ],
+          scores: [missingCountryScore("BRA"), missingCountryScore("CHN")],
         },
         status: "error",
       },
@@ -1046,10 +1040,7 @@ describe("AI tool-part presentation", () => {
         latestVerifiedAt: null,
         scorecard: {
           ...partialScoreResult.scorecard,
-          scores: [
-            missingCountryScore("BRA"),
-            missingCountryScore("CHN"),
-          ],
+          scores: [missingCountryScore("BRA"), missingCountryScore("CHN")],
         },
       },
     },
@@ -1064,12 +1055,15 @@ describe("AI tool-part presentation", () => {
     { label: "market comparison", output: partialMarketResult },
     { label: "opportunity score", output: partialScoreResult },
     { label: "sales brief", output: partialSalesBriefResult },
-  ])("rejects failed $label output that retains structured facts", ({ output }) => {
-    expectInvalidResult({
-      ...output,
-      status: "error",
-    });
-  });
+  ])(
+    "rejects failed $label output that retains structured facts",
+    ({ output }) => {
+      expectInvalidResult({
+        ...output,
+        status: "error",
+      });
+    },
+  );
 
   it("rejects cited failed outputs even when they contain no facts", () => {
     expectInvalidResult({

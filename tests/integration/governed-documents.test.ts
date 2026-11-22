@@ -83,7 +83,10 @@ function metadata(label: string): DocumentImportMetadata {
   };
 }
 
-function chunk(content: string, metadataValue: DocumentImportMetadata): ChunkInsert {
+function chunk(
+  content: string,
+  metadataValue: DocumentImportMetadata,
+): ChunkInsert {
   return {
     applicationScope: metadataValue.applicationScope,
     chunkIndex: 0,
@@ -139,9 +142,7 @@ async function preparedReprocessing(input: {
   fingerprint: string;
   label: string;
 }): Promise<PreparedKnowledgeDocumentReprocessing> {
-  const knowledgeRepository = createKnowledgeRepository(
-    testDatabase.database,
-  );
+  const knowledgeRepository = createKnowledgeRepository(testDatabase.database);
   const document = await knowledgeRepository.findDocumentForReprocessing({
     accessScope: { kind: "global" },
     documentId: input.documentId,
@@ -172,19 +173,19 @@ async function preparedReprocessing(input: {
   const provenanceAudit = provenanceAudits[0]!;
   const provenanceMetadata =
     provenanceAudit.action === "document_reprocessed"
-      ? documentReprocessedAuditAfterDataSchema.parse(
-          provenanceAudit.afterData,
-        ).metadata
+      ? documentReprocessedAuditAfterDataSchema.parse(provenanceAudit.afterData)
+          .metadata
       : documentDraftCreatedAuditAfterDataSchema.parse(
           provenanceAudit.afterData,
         ).metadata;
-  const provenanceMarkerFingerprint =
-    createDocumentProvenanceMarkerFingerprint({
+  const provenanceMarkerFingerprint = createDocumentProvenanceMarkerFingerprint(
+    {
       afterData: provenanceAudit.afterData,
       draftId: provenanceAudit.draftId,
       entityKey: provenanceAudit.entityKey,
       entityType: provenanceAudit.entityType,
-    });
+    },
+  );
   const metadataValue = metadata(input.label);
 
   return {
@@ -287,7 +288,11 @@ async function documentBatchWriteCase(
     ...preparedUpload("a", label),
     contentSha256: sha256(label),
     metadata: metadataValue,
-    outcome: { chunks, processingError: null, processingStatus: "ready" as const },
+    outcome: {
+      chunks,
+      processingError: null,
+      processingStatus: "ready" as const,
+    },
   } satisfies PreparedKnowledgeDocumentUpload;
   const parameterCounts: number[] = [];
   const database = drizzle(testDatabase.client, {
@@ -320,9 +325,14 @@ async function documentBatchWriteCase(
       return created.documentId;
     };
   } else if (path === "upload") {
-    run = async () => (await governanceRepository.commitDocumentUpload({
-      actor, changeReason: "Commit a complete multi-batch Demo document.", prepared,
-    })).documentId;
+    run = async () =>
+      (
+        await governanceRepository.commitDocumentUpload({
+          actor,
+          changeReason: "Commit a complete multi-batch Demo document.",
+          prepared,
+        })
+      ).documentId;
   } else {
     const initial = preparedUpload("a", `${label}-initial`);
     initial.contentSha256 = sha256(`${label}-initial`);
@@ -332,18 +342,26 @@ async function documentBatchWriteCase(
       processingError: null,
       processingStatus: "ready",
     };
-    const uploaded = await createGovernanceRepository(testDatabase.database).commitDocumentUpload({
-      actor, changeReason: "Prepare the original Demo document revision.", prepared: initial,
+    const uploaded = await createGovernanceRepository(
+      testDatabase.database,
+    ).commitDocumentUpload({
+      actor,
+      changeReason: "Prepare the original Demo document revision.",
+      prepared: initial,
     });
     documentId = uploaded.documentId;
     const reprocessing = await preparedReprocessing({
-      documentId, fingerprint: sha256(`${label}-operation`), label,
+      documentId,
+      fingerprint: sha256(`${label}-operation`),
+      label,
     });
     reprocessing.metadata = metadataValue;
     reprocessing.outcome = prepared.outcome;
     run = async () => {
       await governanceRepository.commitDocumentReprocessing({
-        actor, prepared: reprocessing, reason: "Replace a complete multi-batch Demo revision.",
+        actor,
+        prepared: reprocessing,
+        reason: "Replace a complete multi-batch Demo revision.",
       });
       return uploaded.documentId;
     };
@@ -352,53 +370,131 @@ async function documentBatchWriteCase(
 }
 
 describe("document chunk batches", () => {
-  it.each(documentBatchWritePaths)("writes every %s chunk through bounded statements", async (path) => {
-    const fixture = await documentBatchWriteCase(path, `batch-${path}-success`, false);
-    const documentId = await fixture.run();
-    expect(fixture.parameterCounts).toEqual([18000, 18]);
-    const state = await documentReprocessingState({
-      documentId, attemptedSourceTitle: fixture.prepared.metadata.sourceTitle,
-    });
-    expect(state.documentRows[0]).toMatchObject({ processingStatus: "ready", governanceStatus: "draft" });
-    expect(state.chunkRows.map(({ chunkIndex, content, contentHash, headingPath, sectionLocator }) =>
-      ({ chunkIndex, content, contentHash, headingPath, sectionLocator })
-    )).toEqual(fixture.prepared.outcome.chunks.map(({ chunkIndex, content, contentHash, headingPath, sectionLocator }) =>
-      ({ chunkIndex, content, contentHash, headingPath, sectionLocator })
-    ));
-    expect(state.draftRows).toHaveLength(path === "development" ? 0 : path === "upload" ? 1 : 2);
-    expect(state.logRows.map(({ action }) => action).sort()).toEqual(
-      path === "development" ? [] : path === "upload" ? ["draft_created"] :
-        ["document_reprocessed", "draft_created", "draft_created"],
-    );
-    if (path !== "development") {
-      await fixture.run();
+  it.each(documentBatchWritePaths)(
+    "writes every %s chunk through bounded statements",
+    async (path) => {
+      const fixture = await documentBatchWriteCase(
+        path,
+        `batch-${path}-success`,
+        false,
+      );
+      const documentId = await fixture.run();
       expect(fixture.parameterCounts).toEqual([18000, 18]);
-      expect(await documentReprocessingState({
-        documentId, attemptedSourceTitle: fixture.prepared.metadata.sourceTitle,
-      })).toEqual(state);
-    }
-  });
+      const state = await documentReprocessingState({
+        documentId,
+        attemptedSourceTitle: fixture.prepared.metadata.sourceTitle,
+      });
+      expect(state.documentRows[0]).toMatchObject({
+        processingStatus: "ready",
+        governanceStatus: "draft",
+      });
+      expect(
+        state.chunkRows.map(
+          ({
+            chunkIndex,
+            content,
+            contentHash,
+            headingPath,
+            sectionLocator,
+          }) => ({
+            chunkIndex,
+            content,
+            contentHash,
+            headingPath,
+            sectionLocator,
+          }),
+        ),
+      ).toEqual(
+        fixture.prepared.outcome.chunks.map(
+          ({
+            chunkIndex,
+            content,
+            contentHash,
+            headingPath,
+            sectionLocator,
+          }) => ({
+            chunkIndex,
+            content,
+            contentHash,
+            headingPath,
+            sectionLocator,
+          }),
+        ),
+      );
+      expect(state.draftRows).toHaveLength(
+        path === "development" ? 0 : path === "upload" ? 1 : 2,
+      );
+      expect(state.logRows.map(({ action }) => action).sort()).toEqual(
+        path === "development"
+          ? []
+          : path === "upload"
+            ? ["draft_created"]
+            : ["document_reprocessed", "draft_created", "draft_created"],
+      );
+      if (path !== "development") {
+        await fixture.run();
+        expect(fixture.parameterCounts).toEqual([18000, 18]);
+        expect(
+          await documentReprocessingState({
+            documentId,
+            attemptedSourceTitle: fixture.prepared.metadata.sourceTitle,
+          }),
+        ).toEqual(state);
+      }
+    },
+  );
 
-  it.each(documentBatchWritePaths)("rolls back the first %s batch when the second fails", async (path) => {
-    const fixture = await documentBatchWriteCase(path, `batch-${path}-rollback`, true);
-    const stateInput = fixture.documentId === null ? null : {
-      documentId: fixture.documentId,
-      attemptedSourceTitle: fixture.prepared.metadata.sourceTitle,
-    };
-    const before = stateInput === null ? null : await documentReprocessingState(stateInput);
-    await expect(fixture.run()).rejects.toThrow();
-    expect(fixture.parameterCounts).toEqual([18000, 18]);
-    if (stateInput !== null) {
-      expect(await documentReprocessingState(stateInput)).toEqual(before);
-    } else {
-      expect(await Promise.all([
-        testDatabase.database.select().from(documents).where(eq(documents.contentSha256, fixture.prepared.contentSha256)),
-        testDatabase.database.select().from(dataSources).where(eq(dataSources.title, fixture.prepared.metadata.sourceTitle)),
-        testDatabase.database.select().from(dataGovernanceDrafts).where(eq(dataGovernanceDrafts.createdBy, fixture.actor.email)),
-        testDatabase.database.select().from(dataChangeLogs).where(eq(dataChangeLogs.actorEmail, fixture.actor.email)),
-      ])).toEqual([[], [], [], []]);
-    }
-  });
+  it.each(documentBatchWritePaths)(
+    "rolls back the first %s batch when the second fails",
+    async (path) => {
+      const fixture = await documentBatchWriteCase(
+        path,
+        `batch-${path}-rollback`,
+        true,
+      );
+      const stateInput =
+        fixture.documentId === null
+          ? null
+          : {
+              documentId: fixture.documentId,
+              attemptedSourceTitle: fixture.prepared.metadata.sourceTitle,
+            };
+      const before =
+        stateInput === null
+          ? null
+          : await documentReprocessingState(stateInput);
+      await expect(fixture.run()).rejects.toThrow();
+      expect(fixture.parameterCounts).toEqual([18000, 18]);
+      if (stateInput !== null) {
+        expect(await documentReprocessingState(stateInput)).toEqual(before);
+      } else {
+        expect(
+          await Promise.all([
+            testDatabase.database
+              .select()
+              .from(documents)
+              .where(
+                eq(documents.contentSha256, fixture.prepared.contentSha256),
+              ),
+            testDatabase.database
+              .select()
+              .from(dataSources)
+              .where(
+                eq(dataSources.title, fixture.prepared.metadata.sourceTitle),
+              ),
+            testDatabase.database
+              .select()
+              .from(dataGovernanceDrafts)
+              .where(eq(dataGovernanceDrafts.createdBy, fixture.actor.email)),
+            testDatabase.database
+              .select()
+              .from(dataChangeLogs)
+              .where(eq(dataChangeLogs.actorEmail, fixture.actor.email)),
+          ]),
+        ).toEqual([[], [], [], []]);
+      }
+    },
+  );
 });
 
 async function driftSourceTimestampWithinSameMillisecond(
@@ -640,10 +736,7 @@ async function mutateReprocessingLineage(input: {
           supersededDraftIds:
             input.mutation === "empty"
               ? []
-              : [
-                  predecessorId,
-                  "83000000-0000-4000-8000-000000000098",
-                ],
+              : [predecessorId, "83000000-0000-4000-8000-000000000098"],
         },
       })
       .where(eq(dataChangeLogs.id, marker.id));
@@ -848,9 +941,7 @@ describe("governed document atomic writes", () => {
   it.each(v2ProvenanceMutationCases)(
     "fails v2 review transactionally when provenance is %s",
     async (mutation) => {
-      const fixture = await createV2ProvenanceFixture(
-        `v2-review-${mutation}`,
-      );
+      const fixture = await createV2ProvenanceFixture(`v2-review-${mutation}`);
       await mutateDocumentProvenance({
         action: "document_reprocessed",
         documentId: fixture.documentId,
@@ -894,9 +985,7 @@ describe("governed document atomic writes", () => {
   it.each(reprocessingLineageMutationCases)(
     "fails v2 review without side effects when predecessor lineage is %s",
     async (mutation) => {
-      const fixture = await createV2ProvenanceFixture(
-        `v2-lineage-${mutation}`,
-      );
+      const fixture = await createV2ProvenanceFixture(`v2-lineage-${mutation}`);
       await mutateReprocessingLineage({
         documentId: fixture.documentId,
         draftId: fixture.draft.id,
@@ -928,9 +1017,7 @@ describe("governed document atomic writes", () => {
   );
 
   it("fails v2 publish without side effects when its immediate predecessor drifts", async () => {
-    const fixture = await createV2ProvenanceFixture(
-      "v2-lineage-publish",
-    );
+    const fixture = await createV2ProvenanceFixture("v2-lineage-publish");
     await fixture.repository.reviewDraft({
       actor: reviewer,
       draftId: fixture.draft.id,
@@ -996,9 +1083,7 @@ describe("governed document atomic writes", () => {
   it.each(v2ProvenanceMutationCases)(
     "fails v2 publish transactionally when provenance is %s",
     async (mutation) => {
-      const fixture = await createV2ProvenanceFixture(
-        `v2-publish-${mutation}`,
-      );
+      const fixture = await createV2ProvenanceFixture(`v2-publish-${mutation}`);
       await fixture.repository.reviewDraft({
         actor: reviewer,
         draftId: fixture.draft.id,
@@ -1078,8 +1163,9 @@ describe("governed document atomic writes", () => {
     if (!result.draft) {
       throw new Error("Failed governed upload did not return its draft.");
     }
-    const [reviewContext] =
-      await dashboardRepository.getDraftReviewContexts([result.draft]);
+    const [reviewContext] = await dashboardRepository.getDraftReviewContexts([
+      result.draft,
+    ]);
 
     expect(result.draftCreated).toBe(true);
     expect(storedDocument).toEqual({
@@ -1350,9 +1436,7 @@ describe("governed document atomic writes", () => {
         reason: "Reject a forged prepared owner expectation.",
       })
       .catch((caught: unknown) => caught);
-    expect(forgedExpectationError).toBeInstanceOf(
-      GovernanceConflictError,
-    );
+    expect(forgedExpectationError).toBeInstanceOf(GovernanceConflictError);
 
     const unauthorizedCommitError = await repository
       .commitDocumentReprocessing({
@@ -1361,9 +1445,7 @@ describe("governed document atomic writes", () => {
         reason: "Do not mutate another editor's active draft.",
       })
       .catch((caught: unknown) => caught);
-    expect(unauthorizedCommitError).toBeInstanceOf(
-      GovernanceConflictError,
-    );
+    expect(unauthorizedCommitError).toBeInstanceOf(GovernanceConflictError);
     const unauthorizedCommitText =
       unauthorizedCommitError instanceof Error
         ? `${unauthorizedCommitError.name}: ${unauthorizedCommitError.message}`
@@ -1378,9 +1460,7 @@ describe("governed document atomic writes", () => {
       prepared,
       reason: "Use reviewer global scope for the governed replacement.",
     });
-    const afterReviewerCommit = await documentReprocessingState(
-      stateInput,
-    );
+    const afterReviewerCommit = await documentReprocessingState(stateInput);
 
     const unauthorizedReplayError = await repository
       .commitDocumentReprocessing({
@@ -1389,9 +1469,7 @@ describe("governed document atomic writes", () => {
         reason: "Do not replay a revision now owned by another actor.",
       })
       .catch((caught: unknown) => caught);
-    expect(unauthorizedReplayError).toBeInstanceOf(
-      GovernanceConflictError,
-    );
+    expect(unauthorizedReplayError).toBeInstanceOf(GovernanceConflictError);
     const unauthorizedReplayText =
       unauthorizedReplayError instanceof Error
         ? `${unauthorizedReplayError.name}: ${unauthorizedReplayError.message}`
@@ -1428,7 +1506,8 @@ describe("governed document atomic writes", () => {
       prepared: preparedUpload("e", "reprocess-initial"),
     });
     const oldDraftId = initial.draft?.id;
-    if (!oldDraftId) throw new Error("Initial document draft was not returned.");
+    if (!oldDraftId)
+      throw new Error("Initial document draft was not returned.");
     const prepared = await preparedReprocessing({
       documentId: initial.documentId,
       fingerprint: "e".repeat(64),
@@ -1800,9 +1879,7 @@ describe("governed document atomic writes", () => {
             ...(field === "operationFingerprint"
               ? { operationFingerprint: "f".repeat(64) }
               : {
-                  supersededDraftIds: [
-                    "83000000-0000-4000-8000-000000000099",
-                  ],
+                  supersededDraftIds: ["83000000-0000-4000-8000-000000000099"],
                 }),
           },
         })
@@ -1887,18 +1964,12 @@ describe("governed document atomic writes", () => {
     [
       "source verifiedAt",
       (documentId: string) =>
-        driftSourceTimestampWithinSameMillisecond(
-          documentId,
-          "verifiedAt",
-        ),
+        driftSourceTimestampWithinSameMillisecond(documentId, "verifiedAt"),
     ],
     [
       "source updatedAt",
       (documentId: string) =>
-        driftSourceTimestampWithinSameMillisecond(
-          documentId,
-          "updatedAt",
-        ),
+        driftSourceTimestampWithinSameMillisecond(documentId, "updatedAt"),
     ],
   ] as const)(
     "fails an idempotent replay closed after %s drift",
@@ -2046,9 +2117,7 @@ describe("governed document atomic writes", () => {
       })
       .where(eq(dataChangeLogs.id, marker.id));
 
-    const [context] = await dashboardRepository.getDraftReviewContexts([
-      draft,
-    ]);
+    const [context] = await dashboardRepository.getDraftReviewContexts([draft]);
     expect(context).toMatchObject({
       baselineStatus: "missing",
       publishReady: false,
@@ -2283,7 +2352,9 @@ describe("governed document atomic writes", () => {
       }),
     ]);
 
-    expect(results.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+    expect(results.filter(({ status }) => status === "fulfilled")).toHaveLength(
+      1,
+    );
     const rejected = results.find(({ status }) => status === "rejected");
     expect(rejected?.status).toBe("rejected");
     if (rejected?.status === "rejected") {

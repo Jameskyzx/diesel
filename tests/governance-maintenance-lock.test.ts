@@ -52,9 +52,7 @@ import {
 } from "@/server/db/governance-maintenance-lock";
 
 function renderQuery(environment: Record<string, string | undefined>) {
-  return new PgDialect().sqlToQuery(
-    buildGovernanceWriteLockQuery(environment),
-  );
+  return new PgDialect().sqlToQuery(buildGovernanceWriteLockQuery(environment));
 }
 
 function processExitedError(): NodeJS.ErrnoException {
@@ -63,26 +61,21 @@ function processExitedError(): NodeJS.ErrnoException {
 
 function createTermIgnoringProcessGroup() {
   let exists = true;
-  const signalProcess = vi.fn(
-    (_pid: number, signal: NodeJS.Signals | 0) => {
-      if (signal === 0) {
-        if (!exists) throw processExitedError();
-        return true;
-      }
-      if (signal === "SIGKILL") exists = false;
+  const signalProcess = vi.fn((_pid: number, signal: NodeJS.Signals | 0) => {
+    if (signal === 0) {
+      if (!exists) throw processExitedError();
       return true;
-    },
-  );
+    }
+    if (signal === "SIGKILL") exists = false;
+    return true;
+  });
   return { signalProcess };
 }
 
 describe("governance maintenance advisory-lock protocol", () => {
   it("guards document completion before any repository read or write", async () => {
     const source = await readFile(
-      resolve(
-        process.cwd(),
-        "src/server/repositories/knowledge-repository.ts",
-      ),
+      resolve(process.cwd(), "src/server/repositories/knowledge-repository.ts"),
       "utf8",
     );
 
@@ -223,19 +216,42 @@ describe("governance maintenance advisory-lock protocol", () => {
 describe("governance maintenance command CLI", () => {
   it("emits only allowlisted failure codes, never raw credentials or error details", () => {
     const secret = "postgresql://user:must-not-log@host/database";
-    for (const error of [new Error(secret), { code: secret, message: secret },
-      new GovernanceMaintenanceSessionError("probe-query-failed", secret)]) {
-      const serialized = formatGovernanceMaintenanceDiagnostic(error, "command");
+    for (const error of [
+      new Error(secret),
+      { code: secret, message: secret },
+      new GovernanceMaintenanceSessionError("probe-query-failed", secret),
+    ]) {
+      const serialized = formatGovernanceMaintenanceDiagnostic(
+        error,
+        "command",
+      );
       expect(serialized).not.toContain(secret);
       expect(JSON.parse(serialized)).toMatchObject({ databaseCode: null });
     }
-    expect(JSON.parse(formatGovernanceMaintenanceDiagnostic(
-      new GovernanceMaintenanceSessionError("probe-query-failed", "ECONNRESET"), "heartbeat",
-    ))).toEqual({ kind: "governance-maintenance-failure-v1", phase: "heartbeat",
-      reason: "probe-query-failed", databaseCode: "ECONNRESET" });
-    expect(JSON.parse(formatGovernanceMaintenanceDiagnostic(
-      new GovernanceMaintenanceProcessGroupError(), "command",
-    )).reason).toBe("process-group-not-terminated");
+    expect(
+      JSON.parse(
+        formatGovernanceMaintenanceDiagnostic(
+          new GovernanceMaintenanceSessionError(
+            "probe-query-failed",
+            "ECONNRESET",
+          ),
+          "heartbeat",
+        ),
+      ),
+    ).toEqual({
+      kind: "governance-maintenance-failure-v1",
+      phase: "heartbeat",
+      reason: "probe-query-failed",
+      databaseCode: "ECONNRESET",
+    });
+    expect(
+      JSON.parse(
+        formatGovernanceMaintenanceDiagnostic(
+          new GovernanceMaintenanceProcessGroupError(),
+          "command",
+        ),
+      ).reason,
+    ).toBe("process-group-not-terminated");
   });
 
   it.each([
@@ -246,63 +262,128 @@ describe("governance maintenance command CLI", () => {
     ["tokenReentered", false, "token-lock-reentry-failed"],
     ["globalBalanced", false, "global-lock-balance-failed"],
     ["tokenBalanced", false, "token-lock-balance-failed"],
-  ])("records the exact failed %s proof once before termination", async (field, value, reason) => {
-    vi.useFakeTimers();
-    try {
-      const events: string[] = [];
-      const onFailure = vi.fn((failure: GovernanceMaintenanceSessionError) => {
-        events.push(failure.reason);
-        throw new Error("diagnostic sink failed");
-      });
-      const kill = vi.fn(() => { events.push("terminated"); return true; });
-      const heartbeat = startGovernanceMaintenanceHeartbeat({
-        child: { kill }, expectedBackendPid: 101, intervalMs: 10, timeoutMs: 50,
-        onFailure,
-        probe: async () => ({ backendPid: 101, globalHeld: true, tokenHeld: true,
-          globalReentered: true, tokenReentered: true, globalBalanced: true,
-          tokenBalanced: true, [field]: value }),
-      });
-      await vi.advanceTimersByTimeAsync(10);
-      expect((await heartbeat.stop())?.reason).toBe(reason);
-      await heartbeat.stop();
-      expect(onFailure).toHaveBeenCalledOnce();
-      expect(kill).toHaveBeenCalledOnce();
-      expect(events).toEqual([reason, "terminated"]);
-    } finally { vi.useRealTimers(); }
-  });
+  ])(
+    "records the exact failed %s proof once before termination",
+    async (field, value, reason) => {
+      vi.useFakeTimers();
+      try {
+        const events: string[] = [];
+        const onFailure = vi.fn(
+          (failure: GovernanceMaintenanceSessionError) => {
+            events.push(failure.reason);
+            throw new Error("diagnostic sink failed");
+          },
+        );
+        const kill = vi.fn(() => {
+          events.push("terminated");
+          return true;
+        });
+        const heartbeat = startGovernanceMaintenanceHeartbeat({
+          child: { kill },
+          expectedBackendPid: 101,
+          intervalMs: 10,
+          timeoutMs: 50,
+          onFailure,
+          probe: async () => ({
+            backendPid: 101,
+            globalHeld: true,
+            tokenHeld: true,
+            globalReentered: true,
+            tokenReentered: true,
+            globalBalanced: true,
+            tokenBalanced: true,
+            [field]: value,
+          }),
+        });
+        await vi.advanceTimersByTimeAsync(10);
+        expect((await heartbeat.stop())?.reason).toBe(reason);
+        await heartbeat.stop();
+        expect(onFailure).toHaveBeenCalledOnce();
+        expect(kill).toHaveBeenCalledOnce();
+        expect(events).toEqual([reason, "terminated"]);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
 
   it("distinguishes a probe deadline from a rejected query", async () => {
     vi.useFakeTimers();
     try {
       for (const [reason, probe] of [
-        ["probe-timeout", () => new Promise<GovernanceMaintenanceSessionProbe>(() => undefined)],
-        ["probe-query-failed", () => Promise.reject(Object.assign(new Error("private"), { code: "57P01" }))],
+        [
+          "probe-timeout",
+          () => new Promise<GovernanceMaintenanceSessionProbe>(() => undefined),
+        ],
+        [
+          "probe-query-failed",
+          () =>
+            Promise.reject(
+              Object.assign(new Error("private"), { code: "57P01" }),
+            ),
+        ],
       ] as const) {
         const onFailure = vi.fn();
         const heartbeat = startGovernanceMaintenanceHeartbeat({
-          child: { kill: vi.fn() }, expectedBackendPid: 101, intervalMs: 10,
-          timeoutMs: 50, onFailure, probe,
+          child: { kill: vi.fn() },
+          expectedBackendPid: 101,
+          intervalMs: 10,
+          timeoutMs: 50,
+          onFailure,
+          probe,
         });
         await vi.advanceTimersByTimeAsync(60);
         const failure = await heartbeat.stop();
         expect(failure?.reason).toBe(reason);
-        expect(failure?.databaseCode).toBe(reason === "probe-query-failed" ? "57P01" : null);
+        expect(failure?.databaseCode).toBe(
+          reason === "probe-query-failed" ? "57P01" : null,
+        );
         expect(onFailure).toHaveBeenCalledOnce();
       }
-    } finally { vi.useRealTimers(); }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it.each([
-    ["unlock-query-failed", async () => { throw Object.assign(new Error("private database URL"), { code: "ECONNRESET" }); }, async () => undefined],
-    ["unlock-proof-failed", async () => ({ globalReleased: false, tokenReleased: true }), async () => undefined],
-    ["session-close-failed", async () => ({ globalReleased: true, tokenReleased: true }), async () => { throw new Error("private path"); }],
-  ])("classifies %s without losing the mandatory session close", async (reason, unlock, close) => {
-    const closeSpy = vi.fn(close);
-    await expect(cleanupGovernanceMaintenanceSession({
-      globalLockHeld: true, tokenLockHeld: true, unlock, close: closeSpy,
-    })).rejects.toMatchObject({ reason });
-    expect(closeSpy).toHaveBeenCalledExactlyOnceWith(governanceMaintenanceCleanupTimeoutSeconds);
-  });
+    [
+      "unlock-query-failed",
+      async () => {
+        throw Object.assign(new Error("private database URL"), {
+          code: "ECONNRESET",
+        });
+      },
+      async () => undefined,
+    ],
+    [
+      "unlock-proof-failed",
+      async () => ({ globalReleased: false, tokenReleased: true }),
+      async () => undefined,
+    ],
+    [
+      "session-close-failed",
+      async () => ({ globalReleased: true, tokenReleased: true }),
+      async () => {
+        throw new Error("private path");
+      },
+    ],
+  ])(
+    "classifies %s without losing the mandatory session close",
+    async (reason, unlock, close) => {
+      const closeSpy = vi.fn(close);
+      await expect(
+        cleanupGovernanceMaintenanceSession({
+          globalLockHeld: true,
+          tokenLockHeld: true,
+          unlock,
+          close: closeSpy,
+        }),
+      ).rejects.toMatchObject({ reason });
+      expect(closeSpy).toHaveBeenCalledExactlyOnceWith(
+        governanceMaintenanceCleanupTimeoutSeconds,
+      );
+    },
+  );
 
   it("parses a single inert database env file option only before the command separator", () => {
     expect(
@@ -335,11 +416,7 @@ describe("governance maintenance command CLI", () => {
       ]),
     ).not.toThrow();
     expect(() =>
-      parseGovernanceMaintenanceCommand([
-        "--database-env-file=",
-        "--",
-        "bash",
-      ]),
+      parseGovernanceMaintenanceCommand(["--database-env-file=", "--", "bash"]),
     ).toThrow("path is required");
   });
 
@@ -456,11 +533,10 @@ describe("governance maintenance command CLI", () => {
     const kill = vi.fn().mockReturnValue(true);
     const signalProcess = vi.fn().mockReturnValue(true);
 
-    signalGovernanceMaintenanceChild(
-      { kill, pid: 4_321 },
-      "SIGTERM",
-      { platform: "linux", signalProcess },
-    );
+    signalGovernanceMaintenanceChild({ kill, pid: 4_321 }, "SIGTERM", {
+      platform: "linux",
+      signalProcess,
+    });
 
     expect(signalProcess).toHaveBeenCalledOnce();
     expect(signalProcess).toHaveBeenCalledWith(-4_321, "SIGTERM");
@@ -473,11 +549,10 @@ describe("governance maintenance command CLI", () => {
       throw new Error("process group exited");
     });
 
-    signalGovernanceMaintenanceChild(
-      { kill, pid: 4_321 },
-      "SIGHUP",
-      { platform: "linux", signalProcess },
-    );
+    signalGovernanceMaintenanceChild({ kill, pid: 4_321 }, "SIGHUP", {
+      platform: "linux",
+      signalProcess,
+    });
 
     expect(signalProcess).toHaveBeenCalledWith(-4_321, "SIGHUP");
     expect(kill).toHaveBeenCalledOnce();
@@ -499,11 +574,10 @@ describe("governance maintenance command CLI", () => {
       sleep: async () => undefined,
       termGraceMs: 0,
     };
-    const controller =
-      createGovernanceMaintenanceChildTerminationController(
-        child,
-        processGroupOptions,
-      );
+    const controller = createGovernanceMaintenanceChildTerminationController(
+      child,
+      processGroupOptions,
+    );
     let settled = false;
     const waiting = waitForMaintenanceChild(
       child,
@@ -546,11 +620,10 @@ describe("governance maintenance command CLI", () => {
       sleep: async () => undefined,
       termGraceMs: 0,
     };
-    const controller =
-      createGovernanceMaintenanceChildTerminationController(
-        child,
-        processGroupOptions,
-      );
+    const controller = createGovernanceMaintenanceChildTerminationController(
+      child,
+      processGroupOptions,
+    );
     const originalError = new Error("child transport failed");
     let settled = false;
     const waiting = waitForMaintenanceChild(
@@ -587,11 +660,10 @@ describe("governance maintenance command CLI", () => {
       sleep: async () => undefined,
       termGraceMs: 0,
     };
-    const controller =
-      createGovernanceMaintenanceChildTerminationController(
-        child,
-        processGroupOptions,
-      );
+    const controller = createGovernanceMaintenanceChildTerminationController(
+      child,
+      processGroupOptions,
+    );
     const waiting = waitForMaintenanceChild(
       child,
       signalTarget,
@@ -642,11 +714,10 @@ describe("governance maintenance command CLI", () => {
       sleep: async () => undefined,
       termGraceMs: 0,
     };
-    const controller =
-      createGovernanceMaintenanceChildTerminationController(
-        child,
-        processGroupOptions,
-      );
+    const controller = createGovernanceMaintenanceChildTerminationController(
+      child,
+      processGroupOptions,
+    );
     const waiting = waitForMaintenanceChild(
       child,
       signalTarget,
@@ -664,20 +735,15 @@ describe("governance maintenance command CLI", () => {
 
   it("spawns production maintenance commands in a dedicated Unix process group", async () => {
     const source = await readFile(
-      resolve(
-        process.cwd(),
-        "scripts/db/with-governance-maintenance-lock.ts",
-      ),
+      resolve(process.cwd(), "scripts/db/with-governance-maintenance-lock.ts"),
       "utf8",
     );
 
     expect(source).toContain('detached: process.platform !== "win32"');
     expect(source).toContain(
-      "signalGovernanceMaintenanceChild(input.child, \"SIGTERM\")",
+      'signalGovernanceMaintenanceChild(input.child, "SIGTERM")',
     );
-    expect(source).toContain(
-      "signalGovernanceMaintenanceChild(child, signal)",
-    );
+    expect(source).toContain("signalGovernanceMaintenanceChild(child, signal)");
     expect(source).toContain(
       "stdio: resolveGovernanceMaintenanceChildStdio(childEnvironment)",
     );
@@ -688,13 +754,12 @@ describe("governance maintenance command CLI", () => {
 
   it("inherits the fixed release lifecycle lock descriptor when explicitly declared", () => {
     expect(governanceMaintenanceReleaseLifecycleLockFd).toBe(8);
-    expect(
-      governanceMaintenanceReleaseLifecycleLockFdEnvironmentVariable,
-    ).toBe("DIESEL_RELEASE_LIFECYCLE_LOCK_FD");
+    expect(governanceMaintenanceReleaseLifecycleLockFdEnvironmentVariable).toBe(
+      "DIESEL_RELEASE_LIFECYCLE_LOCK_FD",
+    );
     expect(
       resolveGovernanceMaintenanceChildStdio({
-        [governanceMaintenanceReleaseLifecycleLockFdEnvironmentVariable]:
-          "8",
+        [governanceMaintenanceReleaseLifecycleLockFdEnvironmentVariable]: "8",
       }),
     ).toEqual([
       "inherit",
@@ -753,8 +818,7 @@ describe("governance maintenance command CLI", () => {
 
   it("shares one final proof across concurrent stop calls", async () => {
     let finishProbe:
-      | ((probe: GovernanceMaintenanceSessionProbe) => void)
-      | undefined;
+      ((probe: GovernanceMaintenanceSessionProbe) => void) | undefined;
     const probe = vi.fn(
       () =>
         new Promise<GovernanceMaintenanceSessionProbe>((resolveProbe) => {
@@ -816,9 +880,7 @@ describe("governance maintenance command CLI", () => {
       await vi.advanceTimersByTimeAsync(50);
       const expectedFailure = await firstStop;
       await expect(secondStop).resolves.toBe(expectedFailure);
-      expect(expectedFailure).toBeInstanceOf(
-        GovernanceMaintenanceSessionError,
-      );
+      expect(expectedFailure).toBeInstanceOf(GovernanceMaintenanceSessionError);
       expect(probe).toHaveBeenCalledOnce();
       expect(kill).not.toHaveBeenCalled();
     } finally {
@@ -1076,8 +1138,7 @@ describe("governance maintenance command CLI", () => {
     vi.useFakeTimers();
     try {
       let finishInFlightProbe:
-        | ((probe: GovernanceMaintenanceSessionProbe) => void)
-        | undefined;
+        ((probe: GovernanceMaintenanceSessionProbe) => void) | undefined;
       const healthyProbe: GovernanceMaintenanceSessionProbe = {
         backendPid: 101,
         globalBalanced: true,
@@ -1255,9 +1316,11 @@ describe("governance maintenance command CLI", () => {
         kill,
       }) as unknown as ChildProcess;
       let childSettled = false;
-      const waiting = waitForMaintenanceChild(child, signalTarget).finally(() => {
-        childSettled = true;
-      });
+      const waiting = waitForMaintenanceChild(child, signalTarget).finally(
+        () => {
+          childSettled = true;
+        },
+      );
       const heartbeat = startGovernanceMaintenanceHeartbeat({
         child,
         expectedBackendPid: 101,
@@ -1305,9 +1368,9 @@ describe("governance maintenance command CLI", () => {
   it("redacts malformed command arguments", () => {
     const secretArgument = "super-secret-command-argument";
 
-    expect(() =>
-      parseGovernanceMaintenanceCommand([secretArgument]),
-    ).toThrow("A command is required");
+    expect(() => parseGovernanceMaintenanceCommand([secretArgument])).toThrow(
+      "A command is required",
+    );
     expect(governanceMaintenanceFailureMessage).toContain(
       "no credentials or command arguments were logged",
     );
@@ -1318,26 +1381,33 @@ describe("governance maintenance command CLI", () => {
     ["SIGHUP", 129],
     ["SIGINT", 130],
     ["SIGTERM", 143],
-  ] as const)("forwards %s and waits for the child before returning", async (signal, code) => {
-    const signalTarget = new EventEmitter();
-    const childEvents = new EventEmitter();
-    const kill = vi.fn().mockReturnValue(true);
-    const child = Object.assign(childEvents, { kill }) as unknown as ChildProcess;
-    const waiting = waitForMaintenanceChild(child, signalTarget);
+  ] as const)(
+    "forwards %s and waits for the child before returning",
+    async (signal, code) => {
+      const signalTarget = new EventEmitter();
+      const childEvents = new EventEmitter();
+      const kill = vi.fn().mockReturnValue(true);
+      const child = Object.assign(childEvents, {
+        kill,
+      }) as unknown as ChildProcess;
+      const waiting = waitForMaintenanceChild(child, signalTarget);
 
-    signalTarget.emit(signal);
-    expect(kill).toHaveBeenCalledWith(signal);
-    childEvents.emit("close", null, signal);
+      signalTarget.emit(signal);
+      expect(kill).toHaveBeenCalledWith(signal);
+      childEvents.emit("close", null, signal);
 
-    await expect(waiting).resolves.toBe(code);
-    expect(signalTarget.listenerCount(signal)).toBe(0);
-  });
+      await expect(waiting).resolves.toBe(code);
+      expect(signalTarget.listenerCount(signal)).toBe(0);
+    },
+  );
 
   it("does not let a child report success after the wrapper received a termination signal", async () => {
     const signalTarget = new EventEmitter();
     const childEvents = new EventEmitter();
     const kill = vi.fn().mockReturnValue(true);
-    const child = Object.assign(childEvents, { kill }) as unknown as ChildProcess;
+    const child = Object.assign(childEvents, {
+      kill,
+    }) as unknown as ChildProcess;
     const waiting = waitForMaintenanceChild(child, signalTarget);
 
     signalTarget.emit("SIGINT");

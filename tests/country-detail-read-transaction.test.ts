@@ -35,8 +35,7 @@ vi.mock("@/server/repositories/regulation-repository", () => ({
 }));
 
 vi.mock("@/server/services/marketing-analysis-service", () => ({
-  compareRegulationsFromRepositories:
-    mocks.compareRegulationsFromRepositories,
+  compareRegulationsFromRepositories: mocks.compareRegulationsFromRepositories,
 }));
 
 import {
@@ -108,10 +107,7 @@ describe("country detail read transaction", () => {
     });
 
     await expect(
-      getCountryDetails(
-        { iso3: "CHN" },
-        { signal: controller.signal },
-      ),
+      getCountryDetails({ iso3: "CHN" }, { signal: controller.signal }),
     ).rejects.toMatchObject({ name: "AbortError" });
 
     expect(mocks.callbackRejected).toBe(true);
@@ -152,9 +148,14 @@ describe("country detail read transaction", () => {
       async (
         input: unknown,
         repositories: RegulationComparisonRepositories,
-        options: Parameters<RegulationComparisonRepositories["regulationRepository"]["findForComparison"]>[1],
+        options: Parameters<
+          RegulationComparisonRepositories["regulationRepository"]["findForComparison"]
+        >[1],
       ) => {
-        await repositories.regulationRepository.findForComparison(input, options);
+        await repositories.regulationRepository.findForComparison(
+          input,
+          options,
+        );
         throw comparisonFailure;
       },
     );
@@ -222,16 +223,22 @@ describe("country detail read transaction", () => {
     mocks.findDetailRowsByIso3.mockImplementation(() => {
       started.push("details");
       return new Promise((resolve) => {
-        releaseDetails = () => resolve({ jurisdictions: [], marketMetrics: [], regulations: [] });
+        releaseDetails = () =>
+          resolve({ jurisdictions: [], marketMetrics: [], regulations: [] });
       });
     });
     let reusedProfile: unknown;
     mocks.compareRegulationsFromRepositories.mockImplementation(
-      async (_input: unknown, repositories: RegulationComparisonRepositories) => {
+      async (
+        _input: unknown,
+        repositories: RegulationComparisonRepositories,
+      ) => {
         started.push("applicability");
         // Both reads are in flight before either finishes: one pipelined wave.
         expect(started).toEqual(["details", "applicability"]);
-        reusedProfile = await repositories.countryRepository.findByIso3({ iso3: "CHN" });
+        reusedProfile = await repositories.countryRepository.findByIso3({
+          iso3: "CHN",
+        });
         releaseDetails();
         throw new Error("stop after the wave");
       },

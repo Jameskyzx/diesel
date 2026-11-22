@@ -23,9 +23,7 @@ import {
 } from "@/server/db/schema";
 import { GovernanceConflictError } from "@/server/repositories/governance-conflict-error";
 
-type DataSourceDraftPayload = z.output<
-  typeof dataSourceDraftPayloadSchema
->;
+type DataSourceDraftPayload = z.output<typeof dataSourceDraftPayloadSchema>;
 
 export const SOURCE_VERIFIED_AT_REGRESSION_MESSAGE =
   "Source verification time cannot be earlier than the current verification time.";
@@ -62,9 +60,8 @@ export function createGovernanceSourceWrites<
     Parameters<typeof database.transaction>[0]
   >[0];
 
-  const hasRows = async <TRow>(
-    query: PromiseLike<TRow[]>,
-  ): Promise<boolean> => (await query).length > 0;
+  const hasRows = async <TRow>(query: PromiseLike<TRow[]>): Promise<boolean> =>
+    (await query).length > 0;
 
   const requireDemoSourceHasNoNonDemoDependents = async (
     transaction: GovernanceTransaction,

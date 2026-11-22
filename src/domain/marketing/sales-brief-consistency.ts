@@ -19,9 +19,7 @@ function hasDuplicates(values: readonly string[]): boolean {
   return new Set(values).size !== values.length;
 }
 
-function weightsFromBrief(
-  brief: SalesBrief,
-): OpportunityScoreWeights | null {
+function weightsFromBrief(brief: SalesBrief): OpportunityScoreWeights | null {
   const entries = brief.marketScore.components.map(
     ({ configuredWeight, key }) => [key, configuredWeight] as const,
   );

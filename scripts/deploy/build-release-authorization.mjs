@@ -21,7 +21,9 @@ if (esbuild.version !== expectedEsbuildVersion) {
   );
 }
 
-const repositoryRoot = resolve(fileURLToPath(new URL("../..", import.meta.url)));
+const repositoryRoot = resolve(
+  fileURLToPath(new URL("../..", import.meta.url)),
+);
 const defaultOutput = resolve(
   repositoryRoot,
   "scripts/deploy/verify-release-authorization.bundle.mjs",
@@ -51,7 +53,10 @@ function parseOptions(arguments_) {
     throw new Error(`Unknown argument: ${argument}`);
   }
 
-  if (outfile.length === 0 || (metafile !== undefined && metafile.length === 0)) {
+  if (
+    outfile.length === 0 ||
+    (metafile !== undefined && metafile.length === 0)
+  ) {
     throw new Error("Output paths must not be empty");
   }
 
@@ -85,8 +90,12 @@ const result = await esbuild.build({
 });
 
 if (options.metafile !== undefined) {
-  await writeFile(options.metafile, `${JSON.stringify(result.metafile, null, 2)}\n`, {
-    encoding: "utf8",
-    flag: "wx",
-  });
+  await writeFile(
+    options.metafile,
+    `${JSON.stringify(result.metafile, null, 2)}\n`,
+    {
+      encoding: "utf8",
+      flag: "wx",
+    },
+  );
 }

@@ -2,9 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import GlobalError, {
-  GlobalErrorDocument,
-} from "@/app/global-error";
+import GlobalError, { GlobalErrorDocument } from "@/app/global-error";
 import { localeFromBrowserCookie } from "@/i18n/locale";
 
 const error = Object.assign(new Error("render failed"), {
@@ -19,7 +17,9 @@ describe("global error locale", () => {
     );
 
     expect(html).toContain('<html lang="en">');
-    expect(html).toContain("<title>The application is temporarily unavailable</title>");
+    expect(html).toContain(
+      "<title>The application is temporarily unavailable</title>",
+    );
     expect(html.match(/<title>/gu)).toHaveLength(1);
     expect(html).toContain("The application is temporarily unavailable");
     expect(html).toContain("Error code: error-reference-123");

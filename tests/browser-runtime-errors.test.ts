@@ -8,12 +8,21 @@ type Attachment = { body: Buffer; contentType: string };
 const reportSchema = z.object({
   totalErrors: z.number().int(),
   omittedErrors: z.number().int(),
-  samples: z.array(z.object({ name: z.string(), message: z.string(), stack: z.string().nullable(), truncated: z.boolean() })),
+  samples: z.array(
+    z.object({
+      name: z.string(),
+      message: z.string(),
+      stack: z.string().nullable(),
+      truncated: z.boolean(),
+    }),
+  ),
 });
 
 function harness() {
   const page = new EventEmitter();
-  const attach = vi.fn<(name: string, options: Attachment) => Promise<void>>().mockResolvedValue(undefined);
+  const attach = vi
+    .fn<(name: string, options: Attachment) => Promise<void>>()
+    .mockResolvedValue(undefined);
   return { page, artifacts: { attach }, attach };
 }
 
@@ -27,27 +36,43 @@ describe("scoped browser runtime-error checks", () => {
 
   it("fails an otherwise successful action and attaches its actual browser stack", async () => {
     const { page, artifacts, attach } = harness();
-    const error = new TypeError("CountryPage cannot have a negative time stamp.");
-    error.stack = "TypeError: fictional runtime failure\n at fictional-renderer.js:123:4";
-    await expect(checkBrowserRuntimeErrors(page, artifacts, async () => {
-      page.emit("pageerror", error);
-    })).rejects.toThrow("1 unhandled browser runtime error");
+    const error = new TypeError(
+      "CountryPage cannot have a negative time stamp.",
+    );
+    error.stack =
+      "TypeError: fictional runtime failure\n at fictional-renderer.js:123:4";
+    await expect(
+      checkBrowserRuntimeErrors(page, artifacts, async () => {
+        page.emit("pageerror", error);
+      }),
+    ).rejects.toThrow("1 unhandled browser runtime error");
     expect(attach).toHaveBeenCalledTimes(1);
     const [name, options] = attach.mock.calls[0]!;
     expect(name).toBe("unhandled-browser-runtime-errors");
     expect(options.contentType).toBe("application/json");
-    const report = reportSchema.parse(JSON.parse(options.body.toString("utf8")));
+    const report = reportSchema.parse(
+      JSON.parse(options.body.toString("utf8")),
+    );
     expect(report.totalErrors).toBe(1);
-    expect(report.samples).toEqual([{ name: "TypeError", message: error.message, stack: error.stack, truncated: false }]);
+    expect(report.samples).toEqual([
+      {
+        name: "TypeError",
+        message: error.message,
+        stack: error.stack,
+        truncated: false,
+      },
+    ]);
     expect(page.listenerCount("pageerror")).toBe(0);
   });
 
   it("preserves an action failure when there is no browser error", async () => {
     const { page, artifacts, attach } = harness();
     const failure = new Error("Fictional URL assertion failure");
-    await expect(checkBrowserRuntimeErrors(page, artifacts, async () => {
-      throw failure;
-    })).rejects.toBe(failure);
+    await expect(
+      checkBrowserRuntimeErrors(page, artifacts, async () => {
+        throw failure;
+      }),
+    ).rejects.toBe(failure);
     expect(attach).not.toHaveBeenCalled();
     expect(page.listenerCount("pageerror")).toBe(0);
   });
@@ -60,7 +85,9 @@ describe("scoped browser runtime-error checks", () => {
       throw failure;
     });
     await expect(result).rejects.toBeInstanceOf(AggregateError);
-    await expect(result).rejects.toMatchObject({ errors: [failure, expect.any(Error)] });
+    await expect(result).rejects.toMatchObject({
+      errors: [failure, expect.any(Error)],
+    });
     expect(attach).toHaveBeenCalledTimes(1);
     expect(page.listenerCount("pageerror")).toBe(0);
   });
@@ -68,11 +95,15 @@ describe("scoped browser runtime-error checks", () => {
   it("does not turn an attachment failure into a passing test", async () => {
     const { page } = harness();
     const attachmentFailure = new Error("Fictional attachment failure");
-    const attach = vi.fn(async () => { throw attachmentFailure; });
+    const attach = vi.fn(async () => {
+      throw attachmentFailure;
+    });
     const result = checkBrowserRuntimeErrors(page, { attach }, async () => {
       page.emit("pageerror", new Error("Fictional browser error"));
     });
-    await expect(result).rejects.toMatchObject({ errors: [expect.any(Error), attachmentFailure] });
+    await expect(result).rejects.toMatchObject({
+      errors: [expect.any(Error), attachmentFailure],
+    });
     expect(page.listenerCount("pageerror")).toBe(0);
   });
 
@@ -81,11 +112,15 @@ describe("scoped browser runtime-error checks", () => {
     const error = new Error("m".repeat(20_000));
     error.name = "n".repeat(500);
     error.stack = "s".repeat(20_000);
-    await expect(checkBrowserRuntimeErrors(page, artifacts, async () => {
-      for (let index = 0; index < 25; index++) page.emit("pageerror", error);
-    })).rejects.toThrow("25 unhandled browser runtime errors");
+    await expect(
+      checkBrowserRuntimeErrors(page, artifacts, async () => {
+        for (let index = 0; index < 25; index++) page.emit("pageerror", error);
+      }),
+    ).rejects.toThrow("25 unhandled browser runtime errors");
     const [, options] = attach.mock.calls[0]!;
-    const report = reportSchema.parse(JSON.parse(options.body.toString("utf8")));
+    const report = reportSchema.parse(
+      JSON.parse(options.body.toString("utf8")),
+    );
     expect(report.totalErrors).toBe(25);
     expect(report.samples).toHaveLength(10);
     expect(report.omittedErrors).toBe(15);

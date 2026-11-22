@@ -55,7 +55,9 @@ sources.
 ## For technical readers
 
 Built with Next.js, TypeScript, PostgreSQL and an OpenAI-compatible model, with
-automated tests and CI on every change. To run it locally with demo data (no
+automated tests and CI on every change. Document search combines PostgreSQL
+full-text search with a local hash embedding; it is lexical, not semantic, and
+no embedding model is involved. To run it locally with demo data (no
 database or API key needed):
 
 ```bash

@@ -16,9 +16,9 @@ import { formatUtcDate } from "@/i18n/date";
 import { createSalesChatTools } from "@/server/ai/sales-chat";
 
 function dateAnchor(date: string) {
-  const anchor = salesChatLiveCases.flatMap(
-    ({ responseContract }) => responseContract.factAnchors,
-  ).find(({ id }) => id === `fact:date-${date}`);
+  const anchor = salesChatLiveCases
+    .flatMap(({ responseContract }) => responseContract.factAnchors)
+    .find(({ id }) => id === `fact:date-${date}`);
   if (!anchor) throw new Error(`Missing canonical date anchor: ${date}`);
   return anchor;
 }
@@ -39,32 +39,48 @@ describe("v13 localized calendar-date evidence", () => {
         formatUtcDate(date, "zh-CN"),
       ]);
       for (const variant of anchor.anyOf) {
-        expect(evaluateLiveEvalResponseContract({
-          expectedLocale: "en",
-          responseContract: {
-            decisionAnchors: [], disclaimerAnchor: null, factAnchors: [anchor],
-          },
-          responseText: `As of ${variant}.`,
-        }).responseGroundingPassed).toBe(true);
+        expect(
+          evaluateLiveEvalResponseContract({
+            expectedLocale: "en",
+            responseContract: {
+              decisionAnchors: [],
+              disclaimerAnchor: null,
+              factAnchors: [anchor],
+            },
+            responseText: `As of ${variant}.`,
+          }).responseGroundingPassed,
+        ).toBe(true);
       }
     },
   );
 
   it.each([
-    "2026-08-12", "2026-09-13", "2025-08-13", "2026-08-130",
-    "12026-08-13", "Aug 12, 2026", "Sep 13, 2026", "Aug 13, 2025",
-    "Aug 13, 20260", "2026年8月12日", "2026年9月13日", "2025年8月13日",
-    "12026年8月13日", "the requested date",
+    "2026-08-12",
+    "2026-09-13",
+    "2025-08-13",
+    "2026-08-130",
+    "12026-08-13",
+    "Aug 12, 2026",
+    "Sep 13, 2026",
+    "Aug 13, 2025",
+    "Aug 13, 20260",
+    "2026年8月12日",
+    "2026年9月13日",
+    "2025年8月13日",
+    "12026年8月13日",
+    "the requested date",
   ])("rejects a wrong, incomplete, or numeric-substring date: %s", (date) => {
-    expect(evaluateLiveEvalResponseContract({
-      expectedLocale: "en",
-      responseContract: {
-        decisionAnchors: [],
-        disclaimerAnchor: null,
-        factAnchors: [dateAnchor("2026-08-13")],
-      },
-      responseText: `As of ${date}.`,
-    }).missingResponseAnchorIds).toEqual(["fact:date-2026-08-13"]);
+    expect(
+      evaluateLiveEvalResponseContract({
+        expectedLocale: "en",
+        responseContract: {
+          decisionAnchors: [],
+          disclaimerAnchor: null,
+          factAnchors: [dateAnchor("2026-08-13")],
+        },
+        responseText: `As of ${date}.`,
+      }).missingResponseAnchorIds,
+    ).toEqual(["fact:date-2026-08-13"]);
   });
 
   it.each(["en", "zh-CN"] as const)(
@@ -78,34 +94,49 @@ describe("v13 localized calendar-date evidence", () => {
         auditRepository: { recordToolCall: async () => undefined },
         selectedCountryIso3: testCase.selectedCountryIso3,
         services: {
-          findCompatibleProducts: async (input) => [evaluateProductFit({
-            applicableRegulations: [],
-            certifications: [],
-            product: null,
-            query: productFitQuerySchema.parse(input),
-          })],
+          findCompatibleProducts: async (input) => [
+            evaluateProductFit({
+              applicableRegulations: [],
+              certifications: [],
+              product: null,
+              query: productFitQuerySchema.parse(input),
+            }),
+          ],
         },
         sessionId: "11111111-1111-4111-8111-111111111111",
       });
       const execute = tools.findCompatibleProducts.execute;
       if (!execute) throw new Error("Expected executable product-fit tool.");
-      const result = findCompatibleProductsResultSchema.parse(await execute(
-        findCompatibleProductsInputSchema.parse(
-          testCase.expectedArgs.findCompatibleProducts,
+      const result = findCompatibleProductsResultSchema.parse(
+        await execute(
+          findCompatibleProductsInputSchema.parse(
+            testCase.expectedArgs.findCompatibleProducts,
+          ),
+          {
+            context: undefined as never,
+            messages: [],
+            toolCallId: "date-fixture",
+          },
         ),
-        { context: undefined as never, messages: [], toolCallId: "date-fixture" },
-      ));
+      );
       expect(testCase.expectedEvidenceAllowed).toBe(false);
       expect(result.evidenceSufficient).toBe(false);
       expect(result.status).toBe("no_data");
-      const responseText = buildEvidenceGapResponse([result], false, false, locale);
+      const responseText = buildEvidenceGapResponse(
+        [result],
+        false,
+        false,
+        locale,
+      );
       expect(responseText).toContain(formatUtcDate("2026-08-13", locale));
       expect(responseText).not.toContain("2026-08-13");
-      expect(evaluateLiveEvalResponseContract({
-        expectedLocale: locale,
-        responseContract: testCase.responseContract,
-        responseText,
-      })).toMatchObject({
+      expect(
+        evaluateLiveEvalResponseContract({
+          expectedLocale: locale,
+          responseContract: testCase.responseContract,
+          responseText,
+        }),
+      ).toMatchObject({
         missingResponseAnchorIds: [],
         responseGroundingPassed: true,
         responseLocalePassed: true,
@@ -119,11 +150,13 @@ describe("v13 localized calendar-date evidence", () => {
       );
       if (!legacyDate) throw new Error("Missing legacy date anchor.");
       legacyDate.anyOf = ["2026-08-13"];
-      expect(evaluateLiveEvalResponseContract({
-        expectedLocale: locale,
-        responseContract: legacyContract,
-        responseText,
-      }).missingResponseAnchorIds).toEqual(["fact:date-2026-08-13"]);
+      expect(
+        evaluateLiveEvalResponseContract({
+          expectedLocale: locale,
+          responseContract: legacyContract,
+          responseText,
+        }).missingResponseAnchorIds,
+      ).toEqual(["fact:date-2026-08-13"]);
     },
   );
 });

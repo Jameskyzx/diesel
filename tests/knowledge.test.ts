@@ -23,8 +23,7 @@ import {
 
 function cosineSimilarity(left: number[], right: number[]): number {
   return left.reduce(
-    (score, component, index) =>
-      score + component * (right[index] ?? 0),
+    (score, component, index) => score + component * (right[index] ?? 0),
     0,
   );
 }
@@ -211,8 +210,7 @@ describe("knowledge search input parsing", () => {
       10,
     );
     expect(
-      hybridSearchQuerySchema.parse({ limit: "5", query: "emissions" })
-        .limit,
+      hybridSearchQuerySchema.parse({ limit: "5", query: "emissions" }).limit,
     ).toBe(5);
 
     for (const limit of [true, false, null, [5], {}, "0x10", 1.5]) {

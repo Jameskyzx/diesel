@@ -22,7 +22,8 @@ export function LocaleToggle({
   testId?: string;
 } = {}) {
   const { dictionary, locale } = useLocale();
-  const { disabled, requestPending, requestState, selectLocale, showError } = useLocaleControls();
+  const { disabled, requestPending, requestState, selectLocale, showError } =
+    useLocaleControls();
   const hydrated = useSyncExternalStore(
     subscribeToHydration,
     readClientHydration,

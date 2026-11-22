@@ -1,7 +1,14 @@
 import { ChildProcess, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { access, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  access,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
@@ -119,34 +126,58 @@ function createTermIgnoringFakeChild() {
 afterEach(async () => {
   vi.useRealTimers();
   await Promise.all(
-    temporaryDirectories.splice(0).map((directory) =>
-      rm(directory, { force: true, recursive: true }),
-    ),
+    temporaryDirectories
+      .splice(0)
+      .map((directory) => rm(directory, { force: true, recursive: true })),
   );
 });
 
 describe("governance snapshot export reliability", () => {
   it("retains only allowlisted failure metadata, never connection details or raw errors", () => {
-    const error = Object.assign(new TypeError("secret URL, query and row data"), {
-      code: "CONNECTION_CLOSED", query: "select private", detail: "secret",
-    });
+    const error = Object.assign(
+      new TypeError("secret URL, query and row data"),
+      {
+        code: "CONNECTION_CLOSED",
+        query: "select private",
+        detail: "secret",
+      },
+    );
     const failure = describeGovernanceSnapshotFailure("reader", error);
-    expect(failure).toEqual({ kind: "governance-snapshot-failure-v1", phase: "reader", errorType: "TypeError", code: "CONNECTION_CLOSED" });
+    expect(failure).toEqual({
+      kind: "governance-snapshot-failure-v1",
+      phase: "reader",
+      errorType: "TypeError",
+      code: "CONNECTION_CLOSED",
+    });
     expect(parseGovernanceSnapshotFailure(failure)).toEqual(failure);
-    expect(describeGovernanceSnapshotFailure("reader", Object.assign(new Error("private"), { name: "secret", code: "secret" })))
-      .toMatchObject({ errorType: "unknown", code: null });
+    expect(
+      describeGovernanceSnapshotFailure(
+        "reader",
+        Object.assign(new Error("private"), { name: "secret", code: "secret" }),
+      ),
+    ).toMatchObject({ errorType: "unknown", code: null });
     for (const invalid of [
-      { ...failure, message: "secret" }, { ...failure, code: "secret" },
-      { ...failure, phase: "secret" }, { ...failure, errorType: "secret" }, null,
-    ]) expect(parseGovernanceSnapshotFailure(invalid)).toBeNull();
+      { ...failure, message: "secret" },
+      { ...failure, code: "secret" },
+      { ...failure, phase: "secret" },
+      { ...failure, errorType: "secret" },
+      null,
+    ])
+      expect(parseGovernanceSnapshotFailure(invalid)).toBeNull();
   });
 
   it("forwards sanitized failures separately and preserves the failed worker exit", async () => {
     const { child } = createTermIgnoringFakeChild();
     const onFailure = vi.fn();
     const onProgress = vi.fn();
-    const pending = waitForGovernanceSnapshotWorkerProcess(child, { onFailure, onProgress });
-    const failure = describeGovernanceSnapshotFailure("uncaught", new TypeError("private"));
+    const pending = waitForGovernanceSnapshotWorkerProcess(child, {
+      onFailure,
+      onProgress,
+    });
+    const failure = describeGovernanceSnapshotFailure(
+      "uncaught",
+      new TypeError("private"),
+    );
     child.emit("message", failure);
     child.emit("close", 1, null);
     expect(await pending).toEqual({ exitCode: 1, signal: null, stdout: "" });
@@ -155,16 +186,23 @@ describe("governance snapshot export reliability", () => {
   });
 
   it("reads bounded Drizzle cause codes without publishing wrapped SQL or looping on cycles", () => {
-    const wrapped = new Error("private query", { cause: Object.assign(new Error("private URL"), { code: "ECONNRESET" }) });
+    const wrapped = new Error("private query", {
+      cause: Object.assign(new Error("private URL"), { code: "ECONNRESET" }),
+    });
     expect(isRetryableGovernanceSnapshotReaderError(wrapped)).toBe(true);
     expect(describeGovernanceSnapshotFailure("reader", wrapped)).toEqual({
-      kind: "governance-snapshot-failure-v1", phase: "reader", errorType: "Error", code: "ECONNRESET",
+      kind: "governance-snapshot-failure-v1",
+      phase: "reader",
+      errorType: "Error",
+      code: "ECONNRESET",
     });
     const cycle = new Error("private");
     cycle.cause = cycle;
     expect(isRetryableGovernanceSnapshotReaderError(cycle)).toBe(false);
     expect(describeGovernanceSnapshotFailure("reader", cycle).code).toBeNull();
-    const permanent = new Error("private query", { cause: Object.assign(new Error("private"), { code: "23505" }) });
+    const permanent = new Error("private query", {
+      cause: Object.assign(new Error("private"), { code: "23505" }),
+    });
     expect(isRetryableGovernanceSnapshotReaderError(permanent)).toBe(false);
   });
 
@@ -172,10 +210,21 @@ describe("governance snapshot export reliability", () => {
     vi.useFakeTimers();
     const { child, signals } = createTermIgnoringFakeChild();
     const onFailure = vi.fn();
-    const pending = waitForGovernanceSnapshotWorkerProcess(child, { onFailure, terminationGraceMs: 10 });
-    for (let count = 0; count < 65; count += 1) child.emit("message", describeGovernanceSnapshotFailure("reader", new Error("private")));
+    const pending = waitForGovernanceSnapshotWorkerProcess(child, {
+      onFailure,
+      terminationGraceMs: 10,
+    });
+    for (let count = 0; count < 65; count += 1)
+      child.emit(
+        "message",
+        describeGovernanceSnapshotFailure("reader", new Error("private")),
+      );
     await vi.advanceTimersByTimeAsync(10);
-    expect(await pending).toEqual({ exitCode: null, signal: "SIGKILL", stdout: "" });
+    expect(await pending).toEqual({
+      exitCode: null,
+      signal: "SIGKILL",
+      stdout: "",
+    });
     expect(onFailure).toHaveBeenCalledTimes(64);
     expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
   });
@@ -183,12 +232,18 @@ describe("governance snapshot export reliability", () => {
   it("lets one healthy export use the shared budget beyond the former 45-minute slot", async () => {
     const directory = await createTemporaryDirectory();
     let now = 0;
-    const runWorker = vi.fn(async (path: string, _attempt: number, timeoutMs: number) => {
-      expect(timeoutMs).toBe(90 * 60 * 1_000);
-      now = 60 * 60 * 1_000;
-      return writeSuccessfulWorkerOutput(path);
+    const runWorker = vi.fn(
+      async (path: string, _attempt: number, timeoutMs: number) => {
+        expect(timeoutMs).toBe(90 * 60 * 1_000);
+        now = 60 * 60 * 1_000;
+        return writeSuccessfulWorkerOutput(path);
+      },
+    );
+    await superviseGovernanceSnapshotExport({
+      targetPath: join(directory, "snapshot.json"),
+      now: () => now,
+      runWorker,
     });
-    await superviseGovernanceSnapshotExport({ targetPath: join(directory, "snapshot.json"), now: () => now, runWorker });
     expect(runWorker).toHaveBeenCalledTimes(1);
   });
 
@@ -197,36 +252,58 @@ describe("governance snapshot export reliability", () => {
     let now = 100;
     const budgets: number[] = [];
     await superviseGovernanceSnapshotExport({
-      targetPath: join(directory, "snapshot.json"), now: () => now,
-      waitBeforeRetry: async () => { now += 1_000; },
+      targetPath: join(directory, "snapshot.json"),
+      now: () => now,
+      waitBeforeRetry: async () => {
+        now += 1_000;
+      },
       runWorker: async (path, attempt, timeoutMs) => {
         budgets.push(timeoutMs);
-        if (attempt === 1) { now += 10 * 60 * 1_000; return { exitCode: 75, signal: null, stdout: "" }; }
+        if (attempt === 1) {
+          now += 10 * 60 * 1_000;
+          return { exitCode: 75, signal: null, stdout: "" };
+        }
         return writeSuccessfulWorkerOutput(path);
       },
     });
-    expect(budgets).toEqual([governanceSnapshotExportTimeoutMs, governanceSnapshotExportTimeoutMs - 601_000]);
+    expect(budgets).toEqual([
+      governanceSnapshotExportTimeoutMs,
+      governanceSnapshotExportTimeoutMs - 601_000,
+    ]);
   });
 
-  it.each([0, 75])("does not publish or start another worker after shared deadline, exit %s", async exitCode => {
-    const directory = await createTemporaryDirectory();
-    let now = 0;
-    const targetPath = join(directory, "snapshot.json");
-    const attemptPath = join(directory, "attempt.json");
-    const onRetry = vi.fn();
-    const runWorker = vi.fn(async (path: string) => {
-      const result = await writeSuccessfulWorkerOutput(path);
-      now = governanceSnapshotExportTimeoutMs + 1;
-      return { ...result, exitCode };
-    });
-    await expect(superviseGovernanceSnapshotExport({
-      targetPath, createAttemptPath: () => attemptPath, now: () => now, onRetry, runWorker,
-    })).rejects.toThrow("Governance snapshot workers failed");
-    expect(runWorker).toHaveBeenCalledTimes(1);
-    expect(onRetry).not.toHaveBeenCalled();
-    await expect(access(targetPath)).rejects.toMatchObject({ code: "ENOENT" });
-    await expect(access(attemptPath)).rejects.toMatchObject({ code: "ENOENT" });
-  });
+  it.each([0, 75])(
+    "does not publish or start another worker after shared deadline, exit %s",
+    async (exitCode) => {
+      const directory = await createTemporaryDirectory();
+      let now = 0;
+      const targetPath = join(directory, "snapshot.json");
+      const attemptPath = join(directory, "attempt.json");
+      const onRetry = vi.fn();
+      const runWorker = vi.fn(async (path: string) => {
+        const result = await writeSuccessfulWorkerOutput(path);
+        now = governanceSnapshotExportTimeoutMs + 1;
+        return { ...result, exitCode };
+      });
+      await expect(
+        superviseGovernanceSnapshotExport({
+          targetPath,
+          createAttemptPath: () => attemptPath,
+          now: () => now,
+          onRetry,
+          runWorker,
+        }),
+      ).rejects.toThrow("Governance snapshot workers failed");
+      expect(runWorker).toHaveBeenCalledTimes(1);
+      expect(onRetry).not.toHaveBeenCalled();
+      await expect(access(targetPath)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+      await expect(access(attemptPath)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+    },
+  );
 
   it("allows only bounded table progress, never errors, SQL or row values", () => {
     const progress = {
@@ -246,18 +323,30 @@ describe("governance snapshot export reliability", () => {
       { ...progress, durationMs: governanceSnapshotWorkerTimeoutMs + 1 },
       "secret-database-url",
       null,
-    ]) expect(parseGovernanceSnapshotProgress(invalid)).toBeNull();
+    ])
+      expect(parseGovernanceSnapshotProgress(invalid)).toBeNull();
   });
 
   it("forwards validated worker progress without mixing it into the final summary", async () => {
     const { child } = createTermIgnoringFakeChild();
     const onProgress = vi.fn();
-    const pending = waitForGovernanceSnapshotWorkerProcess(child, { onProgress });
-    const progress = { kind: "governance-snapshot-progress-v1", table: "countries", batch: 1, durationMs: 20 };
+    const pending = waitForGovernanceSnapshotWorkerProcess(child, {
+      onProgress,
+    });
+    const progress = {
+      kind: "governance-snapshot-progress-v1",
+      table: "countries",
+      batch: 1,
+      durationMs: 20,
+    };
     child.emit("message", progress);
     (child.stdout as PassThrough).write("summary");
     child.emit("close", 0, null);
-    expect(await pending).toEqual({ exitCode: 0, signal: null, stdout: "summary" });
+    expect(await pending).toEqual({
+      exitCode: 0,
+      signal: null,
+      stdout: "summary",
+    });
     expect(onProgress).toHaveBeenCalledExactlyOnceWith(progress);
     expect(child.listenerCount("message")).toBe(0);
   });
@@ -267,11 +356,16 @@ describe("governance snapshot export reliability", () => {
     const { child, signals } = createTermIgnoringFakeChild();
     const onProgress = vi.fn();
     const pending = waitForGovernanceSnapshotWorkerProcess(child, {
-      onProgress, terminationGraceMs: 10,
+      onProgress,
+      terminationGraceMs: 10,
     });
     child.emit("message", { error: "secret-database-url" });
     await vi.advanceTimersByTimeAsync(10);
-    expect(await pending).toEqual({ exitCode: null, signal: "SIGKILL", stdout: "" });
+    expect(await pending).toEqual({
+      exitCode: null,
+      signal: "SIGKILL",
+      stdout: "",
+    });
     expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
     expect(onProgress).not.toHaveBeenCalled();
   });
@@ -280,28 +374,52 @@ describe("governance snapshot export reliability", () => {
     vi.useFakeTimers();
     const { child, signals } = createTermIgnoringFakeChild();
     const pending = waitForGovernanceSnapshotWorkerProcess(child, {
-      onProgress: () => { throw new Error("private sink failure"); },
+      onProgress: () => {
+        throw new Error("private sink failure");
+      },
       terminationGraceMs: 10,
     });
-    child.emit("message", { kind: "governance-snapshot-progress-v1", table: "countries", batch: 1, durationMs: 20 });
+    child.emit("message", {
+      kind: "governance-snapshot-progress-v1",
+      table: "countries",
+      batch: 1,
+      durationMs: 20,
+    });
     await vi.advanceTimersByTimeAsync(10);
-    expect(await pending).toEqual({ exitCode: null, signal: "SIGKILL", stdout: "" });
+    expect(await pending).toEqual({
+      exitCode: null,
+      signal: "SIGKILL",
+      stdout: "",
+    });
     expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
   });
 
   it("lets a real IPC worker exit after sending bounded progress", async () => {
     const progress = {
-      kind: "governance-snapshot-progress-v1", table: "countries",
-      batch: 1, durationMs: 20,
+      kind: "governance-snapshot-progress-v1",
+      table: "countries",
+      batch: 1,
+      durationMs: 20,
     };
-    const child = spawn(process.execPath, ["-e", [
-      `process.send(${JSON.stringify(progress)});`,
-      'process.stdout.write("summary");',
-    ].join("\n")], { stdio: ["ignore", "pipe", "ignore", "ipc"] });
+    const child = spawn(
+      process.execPath,
+      [
+        "-e",
+        [
+          `process.send(${JSON.stringify(progress)});`,
+          'process.stdout.write("summary");',
+        ].join("\n"),
+      ],
+      { stdio: ["ignore", "pipe", "ignore", "ipc"] },
+    );
     const onProgress = vi.fn();
-    expect(await waitForGovernanceSnapshotWorkerProcess(child, {
-      onProgress, timeoutMs: 5_000, terminationGraceMs: 50,
-    })).toEqual({ exitCode: 0, signal: null, stdout: "summary" });
+    expect(
+      await waitForGovernanceSnapshotWorkerProcess(child, {
+        onProgress,
+        timeoutMs: 5_000,
+        terminationGraceMs: 50,
+      }),
+    ).toEqual({ exitCode: 0, signal: null, stdout: "summary" });
     expect(onProgress).toHaveBeenCalledExactlyOnceWith(progress);
   });
 
@@ -358,20 +476,22 @@ describe("governance snapshot export reliability", () => {
       }),
     ).rejects.toBe(probeError);
 
-    expect(events).toEqual([
-      "acquire",
-      "probe",
-      "probe-deferred-write",
-      "end",
-    ]);
+    expect(events).toEqual(["acquire", "probe", "probe-deferred-write", "end"]);
     expect(client.end).toHaveBeenCalledWith({ timeout: 5 });
   });
 
   it("retains only settled successful readers and closes the final lease explicitly", async () => {
-    const client = { end: vi.fn(async () => undefined), unsafe: vi.fn(async () => undefined) };
+    const client = {
+      end: vi.fn(async () => undefined),
+      unsafe: vi.fn(async () => undefined),
+    };
     const retain = vi.fn();
-    await expect(runSnapshotAcquisitionAttempt(client, async () => "first batch", retain)).resolves.toBe("first batch");
-    await expect(runSnapshotAcquisitionAttempt(client, async () => "second batch", retain)).resolves.toBe("second batch");
+    await expect(
+      runSnapshotAcquisitionAttempt(client, async () => "first batch", retain),
+    ).resolves.toBe("first batch");
+    await expect(
+      runSnapshotAcquisitionAttempt(client, async () => "second batch", retain),
+    ).resolves.toBe("second batch");
     expect(retain).toHaveBeenCalledTimes(2);
     expect(retain).toHaveBeenLastCalledWith(client);
     expect(client.unsafe).toHaveBeenCalledTimes(2);
@@ -380,36 +500,59 @@ describe("governance snapshot export reliability", () => {
     expect(client.end).toHaveBeenCalledExactlyOnceWith({ timeout: 5 });
   });
 
-  it.each(["read", "probe"])("never retains a reader after %s failure", async (stage) => {
-    const failure = new Error("bounded failure");
-    const client = {
-      end: vi.fn(async () => undefined),
-      unsafe: vi.fn(async () => { if (stage === "probe") throw failure; }),
-    };
-    const retain = vi.fn();
-    await expect(runSnapshotAcquisitionAttempt(client, async () => {
-      if (stage === "read") throw failure;
-    }, retain)).rejects.toBe(failure);
-    expect(retain).not.toHaveBeenCalled();
-    expect(client.end).toHaveBeenCalledExactlyOnceWith({ timeout: 5 });
-  });
+  it.each(["read", "probe"])(
+    "never retains a reader after %s failure",
+    async (stage) => {
+      const failure = new Error("bounded failure");
+      const client = {
+        end: vi.fn(async () => undefined),
+        unsafe: vi.fn(async () => {
+          if (stage === "probe") throw failure;
+        }),
+      };
+      const retain = vi.fn();
+      await expect(
+        runSnapshotAcquisitionAttempt(
+          client,
+          async () => {
+            if (stage === "read") throw failure;
+          },
+          retain,
+        ),
+      ).rejects.toBe(failure);
+      expect(retain).not.toHaveBeenCalled();
+      expect(client.end).toHaveBeenCalledExactlyOnceWith({ timeout: 5 });
+    },
+  );
 
   it("replaces a failed retained connection without advancing the batch or snapshot", async () => {
-    const clients = [1, 2].map((id) => ({ id, end: vi.fn(async () => undefined), unsafe: vi.fn(async () => undefined) }));
-    let retained: typeof clients[number] | undefined;
+    const clients = [1, 2].map((id) => ({
+      id,
+      end: vi.fn(async () => undefined),
+      unsafe: vi.fn(async () => undefined),
+    }));
+    let retained: (typeof clients)[number] | undefined;
     let next = 0;
     const readClients: number[] = [];
-    const run = (failFirst: boolean) => runGovernanceSnapshotReaderBatchWithRetry({
-      assertAnchorHealthy: () => undefined,
-      createClient: () => { const client = retained ?? clients[next++]; retained = undefined; return client; },
-      retainSuccessfulClient: (client) => { retained = client; },
-      read: async (client) => {
-        readClients.push(client.id);
-        if (failFirst && client.id === 1) throw Object.assign(new Error("transport"), { code: "ECONNRESET" });
-        return "same bounded batch";
-      },
-      waitBeforeRetry: async () => undefined,
-    });
+    const run = (failFirst: boolean) =>
+      runGovernanceSnapshotReaderBatchWithRetry({
+        assertAnchorHealthy: () => undefined,
+        createClient: () => {
+          const client = retained ?? clients[next++];
+          retained = undefined;
+          return client;
+        },
+        retainSuccessfulClient: (client) => {
+          retained = client;
+        },
+        read: async (client) => {
+          readClients.push(client.id);
+          if (failFirst && client.id === 1)
+            throw Object.assign(new Error("transport"), { code: "ECONNRESET" });
+          return "same bounded batch";
+        },
+        waitBeforeRetry: async () => undefined,
+      });
     await run(false);
     await run(true);
     await run(false);
@@ -425,8 +568,9 @@ describe("governance snapshot export reliability", () => {
     expect(parseGovernanceSnapshotId("00000003-0000001B-1")).toBe(
       "00000003-0000001B-1",
     );
-    expect(() => parseGovernanceSnapshotId("00000003-0000001B-1'; select 1"))
-      .toThrow("invalid snapshot ID");
+    expect(() =>
+      parseGovernanceSnapshotId("00000003-0000001B-1'; select 1"),
+    ).toThrow("invalid snapshot ID");
     expect(() => parseGovernanceSnapshotId("snapshot-1")).toThrow(
       "invalid snapshot ID",
     );
@@ -702,9 +846,7 @@ describe("governance snapshot export reliability", () => {
 
     expect(limitSelectionStart).toBeGreaterThanOrEqual(0);
     expect(nextSelectionStart).toBeGreaterThan(limitSelectionStart);
-    expect(limitSelection).toContain(
-      "collectGovernanceSnapshotRowsInBatches",
-    );
+    expect(limitSelection).toContain("collectGovernanceSnapshotRowsInBatches");
     expect(limitSelection).toContain("gt(regulationLimits.id, cursor)");
     expect(limitSelection).toContain(".limit(limit)");
   });
@@ -712,7 +854,8 @@ describe("governance snapshot export reliability", () => {
   it("preserves every raw JSON row with smaller advancing batches", async () => {
     const sourceRows = Array.from({ length: 205 }, (_, index) => ({
       id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
-      payload: '{"largeInteger":9007199254740993,"precise":1.234567890123456789}',
+      payload:
+        '{"largeInteger":9007199254740993,"precise":1.234567890123456789}',
     }));
     const requestedLimits: number[] = [];
     const cursors: Array<string | null> = [];
@@ -720,8 +863,10 @@ describe("governance snapshot export reliability", () => {
       async (cursor, limit) => {
         requestedLimits.push(limit);
         cursors.push(cursor);
-        const start = cursor === null
-          ? 0 : sourceRows.findIndex((row) => row.id === cursor) + 1;
+        const start =
+          cursor === null
+            ? 0
+            : sourceRows.findIndex((row) => row.id === cursor) + 1;
         return sourceRows.slice(start, start + limit);
       },
       governanceSnapshotRawJsonBatchSize,
@@ -734,21 +879,27 @@ describe("governance snapshot export reliability", () => {
 
   it("uses the smaller batch only for all three raw JSON selections", async () => {
     const source = await readFile(
-      join(process.cwd(), "scripts/db/export-governance-snapshot.ts"), "utf8",
+      join(process.cwd(), "scripts/db/export-governance-snapshot.ts"),
+      "utf8",
     );
     for (const [start, end] of [
       ["const governanceDraftRows =", "const marketImportBatchRows ="],
       ["const marketImportBatchRows =", "const changeLogRows ="],
       ["const changeLogRows =", "const selectedTables ="],
     ]) {
-      const selection = source.slice(source.indexOf(start!), source.indexOf(end!));
+      const selection = source.slice(
+        source.indexOf(start!),
+        source.indexOf(end!),
+      );
       expect(selection).toContain("collectGovernanceSnapshotRowsInBatches");
       expect(selection).toContain("governanceSnapshotRawJsonBatchSize,");
       expect(selection).toContain("order by id");
       expect(selection).toContain("limit ${limit}");
     }
     expect(governanceSnapshotDatabaseBatchSize).toBe(500);
-    expect(governanceSnapshotWorkerTimeoutMs).toBe(governanceSnapshotExportTimeoutMs);
+    expect(governanceSnapshotWorkerTimeoutMs).toBe(
+      governanceSnapshotExportTimeoutMs,
+    );
   });
 
   it("rejects oversized or non-advancing governance batches", async () => {
@@ -890,11 +1041,10 @@ describe("governance snapshot export reliability", () => {
   it("restarts after a retryable acquisition or teardown exit", async () => {
     const directory = await createTemporaryDirectory();
     const targetPath = join(directory, "governance.json");
-    const runWorker = vi.fn(
-      async (attemptPath: string, attempt: number) =>
-        attempt === 1
-          ? { exitCode: 75, signal: null, stdout: "" }
-          : writeSuccessfulWorkerOutput(attemptPath),
+    const runWorker = vi.fn(async (attemptPath: string, attempt: number) =>
+      attempt === 1
+        ? { exitCode: 75, signal: null, stdout: "" }
+        : writeSuccessfulWorkerOutput(attemptPath),
     );
 
     await superviseGovernanceSnapshotExport({
@@ -917,7 +1067,8 @@ describe("governance snapshot export reliability", () => {
       superviseGovernanceSnapshotExport({
         createAttemptPath: () => attemptPath,
         runWorker: async (workerAttemptPath) => {
-          const execution = await writeSuccessfulWorkerOutput(workerAttemptPath);
+          const execution =
+            await writeSuccessfulWorkerOutput(workerAttemptPath);
           await writeFile(targetPath, "existing snapshot\n", {
             encoding: "utf8",
             flag: "wx",
@@ -964,7 +1115,9 @@ describe("governance snapshot export reliability", () => {
     expect(runWorker).toHaveBeenCalledTimes(governanceSnapshotMaximumWorkers);
     await expect(access(targetPath)).rejects.toMatchObject({ code: "ENOENT" });
     for (const attemptPath of attemptPaths) {
-      await expect(access(attemptPath)).rejects.toMatchObject({ code: "ENOENT" });
+      await expect(access(attemptPath)).rejects.toMatchObject({
+        code: "ENOENT",
+      });
     }
   });
 
@@ -1016,7 +1169,9 @@ describe("governance snapshot export reliability", () => {
       }),
     ).rejects.toBeDefined();
     expect(invalidWorker).toHaveBeenCalledTimes(1);
-    await expect(access(invalidTarget)).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(access(invalidTarget)).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 
   it("does not retry validation or file-write failures inside a worker", async () => {

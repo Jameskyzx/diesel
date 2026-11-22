@@ -67,11 +67,7 @@ export type InvalidProductManifest = z.infer<
 >;
 
 export type MaintenanceSqlParameter =
-  | boolean
-  | null
-  | number
-  | string
-  | string[];
+  boolean | null | number | string | string[];
 
 export type MaintenanceSqlClient = {
   query<TRow extends Record<string, unknown>>(
@@ -138,10 +134,14 @@ export function assertValidInvalidProductManifest(
   const approvedCertifications = new Set(getApprovedRealCertificationIds());
   for (const product of manifest.products) {
     if (product.isDemo || product.source.isDemo) {
-      throw new Error("Dirty-product maintenance refuses Demo products or sources.");
+      throw new Error(
+        "Dirty-product maintenance refuses Demo products or sources.",
+      );
     }
     if (approvedProducts.has(product.id)) {
-      throw new Error(`Product ${product.id} is present in the public approval manifest.`);
+      throw new Error(
+        `Product ${product.id} is present in the public approval manifest.`,
+      );
     }
     for (const certification of product.certifications) {
       if (approvedCertifications.has(certification.id)) {
@@ -158,8 +158,9 @@ export async function readInvalidProductManifest(
   client: MaintenanceSqlClient,
   generatedAt = new Date(),
 ): Promise<InvalidProductManifest> {
-  const productRows = (await client.query<ProductRow>(
-    `select p.id::text as "id",
+  const productRows = (
+    await client.query<ProductRow>(
+      `select p.id::text as "id",
             p.model_code as "modelCode",
             p.power_min_kw::text as "powerMinKw",
             p.power_max_kw::text as "powerMaxKw",
@@ -177,7 +178,8 @@ export async function readInvalidProductManifest(
         and p.is_demo = false
         and p.power_max_kw <= p.power_min_kw
       order by p.model_code, p.id`,
-  )).rows;
+    )
+  ).rows;
 
   if (productRows.length !== INVALID_PRODUCT_EXPECTED_COUNT) {
     throw new Error(
@@ -186,8 +188,9 @@ export async function readInvalidProductManifest(
   }
 
   const productIds = productRows.map(({ id }) => id);
-  const certificationRows = (await client.query<CertificationRow>(
-    `select pc.id::text as "id",
+  const certificationRows = (
+    await client.query<CertificationRow>(
+      `select pc.id::text as "id",
             pc.product_id::text as "productId",
             pc.regulation_id::text as "regulationId",
             pc.application_scope::text as "applicationScope",
@@ -209,8 +212,9 @@ export async function readInvalidProductManifest(
       where pc.archived_at is null
         and pc.product_id = any($1::uuid[])
       order by pc.product_id, pc.id`,
-    [productIds],
-  )).rows;
+      [productIds],
+    )
+  ).rows;
 
   const products = productRows.map((row) => ({
     certifications: certificationRows
@@ -265,8 +269,10 @@ function sameManifestRows(
   actual: InvalidProductManifest,
   expected: InvalidProductManifest,
 ): boolean {
-  return actual.manifestSha256 === expected.manifestSha256 &&
-    canonicalProducts(actual.products) === canonicalProducts(expected.products);
+  return (
+    actual.manifestSha256 === expected.manifestSha256 &&
+    canonicalProducts(actual.products) === canonicalProducts(expected.products)
+  );
 }
 
 async function updateExactly(
@@ -300,7 +306,9 @@ export async function applyInvalidProductManifest(input: {
   try {
     const actual = await readInvalidProductManifest(input.client, now);
     if (!sameManifestRows(actual, expected)) {
-      throw new Error("Current dirty-product rows do not exactly match the dry-run manifest.");
+      throw new Error(
+        "Current dirty-product rows do not exactly match the dry-run manifest.",
+      );
     }
 
     const certifications = expected.products.flatMap(
@@ -368,13 +376,15 @@ export async function applyInvalidProductManifest(input: {
       );
     }
 
-    const remaining = (await input.client.query<{ count: number }>(
-      `select count(*)::int as "count"
+    const remaining = (
+      await input.client.query<{ count: number }>(
+        `select count(*)::int as "count"
          from products
         where archived_at is null
           and is_demo = false
           and power_max_kw <= power_min_kw`,
-    )).rows[0]?.count;
+      )
+    ).rows[0]?.count;
     if (remaining !== 0) {
       throw new Error("Active invalid products remain after archival.");
     }

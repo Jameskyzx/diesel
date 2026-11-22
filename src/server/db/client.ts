@@ -8,8 +8,7 @@ import postgres from "@/server/db/postgres";
 import { getDatabaseUrl } from "@/server/db/environment";
 import * as schema from "@/server/db/schema";
 
-export const databaseApplicationName =
-  `diesel-app-${process.pid}-${randomUUID()}`;
+export const databaseApplicationName = `diesel-app-${process.pid}-${randomUUID()}`;
 
 function createConnection() {
   const client = postgres(getDatabaseUrl(), {

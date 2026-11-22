@@ -12,8 +12,6 @@ describe("rate-limit environment isolation", () => {
     expect(demoServer).toContain(
       'process.env.AI_CHAT_RATE_LIMIT_BACKEND = "memory"',
     );
-    expect(playwrightConfig).toContain(
-      'AI_CHAT_RATE_LIMIT_BACKEND: "memory"',
-    );
+    expect(playwrightConfig).toContain('AI_CHAT_RATE_LIMIT_BACKEND: "memory"');
   });
 });

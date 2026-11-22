@@ -70,27 +70,15 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   typecheck, coverage-gated Vitest, migrations, build, Playwright public/demo/FDE/CSP,
   secret scan, supply-chain audit, deployment contracts, Linux release handoff).
 - Offline AI eval: `pnpm ai:eval` (deterministic, no paid model).
-- Paid live AI eval: the chat prompt is now `sales-chat-system-v14` (feedback lookup); the
-  recorded runs below used `v13` or earlier and are not evidence for `v14`. No paid run has
-  been made on `v14`.
 - Paid live AI eval: `pnpm ai:eval:live` writes `docs/evals/ai-live-eval-latest.json`;
-  see [evals/README.md](evals/README.md). Last recorded run, 2026-10-18 16:17 UTC, local
-  uncommitted worktree (contract `sales-chat-live-v27`, `deepseek-flash`, prompt
-  `sales-chat-system-v13`, ADR-275): **18/18 passed**, 152,633 tokens of the 180,000 budget,
-  and all 5 safety-critical cases failed closed. This is one run on one model, not proof
-  of stability. The harness and prompt `v13` were committed afterwards (`8753751`) and are
-  in the deployed releases; the run itself was not repeated on the committed code. Earlier
-  runs that day:
-  - 06:44 UTC, prompt `v12`: 16/18. `sales-brief` ran a second brief with the comparison
-    country BRA as its target. `source-document-retrieval` sent the model's wording
-    verbatim to full-text search, which missed the requested section. Both are fixed for
-    `v13`: the brief target is stated in the action schema, and the finish check now reuses
-    the target each task actually ran with. Source search uses the user's own terms when
-    their request is plain words.
-  - First harness run, contract `v26`, prompt `v11`: 7/18. The 160,000-token budget stopped
-    it after 13 cases. Its anchors were matched only in the model's message text.
-  - The 17/18 from 2026-10-16 was on the removed `streamSalesChat()` path and is not
-    evidence for the harness.
+  see [evals/README.md](evals/README.md). Last recorded runs, 2026-11-10 14:18 and 14:19 UTC,
+  on clean commit `f492ba4` (contract `sales-chat-live-v27`, `deepseek-flash`, prompt
+  `sales-chat-system-v14`): **18/18 passed twice**, 170,204 and 161,960 tokens of the 180,000
+  budget, and no safety-critical case failed. The committed report is the second run. Both
+  ran locally on Node 24.22.1, not the pinned 22.22.3. Two runs on one model are not proof of
+  stability, and the first run used 95% of the token budget.
+  - Earlier: 2026-10-18, prompt `v13`, 18/18 on an uncommitted worktree; before that 16/18
+    (`v12`) and 7/18 (`v11`, stopped by the token budget). Details are in git history.
 - Production canary: every 6 hours via
   [production-canary.yml](../.github/workflows/production-canary.yml), including one real
   AI starter.

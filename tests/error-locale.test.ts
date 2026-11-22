@@ -91,7 +91,7 @@ describe("localized route error", () => {
     expected: readonly string[];
     forbidden: readonly string[];
     locale: Locale;
-  }>) (
+  }>)(
     "renders the complete $locale error copy without leaking the other locale",
     ({ expected, forbidden, locale }) => {
       const html = renderErrorPage(locale);

@@ -31,7 +31,8 @@ Choose checks by impact. Commands elsewhere are references, not an every-task ch
 | UI interaction or application logic | Lint, typecheck and affected Vitest tests; affected Playwright flows for browser behavior. Build for runtime changes. |
 | Cross-cutting behavior, dependencies, authentication, AI evidence or database/deployment contracts | Full lint, typecheck, Vitest and build; relevant browser, security, migration or integration checks. |
 
-Commands: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+Commands: `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+Format changed code with `pnpm format` (Prettier defaults; documents and data files are excluded).
 Target tests with `pnpm exec vitest run <test-file>` or
 `pnpm playwright test <spec-file> --project=<affected-project>`.
 Use the full Playwright suite when the change spans public flows, not for every asset edit.

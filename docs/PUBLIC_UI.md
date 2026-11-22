@@ -2,9 +2,12 @@
 
 ## Supported interface
 
-The current product is desktop-only (minimum layout width: 1024 CSS pixels).
-Phone-specific navigation, compact table layouts, swipe dismissal, map touch
-gestures and mobile browser projects have been removed at the user's request.
+The product is designed for desktop (1024 CSS pixels and wider). Below that
+width the sidebar collapses into a horizontal navigation bar under the header,
+the page no longer forces a minimum width, and the country panel is capped at
+the viewport width, so public pages can be read and used on a phone. Compact
+table layouts, swipe dismissal, map touch gestures and mobile browser test
+projects are still not maintained; wide tables scroll inside their container.
 Desktop Chrome and Safari, keyboard navigation, accessibility, and desktop
 window resizing remain supported. Historical reports describe their original
 test scope and are not rewritten as current desktop-only evidence.

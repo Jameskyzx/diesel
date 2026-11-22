@@ -5,8 +5,12 @@ import { parsePgTsQuery, printPgTsQuery, type PgTsQuery } from "./pg-tsquery";
 // negation, OR precedence, punctuation and implicit compound-word phrases.
 // Quote markers only distinguish explicitly requested phrases from the soft
 // unquoted terms used by hybrid retrieval.
-export function prepareKnowledgeQueryConstraints(query: string, expandSpelling = true) {
-  if (query.length > 500) throw new RangeError("Knowledge query exceeds its bound");
+export function prepareKnowledgeQueryConstraints(
+  query: string,
+  expandSpelling = true,
+) {
+  if (query.length > 500)
+    throw new RangeError("Knowledge query exceeds its bound");
   const spelling = expandSpelling ? prepareKnowledgeSpellingQuery(query) : null;
   const source = spelling?.query ?? query;
   let prefix = "dieselqueryquote";
@@ -21,7 +25,9 @@ export function prepareKnowledgeQueryConstraints(query: string, expandSpelling =
   return { masked, prefix, quotes, spelling };
 }
 
-export type PreparedKnowledgeQueryConstraints = ReturnType<typeof prepareKnowledgeQueryConstraints>;
+export type PreparedKnowledgeQueryConstraints = ReturnType<
+  typeof prepareKnowledgeQueryConstraints
+>;
 
 /** Conservative parse hint only; known scope aliases are unquoted soft terms. */
 export function knowledgeQueryMayHaveConstraints(query: string): boolean {
@@ -42,23 +48,31 @@ export function knowledgeQueryConstraintKey(canonical: string): string {
     if (++work > 16_384) throw new Error("Native constraint key work limit");
     if (node.kind === "lexeme") return `L${JSON.stringify(node.value)}`;
     if (node.kind === "not") {
-      return node.child.kind === "not" ? key(node.child.child)
+      return node.child.kind === "not"
+        ? key(node.child.child)
         : `N(${key(node.child)})`;
     }
-    if (node.kind === "phrase") return `P${node.distance}(${key(node.left)},${key(node.right)})`;
+    if (node.kind === "phrase")
+      return `P${node.distance}(${key(node.left)},${key(node.right)})`;
     const kind = node.kind;
     const children: string[] = [];
     const collect = (child: PgTsQuery) => {
       if (++work > 16_384) throw new Error("Native constraint key work limit");
-      if (child.kind === kind) { collect(child.left); collect(child.right); }
-      else children.push(key(child));
+      if (child.kind === kind) {
+        collect(child.left);
+        collect(child.right);
+      } else children.push(key(child));
     };
-    collect(node.left); collect(node.right);
+    collect(node.left);
+    collect(node.right);
     const unique = [...new Set(children)].sort();
-    return unique.length === 1 ? unique[0]! : `${kind === "and" ? "A" : "O"}(${unique.join(",")})`;
+    return unique.length === 1
+      ? unique[0]!
+      : `${kind === "and" ? "A" : "O"}(${unique.join(",")})`;
   };
   const result = key(root);
-  if (result.length > 262_144) throw new Error("Native constraint key size limit");
+  if (result.length > 262_144)
+    throw new Error("Native constraint key size limit");
   return result;
 }
 
@@ -78,9 +92,16 @@ export function projectKnowledgeQueryConstraints(
   };
   const root = parse(canonicalQueries[0]!);
   if (!root) return null;
-  const quotes = new Map(prepared.quotes.map(({ marker }, index) => [marker, parse(canonicalQueries[index + 1]!)]));
+  const quotes = new Map(
+    prepared.quotes.map(({ marker }, index) => [
+      marker,
+      parse(canonicalQueries[index + 1]!),
+    ]),
+  );
   let work = 0;
-  const tick = () => { if (++work > 16_384) throw new Error("Native query constraint work limit"); };
+  const tick = () => {
+    if (++work > 16_384) throw new Error("Native query constraint work limit");
+  };
   const containsQuote = (node: PgTsQuery): boolean => {
     tick();
     if (node.kind === "lexeme") return quotes.has(node.value);
@@ -96,27 +117,35 @@ export function projectKnowledgeQueryConstraints(
       return quote;
     }
     if (node.kind === "not") return { ...node, child: materialize(node.child) };
-    return { ...node, left: materialize(node.left), right: materialize(node.right) };
+    return {
+      ...node,
+      left: materialize(node.left),
+      right: materialize(node.right),
+    };
   };
   const project = (node: PgTsQuery): PgTsQuery | null => {
     tick();
     if (node.kind === "not") {
       // --term has the same hybrid semantics as the unquoted positive term.
-      return node.child.kind === "not" ? project(node.child.child) : materialize(node);
+      return node.child.kind === "not"
+        ? project(node.child.child)
+        : materialize(node);
     }
     // An OR branch needs its positive anchors; stripping them would make the
     // disjunction trivially true and allow exclusions to be bypassed.
     if (node.kind === "or") return materialize(node);
     if (node.kind === "and") {
-      const left = project(node.left), right = project(node.right);
-      return left && right ? { kind: "and", left, right } : left ?? right;
+      const left = project(node.left),
+        right = project(node.right);
+      return left && right ? { kind: "and", left, right } : (left ?? right);
     }
     return containsQuote(node) ? materialize(node) : null;
   };
   const result = project(root);
   if (result) {
     const printed = printPgTsQuery(result);
-    if (!printed || printed.includes(prepared.prefix)) throw new Error("Unresolved native query constraint");
+    if (!printed || printed.includes(prepared.prefix))
+      throw new Error("Unresolved native query constraint");
   }
   return result;
 }

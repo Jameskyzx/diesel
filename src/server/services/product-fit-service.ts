@@ -44,17 +44,21 @@ export async function listProducts(
 
   return productListResponseSchema.parse({
     // SQL collation is not the canonical evidence order consumed by JS clients.
-    products: rows.toSorted((left, right) => compareCanonicalText(
-      `${left.modelCode}\u0000${left.id}`,
-      `${right.modelCode}\u0000${right.id}`,
-    )).map((product) => ({
-      ...product,
-      source: {
-        ...product.source,
-        verifiedAt: serializeDate(product.source.verifiedAt),
-      },
-      verifiedAt: serializeDate(product.verifiedAt),
-    })),
+    products: rows
+      .toSorted((left, right) =>
+        compareCanonicalText(
+          `${left.modelCode}\u0000${left.id}`,
+          `${right.modelCode}\u0000${right.id}`,
+        ),
+      )
+      .map((product) => ({
+        ...product,
+        source: {
+          ...product.source,
+          verifiedAt: serializeDate(product.source.verifiedAt),
+        },
+        verifiedAt: serializeDate(product.verifiedAt),
+      })),
     status: "ok",
   });
 }
@@ -148,7 +152,9 @@ export async function evaluateProductFit(
     }),
   );
   if (!productFitEvaluationMatchesDeterministicRules(evaluation)) {
-    throw new Error("Product-fit evaluation does not match deterministic rules.");
+    throw new Error(
+      "Product-fit evaluation does not match deterministic rules.",
+    );
   }
 
   return evaluation;

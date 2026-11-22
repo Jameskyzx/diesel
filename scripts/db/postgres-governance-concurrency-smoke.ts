@@ -40,8 +40,7 @@ const smokeReprocessingInitialSourceTitle =
   "PostgreSQL reprocessing smoke initial source";
 const smokeReprocessingReplacementSourceTitle =
   "PostgreSQL reprocessing smoke replacement source";
-const smokeReprocessingDocumentTitle =
-  "PostgreSQL reprocessing smoke document";
+const smokeReprocessingDocumentTitle = "PostgreSQL reprocessing smoke document";
 const smokeReprocessingReason =
   "Exercise the PostgreSQL response-loss reprocessing retry.";
 export const postgresSourceVerifiedAtPrecisionCases = {
@@ -51,8 +50,7 @@ export const postgresSourceVerifiedAtPrecisionCases = {
 } as const;
 const smokeInitialSourceVerifiedAt =
   postgresSourceVerifiedAtPrecisionCases.current;
-const smokeDraftSourceVerifiedAt =
-  postgresSourceVerifiedAtPrecisionCases.older;
+const smokeDraftSourceVerifiedAt = postgresSourceVerifiedAtPrecisionCases.older;
 const smokeNewestSourceVerifiedAt =
   postgresSourceVerifiedAtPrecisionCases.newer;
 const waiterObservationTimeoutMs = 3_000;
@@ -67,9 +65,7 @@ export function assertPostgresRowsEqual(
   assert.deepEqual(Array.from(actual), expected);
 }
 
-export function createSameMillisecondTimestampDrift(
-  timestamp: string,
-): string {
+export function createSameMillisecondTimestampDrift(timestamp: string): string {
   const match = /^(.*\.\d{3})(\d{3})Z$/u.exec(timestamp);
   if (!match) {
     throw new Error("Expected an exact PostgreSQL microsecond timestamp.");
@@ -145,9 +141,7 @@ export function composePostgresConcurrencySmokeError(
 export function validatePostgresConcurrencySmokeTarget(
   environment: SmokeEnvironment = process.env,
 ): URL {
-  if (
-    environment[postgresConcurrencySmokeOptInEnvironmentVariable] !== "1"
-  ) {
+  if (environment[postgresConcurrencySmokeOptInEnvironmentVariable] !== "1") {
     throw new Error(
       `${postgresConcurrencySmokeOptInEnvironmentVariable}=1 is required for this destructive smoke.`,
     );
@@ -177,9 +171,7 @@ export function validatePostgresConcurrencySmokeTarget(
   ) {
     throw new Error("DATABASE_URL must use the PostgreSQL protocol.");
   }
-  if (
-    !["127.0.0.1", "localhost", "[::1]"].includes(databaseUrl.hostname)
-  ) {
+  if (!["127.0.0.1", "localhost", "[::1]"].includes(databaseUrl.hostname)) {
     throw new Error(
       "The concurrency smoke only accepts a loopback PostgreSQL host.",
     );
@@ -201,10 +193,7 @@ export function validatePostgresConcurrencyReadback(
       `PostgreSQL readback selected unexpected database ${input.currentDatabase}.`,
     );
   }
-  if (
-    input.serverVersionNum < 160_000 ||
-    input.serverVersionNum >= 170_000
-  ) {
+  if (input.serverVersionNum < 160_000 || input.serverVersionNum >= 170_000) {
     throw new Error("The concurrency smoke requires PostgreSQL 16.x.");
   }
   if (!input.vectorInstalled) {
@@ -361,7 +350,9 @@ async function waitForLockWaiters(
 
   while (Date.now() < deadline) {
     if (abortSignal.aborted) {
-      throw new Error("PostgreSQL concurrency smoke exceeded its 30s deadline.");
+      throw new Error(
+        "PostgreSQL concurrency smoke exceeded its 30s deadline.",
+      );
     }
     const rows = await monitor<{ count: number }[]>`
       select count(*)::int as count
@@ -391,7 +382,9 @@ async function waitForDocumentDraftLockWaiters(
 
   while (Date.now() < deadline) {
     if (abortSignal.aborted) {
-      throw new Error("PostgreSQL concurrency smoke exceeded its 30s deadline.");
+      throw new Error(
+        "PostgreSQL concurrency smoke exceeded its 30s deadline.",
+      );
     }
     const rows = await monitor<{ count: number }[]>`
       select count(*)::int as count
@@ -613,21 +606,13 @@ async function verifyConcurrentSourceVerifiedAtMonotonicity(input: {
         sourceId: smokeSourceId,
         verifiedAt: smokeNewestSourceVerifiedAt,
       });
-      await waitForLockWaiters(
-        input.monitor,
-        input.abortSignal,
-        1,
-      );
+      await waitForLockWaiters(input.monitor, input.abortSignal, 1);
       stalePublication = input.repository.publishDraft({
         actor: smokeActor,
         draftId: draft.id,
         reason: "Attempt the stale PostgreSQL source publication.",
       });
-      await waitForLockWaiters(
-        input.monitor,
-        input.abortSignal,
-        2,
-      );
+      await waitForLockWaiters(input.monitor, input.abortSignal, 2);
     });
   } catch (error: unknown) {
     await Promise.allSettled(
@@ -797,7 +782,9 @@ async function verifyMissingSourceInsertRaceFailsClosed(input: {
     where draft.id = ${draft.id}
     group by draft.workflow_status
   `;
-  assertPostgresRowsEqual(draftRows, [{ publishedAudits: 0, status: "reviewed" }]);
+  assertPostgresRowsEqual(draftRows, [
+    { publishedAudits: 0, status: "reviewed" },
+  ]);
 }
 
 function createDocumentReprocessingRequest(documentId: string): Request {
@@ -806,14 +793,8 @@ function createDocumentReprocessingRequest(documentId: string): Request {
   body.set("sourceTitle", smokeReprocessingReplacementSourceTitle);
   const headers = new Headers();
   headers.set("oai-authenticated-user-email", smokeActor.email);
-  headers.set(
-    ADMIN_EXPECTED_PRINCIPAL_EMAIL_REQUEST_HEADER,
-    smokeActor.email,
-  );
-  headers.set(
-    ADMIN_EXPECTED_PRINCIPAL_ROLE_REQUEST_HEADER,
-    smokeActor.role,
-  );
+  headers.set(ADMIN_EXPECTED_PRINCIPAL_EMAIL_REQUEST_HEADER, smokeActor.email);
+  headers.set(ADMIN_EXPECTED_PRINCIPAL_ROLE_REQUEST_HEADER, smokeActor.role);
 
   return new Request(
     `http://localhost/api/admin/documents/${documentId}/reprocess`,
@@ -826,18 +807,13 @@ async function verifyDocumentReprocessingBarriers(input: {
   locker: Sql;
   monitor: Sql;
   onDocumentCreated: (documentId: string) => void;
-  onStoragePrepared: (input: {
-    created: boolean;
-    storagePath: string;
-  }) => void;
+  onStoragePrepared: (input: { created: boolean; storagePath: string }) => void;
   repository: ReturnType<typeof createGovernanceRepository>;
   routeApplicationName: string;
 }): Promise<void> {
   const [{ prepareKnowledgeDocument }, { POST }] = await Promise.all([
     import("../../src/server/services/knowledge-service"),
-    import(
-      "../../src/app/api/admin/documents/[documentId]/reprocess/route"
-    ),
+    import("../../src/app/api/admin/documents/[documentId]/reprocess/route"),
   ]);
   const prepared = await prepareKnowledgeDocument({
     bytes: smokeReprocessingBytes,
@@ -1109,11 +1085,9 @@ export async function runPostgresGovernanceConcurrencySmoke(
   process.env.ADMIN_ROLE_BINDINGS_JSON = JSON.stringify({
     [smokeActor.email]: smokeActor.role,
   });
-  process.env.KNOWLEDGE_STORAGE_ROOT =
-    "postgres-governance-concurrency-smoke";
-  const { closeDatabaseConnection, databaseApplicationName } = await import(
-    "../../src/server/db/client"
-  );
+  process.env.KNOWLEDGE_STORAGE_ROOT = "postgres-governance-concurrency-smoke";
+  const { closeDatabaseConnection, databaseApplicationName } =
+    await import("../../src/server/db/client");
   const repositoryClient = createSmokeClient(
     databaseUrl,
     repositoryApplicationName,
@@ -1207,7 +1181,9 @@ export async function runPostgresGovernanceConcurrencySmoke(
       repository,
     });
     if (abortController.signal.aborted) {
-      throw new Error("PostgreSQL concurrency smoke exceeded its 30s deadline.");
+      throw new Error(
+        "PostgreSQL concurrency smoke exceeded its 30s deadline.",
+      );
     }
   } catch (error: unknown) {
     if (abortController.signal.aborted) {
@@ -1236,12 +1212,9 @@ export async function runPostgresGovernanceConcurrencySmoke(
         reprocessingDocumentId: reprocessingFixture.documentId,
       });
       if (reprocessingFixture.storage?.created) {
-        const { removeDocumentFile } = await import(
-          "../../src/server/knowledge/local-document-storage"
-        );
-        await removeDocumentFile(
-          reprocessingFixture.storage.storagePath,
-        );
+        const { removeDocumentFile } =
+          await import("../../src/server/knowledge/local-document-storage");
+        await removeDocumentFile(reprocessingFixture.storage.storagePath);
       }
     } catch (error: unknown) {
       cleanupError = normalizeError(error);

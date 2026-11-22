@@ -78,7 +78,9 @@ const exactPowerNormalizationCases = [
     "&applicationScope=non-road&asOf=2026-01-20&utm_term=engine&utm_term=export&tag=",
   canonical:
     "/countries/CHN?applicationScope=non-road&asOf=2026-01-20" +
-    (scenario.canonicalPowerKw === null ? "" : `&powerKw=${scenario.canonicalPowerKw}`) +
+    (scenario.canonicalPowerKw === null
+      ? ""
+      : `&powerKw=${scenario.canonicalPowerKw}`) +
     "&utm_term=engine&utm_term=export&tag=",
 }));
 
@@ -94,7 +96,10 @@ const canonicalCountryPath =
 
 test.describe("country URL request normalization", () => {
   for (const method of ["get", "head"] as const) {
-    for (const scenario of [...normalizationCases, ...exactPowerNormalizationCases]) {
+    for (const scenario of [
+      ...normalizationCases,
+      ...exactPowerNormalizationCases,
+    ]) {
       test(`${method.toUpperCase()} redirects ${scenario.name} once before rendering`, async ({
         request,
       }) => {
@@ -149,10 +154,14 @@ test.describe("country URL request normalization", () => {
           ]) {
             const response = await page.goto(scenario.input);
             expect(response?.status()).toBe(200);
-            await expect(page).toHaveURL(new URL(scenario.canonical, page.url()).href);
+            await expect(page).toHaveURL(
+              new URL(scenario.canonical, page.url()).href,
+            );
             await expect(page.locator("html")).toHaveAttribute("lang", locale);
             await expect(page.getByTestId("country-detail")).toBeVisible();
-            await expect(page.getByRole("heading", { exact: true, name: heading })).toBeVisible();
+            await expect(
+              page.getByRole("heading", { exact: true, name: heading }),
+            ).toBeVisible();
           }
 
           const localeCookies = (await context.cookies()).filter(
@@ -172,20 +181,36 @@ test.describe("country URL request normalization", () => {
             await test.step(scenario.name, async () => {
               const response = await page.goto(scenario.input);
               expect(response?.status()).toBe(200);
-              await expect(page).toHaveURL(new URL(scenario.canonical, page.url()).href);
+              await expect(page).toHaveURL(
+                new URL(scenario.canonical, page.url()).href,
+              );
 
               const destination = new URL(page.url());
               expect(destination.pathname).toBe("/countries/CHN");
               expect(destination.searchParams.getAll("powerKw")).toEqual(
-                scenario.canonicalPowerKw === null ? [] : [scenario.canonicalPowerKw],
+                scenario.canonicalPowerKw === null
+                  ? []
+                  : [scenario.canonicalPowerKw],
               );
-              expect(destination.searchParams.getAll("applicationScope")).toEqual(["non-road"]);
-              expect(destination.searchParams.getAll("asOf")).toEqual(["2026-01-20"]);
-              expect(destination.searchParams.getAll("utm_term")).toEqual(["engine", "export"]);
+              expect(
+                destination.searchParams.getAll("applicationScope"),
+              ).toEqual(["non-road"]);
+              expect(destination.searchParams.getAll("asOf")).toEqual([
+                "2026-01-20",
+              ]);
+              expect(destination.searchParams.getAll("utm_term")).toEqual([
+                "engine",
+                "export",
+              ]);
               expect(destination.searchParams.getAll("tag")).toEqual([""]);
-              await expect(page.locator("html")).toHaveAttribute("lang", locale);
+              await expect(page.locator("html")).toHaveAttribute(
+                "lang",
+                locale,
+              );
               await expect(page.getByTestId("country-detail")).toBeVisible();
-              await expect(page.getByRole("heading", { exact: true, name: heading })).toBeVisible();
+              await expect(
+                page.getByRole("heading", { exact: true, name: heading }),
+              ).toBeVisible();
             });
           }
         });
@@ -198,24 +223,26 @@ test.describe("country URL request normalization", () => {
         await checkBrowserRuntimeErrors(page, testInfo, async () => {
           await page.goto(`/map?${mapQuery}`);
           await expect(page.locator("html")).toHaveAttribute("lang", locale);
-          await expect(page.getByTestId("map-canvas-container")).toHaveAttribute(
-            "data-map-ready",
-            "true",
-          );
+          await expect(
+            page.getByTestId("map-canvas-container"),
+          ).toHaveAttribute("data-map-ready", "true");
           await expect(page.locator("#country-select")).toBeEnabled();
 
           // A property on the current document disappears if navigation reloads it.
           await page.evaluate(() => {
-            document.documentElement.dataset.countryUrlNavigation = "same-document";
+            document.documentElement.dataset.countryUrlNavigation =
+              "same-document";
           });
 
           const [redirectResponse] = await Promise.all([
             page.waitForResponse((response) => {
               const url = new URL(response.url());
-              return url.pathname === "/countries/CHN" &&
+              return (
+                url.pathname === "/countries/CHN" &&
                 url.searchParams.get("powerKw") === "300.0" &&
                 response.request().headers().rsc === "1" &&
-                response.status() === 307;
+                response.status() === 307
+              );
             }),
             page.locator("#country-select").selectOption("CHN"),
           ]);
@@ -227,11 +254,17 @@ test.describe("country URL request normalization", () => {
           expect(destination.origin).toBe(new URL(page.url()).origin);
           // The default Next adapter strips its internal cache key before proxy.
           expect(destination.searchParams.has("_rsc")).toBe(false);
-          expect(destination.href).toBe(new URL(canonicalCountryPath, page.url()).href);
+          expect(destination.href).toBe(
+            new URL(canonicalCountryPath, page.url()).href,
+          );
 
-          await expect(page).toHaveURL(new URL(canonicalCountryPath, page.url()).href);
+          await expect(page).toHaveURL(
+            new URL(canonicalCountryPath, page.url()).href,
+          );
           await expect(page.getByTestId("country-detail")).toBeVisible();
-          await expect(page.getByRole("heading", { exact: true, name: heading })).toBeVisible();
+          await expect(
+            page.getByRole("heading", { exact: true, name: heading }),
+          ).toBeVisible();
           await expect(page.locator("html")).toHaveAttribute("lang", locale);
           await expect(page.locator("html")).toHaveAttribute(
             "data-country-url-navigation",

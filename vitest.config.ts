@@ -20,11 +20,7 @@ export default defineConfig({
         "src/server/db/seed/**",
         "src/**/*.d.ts",
       ],
-      include: [
-        "src/domain/**/*.ts",
-        "src/lib/**/*.ts",
-        "src/server/**/*.ts",
-      ],
+      include: ["src/domain/**/*.ts", "src/lib/**/*.ts", "src/server/**/*.ts"],
       provider: "v8",
       reporter: ["text", "html", "json-summary"],
       thresholds: {

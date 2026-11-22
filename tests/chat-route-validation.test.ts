@@ -10,12 +10,12 @@ const mocks = vi.hoisted(() => ({
   getConfiguredAiModel: vi.fn(),
 }));
 
-type GetResolvedPdfJs = typeof import("unpdf")["getResolvedPDFJS"];
+type GetResolvedPdfJs = (typeof import("unpdf"))["getResolvedPDFJS"];
 type PdfJsModule = Awaited<ReturnType<GetResolvedPdfJs>>;
 type PdfLoadingTask = ReturnType<PdfJsModule["getDocument"]>;
 type PdfDocument = Awaited<PdfLoadingTask["promise"]>;
 type PdfPage = Awaited<ReturnType<PdfDocument["getPage"]>>;
-type SharpFactory = typeof import("sharp")["default"];
+type SharpFactory = (typeof import("sharp"))["default"];
 type SharpInstance = ReturnType<SharpFactory>;
 type SharpMetadata = Awaited<ReturnType<SharpInstance["metadata"]>>;
 
@@ -115,9 +115,7 @@ describe("POST /api/chat validation ordering", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("x-request-id")).toMatch(
-      /^[0-9a-f-]{36}$/u,
-    );
+    expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/u);
     const body = await response.text();
     expect(body).toContain("structured facts and traceable sources");
     await expect(validateUiMessageSse(body)).resolves.toBe(true);
@@ -135,37 +133,42 @@ describe("POST /api/chat validation ordering", () => {
     { cookie: "diesel_locale=en; diesel_locale=zh-CN", locale: "en" },
     { cookie: "diesel_locale=fr; diesel_locale=zh-CN", locale: "en" },
     { cookie: "diesel_locale=%E0%A4%A; diesel_locale=zh-CN", locale: "en" },
-  ])("uses the shared $locale cookie semantics for $cookie when the body omits locale", async ({ cookie, locale }) => {
-    const response = await POST(
-      new Request("http://localhost/api/chat", {
-        body: JSON.stringify({
-          messages: [
-            {
-              id: "cookie-locale",
-              parts: [{ text: "What can you do?", type: "text" }],
-              role: "user",
-            },
-          ],
-          sessionId: crypto.randomUUID(),
+  ])(
+    "uses the shared $locale cookie semantics for $cookie when the body omits locale",
+    async ({ cookie, locale }) => {
+      const response = await POST(
+        new Request("http://localhost/api/chat", {
+          body: JSON.stringify({
+            messages: [
+              {
+                id: "cookie-locale",
+                parts: [{ text: "What can you do?", type: "text" }],
+                role: "user",
+              },
+            ],
+            sessionId: crypto.randomUUID(),
+          }),
+          headers: {
+            cookie,
+            "content-type": "application/json",
+          },
+          method: "POST",
         }),
-        headers: {
-          cookie,
-          "content-type": "application/json",
-        },
-        method: "POST",
-      }),
-    );
+      );
 
-    expect(response.status).toBe(200);
-    const body = await response.text();
-    expect(body).toContain(locale === "en"
-      ? "structured facts and traceable sources"
-      : "结构化事实和可追溯来源");
-    await expect(validateUiMessageSse(body)).resolves.toBe(true);
-    expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
-    expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();
-    expect(mocks.ensureSession).not.toHaveBeenCalled();
-  });
+      expect(response.status).toBe(200);
+      const body = await response.text();
+      expect(body).toContain(
+        locale === "en"
+          ? "structured facts and traceable sources"
+          : "结构化事实和可追溯来源",
+      );
+      await expect(validateUiMessageSse(body)).resolves.toBe(true);
+      expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
+      expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();
+      expect(mocks.ensureSession).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     {
@@ -174,23 +177,29 @@ describe("POST /api/chat validation ordering", () => {
     },
     {
       cookie: "diesel_locale=%E0%A4%A; diesel_locale=zh-CN",
-      message: "The chat request is invalid. Check the messages and country context.",
+      message:
+        "The chat request is invalid. Check the messages and country context.",
     },
-  ])("uses the shared Cookie semantics for an invalid request with $cookie", async ({ cookie, message }) => {
-    const response = await POST(new Request("http://localhost/api/chat", {
-      body: "not-json",
-      headers: { "content-type": "application/json", cookie },
-      method: "POST",
-    }));
+  ])(
+    "uses the shared Cookie semantics for an invalid request with $cookie",
+    async ({ cookie, message }) => {
+      const response = await POST(
+        new Request("http://localhost/api/chat", {
+          body: "not-json",
+          headers: { "content-type": "application/json", cookie },
+          method: "POST",
+        }),
+      );
 
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: { code: "INVALID_INPUT", message },
-    });
-    expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
-    expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();
-    expect(mocks.ensureSession).not.toHaveBeenCalled();
-  });
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({
+        error: { code: "INVALID_INPUT", message },
+      });
+      expect(mocks.getConfiguredAiModel).not.toHaveBeenCalled();
+      expect(mocks.getAiAuditRepository).not.toHaveBeenCalled();
+      expect(mocks.ensureSession).not.toHaveBeenCalled();
+    },
+  );
 
   it("keeps an explicit body locale authoritative over the locale cookie", async () => {
     const response = await POST(
@@ -408,16 +417,18 @@ describe("POST /api/chat validation ordering", () => {
           }),
       ),
     ];
-    const pendingDocuments = Array.from({ length: 2 }, (_, index) =>
-      new Promise<PdfDocument>((resolve, reject) => {
-        settleDocuments.push(() => {
-          if (index === 0) {
-            resolve({ numPages: 0 } as PdfDocument);
-            return;
-          }
-          reject(new Error("late-pdf-secret-must-not-escape"));
-        });
-      }),
+    const pendingDocuments = Array.from(
+      { length: 2 },
+      (_, index) =>
+        new Promise<PdfDocument>((resolve, reject) => {
+          settleDocuments.push(() => {
+            if (index === 0) {
+              resolve({ numPages: 0 } as PdfDocument);
+              return;
+            }
+            reject(new Error("late-pdf-secret-must-not-escape"));
+          });
+        }),
     );
     const loadingTasks = pendingDocuments.map((promise, index) =>
       mockPdfLoadingTask(promise, destroyers[index]),
@@ -646,7 +657,10 @@ describe("POST /api/chat validation ordering", () => {
     });
     const documents = pages.map(
       (page) =>
-        ({ getPage: vi.fn(async () => page), numPages: 1 }) as unknown as PdfDocument,
+        ({
+          getPage: vi.fn(async () => page),
+          numPages: 1,
+        }) as unknown as PdfDocument,
     );
     const destroyers = Array.from({ length: 2 }, () =>
       vi.fn(async () => undefined),
@@ -714,7 +728,9 @@ describe("POST /api/chat validation ordering", () => {
 
     const responses = await Promise.all(requests);
     expect(responses.every((response) => response.status === 408)).toBe(true);
-    expect(cancels.every((cancel) => cancel.mock.calls.length === 1)).toBe(true);
+    expect(cancels.every((cancel) => cancel.mock.calls.length === 1)).toBe(
+      true,
+    );
     expect(cleanups.every((cleanup) => cleanup.mock.calls.length === 1)).toBe(
       true,
     );
@@ -791,7 +807,8 @@ describe("POST /api/chat validation ordering", () => {
         destroyed.push(metadataDestroy, pixelDestroy);
       }
 
-      const clientIp = pendingStage === "metadata" ? "203.0.113.63" : "203.0.113.64";
+      const clientIp =
+        pendingStage === "metadata" ? "203.0.113.63" : "203.0.113.64";
       const imageUrl =
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAHUlEQVR4nGNQTl72nxLMMGrA/9EwWDYaBsnDIgwAMoorH0C43vMAAAAASUVORK5CYII=";
       const imageRequest = (signal: AbortSignal) =>
@@ -857,9 +874,9 @@ describe("POST /api/chat validation ordering", () => {
 
       const responses = await Promise.all(requests);
       expect(responses.every((response) => response.status === 408)).toBe(true);
-      expect(destroyed.every((destroy) => destroy.mock.calls.length === 1)).toBe(
-        true,
-      );
+      expect(
+        destroyed.every((destroy) => destroy.mock.calls.length === 1),
+      ).toBe(true);
       expect((await POST(greetingRequest())).status).toBe(429);
 
       for (const settle of settlePending) {
@@ -902,8 +919,7 @@ describe("POST /api/chat validation ordering", () => {
               id: crypto.randomUUID(),
               parts: [
                 {
-                  text:
-                    "核对 CHN non-road 100 kW 在 2026-08-30 的现行法规与限值。",
+                  text: "核对 CHN non-road 100 kW 在 2026-08-30 的现行法规与限值。",
                   type: "text",
                 },
               ],
@@ -993,8 +1009,7 @@ describe("POST /api/chat validation ordering", () => {
               id: crypto.randomUUID(),
               parts: [
                 {
-                  text:
-                    "核对 CHN non-road 100 kW 在 2026-08-30 的现行法规与限值。",
+                  text: "核对 CHN non-road 100 kW 在 2026-08-30 的现行法规与限值。",
                   type: "text",
                 },
               ],
@@ -1030,7 +1045,9 @@ describe("POST /api/chat validation ordering", () => {
 
     try {
       const requests = [POST(setupRequest()), POST(setupRequest())];
-      await vi.waitFor(() => expect(mocks.ensureSession).toHaveBeenCalledTimes(2));
+      await vi.waitFor(() =>
+        expect(mocks.ensureSession).toHaveBeenCalledTimes(2),
+      );
       await vi.advanceTimersByTimeAsync(MAX_CHAT_SETUP_MS);
 
       const responses = await Promise.all(requests);
@@ -1059,7 +1076,9 @@ describe("POST /api/chat validation ordering", () => {
         await Promise.resolve();
       }
 
-      expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain(sensitiveText);
+      expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain(
+        sensitiveText,
+      );
       expect(consoleSpy).toHaveBeenCalledWith(
         "AI chat setup failed after request completion",
         { errorCode: "Error", stage: "audit_session" },

@@ -40,7 +40,10 @@ function invalidInputResponse(messages: Dictionary["apiErrors"]) {
   );
 }
 
-function internalErrorResponse(error: unknown, messages: Dictionary["apiErrors"]) {
+function internalErrorResponse(
+  error: unknown,
+  messages: Dictionary["apiErrors"],
+) {
   console.error("Product fit evaluation failed", {
     errorCode: getErrorCode(error),
   });
@@ -72,15 +75,18 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
-      return observer.finish(NextResponse.json(
-        productFitApiErrorSchema.parse({
-          error: {
-            code: "PAYLOAD_TOO_LARGE",
-            message: messages.productFitPayloadTooLarge,
-          },
-        }),
-        { status: 413 },
-      ), "PAYLOAD_TOO_LARGE");
+      return observer.finish(
+        NextResponse.json(
+          productFitApiErrorSchema.parse({
+            error: {
+              code: "PAYLOAD_TOO_LARGE",
+              message: messages.productFitPayloadTooLarge,
+            },
+          }),
+          { status: 413 },
+        ),
+        "PAYLOAD_TOO_LARGE",
+      );
     }
     if (
       error instanceof RequestBodyTimeoutError ||
@@ -105,7 +111,10 @@ export async function POST(request: Request) {
     if (error instanceof SyntaxError || error instanceof ZodError) {
       return observer.finish(invalidInputResponse(messages), "INVALID_INPUT");
     }
-    return observer.finish(internalErrorResponse(error, messages), "INTERNAL_ERROR");
+    return observer.finish(
+      internalErrorResponse(error, messages),
+      "INTERNAL_ERROR",
+    );
   }
 
   try {
@@ -135,11 +144,12 @@ export async function POST(request: Request) {
       );
     }
     return observer.finish(
-      NextResponse.json(
-        productFitEvaluationSchema.parse(operation.value),
-      ),
+      NextResponse.json(productFitEvaluationSchema.parse(operation.value)),
     );
   } catch (error) {
-    return observer.finish(internalErrorResponse(error, messages), "INTERNAL_ERROR");
+    return observer.finish(
+      internalErrorResponse(error, messages),
+      "INTERNAL_ERROR",
+    );
   }
 }

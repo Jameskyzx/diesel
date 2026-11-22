@@ -69,9 +69,11 @@ function reportRateLimitCleanupFailure(error: unknown): void {
   }
 }
 
-export function createRateLimitCleanupScheduler(options: {
-  now?: () => number;
-} = {}): RateLimitCleanupScheduler {
+export function createRateLimitCleanupScheduler(
+  options: {
+    now?: () => number;
+  } = {},
+): RateLimitCleanupScheduler {
   let cleanupInFlight: Promise<void> | null = null;
   let nextCleanupAtMs = Number.NEGATIVE_INFINITY;
   const now = options.now ?? Date.now;
@@ -144,8 +146,7 @@ export function resolveAiChatRateLimitConfig(options: {
   perClientLimitPerHour: number;
 }): AiChatRateLimitConfig {
   const globalLimitPerHour =
-    options.globalLimitPerHour ??
-    AI_CHAT_RATE_LIMIT_GLOBAL_DEFAULT_PER_HOUR;
+    options.globalLimitPerHour ?? AI_CHAT_RATE_LIMIT_GLOBAL_DEFAULT_PER_HOUR;
   assertHourlyLimit("Global hourly rate limit", globalLimitPerHour);
   assertHourlyLimit(
     "Per-client hourly rate limit",
@@ -416,8 +417,7 @@ export function validateAiChatRateLimitConfiguration(): void {
 export function getAiChatRateLimiter(): RateLimiter {
   const runtime = globalThis as RuntimeWithRateLimiter;
   if (!runtime.__aiChatRateLimiter) {
-    const { backend, config } =
-      resolveRuntimeAiChatRateLimitConfiguration();
+    const { backend, config } = resolveRuntimeAiChatRateLimitConfiguration();
 
     runtime.__aiChatRateLimiter =
       backend === "postgres"

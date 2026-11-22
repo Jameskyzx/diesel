@@ -4,9 +4,19 @@ import { requestsSalesGuarantee } from "@/domain/ai/sales-guarantee-intent";
 import { maskKnowledgeQueryLiterals } from "@/domain/knowledge/query-literal-spans";
 
 import { countryDetailResponseMatchesDeterministicRules } from "@/domain/countries/detail-consistency";
-import { buildKnowledgeRequestContext, knowledgeQuerySatisfies, knowledgeTermsIn } from "@/server/ai/knowledge-request-context";
-import { knowledgeDeliverySatisfied, type KnowledgeDeliveryRequirements } from "@/domain/knowledge/delivery";
-export { knowledgeTermsIn, knowledgeTermsMatch } from "@/server/ai/knowledge-request-context";
+import {
+  buildKnowledgeRequestContext,
+  knowledgeQuerySatisfies,
+  knowledgeTermsIn,
+} from "@/server/ai/knowledge-request-context";
+import {
+  knowledgeDeliverySatisfied,
+  type KnowledgeDeliveryRequirements,
+} from "@/domain/knowledge/delivery";
+export {
+  knowledgeTermsIn,
+  knowledgeTermsMatch,
+} from "@/server/ai/knowledge-request-context";
 import {
   aiKnowledgeSearchResultMatchesDeterministicRules,
   aiKnowledgeSearchUsesCanonicalNarrowing,
@@ -144,8 +154,9 @@ function splitCountryAwareClauses(
         // Protect only a list separator between adjacent recognized countries.
         // "CHN and BRA regulations" is one task; "CHN regulations and recommend
         // BRA products" still has an ordinary task boundary.
-        return /^\s*(?:[,，、](?:\s*(?:and|和|与|以及))?|and|和|与|以及)\s*$/iu
-          .test(text.slice(start, next.index))
+        return /^\s*(?:[,，、](?:\s*(?:and|和|与|以及))?|and|和|与|以及)\s*$/iu.test(
+          text.slice(start, next.index),
+        )
           ? [{ start, end: next.index }]
           : [];
       })
@@ -157,7 +168,9 @@ function splitCountryAwareClauses(
     if (
       // Country identity is atomic, including the "and" in Trinidad and Tobago.
       mentions.some(
-        (country) => country.index <= boundary.index && end <= country.index + country.length,
+        (country) =>
+          country.index <= boundary.index &&
+          end <= country.index + country.length,
       ) ||
       countryListJoins.some(
         (join) => join.start <= boundary.index && end <= join.end,
@@ -173,8 +186,9 @@ function splitCountryAwareClauses(
 }
 
 function intentClauses(text: string, intentPattern: RegExp): string[] {
-  return splitCountryAwareClauses(text, intentClauseBoundaryPattern, { protectCountryLists: true })
-    .filter((clause) => intentPattern.test(clause));
+  return splitCountryAwareClauses(text, intentClauseBoundaryPattern, {
+    protectCountryLists: true,
+  }).filter((clause) => intentPattern.test(clause));
 }
 
 function hasStandaloneRegulationIntent(
@@ -187,7 +201,10 @@ function hasStandaloneRegulationIntent(
   );
 }
 
-function countriesInIntentClauses(text: string, intentPattern: RegExp): string[] {
+function countriesInIntentClauses(
+  text: string,
+  intentPattern: RegExp,
+): string[] {
   return uniqueCountries(
     intentClauses(text, intentPattern).flatMap((clause) =>
       countryIso3sIn(clause),
@@ -200,14 +217,17 @@ function countriesInExplicitSourceSpans(text: string): string[] {
   if (!hasExplicitSourceIntent(metadataText) && hasExplicitSourceIntent(text)) {
     return countryIso3sIn(metadataText);
   }
-  return uniqueCountries(explicitSourceRequestSpans(metadataText).flatMap(countryIso3sIn));
+  return uniqueCountries(
+    explicitSourceRequestSpans(metadataText).flatMap(countryIso3sIn),
+  );
 }
 
 /** Independent task clauses are not source search constraints. Callers retain
  * the complete user text for safety/delivery; native literals must not be split. */
 export function explicitSourceRequestSpans(text: string): string[] {
   if (maskKnowledgeQueryLiterals(text) !== text) return [text];
-  return splitCountryAwareClauses(text, sourceSpanBoundaryPattern).flatMap((span) => {
+  return splitCountryAwareClauses(text, sourceSpanBoundaryPattern).flatMap(
+    (span) => {
       const clauses = splitCountryAwareClauses(span, weakConjunctionPattern);
       const sourceClauseIndexes = clauses.flatMap((clause, index) =>
         hasExplicitSourceIntent(clause) ? [index] : [],
@@ -234,10 +254,14 @@ export function explicitSourceRequestSpans(text: string): string[] {
 
         return clauses.slice(start, end).join(" ").trim();
       });
-    });
+    },
+  );
 }
 
-function powerKwsInIntentClauses(text: string, intentPattern: RegExp): number[] {
+function powerKwsInIntentClauses(
+  text: string,
+  intentPattern: RegExp,
+): number[] {
   return Array.from(
     new Set(
       intentClauses(text, intentPattern).flatMap((clause) =>
@@ -287,9 +311,8 @@ function metricCodesIn(text: string): string[] {
 export function metricCodesByTask(
   userTexts: readonly string[],
 ): Partial<Record<MetricEvidenceTask, readonly string[]>> {
-  const metricCodes: Partial<
-    Record<MetricEvidenceTask, readonly string[]>
-  > = {};
+  const metricCodes: Partial<Record<MetricEvidenceTask, readonly string[]>> =
+    {};
   let activeTask: ActiveConversationTask | null = null;
 
   for (const text of userTexts) {
@@ -336,16 +359,21 @@ export function buildSalesChatEvidenceContract(input: {
     (!asksForProductFit && regulationIntentPattern.test(latestUserText));
   const asksForMarket = marketIntentPattern.test(latestUserText);
   const asksForComparison = hasConversationComparisonIntent(latestUserText);
-  const isSingleCountryComparisonFollowUp = asksForComparison && userTexts.length > 1 &&
+  const isSingleCountryComparisonFollowUp =
+    asksForComparison &&
+    userTexts.length > 1 &&
     countryIso3sIn(latestUserText).length === 1;
   const asksForSource = hasExplicitSourceIntent(latestUserText);
-  const asksForOpportunityScore = opportunityScoreIntentPattern.test(
-    latestUserText,
-  );
+  const asksForOpportunityScore =
+    opportunityScoreIntentPattern.test(latestUserText);
   const asksForSalesBrief = salesBriefIntentPattern.test(latestUserText);
   const activeTask =
-    asksForSalesBrief || asksForOpportunityScore || asksForProductFit ||
-    asksForRegulation || asksForMarket || asksForSource
+    asksForSalesBrief ||
+    asksForOpportunityScore ||
+    asksForProductFit ||
+    asksForRegulation ||
+    asksForMarket ||
+    asksForSource
       ? null
       : context.activeTask;
   const requirements: EvidenceRequirement[] = [];
@@ -388,9 +416,8 @@ export function buildSalesChatEvidenceContract(input: {
     latestUserText,
     marketIntentPattern,
   );
-  const sourceCountriesFromLatest = countriesInExplicitSourceSpans(
-    latestUserText,
-  );
+  const sourceCountriesFromLatest =
+    countriesInExplicitSourceSpans(latestUserText);
   const addKnowledgeRequirement = () => {
     const knowledgeContext = buildKnowledgeRequestContext(userTexts, context);
     addMissing(knowledgeContext.requiresRestatement, "knowledgeQuery");
@@ -440,10 +467,7 @@ export function buildSalesChatEvidenceContract(input: {
           : { targetCountryIso3: context.targetCountryIso3 }),
       },
     });
-  } else if (
-    asksForOpportunityScore ||
-    activeTask === "opportunity_score"
-  ) {
+  } else if (asksForOpportunityScore || activeTask === "opportunity_score") {
     addMissing(context.countryIso3s.length < 2, "countryIso3s");
     addMissing(context.applicationScope === null, "applicationScope");
     addMissing(context.powerKw === null, "powerKw");
@@ -497,7 +521,11 @@ export function buildSalesChatEvidenceContract(input: {
         asksForComparison || activeTask === "regulation_compare";
       const regulationCountries =
         regulationCountriesFromLatest.length > 0 &&
-        !(isRegulationComparison && regulationCountriesFromLatest.length === 1 && isSingleCountryComparisonFollowUp)
+        !(
+          isRegulationComparison &&
+          regulationCountriesFromLatest.length === 1 &&
+          isSingleCountryComparisonFollowUp
+        )
           ? regulationCountriesFromLatest
           : context.countryIso3s;
       if (isRegulationComparison) {
@@ -536,27 +564,21 @@ export function buildSalesChatEvidenceContract(input: {
               : [];
         const hasApplicationScope = context.applicationScope !== null;
         const hasPower = context.powerKw !== null;
-        const hasPartialApplicabilityQuery =
-          hasApplicationScope !== hasPower;
+        const hasPartialApplicabilityQuery = hasApplicationScope !== hasPower;
         addMissing(singleCountryRegulations.length === 0, "countryIso3");
         addMissing(
           hasPartialApplicabilityQuery && !hasApplicationScope,
           "applicationScope",
         );
-        addMissing(
-          hasPartialApplicabilityQuery && !hasPower,
-          "powerKw",
-        );
+        addMissing(hasPartialApplicabilityQuery && !hasPower, "powerKw");
         for (const countryIso3 of singleCountryRegulations.length > 0
           ? singleCountryRegulations
           : [null]) {
-          const hasExactRegulationFilters =
-            hasApplicationScope && hasPower;
+          const hasExactRegulationFilters = hasApplicationScope && hasPower;
           requirements.push({
-            acceptedTools:
-              hasExactRegulationFilters
-                ? ["compareRegulations"]
-                : ["getCountryProfile"],
+            acceptedTools: hasExactRegulationFilters
+              ? ["compareRegulations"]
+              : ["getCountryProfile"],
             query: {
               applicationScope: context.applicationScope,
               asOf,
@@ -584,7 +606,11 @@ export function buildSalesChatEvidenceContract(input: {
         asksForComparison || activeTask === "market_compare";
       const marketCountries =
         marketCountriesFromLatest.length > 0 &&
-        !(isMarketComparison && marketCountriesFromLatest.length === 1 && isSingleCountryComparisonFollowUp)
+        !(
+          isMarketComparison &&
+          marketCountriesFromLatest.length === 1 &&
+          isSingleCountryComparisonFollowUp
+        )
           ? marketCountriesFromLatest
           : context.countryIso3s;
       if (isMarketComparison) {
@@ -636,7 +662,9 @@ export function buildSalesChatEvidenceContract(input: {
     // is only "continue", and its trigger can be split across adjacent turns.
     // Check both the individual messages and the same retained history joined
     // with a neutral boundary; attachment text is intentionally absent here.
-    blocksModelText: containsUntrustedInstruction(userTexts) || requestsSalesGuarantee(userTexts.at(-1) ?? ""),
+    blocksModelText:
+      containsUntrustedInstruction(userTexts) ||
+      requestsSalesGuarantee(userTexts.at(-1) ?? ""),
     countryIso3s: context.countryIso3s,
     missingRequiredParameters: Array.from(missingRequiredParameters),
     powerKw: context.powerKw,
@@ -652,9 +680,9 @@ export function buildSalesChatEvidenceContract(input: {
       (activeTask === "country_profile" &&
         context.profileTopics.includes("regulations")) ||
       (activeTask === "knowledge" &&
-        userTexts.slice(0, -1).some((text) =>
-          regulationIntentPattern.test(text),
-        )),
+        userTexts
+          .slice(0, -1)
+          .some((text) => regulationIntentPattern.test(text))),
     targetCountryIso3: context.targetCountryIso3,
   };
 }
@@ -679,9 +707,7 @@ function resultQuery(result: AiToolResult): ResultQuery {
       countryIso3s: [result.resolvedCountryIso3],
       knowledgeTerms: knowledgeTermsIn(
         result.search.query,
-        result.resolvedCountryIso3 === null
-          ? []
-          : [result.resolvedCountryIso3],
+        result.resolvedCountryIso3 === null ? [] : [result.resolvedCountryIso3],
       ),
     };
   }
@@ -713,8 +739,7 @@ function resultQuery(result: AiToolResult): ResultQuery {
   if (result.tool === "compareMarkets") {
     return {
       marketPeriod: result.comparison.query.marketPeriod,
-      applicationScope:
-        result.comparison.query.applicationScope ?? null,
+      applicationScope: result.comparison.query.applicationScope ?? null,
       countryIso3s: result.comparison.query.countryIso3s,
       metricCodes: result.comparison.query.metricCodes,
     };
@@ -765,15 +790,17 @@ function sameUniqueMetricCodeSet(
   );
 }
 
-
 function queryMatchesExpectation(
   expectation: EvidenceQueryExpectation,
   result: AiToolResult,
 ): boolean {
   const query = resultQuery(result);
-  if ((result.tool === "getCountryProfile" || result.tool === "compareMarkets") &&
+  if (
+    (result.tool === "getCountryProfile" || result.tool === "compareMarkets") &&
     (query.marketPeriod?.start !== expectation.marketPeriod?.start ||
-      query.marketPeriod?.end !== expectation.marketPeriod?.end)) return false;
+      query.marketPeriod?.end !== expectation.marketPeriod?.end)
+  )
+    return false;
 
   if (expectation.countryIso3s !== undefined) {
     if (query.countryIso3s === undefined) {
@@ -783,17 +810,25 @@ function queryMatchesExpectation(
       return false;
     }
   }
-  if (!knowledgeQuerySatisfies(expectation.knowledgeTerms, query.knowledgeTerms, expectation.knowledgeOptionalTerms)) return false;
-  if (expectation.knowledgeDelivery !== undefined &&
-    (result.tool !== "searchKnowledgeBase" || !knowledgeDeliverySatisfied(expectation.knowledgeDelivery, result))) return false;
+  if (
+    !knowledgeQuerySatisfies(
+      expectation.knowledgeTerms,
+      query.knowledgeTerms,
+      expectation.knowledgeOptionalTerms,
+    )
+  )
+    return false;
+  if (
+    expectation.knowledgeDelivery !== undefined &&
+    (result.tool !== "searchKnowledgeBase" ||
+      !knowledgeDeliverySatisfied(expectation.knowledgeDelivery, result))
+  )
+    return false;
   if (
     Object.hasOwn(expectation, "metricCodes") &&
     (query.metricCodes === undefined ||
       expectation.metricCodes === undefined ||
-      !sameUniqueMetricCodeSet(
-        query.metricCodes,
-        expectation.metricCodes,
-      ))
+      !sameUniqueMetricCodeSet(query.metricCodes, expectation.metricCodes))
   ) {
     return false;
   }
@@ -812,12 +847,12 @@ function queryMatchesExpectation(
   }
   if (
     Object.hasOwn(expectation, "powerKw") &&
-    (!Object.hasOwn(query, "powerKw") ||
-      query.powerKw !== expectation.powerKw)
+    (!Object.hasOwn(query, "powerKw") || query.powerKw !== expectation.powerKw)
   ) {
     return false;
   }
-  if (Object.hasOwn(expectation, "productModelCode") &&
+  if (
+    Object.hasOwn(expectation, "productModelCode") &&
     (result.tool === "findCompatibleProducts" ||
       result.tool === "calculateOpportunityScore" ||
       result.tool === "generateSalesBrief")
@@ -852,8 +887,7 @@ function resultSatisfiesRequirement(
   if (
     !aiEvidenceCitationsMatchFacts(result) ||
     !resultMatchesDeterministicRules(result) ||
-    result.evidenceSufficient !==
-      expectedAiEvidenceSufficiency(result) ||
+    result.evidenceSufficient !== expectedAiEvidenceSufficiency(result) ||
     (result.tool === "getCountryProfile" &&
       !countryProfilePayloadMatchesQuery(result)) ||
     (result.tool === "findCompatibleProducts" &&
@@ -917,9 +951,7 @@ function resultMatchesDeterministicRules(result: AiToolResult): boolean {
       return marketComparisonMatchesDeterministicRules(result.comparison);
     }
     if (result.tool === "calculateOpportunityScore") {
-      return opportunityScorecardMatchesTrustedProvenance(
-        result.scorecard,
-      );
+      return opportunityScorecardMatchesTrustedProvenance(result.scorecard);
     }
     if (result.tool === "generateSalesBrief") {
       return salesBriefMatchesDeterministicRules(result.brief);
@@ -931,20 +963,38 @@ function resultMatchesDeterministicRules(result: AiToolResult): boolean {
 }
 
 /** Returns only tools that can satisfy requirements not yet covered. */
-export function remainingEvidenceRequirements(contract: SalesChatEvidenceContract, results: readonly AiToolResult[]): EvidenceRequirement[] {
-  return contract.requirements.filter(requirement => !results.some(result =>
-    result.status === "ok" && result.evidenceSufficient && resultSatisfiesRequirement(requirement, result)));
+export function remainingEvidenceRequirements(
+  contract: SalesChatEvidenceContract,
+  results: readonly AiToolResult[],
+): EvidenceRequirement[] {
+  return contract.requirements.filter(
+    (requirement) =>
+      !results.some(
+        (result) =>
+          result.status === "ok" &&
+          result.evidenceSufficient &&
+          resultSatisfiesRequirement(requirement, result),
+      ),
+  );
 }
 
-export function evidenceResultMatchesRequest(contract: SalesChatEvidenceContract, result: AiToolResult): boolean {
-  return contract.requirements.some(requirement => resultSatisfiesRequirement(requirement, result));
+export function evidenceResultMatchesRequest(
+  contract: SalesChatEvidenceContract,
+  result: AiToolResult,
+): boolean {
+  return contract.requirements.some((requirement) =>
+    resultSatisfiesRequirement(requirement, result),
+  );
 }
 
 /** Scheduling only: a valid search can finish without finding the requested
  * passage. Keep all query/provenance checks, but not delivery success. This
  * NEVER authorizes prose; publication still uses the full evidence contract. */
-export function evidenceQueryWasAnswered(contract: SalesChatEvidenceContract, result: AiToolResult): boolean {
-  return contract.requirements.some(requirement => {
+export function evidenceQueryWasAnswered(
+  contract: SalesChatEvidenceContract,
+  result: AiToolResult,
+): boolean {
+  return contract.requirements.some((requirement) => {
     const query = { ...requirement.query };
     delete query.knowledgeDelivery;
     return resultSatisfiesRequirement({ ...requirement, query }, result);
@@ -963,8 +1013,9 @@ export function remainingEvidenceTools(
     (result) => result.status === "ok" && result.evidenceSufficient,
   );
   const remainingToolNames = new Set(
-    remainingEvidenceRequirements(contract, sufficientResults)
-      .flatMap((requirement) => requirement.acceptedTools),
+    remainingEvidenceRequirements(contract, sufficientResults).flatMap(
+      (requirement) => requirement.acceptedTools,
+    ),
   );
 
   return aiToolNames.filter((toolName) => remainingToolNames.has(toolName));

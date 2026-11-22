@@ -174,22 +174,34 @@ test("keeps a pending evaluation typed and re-localizes its late result", async 
   );
 });
 
-test("preserves a newer draft when its own evaluated URL arrives late", async ({ page }, testInfo) => {
+test("preserves a newer draft when its own evaluated URL arrives late", async ({
+  page,
+}, testInfo) => {
   await checkBrowserRuntimeErrors(page, testInfo, async () => {
     let releasePage = () => {};
     let markPageReady = () => {};
-    const pageGate = new Promise<void>((resolve) => { releasePage = resolve; });
-    const pageReady = new Promise<void>((resolve) => { markPageReady = resolve; });
+    const pageGate = new Promise<void>((resolve) => {
+      releasePage = resolve;
+    });
+    const pageReady = new Promise<void>((resolve) => {
+      markPageReady = resolve;
+    });
     let fitPostCount = 0;
     page.on("request", (request) => {
-      if (new URL(request.url()).pathname === "/api/product-fit" && request.method() === "POST") {
+      if (
+        new URL(request.url()).pathname === "/api/product-fit" &&
+        request.method() === "POST"
+      ) {
         fitPostCount += 1;
       }
     });
     await page.route("**/countries/CHN?**", async (route) => {
       const request = route.request();
       const url = new URL(request.url());
-      if (request.headers().rsc === "1" && url.searchParams.get("powerKw") === "150") {
+      if (
+        request.headers().rsc === "1" &&
+        url.searchParams.get("powerKw") === "150"
+      ) {
         const response = await route.fetch();
         expect(response.ok()).toBe(true);
         markPageReady();
@@ -199,27 +211,44 @@ test("preserves a newer draft when its own evaluated URL arrives late", async ({
         await route.continue();
       }
     });
-    await page.goto("/countries/CHN?applicationScope=non-road&asOf=2026-01-20&powerKw=100");
+    await page.goto(
+      "/countries/CHN?applicationScope=non-road&asOf=2026-01-20&powerKw=100",
+    );
     const power = page.getByLabel("Power (kW)", { exact: true });
     await page.getByRole("radio", { name: /^DEMO-ENG-100/ }).check();
     await power.fill("150");
     const refreshedPage = page.waitForResponse((response) => {
       const url = new URL(response.url());
-      return url.pathname === "/countries/CHN" && url.searchParams.get("powerKw") === "150" && response.request().headers().rsc === "1";
+      return (
+        url.pathname === "/countries/CHN" &&
+        url.searchParams.get("powerKw") === "150" &&
+        response.request().headers().rsc === "1"
+      );
     });
     try {
       await page.getByRole("button", { name: "Run deterministic fit" }).click();
-      await expect(page.getByTestId("product-fit-status-not_fit")).toBeVisible();
+      await expect(
+        page.getByTestId("product-fit-status-not_fit"),
+      ).toBeVisible();
       await pageReady;
       await power.fill("175");
       await expect(page.getByTestId("product-fit-result")).toBeHidden();
       releasePage();
       expect(await (await refreshedPage).finished()).toBeNull();
-      await expect(page).toHaveURL((url) => url.searchParams.get("powerKw") === "150");
+      await expect(page).toHaveURL(
+        (url) => url.searchParams.get("powerKw") === "150",
+      );
       await expect(power).toHaveValue("175");
       await expect(page.getByTestId("product-fit-result")).toBeHidden();
-      await expect(page.getByTestId("country-applicability-summary")).toContainText("Non-road · 150 kW · As of Jan 20, 2026");
-      await expect(page.getByRole("link", { name: "Analyze in chat" })).toHaveAttribute("href", "/chat?asOf=2026-01-20&countryIso3=CHN&applicationScope=non-road&powerKw=150&productModelCode=DEMO-ENG-100");
+      await expect(
+        page.getByTestId("country-applicability-summary"),
+      ).toContainText("Non-road · 150 kW · As of Jan 20, 2026");
+      await expect(
+        page.getByRole("link", { name: "Analyze in chat" }),
+      ).toHaveAttribute(
+        "href",
+        "/chat?asOf=2026-01-20&countryIso3=CHN&applicationScope=non-road&powerKw=150&productModelCode=DEMO-ENG-100",
+      );
       expect(fitPostCount).toBe(1);
     } finally {
       releasePage();
@@ -233,30 +262,41 @@ for (const locale of ["en", "zh-CN"] as const) {
     page,
   }, testInfo) => {
     if (locale === "zh-CN") {
-      await context.addCookies([{
-        name: "diesel_locale",
-        value: locale,
-        url: testInfo.project.use.baseURL ?? "http://127.0.0.1:3100",
-      }]);
+      await context.addCookies([
+        {
+          name: "diesel_locale",
+          value: locale,
+          url: testInfo.project.use.baseURL ?? "http://127.0.0.1:3100",
+        },
+      ]);
     }
     await checkBrowserRuntimeErrors(page, testInfo, async () => {
       const zh = locale === "zh-CN";
       let releasePage = () => {};
       let markPageReady = () => {};
-      const pageGate = new Promise<void>((resolve) => { releasePage = resolve; });
-      const pageReady = new Promise<void>((resolve) => { markPageReady = resolve; });
+      const pageGate = new Promise<void>((resolve) => {
+        releasePage = resolve;
+      });
+      const pageReady = new Promise<void>((resolve) => {
+        markPageReady = resolve;
+      });
       const fitInputs: unknown[] = [];
       page.on("request", (request) => {
-        if (new URL(request.url()).pathname === "/api/product-fit" && request.method() === "POST") {
+        if (
+          new URL(request.url()).pathname === "/api/product-fit" &&
+          request.method() === "POST"
+        ) {
           fitInputs.push(request.postDataJSON());
         }
       });
       await page.route("**/countries/CHN?**", async (route) => {
         const request = route.request();
         const url = new URL(request.url());
-        if (request.headers().rsc === "1" &&
+        if (
+          request.headers().rsc === "1" &&
           url.searchParams.get("powerKw") === "150" &&
-          url.searchParams.get("productModelCode") === "DEMO-ENG-100") {
+          url.searchParams.get("productModelCode") === "DEMO-ENG-100"
+        ) {
           const response = await route.fetch();
           expect(response.ok()).toBe(true);
           markPageReady();
@@ -272,31 +312,37 @@ for (const locale of ["en", "zh-CN"] as const) {
           "/countries/CHN?applicationScope=non-road&asOf=2026-01-20&powerKw=100&productModelCode=DOES-NOT-EXIST&utm_term=engine&utm_term=export",
         );
         await expect(page.locator("html")).toHaveAttribute("lang", locale);
-        const power = page.getByLabel(zh ? "功率（kW）" : "Power (kW)", { exact: true });
+        const power = page.getByLabel(zh ? "功率（kW）" : "Power (kW)", {
+          exact: true,
+        });
         const result = page.getByTestId("product-fit-result");
         const run = page.getByRole("button", {
           exact: true,
           name: zh ? "运行确定性匹配" : "Run deterministic fit",
         });
         await expect(run).toBeEnabled();
-        await expect(page).toHaveURL((url) =>
-          url.searchParams.get("productModelCode") === "DOES-NOT-EXIST",
+        await expect(page).toHaveURL(
+          (url) =>
+            url.searchParams.get("productModelCode") === "DOES-NOT-EXIST",
         );
         await expect(result).toBeHidden();
         expect(fitInputs).toHaveLength(0);
         await page.getByRole("radio", { name: /^DEMO-ENG-100/ }).check();
         await power.fill("150");
 
-        const fitResponse = page.waitForResponse((response) =>
-          new URL(response.url()).pathname === "/api/product-fit" &&
-          response.request().method() === "POST",
+        const fitResponse = page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname === "/api/product-fit" &&
+            response.request().method() === "POST",
         );
         const refreshedPage = page.waitForResponse((response) => {
           const url = new URL(response.url());
-          return url.pathname === "/countries/CHN" &&
+          return (
+            url.pathname === "/countries/CHN" &&
             url.searchParams.get("powerKw") === "150" &&
             url.searchParams.get("productModelCode") === "DEMO-ENG-100" &&
-            response.request().headers().rsc === "1";
+            response.request().headers().rsc === "1"
+          );
         });
         await run.click();
         const response = await fitResponse;
@@ -311,7 +357,9 @@ for (const locale of ["en", "zh-CN"] as const) {
           },
           status: "not_fit",
         });
-        await expect(page.getByTestId("product-fit-status-not_fit")).toBeVisible();
+        await expect(
+          page.getByTestId("product-fit-status-not_fit"),
+        ).toBeVisible();
         await pageReady;
         expect(fitInputs).toHaveLength(1);
 
@@ -319,39 +367,59 @@ for (const locale of ["en", "zh-CN"] as const) {
         await expect(result).toBeHidden();
         releasePage();
         expect(await (await refreshedPage).finished()).toBeNull();
-        await expect(page).toHaveURL((url) =>
-          url.pathname === "/countries/CHN" &&
-          url.searchParams.get("applicationScope") === "non-road" &&
-          url.searchParams.get("asOf") === "2026-01-20" &&
-          url.searchParams.get("powerKw") === "150" &&
-          url.searchParams.get("productModelCode") === "DEMO-ENG-100" &&
-          url.searchParams.getAll("utm_term").join(",") === "engine,export",
+        await expect(page).toHaveURL(
+          (url) =>
+            url.pathname === "/countries/CHN" &&
+            url.searchParams.get("applicationScope") === "non-road" &&
+            url.searchParams.get("asOf") === "2026-01-20" &&
+            url.searchParams.get("powerKw") === "150" &&
+            url.searchParams.get("productModelCode") === "DEMO-ENG-100" &&
+            url.searchParams.getAll("utm_term").join(",") === "engine,export",
         );
         // Let the route commit's passive effect and zero-delay auto-run task
         // execute before checking that the user's new draft was not submitted.
-        await page.evaluate(() => new Promise<void>((resolve) => {
-          requestAnimationFrame(() => requestAnimationFrame(() => {
-            setTimeout(resolve, 0);
-          }));
-        }));
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) => {
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => {
+                  setTimeout(resolve, 0);
+                }),
+              );
+            }),
+        );
         await expect(power).toHaveValue("175");
         await expect(result).toBeHidden();
-        await expect(page.getByTestId("product-fit-evaluation-loading")).toBeHidden();
-        await expect(page.getByTestId("country-applicability-summary")).toContainText(zh
-          ? "非道路 · 150 kW · 截止 2026年1月20日"
-          : "Non-road · 150 kW · As of Jan 20, 2026");
-        await expect(page.getByRole("link", { name: zh ? "在对话中分析" : "Analyze in chat" })).toHaveAttribute(
+        await expect(
+          page.getByTestId("product-fit-evaluation-loading"),
+        ).toBeHidden();
+        await expect(
+          page.getByTestId("country-applicability-summary"),
+        ).toContainText(
+          zh
+            ? "非道路 · 150 kW · 截止 2026年1月20日"
+            : "Non-road · 150 kW · As of Jan 20, 2026",
+        );
+        await expect(
+          page.getByRole("link", {
+            name: zh ? "在对话中分析" : "Analyze in chat",
+          }),
+        ).toHaveAttribute(
           "href",
           "/chat?asOf=2026-01-20&countryIso3=CHN&applicationScope=non-road&powerKw=150&productModelCode=DEMO-ENG-100",
         );
-        await expect(page).toHaveURL((url) => url.searchParams.get("powerKw") === "150");
-        expect(fitInputs).toEqual([{
-          applicationScope: "non-road",
-          asOf: "2026-01-20",
-          countryIso3: "CHN",
-          powerKw: "150",
-          productModelCode: "DEMO-ENG-100",
-        }]);
+        await expect(page).toHaveURL(
+          (url) => url.searchParams.get("powerKw") === "150",
+        );
+        expect(fitInputs).toEqual([
+          {
+            applicationScope: "non-road",
+            asOf: "2026-01-20",
+            countryIso3: "CHN",
+            powerKw: "150",
+            productModelCode: "DEMO-ENG-100",
+          },
+        ]);
       } finally {
         releasePage();
         await page.unrouteAll({ behavior: "wait" });
@@ -429,7 +497,9 @@ for (const { order, summaryFirst } of [
           // A newer SSR context may cancel this obsolete request. Only an
           // explicit browser abort is expected; transport and teardown errors
           // must still fail the test rather than disappearing in a catch-all.
-          if (!(error instanceof Error && error.message.includes("net::ERR_ABORTED"))) {
+          if (!(
+            error instanceof Error && error.message.includes("net::ERR_ABORTED")
+          )) {
             throw error;
           }
         } finally {
@@ -466,21 +536,26 @@ for (const { order, summaryFirst } of [
       "Non-road · 100 kW · As of Jan 20, 2026",
     );
     await page.getByRole("radio", { name: /^DEMO-ENG-100/ }).check();
-    await page.getByLabel("Application", { exact: true }).selectOption("marine");
+    await page
+      .getByLabel("Application", { exact: true })
+      .selectOption("marine");
     await page.getByLabel("Power (kW)", { exact: true }).fill("150");
     await expect(page.getByLabel("Evaluation date")).toHaveValue("2026-01-20");
     expect(fitPostCount).toBe(0);
 
-    const fitResponsePromise = page.waitForResponse((response) =>
-      new URL(response.url()).pathname === "/api/product-fit" &&
-      response.request().method() === "POST",
+    const fitResponsePromise = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/product-fit" &&
+        response.request().method() === "POST",
     );
     const refreshedPageResponsePromise = page.waitForResponse((response) => {
       const url = new URL(response.url());
-      return url.pathname === "/countries/CHN" &&
+      return (
+        url.pathname === "/countries/CHN" &&
         url.searchParams.get("applicationScope") === "marine" &&
         url.searchParams.get("powerKw") === "150" &&
-        response.request().headers().rsc === "1";
+        response.request().headers().rsc === "1"
+      );
     });
 
     try {
@@ -514,12 +589,13 @@ for (const { order, summaryFirst } of [
       const refreshedPageResponse = await refreshedPageResponsePromise;
       expect(refreshedPageResponse.ok()).toBe(true);
       expect(await refreshedPageResponse.finished()).toBeNull();
-      await expect(page).toHaveURL((url) =>
-        url.pathname === "/countries/CHN" &&
-        url.searchParams.get("applicationScope") === "marine" &&
-        url.searchParams.get("asOf") === "2026-01-20" &&
-        url.searchParams.get("powerKw") === "150" &&
-        url.searchParams.get("productModelCode") === "DEMO-ENG-100",
+      await expect(page).toHaveURL(
+        (url) =>
+          url.pathname === "/countries/CHN" &&
+          url.searchParams.get("applicationScope") === "marine" &&
+          url.searchParams.get("asOf") === "2026-01-20" &&
+          url.searchParams.get("powerKw") === "150" &&
+          url.searchParams.get("productModelCode") === "DEMO-ENG-100",
       );
 
       // In the late-summary row this retains the original red ordering: the
@@ -537,13 +613,14 @@ for (const { order, summaryFirst } of [
       await expect(page.getByLabel("Power (kW)", { exact: true })).toHaveValue(
         "150",
       );
-      await expect(page.getByLabel("Evaluation date")).toHaveValue("2026-01-20");
+      await expect(page.getByLabel("Evaluation date")).toHaveValue(
+        "2026-01-20",
+      );
       const chatHref =
         "/chat?asOf=2026-01-20&countryIso3=CHN&applicationScope=marine&powerKw=150&productModelCode=DEMO-ENG-100";
-      await expect(page.getByRole("link", { name: "Analyze in chat" })).toHaveAttribute(
-        "href",
-        chatHref,
-      );
+      await expect(
+        page.getByRole("link", { name: "Analyze in chat" }),
+      ).toHaveAttribute("href", chatHref);
       expect(fitPostCount).toBe(1);
 
       // Locale refresh must not replace an unsubmitted draft with URL values
@@ -551,20 +628,27 @@ for (const { order, summaryFirst } of [
       await page.getByLabel("Power (kW)", { exact: true }).fill("175");
       await expect(page.getByTestId("product-fit-result")).toBeHidden();
       const localeToggle = page.getByTestId("country-drawer-locale-toggle");
-      await localeToggle.getByRole("button", { exact: true, name: "中文" }).click();
+      await localeToggle
+        .getByRole("button", { exact: true, name: "中文" })
+        .click();
       await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
       await expect(localeToggle).toHaveAttribute("aria-busy", "false");
-      await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue("175");
-      await expect(page.getByLabel("应用场景", { exact: true })).toHaveValue("marine");
+      await expect(page.getByLabel("功率（kW）", { exact: true })).toHaveValue(
+        "175",
+      );
+      await expect(page.getByLabel("应用场景", { exact: true })).toHaveValue(
+        "marine",
+      );
       await expect(page.getByLabel("评估日期")).toHaveValue("2026-01-20");
       await expect(summary).toContainText("船舶 · 150 kW · 截止 2026年1月20日");
       await expect(summary).not.toContainText("175 kW");
-      await expect(page.getByRole("link", { name: "在对话中分析" })).toHaveAttribute(
-        "href",
-        chatHref,
-      );
+      await expect(
+        page.getByRole("link", { name: "在对话中分析" }),
+      ).toHaveAttribute("href", chatHref);
       await expect(page.getByTestId("product-fit-result")).toBeHidden();
-      await expect(page).toHaveURL((url) => url.searchParams.get("powerKw") === "150");
+      await expect(page).toHaveURL(
+        (url) => url.searchParams.get("powerKw") === "150",
+      );
       expect(fitPostCount).toBe(1);
     } finally {
       releaseSummary();

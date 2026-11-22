@@ -1,4 +1,12 @@
 {
-  "reviewedAt": "2026-10-08",
-  "advisories": []
+  "reviewedAt": "2026-11-18",
+  "advisories": [
+    {
+      "expiresOn": "2026-11-24",
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "owner": "Jameskyzx",
+      "reason": "Explicitly approved seven-calendar-day tooling exception; no official picomatch fix exists (all versions <=4.0.7, latest 4.0.7). Reached only through ESLint and Vite/Vitest devDependencies via tinyglobby/fdir; pnpm why --prod finds no production path. Glob patterns come from committed config, not user input. See docs/DEPENDENCY_SECURITY.md; re-review or remediate before 2026-11-25 UTC, never auto-renew.",
+      "severity": "high"
+    }
+  ]
 }

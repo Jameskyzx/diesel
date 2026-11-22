@@ -2,10 +2,7 @@ import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
-import {
-  drizzle,
-  type PostgresJsDatabase,
-} from "drizzle-orm/postgres-js";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres, { type Sql } from "../../src/server/db/postgres";
 
 import * as schema from "../../src/server/db/schema";
@@ -75,9 +72,11 @@ export function composePostgresRateLimitSmokeError(
   const teardownErrors = [
     ...(input.cleanupError === undefined
       ? []
-      : [new Error(`fixture cleanup: ${errorMessage(input.cleanupError)}`, {
-          cause: input.cleanupError,
-        })]),
+      : [
+          new Error(`fixture cleanup: ${errorMessage(input.cleanupError)}`, {
+            cause: input.cleanupError,
+          }),
+        ]),
     ...(input.closeErrors ?? []).map(
       (error, index) =>
         new Error(`pool close ${index + 1}: ${errorMessage(error)}`, {
@@ -230,11 +229,13 @@ function createSmokePool(databaseUrl: URL, index: number): SmokePool {
 }
 
 async function readAndValidateTarget(client: Sql): Promise<void> {
-  const rows = await client<{
-    currentDatabase: string;
-    serverVersionNum: number;
-    vectorInstalled: boolean;
-  }[]>`
+  const rows = await client<
+    {
+      currentDatabase: string;
+      serverVersionNum: number;
+      vectorInstalled: boolean;
+    }[]
+  >`
     select
       current_database() as "currentDatabase",
       current_setting('server_version_num')::int as "serverVersionNum",
@@ -254,8 +255,9 @@ async function readAndValidateSessionTopology(
 ): Promise<void> {
   const clients = [monitor, ...pools.map(({ client }) => client)];
   const rows = await Promise.all(
-    clients.map((client) =>
-      client<{ backendPid: number }[]>`
+    clients.map(
+      (client) =>
+        client<{ backendPid: number }[]>`
         select pg_backend_pid()::int as "backendPid"
       `,
     ),
@@ -270,7 +272,10 @@ async function readAndValidateSessionTopology(
   );
 }
 
-async function countScopeRows(client: Sql, scopes: readonly string[]): Promise<number> {
+async function countScopeRows(
+  client: Sql,
+  scopes: readonly string[],
+): Promise<number> {
   let count = 0;
   for (const scope of scopes) {
     const rows = await client<{ count: number }[]>`
@@ -284,7 +289,10 @@ async function countScopeRows(client: Sql, scopes: readonly string[]): Promise<n
   return count;
 }
 
-async function cleanupScopes(client: Sql, scopes: readonly string[]): Promise<void> {
+async function cleanupScopes(
+  client: Sql,
+  scopes: readonly string[],
+): Promise<void> {
   for (const scope of scopes) {
     await client`
       delete from api_rate_limit_buckets
@@ -431,10 +439,7 @@ export async function runPostgresRateLimitConcurrencySmoke(): Promise<void> {
     });
 
     await runScenario({
-      clientKeys: Array.from(
-        { length: 12 },
-        () => `shared-client-${nonce}`,
-      ),
+      clientKeys: Array.from({ length: 12 }, () => `shared-client-${nonce}`),
       clientLimit: 3,
       clientScope: scopes.clientExhaustionClient,
       expectedAllowed: 3,

@@ -115,7 +115,9 @@ export async function saveDocumentFile(input: {
   try {
     const existing = await readBoundedDocumentFile(target);
     if (sha256(existing) !== input.contentSha256) {
-      throw new Error("Stored file hash does not match the requested document.");
+      throw new Error(
+        "Stored file hash does not match the requested document.",
+      );
     }
     return {
       created: false,

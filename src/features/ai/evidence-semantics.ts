@@ -430,7 +430,11 @@ type CountryProfileEvidenceResult = EvidenceBase & {
           currentEffectiveRegulations: readonly CountryProfileRegulation[];
           futureAdoptedRegulations: readonly CountryProfileRegulation[];
           iso3: string;
-          marketMetrics: readonly { countryIso3: string; periodStart: string; periodEnd: string }[];
+          marketMetrics: readonly {
+            countryIso3: string;
+            periodStart: string;
+            periodEnd: string;
+          }[];
         };
         status: "available";
       };
@@ -588,9 +592,7 @@ export function latestVerifiedAtFromCitations(
     }
     if (
       timestamp > latestTime ||
-      (timestamp === latestTime &&
-        latest !== null &&
-        verifiedAt > latest)
+      (timestamp === latestTime && latest !== null && verifiedAt > latest)
     ) {
       latest = verifiedAt;
       latestTime = timestamp;
@@ -612,8 +614,7 @@ export function latestVerifiedAtMatchesCitations(result: {
     return false;
   }
   return (
-    result.latestVerifiedAt ===
-    latestVerifiedAtFromCitations(result.citations)
+    result.latestVerifiedAt === latestVerifiedAtFromCitations(result.citations)
   );
 }
 
@@ -640,11 +641,12 @@ export function countryProfilePayloadMatchesQuery(
     countryIso3 === result.resolvedCountryIso3 &&
     result.profile.asOf === result.informationAsOf &&
     result.profile.country.marketMetrics.every(
-      (metric) => metric.countryIso3 === countryIso3 && observationInReportingPeriod(metric, result.marketPeriod),
+      (metric) =>
+        metric.countryIso3 === countryIso3 &&
+        observationInReportingPeriod(metric, result.marketPeriod),
     ) &&
     regulations.every(
-      (regulation) =>
-        regulation.applicability.countryIso3 === countryIso3,
+      (regulation) => regulation.applicability.countryIso3 === countryIso3,
     )
   );
 }
@@ -701,9 +703,7 @@ function descriptorHasFields(
 ): boolean {
   return (
     hasRecordShape(descriptor) &&
-    Object.entries(expected).every(
-      ([key, value]) => descriptor[key] === value,
-    )
+    Object.entries(expected).every(([key, value]) => descriptor[key] === value)
   );
 }
 
@@ -716,9 +716,7 @@ function sameStructuredValue(left: unknown, right: unknown): boolean {
       Array.isArray(left) &&
       Array.isArray(right) &&
       left.length === right.length &&
-      left.every((value, index) =>
-        sameStructuredValue(value, right[index]),
-      )
+      left.every((value, index) => sameStructuredValue(value, right[index]))
     );
   }
   if (!hasRecordShape(left) || !hasRecordShape(right)) {
@@ -730,8 +728,7 @@ function sameStructuredValue(left: unknown, right: unknown): boolean {
     leftKeys.length === rightKeys.length &&
     leftKeys.every(
       (key, index) =>
-        key === rightKeys[index] &&
-        sameStructuredValue(left[key], right[key]),
+        key === rightKeys[index] && sameStructuredValue(left[key], right[key]),
     )
   );
 }
@@ -785,12 +782,10 @@ function citationHasNoDocumentContext(
   );
 }
 
-export function citationHasPairedEntityIdentity(
-  citation: {
-    entityId?: string | null;
-    entityType?: EvidenceEntityType | null;
-  },
-): boolean {
+export function citationHasPairedEntityIdentity(citation: {
+  entityId?: string | null;
+  entityType?: EvidenceEntityType | null;
+}): boolean {
   return (
     (citation.entityId === undefined || citation.entityId === null) ===
     (citation.entityType === undefined || citation.entityType === null)
@@ -953,9 +948,7 @@ function citationsExactlyMatchAnalysisSources(
   return (
     citationsCoverAnalysisSources(citations, sources) &&
     citations.every((citation) =>
-      sources.some((source) =>
-        citationMatchesAnalysisSource(citation, source),
-      ),
+      sources.some((source) => citationMatchesAnalysisSource(citation, source)),
     )
   );
 }
@@ -1006,9 +999,11 @@ function citationMatchesEntityIdentity(
   );
 }
 
-function citationMatchesEntity(input: {
-  citations: readonly EvidenceCitationIdentity[];
-} & EntityCitationExpectation): boolean {
+function citationMatchesEntity(
+  input: {
+    citations: readonly EvidenceCitationIdentity[];
+  } & EntityCitationExpectation,
+): boolean {
   const { citations, ...expectation } = input;
   return citations.some((citation) =>
     citationMatchesEntityIdentity(citation, expectation),
@@ -1016,9 +1011,7 @@ function citationMatchesEntity(input: {
 }
 
 /** Ensures each regulation fact owns its nested source and top-level source. */
-export function regulationComparisonSourcesMatchFacts(
-  value: unknown,
-): boolean {
+export function regulationComparisonSourcesMatchFacts(value: unknown): boolean {
   try {
     const comparison = value as RegulationComparisonIdentity;
     const nestedSources: AnalysisSourceIdentity[] = [];
@@ -1026,9 +1019,7 @@ export function regulationComparisonSourcesMatchFacts(
       if (!comparison.query.countryIso3s.includes(country.countryIso3)) {
         return false;
       }
-      if (
-        (country.countrySource === null) !== (country.countryName === null)
-      ) {
+      if ((country.countrySource === null) !== (country.countryName === null)) {
         return false;
       }
       const regulations = [
@@ -1039,19 +1030,23 @@ export function regulationComparisonSourcesMatchFacts(
         !sameStringSequence(
           country.currentEffectiveRegulations.map(({ id }) => id),
           country.currentEffectiveRegulations
-            .toSorted((left, right) => compareCanonicalText(
-              `${left.canonicalName}\u0000${left.id}`,
-              `${right.canonicalName}\u0000${right.id}`,
-            ))
+            .toSorted((left, right) =>
+              compareCanonicalText(
+                `${left.canonicalName}\u0000${left.id}`,
+                `${right.canonicalName}\u0000${right.id}`,
+              ),
+            )
             .map(({ id }) => id),
         ) ||
         !sameStringSequence(
           country.futureAdoptedRegulations.map(({ id }) => id),
           country.futureAdoptedRegulations
-            .toSorted((left, right) => compareCanonicalText(
-              `${left.canonicalName}\u0000${left.id}`,
-              `${right.canonicalName}\u0000${right.id}`,
-            ))
+            .toSorted((left, right) =>
+              compareCanonicalText(
+                `${left.canonicalName}\u0000${left.id}`,
+                `${right.canonicalName}\u0000${right.id}`,
+              ),
+            )
             .map(({ id }) => id),
         )
       ) {
@@ -1062,24 +1057,26 @@ export function regulationComparisonSourcesMatchFacts(
           !sameStringSequence(
             regulation.limits.map(({ id }) => id),
             regulation.limits
-              .toSorted((left, right) => compareCanonicalText(
-                [
-                  left.pollutantCode,
-                  left.powerMinKw ?? -1,
-                  left.powerMaxKw ?? -1,
-                  left.validFrom,
-                  left.validTo ?? "",
-                  left.id,
-                ].join("\u0000"),
-                [
-                  right.pollutantCode,
-                  right.powerMinKw ?? -1,
-                  right.powerMaxKw ?? -1,
-                  right.validFrom,
-                  right.validTo ?? "",
-                  right.id,
-                ].join("\u0000"),
-              ))
+              .toSorted((left, right) =>
+                compareCanonicalText(
+                  [
+                    left.pollutantCode,
+                    left.powerMinKw ?? -1,
+                    left.powerMaxKw ?? -1,
+                    left.validFrom,
+                    left.validTo ?? "",
+                    left.id,
+                  ].join("\u0000"),
+                  [
+                    right.pollutantCode,
+                    right.powerMinKw ?? -1,
+                    right.powerMaxKw ?? -1,
+                    right.validFrom,
+                    right.validTo ?? "",
+                    right.id,
+                  ].join("\u0000"),
+                ),
+              )
               .map(({ id }) => id),
           ) ||
           regulation.applicability.countryIso3 !== country.countryIso3 ||
@@ -1095,16 +1092,13 @@ export function regulationComparisonSourcesMatchFacts(
             locator: regulation.citationCode,
             title: regulation.canonicalName,
           }) ||
-          !analysisSourceMatches(
-            regulation.applicability.jurisdiction.source,
-            {
-              countryIso3: country.countryIso3,
-              entityId: regulation.applicability.jurisdiction.id,
-              entityType: "jurisdiction",
-              regulationId: regulation.id,
-              regulationStatus: regulation.recordStatus,
-            },
-          ) ||
+          !analysisSourceMatches(regulation.applicability.jurisdiction.source, {
+            countryIso3: country.countryIso3,
+            entityId: regulation.applicability.jurisdiction.id,
+            entityType: "jurisdiction",
+            regulationId: regulation.id,
+            regulationStatus: regulation.recordStatus,
+          }) ||
           !analysisSourcePresentationMatches(
             regulation.applicability.jurisdiction.source,
             {
@@ -1113,16 +1107,13 @@ export function regulationComparisonSourcesMatchFacts(
               title: regulation.applicability.jurisdiction.name,
             },
           ) ||
-          !analysisSourceMatches(
-            regulation.applicability.membership.source,
-            {
-              countryIso3: country.countryIso3,
-              entityId: regulation.applicability.jurisdiction.id,
-              entityType: "country_jurisdiction",
-              regulationId: regulation.id,
-              regulationStatus: regulation.recordStatus,
-            },
-          ) ||
+          !analysisSourceMatches(regulation.applicability.membership.source, {
+            countryIso3: country.countryIso3,
+            entityId: regulation.applicability.jurisdiction.id,
+            entityType: "country_jurisdiction",
+            regulationId: regulation.id,
+            regulationStatus: regulation.recordStatus,
+          }) ||
           !analysisSourcePresentationMatches(
             regulation.applicability.membership.source,
             {
@@ -1136,8 +1127,7 @@ export function regulationComparisonSourcesMatchFacts(
               title: `${regulation.applicability.jurisdiction.name} 对 ${country.countryIso3} 的成员关系`,
               titleDescriptor: {
                 countryIso3: country.countryIso3,
-                jurisdictionName:
-                  regulation.applicability.jurisdiction.name,
+                jurisdictionName: regulation.applicability.jurisdiction.name,
                 kind: "country_jurisdiction_membership",
               },
             },
@@ -1280,8 +1270,9 @@ export function marketComparisonSourcesMatchFacts(value: unknown): boolean {
               const leftCountryIndex = comparison.query.countryIso3s.indexOf(
                 left.countryIso3,
               );
-              const rightCountryIndex =
-                comparison.query.countryIso3s.indexOf(right.countryIso3);
+              const rightCountryIndex = comparison.query.countryIso3s.indexOf(
+                right.countryIso3,
+              );
               return (
                 leftCountryIndex - rightCountryIndex ||
                 compareCanonicalText(right.periodEnd, left.periodEnd) ||
@@ -1298,9 +1289,7 @@ export function marketComparisonSourcesMatchFacts(value: unknown): boolean {
         if (
           observation.metricCode !== metric.metricCode ||
           observation.metricName !== metric.metricName ||
-          !comparison.query.countryIso3s.includes(
-            observation.countryIso3,
-          ) ||
+          !comparison.query.countryIso3s.includes(observation.countryIso3) ||
           (comparison.query.applicationScope != null &&
             observation.applicationScope != null &&
             observation.applicationScope !==
@@ -1440,9 +1429,7 @@ function countryProfileCitationsMatchFacts(
       kind: "country_profile",
     }) &&
     citationHasNoDocumentContext(citation);
-  if (
-    !citations.some(citationMatchesCountry)
-  ) {
+  if (!citations.some(citationMatchesCountry)) {
     return false;
   }
 
@@ -1464,8 +1451,7 @@ function countryProfileCitationsMatchFacts(
       entityId: jurisdiction.id,
       entityType: "country_jurisdiction",
       expectedIsDemo:
-        jurisdiction.membershipIsDemo ||
-        jurisdiction.membershipSource.isDemo,
+        jurisdiction.membershipIsDemo || jurisdiction.membershipSource.isDemo,
       locator: `${jurisdiction.validFrom}–${jurisdiction.validTo ?? "open"}`,
       locatorDescriptor: {
         kind: "membership_period",
@@ -1524,8 +1510,7 @@ function countryProfileCitationsMatchFacts(
         regulation.applicability.jurisdiction.isDemo ||
         regulation.applicability.jurisdiction.source.isDemo,
       locator: regulation.applicability.jurisdiction.code,
-      publishedOn:
-        regulation.applicability.jurisdiction.source.publishedOn,
+      publishedOn: regulation.applicability.jurisdiction.source.publishedOn,
       regulationId: regulation.id,
       regulationStatus: regulation.status,
       source: regulation.applicability.jurisdiction.source,
@@ -1797,8 +1782,7 @@ function productCitationsMatchFacts(result: ProductIdentityResult): boolean {
             regulation.applicability.jurisdiction.isDemo ||
             regulation.applicability.jurisdiction.source.isDemo,
           locator: regulation.applicability.jurisdiction.code,
-          publishedOn:
-            regulation.applicability.jurisdiction.source.publishedOn,
+          publishedOn: regulation.applicability.jurisdiction.source.publishedOn,
           regulationId: regulation.regulationId,
           regulationStatus: regulation.recordStatus,
           source: regulation.applicability.jurisdiction.source,
@@ -1817,8 +1801,7 @@ function productCitationsMatchFacts(result: ProductIdentityResult): boolean {
             validFrom: regulation.applicability.membership.validFrom,
             validTo: regulation.applicability.membership.validTo,
           },
-          publishedOn:
-            regulation.applicability.membership.source.publishedOn,
+          publishedOn: regulation.applicability.membership.source.publishedOn,
           regulationId: regulation.regulationId,
           regulationStatus: regulation.recordStatus,
           source: regulation.applicability.membership.source,
@@ -1853,8 +1836,7 @@ function productCitationsMatchFacts(result: ProductIdentityResult): boolean {
             countryIso3,
             entityId: certification.id,
             entityType: "product_certification",
-            expectedIsDemo:
-              certification.isDemo || certification.source.isDemo,
+            expectedIsDemo: certification.isDemo || certification.source.isDemo,
             locator: certification.certificateNumber,
             publishedOn: certification.source.publishedOn,
             regulationId: certification.regulationId,
@@ -1885,8 +1867,7 @@ function productCitationsMatchFacts(result: ProductIdentityResult): boolean {
             {
               ...evaluation.product.source,
               isDemo:
-                evaluation.product.isDemo ||
-                evaluation.product.source.isDemo,
+                evaluation.product.isDemo || evaluation.product.source.isDemo,
             },
           ]),
       ...evaluation.regulationChecks.flatMap(
@@ -1999,14 +1980,12 @@ function briefCitationsMatchFacts(result: BriefIdentityResult): boolean {
     result.informationAsOf !== brief.query.asOf ||
     !brief.sources.every(
       ({ countryIso3 }) =>
-        countryIso3 !== null &&
-        brief.query.countryIso3s.includes(countryIso3),
+        countryIso3 !== null && brief.query.countryIso3s.includes(countryIso3),
     ) ||
     !citationsExactlyMatchAnalysisSources(citations, brief.sources) ||
     (brief.marketScore.overallScore !== null &&
       !brief.sources.some(
-        ({ countryIso3 }) =>
-          countryIso3 === brief.marketScore.countryIso3,
+        ({ countryIso3 }) => countryIso3 === brief.marketScore.countryIso3,
       ))
   ) {
     return false;
@@ -2121,4 +2100,7 @@ export function aiEvidenceCitationsMatchFacts(value: unknown): boolean {
     return false;
   }
 }
-import { observationInReportingPeriod, type MarketReportingPeriod } from "@/domain/marketing/reporting-period";
+import {
+  observationInReportingPeriod,
+  type MarketReportingPeriod,
+} from "@/domain/marketing/reporting-period";

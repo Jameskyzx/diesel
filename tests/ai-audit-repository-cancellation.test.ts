@@ -42,9 +42,11 @@ describe("AI audit repository cancellation", () => {
     controller.abort("caller-controlled-secret");
 
     let settled = false;
-    void ensuring.finally(() => {
-      settled = true;
-    }).catch(() => undefined);
+    void ensuring
+      .finally(() => {
+        settled = true;
+      })
+      .catch(() => undefined);
     await Promise.resolve();
     expect(settled).toBe(false);
 

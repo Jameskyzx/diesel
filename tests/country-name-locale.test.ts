@@ -165,10 +165,7 @@ describe("localized country display names", () => {
     "normalizes the known $iso3 ICU alias difference for hydration stability",
     (country) => {
       expect(
-        formatCountryDisplayName(
-          { ...country, nameLocal: null },
-          "zh-CN",
-        ),
+        formatCountryDisplayName({ ...country, nameLocal: null }, "zh-CN"),
       ).toBe(country.expected);
     },
   );

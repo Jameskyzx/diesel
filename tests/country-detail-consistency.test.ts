@@ -85,9 +85,7 @@ describe("country-detail deterministic consistency", () => {
     );
     const summary = reordered.applicabilitySummary;
     if (summary !== null && summary.lastVerifiedAt !== null) {
-      summary.lastVerifiedAt = sameInstantAtPlusEight(
-        summary.lastVerifiedAt,
-      );
+      summary.lastVerifiedAt = sameInstantAtPlusEight(summary.lastVerifiedAt);
     }
 
     expect(countryDetailResponseMatchesDeterministicRules(reordered)).toBe(
@@ -97,10 +95,7 @@ describe("country-detail deterministic consistency", () => {
 
   it("selects the actual latest pre-epoch verification instant", () => {
     expect(
-      latestTimestamp([
-        "1960-01-01T00:00:00.000Z",
-        "1969-12-31T23:59:59.000Z",
-      ]),
+      latestTimestamp(["1960-01-01T00:00:00.000Z", "1969-12-31T23:59:59.000Z"]),
     ).toBe("1969-12-31T23:59:59.000Z");
     expect(latestTimestamp([])).toBe("1970-01-01T00:00:00.000Z");
     expect(() => latestTimestamp(["not-a-timestamp"])).toThrow(
@@ -172,9 +167,7 @@ describe("country-detail deterministic consistency", () => {
       label: "duplicate regulation ID",
       mutate: (detail) => {
         detail.country.currentEffectiveRegulations.push(
-          structuredClone(
-            detail.country.currentEffectiveRegulations[0]!,
-          ),
+          structuredClone(detail.country.currentEffectiveRegulations[0]!),
         );
       },
     },
@@ -216,15 +209,13 @@ describe("country-detail deterministic consistency", () => {
     {
       label: "future regulation adopted after the query date",
       mutate: (detail) => {
-        detail.country.futureAdoptedRegulations[0]!.adoptedOn =
-          "2030-01-01";
+        detail.country.futureAdoptedRegulations[0]!.adoptedOn = "2030-01-01";
       },
     },
     {
       label: "future effective date at the half-open query boundary",
       mutate: (detail) => {
-        detail.country.futureAdoptedRegulations[0]!.effectiveFrom =
-          detail.asOf;
+        detail.country.futureAdoptedRegulations[0]!.effectiveFrom = detail.asOf;
       },
     },
     {
@@ -372,17 +363,14 @@ describe("country-detail deterministic consistency", () => {
     },
   ];
 
-  it.each(scopedMutationCases)(
-    "rejects $label",
-    ({ mutate }) => {
-      const candidate = structuredClone(scoped);
-      mutate(candidate);
+  it.each(scopedMutationCases)("rejects $label", ({ mutate }) => {
+    const candidate = structuredClone(scoped);
+    mutate(candidate);
 
-      expect(countryDetailResponseMatchesDeterministicRules(candidate)).toBe(
-        false,
-      );
-    },
-  );
+    expect(countryDetailResponseMatchesDeterministicRules(candidate)).toBe(
+      false,
+    );
+  });
 
   it("leaves explicit unprovable fields outside the payload-only boundary", () => {
     const candidate = structuredClone(scoped);
@@ -403,9 +391,7 @@ describe("country-detail deterministic consistency", () => {
     });
     const contract = buildSalesChatEvidenceContract({
       selectedCountryIso3: null,
-      userTexts: [
-        "As of 2026-08-13, return only the CHN country overview.",
-      ],
+      userTexts: ["As of 2026-08-13, return only the CHN country overview."],
     });
 
     expect(countryDetailResponseSchema.safeParse(broad).success).toBe(true);
@@ -413,9 +399,7 @@ describe("country-detail deterministic consistency", () => {
       true,
     );
     expect(clientAiToolResultSchema.safeParse(toolResult).success).toBe(true);
-    expect(
-      evidenceContractAllowsModelText(contract, [toolResult]),
-    ).toBe(true);
+    expect(evidenceContractAllowsModelText(contract, [toolResult])).toBe(true);
 
     const driftedDetail = structuredClone(broad);
     driftedDetail.country.lastVerifiedAt = "1970-01-01T00:00:00.000Z";

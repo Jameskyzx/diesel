@@ -14,19 +14,13 @@ import { z, ZodError } from "zod";
 
 import { captureChatRuntimeContext } from "@/domain/ai/chat-runtime-context";
 import { requestsSalesGuarantee } from "@/domain/ai/sales-guarantee-intent";
-import {
-  chatApiErrorSchema,
-  chatRequestSchema,
-} from "@/features/ai/schemas";
+import { chatApiErrorSchema, chatRequestSchema } from "@/features/ai/schemas";
 import { getAdmissionDatabaseErrorCode, getErrorCode } from "@/lib/api-error";
 import {
   createSalesChatTools,
   type SalesChatTools,
 } from "@/server/ai/sales-chat";
-import {
-  AiConfigurationError,
-  getConfiguredAiModel,
-} from "@/server/ai/model";
+import { AiConfigurationError, getConfiguredAiModel } from "@/server/ai/model";
 import {
   ChatAttachmentProcessingError,
   prepareTrustedUserMessagesForModel,
@@ -64,7 +58,10 @@ import {
   buildCapabilityChatResponse,
 } from "@/server/ai/chat-turn-guidance";
 import { catalogHarnessResponse } from "@/server/ai/catalog-harness";
-import { signConversationReceipt, verifyConversationReceipt } from "@/server/ai/conversation-receipt";
+import {
+  signConversationReceipt,
+  verifyConversationReceipt,
+} from "@/server/ai/conversation-receipt";
 import type { conversationMetadataSchema } from "@/features/ai/conversation-state";
 import { createPublicApiRequestObserver } from "@/server/http/public-api-response";
 import { localeFromRequest, type Locale } from "@/i18n/locale";
@@ -112,7 +109,10 @@ function errorResponse(
   );
 }
 
-function directChatResponse(text: string, metadata?: z.infer<typeof conversationMetadataSchema>): Response {
+function directChatResponse(
+  text: string,
+  metadata?: z.infer<typeof conversationMetadataSchema>,
+): Response {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
       const id = crypto.randomUUID();
@@ -120,7 +120,11 @@ function directChatResponse(text: string, metadata?: z.infer<typeof conversation
       writer.write({ id, type: "text-start" });
       writer.write({ delta: text, id, type: "text-delta" });
       writer.write({ id, type: "text-end" });
-      writer.write({ finishReason: "stop", type: "finish", ...(metadata ? { messageMetadata: metadata } : {}) });
+      writer.write({
+        finishReason: "stop",
+        type: "finish",
+        ...(metadata ? { messageMetadata: metadata } : {}),
+      });
     },
   });
 
@@ -193,14 +197,10 @@ function createDeferredCleanupTracker(): DeferredCleanupTracker {
   };
 }
 
-type ChatSetupStage =
-  | "admission_budget"
-  | "audit_repository"
-  | "audit_session";
+type ChatSetupStage = "admission_budget" | "audit_repository" | "audit_session";
 
 type ChatSetupOperationOutcome<T> =
-  | { status: "completed"; value: T }
-  | { error: unknown; status: "failed" };
+  { status: "completed"; value: T } | { error: unknown; status: "failed" };
 
 async function runOwnedChatSetupOperation<T>(input: {
   deadlineAtMs: number;
@@ -304,10 +304,19 @@ async function processChatRequest(
 ): Promise<Response> {
   let locale = fallbackLocale;
   let phaseStartedAtMs = performance.now();
-  const completedPhase = (phase: "input" | "attachments" | "admission" | "audit") => {
+  const completedPhase = (
+    phase: "input" | "attachments" | "admission" | "audit",
+  ) => {
     const now = performance.now();
-    console.info(JSON.stringify({ event: "ai.phase", requestId, phase,
-      durationMs: Math.max(0, now - phaseStartedAtMs), elapsedMs: Math.max(0, now - requestStartedAtMs) }));
+    console.info(
+      JSON.stringify({
+        event: "ai.phase",
+        requestId,
+        phase,
+        durationMs: Math.max(0, now - phaseStartedAtMs),
+        elapsedMs: Math.max(0, now - requestStartedAtMs),
+      }),
+    );
     phaseStartedAtMs = now;
   };
   try {
@@ -353,24 +362,45 @@ async function processChatRequest(
     const latestUserText = userTexts.at(-1)!;
     completedPhase("input");
     const previous = verifyConversationReceipt(body.conversation?.receipt, {
-      sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
+      sessionId: body.sessionId,
+      selectedCountryIso3: body.selectedCountryIso3,
       previousUserText: userTexts.at(-2),
     });
     // Greetings, thanks and app-help questions get a deterministic reply without
     // a model call. Everything else, including uploads, goes to the harness loop.
-    const directResponse = hasAttachments || requestsSalesGuarantee(latestUserText)
-      ? null
-      : buildSocialChatResponse(latestUserText, locale) ??
-        buildCapabilityChatResponse({ locale, selectedCountryIso3: body.selectedCountryIso3, text: latestUserText });
+    const directResponse =
+      hasAttachments || requestsSalesGuarantee(latestUserText)
+        ? null
+        : (buildSocialChatResponse(latestUserText, locale) ??
+          buildCapabilityChatResponse({
+            locale,
+            selectedCountryIso3: body.selectedCountryIso3,
+            text: latestUserText,
+          }));
     if (directResponse) {
       throwIfChatRequestAborted(abortSignal);
-      const state = previous?.state ?? { tasks: [], countryIso3s: [], applicationScope: null, powerKw: null, asOf: null, productModelCode: null };
-      return directChatResponse(directResponse, { conversation: {
-        state, mode: "general", receipt: signConversationReceipt({
-          sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3,
-          userText: latestUserText, answer: directResponse, state, previous,
-        }),
-      } });
+      const state = previous?.state ?? {
+        tasks: [],
+        countryIso3s: [],
+        applicationScope: null,
+        powerKw: null,
+        asOf: null,
+        productModelCode: null,
+      };
+      return directChatResponse(directResponse, {
+        conversation: {
+          state,
+          mode: "general",
+          receipt: signConversationReceipt({
+            sessionId: body.sessionId,
+            selectedCountryIso3: body.selectedCountryIso3,
+            userText: latestUserText,
+            answer: directResponse,
+            state,
+            previous,
+          }),
+        },
+      });
     }
 
     try {
@@ -391,8 +421,7 @@ async function processChatRequest(
     throwIfChatRequestAborted(abortSignal);
 
     const requiresMultimodalModel = latestUserMessage.parts.some(
-      (part) =>
-        part.type === "file" && part.mediaType.startsWith("image/"),
+      (part) => part.type === "file" && part.mediaType.startsWith("image/"),
     );
     const { model, modelId } = getConfiguredAiModel(undefined, {
       requiresMultimodalModel,
@@ -412,8 +441,7 @@ async function processChatRequest(
       messages: preparedUserMessages.messages,
     });
     if (
-      preparedUserMessages.requiresMultimodalModel !==
-      requiresMultimodalModel
+      preparedUserMessages.requiresMultimodalModel !== requiresMultimodalModel
     ) {
       throw new ChatAttachmentProcessingError(
         "附件模型能力检查失败，请重新选择附件后再试。",
@@ -426,8 +454,7 @@ async function processChatRequest(
       admissionDecision = await runOwnedChatSetupOperation({
         deadlineAtMs: setupDeadlineAtMs,
         deferredCleanup,
-        operation: () =>
-          getAiChatAdmissionBudget().reserve(clientIdentifier),
+        operation: () => getAiChatAdmissionBudget().reserve(clientIdentifier),
         signal: abortSignal,
         stage: "admission_budget",
       });
@@ -475,16 +502,44 @@ async function processChatRequest(
     throwIfChatRequestAborted(abortSignal);
     const runtimeContext = captureChatRuntimeContext();
     await runOwnedChatSetupOperation({
-      deadlineAtMs: setupDeadlineAtMs, deferredCleanup, signal: abortSignal, stage: "audit_session",
-      operation: () => auditRepository.ensureSession({ modelId, selectedCountryIso3: body.selectedCountryIso3, sessionId: body.sessionId }, { signal: abortSignal }),
+      deadlineAtMs: setupDeadlineAtMs,
+      deferredCleanup,
+      signal: abortSignal,
+      stage: "audit_session",
+      operation: () =>
+        auditRepository.ensureSession(
+          {
+            modelId,
+            selectedCountryIso3: body.selectedCountryIso3,
+            sessionId: body.sessionId,
+          },
+          { signal: abortSignal },
+        ),
     });
     throwIfChatRequestAborted(abortSignal);
     completedPhase("audit");
-    const tools = createSalesChatTools({ auditRepository, beginDeferredWork: deferredCleanup.begin,
-      runtimeContext, selectedCountryIso3: body.selectedCountryIso3, sessionId: body.sessionId, turnId: requestId });
-    return catalogHarnessResponse({ model, tools, signal: abortSignal, locale, today: runtimeContext.utcDate,
-      userText: latestUserText, messages: await convertToModelMessages(modelUiMessages), previous, hasAttachments,
-      sessionId: body.sessionId, selectedCountryIso3: body.selectedCountryIso3, requestId });
+    const tools = createSalesChatTools({
+      auditRepository,
+      beginDeferredWork: deferredCleanup.begin,
+      runtimeContext,
+      selectedCountryIso3: body.selectedCountryIso3,
+      sessionId: body.sessionId,
+      turnId: requestId,
+    });
+    return catalogHarnessResponse({
+      model,
+      tools,
+      signal: abortSignal,
+      locale,
+      today: runtimeContext.utcDate,
+      userText: latestUserText,
+      messages: await convertToModelMessages(modelUiMessages),
+      previous,
+      hasAttachments,
+      sessionId: body.sessionId,
+      selectedCountryIso3: body.selectedCountryIso3,
+      requestId,
+    });
   } catch (error: unknown) {
     if (
       error instanceof RequestBodyAbortedError ||
@@ -678,10 +733,7 @@ async function waitForRateLimitCheck(
 
   let abortListener: (() => void) | undefined;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const settledCheck = check.then<
-    RateLimitCheckResult,
-    RateLimitCheckResult
-  >(
+  const settledCheck = check.then<RateLimitCheckResult, RateLimitCheckResult>(
     (decision) => ({ decision, status: "completed" }),
     (error: unknown) => ({ error, status: "failed" }),
   );
@@ -738,14 +790,17 @@ export async function POST(request: Request): Promise<Response> {
   // can otherwise consume the entire connection pool outside this bound.
   const lease = getAiChatInFlightGate().tryAcquire(clientIdentifier);
   if (!lease) {
-    return respond(errorResponse(
+    return respond(
+      errorResponse(
+        "RATE_LIMITED",
+        requestLocale === "en"
+          ? "Too many AI chat requests are in flight. Wait for the current request to finish and retry."
+          : "AI 聊天并发请求过多，请等待当前请求完成后重试。",
+        429,
+        { "Retry-After": "1" },
+      ),
       "RATE_LIMITED",
-      requestLocale === "en"
-        ? "Too many AI chat requests are in flight. Wait for the current request to finish and retry."
-        : "AI 聊天并发请求过多，请等待当前请求完成后重试。",
-      429,
-      { "Retry-After": "1" },
-    ), "RATE_LIMITED");
+    );
   }
 
   const modelAbortController = new AbortController();
@@ -781,14 +836,17 @@ export async function POST(request: Request): Promise<Response> {
       databaseErrorCode: getAdmissionDatabaseErrorCode(error),
       errorCode: getErrorCode(error),
     });
-    return respond(errorResponse(
-      "INTERNAL_ERROR",
-      requestLocale === "en"
-        ? "The AI chat service is temporarily unavailable. Please try again later."
-        : "AI 聊天服务暂时不可用，请稍后重试。",
-      503,
-      { "Retry-After": "60" },
-    ), "RATE_LIMIT_UNAVAILABLE");
+    return respond(
+      errorResponse(
+        "INTERNAL_ERROR",
+        requestLocale === "en"
+          ? "The AI chat service is temporarily unavailable. Please try again later."
+          : "AI 聊天服务暂时不可用，请稍后重试。",
+        503,
+        { "Retry-After": "60" },
+      ),
+      "RATE_LIMIT_UNAVAILABLE",
+    );
   }
 
   const rateLimitResult = await waitForRateLimitCheck(
@@ -804,22 +862,28 @@ export async function POST(request: Request): Promise<Response> {
     // until it settles so repeated timeouts cannot accumulate database work.
     releaseLeaseWhenRateLimitCheckSettles(rateLimitCheck, lease.release);
     if (rateLimitResult.status === "aborted") {
-      return respond(errorResponse(
-        "REQUEST_TIMEOUT",
-        requestLocale === "en"
-          ? "The chat request was canceled before processing completed."
-          : "聊天请求已在处理完成前取消。",
-        408,
-      ), "REQUEST_ABORTED");
+      return respond(
+        errorResponse(
+          "REQUEST_TIMEOUT",
+          requestLocale === "en"
+            ? "The chat request was canceled before processing completed."
+            : "聊天请求已在处理完成前取消。",
+          408,
+        ),
+        "REQUEST_ABORTED",
+      );
     }
-    return respond(errorResponse(
-      "INTERNAL_ERROR",
-      requestLocale === "en"
-        ? "The AI chat service is temporarily unavailable. Please try again later."
-        : "AI 聊天服务暂时不可用，请稍后重试。",
-      503,
-      { "Retry-After": "60" },
-    ), "RATE_LIMIT_TIMEOUT");
+    return respond(
+      errorResponse(
+        "INTERNAL_ERROR",
+        requestLocale === "en"
+          ? "The AI chat service is temporarily unavailable. Please try again later."
+          : "AI 聊天服务暂时不可用，请稍后重试。",
+        503,
+        { "Retry-After": "60" },
+      ),
+      "RATE_LIMIT_TIMEOUT",
+    );
   }
 
   if (rateLimitResult.status === "failed") {
@@ -830,42 +894,51 @@ export async function POST(request: Request): Promise<Response> {
       databaseErrorCode: getAdmissionDatabaseErrorCode(rateLimitResult.error),
       errorCode: getErrorCode(rateLimitResult.error),
     });
-    return respond(errorResponse(
-      "INTERNAL_ERROR",
-      requestLocale === "en"
-        ? "The AI chat service is temporarily unavailable. Please try again later."
-        : "AI 聊天服务暂时不可用，请稍后重试。",
-      503,
-      { "Retry-After": "60" },
-    ), "RATE_LIMIT_UNAVAILABLE");
+    return respond(
+      errorResponse(
+        "INTERNAL_ERROR",
+        requestLocale === "en"
+          ? "The AI chat service is temporarily unavailable. Please try again later."
+          : "AI 聊天服务暂时不可用，请稍后重试。",
+        503,
+        { "Retry-After": "60" },
+      ),
+      "RATE_LIMIT_UNAVAILABLE",
+    );
   }
 
   const rateDecision = rateLimitResult.decision;
   if (!rateDecision.allowed) {
     disposeAbortBridge();
     lease.release();
-    return respond(errorResponse(
+    return respond(
+      errorResponse(
+        "RATE_LIMITED",
+        requestLocale === "en"
+          ? "AI chat requests are arriving too quickly. Please try again later."
+          : "AI 聊天请求过于频繁，请稍后重试。",
+        429,
+        {
+          "Retry-After": String(rateDecision.retryAfterSeconds),
+        },
+      ),
       "RATE_LIMITED",
-      requestLocale === "en"
-        ? "AI chat requests are arriving too quickly. Please try again later."
-        : "AI 聊天请求过于频繁，请稍后重试。",
-      429,
-      {
-        "Retry-After": String(rateDecision.retryAfterSeconds),
-      },
-    ), "RATE_LIMITED");
+    );
   }
 
   if (request.signal.aborted) {
     disposeAbortBridge();
     lease.release();
-    return respond(errorResponse(
-      "REQUEST_TIMEOUT",
-      requestLocale === "en"
-        ? "The chat request was canceled before processing completed."
-        : "聊天请求已在处理完成前取消。",
-      408,
-    ), "REQUEST_ABORTED");
+    return respond(
+      errorResponse(
+        "REQUEST_TIMEOUT",
+        requestLocale === "en"
+          ? "The chat request was canceled before processing completed."
+          : "聊天请求已在处理完成前取消。",
+        408,
+      ),
+      "REQUEST_ABORTED",
+    );
   }
 
   const deferredCleanup = createDeferredCleanupTracker();

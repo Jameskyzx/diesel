@@ -126,9 +126,7 @@ test("protects every management route with workspace identity and role checks", 
   expect(editorDashboard.headers()[principalEmailResponseHeader]).toBe(
     "editor@example.test",
   );
-  expect(editorDashboard.headers()[principalRoleResponseHeader]).toBe(
-    "editor",
-  );
+  expect(editorDashboard.headers()[principalRoleResponseHeader]).toBe("editor");
   const dashboard = (await editorDashboard.json()) as {
     auditLogs: Array<Record<string, unknown>>;
     drafts: Array<{
@@ -201,10 +199,7 @@ test("rejects a direct API publish of v2 without a lower published baseline", as
       verifiedAt: "2026-07-29T00:00:00.000Z",
     },
   };
-  const editorHeaders = adminMutationHeaders(
-    "editor@example.test",
-    "editor",
-  );
+  const editorHeaders = adminMutationHeaders("editor@example.test", "editor");
   const reviewerHeaders = adminMutationHeaders(
     "reviewer@example.test",
     "reviewer",
@@ -321,15 +316,11 @@ test("renders the governed workflows for an authorized admin", async ({
   await expect(
     page.getByRole("heading", { name: "数据变更记录" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("group", { name: "上传新文档" }),
-  ).toBeVisible();
+  await expect(page.getByRole("group", { name: "上传新文档" })).toBeVisible();
   await expect(
     page.getByRole("group", { name: "重新处理 Draft 文档" }),
   ).toBeVisible();
-  const verifiedAtInput = page.getByLabel(
-    "核验时间（ISO 8601，必须含时区）",
-  );
+  const verifiedAtInput = page.getByLabel("核验时间（ISO 8601，必须含时区）");
   await expect(verifiedAtInput).toHaveValue(/Z$/);
   const exactVerifiedAt = "2026-03-01T08:00:00.123456+08:00";
   await verifiedAtInput.fill(exactVerifiedAt);
@@ -345,9 +336,7 @@ test("renders the governed workflows for an authorized admin", async ({
 test("renders only the editor-scoped queue and reports an exact truncated total", async ({
   page,
 }) => {
-  const dashboard = dashboardWithEditorCanary(
-    "EDITOR_SCOPED_QUEUE_CANARY",
-  );
+  const dashboard = dashboardWithEditorCanary("EDITOR_SCOPED_QUEUE_CANARY");
   dashboard.workflowCounts = { draft: 101, published: 7, reviewed: 0 };
   await page.setExtraHTTPHeaders({
     [identityHeader]: "editor@example.test",
@@ -367,9 +356,9 @@ test("renders only the editor-scoped queue and reports an exact truncated total"
   await expect(page.getByTestId("admin-editor-audit-scope")).toContainText(
     "不加载全局变更记录或其他操作者身份",
   );
-  await expect(
-    page.getByRole("heading", { name: "数据变更记录" }),
-  ).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "数据变更记录" })).toHaveCount(
+    0,
+  );
   await expect(page.getByTestId("admin-active-queue-truncated")).toContainText(
     "当前显示最新 1 / 101条活跃修订；单次最多返回 100 条",
   );
@@ -524,9 +513,7 @@ test("reports duplicate uploads and failed reprocessing honestly", async ({
   await reprocess
     .getByLabel("重新处理原因")
     .fill("Retry failed document processing.");
-  await reprocess
-    .getByRole("button", { name: "重新处理 Draft 文档" })
-    .click();
+  await reprocess.getByRole("button", { name: "重新处理 Draft 文档" }).click();
   await expect(
     page.getByText("重新处理仍未通过；Draft 保持不可审核，请检查处理错误。"),
   ).toBeVisible();
@@ -766,9 +753,7 @@ test("requires reviewers to inspect payload, diff, dependencies, and enter their
     .getByLabel("发布理由")
     .fill("已复核 payload、来源依赖与无基线警告，批准发布。");
   await expect(publishButton).toBeDisabled();
-  await page
-    .getByLabel(/我已核对完整 payload、服务端发布基线/)
-    .check();
+  await page.getByLabel(/我已核对完整 payload、服务端发布基线/).check();
   await expect(publishButton).toBeEnabled();
   await publishButton.click();
   await expect(page.getByText("版本已发布。")).toBeVisible();
@@ -842,7 +827,9 @@ test("fails closed when the server cannot verify a published baseline", async ({
   );
   await page.getByLabel("发布理由").fill("已核查但服务端没有可靠发布基线。");
   await page.getByLabel(/我已核对完整 payload、服务端发布基线/).check();
-  await expect(page.getByRole("button", { name: "确认发布版本" })).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "确认发布版本" }),
+  ).toBeDisabled();
 });
 
 for (const authorizationFailure of [
@@ -890,9 +877,9 @@ for (const authorizationFailure of [
     await expect(page.getByText(auditCanary)).toBeVisible();
     expect(acceptedDashboardRequests).toBeGreaterThanOrEqual(1);
     expect(rejectedRefreshRequests).toBe(0);
-    await page.getByLabel("结构化 JSON").fill(
-      JSON.stringify({ privateMarker: payloadCanary }),
-    );
+    await page
+      .getByLabel("结构化 JSON")
+      .fill(JSON.stringify({ privateMarker: payloadCanary }));
     const acceptedRequestsBeforeRefresh = acceptedDashboardRequests;
     rejectRefresh = true;
     await page.getByRole("button", { name: "刷新" }).click();
@@ -949,9 +936,9 @@ test("atomically remounts the workspace when the authorized principal changes", 
 
   await page.goto("/admin");
   await expect(page.getByText("ADMIN_A_ONLY_AUDIT_CANARY")).toBeVisible();
-  await page.getByLabel("结构化 JSON").fill(
-    JSON.stringify({ privateMarker: payloadCanary }),
-  );
+  await page
+    .getByLabel("结构化 JSON")
+    .fill(JSON.stringify({ privateMarker: payloadCanary }));
   const upload = page.getByRole("group", { name: "上传新文档" });
   await upload.getByLabel("文档标题").fill(documentCanary);
   await page.getByLabel("CSV 文件").setInputFiles({
@@ -1021,10 +1008,9 @@ test("clears the old snapshot when a newly authenticated principal receives a 50
   await expect(page.getByText("OLD_ADMIN_500_AUDIT_CANARY")).toHaveCount(0);
   await expect(page.getByLabel("结构化 JSON")).toHaveCount(0);
   await expect(
-    page.getByText(
-      "管理数据刷新失败：Synthetic editor dashboard failure.",
-      { exact: true },
-    ),
+    page.getByText("管理数据刷新失败：Synthetic editor dashboard failure.", {
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
     page.getByText("当前显示的是上一次成功加载的快照。"),
@@ -1067,9 +1053,9 @@ test("clears a loaded workspace when a dashboard 500 lacks principal binding", a
 
   await page.goto("/admin");
   await expect(page.getByText(auditCanary)).toBeVisible();
-  await page.getByLabel("结构化 JSON").fill(
-    JSON.stringify({ privateMarker: payloadCanary }),
-  );
+  await page
+    .getByLabel("结构化 JSON")
+    .fill(JSON.stringify({ privateMarker: payloadCanary }));
 
   await page.getByRole("button", { name: "刷新" }).click();
 
@@ -1079,9 +1065,7 @@ test("clears a loaded workspace when a dashboard 500 lacks principal binding", a
   await expect(
     page.getByText("当前显示的是上一次成功加载的快照。"),
   ).toHaveCount(0);
-  expect(await page.locator("body").textContent()).not.toContain(
-    payloadCanary,
-  );
+  expect(await page.locator("body").textContent()).not.toContain(payloadCanary);
 });
 
 for (const malformedEditorDashboard of [
@@ -1141,9 +1125,9 @@ for (const malformedEditorDashboard of [
 
     await page.goto("/admin");
     await expect(page.getByText(adminAuditCanary)).toBeVisible();
-    await page.getByLabel("结构化 JSON").fill(
-      JSON.stringify({ privateMarker: adminPayloadCanary }),
-    );
+    await page
+      .getByLabel("结构化 JSON")
+      .fill(JSON.stringify({ privateMarker: adminPayloadCanary }));
 
     await page.getByRole("button", { name: "刷新" }).click();
 
@@ -1174,9 +1158,7 @@ for (const malformedCurrentDashboard of [
   },
   {
     body: JSON.stringify({
-      ...dashboardWithAuditCanary(
-        "CURRENT_ADMIN_INVALID_SCHEMA_AUDIT_CANARY",
-      ),
+      ...dashboardWithAuditCanary("CURRENT_ADMIN_INVALID_SCHEMA_AUDIT_CANARY"),
       status: "invalid",
     }),
     contentType: "application/json",
@@ -1197,9 +1179,7 @@ for (const malformedCurrentDashboard of [
       dashboardRequests += 1;
       if (dashboardRequests === 1) {
         await route.fulfill({
-          body: JSON.stringify(
-            dashboardWithAuditCanary(trustedAuditCanary),
-          ),
+          body: JSON.stringify(dashboardWithAuditCanary(trustedAuditCanary)),
           contentType: "application/json",
           headers: adminPrincipalResponseHeaders,
           status: 200,
@@ -1265,9 +1245,7 @@ test("unloads the workspace when a management write loses authorization", async 
   });
   await page.route("**/api/admin/dashboard", async (route) => {
     await route.fulfill({
-      body: JSON.stringify(
-        dashboardWithAuditCanary("WRITE_AUTH_AUDIT_CANARY"),
-      ),
+      body: JSON.stringify(dashboardWithAuditCanary("WRITE_AUTH_AUDIT_CANARY")),
       contentType: "application/json",
       headers: adminPrincipalResponseHeaders,
       status: 200,
@@ -1341,9 +1319,9 @@ for (const actionPrincipalBoundary of [
 
     await page.goto("/admin");
     await expect(page.getByText(auditCanary)).toBeVisible();
-    await page.getByLabel("结构化 JSON").fill(
-      JSON.stringify({ privateMarker: payloadCanary }),
-    );
+    await page
+      .getByLabel("结构化 JSON")
+      .fill(JSON.stringify({ privateMarker: payloadCanary }));
     await page.getByRole("button", { name: "保存 Draft" }).click();
 
     const identityCard = page.locator("main > header");
@@ -1431,10 +1409,8 @@ test("keeps the newest dashboard refresh when an older request finishes later", 
     newestResponseSettled = resolve;
   });
   let dashboardPhase:
-    | "initial"
-    | "delay-next-refresh"
-    | "serve-newest-refresh"
-    | "complete" = "initial";
+    "initial" | "delay-next-refresh" | "serve-newest-refresh" | "complete" =
+    "initial";
   let initialRequestCount = 0;
   let olderRefreshRequestCount = 0;
   let newestRefreshRequestCount = 0;
@@ -1939,34 +1915,58 @@ test("invalidates an old CSV preview before retrying or selecting another file",
   ).toBeHidden();
 });
 
-test("imports a catalogue workbook through preview and confirmation into review drafts", async ({ page }) => {
+test("imports a catalogue workbook through preview and confirmation into review drafts", async ({
+  page,
+}) => {
   await page.setExtraHTTPHeaders({ [identityHeader]: "admin@example.test" });
   const { buildXlsx } = await import("../tests/helpers/xlsx");
   const model = `DEMO-E2E-${Date.now()}`;
   const values: Record<string, string | number | boolean> = {
-    model_code: model, series: "DEMO-E2E", category: "construction", application_scopes: "construction",
-    rated_power_kw: 120, rated_speed_rpm: 2200, power_min_kw: 100, power_max_kw: 140, displacement_l: 6.7, cylinders: 6,
-    aftertreatment: "DOC + DPF", emission_label: "EU Stage V", declared_citation_codes: "CELEX:32016R1628",
-    data_source_id: "00000000-0000-4000-8000-000000000007", verified_at: "2026-10-01T00:00:00.000Z", is_demo: true,
+    model_code: model,
+    series: "DEMO-E2E",
+    category: "construction",
+    application_scopes: "construction",
+    rated_power_kw: 120,
+    rated_speed_rpm: 2200,
+    power_min_kw: 100,
+    power_max_kw: 140,
+    displacement_l: 6.7,
+    cylinders: 6,
+    aftertreatment: "DOC + DPF",
+    emission_label: "EU Stage V",
+    declared_citation_codes: "CELEX:32016R1628",
+    data_source_id: "00000000-0000-4000-8000-000000000007",
+    verified_at: "2026-10-01T00:00:00.000Z",
+    is_demo: true,
   };
   // The 16 template columns (docs/DATA_MODEL.md §7.6). Spelled out rather than
   // imported: app modules use the "@/" alias, which Playwright does not resolve.
   const headers = Object.keys(values);
-  const workbook = buildXlsx([headers, headers.map(header => values[header] ?? null)]);
+  const workbook = buildXlsx([
+    headers,
+    headers.map((header) => values[header] ?? null),
+  ]);
 
   await page.goto("/admin");
   const panel = page.getByTestId("catalog-import");
   await panel.getByLabel("xlsx 工作簿").setInputFiles({
     buffer: Buffer.from(workbook),
-    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     name: "catalogue.xlsx",
   });
   await panel.getByRole("button", { name: "预览目录工作簿" }).click();
   await expect(panel.getByText("总行数 1 · 有效 1 · 错误 0")).toBeVisible();
   await expect(panel).toContainText(model);
-  await expect(page.getByText("工作簿只完成预览；尚未写入目录或草稿。")).toBeVisible();
+  await expect(
+    page.getByText("工作簿只完成预览；尚未写入目录或草稿。"),
+  ).toBeVisible();
 
   await panel.getByRole("button", { name: "确认目录批次" }).click();
-  await expect(page.getByText("已原子创建 1 条目录草稿，尚未发布。")).toBeVisible();
-  await expect(page.getByRole("button", { name: "确认目录批次" })).toHaveCount(0);
+  await expect(
+    page.getByText("已原子创建 1 条目录草稿，尚未发布。"),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "确认目录批次" })).toHaveCount(
+    0,
+  );
 });

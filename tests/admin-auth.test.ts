@@ -179,16 +179,12 @@ describe("admin authorization", () => {
         ),
       });
 
-      expect(error).toBeInstanceOf(
-        AdminRoleBindingsConfigurationError,
-      );
+      expect(error).toBeInstanceOf(AdminRoleBindingsConfigurationError);
       expect(error).toMatchObject({
         message: "管理员角色绑定配置无效。",
         name: "AdminRoleBindingsConfigurationError",
       });
-      expect(observableError.toLowerCase()).not.toContain(
-        secretCanary,
-      );
+      expect(observableError.toLowerCase()).not.toContain(secretCanary);
     },
   );
 

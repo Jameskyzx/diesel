@@ -22,9 +22,7 @@ import { buildLocalizedOpenGraph } from "@/i18n/metadata";
 function leafKeys(value: object, prefix = ""): string[] {
   return Object.entries(value).flatMap(([key, child]) => {
     const path = prefix ? `${prefix}.${key}` : key;
-    return typeof child === "string"
-      ? [path]
-      : leafKeys(child as object, path);
+    return typeof child === "string" ? [path] : leafKeys(child as object, path);
   });
 }
 
@@ -38,80 +36,167 @@ function placeholdersByLeaf(
       if (typeof child !== "string") {
         return Object.entries(placeholdersByLeaf(child as object, path));
       }
-      return [[
-        path,
-        Array.from(
-          child.matchAll(/\{([A-Za-z][A-Za-z0-9]*)\}/gu),
-          (match) => match[1]!,
-        ).sort(),
-      ]] as const;
+      return [
+        [
+          path,
+          Array.from(
+            child.matchAll(/\{([A-Za-z][A-Za-z0-9]*)\}/gu),
+            (match) => match[1]!,
+          ).sort(),
+        ],
+      ] as const;
     }),
   );
 }
 
 describe("locale preferences", () => {
-  it.each(locales.flatMap((renderedLocale) => locales.flatMap((pageLocale) =>
-    locales.map((cookie) => ({ cookie, pageLocale, renderedLocale })),
-  )))("checks committed page $pageLocale as well as shell $renderedLocale against Cookie $cookie", ({ cookie, pageLocale, renderedLocale }) => {
-    const aligned = cookie === pageLocale && cookie === renderedLocale;
-    expect(localeSynchronizationTarget({
-      browserPreference: { locale: cookie, status: "available" },
-      pageLocale,
-      renderedLocale,
-    })).toBe(aligned ? null : cookie);
-    expect(localeSelectionAction({
-      browserPreference: { locale: cookie, status: "available" },
-      pageLocale,
-      renderedLocale,
-      targetLocale: cookie,
-    })).toBe(aligned ? "none" : "refresh");
-  });
-
-  it.each(locales)("does not infer a Cookie preference from a committed $case page", (pageLocale) => {
-    expect(localeSynchronizationTarget({
-      browserPreference: { status: "unavailable" },
-      pageLocale,
-      renderedLocale: "en",
-    })).toBeNull();
-    expect(localeSelectionAction({
-      browserPreference: { status: "unavailable" },
-      pageLocale,
-      renderedLocale: pageLocale,
-      targetLocale: pageLocale,
-    })).toBe("persist");
-  });
-
-  it.each([
-    { renderedLocale: "en", cookie: "en", targetLocale: "en", expected: "none" },
-    { renderedLocale: "en", cookie: "zh-CN", targetLocale: "en", expected: "persist" },
-    { renderedLocale: "en", cookie: "zh-CN", targetLocale: "zh-CN", expected: "refresh" },
-    { renderedLocale: "en", cookie: "en", targetLocale: "zh-CN", expected: "persist" },
-    { renderedLocale: "zh-CN", cookie: "zh-CN", targetLocale: "zh-CN", expected: "none" },
-    { renderedLocale: "zh-CN", cookie: "en", targetLocale: "zh-CN", expected: "persist" },
-    { renderedLocale: "zh-CN", cookie: "en", targetLocale: "en", expected: "refresh" },
-    { renderedLocale: "zh-CN", cookie: "zh-CN", targetLocale: "en", expected: "persist" },
-    { renderedLocale: "en", cookie: null, targetLocale: "en", expected: "none" },
-    { renderedLocale: "zh-CN", cookie: null, targetLocale: "en", expected: "refresh" },
-    { renderedLocale: "en", cookie: null, targetLocale: "zh-CN", expected: "persist" },
-    { renderedLocale: "zh-CN", cookie: null, targetLocale: "zh-CN", expected: "persist" },
-  ] as const)(
-    "chooses $expected for explicit $targetLocale selection with rendered $renderedLocale and Cookie $cookie",
-    ({ renderedLocale, cookie, targetLocale, expected }) => {
-      expect(localeSelectionAction({
-        browserPreference: { locale: cookie, status: "available" },
-        renderedLocale,
-        targetLocale,
-      })).toBe(expected);
+  it.each(
+    locales.flatMap((renderedLocale) =>
+      locales.flatMap((pageLocale) =>
+        locales.map((cookie) => ({ cookie, pageLocale, renderedLocale })),
+      ),
+    ),
+  )(
+    "checks committed page $pageLocale as well as shell $renderedLocale against Cookie $cookie",
+    ({ cookie, pageLocale, renderedLocale }) => {
+      const aligned = cookie === pageLocale && cookie === renderedLocale;
+      expect(
+        localeSynchronizationTarget({
+          browserPreference: { locale: cookie, status: "available" },
+          pageLocale,
+          renderedLocale,
+        }),
+      ).toBe(aligned ? null : cookie);
+      expect(
+        localeSelectionAction({
+          browserPreference: { locale: cookie, status: "available" },
+          pageLocale,
+          renderedLocale,
+          targetLocale: cookie,
+        }),
+      ).toBe(aligned ? "none" : "refresh");
     },
   );
 
-  it.each(locales)("does not discard an explicit $case selection when Cookie access is unavailable", (targetLocale) => {
-    expect(localeSelectionAction({
-      browserPreference: { status: "unavailable" },
-      renderedLocale: targetLocale,
-      targetLocale,
-    })).toBe("persist");
-  });
+  it.each(locales)(
+    "does not infer a Cookie preference from a committed $case page",
+    (pageLocale) => {
+      expect(
+        localeSynchronizationTarget({
+          browserPreference: { status: "unavailable" },
+          pageLocale,
+          renderedLocale: "en",
+        }),
+      ).toBeNull();
+      expect(
+        localeSelectionAction({
+          browserPreference: { status: "unavailable" },
+          pageLocale,
+          renderedLocale: pageLocale,
+          targetLocale: pageLocale,
+        }),
+      ).toBe("persist");
+    },
+  );
+
+  it.each([
+    {
+      renderedLocale: "en",
+      cookie: "en",
+      targetLocale: "en",
+      expected: "none",
+    },
+    {
+      renderedLocale: "en",
+      cookie: "zh-CN",
+      targetLocale: "en",
+      expected: "persist",
+    },
+    {
+      renderedLocale: "en",
+      cookie: "zh-CN",
+      targetLocale: "zh-CN",
+      expected: "refresh",
+    },
+    {
+      renderedLocale: "en",
+      cookie: "en",
+      targetLocale: "zh-CN",
+      expected: "persist",
+    },
+    {
+      renderedLocale: "zh-CN",
+      cookie: "zh-CN",
+      targetLocale: "zh-CN",
+      expected: "none",
+    },
+    {
+      renderedLocale: "zh-CN",
+      cookie: "en",
+      targetLocale: "zh-CN",
+      expected: "persist",
+    },
+    {
+      renderedLocale: "zh-CN",
+      cookie: "en",
+      targetLocale: "en",
+      expected: "refresh",
+    },
+    {
+      renderedLocale: "zh-CN",
+      cookie: "zh-CN",
+      targetLocale: "en",
+      expected: "persist",
+    },
+    {
+      renderedLocale: "en",
+      cookie: null,
+      targetLocale: "en",
+      expected: "none",
+    },
+    {
+      renderedLocale: "zh-CN",
+      cookie: null,
+      targetLocale: "en",
+      expected: "refresh",
+    },
+    {
+      renderedLocale: "en",
+      cookie: null,
+      targetLocale: "zh-CN",
+      expected: "persist",
+    },
+    {
+      renderedLocale: "zh-CN",
+      cookie: null,
+      targetLocale: "zh-CN",
+      expected: "persist",
+    },
+  ] as const)(
+    "chooses $expected for explicit $targetLocale selection with rendered $renderedLocale and Cookie $cookie",
+    ({ renderedLocale, cookie, targetLocale, expected }) => {
+      expect(
+        localeSelectionAction({
+          browserPreference: { locale: cookie, status: "available" },
+          renderedLocale,
+          targetLocale,
+        }),
+      ).toBe(expected);
+    },
+  );
+
+  it.each(locales)(
+    "does not discard an explicit $case selection when Cookie access is unavailable",
+    (targetLocale) => {
+      expect(
+        localeSelectionAction({
+          browserPreference: { status: "unavailable" },
+          renderedLocale: targetLocale,
+          targetLocale,
+        }),
+      ).toBe("persist");
+    },
+  );
 
   it.each([
     { renderedLocale: "en", cookie: "en", expected: null },
@@ -123,19 +208,26 @@ describe("locale preferences", () => {
   ] as const)(
     "reads synchronization target $expected for rendered $renderedLocale and Cookie $cookie",
     ({ renderedLocale, cookie, expected }) => {
-      expect(localeSynchronizationTarget({
-        browserPreference: { locale: cookie, status: "available" },
-        renderedLocale,
-      })).toBe(expected);
+      expect(
+        localeSynchronizationTarget({
+          browserPreference: { locale: cookie, status: "available" },
+          renderedLocale,
+        }),
+      ).toBe(expected);
     },
   );
 
-  it.each(locales)("does not guess a synchronization target for $case when Cookie access is unavailable", (renderedLocale) => {
-    expect(localeSynchronizationTarget({
-      browserPreference: { status: "unavailable" },
-      renderedLocale,
-    })).toBeNull();
-  });
+  it.each(locales)(
+    "does not guess a synchronization target for $case when Cookie access is unavailable",
+    (renderedLocale) => {
+      expect(
+        localeSynchronizationTarget({
+          browserPreference: { status: "unavailable" },
+          renderedLocale,
+        }),
+      ).toBeNull();
+    },
+  );
 
   it("uses English as the safe default and accepts only supported locales", () => {
     expect(locales).toEqual(["en", "zh-CN"]);
@@ -168,21 +260,17 @@ describe("locale preferences", () => {
   });
 
   it("uses only the browser cookie and fails unavailable cookie access closed", () => {
-    expect(
-      localeFromBrowserCookie(() => "diesel_locale=zh-CN"),
-    ).toBe("zh-CN");
-    expect(
-      localeFromBrowserCookie(() => "diesel_locale=en"),
-    ).toBe("en");
-    expect(
-      localeFromBrowserCookie(() => ""),
-    ).toBe("en");
+    expect(localeFromBrowserCookie(() => "diesel_locale=zh-CN")).toBe("zh-CN");
+    expect(localeFromBrowserCookie(() => "diesel_locale=en")).toBe("en");
+    expect(localeFromBrowserCookie(() => "")).toBe("en");
     expect(
       localeFromBrowserCookie(() => {
         throw new DOMException("Cookies disabled", "SecurityError");
       }),
     ).toBe("en");
-    expect(localePreferenceFromCookieHeader("diesel_locale=%E0%A4%A")).toBeNull();
+    expect(
+      localePreferenceFromCookieHeader("diesel_locale=%E0%A4%A"),
+    ).toBeNull();
     expect(
       tryReadBrowserLocalePreference(() => {
         throw new DOMException("Cookies disabled", "SecurityError");
@@ -336,8 +424,8 @@ describe("locale preferences", () => {
   it("keeps public Chinese chat examples free of raw internal enum and fixture labels", () => {
     const chinese = getDictionary("zh-CN");
     const publicChatCopy = [
-      ...Object.values(chinese.chatPage).filter((value) =>
-        typeof value === "string",
+      ...Object.values(chinese.chatPage).filter(
+        (value) => typeof value === "string",
       ),
       chinese.chat.emptyDemo,
       chinese.chat.emptyLive,
@@ -347,9 +435,9 @@ describe("locale preferences", () => {
   });
 
   it("interpolates known placeholders and leaves unknown placeholders intact", () => {
-    expect(interpolate("Current selection: {name} / {code}", { name: "China" })).toBe(
-      "Current selection: China / {code}",
-    );
+    expect(
+      interpolate("Current selection: {name} / {code}", { name: "China" }),
+    ).toBe("Current selection: China / {code}");
   });
 
   it("does not reinterpret placeholder-looking text inside interpolated values", () => {

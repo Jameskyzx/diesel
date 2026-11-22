@@ -24,12 +24,12 @@ export function parseGovernanceSnapshotOptions(
     .parse(args);
   const [outputArgument] = parsed;
   if (!outputArgument.startsWith("--output=")) {
-    throw new Error(
-      "Expected exactly one --output=/absolute/path.json option",
-    );
+    throw new Error("Expected exactly one --output=/absolute/path.json option");
   }
 
   return {
-    outputPath: outputPathSchema.parse(outputArgument.slice("--output=".length)),
+    outputPath: outputPathSchema.parse(
+      outputArgument.slice("--output=".length),
+    ),
   };
 }

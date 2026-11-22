@@ -31,10 +31,7 @@ import {
   type ProductFitEvaluation,
   type ProductSummary,
 } from "@/features/product-fit/schemas";
-import {
-  parseApiErrorCode,
-  type SafeApiErrorCode,
-} from "@/lib/api-error";
+import { parseApiErrorCode, type SafeApiErrorCode } from "@/lib/api-error";
 import { createPublicApiRequestDeadline } from "@/lib/public-api-request";
 import { subscribeToPublicNavigationIntent } from "@/lib/public-navigation-intent";
 import { isNavigableEvidenceUrl } from "@/lib/source-link";
@@ -310,9 +307,9 @@ export function ProductFitPanel({
       .catch((error: unknown) => {
         if (
           !requestIsCurrent() ||
-          error instanceof DOMException &&
-          error.name === "AbortError" &&
-          !deadline.didTimeout()
+          (error instanceof DOMException &&
+            error.name === "AbortError" &&
+            !deadline.didTimeout())
         ) {
           return;
         }
@@ -367,8 +364,7 @@ export function ProductFitPanel({
           asOf: overrides?.asOf ?? evaluationDate,
           countryIso3,
           powerKw: overrides?.powerKw ?? powerKw,
-          productModelCode:
-            overrides?.productModelCode ?? productModelCode,
+          productModelCode: overrides?.productModelCode ?? productModelCode,
         }),
         headers: {
           accept: "application/json",
@@ -474,8 +470,12 @@ export function ProductFitPanel({
       <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
         {copy.formDescription}
       </p>
-      {productList.status === "ready" && productList.products.length > 0 && productList.products.every((product) => product.isDemo) ? (
-        <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">{dictionary.queryEditor.demoOnly}</p>
+      {productList.status === "ready" &&
+      productList.products.length > 0 &&
+      productList.products.every((product) => product.isDemo) ? (
+        <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
+          {dictionary.queryEditor.demoOnly}
+        </p>
       ) : null}
 
       <form
@@ -511,8 +511,7 @@ export function ProductFitPanel({
               {copy.loadingProducts}
             </p>
           ) : null}
-          {productList.status === "ready" &&
-          productList.products.length > 0 ? (
+          {productList.status === "ready" && productList.products.length > 0 ? (
             <div className="grid min-w-0 gap-2">
               {productList.products.map((product) => {
                 const selected = product.modelCode === productModelCode;
@@ -686,8 +685,7 @@ export function ProductFitPanel({
           </div>
         ) : null}
 
-        {productList.status === "ready" &&
-        productList.products.length === 0 ? (
+        {productList.status === "ready" && productList.products.length === 0 ? (
           <div
             aria-atomic="true"
             aria-live="polite"
@@ -784,7 +782,9 @@ function ProductFitResult({
       >
         <div className="flex items-center gap-2 font-semibold">
           <StatusIcon aria-hidden="true" className="size-5" />
-          {copy.fitAxis}{dictionary.common.labelSeparator}{isDemoFit ? copy.demoFit : fitLabel}
+          {copy.fitAxis}
+          {dictionary.common.labelSeparator}
+          {isDemoFit ? copy.demoFit : fitLabel}
         </div>
         {isDemoFit ? (
           <p className="mt-2 rounded-lg border border-amber-400/70 bg-amber-100/80 px-3 py-2 text-xs font-semibold leading-5 text-amber-950">
@@ -797,7 +797,11 @@ function ProductFitResult({
             : null}
         </p>
         <p className="mt-2 text-xs">
-          {copy.resultRule}{dictionary.common.labelSeparator}{evaluation.rulesetVersion} · {copy.resultAsOf}{dictionary.common.labelSeparator}{formatUtcDate(evaluation.asOf, locale)}
+          {copy.resultRule}
+          {dictionary.common.labelSeparator}
+          {evaluation.rulesetVersion} · {copy.resultAsOf}
+          {dictionary.common.labelSeparator}
+          {formatUtcDate(evaluation.asOf, locale)}
         </p>
       </div>
 
@@ -807,7 +811,8 @@ function ProductFitResult({
       >
         <p className="font-semibold">{readinessLabel}</p>
         <p className="mt-2 text-sm leading-6">
-          {copy.availability}{dictionary.common.labelSeparator}
+          {copy.availability}
+          {dictionary.common.labelSeparator}
           {productFitReasonMessage(
             evaluation.productChecks.availability,
             locale,
@@ -964,25 +969,24 @@ function ProductFitResult({
           <div className="mt-3 border-t pt-3 text-xs">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-semibold">{dictionary.country.applicabilityEvidence}</p>
+                <p className="font-semibold">
+                  {dictionary.country.applicabilityEvidence}
+                </p>
                 <p className="mt-1 text-muted-foreground">
                   {nameWithCode(
                     jurisdictionDisplayName(
                       {
-                        code:
-                          regulationCheck.regulation.applicability.jurisdiction
-                            .code,
+                        code: regulationCheck.regulation.applicability
+                          .jurisdiction.code,
                         countryIso3:
                           regulationCheck.regulation.applicability.countryIso3,
-                        id:
-                          regulationCheck.regulation.applicability.jurisdiction
-                            .id,
+                        id: regulationCheck.regulation.applicability
+                          .jurisdiction.id,
                         isDemo:
                           regulationCheck.regulation.applicability.jurisdiction
                             .isDemo,
-                        name:
-                          regulationCheck.regulation.applicability.jurisdiction
-                            .name,
+                        name: regulationCheck.regulation.applicability
+                          .jurisdiction.name,
                         sourceId:
                           regulationCheck.regulation.applicability.jurisdiction
                             .source.id,
@@ -999,7 +1003,8 @@ function ProductFitResult({
                     ),
                     regulationCheck.regulation.applicability.jurisdiction.code,
                     locale,
-                  )} · {dictionary.country.applicableJurisdiction}
+                  )}{" "}
+                  · {dictionary.country.applicableJurisdiction}
                   {dictionary.common.labelSeparator}
                   {regulationCheck.regulation.applicability.countryIso3} ·{" "}
                   {dictionary.country.membershipPeriod}
@@ -1011,14 +1016,14 @@ function ProductFitResult({
                   )}{" "}
                   →{" "}
                   {formatOptionalUtcDate(
-                    regulationCheck.regulation.applicability.membership
-                      .validTo,
+                    regulationCheck.regulation.applicability.membership.validTo,
                     locale,
                     dictionary.common.open,
                   )}
                 </p>
                 <p className="mt-1 break-all text-muted-foreground">
-                  {copy.jurisdictionId}{dictionary.common.labelSeparator}
+                  {copy.jurisdictionId}
+                  {dictionary.common.labelSeparator}
                   {regulationCheck.regulation.applicability.jurisdiction.id}
                 </p>
               </div>
@@ -1044,7 +1049,9 @@ function ProductFitResult({
             <SourceReference
               className="mt-1"
               label={copy.membershipSource}
-              source={regulationCheck.regulation.applicability.membership.source}
+              source={
+                regulationCheck.regulation.applicability.membership.source
+              }
             />
           </div>
 
@@ -1069,11 +1076,13 @@ function ProductFitResult({
                     />
                   </div>
                   <p className="mt-1 text-muted-foreground">
-                    {copy.status}{dictionary.common.labelSeparator}
+                    {copy.status}
+                    {dictionary.common.labelSeparator}
                     {certificationStatusLabel(
                       certificationCheck.certification.status,
                       dictionary,
-                    )} · {copy.power}{" "}
+                    )}{" "}
+                    · {copy.power}{" "}
                     {formatCertificationPowerRange(
                       certificationCheck.certification.powerMinKw,
                       certificationCheck.certification.powerMaxKw,
@@ -1093,13 +1102,13 @@ function ProductFitResult({
                   </p>
                   <p className="mt-2 leading-5">
                     {certificationCheck.reasons
-                      .map((reason) =>
-                        productFitReasonMessage(reason, locale),
-                      )
+                      .map((reason) => productFitReasonMessage(reason, locale))
                       .join(locale === "en" ? "; " : "；")}
                   </p>
                   <p className="mt-2 break-all text-muted-foreground">
-                    {copy.certificationId}{dictionary.common.labelSeparator}{certificationCheck.certification.id}
+                    {copy.certificationId}
+                    {dictionary.common.labelSeparator}
+                    {certificationCheck.certification.id}
                   </p>
                   <SourceReference
                     className="mt-1"
@@ -1170,12 +1179,12 @@ function DataGapCopyAction({
   return (
     <div className="rounded-md border border-amber-300 bg-amber-50/60 p-4 text-xs text-amber-950">
       <p className="font-semibold">{copy.dataGapTitle}</p>
-      <p className="mt-1 leading-5">
-        {copy.dataGapBody}
-      </p>
+      <p className="mt-1 leading-5">{copy.dataGapBody}</p>
       <p className="mt-3 font-semibold">{dictionary.queryEditor.nextSteps}</p>
       <ul className="mt-2 list-disc space-y-2 pl-4">
-        {productFitNextSteps(evaluation.reasons, dictionary).map((step) => <li key={step}>{step}</li>)}
+        {productFitNextSteps(evaluation.reasons, dictionary).map((step) => (
+          <li key={step}>{step}</li>
+        ))}
       </ul>
       <Button
         className="mt-3"
@@ -1211,7 +1220,11 @@ function TraceCheck({
     <div className="rounded-md bg-muted/60 p-3">
       <p className="font-semibold">
         {label} ·{" "}
-        {status === "pass" ? copy.pass : status === "fail" ? copy.fail : copy.unknown}
+        {status === "pass"
+          ? copy.pass
+          : status === "fail"
+            ? copy.fail
+            : copy.unknown}
       </p>
       <p className="mt-1 leading-5 text-muted-foreground">{message}</p>
     </div>
@@ -1256,7 +1269,8 @@ function SourceReference({
   const { dictionary, locale } = useLocale();
   return (
     <p className={`${className ?? ""} text-xs text-muted-foreground`}>
-      {label}{dictionary.common.labelSeparator}
+      {label}
+      {dictionary.common.labelSeparator}
       {isNavigableEvidenceUrl(source.url) ? (
         <a
           className="inline-flex items-center gap-1 text-primary hover:underline"
@@ -1275,7 +1289,8 @@ function SourceReference({
       )}
       {source.publishedOn
         ? ` · ${dictionary.country.metricPublished} ${formatUtcDate(source.publishedOn, locale)}`
-        : ""} · {dictionary.country.verifiedAt}{" "}
+        : ""}{" "}
+      · {dictionary.country.verifiedAt}{" "}
       {formatUtcDate(source.verifiedAt, locale)}
     </p>
   );

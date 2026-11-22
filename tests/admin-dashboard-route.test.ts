@@ -1,13 +1,22 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getGovernanceDashboard: vi.fn(),
 }));
 
 vi.mock("@/server/services/governance-service", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("@/server/services/governance-service")
-  >();
+  const actual =
+    await importOriginal<
+      typeof import("@/server/services/governance-service")
+    >();
   return {
     ...actual,
     getGovernanceDashboard: mocks.getGovernanceDashboard,
@@ -206,9 +215,7 @@ describe("admin dashboard route wire admission", () => {
   it("forwards the bound editor principal and emits only the editor-scoped response", async () => {
     mocks.getGovernanceDashboard.mockResolvedValue(editorDashboard());
 
-    const response = await getAdminDashboard(
-      dashboardRequest(editorPrincipal),
-    );
+    const response = await getAdminDashboard(dashboardRequest(editorPrincipal));
 
     expect(response.status).toBe(200);
     expectPrivateBoundResponse(response, editorPrincipal);
@@ -233,9 +240,7 @@ describe("admin dashboard route wire admission", () => {
       pollute(dashboard: ReturnType<typeof editorDashboard>) {
         return {
           ...dashboard,
-          drafts: [
-            { ...dashboard.drafts[0], createdBy: "other@example.test" },
-          ],
+          drafts: [{ ...dashboard.drafts[0], createdBy: "other@example.test" }],
         };
       },
     },
@@ -403,9 +408,7 @@ describe("admin dashboard route wire admission", () => {
         });
         return {
           ...dashboard,
-          drafts: [
-            { ...dashboard.drafts[0], payload: { items } },
-          ],
+          drafts: [{ ...dashboard.drafts[0], payload: { items } }],
         };
       },
     },
@@ -439,9 +442,7 @@ describe("admin dashboard route wire admission", () => {
         });
         return {
           ...dashboard,
-          drafts: [
-            { ...dashboard.drafts[0], payload: { date } },
-          ],
+          drafts: [{ ...dashboard.drafts[0], payload: { date } }],
         };
       },
     },
@@ -476,9 +477,7 @@ describe("admin dashboard route wire admission", () => {
   ])("fails closed before emitting $name", async ({ pollute }) => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      mocks.getGovernanceDashboard.mockResolvedValue(
-        pollute(validDashboard()),
-      );
+      mocks.getGovernanceDashboard.mockResolvedValue(pollute(validDashboard()));
 
       const response = await getAdminDashboard(dashboardRequest());
       const body = await response.text();

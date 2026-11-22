@@ -42,8 +42,7 @@ const rawGovernanceJsonTableNames = [
   "market_import_batches",
 ] as const satisfies readonly GovernanceTableName[];
 
-type RawGovernanceJsonTableName =
-  (typeof rawGovernanceJsonTableNames)[number];
+type RawGovernanceJsonTableName = (typeof rawGovernanceJsonTableNames)[number];
 
 export type RawGovernanceJsonRow = {
   jsonValues: Record<string, string | null>;
@@ -80,31 +79,16 @@ const preciseTimestampConfig: Record<
 > = {
   catalog_engines: {
     key: (row) => String(row.id),
-    properties: new Set([
-      "verifiedAt",
-      "createdAt",
-      "updatedAt",
-      "archivedAt",
-    ]),
+    properties: new Set(["verifiedAt", "createdAt", "updatedAt", "archivedAt"]),
   },
   countries: {
     key: (row) => String(row.iso3),
-    properties: new Set([
-      "verifiedAt",
-      "createdAt",
-      "updatedAt",
-      "archivedAt",
-    ]),
+    properties: new Set(["verifiedAt", "createdAt", "updatedAt", "archivedAt"]),
   },
   country_jurisdictions: {
     key: (row) =>
       `${String(row.countryIso3)}:${String(row.jurisdictionId)}:${String(row.validFrom)}`,
-    properties: new Set([
-      "verifiedAt",
-      "createdAt",
-      "updatedAt",
-      "archivedAt",
-    ]),
+    properties: new Set(["verifiedAt", "createdAt", "updatedAt", "archivedAt"]),
   },
   data_change_logs: {
     key: (row) => String(row.id),
@@ -122,12 +106,7 @@ const preciseTimestampConfig: Record<
   },
   data_sources: {
     key: (row) => String(row.id),
-    properties: new Set([
-      "verifiedAt",
-      "createdAt",
-      "updatedAt",
-      "archivedAt",
-    ]),
+    properties: new Set(["verifiedAt", "createdAt", "updatedAt", "archivedAt"]),
   },
   engine_feedback: {
     key: (row) => String(row.id),
@@ -135,12 +114,7 @@ const preciseTimestampConfig: Record<
   },
   jurisdictions: {
     key: (row) => String(row.id),
-    properties: new Set([
-      "verifiedAt",
-      "createdAt",
-      "updatedAt",
-      "archivedAt",
-    ]),
+    properties: new Set(["verifiedAt", "createdAt", "updatedAt", "archivedAt"]),
   },
   market_import_batches: {
     key: (row) => String(row.id),
@@ -148,30 +122,15 @@ const preciseTimestampConfig: Record<
   },
   market_metrics: {
     key: (row) => String(row.id),
-    properties: new Set([
-      "verifiedAt",
-      "createdAt",
-      "updatedAt",
-      "archivedAt",
-    ]),
+    properties: new Set(["verifiedAt", "createdAt", "updatedAt", "archivedAt"]),
   },
   regulation_limits: {
     key: (row) => String(row.id),
-    properties: new Set([
-      "verifiedAt",
-      "createdAt",
-      "updatedAt",
-      "archivedAt",
-    ]),
+    properties: new Set(["verifiedAt", "createdAt", "updatedAt", "archivedAt"]),
   },
   regulations: {
     key: (row) => String(row.id),
-    properties: new Set([
-      "verifiedAt",
-      "createdAt",
-      "updatedAt",
-      "archivedAt",
-    ]),
+    properties: new Set(["verifiedAt", "createdAt", "updatedAt", "archivedAt"]),
   },
 };
 
@@ -473,7 +432,15 @@ const engineFeedbackRowSchema = z
   .object({
     archivedAt: nullableTimestampSchema,
     catalogEngineId: uuidSchema,
-    category: z.enum(["failure", "quality", "performance_request", "service_parts", "commercial", "documentation", "other"]),
+    category: z.enum([
+      "failure",
+      "quality",
+      "performance_request",
+      "service_parts",
+      "commercial",
+      "documentation",
+      "other",
+    ]),
     component: z.string().nullable(),
     countryIso3: iso3Schema.nullable(),
     createdAt: timestampSchema,
@@ -492,17 +459,35 @@ const engineFeedbackRowSchema = z
     requestedPowerValue: z.number().positive().nullable(),
     severity: z.enum(["low", "medium", "high", "safety"]),
     sourceBatchId: nullableUuidSchema,
-    sourceKind: z.enum(["chat_screenshot", "paper_photo", "pdf", "email", "text"]),
+    sourceKind: z.enum([
+      "chat_screenshot",
+      "paper_photo",
+      "pdf",
+      "email",
+      "text",
+    ]),
     sourceLanguage: z.string().nullable(),
     symptom: z.string(),
-    system: z.enum(["intake", "exhaust", "aftertreatment", "fuel", "cooling", "lubrication", "electronics", "power_output", "structure", "other"]),
+    system: z.enum([
+      "intake",
+      "exhaust",
+      "aftertreatment",
+      "fuel",
+      "cooling",
+      "lubrication",
+      "electronics",
+      "power_output",
+      "structure",
+      "other",
+    ]),
     tags: z.array(z.string()),
     updatedAt: timestampSchema,
   })
   .strict()
   .refine(
     (row) =>
-      (row.requestedPowerValue === null) === (row.requestedPowerUnit === null) &&
+      (row.requestedPowerValue === null) ===
+        (row.requestedPowerUnit === null) &&
       (row.requestedPowerValue === null) === (row.requestedPowerKw === null),
     "Requested power value, unit and kW must be set together",
   );
@@ -594,7 +579,10 @@ const marketMetricRowSchema = z
     archivedAt: nullableTimestampSchema,
     countryIso3: iso3Schema,
     createdAt: timestampSchema,
-    currencyCode: z.string().regex(/^[A-Z]{3}$/).nullable(),
+    currencyCode: z
+      .string()
+      .regex(/^[A-Z]{3}$/)
+      .nullable(),
     dataSourceId: uuidSchema,
     definition: z.string(),
     id: uuidSchema,
@@ -645,10 +633,14 @@ const changeLogRowSchema = z
       return;
     }
     for (const field of ["beforeData", "afterData"] as const) {
-      if (row[field] !== null && !rawGovernanceJsonSchema.safeParse(row[field]).success) {
+      if (
+        row[field] !== null &&
+        !rawGovernanceJsonSchema.safeParse(row[field]).success
+      ) {
         context.addIssue({
           code: "custom",
-          message: "Only legacy product archival audit data may contain an encoded object",
+          message:
+            "Only legacy product archival audit data may contain an encoded object",
           path: [field],
         });
       }
@@ -713,7 +705,9 @@ const governanceSnapshotSchema = z
   .strict()
   .superRefine((snapshot, context) => {
     for (const tableName of governanceTableNames) {
-      if (snapshot.tableCounts[tableName] !== snapshot.tables[tableName].length) {
+      if (
+        snapshot.tableCounts[tableName] !== snapshot.tables[tableName].length
+      ) {
         context.addIssue({
           code: "custom",
           message: `Declared count does not match ${tableName}`,
@@ -778,7 +772,8 @@ const governanceSnapshotSchema = z
     }
     reportDuplicateKeys(
       snapshot.tables.data_governance_drafts,
-      (row) => `${String(row.entityType)}:${String(row.entityKey)}:${String(row.version)}`,
+      (row) =>
+        `${String(row.entityType)}:${String(row.entityKey)}:${String(row.version)}`,
       context,
       ["tables", "data_governance_drafts"],
     );
@@ -789,9 +784,7 @@ const governanceSnapshotSchema = z
       ["tables", "catalog_engines"],
     );
     reportDuplicateKeys(
-      snapshot.tables.regulations.filter(
-        (row) => row.citationCode !== null,
-      ),
+      snapshot.tables.regulations.filter((row) => row.citationCode !== null),
       (row) => `${String(row.jurisdictionId)}:${String(row.citationCode)}`,
       context,
       ["tables", "regulations"],
@@ -811,11 +804,15 @@ const governanceSnapshotSchema = z
       ["tables", "market_metrics"],
     );
 
-    const sourceIds = new Set(snapshot.tables.data_sources.map((row) => row.id));
+    const sourceIds = new Set(
+      snapshot.tables.data_sources.map((row) => row.id),
+    );
     const sourceById = new Map(
       snapshot.tables.data_sources.map((row) => [row.id, row]),
     );
-    const countryIds = new Set(snapshot.tables.countries.map((row) => row.iso3));
+    const countryIds = new Set(
+      snapshot.tables.countries.map((row) => row.iso3),
+    );
     const jurisdictionIds = new Set(
       snapshot.tables.jurisdictions.map((row) => row.id),
     );
@@ -966,10 +963,7 @@ const governanceSnapshotSchema = z
         "dataSourceId",
       );
     });
-    const canonicalDocumentProvenanceCountByDraftId = new Map<
-      string,
-      number
-    >();
+    const canonicalDocumentProvenanceCountByDraftId = new Map<string, number>();
     snapshot.tables.data_change_logs.forEach((row, index) => {
       if (row.draftId !== null) {
         requireReference(
@@ -1014,8 +1008,7 @@ const governanceSnapshotSchema = z
       if (isCanonicalDocumentProvenance && row.draftId !== null) {
         canonicalDocumentProvenanceCountByDraftId.set(
           row.draftId,
-          (canonicalDocumentProvenanceCountByDraftId.get(row.draftId) ?? 0) +
-            1,
+          (canonicalDocumentProvenanceCountByDraftId.get(row.draftId) ?? 0) + 1,
         );
       }
 
@@ -1108,13 +1101,13 @@ const governanceSnapshotSchema = z
           requireReference(
             Boolean(
               markerDraft &&
-                supersededDraft?.entityType === "document" &&
-                supersededDraft.entityKey ===
-                  reprocessedMarker.afterData.documentId &&
-                supersededDraft.archivedAt !== null &&
-                supersededDraft.version === markerDraft.version - 1 &&
-                (supersededDraft.workflowStatus === "draft" ||
-                  supersededDraft.workflowStatus === "reviewed"),
+              supersededDraft?.entityType === "document" &&
+              supersededDraft.entityKey ===
+                reprocessedMarker.afterData.documentId &&
+              supersededDraft.archivedAt !== null &&
+              supersededDraft.version === markerDraft.version - 1 &&
+              (supersededDraft.workflowStatus === "draft" ||
+                supersededDraft.workflowStatus === "reviewed"),
             ),
             "data_change_logs",
             index,
@@ -1205,7 +1198,9 @@ export function applyPreciseGovernanceTimestamps(
   ) as Record<GovernanceTableName, object[]>;
 
   if (patches.size > 0) {
-    throw new Error("Precise timestamp patches contain rows outside the snapshot");
+    throw new Error(
+      "Precise timestamp patches contain rows outside the snapshot",
+    );
   }
   return result;
 }
@@ -1238,9 +1233,8 @@ export function applyRawGovernanceJson(
 
   const result = Object.fromEntries(
     governanceTableNames.map((tableName) => {
-      const rawConfig = rawGovernanceJsonConfig[
-        tableName as RawGovernanceJsonTableName
-      ];
+      const rawConfig =
+        rawGovernanceJsonConfig[tableName as RawGovernanceJsonTableName];
       if (!rawConfig) {
         return [tableName, [...tables[tableName]]];
       }

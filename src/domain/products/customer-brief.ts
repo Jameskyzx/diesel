@@ -25,20 +25,29 @@ export type CustomerBrief = {
 };
 
 export function buildCustomerBrief(result: CatalogFitResult): CustomerBrief {
-  const citationsById = new Map(result.applicableRegulations.map(regulation => [regulation.regulationId, regulation.citationCode]));
+  const citationsById = new Map(
+    result.applicableRegulations.map((regulation) => [
+      regulation.regulationId,
+      regulation.citationCode,
+    ]),
+  );
   return {
     query: result.query,
     rulesetVersion: result.rulesetVersion,
     regulations: result.applicableRegulations,
     candidates: result.evaluations
-      .filter(evaluation => evaluation.status === "declared_match")
-      .map(evaluation => ({
+      .filter((evaluation) => evaluation.status === "declared_match")
+      .map((evaluation) => ({
         record: evaluation.record,
-        coveredCitations: evaluation.declaredRegulationIds.flatMap(id => citationsById.get(id) ?? []),
+        coveredCitations: evaluation.declaredRegulationIds.flatMap(
+          (id) => citationsById.get(id) ?? [],
+        ),
       })),
     declarationGapCount: result.counts.declaration_gap,
     noRegulationData: result.applicableRegulations.length === 0,
-    realRegulationData: result.applicableRegulations.some(regulation => !regulation.isDemo),
+    realRegulationData: result.applicableRegulations.some(
+      (regulation) => !regulation.isDemo,
+    ),
     fictionalCatalogue: result.catalog.isDemo,
   };
 }

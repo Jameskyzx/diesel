@@ -1,0 +1,23 @@
+# Prettier formats source code only. Documents, data and generated files keep
+# their own layout.
+*.md
+*.json
+*.yaml
+*.yml
+*.html
+*.svg
+.next/
+.next-e2e/
+.data/
+coverage/
+drizzle/
+node_modules/
+patches/
+playwright-report/
+public/
+test-results/
+tests/fixtures/
+next-env.d.ts
+pnpm-lock.yaml
+scripts/deploy/durable-release.bundle.mjs
+scripts/deploy/verify-release-authorization.bundle.mjs

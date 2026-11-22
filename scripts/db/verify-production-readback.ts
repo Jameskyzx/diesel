@@ -14,29 +14,39 @@ import {
 } from "./production-readback";
 
 const journalSchema = z.object({
-  entries: z.array(z.object({
-    tag: z.string(),
-    when: z.number().int().nonnegative(),
-  })),
+  entries: z.array(
+    z.object({
+      tag: z.string(),
+      when: z.number().int().nonnegative(),
+    }),
+  ),
 });
 
 async function expectedMigrationIdentities(
   entries: readonly { tag: string; when: number }[],
 ): Promise<MigrationIdentity[]> {
-  return Promise.all(entries.map(async (entry) => ({
-    createdAt: String(entry.when),
-    hash: createHash("sha256").update(await readFile(
-      resolve(process.cwd(), "drizzle", `${entry.tag}.sql`),
-    )).digest("hex"),
-  })));
+  return Promise.all(
+    entries.map(async (entry) => ({
+      createdAt: String(entry.when),
+      hash: createHash("sha256")
+        .update(
+          await readFile(resolve(process.cwd(), "drizzle", `${entry.tag}.sql`)),
+        )
+        .digest("hex"),
+    })),
+  );
 }
 
 async function main(): Promise<void> {
   assertProductionReadbackEnvironment(process.env);
-  const journal = journalSchema.parse(JSON.parse(await readFile(
-    resolve(process.cwd(), "drizzle/meta/_journal.json"),
-    "utf8",
-  )));
+  const journal = journalSchema.parse(
+    JSON.parse(
+      await readFile(
+        resolve(process.cwd(), "drizzle/meta/_journal.json"),
+        "utf8",
+      ),
+    ),
+  );
   const sql = postgres(getDatabaseUrl(), { max: 1, prepare: false });
   try {
     const actualMigrations = await sql<MigrationIdentity[]>`
@@ -48,14 +58,16 @@ async function main(): Promise<void> {
       actual: actualMigrations,
       expected: await expectedMigrationIdentities(journal.entries),
     });
-    const [row] = await sql<{
-      activeInvalidProducts: number;
-      apiRateLimitTableExists: boolean;
-      membershipExclusionDefinition: string;
-      migrationCount: number;
-      productPowerDefinition: string;
-      rateLimitCountDefinition: string;
-    }[]>`
+    const [row] = await sql<
+      {
+        activeInvalidProducts: number;
+        apiRateLimitTableExists: boolean;
+        membershipExclusionDefinition: string;
+        migrationCount: number;
+        productPowerDefinition: string;
+        rateLimitCountDefinition: string;
+      }[]
+    >`
       select
         (select count(*)::int from drizzle.__drizzle_migrations) as "migrationCount",
         coalesce((select pg_get_constraintdef(oid) from pg_constraint
@@ -82,17 +94,19 @@ async function main(): Promise<void> {
       recognizedLegacyMigrationCount:
         migrationLineage.recognizedLegacyMigrationCount,
     });
-    process.stdout.write(`${JSON.stringify({
-      activeInvalidProducts: row.activeInvalidProducts,
-      apiRateLimitTableExists: row.apiRateLimitTableExists,
-      expectedMigrationCount: journal.entries.length,
-      migrationCount: row.migrationCount,
-      recognizedLegacyHashAliases:
-        migrationLineage.recognizedLegacyHashAliases,
-      recognizedLegacyMigrationCount:
-        migrationLineage.recognizedLegacyMigrationCount,
-      status: "verified",
-    })}\n`);
+    process.stdout.write(
+      `${JSON.stringify({
+        activeInvalidProducts: row.activeInvalidProducts,
+        apiRateLimitTableExists: row.apiRateLimitTableExists,
+        expectedMigrationCount: journal.entries.length,
+        migrationCount: row.migrationCount,
+        recognizedLegacyHashAliases:
+          migrationLineage.recognizedLegacyHashAliases,
+        recognizedLegacyMigrationCount:
+          migrationLineage.recognizedLegacyMigrationCount,
+        status: "verified",
+      })}\n`,
+    );
   } finally {
     await sql.end();
   }

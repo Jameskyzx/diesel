@@ -17,10 +17,10 @@ const analysisLinkCopy = {
 } as const;
 
 for (const locale of ["en", "zh-CN"] as const) {
-  test(`names header links in ${locale} across viewport changes and keyboard navigation`, async (
-    { context, page },
-    testInfo,
-  ) => {
+  test(`names header links in ${locale} across viewport changes and keyboard navigation`, async ({
+    context,
+    page,
+  }, testInfo) => {
     await context.clearCookies();
     const response = await page.request.post("/api/preferences/locale", {
       data: { locale },
@@ -40,20 +40,27 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect(brandIcon).toHaveAttribute("width", "44");
     await expect(brandIcon).toHaveAttribute("height", "44");
     await expect(brandIcon).toHaveAttribute("src", /diesel-chibi\.png/u);
-    await expect.poll(() => brandIcon.evaluate(
-      (image: HTMLImageElement) => image.complete && image.naturalWidth > 0,
-    )).toBe(true);
+    await expect
+      .poll(() =>
+        brandIcon.evaluate(
+          (image: HTMLImageElement) => image.complete && image.naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
     for (const width of [1024, 1280, 1440]) {
       await page.setViewportSize({ height: 720, width });
       await expect(brandLink).toHaveAccessibleName(brandHomeNames[locale]);
       await expect(brandLink).toHaveAttribute("href", "/");
     }
 
-    const analysisLink = page.getByRole("banner")
+    const analysisLink = page
+      .getByRole("banner")
       .getByRole("link", { exact: true, name: analysisLinkCopy[locale].name });
     await expect(analysisLink).toBeVisible();
     await expect(analysisLink).toHaveText(analysisLinkCopy[locale].name);
-    await expect(analysisLink).toHaveAccessibleName(analysisLinkCopy[locale].name);
+    await expect(analysisLink).toHaveAccessibleName(
+      analysisLinkCopy[locale].name,
+    );
     await expect(analysisLink).toHaveAccessibleDescription(
       analysisLinkCopy[locale].description,
     );
@@ -64,10 +71,12 @@ for (const locale of ["en", "zh-CN"] as const) {
     await page.goto("/chat?countryIso3=CHN");
     const tabKey = testInfo.project.name === "core-webkit" ? "Alt+Tab" : "Tab";
     await page.keyboard.press(tabKey);
-    await expect(page.getByRole("link", {
-      exact: true,
-      name: locale === "en" ? "Skip to main content" : "跳到主要内容",
-    })).toBeFocused();
+    await expect(
+      page.getByRole("link", {
+        exact: true,
+        name: locale === "en" ? "Skip to main content" : "跳到主要内容",
+      }),
+    ).toBeFocused();
     await page.keyboard.press(tabKey);
     await expect(brandLink).toBeFocused();
     await expect(brandLink).toHaveAccessibleName(brandHomeNames[locale]);
@@ -76,10 +85,13 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
 
     const nextLocale = locale === "en" ? "zh-CN" : "en";
-    await page.getByTestId("locale-toggle").getByRole("button", {
-      exact: true,
-      name: nextLocale === "en" ? "EN" : "中文",
-    }).click();
+    await page
+      .getByTestId("locale-toggle")
+      .getByRole("button", {
+        exact: true,
+        name: nextLocale === "en" ? "EN" : "中文",
+      })
+      .click();
     await expect(page.locator("html")).toHaveAttribute("lang", nextLocale);
     await expect(brandLink).toHaveAccessibleName(brandHomeNames[nextLocale]);
     await page.reload();
@@ -87,8 +99,10 @@ for (const locale of ["en", "zh-CN"] as const) {
     await expect(brandLink).toHaveAccessibleName(brandHomeNames[nextLocale]);
 
     await page.setViewportSize({ height: 720, width: 1024 });
-    const localizedAnalysisLink = page.getByRole("banner")
-      .getByRole("link", { exact: true, name: analysisLinkCopy[nextLocale].name });
+    const localizedAnalysisLink = page.getByRole("banner").getByRole("link", {
+      exact: true,
+      name: analysisLinkCopy[nextLocale].name,
+    });
     await expect(localizedAnalysisLink).toHaveAccessibleName(
       analysisLinkCopy[nextLocale].name,
     );
@@ -109,27 +123,37 @@ for (const locale of ["en", "zh-CN"] as const) {
   }, testInfo) => {
     const tabKey = testInfo.project.name === "core-webkit" ? "Alt+Tab" : "Tab";
     if (!baseURL) {
-      throw new Error("Country accessibility tests require a configured base URL.");
+      throw new Error(
+        "Country accessibility tests require a configured base URL.",
+      );
     }
     // This test exercises keyboard navigation, not preference transport. Seed
     // its authoritative cookie in the fresh context; real preference POSTs and
     // user-driven language switches remain covered by locale.spec.ts.
-    await context.addCookies([{
-      name: "diesel_locale",
-      value: locale,
-      url: new URL("/", baseURL).toString(),
-      sameSite: "Lax",
-    }]);
+    await context.addCookies([
+      {
+        name: "diesel_locale",
+        value: locale,
+        url: new URL("/", baseURL).toString(),
+        sameSite: "Lax",
+      },
+    ]);
     await page.goto("/countries/CHN");
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await expect(page.getByTestId("country-detail")).toBeVisible();
     const drawer = page.getByRole("dialog");
-    const home = page.getByRole("banner").getByRole("link", { name: brandHomeNames[locale], exact: true });
+    const home = page
+      .getByRole("banner")
+      .getByRole("link", { name: brandHomeNames[locale], exact: true });
     // Moving focus outside must not be pulled back into a hidden modal scope.
     await home.focus();
     await expect(home).toBeFocused();
     await page.keyboard.press(tabKey);
-    await expect(page.getByTestId("locale-toggle").getByRole("button", { name: "EN", exact: true })).toBeFocused();
+    await expect(
+      page
+        .getByTestId("locale-toggle")
+        .getByRole("button", { name: "EN", exact: true }),
+    ).toBeFocused();
     await expect(drawer).toBeVisible();
     await home.focus();
     await page.keyboard.press("Enter");
@@ -141,15 +165,29 @@ for (const locale of ["en", "zh-CN"] as const) {
 }
 
 for (const locale of ["en", "zh-CN"] as const) {
-  test(`home loading metrics expose valid accessible status in ${locale}`, async ({ context, page }) => {
+  test(`home loading metrics expose valid accessible status in ${locale}`, async ({
+    context,
+    page,
+  }) => {
     await context.clearCookies();
-    expect((await page.request.post("/api/preferences/locale", { data: { locale } })).ok()).toBe(true);
+    expect(
+      (
+        await page.request.post("/api/preferences/locale", { data: { locale } })
+      ).ok(),
+    ).toBe(true);
     let release!: () => void;
-    const held = new Promise<void>((resolve) => { release = resolve; });
-    await page.route("**/api/countries", async (route) => { await held; await route.abort(); });
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route("**/api/countries", async (route) => {
+      await held;
+      await route.abort();
+    });
     try {
       await page.goto("/");
-      const loadingMetrics = page.getByTestId("home-workspace").locator('article [role="status"]');
+      const loadingMetrics = page
+        .getByTestId("home-workspace")
+        .locator('article [role="status"]');
       // The public home has one live catalog metric; its published evidence
       // totals are static. The four-metric layout belongs to the offline Demo.
       await expect(loadingMetrics).toHaveCount(1);
@@ -161,8 +199,13 @@ for (const locale of ["en", "zh-CN"] as const) {
       // by waiting until the data replaces the skeleton.
       const results = await new AxeBuilder({ page })
         .include('[data-testid="home-workspace"]')
-        .options({ runOnly: ["wcag2a", "wcag2aa", "wcag21aa"] }).analyze();
-      expect(results.violations.filter(({ impact }) => impact === "critical" || impact === "serious")).toEqual([]);
+        .options({ runOnly: ["wcag2a", "wcag2aa", "wcag21aa"] })
+        .analyze();
+      expect(
+        results.violations.filter(
+          ({ impact }) => impact === "critical" || impact === "serious",
+        ),
+      ).toEqual([]);
       await expect(loadingMetrics).toHaveCount(1);
     } finally {
       release();
@@ -177,46 +220,59 @@ for (const route of [
   "/map",
   "/countries/CHN?applicationScope=non-road&asOf=2026-01-20&powerKw=100&productModelCode=DEMO-ENG-100",
 ] as const) {
-  test(`${route} has no serious or critical accessibility violations`, async (
-    { page },
-  ) => {
+  test(`${route} has no serious or critical accessibility violations`, async ({
+    page,
+  }) => {
     if (route.startsWith("/countries/")) {
       // Keep cold development compilation outside the unchanged UI/axe checks.
       // These are real read-only requests; a failed preparation fails the test.
-      await test.step("Prepare the real product routes before the accessibility scan", async () => {
-        const products = await page.request.get("/api/products", { timeout: 30_000 });
-        expect(products.status()).toBe(200);
-        const catalog = productListResponseSchema.parse(await products.json());
-        expect(catalog.products.some(
-          (product) => product.modelCode === "DEMO-ENG-100",
-        )).toBe(true);
-        const fit = await page.request.post("/api/product-fit", {
-          data: {
+      await test.step(
+        "Prepare the real product routes before the accessibility scan",
+        async () => {
+          const products = await page.request.get("/api/products", {
+            timeout: 30_000,
+          });
+          expect(products.status()).toBe(200);
+          const catalog = productListResponseSchema.parse(
+            await products.json(),
+          );
+          expect(
+            catalog.products.some(
+              (product) => product.modelCode === "DEMO-ENG-100",
+            ),
+          ).toBe(true);
+          const fit = await page.request.post("/api/product-fit", {
+            data: {
+              applicationScope: "non-road",
+              asOf: "2026-01-20",
+              countryIso3: "CHN",
+              powerKw: 100,
+              productModelCode: "DEMO-ENG-100",
+            },
+            timeout: 30_000,
+          });
+          expect(fit.status()).toBe(200);
+          const evaluation = productFitEvaluationSchema.parse(await fit.json());
+          expect(evaluation.asOf).toBe("2026-01-20");
+          expect(evaluation.input).toMatchObject({
             applicationScope: "non-road",
-            asOf: "2026-01-20",
             countryIso3: "CHN",
             powerKw: 100,
             productModelCode: "DEMO-ENG-100",
-          },
-          timeout: 30_000,
-        });
-        expect(fit.status()).toBe(200);
-        const evaluation = productFitEvaluationSchema.parse(await fit.json());
-        expect(evaluation.asOf).toBe("2026-01-20");
-        expect(evaluation.input).toMatchObject({
-          applicationScope: "non-road",
-          countryIso3: "CHN",
-          powerKw: 100,
-          productModelCode: "DEMO-ENG-100",
-        });
-      }, { timeout: 30_000 });
+          });
+        },
+        { timeout: 30_000 },
+      );
     }
     await page.goto(route);
     await expect(page.locator("main")).toBeVisible();
     if (route === "/chat") {
       // The scroll container itself must remain reachable even while starter
       // buttons are disabled or a completed response has no interactive links.
-      const conversation = page.getByRole("region", { name: "AI conversation", exact: true });
+      const conversation = page.getByRole("region", {
+        name: "AI conversation",
+        exact: true,
+      });
       await expect(conversation).toHaveAttribute("tabindex", "0");
       await conversation.focus();
       await expect(conversation).toBeFocused();
@@ -228,9 +284,16 @@ for (const route of [
       await expect(page.getByRole("dialog")).toBeVisible();
       await expect(page.getByRole("banner")).toBeVisible();
       await expect(page.getByRole("main")).toBeVisible();
-      await expect(page.getByRole("navigation", { name: "Primary navigation" })).toBeVisible();
-      await expect(page.getByRole("group", { name: "Language", exact: true })).toHaveCount(2);
-      await expect(page.locator("#main-content")).not.toHaveAttribute("aria-hidden", "true");
+      await expect(
+        page.getByRole("navigation", { name: "Primary navigation" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("group", { name: "Language", exact: true }),
+      ).toHaveCount(2);
+      await expect(page.locator("#main-content")).not.toHaveAttribute(
+        "aria-hidden",
+        "true",
+      );
       await expect(page.locator("#main-content")).not.toHaveAttribute("inert");
       const expectedTitle =
         "People's Republic of China (CHN) country details · Global Regulations & Market Intelligence";
@@ -274,9 +337,7 @@ for (const route of [
       // axe-core can miss Next.js's streamed country title even after
       // document.title, the DOM title, and Open Graph title all settle. Those
       // three assertions above remain the source of truth for this rule.
-      return !(
-        hasIndependentlyVerifiedCountryTitle && id === "document-title"
-      );
+      return !(hasIndependentlyVerifiedCountryTitle && id === "document-title");
     });
 
     expect(blockingViolations).toEqual([]);

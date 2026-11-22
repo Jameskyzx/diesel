@@ -25,10 +25,7 @@ export function createPublicApiRequestDeadline(
       new DOMException("Public API request deadline exceeded.", "TimeoutError"),
     );
   }, timeoutMs);
-  const signal = AbortSignal.any([
-    lifecycleSignal,
-    timeoutController.signal,
-  ]);
+  const signal = AbortSignal.any([lifecycleSignal, timeoutController.signal]);
   let disposed = false;
   const dispose = () => {
     if (disposed) return;

@@ -25,17 +25,15 @@ describe("chat image structural validation", () => {
       resolve(process.cwd(), "public/portfolio/live-dashboard.jpg"),
     );
 
-    expect(
-      hasStructurallyValidChatImage("image/png", sixteenPixelPng),
-    ).toBe(true);
+    expect(hasStructurallyValidChatImage("image/png", sixteenPixelPng)).toBe(
+      true,
+    );
     expect(hasStructurallyValidChatImage("image/jpeg", jpeg)).toBe(true);
   });
 
   it("rejects undersized, truncated, and oversized PNG dimensions", () => {
     expect(MIN_CHAT_IMAGE_DIMENSION).toBe(11);
-    expect(
-      hasStructurallyValidChatImage("image/png", onePixelPng),
-    ).toBe(false);
+    expect(hasStructurallyValidChatImage("image/png", onePixelPng)).toBe(false);
     expect(
       hasStructurallyValidChatImage(
         "image/png",
@@ -49,27 +47,18 @@ describe("chat image structural validation", () => {
     oversized[17] = (width >>> 16) & 0xff;
     oversized[18] = (width >>> 8) & 0xff;
     oversized[19] = width & 0xff;
-    expect(
-      hasStructurallyValidChatImage("image/png", oversized),
-    ).toBe(false);
+    expect(hasStructurallyValidChatImage("image/png", oversized)).toBe(false);
   });
 
   it("requires a complete RIFF length, dimensions, and image payload for WebP", () => {
     const structuralLosslessWebp = Uint8Array.from([
-      0x52, 0x49, 0x46, 0x46,
-      0x16, 0x00, 0x00, 0x00,
-      0x57, 0x45, 0x42, 0x50,
-      0x56, 0x50, 0x38, 0x4c,
-      0x0a, 0x00, 0x00, 0x00,
-      0x2f, 0x0f, 0xc0, 0x03, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00,
+      0x52, 0x49, 0x46, 0x46, 0x16, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+      0x56, 0x50, 0x38, 0x4c, 0x0a, 0x00, 0x00, 0x00, 0x2f, 0x0f, 0xc0, 0x03,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ]);
 
     expect(
-      hasStructurallyValidChatImage(
-        "image/webp",
-        structuralLosslessWebp,
-      ),
+      hasStructurallyValidChatImage("image/webp", structuralLosslessWebp),
     ).toBe(true);
     expect(
       hasStructurallyValidChatImage(

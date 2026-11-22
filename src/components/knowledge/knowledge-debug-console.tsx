@@ -129,9 +129,7 @@ export function KnowledgeDebugConsole() {
       });
 
       if (!response.ok) {
-        throw new Error(
-          await parseApiErrorMessage(response, "文档导入失败。"),
-        );
+        throw new Error(await parseApiErrorMessage(response, "文档导入失败。"));
       }
 
       const parsed = documentImportResponseSchema.parse(await response.json());
@@ -172,9 +170,7 @@ export function KnowledgeDebugConsole() {
       });
 
       if (!response.ok) {
-        throw new Error(
-          await parseApiErrorMessage(response, "混合检索失败。"),
-        );
+        throw new Error(await parseApiErrorMessage(response, "混合检索失败。"));
       }
 
       setSearchState({
@@ -206,8 +202,10 @@ export function KnowledgeDebugConsole() {
           知识库导入与混合检索调试
         </h1>
         <p className="mt-3 max-w-4xl text-sm leading-6 text-muted-foreground">
-          上传 UTF-8 TXT/Markdown，检查哈希去重、处理状态、章节切块、全文与向量得分及
-          metadata filter。当前 embedding 是可替换的确定性开发实现，不代表生产语义检索质量。
+          上传 UTF-8
+          TXT/Markdown，检查哈希去重、处理状态、章节切块、全文与向量得分及
+          metadata filter。当前 embedding
+          是可替换的确定性开发实现，不代表生产语义检索质量。
         </p>
       </header>
 
@@ -454,10 +452,7 @@ function ImportFeedback({ state }: { state: ImportState }) {
         className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
         role="alert"
       >
-        <AlertTriangle
-          aria-hidden="true"
-          className="size-5 text-destructive"
-        />
+        <AlertTriangle aria-hidden="true" className="size-5 text-destructive" />
         <p className="mt-2">{state.message}</p>
       </div>
     );
@@ -475,15 +470,9 @@ function ImportFeedback({ state }: { state: ImportState }) {
       role="status"
     >
       {failed ? (
-        <AlertTriangle
-          aria-hidden="true"
-          className="size-5 text-destructive"
-        />
+        <AlertTriangle aria-hidden="true" className="size-5 text-destructive" />
       ) : (
-        <CheckCircle2
-          aria-hidden="true"
-          className="size-5 text-emerald-700"
-        />
+        <CheckCircle2 aria-hidden="true" className="size-5 text-emerald-700" />
       )}
       <p className="mt-2 font-semibold">
         {state.response.status === "duplicate"
@@ -526,18 +515,15 @@ function SearchFeedback({ state }: { state: SearchState }) {
           {JSON.stringify(state.response.filters, null, 2)}
         </pre>
         <p className="mt-2 text-muted-foreground">
-          Embedding：{state.response.embeddingModel} · 关键词权重 0.5 ·
-          向量权重 0.5
+          Embedding：{state.response.embeddingModel} · 关键词权重 0.5 · 向量权重
+          0.5
         </p>
       </div>
 
       {state.response.results.length > 0 ? (
         <div className="mt-4 space-y-3">
           {state.response.results.map((result) => (
-            <article
-              className="rounded-2xl border p-4"
-              key={result.chunkId}
-            >
+            <article className="rounded-2xl border p-4" key={result.chunkId}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-semibold">
                   #{result.rank} · {result.document.title}
@@ -646,7 +632,7 @@ function DocumentList({ state }: { state: OptionsState }) {
                     ? "bg-emerald-100 text-emerald-900"
                     : document.processingStatus === "ready"
                       ? "bg-amber-100 text-amber-950"
-                    : "bg-secondary"
+                      : "bg-secondary"
               }`}
             >
               {documentStatusLabel(document)}

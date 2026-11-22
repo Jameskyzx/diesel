@@ -10,7 +10,17 @@ export type RuntimeMetadata = {
   archiveSha256: string;
   archiveBytes: number;
 };
-export function parseRuntimeMetadata(value: unknown, release: string): RuntimeMetadata;
+export function parseRuntimeMetadata(
+  value: unknown,
+  release: string,
+): RuntimeMetadata;
 export function hashFile(path: string): Promise<string>;
-export function runtimeReadyArguments(release: string, runtimeUid: string, runtimeGid: string): string[];
-export function verifyStaged(release: string, directory: string): Promise<RuntimeMetadata>;
+export function runtimeReadyArguments(
+  release: string,
+  runtimeUid: string,
+  runtimeGid: string,
+): string[];
+export function verifyStaged(
+  release: string,
+  directory: string,
+): Promise<RuntimeMetadata>;

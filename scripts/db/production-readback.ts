@@ -64,7 +64,9 @@ export function assertProductionMigrationLineage(input: {
   const actualByTimestamp = new Map<string, MigrationIdentity>();
   for (const migration of input.actual) {
     if (actualByTimestamp.has(migration.createdAt)) {
-      throw new Error("Production migration journal contains duplicate timestamps.");
+      throw new Error(
+        "Production migration journal contains duplicate timestamps.",
+      );
     }
     actualByTimestamp.set(migration.createdAt, migration);
   }
@@ -73,12 +75,16 @@ export function assertProductionMigrationLineage(input: {
   let recognizedLegacyHashAliases = 0;
   for (const expected of input.expected) {
     if (expectedTimestamps.has(expected.createdAt)) {
-      throw new Error("Repository migration journal contains duplicate timestamps.");
+      throw new Error(
+        "Repository migration journal contains duplicate timestamps.",
+      );
     }
     expectedTimestamps.add(expected.createdAt);
     const actual = actualByTimestamp.get(expected.createdAt);
     if (!actual) {
-      throw new Error("Production migration journal is missing a repository migration.");
+      throw new Error(
+        "Production migration journal is missing a repository migration.",
+      );
     }
     if (actual.hash === expected.hash) {
       continue;
@@ -87,7 +93,9 @@ export function assertProductionMigrationLineage(input: {
       (alias) => migrationKey(alias) === migrationKey(actual),
     );
     if (!recognizedAlias) {
-      throw new Error("Production migration hash does not match the repository.");
+      throw new Error(
+        "Production migration hash does not match the repository.",
+      );
     }
     recognizedLegacyHashAliases += 1;
   }
@@ -101,7 +109,9 @@ export function assertProductionMigrationLineage(input: {
       (legacy) => migrationKey(legacy) === migrationKey(actual),
     );
     if (!recognizedExtra) {
-      throw new Error("Production migration journal contains an unknown extra migration.");
+      throw new Error(
+        "Production migration journal contains an unknown extra migration.",
+      );
     }
     recognizedLegacyMigrationCount += 1;
   }
@@ -115,11 +125,14 @@ export function assertProductionMigrationLineage(input: {
 export function assertProductionReadback(input: ProductionReadback): void {
   if (
     input.recognizedLegacyMigrationCount < 0 ||
-    input.recognizedLegacyMigrationCount > recognizedLegacyMigrationExtras.length ||
+    input.recognizedLegacyMigrationCount >
+      recognizedLegacyMigrationExtras.length ||
     input.migrationCount !==
       input.expectedMigrationCount + input.recognizedLegacyMigrationCount
   ) {
-    throw new Error("Production migration journal does not match the repository.");
+    throw new Error(
+      "Production migration journal does not match the repository.",
+    );
   }
   const productPower = normalizePostgresConstraintDefinition(
     input.productPowerDefinition,

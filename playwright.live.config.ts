@@ -4,7 +4,9 @@ import { z } from "zod";
 // Explicit opt-in: this suite calls the deployed database, admission gates and
 // paid model. It never starts a demo server or intercepts /api/chat.
 z.literal("true").parse(process.env.DIESEL_LIVE_ACCEPTANCE);
-z.string().regex(/^[0-9a-f]{40}$/u).parse(process.env.DIESEL_LIVE_RELEASE);
+z.string()
+  .regex(/^[0-9a-f]{40}$/u)
+  .parse(process.env.DIESEL_LIVE_RELEASE);
 const outputDir = `test-results/live-${Date.now()}`;
 
 export default defineConfig({

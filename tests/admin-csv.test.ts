@@ -263,9 +263,7 @@ describe("market-metric CSV parsing", () => {
       "Real metric line one\nline two.",
       "Real metric duplicate.",
     );
-    const result = parseMarketCsv(
-      [header, firstRow, duplicateRow].join("\n"),
-    );
+    const result = parseMarketCsv([header, firstRow, duplicateRow].join("\n"));
 
     expect(result.rows.map(({ rowNumber }) => rowNumber)).toEqual([2, 4]);
     expect(result.errors).toEqual([

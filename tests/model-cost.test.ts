@@ -35,22 +35,24 @@ const tieredProfile = {
   version: "pricing-2026-08-cache-v1",
 } as const;
 
-function aggregate(input: {
-  cacheReadTokens?: number | null;
-  cacheReported?: boolean;
-  cacheStatus?: ModelObservabilityAggregate["cacheStatus"];
-  cacheWriteTokens?: number | null;
-  completedStepCount?: number;
-  expectedStepCount?: number | null;
-  incomplete?: boolean;
-  inputReported?: boolean;
-  inputTokens?: number | null;
-  noCacheTokens?: number | null;
-  outputReported?: boolean;
-  outputTokens?: number | null;
-  totalReported?: boolean;
-  totalTokens?: number | null;
-} = {}): ModelObservabilityAggregate {
+function aggregate(
+  input: {
+    cacheReadTokens?: number | null;
+    cacheReported?: boolean;
+    cacheStatus?: ModelObservabilityAggregate["cacheStatus"];
+    cacheWriteTokens?: number | null;
+    completedStepCount?: number;
+    expectedStepCount?: number | null;
+    incomplete?: boolean;
+    inputReported?: boolean;
+    inputTokens?: number | null;
+    noCacheTokens?: number | null;
+    outputReported?: boolean;
+    outputTokens?: number | null;
+    totalReported?: boolean;
+    totalTokens?: number | null;
+  } = {},
+): ModelObservabilityAggregate {
   const inputTokens = input.inputTokens === undefined ? 100 : input.inputTokens;
   const outputTokens =
     input.outputTokens === undefined ? 20 : input.outputTokens;
@@ -70,8 +72,7 @@ function aggregate(input: {
     tokenUsage: {
       cacheReadTokens: {
         reported: input.cacheReported ?? true,
-        value:
-          input.cacheReadTokens === undefined ? 25 : input.cacheReadTokens,
+        value: input.cacheReadTokens === undefined ? 25 : input.cacheReadTokens,
       },
       cacheWriteTokens: {
         reported: input.cacheReported ?? true,
@@ -103,12 +104,14 @@ function aggregate(input: {
   };
 }
 
-function estimate(input: {
-  actualModelId?: string;
-  observability?: ModelObservabilityAggregate;
-  profile?: unknown | null;
-  referenceDate?: string;
-} = {}) {
+function estimate(
+  input: {
+    actualModelId?: string;
+    observability?: ModelObservabilityAggregate;
+    profile?: unknown | null;
+    referenceDate?: string;
+  } = {},
+) {
   return estimateModelCost({
     actualModelId: input.actualModelId ?? actualModelId,
     observability: input.observability ?? aggregate(),
@@ -182,10 +185,7 @@ describe("model cost profile validation", () => {
       },
     ],
     ["invalid calendar date", { ...flatProfile, asOf: "2026-02-29" }],
-    [
-      "validity before as-of",
-      { ...flatProfile, validThrough: "2026-07-31" },
-    ],
+    ["validity before as-of", { ...flatProfile, validThrough: "2026-07-31" }],
     [
       "invalid validity calendar date",
       { ...flatProfile, validThrough: "2026-02-29" },
@@ -288,9 +288,7 @@ describe("model cost estimation", () => {
   });
 
   it("keeps a reference date before as-of classified as an invalid profile", () => {
-    expect(
-      estimate({ referenceDate: "2026-07-31" }),
-    ).toEqual({
+    expect(estimate({ referenceDate: "2026-07-31" })).toEqual({
       estimatedCostMicroUsd: null,
       profileAsOf: null,
       profileValidThrough: null,
@@ -300,9 +298,7 @@ describe("model cost estimation", () => {
   });
 
   it("requires an exact, case-sensitive model ID match", () => {
-    expect(
-      estimate({ actualModelId: actualModelId.toUpperCase() }),
-    ).toEqual({
+    expect(estimate({ actualModelId: actualModelId.toUpperCase() })).toEqual({
       estimatedCostMicroUsd: null,
       profileAsOf: flatProfile.asOf,
       profileValidThrough: flatProfile.validThrough,
@@ -334,9 +330,7 @@ describe("model cost estimation", () => {
       profileVersion: flatProfile.version,
       status: "estimated",
     });
-    expect(
-      estimate({ referenceDate: "2026-08-31" }),
-    ).toEqual({
+    expect(estimate({ referenceDate: "2026-08-31" })).toEqual({
       estimatedCostMicroUsd: null,
       profileAsOf: flatProfile.asOf,
       profileValidThrough: flatProfile.validThrough,
@@ -450,13 +444,14 @@ describe("model cost estimation", () => {
     ["missing no-cache", aggregate({ noCacheTokens: null })],
     ["cache read exceeds input", aggregate({ cacheReadTokens: 101 })],
     ["cache write exceeds input", aggregate({ cacheWriteTokens: 101 })],
-    ["cache tiers double count written tokens", aggregate({ noCacheTokens: 75 })],
+    [
+      "cache tiers double count written tokens",
+      aggregate({ noCacheTokens: 75 }),
+    ],
     ["tiers do not cover input", aggregate({ noCacheTokens: 64 })],
     ["stream incomplete", aggregate({ incomplete: true })],
   ])("fails closed for tiered pricing when %s", (_label, observability) => {
-    expect(
-      estimate({ observability, profile: tieredProfile }),
-    ).toMatchObject({
+    expect(estimate({ observability, profile: tieredProfile })).toMatchObject({
       estimatedCostMicroUsd: null,
       status: "usage_incomplete",
     });

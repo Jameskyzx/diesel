@@ -141,9 +141,7 @@ function assertValidAdmissionInput(
   }
 }
 
-function assertValidHourlyInput(
-  input: ReserveAiChatHourlyRequestInput,
-): void {
+function assertValidHourlyInput(input: ReserveAiChatHourlyRequestInput): void {
   for (const [name, bucket] of [
     ["Global", input.global],
     ["Client", input.client],
@@ -180,7 +178,9 @@ function assertValidHourlyInput(
     nowMs >= expiresAtMs ||
     expiresAtMs - windowStartMs !== HOUR_MS
   ) {
-    throw new Error("Hourly rate-limit window must be one current aligned hour.");
+    throw new Error(
+      "Hourly rate-limit window must be one current aligned hour.",
+    );
   }
 }
 
@@ -205,10 +205,12 @@ function assertValidHourlyCount(count: number, limit: number): void {
   }
 }
 
-const pairRowSchema = z.strictObject({
-  globalCount: z.number().int().nullable(),
-  clientCount: z.number().int().nullable(),
-}).refine((row) => row.globalCount !== null || row.clientCount === null);
+const pairRowSchema = z
+  .strictObject({
+    globalCount: z.number().int().nullable(),
+    clientCount: z.number().int().nullable(),
+  })
+  .refine((row) => row.globalCount !== null || row.clientCount === null);
 const pairRowsSchema = z.array(pairRowSchema).length(1);
 const pairResultSchema = z.union([
   pairRowsSchema,
@@ -354,9 +356,11 @@ export function createRateLimitRepository<
           const { globalCount, clientCount } = readReservedPair(
             await transaction.execute(reservePairQuery({ ...input, units: 1 })),
           );
-          if (globalCount === null) throw new AiChatHourlyRateLimitExhaustedError();
+          if (globalCount === null)
+            throw new AiChatHourlyRateLimitExhaustedError();
           assertValidHourlyCount(globalCount, input.global.limit);
-          if (clientCount === null) throw new AiChatHourlyRateLimitExhaustedError();
+          if (clientCount === null)
+            throw new AiChatHourlyRateLimitExhaustedError();
           assertValidHourlyCount(clientCount, input.client.limit);
           return { allowed: true, clientCount, globalCount } as const;
         });
@@ -392,12 +396,24 @@ export function createRateLimitRepository<
           `);
 
           const { globalCount, clientCount } = readReservedPair(
-            await transaction.execute(reservePairQuery({ ...input, expiresAt: input.resetAt })),
+            await transaction.execute(
+              reservePairQuery({ ...input, expiresAt: input.resetAt }),
+            ),
           );
-          if (globalCount === null) throw new AiChatAdmissionBudgetExhaustedError();
-          assertValidReservedCount(globalCount, input.global.limit, input.units);
-          if (clientCount === null) throw new AiChatAdmissionBudgetExhaustedError();
-          assertValidReservedCount(clientCount, input.client.limit, input.units);
+          if (globalCount === null)
+            throw new AiChatAdmissionBudgetExhaustedError();
+          assertValidReservedCount(
+            globalCount,
+            input.global.limit,
+            input.units,
+          );
+          if (clientCount === null)
+            throw new AiChatAdmissionBudgetExhaustedError();
+          assertValidReservedCount(
+            clientCount,
+            input.client.limit,
+            input.units,
+          );
           return true;
         });
       } catch (error: unknown) {

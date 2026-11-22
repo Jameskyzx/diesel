@@ -57,16 +57,16 @@ jobs:
   it.each([
     ["space", " "],
     ["tab", "\t"],
-  ])("allows a pinned reference followed by a %s-separated comment", (
-    _label,
-    separator,
-  ) => {
-    expect(
-      findUnpinnedWorkflowUses(
-        `steps:\n  - uses: actions/checkout@${commitSha}${separator}# pinned`,
-      ),
-    ).toEqual([]);
-  });
+  ])(
+    "allows a pinned reference followed by a %s-separated comment",
+    (_label, separator) => {
+      expect(
+        findUnpinnedWorkflowUses(
+          `steps:\n  - uses: actions/checkout@${commitSha}${separator}# pinned`,
+        ),
+      ).toEqual([]);
+    },
+  );
 
   it.each([
     ["non-breaking space", "\u00A0"],
@@ -100,7 +100,10 @@ jobs:
   });
 
   it.each([
-    ["service tag", "services:\n      postgres:\n        image: pgvector/pgvector:pg16"],
+    [
+      "service tag",
+      "services:\n      postgres:\n        image: pgvector/pgvector:pg16",
+    ],
     ["job-container tag", "container:\n      image: node:22"],
     ["scalar job-container tag", "container: node:22"],
     [
@@ -115,10 +118,7 @@ jobs:
       "flow-mapped services",
       `services: {postgres: {image: pgvector/pgvector@sha256:${digest}}}`,
     ],
-    [
-      "flow-mapped job container",
-      `container: {image: node@sha256:${digest}}`,
-    ],
+    ["flow-mapped job container", `container: {image: node@sha256:${digest}}`],
     ["aliased services", "services: *postgresServices"],
     [
       "anchored service definition",
@@ -134,10 +134,7 @@ jobs:
     ],
     ["dynamic services", "services: ${{ matrix.postgresServices }}"],
     ["aliased job container", "container: *buildContainer"],
-    [
-      "merged job container",
-      "container:\n      <<: *buildContainer",
-    ],
+    ["merged job container", "container:\n      <<: *buildContainer"],
     ["empty service image", "services:\n      postgres:\n        image:"],
   ])("rejects a mutable or malformed %s", (_label, fragment) => {
     expect(
@@ -145,7 +142,8 @@ jobs:
     ).toEqual([
       expect.objectContaining({
         file: "ci.yml",
-        reason: "Service and job container images must use an immutable sha256 digest",
+        reason:
+          "Service and job container images must use an immutable sha256 digest",
       }),
     ]);
   });
@@ -192,30 +190,15 @@ jobs:
       "next-line flow-mapped job",
       "jobs:\n  quality:\n    {steps: [{uses: actions/checkout@v4}]}",
     ],
-    [
-      "aliased job",
-      "jobs:\n  quality: *sharedJob",
-    ],
+    ["aliased job", "jobs:\n  quality: *sharedJob"],
     [
       "anchored job",
       "jobs:\n  quality: &sharedJob\n    steps:\n      - uses: actions/checkout@0123456789abcdef0123456789abcdef01234567",
     ],
-    [
-      "dynamic job",
-      "jobs:\n  quality: ${{ fromJSON(inputs.job) }}",
-    ],
-    [
-      "dynamic jobs",
-      "jobs: ${{ fromJSON(inputs.jobs) }}",
-    ],
-    [
-      "aliased steps",
-      "jobs:\n  quality:\n    steps: *sharedSteps",
-    ],
-    [
-      "anchored steps",
-      "jobs:\n  quality:\n    steps: &sharedSteps",
-    ],
+    ["dynamic job", "jobs:\n  quality: ${{ fromJSON(inputs.job) }}"],
+    ["dynamic jobs", "jobs: ${{ fromJSON(inputs.jobs) }}"],
+    ["aliased steps", "jobs:\n  quality:\n    steps: *sharedSteps"],
+    ["anchored steps", "jobs:\n  quality:\n    steps: &sharedSteps"],
     [
       "flow steps",
       "jobs:\n  quality:\n    steps: [{uses: actions/checkout@v4}]",
@@ -232,10 +215,7 @@ jobs:
       "flow-mapped step item",
       "jobs:\n  quality:\n    steps:\n      - {uses: actions/checkout@v4}",
     ],
-    [
-      "aliased step item",
-      "jobs:\n  quality:\n    steps:\n      - *sharedStep",
-    ],
+    ["aliased step item", "jobs:\n  quality:\n    steps:\n      - *sharedStep"],
     [
       "bare nested step item",
       "jobs:\n  quality:\n    steps:\n      -\n        uses: actions/checkout@v4",
@@ -275,7 +255,7 @@ jobs:
     ],
     [
       "escaped uses key",
-      "jobs:\n  quality:\n    steps:\n      - \"us\\u0065s\": actions/checkout@v4",
+      'jobs:\n  quality:\n    steps:\n      - "us\\u0065s": actions/checkout@v4',
     ],
   ])("rejects a non-block %s that can hide uses", (_label, source) => {
     expect(findUnpinnedWorkflowUses(source, "ci.yml")).toEqual([

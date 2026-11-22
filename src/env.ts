@@ -7,21 +7,18 @@ const optionalTrimmedString = z.preprocess(
   z.string().trim().min(1).optional(),
 );
 
-const optionalBoolean = z.preprocess(
-  (value) => {
-    if (value === "") {
-      return undefined;
-    }
-    if (value === "true") {
-      return true;
-    }
-    if (value === "false") {
-      return false;
-    }
-    return value;
-  },
-  z.boolean().optional(),
-);
+const optionalBoolean = z.preprocess((value) => {
+  if (value === "") {
+    return undefined;
+  }
+  if (value === "true") {
+    return true;
+  }
+  if (value === "false") {
+    return false;
+  }
+  return value;
+}, z.boolean().optional());
 
 const optionalAiAdmissionUnitLimit = z.preprocess(
   (value) => (value === "" ? undefined : value),
@@ -41,26 +38,14 @@ const serverEnvSchema = z.object({
     optionalAiAdmissionUnitLimit,
   AI_CHAT_ADMISSION_GLOBAL_PROVIDER_CALL_UNITS_PER_DAY:
     optionalAiAdmissionUnitLimit,
-  AI_CHAT_RATE_LIMIT_BACKEND: z
-    .enum(["memory", "postgres"])
-    .optional(),
+  AI_CHAT_RATE_LIMIT_BACKEND: z.enum(["memory", "postgres"]).optional(),
   AI_CHAT_RATE_LIMIT_GLOBAL_PER_HOUR: z.preprocess(
     (value) => (value === "" ? undefined : value),
-    z.coerce
-      .number()
-      .int()
-      .positive()
-      .max(10_000)
-      .default(10_000),
+    z.coerce.number().int().positive().max(10_000).default(10_000),
   ),
   AI_CHAT_RATE_LIMIT_PER_HOUR: z.preprocess(
     (value) => (value === "" ? undefined : value),
-    z.coerce
-      .number()
-      .int()
-      .positive()
-      .max(10_000)
-      .default(30),
+    z.coerce.number().int().positive().max(10_000).default(30),
   ),
   AI_COST_PROFILE_JSON: optionalTrimmedString,
   AI_API_KEY: z.preprocess(
@@ -76,12 +61,7 @@ const serverEnvSchema = z.object({
   APP_VERSION: z.string().trim().min(1).default("dev"),
   COUNTRY_STALE_AFTER_DAYS: z.preprocess(
     (value) => (value === "" ? undefined : value),
-    z.coerce
-      .number()
-      .int()
-      .positive()
-      .max(3650)
-      .default(90),
+    z.coerce.number().int().positive().max(3650).default(90),
   ),
   NODE_ENV: z
     .enum(["development", "test", "production"])

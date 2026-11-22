@@ -50,10 +50,17 @@ export function buildEvidenceGapResponse(
     if (result.status === "ok" && result.evidenceSufficient) {
       continue;
     }
-    const period = result.tool === "getCountryProfile" ? result.marketPeriod
-      : result.tool === "compareMarkets" ? result.comparison.query.marketPeriod : undefined;
-    if (period) details.add((locale === "en" ? "Requested reporting period: " : "请求的统计期：") +
-      marketObservationPeriod(period.start, period.end, locale));
+    const period =
+      result.tool === "getCountryProfile"
+        ? result.marketPeriod
+        : result.tool === "compareMarkets"
+          ? result.comparison.query.marketPeriod
+          : undefined;
+    if (period)
+      details.add(
+        (locale === "en" ? "Requested reporting period: " : "请求的统计期：") +
+          marketObservationPeriod(period.start, period.end, locale),
+      );
 
     if (result.tool === "getCountryProfile") {
       if (!result.resolvedCountryIso3) {

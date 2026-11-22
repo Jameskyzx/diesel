@@ -84,9 +84,7 @@ const reviewer = {
 };
 const marketReadbackReason =
   "M3 official market facts: 2022/2023 registration tables and deterministic YoY, signed off in docs/ACCEPTANCE.md (ADR-020).";
-const ingestOptions = parseIngestOptions(
-  process.argv.slice(2),
-);
+const ingestOptions = parseIngestOptions(process.argv.slice(2));
 const { countryIso3: targetCountryIso3, marketOnly } = ingestOptions;
 const signoffReason =
   "M3 regulation coverage: facts signed off in docs/ACCEPTANCE.md (ADR-015/042).";
@@ -103,7 +101,7 @@ const SIGNOFF_ISO = "2026-07-30T00:00:00.000Z";
 const AFRICA_DEEP_REVIEW_SIGNOFF_ISO = "2026-08-10T17:13:30.000Z";
 const GULF_DEEP_REVIEW_SIGNOFF_ISO = "2026-08-10T18:48:04.000Z";
 const MAR_KEN_SOURCE_REFRESH_SIGNOFF_ISO = "2026-08-10T18:48:04.000Z";
-const CHINA_NONROAD_COMPLETENESS_SIGNOFF_ISO = "2026-08-11T04:38:07.000Z";
+const CHINA_NONROAD_COMPLETENESS_SIGNOFF_ISO = "2026-11-17T08:38:02.000Z";
 const EU_MEMBERSHIP_SIGNOFF_ISO = "2026-08-11T04:27:59.000Z";
 const JAPAN_SIGNOFF_ISO = "2026-08-06T02:41:52.000Z";
 const KOREA_SIGNOFF_ISO = "2026-08-06T04:57:42.000Z";
@@ -739,15 +737,20 @@ function countrySignoffVerifiedAt(iso3: string): string {
   if (maliCountrySet.has(iso3)) return "2026-08-10T08:31:37.000Z";
   if (myanmarCountrySet.has(iso3)) return ASIA_FIVE_GATE_REVIEW_SIGNOFF_ISO;
   if (mauritaniaCountrySet.has(iso3)) return "2026-08-10T08:31:37.000Z";
-  if (newCaledoniaCountrySet.has(iso3)) return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
+  if (newCaledoniaCountrySet.has(iso3))
+    return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
   if (nigerCountrySet.has(iso3)) return "2026-08-10T09:11:38.000Z";
   if (nicaraguaCountrySet.has(iso3)) return LATAM_SOURCE_REFRESH_SIGNOFF_ISO;
   if (papuaNewGuineaCountrySet.has(iso3)) return "2026-08-10T23:00:23.000Z";
-  if (puertoRicoCountrySet.has(iso3)) return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
-  if (northKoreaCountrySet.has(iso3)) return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
+  if (puertoRicoCountrySet.has(iso3))
+    return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
+  if (northKoreaCountrySet.has(iso3))
+    return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
   if (paraguayCountrySet.has(iso3)) return LATAM_SOURCE_REFRESH_SIGNOFF_ISO;
-  if (palestineCountrySet.has(iso3)) return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
-  if (sudanCountrySet.has(iso3)) return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
+  if (palestineCountrySet.has(iso3))
+    return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
+  if (sudanCountrySet.has(iso3))
+    return PRK_PSE_SDN_PRI_NCL_SOURCE_REFRESH_SIGNOFF_ISO;
   if (solomonIslandsCountrySet.has(iso3)) {
     return TWELVE_COUNTRY_SOURCE_ONLY_REFRESH_SIGNOFF_ISO;
   }
@@ -1048,13 +1051,16 @@ const ingestedSourceIds = new Set<string>([
   acceptanceFixtureIds.source.cubaTransport,
   acceptanceFixtureIds.source.djiboutiEnvironment,
   acceptanceFixtureIds.source.djiboutiTransport,
-  acceptanceFixtureIds.source.eritreaEnvironmentalProtectionManagementRegulations127_2017,
-  acceptanceFixtureIds.source.eritreaVehicleTechnicalStandardsRegulations61_2002,
+  acceptanceFixtureIds.source
+    .eritreaEnvironmentalProtectionManagementRegulations127_2017,
+  acceptanceFixtureIds.source
+    .eritreaVehicleTechnicalStandardsRegulations61_2002,
   acceptanceFixtureIds.source.gabonEnvironmentalProtectionLaw007_2014,
   acceptanceFixtureIds.source.gabonHeavyVehicleHomologationOrder00097_2017,
   acceptanceFixtureIds.source.guineaEnvironment,
   acceptanceFixtureIds.source.guineaTransport,
-  acceptanceFixtureIds.source.gambiaEnvironmentalQualityStandardsRegulations1999,
+  acceptanceFixtureIds.source
+    .gambiaEnvironmentalQualityStandardsRegulations1999,
   acceptanceFixtureIds.source.gambiaMotorTrafficAmendmentAct2013,
   acceptanceFixtureIds.source.guineaBissauBasicEnvironmentLaw1_2011,
   acceptanceFixtureIds.source.guineaBissauTransportMinistryDirectory,
@@ -1455,10 +1461,7 @@ const ingestedCountryMemberships = new Set<string>([
   ...euMemberCountryIso3,
 ]);
 const coveredCountryIso3 = [
-  ...new Set([
-    ...explicitlyCoveredCountryIso3,
-    ...ingestedCountryMemberships,
-  ]),
+  ...new Set([...explicitlyCoveredCountryIso3, ...ingestedCountryMemberships]),
 ];
 
 function assertExactSelectionSet(
@@ -1517,12 +1520,9 @@ async function main(): Promise<void> {
       )
       .map((jurisdiction) => jurisdiction.code),
   );
-  assertExactSelectionSet(
-    "source",
-    ingestedSourceIds,
-    derivedFullSourceIds,
-    { allowSupplementaryEntries: true },
-  );
+  assertExactSelectionSet("source", ingestedSourceIds, derivedFullSourceIds, {
+    allowSupplementaryEntries: true,
+  });
   assertExactSelectionSet(
     "regulation",
     ingestedRegulationIds,
@@ -1695,18 +1695,17 @@ async function main(): Promise<void> {
         jurisdictionId,
         signedCountryIso3s: ingestedCountryMemberships,
         targetCountryIso3: targetSelection?.countryIso3,
-      })
-        .map((membership) => ({
-          countryIso3: membership.countryIso3,
-          dataSourceId: membership.dataSourceId,
-          isDemo: membership.isDemo,
-          validFrom: membership.validFrom,
-          validTo: membership.validTo ?? null,
-          verifiedAt: requireVerifiedAt(
-            membership.verifiedAt,
-            `jurisdiction membership ${membership.countryIso3}`,
-          ),
-        }));
+      }).map((membership) => ({
+        countryIso3: membership.countryIso3,
+        dataSourceId: membership.dataSourceId,
+        isDemo: membership.isDemo,
+        validFrom: membership.validFrom,
+        validTo: membership.validTo ?? null,
+        verifiedAt: requireVerifiedAt(
+          membership.verifiedAt,
+          `jurisdiction membership ${membership.countryIso3}`,
+        ),
+      }));
       const draft = await governance.createDraft({
         actor: editor,
         changeReason: signoffReason,
@@ -1751,7 +1750,8 @@ async function main(): Promise<void> {
           ingestedCountryMemberships.has(countryIso3),
         );
     for (const countryIso3 of marketOnly ? [] : countriesToRetire) {
-      const retiredRegulationIds = retiredRegulationIdsByCountry.get(countryIso3);
+      const retiredRegulationIds =
+        retiredRegulationIdsByCountry.get(countryIso3);
       if (!retiredRegulationIds) {
         continue;
       }
@@ -1805,10 +1805,7 @@ async function main(): Promise<void> {
         unitCode: limit.unitCode,
         validFrom: limit.validFrom,
         validTo: limit.validTo ?? null,
-        verifiedAt: requireVerifiedAt(
-          limit.verifiedAt,
-          `limit ${limit.id}`,
-        ),
+        verifiedAt: requireVerifiedAt(limit.verifiedAt, `limit ${limit.id}`),
       });
       limitsByRegulation.set(limit.regulationId, list);
     }
@@ -2129,11 +2126,9 @@ async function main(): Promise<void> {
           "ESC:NOX": 2,
           "ETC:PM": 0.03,
         },
-        name:
-          "THA TIS 3046 starts exactly on 2024-01-01 and preserves non-road no-data",
+        name: "THA TIS 3046 starts exactly on 2024-01-01 and preserves non-road no-data",
         powerKw: 150,
-        regulationId:
-          acceptanceFixtureIds.regulation.thailandHeavyDieselLevel6,
+        regulationId: acceptanceFixtureIds.regulation.thailandHeavyDieselLevel6,
       },
       BIH: {
         beforeEffectiveFrom: "2019-05-31",
@@ -2143,8 +2138,7 @@ async function main(): Promise<void> {
           "WHSC:PN": 800,
           "WHTC:NOX": 460,
         },
-        name:
-          "BIH UN R49/06 starts exactly on 2019-06-01 and preserves non-road no-data",
+        name: "BIH UN R49/06 starts exactly on 2019-06-01 and preserves non-road no-data",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.bosniaR49Series06,
       },
@@ -2160,8 +2154,7 @@ async function main(): Promise<void> {
           "WNTE:PM": 16,
         },
         includedPowerKw: 15.001,
-        name:
-          "MNE Euro VI starts exactly on 2018-10-15 with a strict >15 kW boundary",
+        name: "MNE Euro VI starts exactly on 2018-10-15 with a strict >15 kW boundary",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.montenegroEuroVi,
       },
@@ -2175,8 +2168,7 @@ async function main(): Promise<void> {
           "WNTE:NOX": 600,
           "WNTE:PM": 16,
         },
-        name:
-          "NPL Standard 2082 starts exactly on 2025-06-23 and preserves excluded machinery no-data",
+        name: "NPL Standard 2082 starts exactly on 2025-06-23 and preserves excluded machinery no-data",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.nepalHeavyVehicle2082,
       },
@@ -2191,8 +2183,7 @@ async function main(): Promise<void> {
         },
         finalIncludedAsOf: "2026-12-31",
         firstExcludedAsOf: "2027-01-01",
-        name:
-          "UKR Euro V starts on 2016-01-01, remains through 2026-12-31 and fails closed on 2027-01-01",
+        name: "UKR Euro V starts on 2016-01-01, remains through 2026-12-31 and fails closed on 2027-01-01",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.ukraineRoadEuroV,
       },
@@ -2206,11 +2197,9 @@ async function main(): Promise<void> {
           "88/77/EEC (91/542/EEC):NOX": 7,
           "88/77/EEC (91/542/EEC):PM": 0.15,
         },
-        name:
-          "BGD Air Pollution Rules Schedule 2 starts exactly on 2022-07-26 and preserves non-road no-data",
+        name: "BGD Air Pollution Rules Schedule 2 starts exactly on 2022-07-26 and preserves non-road no-data",
         powerKw: 150,
-        regulationId:
-          acceptanceFixtureIds.regulation.bangladeshHeavyDiesel2022,
+        regulationId: acceptanceFixtureIds.regulation.bangladeshHeavyDiesel2022,
       },
       BOL: {
         beforeEffectiveFrom: "2022-03-31",
@@ -2222,8 +2211,7 @@ async function main(): Promise<void> {
           "ECE 49:NOX": 7,
           "ECE 49:PM": 0.15,
         },
-        name:
-          "BOL RM 064 Annex III starts exactly on 2022-04-01 and preserves non-road no-data",
+        name: "BOL RM 064 Annex III starts exactly on 2022-04-01 and preserves non-road no-data",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.boliviaRm064HeavyDiesel,
       },
@@ -2237,8 +2225,7 @@ async function main(): Promise<void> {
           "ECE R49.02B / European 13-mode:NOX": 7,
           "ECE R49.02B / European 13-mode:PM": 0.15,
         },
-        name:
-          "ZAF SANS/ECE R49.02B representative route starts at the full manufacture/import boundary and preserves non-road no-data",
+        name: "ZAF SANS/ECE R49.02B representative route starts at the full manufacture/import boundary and preserves non-road no-data",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.southAfricaR4902B,
       },
@@ -2253,8 +2240,7 @@ async function main(): Promise<void> {
           "WHTC:NOX": 460,
           "WHTC:PN": 600,
         },
-        name:
-          "ARE Euro VI/B generic road limits start at the all-import boundary on 2027-07-01 and preserve the 2026 new-model caveat plus non-road no-data",
+        name: "ARE Euro VI/B generic road limits start at the all-import boundary on 2027-07-01 and preserve the 2026 new-model caveat plus non-road no-data",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.uaeHeavyVehicleEuro6B,
       },
@@ -2267,8 +2253,7 @@ async function main(): Promise<void> {
           "ESC:NOX": 2,
           "ETC:PM": 0.03,
         },
-        name:
-          "SAU MY2026 Euro V representative route preserves the normalized model-year and non-road no-data boundaries",
+        name: "SAU MY2026 Euro V representative route preserves the normalized model-year and non-road no-data boundaries",
         powerKw: 150,
         regulationId:
           acceptanceFixtureIds.regulation.saudiHeavyVehicleEuroVMy2026,
@@ -2283,8 +2268,7 @@ async function main(): Promise<void> {
           "ECE-49:NOX": 7,
           "ECE-49:PM": 0.15,
         },
-        name:
-          "ECU RTE 017 / NTE 2207 ECE-49 route starts exactly on 2009-02-07 and preserves the explicit machinery exclusions",
+        name: "ECU RTE 017 / NTE 2207 ECE-49 route starts exactly on 2009-02-07 and preserves the explicit machinery exclusions",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.ecuadorHeavyDieselRte017,
       },
@@ -2301,8 +2285,7 @@ async function main(): Promise<void> {
           "ETC:NOX": 3.5,
           "ETC:PM": 0.03,
         },
-        name:
-          "PHL LTO MC AVT-2015-1946 starts Euro IV for new heavy-duty vehicles exactly on 2016-01-01 and preserves non-road no-data",
+        name: "PHL LTO MC AVT-2015-1946 starts Euro IV for new heavy-duty vehicles exactly on 2016-01-01 and preserves non-road no-data",
         powerKw: 150,
         regulationId:
           acceptanceFixtureIds.regulation.philippinesHeavyDieselEuroIv,
@@ -2322,8 +2305,7 @@ async function main(): Promise<void> {
           "ETC:NOX": 3.5,
           "ETC:PM": 0.03,
         },
-        name:
-          "RWA RS EAS 1047:2022 Euro IV new-heavy-duty road pathway starts exactly on 2023-01-23 and preserves non-road no-data",
+        name: "RWA RS EAS 1047:2022 Euro IV new-heavy-duty road pathway starts exactly on 2023-01-23 and preserves non-road no-data",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.rwandaRoadEuroIv,
       },
@@ -2337,8 +2319,7 @@ async function main(): Promise<void> {
           "ECE-R-49:NOX": 7,
           "ECE-R-49:PM": 0.15,
         },
-        name:
-          "PAK S.R.O. 72(KE)/2009 applies Pak-II ECE-R-49 to imported and locally manufactured truck/bus diesel engines from 2012-07-01",
+        name: "PAK S.R.O. 72(KE)/2009 applies Pak-II ECE-R-49 to imported and locally manufactured truck/bus diesel engines from 2012-07-01",
         powerKw: 150,
         regulationId: acceptanceFixtureIds.regulation.pakistanHeavyDieselPakIi,
       },
@@ -2351,10 +2332,7 @@ async function main(): Promise<void> {
       const currentAsOf = config.currentAsOf ?? "2026-08-10";
       const query = (
         applicationScope:
-          | "on-road-truck"
-          | "on-road-bus"
-          | "construction"
-          | "agriculture",
+          "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
         asOf: string,
         powerKw = config.powerKw,
       ) =>
@@ -2396,29 +2374,29 @@ async function main(): Promise<void> {
       const expectedValuesMatch = Object.entries(config.expectedValues).every(
         ([key, value]) => values.get(key) === value,
       );
-      const [includedPowerRows, excludedPowerRows, finalIncludedRows, firstExcludedRows] =
-        await Promise.all([
-          config.includedPowerKw === undefined
-            ? Promise.resolve(null)
-            : query(
-                "on-road-truck",
-                config.effectiveFrom,
-                config.includedPowerKw,
-              ),
-          config.excludedPowerKw === undefined
-            ? Promise.resolve(null)
-            : query(
-                "on-road-truck",
-                currentAsOf,
-                config.excludedPowerKw,
-              ),
-          config.finalIncludedAsOf === undefined
-            ? Promise.resolve(null)
-            : query("on-road-truck", config.finalIncludedAsOf),
-          config.firstExcludedAsOf === undefined
-            ? Promise.resolve(null)
-            : query("on-road-truck", config.firstExcludedAsOf),
-        ]);
+      const [
+        includedPowerRows,
+        excludedPowerRows,
+        finalIncludedRows,
+        firstExcludedRows,
+      ] = await Promise.all([
+        config.includedPowerKw === undefined
+          ? Promise.resolve(null)
+          : query(
+              "on-road-truck",
+              config.effectiveFrom,
+              config.includedPowerKw,
+            ),
+        config.excludedPowerKw === undefined
+          ? Promise.resolve(null)
+          : query("on-road-truck", currentAsOf, config.excludedPowerKw),
+        config.finalIncludedAsOf === undefined
+          ? Promise.resolve(null)
+          : query("on-road-truck", config.finalIncludedAsOf),
+        config.firstExcludedAsOf === undefined
+          ? Promise.resolve(null)
+          : query("on-road-truck", config.firstExcludedAsOf),
+      ]);
       return (
         before.length === 0 &&
         truckAtStart.length === config.expectedRoadRows &&
@@ -2477,12 +2455,14 @@ async function main(): Promise<void> {
       countryIso3: (typeof signedNoDataCountryIso3s)[number],
     ): Promise<boolean> => {
       const rows = await Promise.all(
-        ([
-          "on-road-truck",
-          "on-road-bus",
-          "construction",
-          "agriculture",
-        ] as const).map((applicationScope) =>
+        (
+          [
+            "on-road-truck",
+            "on-road-bus",
+            "construction",
+            "agriculture",
+          ] as const
+        ).map((applicationScope) =>
           regulationRepository.findEffectiveByCountry({
             applicationScope,
             asOf: "2026-08-11",
@@ -2522,10 +2502,7 @@ async function main(): Promise<void> {
     ): Promise<boolean> => {
       const query = (
         applicationScope:
-          | "on-road-truck"
-          | "on-road-bus"
-          | "construction"
-          | "agriculture",
+          "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
         asOf: string,
         powerKw: number,
       ) =>
@@ -2543,16 +2520,21 @@ async function main(): Promise<void> {
         countryIso3 === "UZB"
           ? ([0, 3, 3, 0] as const)
           : ([0, 3, 3, 3, 3, 3, 0] as const);
-      const [truckRows, busRows, constructionRows, agricultureRows, ...powerRows] =
-        await Promise.all([
-          query("on-road-truck", "2026-08-10", 150),
-          query("on-road-bus", "2026-08-10", 150),
-          query("construction", "2026-08-10", 150),
-          query("agriculture", "2026-08-10", 150),
-          ...powerBoundaries.map((powerKw) =>
-            query("agriculture", "2026-08-10", powerKw),
-          ),
-        ]);
+      const [
+        truckRows,
+        busRows,
+        constructionRows,
+        agricultureRows,
+        ...powerRows
+      ] = await Promise.all([
+        query("on-road-truck", "2026-08-10", 150),
+        query("on-road-bus", "2026-08-10", 150),
+        query("construction", "2026-08-10", 150),
+        query("agriculture", "2026-08-10", 150),
+        ...powerBoundaries.map((powerKw) =>
+          query("agriculture", "2026-08-10", powerKw),
+        ),
+      ]);
       const beforeAgriculture = await query(
         "agriculture",
         countryIso3 === "UZB" ? "2025-09-30" : "2024-12-31",
@@ -2592,11 +2574,7 @@ async function main(): Promise<void> {
           Number(row.limit.limitValue),
         ]),
       );
-      const beforeRoad = await query(
-        "on-road-truck",
-        "2018-12-31",
-        150,
-      );
+      const beforeRoad = await query("on-road-truck", "2018-12-31", 150);
       const [earlyBandAtStart, laterBandBeforeStart, laterBandAtStart] =
         await Promise.all([
           query("agriculture", "2025-01-01", 37),
@@ -2656,10 +2634,7 @@ async function main(): Promise<void> {
     ): Promise<boolean> => {
       const query = (
         applicationScope:
-          | "on-road-truck"
-          | "on-road-bus"
-          | "construction"
-          | "agriculture",
+          "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
         asOf: string,
         powerKw: number,
       ) =>
@@ -2670,8 +2645,7 @@ async function main(): Promise<void> {
           powerKw,
         });
       const config = caucasusRegulationIds[countryIso3];
-      const beforeRoad =
-        countryIso3 === "GEO" ? "2024-12-31" : "2018-12-31";
+      const beforeRoad = countryIso3 === "GEO" ? "2024-12-31" : "2018-12-31";
       const [
         truckRows,
         busRows,
@@ -2758,10 +2732,7 @@ async function main(): Promise<void> {
     const runIsraelBoundaryCheck = async (): Promise<boolean> => {
       const query = (
         applicationScope:
-          | "on-road-truck"
-          | "on-road-bus"
-          | "construction"
-          | "agriculture",
+          "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
         asOf: string,
         powerKw: number,
       ) =>
@@ -2848,10 +2819,7 @@ async function main(): Promise<void> {
     const runSriLankaBoundaryCheck = async (): Promise<boolean> => {
       const query = (
         applicationScope:
-          | "on-road-truck"
-          | "on-road-bus"
-          | "construction"
-          | "agriculture",
+          "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
         asOf: string,
         powerKw: number,
       ) =>
@@ -2890,8 +2858,8 @@ async function main(): Promise<void> {
       const valuesFor = (pollutantCode: string) =>
         constructionRows.map((rows) =>
           Number(
-            rows.find((row) => row.limit.pollutantCode === pollutantCode)
-              ?.limit.limitValue,
+            rows.find((row) => row.limit.pollutantCode === pollutantCode)?.limit
+              .limitValue,
           ),
         );
       return (
@@ -2920,8 +2888,7 @@ async function main(): Promise<void> {
             ) &&
             rows.some((row) => row.limit.pollutantCode === "HC+NOx") &&
             rows.every(
-              (row) =>
-                !["HC", "THC", "NOX"].includes(row.limit.pollutantCode),
+              (row) => !["HC", "THC", "NOX"].includes(row.limit.pollutantCode),
             ),
         ) &&
         valuesFor("CO").join(",") === "8,6.6,5.5,5,5,3.5" &&
@@ -2935,10 +2902,7 @@ async function main(): Promise<void> {
     const runAustraliaBoundaryCheck = async (): Promise<boolean> => {
       const query = (
         applicationScope:
-          | "on-road-truck"
-          | "on-road-bus"
-          | "construction"
-          | "agriculture",
+          "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
         asOf: string,
       ) =>
         regulationRepository.findEffectiveByCountry({
@@ -2980,7 +2944,8 @@ async function main(): Promise<void> {
         adr803Rows.every(
           (row) =>
             row.citationCode === "ADR 80/03" &&
-            row.limit.sourceId === acceptanceFixtureIds.source.australiaAdr80_03,
+            row.limit.sourceId ===
+              acceptanceFixtureIds.source.australiaAdr80_03,
         ) &&
         adr803AtStart.some(
           (row) =>
@@ -2994,7 +2959,8 @@ async function main(): Promise<void> {
         adr804Rows.every(
           (row) =>
             row.citationCode === "ADR 80/04" &&
-            row.limit.sourceId === acceptanceFixtureIds.source.australiaAdr80_04,
+            row.limit.sourceId ===
+              acceptanceFixtureIds.source.australiaAdr80_04,
         ) &&
         adr804Values.get("WHSC:CO") === 1500 &&
         adr804Values.get("WHSC:THC") === 130 &&
@@ -3140,7 +3106,9 @@ async function main(): Promise<void> {
           "3,4,5,5,5,3,3,4,5,5,5,3" &&
         stage3PowerRows.every((rows, index) => {
           const expected = stage3PowerCases[index % stage3PowerCases.length];
-          return expected !== undefined && matchesStage3PowerCase(rows, expected);
+          return (
+            expected !== undefined && matchesStage3PowerCase(rows, expected)
+          );
         }) &&
         valuesFor(currentRows[4] ?? []).get("NOX") === 2 &&
         valuesFor(currentRows[5] ?? []).get("HC+NOx") === 6.4 &&
@@ -3176,53 +3144,59 @@ async function main(): Promise<void> {
             row.limit.pollutantCode !== "NH3",
         ) &&
         cnMeeJurisdiction?.code === "CN-MEE" &&
-        cnMeeJurisdiction.source.id ===
-          acceptanceFixtureIds.source.cnHj1014 &&
+        cnMeeJurisdiction.source.id === acceptanceFixtureIds.source.cnHj1014 &&
         cnMeeJurisdiction.source.verifiedAt.toISOString() ===
           CHINA_NONROAD_COMPLETENESS_SIGNOFF_ISO
       );
     };
 
     const runMaltaMembershipBoundaryCheck = async (): Promise<boolean> => {
-      const [beforeAccession, atAccession, current, roadTruck, roadBus, plant, agri] =
-        await Promise.all([
-          countryRepository.findDetailsByIso3({
-            asOf: "2004-04-30",
-            iso3: "MLT",
-          }),
-          countryRepository.findDetailsByIso3({
-            asOf: "2004-05-01",
-            iso3: "MLT",
-          }),
-          countryRepository.findDetailsByIso3({
-            asOf: "2026-08-11",
-            iso3: "MLT",
-          }),
-          regulationRepository.findEffectiveByCountry({
-            applicationScope: "on-road-truck",
-            asOf: "2026-08-11",
-            countryIso3: "MLT",
-            powerKw: 300,
-          }),
-          regulationRepository.findEffectiveByCountry({
-            applicationScope: "on-road-bus",
-            asOf: "2026-08-11",
-            countryIso3: "MLT",
-            powerKw: 300,
-          }),
-          regulationRepository.findEffectiveByCountry({
-            applicationScope: "construction",
-            asOf: "2026-08-11",
-            countryIso3: "MLT",
-            powerKw: 150,
-          }),
-          regulationRepository.findEffectiveByCountry({
-            applicationScope: "agriculture",
-            asOf: "2026-08-11",
-            countryIso3: "MLT",
-            powerKw: 150,
-          }),
-        ]);
+      const [
+        beforeAccession,
+        atAccession,
+        current,
+        roadTruck,
+        roadBus,
+        plant,
+        agri,
+      ] = await Promise.all([
+        countryRepository.findDetailsByIso3({
+          asOf: "2004-04-30",
+          iso3: "MLT",
+        }),
+        countryRepository.findDetailsByIso3({
+          asOf: "2004-05-01",
+          iso3: "MLT",
+        }),
+        countryRepository.findDetailsByIso3({
+          asOf: "2026-08-11",
+          iso3: "MLT",
+        }),
+        regulationRepository.findEffectiveByCountry({
+          applicationScope: "on-road-truck",
+          asOf: "2026-08-11",
+          countryIso3: "MLT",
+          powerKw: 300,
+        }),
+        regulationRepository.findEffectiveByCountry({
+          applicationScope: "on-road-bus",
+          asOf: "2026-08-11",
+          countryIso3: "MLT",
+          powerKw: 300,
+        }),
+        regulationRepository.findEffectiveByCountry({
+          applicationScope: "construction",
+          asOf: "2026-08-11",
+          countryIso3: "MLT",
+          powerKw: 150,
+        }),
+        regulationRepository.findEffectiveByCountry({
+          applicationScope: "agriculture",
+          asOf: "2026-08-11",
+          countryIso3: "MLT",
+          powerKw: 150,
+        }),
+      ]);
       const membership = current?.jurisdictions[0];
 
       return (
@@ -3253,10 +3227,7 @@ async function main(): Promise<void> {
     const runCanadaBoundaryCheck = async (): Promise<boolean> => {
       const query = (
         applicationScope:
-          | "on-road-truck"
-          | "on-road-bus"
-          | "construction"
-          | "agriculture",
+          "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
         asOf: string,
         powerKw: number,
       ) =>
@@ -3296,11 +3267,10 @@ async function main(): Promise<void> {
         ),
       ]);
       const nonroadPowerRows = await Promise.all(
-        (["construction", "agriculture"] as const).flatMap(
-          (applicationScope) =>
-            cfr1039RoundedPowerCases.map(({ powerKw }) =>
-              query(applicationScope, "2026-08-10", powerKw),
-            ),
+        (["construction", "agriculture"] as const).flatMap((applicationScope) =>
+          cfr1039RoundedPowerCases.map(({ powerKw }) =>
+            query(applicationScope, "2026-08-10", powerKw),
+          ),
         ),
       );
       const expectedRoadValues = new Map([
@@ -3343,9 +3313,7 @@ async function main(): Promise<void> {
         agricultureAboveUpperBoundary.length === 0 &&
         nonroadPowerRows.every((rows, index) => {
           const expected =
-            cfr1039RoundedPowerCases[
-              index % cfr1039RoundedPowerCases.length
-            ];
+            cfr1039RoundedPowerCases[index % cfr1039RoundedPowerCases.length];
           return (
             expected !== undefined &&
             matchesCfr1039RoundedPowerCase(
@@ -3376,8 +3344,7 @@ async function main(): Promise<void> {
             row.regulationId ===
               acceptanceFixtureIds.regulation.canadaOffroad2020 &&
             row.limit.sourceId === acceptanceFixtureIds.source.usEcfr1039 &&
-            row.limit.testCycleCode ===
-              "NRTC AND NRSC-C1 (8-mode OR RMC)" &&
+            row.limit.testCycleCode === "NRTC AND NRSC-C1 (8-mode OR RMC)" &&
             row.limit.validFrom === "2021-06-04" &&
             row.limit.verifiedAt.toISOString() ===
               CANADA_COMPLETENESS_SIGNOFF_ISO,
@@ -3388,10 +3355,7 @@ async function main(): Promise<void> {
     const runUnitedStatesBoundaryCheck = async (): Promise<boolean> => {
       const query = (
         applicationScope:
-          | "on-road-truck"
-          | "on-road-bus"
-          | "construction"
-          | "agriculture",
+          "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
         asOf: string,
         powerKw: number,
       ) =>
@@ -3433,11 +3397,10 @@ async function main(): Promise<void> {
         ),
       ]);
       const nonroadPowerRows = await Promise.all(
-        (["construction", "agriculture"] as const).flatMap(
-          (applicationScope) =>
-            cfr1039RoundedPowerCases.map(({ powerKw }) =>
-              query(applicationScope, "2026-08-10", powerKw),
-            ),
+        (["construction", "agriculture"] as const).flatMap((applicationScope) =>
+          cfr1039RoundedPowerCases.map(({ powerKw }) =>
+            query(applicationScope, "2026-08-10", powerKw),
+          ),
         ),
       );
       const valuesFor = (
@@ -3459,11 +3422,7 @@ async function main(): Promise<void> {
       );
       const cfr86Rows = [...truckBefore2027, ...busBefore2027];
       const cfr1036Rows = [...truckFrom2027, ...busFrom2027];
-      const cfr1039Rows = [
-        ...construction,
-        ...agriculture,
-        ...atUpperBoundary,
-      ];
+      const cfr1039Rows = [...construction, ...agriculture, ...atUpperBoundary];
 
       return (
         roadBefore.length === 0 &&
@@ -3478,9 +3437,7 @@ async function main(): Promise<void> {
         agricultureAboveUpperBoundary.length === 0 &&
         nonroadPowerRows.every((rows, index) => {
           const expected =
-            cfr1039RoundedPowerCases[
-              index % cfr1039RoundedPowerCases.length
-            ];
+            cfr1039RoundedPowerCases[index % cfr1039RoundedPowerCases.length];
           return (
             expected !== undefined &&
             matchesCfr1039RoundedPowerCase(
@@ -3532,8 +3489,7 @@ async function main(): Promise<void> {
           (row) =>
             row.regulationId === acceptanceFixtureIds.regulation.us1039101 &&
             row.limit.sourceId === acceptanceFixtureIds.source.usEcfr1039 &&
-            row.limit.testCycleCode ===
-              "NRTC AND NRSC-C1 (8-mode OR RMC)" &&
+            row.limit.testCycleCode === "NRTC AND NRSC-C1 (8-mode OR RMC)" &&
             row.limit.validFrom === "2015-01-01" &&
             row.limit.verifiedAt.toISOString() ===
               UNITED_STATES_COMPLETENESS_SIGNOFF_ISO,
@@ -3544,10 +3500,7 @@ async function main(): Promise<void> {
     const runPapuaNewGuineaBoundaryCheck = async (): Promise<boolean> => {
       const query = (
         applicationScope:
-          | "on-road-truck"
-          | "on-road-bus"
-          | "construction"
-          | "agriculture",
+          "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
         asOf: string,
       ) =>
         regulationRepository.findEffectiveByCountry({
@@ -3556,13 +3509,15 @@ async function main(): Promise<void> {
           countryIso3: "PNG",
           powerKw: 300,
         });
-      const [before, truck, bus, construction, agriculture] = await Promise.all([
-        query("on-road-truck", "2018-12-31"),
-        query("on-road-truck", countrySignoffAsOf("PNG")),
-        query("on-road-bus", countrySignoffAsOf("PNG")),
-        query("construction", countrySignoffAsOf("PNG")),
-        query("agriculture", countrySignoffAsOf("PNG")),
-      ]);
+      const [before, truck, bus, construction, agriculture] = await Promise.all(
+        [
+          query("on-road-truck", "2018-12-31"),
+          query("on-road-truck", countrySignoffAsOf("PNG")),
+          query("on-road-bus", countrySignoffAsOf("PNG")),
+          query("construction", countrySignoffAsOf("PNG")),
+          query("agriculture", countrySignoffAsOf("PNG")),
+        ],
+      );
       const values = new Map(
         truck.map((row) => [
           `${row.limit.testCycleCode}:${row.limit.pollutantCode}`,
@@ -3578,7 +3533,8 @@ async function main(): Promise<void> {
             row.regulationId ===
               acceptanceFixtureIds.regulation.papuaNewGuineaHeavyTruckAdr803 &&
             row.effectiveFrom === "2019-01-01" &&
-            row.limit.sourceId === acceptanceFixtureIds.source.australiaAdr80_03 &&
+            row.limit.sourceId ===
+              acceptanceFixtureIds.source.australiaAdr80_03 &&
             row.limit.validFrom === "2019-01-01",
         ) &&
         values.get("ESC:NOX") === 2 &&
@@ -3595,41 +3551,43 @@ async function main(): Promise<void> {
       const expectedJurisdictionIds = [...targetSelection.jurisdictionIds];
       const expectedRegulationIds = [...targetSelection.regulationIds];
       const [sourceRows, jurisdictionRows, membershipRows] = await Promise.all([
-          database
-            .select({ id: schema.dataSources.id })
-            .from(schema.dataSources)
-            .where(
-              and(
-                inArray(schema.dataSources.id, expectedSourceIds),
-                isNull(schema.dataSources.archivedAt),
-              ),
+        database
+          .select({ id: schema.dataSources.id })
+          .from(schema.dataSources)
+          .where(
+            and(
+              inArray(schema.dataSources.id, expectedSourceIds),
+              isNull(schema.dataSources.archivedAt),
             ),
-          database
-            .select({ id: schema.jurisdictions.id })
-            .from(schema.jurisdictions)
-            .where(
-              and(
-                inArray(schema.jurisdictions.id, expectedJurisdictionIds),
-                isNull(schema.jurisdictions.archivedAt),
-              ),
+          ),
+        database
+          .select({ id: schema.jurisdictions.id })
+          .from(schema.jurisdictions)
+          .where(
+            and(
+              inArray(schema.jurisdictions.id, expectedJurisdictionIds),
+              isNull(schema.jurisdictions.archivedAt),
             ),
-          database
-            .select({ jurisdictionId: schema.countryJurisdictions.jurisdictionId })
-            .from(schema.countryJurisdictions)
-            .where(
-              and(
-                eq(
-                  schema.countryJurisdictions.countryIso3,
-                  targetSelection.countryIso3,
-                ),
-                inArray(
-                  schema.countryJurisdictions.jurisdictionId,
-                  expectedJurisdictionIds,
-                ),
-                isNull(schema.countryJurisdictions.archivedAt),
+          ),
+        database
+          .select({
+            jurisdictionId: schema.countryJurisdictions.jurisdictionId,
+          })
+          .from(schema.countryJurisdictions)
+          .where(
+            and(
+              eq(
+                schema.countryJurisdictions.countryIso3,
+                targetSelection.countryIso3,
               ),
+              inArray(
+                schema.countryJurisdictions.jurisdictionId,
+                expectedJurisdictionIds,
+              ),
+              isNull(schema.countryJurisdictions.archivedAt),
             ),
-        ]);
+          ),
+      ]);
       const regulationRows =
         expectedRegulationIds.length === 0
           ? []
@@ -3698,12 +3656,14 @@ async function main(): Promise<void> {
 
       if (targetSelection.limitRows.length === 0) {
         const noDataRows = await Promise.all(
-          ([
-            "on-road-truck",
-            "on-road-bus",
-            "construction",
-            "agriculture",
-          ] as const).map((applicationScope) =>
+          (
+            [
+              "on-road-truck",
+              "on-road-bus",
+              "construction",
+              "agriculture",
+            ] as const
+          ).map((applicationScope) =>
             regulationRepository.findEffectiveByCountry({
               applicationScope,
               asOf: countrySignoffAsOf(targetSelection.countryIso3),
@@ -3729,64 +3689,56 @@ async function main(): Promise<void> {
 
       if (targetSelection.countryIso3 === "ISR") {
         targetChecks.push({
-          name:
-            "ISR preserves the CY2026 Euro VI road, construction Stage V and agriculture no-data boundaries",
+          name: "ISR preserves the CY2026 Euro VI road, construction Stage V and agriculture no-data boundaries",
           passed: await runIsraelBoundaryCheck(),
         });
       }
 
       if (targetSelection.countryIso3 === "LKA") {
         targetChecks.push({
-          name:
-            "LKA preserves the 2018-07-13 Table 5 road and six-band Table 6 construction boundaries without agriculture inference",
+          name: "LKA preserves the 2018-07-13 Table 5 road and six-band Table 6 construction boundaries without agriculture inference",
           passed: await runSriLankaBoundaryCheck(),
         });
       }
 
       if (targetSelection.countryIso3 === "AUS") {
         targetChecks.push({
-          name:
-            "AUS preserves the full-coverage ADR 80/03 to ADR 80/04 succession and complete diesel tables",
+          name: "AUS preserves the full-coverage ADR 80/03 to ADR 80/04 succession and complete diesel tables",
           passed: await runAustraliaBoundaryCheck(),
         });
       }
 
       if (targetSelection.countryIso3 === "CHN") {
         targetChecks.push({
-          name:
-            "CHN preserves Stage III history, the Stage IV switch, all current power bands and HJ 1014 provenance",
+          name: "CHN preserves Stage III history, the Stage IV switch, all current power bands and HJ 1014 provenance",
           passed: await runChinaNonroadBoundaryCheck(),
         });
       }
 
       if (targetSelection.countryIso3 === "MLT") {
         targetChecks.push({
-          name:
-            "MLT preserves the 2004-05-01 EU accession boundary and current shared Euro VI/Stage V graph",
+          name: "MLT preserves the 2004-05-01 EU accession boundary and current shared Euro VI/Stage V graph",
           passed: await runMaltaMembershipBoundaryCheck(),
         });
       }
 
       if (targetSelection.countryIso3 === "CAN") {
         targetChecks.push({
-          name:
-            "CAN preserves complete direct-source road and nonroad tables, effective dates, cycles, scopes and inclusive 560 kW boundary",
+          name: "CAN preserves complete direct-source road and nonroad tables, effective dates, cycles, scopes and inclusive 560 kW boundary",
           passed: await runCanadaBoundaryCheck(),
         });
       }
 
       if (targetSelection.countryIso3 === "USA") {
         targetChecks.push({
-          name:
-            "USA preserves complete representative CFR 86/1036 road succession and CFR 1039 variable-speed Tier 4 boundaries",
+          name: "USA preserves complete representative CFR 86/1036 road succession and CFR 1039 variable-speed Tier 4 boundaries",
           passed: await runUnitedStatesBoundaryCheck(),
         });
       }
 
       if (targetSelection.countryIso3 === "PNG") {
         targetChecks.push({
-          name:
-            "PNG preserves the 2019 ADR 80/03 truck-only ESC/ELR/ETC pathway and all other scopes as no-data",
+          name: "PNG preserves the 2019 ADR 80/03 truck-only ESC/ELR/ETC pathway and all other scopes as no-data",
           passed: await runPapuaNewGuineaBoundaryCheck(),
         });
       }
@@ -3816,30 +3768,29 @@ async function main(): Promise<void> {
           constructionRows,
           agricultureRows,
           truckBeforeEffectiveDate,
-        ] =
-          await Promise.all(
+        ] = await Promise.all([
+          ...(
             [
-              ...([
-                "on-road-truck",
-                "on-road-bus",
-                "construction",
-                "agriculture",
-              ] as const).map((applicationScope) =>
-                regulationRepository.findEffectiveByCountry({
-                  applicationScope,
-                  asOf: "2026-08-10",
-                  countryIso3: "URY",
-                  powerKw: 150,
-                }),
-              ),
-              regulationRepository.findEffectiveByCountry({
-                applicationScope: "on-road-truck",
-                asOf: "2023-05-13",
-                countryIso3: "URY",
-                powerKw: 150,
-              }),
-            ],
-          );
+              "on-road-truck",
+              "on-road-bus",
+              "construction",
+              "agriculture",
+            ] as const
+          ).map((applicationScope) =>
+            regulationRepository.findEffectiveByCountry({
+              applicationScope,
+              asOf: "2026-08-10",
+              countryIso3: "URY",
+              powerKw: 150,
+            }),
+          ),
+          regulationRepository.findEffectiveByCountry({
+            applicationScope: "on-road-truck",
+            asOf: "2023-05-13",
+            countryIso3: "URY",
+            powerKw: 150,
+          }),
+        ]);
         const values = new Map(
           truckRows.map((row) => [
             `${row.limit.testCycleCode}:${row.limit.pollutantCode}`,
@@ -3847,8 +3798,7 @@ async function main(): Promise<void> {
           ]),
         );
         targetChecks.push({
-          name:
-            "URY Decree 135/021 returns separate ESC/ETC truck and bus paths and preserves non-road no-data",
+          name: "URY Decree 135/021 returns separate ESC/ETC truck and bus paths and preserves non-road no-data",
           passed:
             targetSelection.regulationIds.size === 1 &&
             targetSelection.regulationIds.has(
@@ -3958,8 +3908,7 @@ async function main(): Promise<void> {
             rows.every(
               (row) =>
                 row.regulationId ===
-                  acceptanceFixtureIds.regulation
-                    .venezuelaHeavyDieselMy2000 &&
+                  acceptanceFixtureIds.regulation.venezuelaHeavyDieselMy2000 &&
                 row.limit.testCycleCode === "Directive 91/542/EEC" &&
                 row.limit.unitCode === "g/kWh",
             ) &&
@@ -3970,8 +3919,7 @@ async function main(): Promise<void> {
           );
         };
         targetChecks.push({
-          name:
-            "VEN Decreto 2.673 returns the MY2000 EU representative road path, exact 85 kW PM split and non-road no-data",
+          name: "VEN Decreto 2.673 returns the MY2000 EU representative road path, exact 85 kW PM split and non-road no-data",
           passed:
             hasExpectedRoadLimits(truckAt85Kw, 0.612) &&
             hasExpectedRoadLimits(truckAbove85Kw, 0.36) &&
@@ -4037,8 +3985,7 @@ async function main(): Promise<void> {
           ]),
         );
         targetChecks.push({
-          name:
-            "UKR Euro V B2 returns road limits through 2026 and fails closed at the 2027 Euro VI switch",
+          name: "UKR Euro V B2 returns road limits through 2026 and fails closed at the 2027 Euro VI switch",
           passed:
             truckRows.length === 9 &&
             busRows.length === 9 &&
@@ -4060,7 +4007,9 @@ async function main(): Promise<void> {
       }
 
       for (const check of targetChecks) {
-        process.stdout.write(`${check.passed ? "PASS" : "FAIL"}  ${check.name}\n`);
+        process.stdout.write(
+          `${check.passed ? "PASS" : "FAIL"}  ${check.name}\n`,
+        );
         if (!check.passed) {
           failures.push(check.name);
         }
@@ -4099,13 +4048,11 @@ async function main(): Promise<void> {
         run: () => runCaucasusBoundaryCheck(countryIso3),
       })),
       {
-        name:
-          "ISR preserves the CY2026 Euro VI road, construction Stage V and agriculture no-data boundaries",
+        name: "ISR preserves the CY2026 Euro VI road, construction Stage V and agriculture no-data boundaries",
         run: runIsraelBoundaryCheck,
       },
       {
-        name:
-          "LKA preserves the 2018-07-13 Table 5 road and six-band Table 6 construction boundaries without agriculture inference",
+        name: "LKA preserves the 2018-07-13 Table 5 road and six-band Table 6 construction boundaries without agriculture inference",
         run: runSriLankaBoundaryCheck,
       },
       {
@@ -4117,9 +4064,7 @@ async function main(): Promise<void> {
             countryIso3: "CHN",
             powerKw: 350,
           });
-          const nox = rows.find(
-            (row) => row.limit.pollutantCode === "NOX",
-          );
+          const nox = rows.find((row) => row.limit.pollutantCode === "NOX");
           return (
             rows.length > 0 &&
             rows.every((row) => row.citationCode === "GB 17691-2018") &&
@@ -4129,18 +4074,15 @@ async function main(): Promise<void> {
         },
       },
       {
-        name:
-          "CHN preserves Stage III history, the Stage IV switch, all current power bands and HJ 1014 provenance",
+        name: "CHN preserves Stage III history, the Stage IV switch, all current power bands and HJ 1014 provenance",
         run: runChinaNonroadBoundaryCheck,
       },
       {
-        name:
-          "MLT preserves the 2004-05-01 EU accession boundary and current shared Euro VI/Stage V graph",
+        name: "MLT preserves the 2004-05-01 EU accession boundary and current shared Euro VI/Stage V graph",
         run: runMaltaMembershipBoundaryCheck,
       },
       {
-        name:
-          "USA preserves complete representative CFR 86/1036 road succession and CFR 1039 variable-speed Tier 4 boundaries",
+        name: "USA preserves complete representative CFR 86/1036 road succession and CFR 1039 variable-speed Tier 4 boundaries",
         run: runUnitedStatesBoundaryCheck,
       },
       {
@@ -4247,7 +4189,10 @@ async function main(): Promise<void> {
             powerKw: 100,
           });
           const byPollutant = new Map(
-            rows.map((row) => [row.limit.pollutantCode, Number(row.limit.limitValue)]),
+            rows.map((row) => [
+              row.limit.pollutantCode,
+              Number(row.limit.limitValue),
+            ]),
           );
           return (
             rows.length > 0 &&
@@ -4268,7 +4213,10 @@ async function main(): Promise<void> {
             powerKw: 30,
           });
           const byPollutant = new Map(
-            rows.map((row) => [row.limit.pollutantCode, Number(row.limit.limitValue)]),
+            rows.map((row) => [
+              row.limit.pollutantCode,
+              Number(row.limit.limitValue),
+            ]),
           );
           return (
             byPollutant.get("CO") === 5.5 &&
@@ -4291,9 +4239,7 @@ async function main(): Promise<void> {
           );
           return (
             rows.length === 8 &&
-            rows.every(
-              (row) => row.citationCode === "JPN 2016 HD Diesel",
-            ) &&
+            rows.every((row) => row.citationCode === "JPN 2016 HD Diesel") &&
             noxRows.length === 2 &&
             noxRows.every(
               (row) =>
@@ -4322,8 +4268,7 @@ async function main(): Promise<void> {
             rows.length === 4 &&
             rows.every(
               (row) =>
-                row.citationCode ===
-                "平成26年三省告示第1号（2014年基準）",
+                row.citationCode === "平成26年三省告示第1号（2014年基準）",
             ) &&
             byPollutant.get("NOX") === 0.4 &&
             byPollutant.get("PM") === 0.02
@@ -4366,10 +4311,17 @@ async function main(): Promise<void> {
             .map((row) => Number(row.limit.limitValue));
           return (
             rows.length === 12 &&
-            rows.every((row) => row.citationCode === "KOR Annex 17 HD Diesel 2017") &&
+            rows.every(
+              (row) => row.citationCode === "KOR Annex 17 HD Diesel 2017",
+            ) &&
             noxValues.includes(0.4) &&
             noxValues.includes(0.46) &&
-            rows.every((row) => row.limit.unitCode === "g/kWh" || row.limit.unitCode === "e9/kWh" || row.limit.unitCode === "ppm")
+            rows.every(
+              (row) =>
+                row.limit.unitCode === "g/kWh" ||
+                row.limit.unitCode === "e9/kWh" ||
+                row.limit.unitCode === "ppm",
+            )
           );
         },
       },
@@ -4408,7 +4360,10 @@ async function main(): Promise<void> {
       {
         name: "KOR Annex 17 nonroad keeps [19,560) and all official power bands",
         run: async () => {
-          const query = (applicationScope: "construction" | "agriculture", powerKw: number) =>
+          const query = (
+            applicationScope: "construction" | "agriculture",
+            powerKw: number,
+          ) =>
             regulationRepository.findEffectiveByCountry({
               applicationScope,
               asOf: "2026-08-06",
@@ -4445,9 +4400,7 @@ async function main(): Promise<void> {
           const noxValues = rows
             .filter((row) => row.limit.pollutantCode === "NOX")
             .map((row) => Number(row.limit.limitValue));
-          const cycles = new Set(
-            rows.map((row) => row.limit.testCycleCode),
-          );
+          const cycles = new Set(rows.map((row) => row.limit.testCycleCode));
           return (
             rows.length === 16 &&
             rows.some(
@@ -4465,9 +4418,7 @@ async function main(): Promise<void> {
             noxValues.includes(0.2) &&
             noxValues.includes(0.4) &&
             noxValues.includes(0.46) &&
-            ["CT/CSE", "CEEMAP", "CETMAP"].every((cycle) =>
-              cycles.has(cycle),
-            )
+            ["CT/CSE", "CEEMAP", "CETMAP"].every((cycle) => cycles.has(cycle))
           );
         },
       },
@@ -4562,22 +4513,21 @@ async function main(): Promise<void> {
               powerKw: 600,
             }),
           ]);
-          return at130.length === 5 && at560.length === 0 && above560.length === 4;
+          return (
+            at130.length === 5 && at560.length === 0 && above560.length === 4
+          );
         },
       },
       {
-        name:
-          "AUS preserves the full-coverage ADR 80/03 to ADR 80/04 succession and complete diesel tables",
+        name: "AUS preserves the full-coverage ADR 80/03 to ADR 80/04 succession and complete diesel tables",
         run: runAustraliaBoundaryCheck,
       },
       {
-        name:
-          "PNG preserves the 2019 ADR 80/03 truck-only ESC/ELR/ETC pathway and all other scopes as no-data",
+        name: "PNG preserves the 2019 ADR 80/03 truck-only ESC/ELR/ETC pathway and all other scopes as no-data",
         run: runPapuaNewGuineaBoundaryCheck,
       },
       {
-        name:
-          "CAN preserves complete direct-source road and nonroad tables, effective dates, cycles, scopes and inclusive 560 kW boundary",
+        name: "CAN preserves complete direct-source road and nonroad tables, effective dates, cycles, scopes and inclusive 560 kW boundary",
         run: runCanadaBoundaryCheck,
       },
       {
@@ -4702,9 +4652,7 @@ async function main(): Promise<void> {
           return (
             rows.length === 8 &&
             rows.every(
-              (row) =>
-                row.citationCode ===
-                "P.20/MENLHK/SETJEN/KUM.1/3/2017",
+              (row) => row.citationCode === "P.20/MENLHK/SETJEN/KUM.1/3/2017",
             ) &&
             values.get("ESC:NOX") === 3.5 &&
             values.get("ESC:PM") === 0.02 &&
@@ -4739,12 +4687,14 @@ async function main(): Promise<void> {
             powerKw: 150,
           });
           const [truck, bus, construction, agriculture] = await Promise.all(
-            ([
-              "on-road-truck",
-              "on-road-bus",
-              "construction",
-              "agriculture",
-            ] as const).map((applicationScope) =>
+            (
+              [
+                "on-road-truck",
+                "on-road-bus",
+                "construction",
+                "agriculture",
+              ] as const
+            ).map((applicationScope) =>
               regulationRepository.findEffectiveByCountry({
                 applicationScope,
                 asOf: "2026-08-10",
@@ -4781,12 +4731,14 @@ async function main(): Promise<void> {
             powerKw: 150,
           });
           const [truck, bus, construction, agriculture] = await Promise.all(
-            ([
-              "on-road-truck",
-              "on-road-bus",
-              "construction",
-              "agriculture",
-            ] as const).map((applicationScope) =>
+            (
+              [
+                "on-road-truck",
+                "on-road-bus",
+                "construction",
+                "agriculture",
+              ] as const
+            ).map((applicationScope) =>
               regulationRepository.findEffectiveByCountry({
                 applicationScope,
                 asOf: "2026-08-10",
@@ -4821,19 +4773,22 @@ async function main(): Promise<void> {
             countryIso3: "MNE",
             powerKw: 150,
           });
-          const atExcludedPower = await regulationRepository.findEffectiveByCountry({
-            applicationScope: "on-road-truck",
-            asOf: "2026-08-10",
-            countryIso3: "MNE",
-            powerKw: 15,
-          });
+          const atExcludedPower =
+            await regulationRepository.findEffectiveByCountry({
+              applicationScope: "on-road-truck",
+              asOf: "2026-08-10",
+              countryIso3: "MNE",
+              powerKw: 15,
+            });
           const [truck, bus, construction, agriculture] = await Promise.all(
-            ([
-              "on-road-truck",
-              "on-road-bus",
-              "construction",
-              "agriculture",
-            ] as const).map((applicationScope) =>
+            (
+              [
+                "on-road-truck",
+                "on-road-bus",
+                "construction",
+                "agriculture",
+              ] as const
+            ).map((applicationScope) =>
               regulationRepository.findEffectiveByCountry({
                 applicationScope,
                 asOf: "2026-08-10",
@@ -4872,12 +4827,14 @@ async function main(): Promise<void> {
             powerKw: 150,
           });
           const [truck, bus, construction, agriculture] = await Promise.all(
-            ([
-              "on-road-truck",
-              "on-road-bus",
-              "construction",
-              "agriculture",
-            ] as const).map((applicationScope) =>
+            (
+              [
+                "on-road-truck",
+                "on-road-bus",
+                "construction",
+                "agriculture",
+              ] as const
+            ).map((applicationScope) =>
               regulationRepository.findEffectiveByCountry({
                 applicationScope,
                 asOf: "2026-08-10",
@@ -4929,9 +4886,7 @@ async function main(): Promise<void> {
           return (
             before.length === 0 &&
             rows.length === 9 &&
-            rows.every(
-              (row) => row.citationCode === "QCVN 109:2021/BGTVT",
-            ) &&
+            rows.every((row) => row.citationCode === "QCVN 109:2021/BGTVT") &&
             values.get("ESC:NOX") === 2 &&
             values.get("ESC:PM") === 0.02 &&
             values.get("ETC:NOX") === 2 &&
@@ -4945,14 +4900,13 @@ async function main(): Promise<void> {
         name: "VNM non-road scopes remain explicit no-data",
         run: async () => {
           const results = await Promise.all(
-            (["construction", "agriculture"] as const).map(
-              (applicationScope) =>
-                regulationRepository.findEffectiveByCountry({
-                  applicationScope,
-                  asOf: "2026-08-07",
-                  countryIso3: "VNM",
-                  powerKw: 150,
-                }),
+            (["construction", "agriculture"] as const).map((applicationScope) =>
+              regulationRepository.findEffectiveByCountry({
+                applicationScope,
+                asOf: "2026-08-07",
+                countryIso3: "VNM",
+                powerKw: 150,
+              }),
             ),
           );
           return results.every((rows) => rows.length === 0);
@@ -4983,8 +4937,7 @@ async function main(): Promise<void> {
             before.length === 0 &&
             rows.length === 4 &&
             rows.every(
-              (row) =>
-                row.citationCode === "P.U.(A) 429/96 / VTA Euro II",
+              (row) => row.citationCode === "P.U.(A) 429/96 / VTA Euro II",
             ) &&
             values.get("CO") === 4 &&
             values.get("HC") === 1.1 &&
@@ -5003,21 +4956,19 @@ async function main(): Promise<void> {
             powerKw: 300,
           });
           const nonRoadResults = await Promise.all(
-            (["construction", "agriculture"] as const).map(
-              (applicationScope) =>
-                regulationRepository.findEffectiveByCountry({
-                  applicationScope,
-                  asOf: "2026-08-07",
-                  countryIso3: "MYS",
-                  powerKw: 150,
-                }),
+            (["construction", "agriculture"] as const).map((applicationScope) =>
+              regulationRepository.findEffectiveByCountry({
+                applicationScope,
+                asOf: "2026-08-07",
+                countryIso3: "MYS",
+                powerKw: 150,
+              }),
             ),
           );
           return (
             roadRows.length === 4 &&
             roadRows.every(
-              (row) =>
-                row.citationCode === "P.U.(A) 429/96 / VTA Euro II",
+              (row) => row.citationCode === "P.U.(A) 429/96 / VTA Euro II",
             ) &&
             nonRoadResults.every((rows) => rows.length === 0)
           );
@@ -5070,14 +5021,13 @@ async function main(): Promise<void> {
             powerKw: 300,
           });
           const nonRoadResults = await Promise.all(
-            (["construction", "agriculture"] as const).map(
-              (applicationScope) =>
-                regulationRepository.findEffectiveByCountry({
-                  applicationScope,
-                  asOf: "2026-08-07",
-                  countryIso3: "ARG",
-                  powerKw: 150,
-                }),
+            (["construction", "agriculture"] as const).map((applicationScope) =>
+              regulationRepository.findEffectiveByCountry({
+                applicationScope,
+                asOf: "2026-08-07",
+                countryIso3: "ARG",
+                powerKw: 150,
+              }),
             ),
           );
           return (
@@ -5150,14 +5100,13 @@ async function main(): Promise<void> {
             powerKw: 300,
           });
           const nonRoadResults = await Promise.all(
-            (["construction", "agriculture"] as const).map(
-              (applicationScope) =>
-                regulationRepository.findEffectiveByCountry({
-                  applicationScope,
-                  asOf: "2026-08-07",
-                  countryIso3: "NZL",
-                  powerKw: 150,
-                }),
+            (["construction", "agriculture"] as const).map((applicationScope) =>
+              regulationRepository.findEffectiveByCountry({
+                applicationScope,
+                asOf: "2026-08-07",
+                countryIso3: "NZL",
+                powerKw: 150,
+              }),
             ),
           );
           return (
@@ -5351,9 +5300,7 @@ async function main(): Promise<void> {
             atUpperBoundary.length === 4 &&
             aboveUpperBoundary.length === 0 &&
             agriculture.length === 0 &&
-            atStart.every(
-              (row) => row.limit.testCycleCode === "NRSC/NRTC",
-            )
+            atStart.every((row) => row.limit.testCycleCode === "NRSC/NRTC")
           );
         },
       },
@@ -5379,14 +5326,13 @@ async function main(): Promise<void> {
             powerKw: 300,
           });
           const nonRoadResults = await Promise.all(
-            (["construction", "agriculture"] as const).map(
-              (applicationScope) =>
-                regulationRepository.findEffectiveByCountry({
-                  applicationScope,
-                  asOf: "2026-08-08",
-                  countryIso3: "PER",
-                  powerKw: 150,
-                }),
+            (["construction", "agriculture"] as const).map((applicationScope) =>
+              regulationRepository.findEffectiveByCountry({
+                applicationScope,
+                asOf: "2026-08-08",
+                countryIso3: "PER",
+                powerKw: 150,
+              }),
             ),
           );
           const values = new Map(
@@ -5448,12 +5394,14 @@ async function main(): Promise<void> {
               }),
             ),
           );
-          const agriculture = await regulationRepository.findEffectiveByCountry({
-            applicationScope: "agriculture",
-            asOf: "2026-08-08",
-            countryIso3: "SGP",
-            powerKw: 150,
-          });
+          const agriculture = await regulationRepository.findEffectiveByCountry(
+            {
+              applicationScope: "agriculture",
+              asOf: "2026-08-08",
+              countryIso3: "SGP",
+              powerKw: 150,
+            },
+          );
           const fixtureRows = buildFixtureLimits().filter((row) =>
             [
               acceptanceFixtureIds.regulation.singaporeHeavyVehicleEuroVi,
@@ -5470,7 +5418,9 @@ async function main(): Promise<void> {
             roadBefore.length === 0 &&
             roadResults.every((rows) => rows.length === 12) &&
             constructionResults[0]?.length === 0 &&
-            constructionResults.slice(1, 6).every((rows) => rows.length === 4) &&
+            constructionResults
+              .slice(1, 6)
+              .every((rows) => rows.length === 4) &&
             constructionResults[6]?.length === 0 &&
             agriculture.length === 0 &&
             Number(noxAt18?.limit.limitValue) === 8 &&
@@ -5496,8 +5446,7 @@ async function main(): Promise<void> {
             ].map(([applicationScope, asOf]) =>
               regulationRepository.findEffectiveByCountry({
                 applicationScope: applicationScope as
-                  | "on-road-truck"
-                  | "on-road-bus",
+                  "on-road-truck" | "on-road-bus",
                 asOf: asOf as string,
                 countryIso3: "NOR",
                 powerKw: 300,
@@ -5554,8 +5503,7 @@ async function main(): Promise<void> {
             ].map(([applicationScope, asOf]) =>
               regulationRepository.findEffectiveByCountry({
                 applicationScope: applicationScope as
-                  | "on-road-truck"
-                  | "on-road-bus",
+                  "on-road-truck" | "on-road-bus",
                 asOf: asOf as string,
                 countryIso3: "ISL",
                 powerKw: 300,

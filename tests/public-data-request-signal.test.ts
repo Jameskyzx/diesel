@@ -26,14 +26,17 @@ function createDeferredSelectDatabase() {
   const select = vi.fn(() => {
     const deferred = createDeferred<unknown[]>();
     queries.push(deferred);
-    const query: object = new Proxy({}, {
-      get(_target, property) {
-        if (property === "then") {
-          return deferred.promise.then.bind(deferred.promise);
-        }
-        return () => query;
+    const query: object = new Proxy(
+      {},
+      {
+        get(_target, property) {
+          if (property === "then") {
+            return deferred.promise.then.bind(deferred.promise);
+          }
+          return () => query;
+        },
       },
-    });
+    );
     return query;
   });
   const database = { select } as unknown as Parameters<
@@ -68,7 +71,9 @@ describe("public data request signal", () => {
   });
 
   it("lets an active signal pass", () => {
-    expect(() => throwIfRequestAborted(new AbortController().signal)).not.toThrow();
+    expect(() =>
+      throwIfRequestAborted(new AbortController().signal),
+    ).not.toThrow();
     expect(() => throwIfRequestAborted()).not.toThrow();
   });
 

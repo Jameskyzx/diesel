@@ -1,13 +1,4 @@
-import {
-  and,
-  desc,
-  eq,
-  inArray,
-  isNull,
-  or,
-  sql,
-  type SQL,
-} from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 import type {
@@ -49,11 +40,7 @@ type GovernanceDashboardSchema = {
 type GovernanceJson = Record<string, unknown>;
 
 type GovernanceReviewDependencyKind =
-  | "country"
-  | "jurisdiction"
-  | "product"
-  | "regulation"
-  | "source";
+  "country" | "jurisdiction" | "product" | "regulation" | "source";
 
 type GovernanceReviewReference = {
   kind: GovernanceReviewDependencyKind;
@@ -102,9 +89,7 @@ function collectGovernanceReviewReferences(
   for (const [key, item] of Object.entries(value)) {
     const nextPath = `${path}.${key}`;
     const kind =
-      governanceDependencyKinds[
-        key as keyof typeof governanceDependencyKinds
-      ];
+      governanceDependencyKinds[key as keyof typeof governanceDependencyKinds];
     if (kind && typeof item === "string" && item.trim()) {
       result.push({ kind, path: nextPath, value: item });
     }
@@ -291,10 +276,7 @@ export function createGovernanceDashboardRepository<
       ] = await Promise.all([
         database
           .selectDistinctOn(
-            [
-              dataGovernanceDrafts.entityType,
-              dataGovernanceDrafts.entityKey,
-            ],
+            [dataGovernanceDrafts.entityType, dataGovernanceDrafts.entityKey],
             {
               entityKey: dataGovernanceDrafts.entityKey,
               entityType: dataGovernanceDrafts.entityType,
@@ -341,7 +323,10 @@ export function createGovernanceDashboardRepository<
                 verifiedAt: countries.verifiedAt,
               })
               .from(countries)
-              .innerJoin(dataSources, eq(countries.dataSourceId, dataSources.id))
+              .innerJoin(
+                dataSources,
+                eq(countries.dataSourceId, dataSources.id),
+              )
               .where(inArray(countries.iso3, countryIds))
           : Promise.resolve([]),
         jurisdictionIds.length > 0
@@ -432,7 +417,10 @@ export function createGovernanceDashboardRepository<
                 sourceArchivedAt: dataSources.archivedAt,
               })
               .from(documents)
-              .innerJoin(dataSources, eq(documents.dataSourceId, dataSources.id))
+              .innerJoin(
+                dataSources,
+                eq(documents.dataSourceId, dataSources.id),
+              )
               .where(inArray(documents.id, documentIds))
           : Promise.resolve([]),
         drafts.some(({ entityType }) => entityType === "document")
@@ -450,9 +438,7 @@ export function createGovernanceDashboardRepository<
                   inArray(
                     dataChangeLogs.draftId,
                     drafts
-                      .filter(
-                        ({ entityType }) => entityType === "document",
-                      )
+                      .filter(({ entityType }) => entityType === "document")
                       .map(({ id }) => id),
                   ),
                 ),
@@ -466,12 +452,18 @@ export function createGovernanceDashboardRepository<
                 sourceArchivedAt: dataSources.archivedAt,
               })
               .from(catalogEngines)
-              .innerJoin(dataSources, eq(catalogEngines.dataSourceId, dataSources.id))
+              .innerJoin(
+                dataSources,
+                eq(catalogEngines.dataSourceId, dataSources.id),
+              )
               .where(inArray(catalogEngines.id, catalogEngineIds))
           : Promise.resolve([]),
         feedbackIds.length > 0
           ? database
-              .select({ archivedAt: engineFeedback.archivedAt, id: engineFeedback.id })
+              .select({
+                archivedAt: engineFeedback.archivedAt,
+                id: engineFeedback.id,
+              })
               .from(engineFeedback)
               .where(inArray(engineFeedback.id, feedbackIds))
           : Promise.resolve([]),
@@ -718,10 +710,7 @@ export function createGovernanceDashboardRepository<
             `文档处理状态不是 ready（当前：${documentProcessingStatus ?? "missing"}）；当前禁止审核或发布。`,
           );
         }
-        if (
-          publishedBaseline &&
-          publishedBaseline.version > draft.version
-        ) {
+        if (publishedBaseline && publishedBaseline.version > draft.version) {
           blockingReasons.push(
             `已有更新的 v${publishedBaseline.version} 发布版本，不能用 v${draft.version} 覆盖。`,
           );

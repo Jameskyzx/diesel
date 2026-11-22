@@ -41,9 +41,9 @@ function queryContainsTerm(normalizedQuery: string, rawTerm: string): boolean {
     return false;
   }
   if (/\p{Script=Han}/u.test(term)) {
-    return normalizedQuery.replace(/\s+/gu, "").includes(
-      term.replace(/\s+/gu, ""),
-    );
+    return normalizedQuery
+      .replace(/\s+/gu, "")
+      .includes(term.replace(/\s+/gu, ""));
   }
 
   const pattern = escapeRegularExpression(term).replace(/\\ /gu, "\\s+");
@@ -59,7 +59,7 @@ function matchedGroupIds(
 ): string[] {
   return groups
     .filter(({ anyOf }) =>
-      anyOf.some((term) => queryContainsTerm(normalizedQuery, term))
+      anyOf.some((term) => queryContainsTerm(normalizedQuery, term)),
     )
     .map(({ id }) => id);
 }

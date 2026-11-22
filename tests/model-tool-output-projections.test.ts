@@ -236,7 +236,8 @@ function projectionPaddedToBytes(
 describe("sales-chat model-facing tool projections", () => {
   it("recomputes country freshness from the selected topic rather than hidden newer sources", () => {
     const profile = structuredClone(fixtures.full.country.profile);
-    if (profile?.status !== "available") throw new Error("Expected an available profile");
+    if (profile?.status !== "available")
+      throw new Error("Expected an available profile");
     const hiddenSource = profile.country.currentEffectiveRegulations[0]?.source;
     if (!hiddenSource) throw new Error("Expected a regulation source");
     const newerVerification = "2026-08-12T00:00:00.000Z";
@@ -246,8 +247,10 @@ describe("sales-chat model-facing tool projections", () => {
       if (Array.isArray(value)) {
         value.forEach(updateSource);
       } else if (typeof value === "object" && value !== null) {
-        if (("id" in value && value.id === hiddenSource?.id) ||
-          ("sourceId" in value && value.sourceId === hiddenSource?.id)) {
+        if (
+          ("id" in value && value.id === hiddenSource?.id) ||
+          ("sourceId" in value && value.sourceId === hiddenSource?.id)
+        ) {
           if ("verifiedAt" in value) value.verifiedAt = newerVerification;
         }
         Object.values(value).forEach(updateSource);
@@ -256,15 +259,23 @@ describe("sales-chat model-facing tool projections", () => {
     updateSource(profile);
     profile.country.lastVerifiedAt = newerVerification;
     const full = buildCountryProfileResult({
-      profile, requestedTopics: ["market"], resolvedCountryIso3: "CHN", informationAsOf,
+      profile,
+      requestedTopics: ["market"],
+      resolvedCountryIso3: "CHN",
+      informationAsOf,
     });
     const projected = getCountryProfileResultToModelOutput(full);
     expect(full.latestVerifiedAt).toBe(newerVerification);
     expect(projected.latestVerifiedAt).not.toBe(full.latestVerifiedAt);
-    expect(projected.latestVerifiedAt).toBe(latestVerifiedAtFromCitations(projected.sources));
-    expect(getCountryProfileModelToolOutputSchema.safeParse({
-      ...projected, latestVerifiedAt: full.latestVerifiedAt,
-    }).success).toBe(false);
+    expect(projected.latestVerifiedAt).toBe(
+      latestVerifiedAtFromCitations(projected.sources),
+    );
+    expect(
+      getCountryProfileModelToolOutputSchema.safeParse({
+        ...projected,
+        latestVerifiedAt: full.latestVerifiedAt,
+      }).success,
+    ).toBe(false);
   });
 
   it("wires all seven sales-chat tools to a model-output projection", () => {
@@ -279,8 +290,7 @@ describe("sales-chat model-facing tool projections", () => {
     expect(Object.keys(tools)).toHaveLength(7);
     expect(
       Object.values(tools).every(
-        (toolDefinition) =>
-          typeof toolDefinition.toModelOutput === "function",
+        (toolDefinition) => typeof toolDefinition.toModelOutput === "function",
       ),
     ).toBe(true);
   });
@@ -335,7 +345,12 @@ describe("sales-chat model-facing tool projections", () => {
       expect(projected.projectionVersion).toBe(
         SALES_CHAT_MODEL_TOOL_OUTPUT_VERSION,
       );
-      expect(schema.safeParse({ ...projected, projectionVersion: "sales-chat-model-tool-output-v3" }).success).toBe(false);
+      expect(
+        schema.safeParse({
+          ...projected,
+          projectionVersion: "sales-chat-model-tool-output-v3",
+        }).success,
+      ).toBe(false);
       expect(projected).not.toEqual(full);
       expect(full).toEqual(original);
       expect(modelToolOutputUtf8Bytes(projected)).toBeLessThanOrEqual(
@@ -403,9 +418,13 @@ describe("sales-chat model-facing tool projections", () => {
       methodologyVersion:
         fullProfile.country.marketMetrics[0]?.methodologyVersion,
     });
-    expect(fixtures.projected.country.citations.every((citation) =>
-      citation.entityType === undefined || citation.entityType === "market_metric",
-    )).toBe(true);
+    expect(
+      fixtures.projected.country.citations.every(
+        (citation) =>
+          citation.entityType === undefined ||
+          citation.entityType === "market_metric",
+      ),
+    ).toBe(true);
   });
 
   it("keeps negative product readiness, certification detail, and every visible evidence source", () => {
@@ -428,9 +447,9 @@ describe("sales-chat model-facing tool projections", () => {
       specificationVersion: fullEvaluation.product?.specificationVersion,
     });
     expect(evaluation.regulationChecks.length).toBeGreaterThan(0);
-    expect(evaluation.regulationChecks[0]?.certifications.length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      evaluation.regulationChecks[0]?.certifications.length,
+    ).toBeGreaterThan(0);
     expect(
       evaluation.regulationChecks[0]?.certifications[0]?.certification,
     ).toMatchObject({
@@ -452,20 +471,17 @@ describe("sales-chat model-facing tool projections", () => {
   });
 
   it("preserves every regulation limit and every market definition and methodology", () => {
-    const fullRegulations = fixtures.full.regulation.comparison.countries.flatMap(
-      (country) => [
+    const fullRegulations =
+      fixtures.full.regulation.comparison.countries.flatMap((country) => [
         ...country.currentEffectiveRegulations,
         ...country.futureAdoptedRegulations,
-      ],
-    );
+      ]);
     const projectedRegulations =
       fixtures.projected.regulation.comparison.countries.flatMap((country) => [
         ...country.currentEffective,
         ...country.futureAdopted,
       ]);
-    expect(
-      projectedRegulations.flatMap(({ limits }) => limits),
-    ).toEqual(
+    expect(projectedRegulations.flatMap(({ limits }) => limits)).toEqual(
       fullRegulations.flatMap(({ limits }) =>
         limits.map((limit) => ({
           id: limit.id,
@@ -543,7 +559,9 @@ describe("sales-chat model-facing tool projections", () => {
     expect(() => searchKnowledgeBaseResultToModelOutput(oversized)).toThrow(
       `exceeds ${SALES_CHAT_MODEL_TOOL_OUTPUT_MAX_UTF8_BYTES} UTF-8 bytes`,
     );
-    expect(firstHit.content).toBe(wrapUntrustedKnowledgeExcerpt(completeExcerpt));
+    expect(firstHit.content).toBe(
+      wrapUntrustedKnowledgeExcerpt(completeExcerpt),
+    );
   });
 });
 
@@ -570,9 +588,7 @@ describe("sales-chat aggregate model-output budget", () => {
     });
     expect(JSON.stringify(rejected)).not.toContain("never-copy-this-value");
     expect(
-      evaluateSalesChatModelToolOutputBudget([
-        stepWithOutputs([rejected]),
-      ]),
+      evaluateSalesChatModelToolOutputBudget([stepWithOutputs([rejected])]),
     ).toMatchObject({
       reason: "invalid_projection",
       status: "exceeded",

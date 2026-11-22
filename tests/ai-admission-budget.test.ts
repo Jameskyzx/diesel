@@ -55,10 +55,7 @@ describe("AI chat estimated provider-call admission budget", () => {
       globalUnitsPerDay: 5,
     });
     await budget.reserve("client-a", utcDayStart + 86_399_999);
-    const atEnd = await budget.reserve(
-      "client-a",
-      utcDayStart + 86_399_999,
-    );
+    const atEnd = await budget.reserve("client-a", utcDayStart + 86_399_999);
     expect(atEnd.retryAfterSeconds).toBe(1);
 
     const nextDay = await budget.reserve("client-a", utcDayStart + 86_400_000);
@@ -75,9 +72,9 @@ describe("AI chat estimated provider-call admission budget", () => {
     expect(() => getAiChatAdmissionWindow(Number.NaN)).toThrow(
       "non-negative epoch millisecond",
     );
-    expect(() =>
-      getAiChatAdmissionWindow(8_640_000_000_000_000),
-    ).toThrow("non-negative epoch millisecond");
+    expect(() => getAiChatAdmissionWindow(8_640_000_000_000_000)).toThrow(
+      "non-negative epoch millisecond",
+    );
   });
 
   it("fails closed on missing production settings and rejects invalid relationships", () => {
@@ -99,18 +96,14 @@ describe("AI chat estimated provider-call admission budget", () => {
       }),
     ).toThrow("multiple of 5");
 
-    expect(
-      resolveAiChatAdmissionBudgetConfig({ nodeEnv: "test" }),
-    ).toEqual({
+    expect(resolveAiChatAdmissionBudgetConfig({ nodeEnv: "test" })).toEqual({
       clientUnitsPerDay: 100_000,
       globalUnitsPerDay: 1_000_000,
     });
   });
 
   it("passes only domain-separated hashes and a validated UTC window to PostgreSQL", async () => {
-    let captured:
-      | ReserveAiChatAdmissionProviderCallUnitsInput
-      | undefined;
+    let captured: ReserveAiChatAdmissionProviderCallUnitsInput | undefined;
     const repository: RateLimitRepository = {
       cleanupExpiredBuckets: vi.fn(async () => undefined),
       reserveAiChatHourlyRequest: vi.fn(async () => ({

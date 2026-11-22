@@ -90,9 +90,7 @@ async function readRequestBytes(
       : new Promise<never>((_resolve, reject) => {
           abortListener = () => {
             reject(
-              new RequestBodyAbortedError(
-                cancelReader("request-body-aborted"),
-              ),
+              new RequestBodyAbortedError(cancelReader("request-body-aborted")),
             );
           };
           abortSignal.addEventListener("abort", abortListener, { once: true });

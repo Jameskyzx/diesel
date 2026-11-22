@@ -38,10 +38,7 @@ const reviewContext = {
   publishReady: true,
 } as const;
 
-type DashboardTestDraft = Omit<
-  typeof draft,
-  "createdBy" | "workflowStatus"
-> & {
+type DashboardTestDraft = Omit<typeof draft, "createdBy" | "workflowStatus"> & {
   createdBy: string;
   workflowStatus: "draft" | "published" | "reviewed";
 };
@@ -110,9 +107,9 @@ describe("governance dashboard service scope", () => {
 
     expect(repository.listDashboardAuditLogs).toHaveBeenCalledOnce();
     expect(result.auditLogs).toHaveLength(1);
-    expect(
-      result.drafts[0]?.reviewContext.publishedBaseline?.publishedBy,
-    ).toBe(reviewer.email);
+    expect(result.drafts[0]?.reviewContext.publishedBaseline?.publishedBy).toBe(
+      reviewer.email,
+    );
   });
 
   it("fails closed when an editor repository row belongs to another creator", async () => {

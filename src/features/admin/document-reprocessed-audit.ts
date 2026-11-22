@@ -28,16 +28,16 @@ function canonicalizePostgresTimestamp(value: Date | string): string {
   const parsed = z.iso.datetime({ offset: true }).parse(value);
   const fraction = /\.(\d+)(?:Z|[+-]\d{2}:\d{2})$/u.exec(parsed)?.[1] ?? "";
   if (fraction.length > 6) {
-    throw new Error("Provenance timestamps cannot exceed PostgreSQL microsecond precision.");
+    throw new Error(
+      "Provenance timestamps cannot exceed PostgreSQL microsecond precision.",
+    );
   }
   const instant = new Date(parsed);
   if (!Number.isFinite(instant.getTime())) {
     throw new Error("Invalid provenance timestamp.");
   }
   const exactFraction = fraction.padEnd(6, "0");
-  return instant
-    .toISOString()
-    .replace(/\.\d{3}Z$/u, `.${exactFraction}Z`);
+  return instant.toISOString().replace(/\.\d{3}Z$/u, `.${exactFraction}Z`);
 }
 
 const exactTimestampInputSchema = z.union([
@@ -51,7 +51,10 @@ const documentChunkFingerprintRowSchema = z
     chunkIndex: z.number().int().nonnegative(),
     content: z.string(),
     contentHash: sha256Schema,
-    countryIso3: z.string().regex(/^[A-Z]{3}$/).nullable(),
+    countryIso3: z
+      .string()
+      .regex(/^[A-Z]{3}$/)
+      .nullable(),
     createdAt: exactTimestampInputSchema,
     embedding: z.array(z.number().finite()).length(128).nullable(),
     embeddingModel: z.string().nullable(),
@@ -139,16 +142,15 @@ export function createDocumentChunkSetFingerprint(value: unknown): string {
     .map((chunk) => ({
       ...chunk,
       createdAt: canonicalizePostgresTimestamp(chunk.createdAt),
-      embedding: chunk.embedding?.map((component) => {
-        const normalized = Math.fround(component);
-        return Object.is(normalized, -0) ? 0 : normalized;
-      }) ?? null,
+      embedding:
+        chunk.embedding?.map((component) => {
+          const normalized = Math.fround(component);
+          return Object.is(normalized, -0) ? 0 : normalized;
+        }) ?? null,
       updatedAt: canonicalizePostgresTimestamp(chunk.updatedAt),
       verifiedAt: canonicalizePostgresTimestamp(chunk.verifiedAt),
     }));
-  if (
-    chunks.some((chunk, index) => chunk.chunkIndex !== index)
-  ) {
+  if (chunks.some((chunk, index) => chunk.chunkIndex !== index)) {
     throw new Error("Document chunk indexes must be contiguous from zero.");
   }
   return createHash("sha256")
@@ -223,8 +225,7 @@ export function parseDocumentDraftCreatedAuditMarkerFor(input: {
         input.expectedChunkSetFingerprint) ||
     parsed.data.afterData.contentSha256 !== input.expectedContentSha256 ||
     parsed.data.afterData.documentId !== input.expectedDocumentId ||
-    parsed.data.afterData.processingStatus !==
-      input.expectedProcessingStatus ||
+    parsed.data.afterData.processingStatus !== input.expectedProcessingStatus ||
     (input.expectedMetadata !== undefined &&
       JSON.stringify(parsed.data.afterData.metadata) !==
         JSON.stringify(
@@ -298,8 +299,7 @@ export function parseDocumentReprocessedAuditMarkerFor(input: {
       parsed.data.afterData.chunkSetFingerprint !==
         input.expectedChunkSetFingerprint) ||
     (input.expectedContentSha256 !== undefined &&
-      parsed.data.afterData.contentSha256 !==
-        input.expectedContentSha256) ||
+      parsed.data.afterData.contentSha256 !== input.expectedContentSha256) ||
     parsed.data.afterData.documentId !== input.expectedDocumentId ||
     (input.expectedMetadata !== undefined &&
       JSON.stringify(parsed.data.afterData.metadata) !==
@@ -348,9 +348,7 @@ export function createDocumentProvenanceMarkerFingerprint(
   const created = documentDraftCreatedAuditMarkerSchema.safeParse(value);
   if (created.success) {
     return createHash("sha256")
-      .update(
-        JSON.stringify({ action: "draft_created", marker: created.data }),
-      )
+      .update(JSON.stringify({ action: "draft_created", marker: created.data }))
       .digest("hex");
   }
   throw new Error("Canonical document provenance marker is malformed.");

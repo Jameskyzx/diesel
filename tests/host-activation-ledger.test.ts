@@ -53,11 +53,12 @@ async function executeHostActivationCommand(
   options?: { descriptor?: "missing" | "valid" | "wrong" },
 ): Promise<CommandResult> {
   const descriptor = options?.descriptor ?? "valid";
-  const descriptorSetup = descriptor === "missing"
-    ? "unset DIESEL_RELEASE_LIFECYCLE_LOCK_FD"
-    : descriptor === "wrong"
-      ? 'exec 7<>"$2"; export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=7'
-      : 'exec 8<>"$2"; export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8';
+  const descriptorSetup =
+    descriptor === "missing"
+      ? "unset DIESEL_RELEASE_LIFECYCLE_LOCK_FD"
+      : descriptor === "wrong"
+        ? 'exec 7<>"$2"; export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=7'
+        : 'exec 8<>"$2"; export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8';
   try {
     const result = await execFileAsync(
       "/bin/bash",
@@ -93,8 +94,7 @@ ${command}`,
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -136,7 +136,9 @@ async function initializeHostActivationProtocol(
 }
 
 async function sha256File(path: string): Promise<string> {
-  return createHash("sha256").update(await readFile(path)).digest("hex");
+  return createHash("sha256")
+    .update(await readFile(path))
+    .digest("hex");
 }
 
 async function writeGovernanceLedgerMarker(
@@ -147,7 +149,12 @@ async function writeGovernanceLedgerMarker(
   const stateDir = join(deployRoot, "backups", releaseId);
   const snapshotPath = join(stateDir, "governance-before.json");
   const markerPath = join(stateDir, markerName);
-  if (!(await lstat(snapshotPath).then(() => true, () => false))) {
+  if (
+    !(await lstat(snapshotPath).then(
+      () => true,
+      () => false,
+    ))
+  ) {
     await writeFile(snapshotPath, '{"fixture":true}\n', "utf8");
     await chmod(snapshotPath, 0o600);
   }
@@ -168,10 +175,7 @@ async function writeV1HostActivationState(
 ): Promise<{ anchor: string; marker: string; stateDir: string }> {
   const stateDir = join(fixture.backupsRoot, releaseId);
   const previousReleaseState = join(stateDir, "previous-release");
-  const environmentBackup = join(
-    stateDir,
-    "env.production.local.pre-switch",
-  );
+  const environmentBackup = join(stateDir, "env.production.local.pre-switch");
   const nginxPrimaryBackup = join(stateDir, "jamesky.site.pre-switch");
   const nginxAlternateBackup = join(stateDir, "diesel-demo.pre-switch");
   const anchor = join(stateDir, "HOST_ACTIVATION_V1");
@@ -276,8 +280,7 @@ async function executePrepareWithContendedLifecycleLock(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -288,43 +291,86 @@ describe("host activation ledger", { timeout: 30_000 }, () => {
   it("commits application verification without a fabricated publication marker or changing the V1 manifest", async () => {
     const fixture = await createHostActivationLedgerFixture();
     try {
-      expect((await initializeHostActivationProtocol(fixture)).exitCode).toBe(0);
+      expect((await initializeHostActivationProtocol(fixture)).exitCode).toBe(
+        0,
+      );
       const protocol = await readFile(fixture.manifest);
       await writeV1HostActivationState(fixture, "PENDING", "none");
       for (const phase of ["before", "after"]) {
-        await writeFile(join(fixture.stateDir, `application-${phase}.json`), '{"fixture":"hash-binding-only"}\n', { mode: 0o600 });
+        await writeFile(
+          join(fixture.stateDir, `application-${phase}.json`),
+          '{"fixture":"hash-binding-only"}\n',
+          { mode: 0o600 },
+        );
       }
-      const result = await executeHostActivationCommand(fixture, [
-        'host_activation_ledger_set_paths "$1" "$2"',
-        'host_activation_ledger_application_payload "$1" "$2"',
-        'host_activation_ledger_write_record "$2/backups/$1/APPLICATION_VERIFIED_V2" "$HOST_ACTIVATION_LEDGER_APPLICATION_PAYLOAD" "$3"',
-        'host_activation_ledger_transition "$1" "$2" "$3" COMMITTED',
-        'host_activation_ledger_revalidate_terminal "$1" "$2" "$3"',
-        'printf "%s:%s\\n" "$HOST_ACTIVATION_LEDGER_STATE" "$HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE"',
-      ].join("\n"), [TEST_RELEASE_SHA, fixture.deployRoot, fixture.nodeBinary]);
-      expect(result).toMatchObject({ exitCode: 0, stdout: "COMMITTED:APPLICATION_VERIFIED_V2\n" });
+      const result = await executeHostActivationCommand(
+        fixture,
+        [
+          'host_activation_ledger_set_paths "$1" "$2"',
+          'host_activation_ledger_application_payload "$1" "$2"',
+          'host_activation_ledger_write_record "$2/backups/$1/APPLICATION_VERIFIED_V2" "$HOST_ACTIVATION_LEDGER_APPLICATION_PAYLOAD" "$3"',
+          'host_activation_ledger_transition "$1" "$2" "$3" COMMITTED',
+          'host_activation_ledger_revalidate_terminal "$1" "$2" "$3"',
+          'printf "%s:%s\\n" "$HOST_ACTIVATION_LEDGER_STATE" "$HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE"',
+        ].join("\n"),
+        [TEST_RELEASE_SHA, fixture.deployRoot, fixture.nodeBinary],
+      );
+      expect(result).toMatchObject({
+        exitCode: 0,
+        stdout: "COMMITTED:APPLICATION_VERIFIED_V2\n",
+      });
       expect(await readFile(fixture.manifest)).toEqual(protocol);
-      await expect(lstat(join(fixture.stateDir, "PUBLISH_FINALIZED"))).rejects.toThrow();
-      await expect(lstat(join(fixture.stateDir, "governance-before.json"))).rejects.toThrow();
-      await writeFile(join(fixture.stateDir, "application-after.json"), '{"drift":true}\n');
-      expect((await executeHostActivationMode(fixture, "validate")).exitCode).not.toBe(0);
-    } finally { await rm(fixture.root, { recursive: true, force: true }); }
+      await expect(
+        lstat(join(fixture.stateDir, "PUBLISH_FINALIZED")),
+      ).rejects.toThrow();
+      await expect(
+        lstat(join(fixture.stateDir, "governance-before.json")),
+      ).rejects.toThrow();
+      await writeFile(
+        join(fixture.stateDir, "application-after.json"),
+        '{"drift":true}\n',
+      );
+      expect(
+        (await executeHostActivationMode(fixture, "validate")).exitCode,
+      ).not.toBe(0);
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
   });
 
   it("rejects simultaneous application and publication markers and disallows rollback after application verification", async () => {
     const fixture = await createHostActivationLedgerFixture();
     try {
-      expect((await initializeHostActivationProtocol(fixture)).exitCode).toBe(0);
+      expect((await initializeHostActivationProtocol(fixture)).exitCode).toBe(
+        0,
+      );
       await writeV1HostActivationState(fixture, "PENDING", "none");
-      for (const phase of ["before", "after"]) await writeFile(join(fixture.stateDir, `application-${phase}.json`), '{}\n', { mode: 0o600 });
-      const written = await executeHostActivationCommand(fixture,
+      for (const phase of ["before", "after"])
+        await writeFile(
+          join(fixture.stateDir, `application-${phase}.json`),
+          "{}\n",
+          { mode: 0o600 },
+        );
+      const written = await executeHostActivationCommand(
+        fixture,
         'host_activation_ledger_set_paths "$1" "$2"; host_activation_ledger_application_payload "$1" "$2"; host_activation_ledger_write_record "$2/backups/$1/APPLICATION_VERIFIED_V2" "$HOST_ACTIVATION_LEDGER_APPLICATION_PAYLOAD" "$3"',
-        [TEST_RELEASE_SHA, fixture.deployRoot, fixture.nodeBinary]);
+        [TEST_RELEASE_SHA, fixture.deployRoot, fixture.nodeBinary],
+      );
       expect(written.exitCode).toBe(0);
-      expect((await executeHostActivationMode(fixture, "mark-rolled-back")).exitCode).toBe(70);
-      await writeGovernanceLedgerMarker(fixture.deployRoot, TEST_RELEASE_SHA, "PUBLISH_FINALIZED");
-      expect((await executeHostActivationMode(fixture, "validate")).exitCode).toBe(70);
-    } finally { await rm(fixture.root, { recursive: true, force: true }); }
+      expect(
+        (await executeHostActivationMode(fixture, "mark-rolled-back")).exitCode,
+      ).toBe(70);
+      await writeGovernanceLedgerMarker(
+        fixture.deployRoot,
+        TEST_RELEASE_SHA,
+        "PUBLISH_FINALIZED",
+      );
+      expect(
+        (await executeHostActivationMode(fixture, "validate")).exitCode,
+      ).toBe(70);
+    } finally {
+      await rm(fixture.root, { recursive: true, force: true });
+    }
   });
 
   it("keeps public CLI mutation modes internal-only", async () => {
@@ -334,10 +380,11 @@ describe("host activation ledger", { timeout: 30_000 }, () => {
       "mark-rolled-back",
       "mark-committed",
     ]) {
-      const result = await execFileAsync(
-        "/bin/bash",
-        [hostActivationLedgerScript, mode, TEST_RELEASE_SHA],
-      ).catch((error: unknown) => error);
+      const result = await execFileAsync("/bin/bash", [
+        hostActivationLedgerScript,
+        mode,
+        TEST_RELEASE_SHA,
+      ]).catch((error: unknown) => error);
       expect(result).toMatchObject({ code: 64 });
       expect(String((result as { stderr?: unknown }).stderr)).toContain(
         "<initialize-protocol|validate>",
@@ -397,9 +444,7 @@ describe("host activation ledger", { timeout: 30_000 }, () => {
         "b".repeat(40),
       );
       expect(otherRelease.exitCode).toBe(70);
-      expect(otherRelease.stderr).toContain(
-        "initialized by another release",
-      );
+      expect(otherRelease.stderr).toContain("initialized by another release");
       expect(await readFile(fixture.manifest, "utf8")).toBe(beforeContents);
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
@@ -449,42 +494,52 @@ describe("host activation ledger", { timeout: 30_000 }, () => {
     "unknown",
     "temporary",
     "symlink",
-  ] as const)("rejects %s pre-protocol state without creating a manifest", async (kind) => {
-    const fixture = await createHostActivationLedgerFixture();
-    try {
-      if (kind === "active") {
-        await writeGovernanceLedgerMarker(
-          fixture.deployRoot,
-          TEST_RELEASE_SHA,
-          "RECOVERY_REQUIRED",
+  ] as const)(
+    "rejects %s pre-protocol state without creating a manifest",
+    async (kind) => {
+      const fixture = await createHostActivationLedgerFixture();
+      try {
+        if (kind === "active") {
+          await writeGovernanceLedgerMarker(
+            fixture.deployRoot,
+            TEST_RELEASE_SHA,
+            "RECOVERY_REQUIRED",
+          );
+        } else if (kind === "anchor-only") {
+          await writeFile(fixture.anchor, "incomplete\n", "utf8");
+          await chmod(fixture.anchor, 0o600);
+        } else if (kind === "unknown") {
+          await writeFile(
+            join(fixture.stateDir, "HOST_ACTIVATION_UNKNOWN"),
+            "unknown\n",
+            "utf8",
+          );
+        } else if (kind === "temporary") {
+          await writeFile(
+            join(fixture.stateDir, ".activation.tmp"),
+            "tmp\n",
+            "utf8",
+          );
+        } else if (kind === "symlink") {
+          await rm(fixture.stateDir, { force: true, recursive: true });
+          await symlink(
+            fixture.previousRelease,
+            join(fixture.backupsRoot, "unsafe-link"),
+          );
+        }
+
+        const result = await executeHostActivationMode(
+          fixture,
+          "initialize-protocol",
         );
-      } else if (kind === "anchor-only") {
-        await writeFile(fixture.anchor, "incomplete\n", "utf8");
-        await chmod(fixture.anchor, 0o600);
-      } else if (kind === "unknown") {
-        await writeFile(
-          join(fixture.stateDir, "HOST_ACTIVATION_UNKNOWN"),
-          "unknown\n",
-          "utf8",
-        );
-      } else if (kind === "temporary") {
-        await writeFile(join(fixture.stateDir, ".activation.tmp"), "tmp\n", "utf8");
-      } else if (kind === "symlink") {
-        await rm(fixture.stateDir, { force: true, recursive: true });
-        await symlink(fixture.previousRelease, join(fixture.backupsRoot, "unsafe-link"));
+
+        expect(result.exitCode).toBe(70);
+        await expect(lstat(fixture.manifest)).rejects.toThrow();
+      } finally {
+        await rm(fixture.root, { force: true, recursive: true });
       }
-
-      const result = await executeHostActivationMode(
-        fixture,
-        "initialize-protocol",
-      );
-
-      expect(result.exitCode).toBe(70);
-      await expect(lstat(fixture.manifest)).rejects.toThrow();
-    } finally {
-      await rm(fixture.root, { force: true, recursive: true });
-    }
-  });
+    },
+  );
 
   it("rejects grandfathered marker and snapshot drift on later scans", async () => {
     for (const driftTarget of ["marker", "snapshot"] as const) {
@@ -707,13 +762,7 @@ describe("host activation ledger", { timeout: 30_000 }, () => {
       expect((await stat(fixture.anchor)).ino).toBe(anchorInode);
       await expect(lstat(fixture.pending)).rejects.toThrow();
       await expect(
-        lstat(
-          join(
-            fixture.backupsRoot,
-            otherRelease,
-            "HOST_ACTIVATION_V1",
-          ),
-        ),
+        lstat(join(fixture.backupsRoot, otherRelease, "HOST_ACTIVATION_V1")),
       ).rejects.toThrow();
     } finally {
       await rm(fixture.root, { force: true, recursive: true });
@@ -769,15 +818,29 @@ describe("host activation ledger", { timeout: 30_000 }, () => {
     }
     const fixture = await createHostActivationLedgerFixture();
     const governanceScript = resolve(
-      process.cwd(), "scripts/deploy/governance-publication-state-machine.sh",
+      process.cwd(),
+      "scripts/deploy/governance-publication-state-machine.sh",
     );
     try {
-      await writeFile(join(fixture.deployRoot, "validator.sh"), "true <&8\n", { mode: 0o600 });
+      await writeFile(join(fixture.deployRoot, "validator.sh"), "true <&8\n", {
+        mode: 0o600,
+      });
       for (const validator of ["ledger", "isolated-governance"] as const) {
-        for (const scenario of ["child-only", "wrong-child", "closed-child", "contended"] as const) {
-          if (validator === "isolated-governance" && scenario === "contended") continue;
-          const result = await execFileAsync("/bin/bash", [
-            "--noprofile", "--norc", "-c", `
+        for (const scenario of [
+          "child-only",
+          "wrong-child",
+          "closed-child",
+          "contended",
+        ] as const) {
+          if (validator === "isolated-governance" && scenario === "contended")
+            continue;
+          const result = await execFileAsync(
+            "/bin/bash",
+            [
+              "--noprofile",
+              "--norc",
+              "-c",
+              `
 set -uo pipefail
 source "$1"
 source "$2"
@@ -811,14 +874,28 @@ run_in_child "$@"
 status=$?
 printf '%s\\n' "$status"
 exit 0
-`, "native-lifecycle-fd-regression", hostActivationLedgerScript,
-            governanceScript, fixture.deployRoot, scenario, validator,
-          ], {
-            env: { PATH: "/usr/bin:/bin", LANG: "C", LC_ALL: "C", NODE_ENV: "test" },
-            timeout: 10_000,
-          });
-          expect(result.stdout.trim(), `${validator}:${scenario}: ${result.stderr}`)
-            .toBe(scenario === "child-only" ? "0" : "70");
+`,
+              "native-lifecycle-fd-regression",
+              hostActivationLedgerScript,
+              governanceScript,
+              fixture.deployRoot,
+              scenario,
+              validator,
+            ],
+            {
+              env: {
+                PATH: "/usr/bin:/bin",
+                LANG: "C",
+                LC_ALL: "C",
+                NODE_ENV: "test",
+              },
+              timeout: 10_000,
+            },
+          );
+          expect(
+            result.stdout.trim(),
+            `${validator}:${scenario}: ${result.stderr}`,
+          ).toBe(scenario === "child-only" ? "0" : "70");
         }
       }
     } finally {
@@ -897,11 +974,10 @@ exit 0
       const result = await executePrepareWithContendedLifecycleLock(fixture);
 
       expect(result.exitCode).toBe(70);
-      expect(result.stderr).toContain(
-        "descriptor 8 is not exclusively locked",
+      expect(result.stderr).toContain("descriptor 8 is not exclusively locked");
+      expect(await readFile(fixture.operationLog, "utf8").catch(() => "")).toBe(
+        "",
       );
-      expect(await readFile(fixture.operationLog, "utf8").catch(() => ""))
-        .toBe("");
       await expect(lstat(fixture.buildWorkspaceRoot)).rejects.toThrow();
       await expect(
         lstat(join(fixture.releaseDir, ".deploy-ready")),
@@ -953,15 +1029,20 @@ exit 0
     ["ROLLED_BACK:HOST_ROLLBACK_COMPLETED", "terminal"],
     ["COMMITTED:PUBLISH_FINALIZED", "terminal"],
   ]);
-  const matrixCases = (["PENDING", "ROLLED_BACK", "COMMITTED"] as const)
-    .flatMap((hostState) => ([
-      "none",
-      "RECOVERY_REQUIRED",
-      "HOST_ROLLBACK_REQUIRED",
-      "HOST_ROLLBACK_COMPLETED",
-      "PUBLISH_COMMITTED",
-      "PUBLISH_FINALIZED",
-    ] as const).map((governanceState) => ({ governanceState, hostState })));
+  const matrixCases = (
+    ["PENDING", "ROLLED_BACK", "COMMITTED"] as const
+  ).flatMap((hostState) =>
+    (
+      [
+        "none",
+        "RECOVERY_REQUIRED",
+        "HOST_ROLLBACK_REQUIRED",
+        "HOST_ROLLBACK_COMPLETED",
+        "PUBLISH_COMMITTED",
+        "PUBLISH_FINALIZED",
+      ] as const
+    ).map((governanceState) => ({ governanceState, hostState })),
+  );
 
   it.each(matrixCases)(
     "strictly classifies $hostState:$governanceState",
@@ -971,11 +1052,7 @@ exit 0
         expect(await initializeHostActivationProtocol(fixture)).toMatchObject({
           exitCode: 0,
         });
-        await writeV1HostActivationState(
-          fixture,
-          hostState,
-          governanceState,
-        );
+        await writeV1HostActivationState(fixture, hostState, governanceState);
         const result = await executeHostActivationCommand(
           fixture,
           'host_activation_ledger_validate_release_state "$1" "$2"; printf "%s\\n" "$HOST_ACTIVATION_LEDGER_CLASSIFICATION"',

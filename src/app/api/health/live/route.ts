@@ -8,8 +8,10 @@ export const runtime = "nodejs";
 export function GET(): Response {
   const observer = createPublicApiRequestObserver("/api/health/live");
   return observer.finish(
-    Response.json(createHealthPayload({
-      version: env.APP_VERSION,
-    })),
+    Response.json(
+      createHealthPayload({
+        version: env.APP_VERSION,
+      }),
+    ),
   );
 }

@@ -8,11 +8,9 @@ const markdownPlugins = [remarkGfm];
 function normalizedExternalUrl(value: string): string | null {
   try {
     const parsed = new URL(value);
-    return (
-      (parsed.protocol === "https:" || parsed.protocol === "http:") &&
+    return (parsed.protocol === "https:" || parsed.protocol === "http:") &&
       !parsed.username &&
       !parsed.password
-    )
       ? parsed.toString()
       : null;
   } catch {
@@ -26,9 +24,7 @@ export function safeAssistantMarkdownUrl(
 ): string {
   const url = value.trim();
   if (
-    (url.startsWith("/") &&
-      !url.startsWith("//") &&
-      !url.includes("\\")) ||
+    (url.startsWith("/") && !url.startsWith("//") && !url.includes("\\")) ||
     url.startsWith("#") ||
     url.startsWith("?")
   ) {
@@ -114,14 +110,10 @@ const markdownComponents: Components = {
     );
   },
   h5({ children }) {
-    return (
-      <p className="mt-3 mb-1 font-semibold text-[#17382e]">{children}</p>
-    );
+    return <p className="mt-3 mb-1 font-semibold text-[#17382e]">{children}</p>;
   },
   h6({ children }) {
-    return (
-      <p className="mt-3 mb-1 font-semibold text-[#17382e]">{children}</p>
-    );
+    return <p className="mt-3 mb-1 font-semibold text-[#17382e]">{children}</p>;
   },
   hr() {
     return <hr className="my-4 border-black/10" />;
@@ -216,9 +208,7 @@ export function AssistantMarkdown({
     img({ alt }) {
       return (
         <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-900">
-          {alt
-            ? interpolate(hiddenImageWithAlt, { alt })
-            : hiddenImage}
+          {alt ? interpolate(hiddenImageWithAlt, { alt }) : hiddenImage}
         </span>
       );
     },

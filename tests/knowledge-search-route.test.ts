@@ -24,9 +24,7 @@ describe("POST /api/dev/knowledge/search request limits", () => {
       new Request("http://localhost/api/dev/knowledge/search", {
         body: "{}",
         headers: {
-          "content-length": String(
-            MAX_KNOWLEDGE_SEARCH_REQUEST_BYTES + 1,
-          ),
+          "content-length": String(MAX_KNOWLEDGE_SEARCH_REQUEST_BYTES + 1),
           "content-type": "application/json",
         },
         method: "POST",
@@ -99,10 +97,9 @@ describe("POST /api/dev/knowledge/search request limits", () => {
       expect(JSON.stringify(consoleSpy.mock.calls)).not.toContain(
         sensitiveText,
       );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Knowledge search route failed",
-        { errorCode: "Error" },
-      );
+      expect(consoleSpy).toHaveBeenCalledWith("Knowledge search route failed", {
+        errorCode: "Error",
+      });
     } finally {
       consoleSpy.mockRestore();
     }

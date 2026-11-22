@@ -202,7 +202,9 @@ export function buildTargetSelection(
     jurisdictionIds.has(requireId(jurisdiction.id, jurisdiction.code)),
   );
   if (jurisdictions.length !== jurisdictionIds.size) {
-    throw new Error(`Target jurisdiction graph for ${countryIso3} is incomplete.`);
+    throw new Error(
+      `Target jurisdiction graph for ${countryIso3} is incomplete.`,
+    );
   }
 
   const regulations = selectSignedPublishableRegulations(jurisdictionIds);
@@ -267,9 +269,7 @@ export function buildFullIngestSelection(
   );
   const countriesWithoutMemberships = countryIso3s.filter(
     (countryIso3) =>
-      !memberships.some(
-        (membership) => membership.countryIso3 === countryIso3,
-      ),
+      !memberships.some((membership) => membership.countryIso3 === countryIso3),
   );
   if (countriesWithoutMemberships.length > 0) {
     throw new Error(

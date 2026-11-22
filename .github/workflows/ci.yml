@@ -62,6 +62,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Format check
+        run: pnpm format:check
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -74,8 +77,11 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # 覆盖率门禁在上一步测试里执行；这里只是诊断报告。Actions 存储额度用尽时
+      # 上传会失败，不应让已经通过的质量检查变红。
       - name: Upload coverage report
         if: ${{ always() }}
+        continue-on-error: true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-report
@@ -218,11 +224,17 @@ jobs:
         run: pnpm db:smoke:upgrade
 
   e2e:
-    name: Playwright key flows
+    name: Playwright key flows (${{ matrix.shard }}/2)
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: quality
+    # 单 worker 全量矩阵已超过 50 分钟总时限。拆成两片各起独立开发服务器，
+    # 用例、重试和单例时限不变；矩阵任一片失败时 needs.e2e.result 即不是 success。
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -263,20 +275,33 @@ jobs:
       - name: Install Playwright Chromium and WebKit
         run: pnpm exec playwright install --with-deps chromium webkit
 
+      # knowledge-chromium 依赖其余项目以保证最后运行，而 --shard 会把整条依赖链
+      # 放进同一片（实测 271:2）。两片只平分其余项目；知识库流程在第二片用全新的
+      # 开发服务器单独运行，同样不会与其他路由的按需编译交错。
       - name: Run Playwright tests
-        run: pnpm test:e2e
+        run: >-
+          pnpm test:e2e --shard=${{ matrix.shard }}/2
+          --project=desktop-chromium --project=core-webkit
+          --project=global-error-chromium
 
+      - name: Run the stateful knowledge flow
+        if: ${{ matrix.shard == 2 }}
+        run: pnpm test:e2e --project=knowledge-chromium --no-deps
+
+      # 生产 CSP 契约只需跑一次，放在第一片，避免两片重复构建。
       - name: Build the production application for the CSP contract
+        if: ${{ matrix.shard == 1 }}
         run: pnpm build
 
       - name: Run the production CSP contract
+        if: ${{ matrix.shard == 1 }}
         run: pnpm test:e2e:csp:production
 
       - name: Upload Playwright report
         if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 14
           if-no-files-found: warn
@@ -285,7 +310,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-test-results
+          name: playwright-test-results-shard-${{ matrix.shard }}
           path: test-results/
           retention-days: 14
           if-no-files-found: warn
@@ -561,7 +586,10 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" "${handoff_temp}/runtime-artifact"
           printf 'path=%s\n' "${handoff_temp}/runtime-artifact" >> "$GITHUB_OUTPUT"
 
+      # 发布授权只接受 master 上 push 触发的运行（verify-release-authorization.ts），
+      # PR 和手动运行的产物永远不会被部署，只构建验证、不上传，节省 Actions 存储。
       - name: Upload verified production runtime
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: diesel-runtime-${{ github.sha }}-${{ github.run_attempt }}

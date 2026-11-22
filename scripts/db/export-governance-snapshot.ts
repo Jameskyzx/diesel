@@ -54,7 +54,8 @@ export const governanceSnapshotWorkerRetryDelayMs = 1_000;
 // The former two 45-minute slots had the same aggregate allowance, but killed
 // a healthy slow export halfway through. A retry receives only time left over.
 export const governanceSnapshotExportTimeoutMs = 90 * 60 * 1_000;
-export const governanceSnapshotWorkerTimeoutMs = governanceSnapshotExportTimeoutMs;
+export const governanceSnapshotWorkerTimeoutMs =
+  governanceSnapshotExportTimeoutMs;
 export const governanceSnapshotWorkerTerminationGraceMs = 2_000;
 export const governanceSnapshotDatabaseBatchSize = 500;
 // Raw JSON can be tens of KiB per row. Keep these batches smaller on the
@@ -70,30 +71,73 @@ const governanceSnapshotWorkerFlag = "--internal-governance-snapshot-worker";
 const governanceSnapshotPermanentWorkerExitCode = 65;
 const governanceSnapshotRetryableWorkerExitCode = 75;
 
-const governanceSnapshotProgressSchema = z.object({
-  kind: z.literal("governance-snapshot-progress-v1"),
-  table: z.enum(governanceTableNames),
-  batch: z.number().int().min(1).max(10_000),
-  durationMs: z.number().int().min(0).max(governanceSnapshotWorkerTimeoutMs),
-}).strict();
-type GovernanceSnapshotProgress = z.infer<typeof governanceSnapshotProgressSchema>;
+const governanceSnapshotProgressSchema = z
+  .object({
+    kind: z.literal("governance-snapshot-progress-v1"),
+    table: z.enum(governanceTableNames),
+    batch: z.number().int().min(1).max(10_000),
+    durationMs: z.number().int().min(0).max(governanceSnapshotWorkerTimeoutMs),
+  })
+  .strict();
+type GovernanceSnapshotProgress = z.infer<
+  typeof governanceSnapshotProgressSchema
+>;
 
-const governanceSnapshotFailureSchema = z.object({
-  kind: z.literal("governance-snapshot-failure-v1"),
-  phase: z.enum(["reader", "anchor", "acquisition", "worker", "uncaught"]),
-  errorType: z.enum(["Error", "TypeError", "PostgresError", "AggregateError", "ZodError", "unknown"]),
-  code: z.enum([
-    "08000", "08001", "08003", "08004", "08006", "08007", "08P01",
-    "22023", "25P02", "25P03", "40001", "40P01", "53300", "54000",
-    "57014", "57P01", "57P02", "57P03", "CONNECT_TIMEOUT",
-    "CONNECTION_CLOSED", "CONNECTION_DESTROYED", "CONNECTION_ENDED",
-    "EAI_AGAIN", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETDOWN",
-    "ENETUNREACH", "EPIPE", "ETIMEDOUT",
-  ]).nullable(),
-}).strict();
-type GovernanceSnapshotFailure = z.infer<typeof governanceSnapshotFailureSchema>;
+const governanceSnapshotFailureSchema = z
+  .object({
+    kind: z.literal("governance-snapshot-failure-v1"),
+    phase: z.enum(["reader", "anchor", "acquisition", "worker", "uncaught"]),
+    errorType: z.enum([
+      "Error",
+      "TypeError",
+      "PostgresError",
+      "AggregateError",
+      "ZodError",
+      "unknown",
+    ]),
+    code: z
+      .enum([
+        "08000",
+        "08001",
+        "08003",
+        "08004",
+        "08006",
+        "08007",
+        "08P01",
+        "22023",
+        "25P02",
+        "25P03",
+        "40001",
+        "40P01",
+        "53300",
+        "54000",
+        "57014",
+        "57P01",
+        "57P02",
+        "57P03",
+        "CONNECT_TIMEOUT",
+        "CONNECTION_CLOSED",
+        "CONNECTION_DESTROYED",
+        "CONNECTION_ENDED",
+        "EAI_AGAIN",
+        "ECONNREFUSED",
+        "ECONNRESET",
+        "EHOSTUNREACH",
+        "ENETDOWN",
+        "ENETUNREACH",
+        "EPIPE",
+        "ETIMEDOUT",
+      ])
+      .nullable(),
+  })
+  .strict();
+type GovernanceSnapshotFailure = z.infer<
+  typeof governanceSnapshotFailureSchema
+>;
 
-export function parseGovernanceSnapshotFailure(value: unknown): GovernanceSnapshotFailure | null {
+export function parseGovernanceSnapshotFailure(
+  value: unknown,
+): GovernanceSnapshotFailure | null {
   const parsed = governanceSnapshotFailureSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }
@@ -103,8 +147,11 @@ export function describeGovernanceSnapshotFailure(
   error: unknown,
 ): GovernanceSnapshotFailure {
   const name = error instanceof Error ? error.name : null;
-  const errorType = governanceSnapshotFailureSchema.shape.errorType.safeParse(name);
-  const code = governanceSnapshotFailureSchema.shape.code.safeParse(readErrorCode(error));
+  const errorType =
+    governanceSnapshotFailureSchema.shape.errorType.safeParse(name);
+  const code = governanceSnapshotFailureSchema.shape.code.safeParse(
+    readErrorCode(error),
+  );
   return {
     kind: "governance-snapshot-failure-v1",
     phase,
@@ -113,7 +160,10 @@ export function describeGovernanceSnapshotFailure(
   };
 }
 
-function reportGovernanceSnapshotFailure(phase: GovernanceSnapshotFailure["phase"], error: unknown) {
+function reportGovernanceSnapshotFailure(
+  phase: GovernanceSnapshotFailure["phase"],
+  error: unknown,
+) {
   if (process.argv[2] === governanceSnapshotWorkerFlag && process.connected) {
     process.send?.(describeGovernanceSnapshotFailure(phase, error));
   }
@@ -127,7 +177,9 @@ export function parseGovernanceSnapshotProgress(
   return parsed.success ? parsed.data : null;
 }
 
-function reportGovernanceSnapshotProgress(progress: GovernanceSnapshotProgress) {
+function reportGovernanceSnapshotProgress(
+  progress: GovernanceSnapshotProgress,
+) {
   if (process.argv[2] === governanceSnapshotWorkerFlag && process.connected) {
     process.send?.(progress);
   }
@@ -167,7 +219,9 @@ const governanceSnapshotIdSchema = z
 export function parseGovernanceSnapshotId(value: unknown): string {
   const result = governanceSnapshotIdSchema.safeParse(value);
   if (!result.success) {
-    throw new Error("Governance snapshot anchor returned an invalid snapshot ID");
+    throw new Error(
+      "Governance snapshot anchor returned an invalid snapshot ID",
+    );
   }
   return result.data;
 }
@@ -194,9 +248,9 @@ export async function collectGovernanceSnapshotRowsInBatches(
   const rows: GovernanceSnapshotBatchedRow[] = [];
   let cursor: string | null = null;
   while (true) {
-    const batch = governanceSnapshotBatchedRowSchema.array().parse(
-      await fetchBatch(cursor, batchSize),
-    );
+    const batch = governanceSnapshotBatchedRowSchema
+      .array()
+      .parse(await fetchBatch(cursor, batchSize));
     if (batch.length > batchSize) {
       throw new Error("Governance snapshot batch exceeded its requested size");
     }
@@ -308,7 +362,8 @@ function readErrorCode(error: unknown): string | null {
   let current = error;
   for (let depth = 0; depth < 4; depth += 1) {
     if (typeof current !== "object" || current === null) return null;
-    if ("code" in current && typeof current.code === "string") return current.code;
+    if ("code" in current && typeof current.code === "string")
+      return current.code;
     current = "cause" in current ? current.cause : null;
   }
   return null;
@@ -348,9 +403,7 @@ type GovernanceSnapshotReaderBatchInput<
 export async function runGovernanceSnapshotReaderBatchWithRetry<
   Client extends RetriableSnapshotClient,
   Result,
->(
-  input: GovernanceSnapshotReaderBatchInput<Client, Result>,
-): Promise<Result> {
+>(input: GovernanceSnapshotReaderBatchInput<Client, Result>): Promise<Result> {
   const maximumAttempts = requirePositiveSafeInteger(
     input.maximumAttempts ?? governanceSnapshotReaderMaximumAttempts,
     "Governance snapshot reader maximum attempts",
@@ -360,7 +413,11 @@ export async function runGovernanceSnapshotReaderBatchWithRetry<
     input.assertAnchorHealthy();
     try {
       const client = input.createClient();
-      const result = await runSnapshotAcquisitionAttempt(client, input.read, input.retainSuccessfulClient);
+      const result = await runSnapshotAcquisitionAttempt(
+        client,
+        input.read,
+        input.retainSuccessfulClient,
+      );
       input.assertAnchorHealthy();
       return result;
     } catch (error: unknown) {
@@ -500,9 +557,7 @@ export async function executeGovernanceSnapshotAnchorTransaction<
         "set local idle_in_transaction_session_timeout = '60s'",
       );
       const snapshotResult = exportedSnapshotResultSchema.safeParse(
-        await transaction.unsafe(
-          'select pg_export_snapshot() as "snapshotId"',
-        ),
+        await transaction.unsafe('select pg_export_snapshot() as "snapshotId"'),
       );
       if (!snapshotResult.success) {
         throw new Error(
@@ -648,7 +703,10 @@ async function validateGovernanceSnapshotWorkerOutput(
   attemptPath: string,
   workerStdout: string,
 ): Promise<GovernanceSnapshotWorkerSummary> {
-  if (Buffer.byteLength(workerStdout, "utf8") > governanceSnapshotMaximumWorkerOutputBytes) {
+  if (
+    Buffer.byteLength(workerStdout, "utf8") >
+    governanceSnapshotMaximumWorkerOutputBytes
+  ) {
     throw new Error("Governance snapshot worker output exceeded its limit");
   }
 
@@ -676,7 +734,9 @@ async function validateGovernanceSnapshotWorkerOutput(
     actualSha256 !== workerSummary.sha256 ||
     !isDeepStrictEqual(snapshot.tableCounts, workerSummary.tableCounts)
   ) {
-    throw new Error("Governance snapshot worker summary did not match its file");
+    throw new Error(
+      "Governance snapshot worker summary did not match its file",
+    );
   }
 
   return workerSummary;
@@ -700,7 +760,9 @@ export async function superviseGovernanceSnapshotExport(
       input.createAttemptPath?.(attempt) ??
       createGovernanceSnapshotAttemptPath(input.targetPath, attempt);
     if (dirname(attemptPath) !== dirname(input.targetPath)) {
-      throw new Error("Governance snapshot attempt must share the target directory");
+      throw new Error(
+        "Governance snapshot attempt must share the target directory",
+      );
     }
     if (await pathExists(attemptPath)) {
       throw new Error("Governance snapshot attempt path already exists");
@@ -739,7 +801,9 @@ export async function superviseGovernanceSnapshotExport(
 
     await removeAttemptFile(attemptPath);
     if (worker.exitCode === governanceSnapshotPermanentWorkerExitCode) {
-      throw new Error("Governance snapshot worker rejected non-retryable output");
+      throw new Error(
+        "Governance snapshot worker rejected non-retryable output",
+      );
     }
     if (attempt < governanceSnapshotMaximumWorkers && now() < deadline) {
       input.onRetry?.(attempt);
@@ -777,17 +841,20 @@ function createGovernanceSnapshotReader(
       createClient: () => {
         const client = retainedClient;
         retainedClient = undefined;
-        return client ?? postgres(databaseUrl, governanceSnapshotPostgresOptions);
+        return (
+          client ?? postgres(databaseUrl, governanceSnapshotPostgresOptions)
+        );
       },
-      retainSuccessfulClient: (client) => { retainedClient = client; },
+      retainSuccessfulClient: (client) => {
+        retainedClient = client;
+      },
       read: (client) => {
         const db = drizzle(client);
         return db.transaction(
           (transaction) =>
             initializeGovernanceSnapshotImportedTransaction(
               {
-                unsafe: (statement) =>
-                  transaction.execute(sql.raw(statement)),
+                unsafe: (statement) => transaction.execute(sql.raw(statement)),
               },
               snapshotId,
               () => query(transaction),
@@ -812,7 +879,8 @@ function createGovernanceSnapshotReader(
     async close() {
       const client = retainedClient;
       retainedClient = undefined;
-      if (client) await runSnapshotAcquisitionAttempt(client, async () => undefined);
+      if (client)
+        await runSnapshotAcquisitionAttempt(client, async () => undefined);
     },
   });
 }
@@ -852,13 +920,15 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
         try {
           const basePreciseTimestampRows: unknown[] = [];
 
-          const dataSourceBatch = await read("data_sources", async (transaction) => {
-            const db = transaction;
-            const rows = await db
-              .select()
-              .from(dataSources)
-              .orderBy(asc(dataSources.id));
-            const timestamps = await db.execute(sql`
+          const dataSourceBatch = await read(
+            "data_sources",
+            async (transaction) => {
+              const db = transaction;
+              const rows = await db
+                .select()
+                .from(dataSources)
+                .orderBy(asc(dataSources.id));
+              const timestamps = await db.execute(sql`
               select 'data_sources' as "tableName", id::text as "rowKey",
                      jsonb_build_object(
                        'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
@@ -869,8 +939,9 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                 from data_sources
                order by id
             `);
-            return { rows, timestamps };
-          });
+              return { rows, timestamps };
+            },
+          );
           basePreciseTimestampRows.push(
             ...parseMatchingTimestampBatch(
               dataSourceBatch.rows.map((row) => row.id),
@@ -906,13 +977,15 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
             ),
           );
 
-          const jurisdictionBatch = await read("jurisdictions", async (transaction) => {
-            const db = transaction;
-            const rows = await db
-              .select()
-              .from(jurisdictions)
-              .orderBy(asc(jurisdictions.id));
-            const timestamps = await db.execute(sql`
+          const jurisdictionBatch = await read(
+            "jurisdictions",
+            async (transaction) => {
+              const db = transaction;
+              const rows = await db
+                .select()
+                .from(jurisdictions)
+                .orderBy(asc(jurisdictions.id));
+              const timestamps = await db.execute(sql`
               select 'jurisdictions' as "tableName", id::text as "rowKey",
                      jsonb_build_object(
                        'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
@@ -923,8 +996,9 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                 from jurisdictions
                order by id
             `);
-            return { rows, timestamps };
-          });
+              return { rows, timestamps };
+            },
+          );
           basePreciseTimestampRows.push(
             ...parseMatchingTimestampBatch(
               jurisdictionBatch.rows.map((row) => row.id),
@@ -933,17 +1007,19 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
             ),
           );
 
-          const membershipBatch = await read("country_jurisdictions", async (transaction) => {
-            const db = transaction;
-            const rows = await db
-              .select()
-              .from(countryJurisdictions)
-              .orderBy(
-                asc(countryJurisdictions.countryIso3),
-                asc(countryJurisdictions.jurisdictionId),
-                asc(countryJurisdictions.validFrom),
-              );
-            const timestamps = await db.execute(sql`
+          const membershipBatch = await read(
+            "country_jurisdictions",
+            async (transaction) => {
+              const db = transaction;
+              const rows = await db
+                .select()
+                .from(countryJurisdictions)
+                .orderBy(
+                  asc(countryJurisdictions.countryIso3),
+                  asc(countryJurisdictions.jurisdictionId),
+                  asc(countryJurisdictions.validFrom),
+                );
+              const timestamps = await db.execute(sql`
               select 'country_jurisdictions' as "tableName",
                      country_iso3 || ':' || jurisdiction_id::text || ':' || valid_from::text as "rowKey",
                      jsonb_build_object(
@@ -955,8 +1031,9 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                 from country_jurisdictions
                order by country_iso3, jurisdiction_id, valid_from
             `);
-            return { rows, timestamps };
-          });
+              return { rows, timestamps };
+            },
+          );
           basePreciseTimestampRows.push(
             ...parseMatchingTimestampBatch(
               membershipBatch.rows.map(
@@ -968,13 +1045,15 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
             ),
           );
 
-          const regulationBatch = await read("regulations", async (transaction) => {
-            const db = transaction;
-            const rows = await db
-              .select()
-              .from(regulations)
-              .orderBy(asc(regulations.id));
-            const timestamps = await db.execute(sql`
+          const regulationBatch = await read(
+            "regulations",
+            async (transaction) => {
+              const db = transaction;
+              const rows = await db
+                .select()
+                .from(regulations)
+                .orderBy(asc(regulations.id));
+              const timestamps = await db.execute(sql`
               select 'regulations' as "tableName", id::text as "rowKey",
                      jsonb_build_object(
                        'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
@@ -985,8 +1064,9 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                 from regulations
                order by id
             `);
-            return { rows, timestamps };
-          });
+              return { rows, timestamps };
+            },
+          );
           basePreciseTimestampRows.push(
             ...parseMatchingTimestampBatch(
               regulationBatch.rows.map((row) => row.id),
@@ -997,17 +1077,21 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
 
           const limitRows = await collectGovernanceSnapshotRowsInBatches(
             async (cursor, limit) => {
-              const batch = await read("regulation_limits", async (transaction) => {
-                const db = transaction;
-                const rows = await db
-                  .select()
-                  .from(regulationLimits)
-                  .where(
-                    cursor === null ? undefined : gt(regulationLimits.id, cursor),
-                  )
-                  .orderBy(asc(regulationLimits.id))
-                  .limit(limit);
-                const timestamps = await db.execute(sql`
+              const batch = await read(
+                "regulation_limits",
+                async (transaction) => {
+                  const db = transaction;
+                  const rows = await db
+                    .select()
+                    .from(regulationLimits)
+                    .where(
+                      cursor === null
+                        ? undefined
+                        : gt(regulationLimits.id, cursor),
+                    )
+                    .orderBy(asc(regulationLimits.id))
+                    .limit(limit);
+                  const timestamps = await db.execute(sql`
                   select 'regulation_limits' as "tableName", id::text as "rowKey",
                          jsonb_build_object(
                            'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
@@ -1020,11 +1104,12 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                    order by id
                    limit ${limit}
                 `);
-                return { rows, timestamps };
-              });
-              const rows = governanceSnapshotBatchedRowSchema.array().parse(
-                batch.rows,
+                  return { rows, timestamps };
+                },
               );
+              const rows = governanceSnapshotBatchedRowSchema
+                .array()
+                .parse(batch.rows);
               const timestamps = parseMatchingTimestampBatch(
                 rows.map((row) => row.id),
                 batch.timestamps,
@@ -1037,17 +1122,21 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
 
           const marketMetricRows = await collectGovernanceSnapshotRowsInBatches(
             async (cursor, limit) => {
-              const batch = await read("market_metrics", async (transaction) => {
-                const db = transaction;
-                const rows = await db
-                  .select()
-                  .from(marketMetrics)
-                  .where(
-                    cursor === null ? undefined : gt(marketMetrics.id, cursor),
-                  )
-                  .orderBy(asc(marketMetrics.id))
-                  .limit(limit);
-                const timestamps = await db.execute(sql`
+              const batch = await read(
+                "market_metrics",
+                async (transaction) => {
+                  const db = transaction;
+                  const rows = await db
+                    .select()
+                    .from(marketMetrics)
+                    .where(
+                      cursor === null
+                        ? undefined
+                        : gt(marketMetrics.id, cursor),
+                    )
+                    .orderBy(asc(marketMetrics.id))
+                    .limit(limit);
+                  const timestamps = await db.execute(sql`
                   select 'market_metrics' as "tableName", id::text as "rowKey",
                          jsonb_build_object(
                            'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
@@ -1060,11 +1149,12 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                    order by id
                    limit ${limit}
                 `);
-                return { rows, timestamps };
-              });
-              const rows = governanceSnapshotBatchedRowSchema.array().parse(
-                batch.rows,
+                  return { rows, timestamps };
+                },
               );
+              const rows = governanceSnapshotBatchedRowSchema
+                .array()
+                .parse(batch.rows);
               const timestamps = parseMatchingTimestampBatch(
                 rows.map((row) => row.id),
                 batch.timestamps,
@@ -1075,19 +1165,24 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
             },
           );
 
-          const catalogEngineRows = await collectGovernanceSnapshotRowsInBatches(
-            async (cursor, limit) => {
-              const batch = await read("catalog_engines", async (transaction) => {
-                const db = transaction;
-                const rows = await db
-                  .select()
-                  .from(catalogEngines)
-                  .where(
-                    cursor === null ? undefined : gt(catalogEngines.id, cursor),
-                  )
-                  .orderBy(asc(catalogEngines.id))
-                  .limit(limit);
-                const timestamps = await db.execute(sql`
+          const catalogEngineRows =
+            await collectGovernanceSnapshotRowsInBatches(
+              async (cursor, limit) => {
+                const batch = await read(
+                  "catalog_engines",
+                  async (transaction) => {
+                    const db = transaction;
+                    const rows = await db
+                      .select()
+                      .from(catalogEngines)
+                      .where(
+                        cursor === null
+                          ? undefined
+                          : gt(catalogEngines.id, cursor),
+                      )
+                      .orderBy(asc(catalogEngines.id))
+                      .limit(limit);
+                    const timestamps = await db.execute(sql`
                   select 'catalog_engines' as "tableName", id::text as "rowKey",
                          jsonb_build_object(
                            'verifiedAt', to_char(verified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
@@ -1100,34 +1195,40 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                    order by id
                    limit ${limit}
                 `);
-                return { rows, timestamps };
-              });
-              const rows = governanceSnapshotBatchedRowSchema.array().parse(
-                batch.rows,
-              );
-              const timestamps = parseMatchingTimestampBatch(
-                rows.map((row) => row.id),
-                batch.timestamps,
-                "catalog_engines",
-              );
-              basePreciseTimestampRows.push(...timestamps);
-              return rows;
-            },
-          );
+                    return { rows, timestamps };
+                  },
+                );
+                const rows = governanceSnapshotBatchedRowSchema
+                  .array()
+                  .parse(batch.rows);
+                const timestamps = parseMatchingTimestampBatch(
+                  rows.map((row) => row.id),
+                  batch.timestamps,
+                  "catalog_engines",
+                );
+                basePreciseTimestampRows.push(...timestamps);
+                return rows;
+              },
+            );
 
-          const engineFeedbackRows = await collectGovernanceSnapshotRowsInBatches(
-            async (cursor, limit) => {
-              const batch = await read("engine_feedback", async (transaction) => {
-                const db = transaction;
-                const rows = await db
-                  .select()
-                  .from(engineFeedback)
-                  .where(
-                    cursor === null ? undefined : gt(engineFeedback.id, cursor),
-                  )
-                  .orderBy(asc(engineFeedback.id))
-                  .limit(limit);
-                const timestamps = await db.execute(sql`
+          const engineFeedbackRows =
+            await collectGovernanceSnapshotRowsInBatches(
+              async (cursor, limit) => {
+                const batch = await read(
+                  "engine_feedback",
+                  async (transaction) => {
+                    const db = transaction;
+                    const rows = await db
+                      .select()
+                      .from(engineFeedback)
+                      .where(
+                        cursor === null
+                          ? undefined
+                          : gt(engineFeedback.id, cursor),
+                      )
+                      .orderBy(asc(engineFeedback.id))
+                      .limit(limit);
+                    const timestamps = await db.execute(sql`
                   select 'engine_feedback' as "tableName", id::text as "rowKey",
                          jsonb_build_object(
                            'createdAt', to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
@@ -1139,26 +1240,28 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                    order by id
                    limit ${limit}
                 `);
-                return { rows, timestamps };
-              });
-              const rows = governanceSnapshotBatchedRowSchema.array().parse(
-                batch.rows,
-              );
-              const timestamps = parseMatchingTimestampBatch(
-                rows.map((row) => row.id),
-                batch.timestamps,
-                "engine_feedback",
-              );
-              basePreciseTimestampRows.push(...timestamps);
-              return rows;
-            },
-          );
+                    return { rows, timestamps };
+                  },
+                );
+                const rows = governanceSnapshotBatchedRowSchema
+                  .array()
+                  .parse(batch.rows);
+                const timestamps = parseMatchingTimestampBatch(
+                  rows.map((row) => row.id),
+                  batch.timestamps,
+                  "engine_feedback",
+                );
+                basePreciseTimestampRows.push(...timestamps);
+                return rows;
+              },
+            );
 
-          const governanceDraftRows = await collectGovernanceSnapshotRowsInBatches(
-            async (cursor, limit) =>
-              read("data_governance_drafts", async (transaction) => {
-                const db = transaction;
-                return db.execute(sql`
+          const governanceDraftRows =
+            await collectGovernanceSnapshotRowsInBatches(
+              async (cursor, limit) =>
+                read("data_governance_drafts", async (transaction) => {
+                  const db = transaction;
+                  return db.execute(sql`
                 select id::text as "id",
                        entity_type::text as "entityType",
                        entity_key as "entityKey",
@@ -1179,14 +1282,15 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                  order by id
                  limit ${limit}
                 `);
-              }),
-            governanceSnapshotRawJsonBatchSize,
-          );
-          const marketImportBatchRows = await collectGovernanceSnapshotRowsInBatches(
-            async (cursor, limit) =>
-              read("market_import_batches", async (transaction) => {
-                const db = transaction;
-                return db.execute(sql`
+                }),
+              governanceSnapshotRawJsonBatchSize,
+            );
+          const marketImportBatchRows =
+            await collectGovernanceSnapshotRowsInBatches(
+              async (cursor, limit) =>
+                read("market_import_batches", async (transaction) => {
+                  const db = transaction;
+                  return db.execute(sql`
                 select id::text as "id",
                        entity_type::text as "entityType",
                        status::text as "status",
@@ -1206,9 +1310,9 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
                  order by id
                  limit ${limit}
                 `);
-              }),
-            governanceSnapshotRawJsonBatchSize,
-          );
+                }),
+              governanceSnapshotRawJsonBatchSize,
+            );
           const changeLogRows = await collectGovernanceSnapshotRowsInBatches(
             async (cursor, limit) =>
               read("data_change_logs", async (transaction) => {
@@ -1309,8 +1413,14 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
           acquisitionError = error;
           throw error;
         } finally {
-          try { await read.close(); } catch (error: unknown) {
-            if (failed) throw new AggregateError([acquisitionError, error], "Snapshot acquisition and retained-client cleanup failed");
+          try {
+            await read.close();
+          } catch (error: unknown) {
+            if (failed)
+              throw new AggregateError(
+                [acquisitionError, error],
+                "Snapshot acquisition and retained-client cleanup failed",
+              );
             throw error;
           }
         }
@@ -1423,12 +1533,14 @@ async function runGovernanceSnapshotWorkerProcess(
       process.stderr.write(`${JSON.stringify(progress)}\n`);
     },
   });
-  process.stderr.write(`${JSON.stringify({
-    kind: "governance-snapshot-worker-exit-v1",
-    durationMs: Math.round(performance.now() - startedAt),
-    exitCode: execution.exitCode,
-    signal: execution.signal,
-  })}\n`);
+  process.stderr.write(
+    `${JSON.stringify({
+      kind: "governance-snapshot-worker-exit-v1",
+      durationMs: Math.round(performance.now() - startedAt),
+      exitCode: execution.exitCode,
+      signal: execution.signal,
+    })}\n`,
+  );
   return execution;
 }
 
@@ -1506,7 +1618,11 @@ export function waitForGovernanceSnapshotWorkerProcess(
           return;
         }
         if (!forcedTermination) {
-          try { options.onFailure?.(failure); } catch { requestTermination(); }
+          try {
+            options.onFailure?.(failure);
+          } catch {
+            requestTermination();
+          }
         }
         return;
       }

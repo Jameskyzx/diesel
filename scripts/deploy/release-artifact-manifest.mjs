@@ -8,14 +8,7 @@ import {
   realpath,
   writeFile,
 } from "node:fs/promises";
-import {
-  basename,
-  dirname,
-  isAbsolute,
-  join,
-  resolve,
-  sep,
-} from "node:path";
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BUILD_MARKER_FORMAT = "diesel-build-complete-v2";
@@ -81,7 +74,9 @@ function assertSha256(value, label) {
 
 function assertSafeInteger(value, label, minimum = 0) {
   if (!Number.isSafeInteger(value) || value < minimum) {
-    fail(`${label} must be a safe integer greater than or equal to ${minimum}.`);
+    fail(
+      `${label} must be a safe integer greater than or equal to ${minimum}.`,
+    );
   }
 }
 
@@ -92,24 +87,28 @@ function assertFixedPath(path, expectedName, label) {
 }
 
 function isSafeRelativePath(path) {
-  return path.length > 0 &&
+  return (
+    path.length > 0 &&
     !path.startsWith("/") &&
     !path.includes("\\") &&
     !controlCharacterPattern.test(path) &&
     !path.includes("\uFFFD") &&
-    !path.split("/").some(
-      (segment) => segment === "" || segment === "." || segment === "..",
-    );
+    !path
+      .split("/")
+      .some((segment) => segment === "" || segment === "." || segment === "..")
+  );
 }
 
 function isSafeEntryName(name) {
-  return name.length > 0 &&
+  return (
+    name.length > 0 &&
     name !== "." &&
     name !== ".." &&
     !name.includes("/") &&
     !name.includes("\\") &&
     !controlCharacterPattern.test(name) &&
-    !name.includes("\uFFFD");
+    !name.includes("\uFFFD")
+  );
 }
 
 function comparePaths(left, right) {
@@ -178,7 +177,8 @@ function assertOwnedMetadata(metadata, label, identity, exactMode = null) {
 }
 
 function metadataIdentityMatches(left, right) {
-  return left.dev === right.dev &&
+  return (
+    left.dev === right.dev &&
     left.ino === right.ino &&
     left.mode === right.mode &&
     left.uid === right.uid &&
@@ -186,7 +186,8 @@ function metadataIdentityMatches(left, right) {
     left.nlink === right.nlink &&
     left.size === right.size &&
     left.mtimeNs === right.mtimeNs &&
-    left.ctimeNs === right.ctimeNs;
+    left.ctimeNs === right.ctimeNs
+  );
 }
 
 async function readBoundedRegularFile(
@@ -206,9 +207,10 @@ async function readBoundedRegularFile(
     fail(`${label} must be a bounded, singly linked regular file.`);
   }
   if (identity) assertOwnedMetadata(discovered, label, identity, exactMode);
-  const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW).catch(
-    () => null,
-  );
+  const handle = await open(
+    path,
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  ).catch(() => null);
   if (!handle) {
     fail(`${label} could not be opened without following symlinks.`);
   }
@@ -258,7 +260,9 @@ function parseInputManifest(contents, expectedCommit) {
   }
   assertCommit(parsed.commit, "Release input manifest commit");
   if (parsed.commit !== expectedCommit) {
-    fail("Release input manifest commit does not match the expected release commit.");
+    fail(
+      "Release input manifest commit does not match the expected release commit.",
+    );
   }
   assertSha256(parsed.inputDigest, "Release input manifest inputDigest");
   if (!Array.isArray(parsed.files) || parsed.files.length === 0) {
@@ -338,10 +342,7 @@ async function listCurrentReleaseInputTree(
   const directories = [];
   const files = [];
   for (const entry of entries) {
-    if (
-      prefix.length === 0 &&
-      EXCLUDED_RELEASE_INPUT_ENTRIES.has(entry.name)
-    ) {
+    if (prefix.length === 0 && EXCLUDED_RELEASE_INPUT_ENTRIES.has(entry.name)) {
       continue;
     }
     const path = prefix.length === 0 ? entry.name : `${prefix}/${entry.name}`;
@@ -410,7 +411,9 @@ async function verifyReleaseInputFile(file, hashBuffer, immutableIdentity) {
     constants.O_RDONLY | constants.O_NOFOLLOW,
   ).catch(() => null);
   if (!handle) {
-    fail(`Release input could not be opened without following symlinks: ${file.path}.`);
+    fail(
+      `Release input could not be opened without following symlinks: ${file.path}.`,
+    );
   }
   try {
     const before = await handle.stat({ bigint: true });
@@ -455,7 +458,9 @@ function currentEffectiveUserId() {
   }
   const value = process.getuid();
   if (!Number.isSafeInteger(value) || value < 0) {
-    fail("Deploy-ready verification could not resolve a safe effective user ID.");
+    fail(
+      "Deploy-ready verification could not resolve a safe effective user ID.",
+    );
   }
   return BigInt(value);
 }
@@ -466,7 +471,9 @@ function currentEffectiveGroupId() {
   }
   const value = process.getgid();
   if (!Number.isSafeInteger(value) || value < 0) {
-    fail("Deploy-ready verification could not resolve a safe effective group ID.");
+    fail(
+      "Deploy-ready verification could not resolve a safe effective group ID.",
+    );
   }
   return BigInt(value);
 }
@@ -513,7 +520,9 @@ async function verifyCanonicalReleaseBoundary(
     basename(releaseDirectory) !== expectedCommit ||
     basename(releasesDirectory) !== "releases"
   ) {
-    fail("Deploy-ready verification must run from the canonical release directory.");
+    fail(
+      "Deploy-ready verification must run from the canonical release directory.",
+    );
   }
   const controllerIdentity = {
     gid: currentEffectiveGroupId(),
@@ -575,7 +584,9 @@ async function verifyRuntimeLink(
     () => null,
   );
   if (!resolvedTarget || resolvedTarget !== resolvedExpectedTarget) {
-    fail(`Runtime ${expectedKind} link has an unexpected target: ${basename(path)}.`);
+    fail(
+      `Runtime ${expectedKind} link has an unexpected target: ${basename(path)}.`,
+    );
   }
   const targetMetadata = await lstat(expectedTarget, { bigint: true }).catch(
     () => null,
@@ -596,10 +607,9 @@ async function verifyRuntimeLink(
     expectedIdentity,
     expectedMode,
   );
-  const confirmedTarget = await lstat(
-    expectedTarget,
-    { bigint: true },
-  ).catch(() => null);
+  const confirmedTarget = await lstat(expectedTarget, { bigint: true }).catch(
+    () => null,
+  );
   if (
     !confirmedTarget ||
     confirmedTarget.dev !== targetMetadata.dev ||
@@ -607,7 +617,8 @@ async function verifyRuntimeLink(
     confirmedTarget.mode !== targetMetadata.mode ||
     confirmedTarget.uid !== targetMetadata.uid ||
     confirmedTarget.gid !== targetMetadata.gid ||
-    (requireSingleLink && !metadataIdentityMatches(targetMetadata, confirmedTarget))
+    (requireSingleLink &&
+      !metadataIdentityMatches(targetMetadata, confirmedTarget))
   ) {
     fail(`Runtime ${expectedKind} link target changed while it was verified.`);
   }
@@ -656,11 +667,13 @@ async function verifyRuntimeLinks(boundary, runtimeIdentity) {
     RUNTIME_MUTABLE_DIRECTORY_MODE,
     false,
   );
-  const confirmedShared = await lstat(
-    sharedDirectory,
-    { bigint: true },
-  ).catch(() => null);
-  if (!confirmedShared || !metadataIdentityMatches(sharedMetadata, confirmedShared)) {
+  const confirmedShared = await lstat(sharedDirectory, { bigint: true }).catch(
+    () => null,
+  );
+  if (
+    !confirmedShared ||
+    !metadataIdentityMatches(sharedMetadata, confirmedShared)
+  ) {
     fail("Shared runtime directory changed while links were verified.");
   }
 }
@@ -698,7 +711,9 @@ async function verifyReleaseInputState(expectedCommit, immutableIdentity) {
     JSON.stringify(actual.files) !== JSON.stringify(expectedFiles) ||
     JSON.stringify(actual.directories) !== JSON.stringify(expectedDirectories)
   ) {
-    fail("Release input paths do not exactly match the release input manifest.");
+    fail(
+      "Release input paths do not exactly match the release input manifest.",
+    );
   }
   const hashBuffer = Buffer.alloc(FILE_HASH_BUFFER_BYTES);
   for (const file of manifest.files) {
@@ -756,9 +771,10 @@ async function discoverEntries(
   immutableIdentity,
   relativePath = "",
 ) {
-  const directoryAbsolute = relativePath.length === 0
-    ? rootAbsolute
-    : join(rootAbsolute, ...relativePath.split("/"));
+  const directoryAbsolute =
+    relativePath.length === 0
+      ? rootAbsolute
+      : join(rootAbsolute, ...relativePath.split("/"));
   const before = await assertRealDirectory(
     directoryAbsolute,
     `Artifact directory ${rootPath}${relativePath ? `/${relativePath}` : ""}`,
@@ -772,9 +788,8 @@ async function discoverEntries(
     if (!isSafeEntryName(name)) {
       fail(`Artifact tree contains an unsafe entry name under ${rootPath}.`);
     }
-    const childRelative = relativePath.length === 0
-      ? name
-      : `${relativePath}/${name}`;
+    const childRelative =
+      relativePath.length === 0 ? name : `${relativePath}/${name}`;
     if (rootPath === ".next" && childRelative === "cache") {
       await assertRealDirectory(
         join(rootAbsolute, "cache"),
@@ -783,10 +798,14 @@ async function discoverEntries(
       continue;
     }
     const childAbsolute = join(rootAbsolute, ...childRelative.split("/"));
-    const metadata = await lstat(childAbsolute, { bigint: true }).catch(() => null);
+    const metadata = await lstat(childAbsolute, { bigint: true }).catch(
+      () => null,
+    );
     const kind = metadata ? entryKind(metadata) : null;
     if (!metadata || !kind) {
-      fail(`Artifact tree contains a missing or special node: ${rootPath}/${childRelative}.`);
+      fail(
+        `Artifact tree contains a missing or special node: ${rootPath}/${childRelative}.`,
+      );
     }
     assertOwnedMetadata(
       metadata,
@@ -795,7 +814,9 @@ async function discoverEntries(
       kind === "directory"
         ? RELEASE_DIRECTORY_MODE
         : kind === "file"
-          ? (fileExecutable(metadata) === 1 ? 0o750n : 0o640n)
+          ? fileExecutable(metadata) === 1
+            ? 0o750n
+            : 0o640n
           : null,
     );
     entries.push({ absolute: childAbsolute, kind, relative: childRelative });
@@ -811,9 +832,13 @@ async function discoverEntries(
       }
     }
   }
-  const after = await lstat(directoryAbsolute, { bigint: true }).catch(() => null);
+  const after = await lstat(directoryAbsolute, { bigint: true }).catch(
+    () => null,
+  );
   if (!after?.isDirectory() || !metadataIdentityMatches(before, after)) {
-    fail(`Artifact directory changed while it was being enumerated: ${rootPath}/${relativePath}.`);
+    fail(
+      `Artifact directory changed while it was being enumerated: ${rootPath}/${relativePath}.`,
+    );
   }
   return entries;
 }
@@ -825,11 +850,14 @@ async function hashRegularFile(
   seenInodes,
   hashBuffer,
 ) {
-  const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW).catch(
-    () => null,
-  );
+  const handle = await open(
+    path,
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  ).catch(() => null);
   if (!handle) {
-    fail(`Artifact file could not be opened without following symlinks: ${label}.`);
+    fail(
+      `Artifact file could not be opened without following symlinks: ${label}.`,
+    );
   }
   try {
     const before = await handle.stat({ bigint: true });
@@ -862,10 +890,7 @@ async function hashRegularFile(
       totalBytes += BigInt(bytesRead);
     }
     const after = await handle.stat({ bigint: true });
-    if (
-      !metadataIdentityMatches(before, after) ||
-      totalBytes !== before.size
-    ) {
+    if (!metadataIdentityMatches(before, after) || totalBytes !== before.size) {
       fail(`Artifact file changed while it was being hashed: ${label}.`);
     }
     return {
@@ -910,7 +935,9 @@ async function validateSymlink(
     !isInClosure(finalTarget, realClosureRoots) ||
     isInExcludedCache(finalTarget, realExcludedCache)
   ) {
-    fail(`Artifact symlink is dangling, cyclic, or escapes the artifact closure: ${label}.`);
+    fail(
+      `Artifact symlink is dangling, cyclic, or escapes the artifact closure: ${label}.`,
+    );
   }
   const after = await lstat(path, { bigint: true }).catch(() => null);
   if (!after?.isSymbolicLink() || !metadataIdentityMatches(metadata, after)) {
@@ -952,9 +979,13 @@ async function computeRootAggregate(
   let symlinks = 0;
   let totalBytes = 0n;
   for (const entry of entries) {
-    const metadata = await lstat(entry.absolute, { bigint: true }).catch(() => null);
+    const metadata = await lstat(entry.absolute, { bigint: true }).catch(
+      () => null,
+    );
     if (!metadata || entryKind(metadata) !== entry.kind) {
-      fail(`Artifact entry changed while it was being hashed: ${rootPath}/${entry.relative}.`);
+      fail(
+        `Artifact entry changed while it was being hashed: ${rootPath}/${entry.relative}.`,
+      );
     }
     assertOwnedMetadata(
       metadata,
@@ -963,7 +994,9 @@ async function computeRootAggregate(
       entry.kind === "directory"
         ? RELEASE_DIRECTORY_MODE
         : entry.kind === "file"
-          ? (fileExecutable(metadata) === 1 ? 0o750n : 0o640n)
+          ? fileExecutable(metadata) === 1
+            ? 0o750n
+            : 0o640n
           : null,
     );
     updateString(hash, entry.relative);
@@ -1032,17 +1065,19 @@ async function computeRoots(immutableIdentity = null) {
   const hashBuffer = Buffer.allocUnsafe(FILE_HASH_BUFFER_BYTES);
   const roots = [];
   for (const [index, rootAbsolute] of closureRoots.entries()) {
-    roots.push(await computeRootAggregate(
-      ROOT_PATHS[index],
-      rootAbsolute,
-      closureRoots,
-      realClosureRoots,
-      excludedCache,
-      realExcludedCache,
-      seenInodes,
-      hashBuffer,
-      immutableIdentity,
-    ));
+    roots.push(
+      await computeRootAggregate(
+        ROOT_PATHS[index],
+        rootAbsolute,
+        closureRoots,
+        realClosureRoots,
+        excludedCache,
+        realExcludedCache,
+        seenInodes,
+        hashBuffer,
+        immutableIdentity,
+      ),
+    );
   }
   return roots;
 }
@@ -1142,7 +1177,10 @@ function parseArtifactMarker(contents, expectedFormat, label) {
   ) {
     fail(`${label} nextBuildId has an unsafe format.`);
   }
-  if (!Array.isArray(parsed.roots) || parsed.roots.length !== ROOT_PATHS.length) {
+  if (
+    !Array.isArray(parsed.roots) ||
+    parsed.roots.length !== ROOT_PATHS.length
+  ) {
     fail(`${label} must contain exactly the fixed artifact roots.`);
   }
   const roots = parsed.roots.map(parseRoot);
@@ -1198,14 +1236,18 @@ async function overwriteBuildMarker(path, marker) {
     discovered.nlink !== 1n ||
     discovered.size > BigInt(MAX_ARTIFACT_MARKER_BYTES)
   ) {
-    fail(`${BUILD_MARKER_NAME} must be a pre-created, singly linked regular file.`);
+    fail(
+      `${BUILD_MARKER_NAME} must be a pre-created, singly linked regular file.`,
+    );
   }
   const handle = await open(
     path,
     constants.O_WRONLY | constants.O_NOFOLLOW,
   ).catch(() => null);
   if (!handle) {
-    fail(`${BUILD_MARKER_NAME} could not be opened without following symlinks.`);
+    fail(
+      `${BUILD_MARKER_NAME} could not be opened without following symlinks.`,
+    );
   }
   try {
     const opened = await handle.stat({ bigint: true });
@@ -1242,11 +1284,13 @@ async function writeReadyMarker(path, marker) {
 }
 
 function manifestsMatch(left, right) {
-  return left.artifactDigest === right.artifactDigest &&
+  return (
+    left.artifactDigest === right.artifactDigest &&
     left.inputDigest === right.inputDigest &&
     left.nextBuildId === right.nextBuildId &&
     left.releaseCommit === right.releaseCommit &&
-    JSON.stringify(left.roots) === JSON.stringify(right.roots);
+    JSON.stringify(left.roots) === JSON.stringify(right.roots)
+  );
 }
 
 async function createBuildMarker(expectedCommit, markerPath) {
@@ -1270,7 +1314,9 @@ async function verifyBuildMarker(
     immutableIdentity,
   );
   if (marker.releaseCommit !== expectedCommit) {
-    fail("Build-complete marker releaseCommit does not match the expected release commit.");
+    fail(
+      "Build-complete marker releaseCommit does not match the expected release commit.",
+    );
   }
   const current = await computeCurrentManifest(
     expectedCommit,
@@ -1278,7 +1324,9 @@ async function verifyBuildMarker(
     immutableIdentity,
   );
   if (!manifestsMatch(marker, current)) {
-    fail("Build artifacts or bound release metadata drifted from the build-complete marker.");
+    fail(
+      "Build artifacts or bound release metadata drifted from the build-complete marker.",
+    );
   }
   return marker;
 }
@@ -1323,15 +1371,27 @@ async function checkReadyMarker(
     marker.releaseCommit !== expectedCommit ||
     ready.releaseCommit !== expectedCommit
   ) {
-    fail("Artifact marker releaseCommit does not match the expected release commit.");
+    fail(
+      "Artifact marker releaseCommit does not match the expected release commit.",
+    );
   }
   if (!manifestsMatch(marker, ready)) {
-    fail("Deploy-ready marker metadata does not match the build-complete marker.");
+    fail(
+      "Deploy-ready marker metadata does not match the build-complete marker.",
+    );
   }
   for (const [path, metadata, label] of [
     [boundary.deployDirectory, boundary.deployMetadata, "Deployment root"],
-    [boundary.releasesDirectory, boundary.releasesMetadata, "Releases directory"],
-    [boundary.releaseDirectory, boundary.metadata, "Canonical release directory"],
+    [
+      boundary.releasesDirectory,
+      boundary.releasesMetadata,
+      "Releases directory",
+    ],
+    [
+      boundary.releaseDirectory,
+      boundary.metadata,
+      "Canonical release directory",
+    ],
   ]) {
     const confirmed = await lstat(path, { bigint: true }).catch(() => null);
     if (!confirmed || !metadataIdentityMatches(metadata, confirmed)) {
@@ -1342,9 +1402,11 @@ async function checkReadyMarker(
 }
 
 function usage() {
-  return "usage: release-artifact-manifest.mjs <create|verify> <full-git-sha> .build-complete\n" +
+  return (
+    "usage: release-artifact-manifest.mjs <create|verify> <full-git-sha> .build-complete\n" +
     "   or: release-artifact-manifest.mjs finalize <full-git-sha> .build-complete .deploy-ready\n" +
-    "   or: release-artifact-manifest.mjs check-ready <full-git-sha> .build-complete .deploy-ready <immutable-uid> <immutable-gid> <runtime-uid> <runtime-gid>";
+    "   or: release-artifact-manifest.mjs check-ready <full-git-sha> .build-complete .deploy-ready <immutable-uid> <immutable-gid> <runtime-uid> <runtime-gid>"
+  );
 }
 
 async function main() {
@@ -1360,9 +1422,10 @@ async function main() {
     !readyPath &&
     identityArguments.length === 0
   ) {
-    result = command === "create"
-      ? await createBuildMarker(expectedCommit, resolve(markerPath))
-      : await verifyBuildMarker(expectedCommit, resolve(markerPath));
+    result =
+      command === "create"
+        ? await createBuildMarker(expectedCommit, resolve(markerPath))
+        : await verifyBuildMarker(expectedCommit, resolve(markerPath));
   } else if (
     command === "finalize" &&
     readyPath &&
@@ -1410,8 +1473,10 @@ export { checkReadyMarker as checkReadyMarkerForTesting };
 function isMainModule() {
   if (!process.argv[1]) return false;
   try {
-    return realpathSync(resolve(process.argv[1])) ===
-      realpathSync(fileURLToPath(import.meta.url));
+    return (
+      realpathSync(resolve(process.argv[1])) ===
+      realpathSync(fileURLToPath(import.meta.url))
+    );
   } catch {
     return false;
   }

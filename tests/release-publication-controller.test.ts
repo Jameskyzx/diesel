@@ -20,7 +20,7 @@ const controllerScript = resolve(
 );
 const RELEASE_ID = "a".repeat(40);
 const signalBlockFunction =
-  "controller_signal_block() { /bin/bash --noprofile --norc -c 'trap \"exit 23\" TERM; exec 9<>\"${CONTROLLER_BLOCK}\"; printf \"ready\\n\" >\"${CONTROLLER_READY}\"; IFS= read -r _ <&9'; }";
+  'controller_signal_block() { /bin/bash --noprofile --norc -c \'trap "exit 23" TERM; exec 9<>"${CONTROLLER_BLOCK}"; printf "ready\\n" >"${CONTROLLER_READY}"; IFS= read -r _ <&9\'; }';
 
 type CommandResult = {
   exitCode: number;
@@ -128,18 +128,22 @@ async function runDetachedSignalHarness(
   child.stdout.on("data", (chunk: string) => {
     stdout += chunk;
   });
-  const completion = new Promise<number>((resolveCompletion, rejectCompletion) => {
-    child.once("error", rejectCompletion);
-    child.once("close", (code, signal) => {
-      if (code !== null) {
-        resolveCompletion(code);
-      } else {
-        rejectCompletion(
-          new Error(`controller signal fixture exited via ${signal ?? "unknown"}`),
-        );
-      }
-    });
-  });
+  const completion = new Promise<number>(
+    (resolveCompletion, rejectCompletion) => {
+      child.once("error", rejectCompletion);
+      child.once("close", (code, signal) => {
+        if (code !== null) {
+          resolveCompletion(code);
+        } else {
+          rejectCompletion(
+            new Error(
+              `controller signal fixture exited via ${signal ?? "unknown"}`,
+            ),
+          );
+        }
+      });
+    },
+  );
 
   try {
     await waitForFile(readyPath);
@@ -151,7 +155,8 @@ async function runDetachedSignalHarness(
       completion,
       new Promise<never>((_resolve, rejectTimeout) => {
         setTimeout(
-          () => rejectTimeout(new Error("controller signal fixture did not exit")),
+          () =>
+            rejectTimeout(new Error("controller signal fixture did not exit")),
           5_000,
         );
       }),
@@ -184,24 +189,24 @@ async function runProcessGroupSignalScenario(
     'controller_signal_log() { printf "%s\\n" "$1" >>"${CONTROLLER_LOG}"; }',
     signalBlockFunction,
     'release_publication_controller_require_pending_state() { controller_signal_log "pending"; }',
-    'release_publication_controller_run_prepare() {',
+    "release_publication_controller_run_prepare() {",
     '  controller_signal_log "prepare"',
     '  if [[ "${SIGNAL_PHASE}" == prepare ]]; then',
-    '    controller_signal_block',
-    '  fi',
-    '}',
+    "    controller_signal_block",
+    "  fi",
+    "}",
     'release_publication_controller_run_activate() { controller_signal_log "activate"; }',
     'release_publication_controller_require_current() { controller_signal_log "current"; }',
-    'release_publication_controller_run_governance_mode() {',
+    "release_publication_controller_run_governance_mode() {",
     '  controller_signal_log "governance:$1"',
     '  if [[ "$1" == publish ]]; then',
-    '    controller_signal_block',
-    '  fi',
-    '}',
-    'release_publication_controller_read_strict_state() {',
+    "    controller_signal_block",
+    "  fi",
+    "}",
+    "release_publication_controller_read_strict_state() {",
     '  controller_signal_log "read:PENDING:PUBLISH_COMMITTED"',
     '  printf "%s\\n" "PENDING:PUBLISH_COMMITTED"',
-    '}',
+    "}",
     'release_publication_controller_impl() { release_publication_controller_reconcile "$1"; }',
     'release_publication_controller_run_main "$2"',
   ].join("\n");
@@ -246,20 +251,20 @@ async function runFinalizeSignalScenario(
     'RELEASE_PUBLICATION_CONTROLLER_DEPLOY_ROOT="${CONTROLLER_DEPLOY_ROOT}"',
     'controller_signal_log() { printf "%s\\n" "$1" >>"${CONTROLLER_LOG}"; }',
     signalBlockFunction,
-    'release_publication_controller_read_strict_state() {',
+    "release_publication_controller_read_strict_state() {",
     '  IFS= read -r strict_state <"${CONTROLLER_STATE}"',
     '  controller_signal_log "read:${strict_state}"',
     '  printf "%s\\n" "${strict_state}"',
-    '}',
-    'release_publication_controller_run_governance_mode() {',
+    "}",
+    "release_publication_controller_run_governance_mode() {",
     '  [[ "$1" == finalize-committed ]] || return 97',
     '  controller_signal_log "finalize:start"',
     '  if [[ "${CONTROLLER_WRITE_TERMINAL}" == 1 ]]; then',
     '    printf "%s\\n" COMMITTED:PUBLISH_FINALIZED >"${CONTROLLER_STATE}"',
     '    controller_signal_log "finalize:terminal"',
-    '  fi',
-    '  controller_signal_block',
-    '}',
+    "  fi",
+    "  controller_signal_block",
+    "}",
     'release_publication_controller_impl() { release_publication_controller_reconcile_committed "$1"; }',
     'release_publication_controller_run_main "$2"',
   ].join("\n");
@@ -275,69 +280,69 @@ async function runFinalizeSignalScenario(
 const reconcileHarness = [
   'source -- "$1"',
   'controller_test_log() { printf "%s\\n" "$1" >>"${CONTROLLER_LOG}"; }',
-  'release_publication_controller_run_prepare() {',
+  "release_publication_controller_run_prepare() {",
   '  controller_test_log "prepare:$1"',
   '  return "${PREPARE_STATUS}"',
-  '}',
-  'release_publication_controller_run_activate() {',
+  "}",
+  "release_publication_controller_run_activate() {",
   '  controller_test_log "activate:$1"',
   '  return "${ACTIVATE_STATUS}"',
-  '}',
-  'release_publication_controller_require_current() {',
+  "}",
+  "release_publication_controller_require_current() {",
   '  controller_test_log "current:$1"',
   '  return "${CURRENT_STATUS}"',
-  '}',
-  'release_publication_controller_require_pending_state() {',
-  '  local pending_count=0',
-  '  local status_index',
-  '  local pending_status',
-  '  local -a pending_statuses=()',
+  "}",
+  "release_publication_controller_require_pending_state() {",
+  "  local pending_count=0",
+  "  local status_index",
+  "  local pending_status",
+  "  local -a pending_statuses=()",
   '  IFS= read -r pending_count <"${PENDING_COUNT_FILE}" || return 96',
-  '  pending_count=$((pending_count + 1))',
+  "  pending_count=$((pending_count + 1))",
   '  printf "%s\\n" "${pending_count}" >"${PENDING_COUNT_FILE}"',
   '  IFS="|" read -r -a pending_statuses <<<"${PENDING_STATUSES}"',
-  '  status_index=$((pending_count - 1))',
-  '  if (( status_index >= ${#pending_statuses[@]} )); then',
-  '    status_index=$((${#pending_statuses[@]} - 1))',
-  '  fi',
+  "  status_index=$((pending_count - 1))",
+  "  if (( status_index >= ${#pending_statuses[@]} )); then",
+  "    status_index=$((${#pending_statuses[@]} - 1))",
+  "  fi",
   '  pending_status="${pending_statuses[${status_index}]}"',
   '  controller_test_log "pending:${pending_status}:$1"',
   '  return "${pending_status}"',
-  '}',
-  'release_publication_controller_run_governance_mode() {',
+  "}",
+  "release_publication_controller_run_governance_mode() {",
   '  controller_test_log "governance:$1:$2"',
   '  case "$1" in',
   '    publish | application) return "${PUBLISH_STATUS}" ;;',
   '    finalize-committed | finalize-application) return "${FINALIZE_STATUS}" ;;',
-  '    *) return 64 ;;',
-  '  esac',
-  '}',
-  'release_publication_controller_read_strict_state() {',
-  '  local read_count=0',
-  '  local state_index',
-  '  local strict_state',
-  '  local -a strict_states=()',
+  "    *) return 64 ;;",
+  "  esac",
+  "}",
+  "release_publication_controller_read_strict_state() {",
+  "  local read_count=0",
+  "  local state_index",
+  "  local strict_state",
+  "  local -a strict_states=()",
   '  IFS= read -r read_count <"${READ_COUNT_FILE}" || return 96',
-  '  read_count=$((read_count + 1))',
+  "  read_count=$((read_count + 1))",
   '  printf "%s\\n" "${read_count}" >"${READ_COUNT_FILE}"',
   '  if [[ "${READ_FAILURE_AT}" == "${read_count}" ]]; then',
   '    controller_test_log "read:error:$1"',
   '    return "${READ_FAILURE_STATUS}"',
-  '  fi',
+  "  fi",
   '  IFS="|" read -r -a strict_states <<<"${STRICT_STATES}"',
-  '  state_index=$((read_count - 1))',
-  '  if (( state_index >= ${#strict_states[@]} )); then',
-  '    state_index=$((${#strict_states[@]} - 1))',
-  '  fi',
+  "  state_index=$((read_count - 1))",
+  "  if (( state_index >= ${#strict_states[@]} )); then",
+  "    state_index=$((${#strict_states[@]} - 1))",
+  "  fi",
   '  strict_state="${strict_states[${state_index}]}"',
   '  controller_test_log "read:${strict_state}:$1"',
   '  printf "%s\\n" "${strict_state}"',
-  '}',
+  "}",
   'case "${CONTROLLER_ENTRY}" in',
   '  reconcile) release_publication_controller_reconcile "$2" ;;',
   '  reconcile-committed) release_publication_controller_reconcile_committed "$2" ;;',
-  '  *) exit 64 ;;',
-  'esac',
+  "  *) exit 64 ;;",
+  "esac",
 ].join("\n");
 
 async function execute(
@@ -360,8 +365,7 @@ async function execute(
       stdout?: unknown;
     };
     return {
-      exitCode:
-        typeof commandError.code === "number" ? commandError.code : -1,
+      exitCode: typeof commandError.code === "number" ? commandError.code : -1,
       stderr: String(commandError.stderr ?? ""),
       stdout: String(commandError.stdout ?? ""),
     };
@@ -423,22 +427,49 @@ async function runScenario(
 
 describe("application-only controller extension", () => {
   it("prepares once and delegates activation/readback to the maintenance-locked application protocol", async () => {
-    const result = await runScenario({ kind: "application", strictStates: ["COMMITTED:APPLICATION_VERIFIED_V2"] });
+    const result = await runScenario({
+      kind: "application",
+      strictStates: ["COMMITTED:APPLICATION_VERIFIED_V2"],
+    });
     expect(result.exitCode).toBe(0);
     expect(result.events).toContain(`governance:application:${RELEASE_ID}`);
-    expect(result.events.some((event) => event.startsWith("activate:") || event.startsWith("governance:publish:") || event.startsWith("governance:finalize-committed:"))).toBe(false);
+    expect(
+      result.events.some(
+        (event) =>
+          event.startsWith("activate:") ||
+          event.startsWith("governance:publish:") ||
+          event.startsWith("governance:finalize-committed:"),
+      ),
+    ).toBe(false);
   });
   it.each([
     { publishStatus: 75, strictStates: ["PENDING:none"], expected: 75 },
     { publishStatus: 70, strictStates: ["PENDING:none"], expected: 70 },
     { publishStatus: 0, strictStates: ["PENDING:none"], expected: 70 },
-    { publishStatus: 70, strictStates: ["PENDING:APPLICATION_VERIFIED_V2"], expected: 75 },
-    { publishStatus: 70, strictStates: ["COMMITTED:APPLICATION_VERIFIED_V2"], expected: 75 },
-    { publishStatus: 0, strictStates: ["COMMITTED:PUBLISH_FINALIZED"], expected: 75 },
+    {
+      publishStatus: 70,
+      strictStates: ["PENDING:APPLICATION_VERIFIED_V2"],
+      expected: 75,
+    },
+    {
+      publishStatus: 70,
+      strictStates: ["COMMITTED:APPLICATION_VERIFIED_V2"],
+      expected: 75,
+    },
+    {
+      publishStatus: 0,
+      strictStates: ["COMMITTED:PUBLISH_FINALIZED"],
+      expected: 75,
+    },
     { publishStatus: 0, readFailureAt: 1, expected: 75 },
-  ])("preserves honest application failure classification %j", async ({ expected, ...scenario }) => {
-    expect((await runScenario({ kind: "application", ...scenario })).exitCode).toBe(expected);
-  });
+  ])(
+    "preserves honest application failure classification %j",
+    async ({ expected, ...scenario }) => {
+      expect(
+        (await runScenario({ kind: "application", ...scenario })).exitCode,
+      ).toBe(expected);
+    },
+  );
 });
 
 async function runProductionEntryScenario(
@@ -456,43 +487,43 @@ async function runProductionEntryScenario(
     'controller_entry_log() { printf "%s\\n" "$1" >>"${CONTROLLER_LOG}"; }',
     'release_publication_controller_effective_uid() { printf "%s\\n" "${CONTROLLER_ROOT_UID}"; }',
     'release_publication_controller_diesel_gid() { printf "%s\\n" 1001; }',
-    'find() { :; }',
-    'flock() { :; }',
-    'mktemp() { :; }',
-    'mv() { :; }',
-    'readlink() { :; }',
-    'realpath() { :; }',
-    'sha256sum() { :; }',
-    'sort() { :; }',
-    'stat() { :; }',
+    "find() { :; }",
+    "flock() { :; }",
+    "mktemp() { :; }",
+    "mv() { :; }",
+    "readlink() { :; }",
+    "realpath() { :; }",
+    "sha256sum() { :; }",
+    "sort() { :; }",
+    "stat() { :; }",
     'release_publication_controller_require_fixed_node_runtime() { return "${CONTROLLER_FIXED_NODE_STATUS}"; }',
-    'release_publication_controller_require_fixed_host_commands() { :; }',
-    'release_publication_controller_require_trusted_host_executable() { :; }',
-    'release_publication_controller_require_trusted_staged_path() {',
+    "release_publication_controller_require_fixed_host_commands() { :; }",
+    "release_publication_controller_require_trusted_host_executable() { :; }",
+    "release_publication_controller_require_trusted_staged_path() {",
     '  if [[ -n "${CONTROLLER_STAGED_PATH_FAILURE_SUFFIX}" && "$1" == *"${CONTROLLER_STAGED_PATH_FAILURE_SUFFIX}" ]]; then',
     '    controller_entry_log "staged-reject:$1"',
     '    return "${CONTROLLER_STAGED_PATH_FAILURE_STATUS}"',
-    '  fi',
+    "  fi",
     '  return "${CONTROLLER_STAGED_PATH_STATUS}"',
-    '}',
-    'host_activation_ledger_require_directory() { :; }',
-    'host_activation_ledger_require_file() { :; }',
-    'host_activation_ledger_require_lifecycle_lock() { :; }',
-    'host_activation_ledger_scan_all() { :; }',
-    'host_activation_ledger_validate_release_state() {',
-    '  HOST_ACTIVATION_LEDGER_PROTOCOL=v1',
+    "}",
+    "host_activation_ledger_require_directory() { :; }",
+    "host_activation_ledger_require_file() { :; }",
+    "host_activation_ledger_require_lifecycle_lock() { :; }",
+    "host_activation_ledger_scan_all() { :; }",
+    "host_activation_ledger_validate_release_state() {",
+    "  HOST_ACTIVATION_LEDGER_PROTOCOL=v1",
     '  HOST_ACTIVATION_LEDGER_STATE="${CONTROLLER_LEDGER_STATE%%:*}"',
     '  HOST_ACTIVATION_LEDGER_GOVERNANCE_STATE="${CONTROLLER_LEDGER_STATE#*:}"',
-    '}',
+    "}",
     'host_activation_ledger_require_pending() { controller_entry_log "require-pending"; }',
     'release_publication_controller_reconcile() { controller_entry_log "reconcile"; }',
     'release_publication_controller_reconcile_committed() { controller_entry_log "reconcile-committed"; return "${CONTROLLER_RECONCILE_COMMITTED_STATUS}"; }',
     'if [[ "${CONTROLLER_INHERIT_LIFECYCLE_FD}" == 1 ]]; then',
-    '  exec 8</dev/null',
-    '  export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8',
-    'else',
-    '  unset DIESEL_RELEASE_LIFECYCLE_LOCK_FD',
-    'fi',
+    "  exec 8</dev/null",
+    "  export DIESEL_RELEASE_LIFECYCLE_LOCK_FD=8",
+    "else",
+    "  unset DIESEL_RELEASE_LIFECYCLE_LOCK_FD",
+    "fi",
     'release_publication_controller "$2"',
   ].join("\n");
 
@@ -525,9 +556,7 @@ async function runProductionEntryScenario(
         ),
         CONTROLLER_STAGED_PATH_FAILURE_SUFFIX:
           options.stagedPathFailureSuffix ?? "",
-        CONTROLLER_STAGED_PATH_STATUS: String(
-          options.stagedPathStatus ?? 0,
-        ),
+        CONTROLLER_STAGED_PATH_STATUS: String(options.stagedPathStatus ?? 0),
       },
     );
     const eventText = await readFile(logPath, "utf8");
@@ -554,14 +583,22 @@ function actionEvents(events: string[]): string[] {
 describe("release-publication-controller.sh", () => {
   it.each([
     { args: [], expectedStatus: 64, name: "missing release ID" },
-    { args: ["A".repeat(40)], expectedStatus: 64, name: "uppercase release ID" },
+    {
+      args: ["A".repeat(40)],
+      expectedStatus: 64,
+      name: "uppercase release ID",
+    },
     { args: ["a".repeat(39)], expectedStatus: 64, name: "short release ID" },
     {
       args: [RELEASE_ID, "/tmp/attempted-path-override"],
       expectedStatus: 64,
       name: "extra production path override",
     },
-    { args: [RELEASE_ID], expectedStatus: 70, name: "non-production entry path" },
+    {
+      args: [RELEASE_ID],
+      expectedStatus: 70,
+      name: "non-production entry path",
+    },
   ])("rejects $name at the CLI boundary", async ({ args, expectedStatus }) => {
     const result = await execute("/bin/bash", [controllerScript, ...args]);
 
@@ -582,7 +619,7 @@ describe("release-publication-controller.sh", () => {
       'after_trap="$(trap -p USR1)"',
       '[[ "${before_options}" == "${after_options}" ]] || exit 91',
       '[[ "${before_trap}" == "${after_trap}" ]] || exit 92',
-      'declare -F release_publication_controller_reconcile >/dev/null || exit 93',
+      "declare -F release_publication_controller_reconcile >/dev/null || exit 93",
     ].join("\n");
     const result = await execute("bash", [
       "--noprofile",
@@ -634,20 +671,23 @@ describe("release-publication-controller.sh", () => {
         "production release publication is unavailable from a sourced shell",
       name: "default production root",
     },
-  ])("rejects the sourced controller $name", async ({ command, expectedError }) => {
-    const result = await execute("/bin/bash", [
-      "--noprofile",
-      "--norc",
-      "-c",
-      ['source -- "$1"', command].join("\n"),
-      "controller-sourced-production-fixture",
-      controllerScript,
-      RELEASE_ID,
-    ]);
+  ])(
+    "rejects the sourced controller $name",
+    async ({ command, expectedError }) => {
+      const result = await execute("/bin/bash", [
+        "--noprofile",
+        "--norc",
+        "-c",
+        ['source -- "$1"', command].join("\n"),
+        "controller-sourced-production-fixture",
+        controllerScript,
+        RELEASE_ID,
+      ]);
 
-    expect(result.exitCode).toBe(64);
-    expect(result.stderr).toContain(expectedError);
-  });
+      expect(result.exitCode).toBe(64);
+      expect(result.stderr).toContain(expectedError);
+    },
+  );
 
   it.each([
     {
@@ -736,15 +776,11 @@ describe("release-publication-controller.sh", () => {
     const source = await readFile(controllerScript, "utf8");
 
     expect(source).toContain(
-      'release_publication_controller_effective_uid() {\n  printf \'%s\\n\' "${EUID}"',
+      "release_publication_controller_effective_uid() {\n  printf '%s\\n' \"${EUID}\"",
     );
     expect(source).not.toContain("$(id -u)");
-    expect(source).toContain(
-      "$(/usr/bin/realpath -e -- \"${path}\")",
-    );
-    expect(source).toContain(
-      "$(/usr/bin/stat -c '%u:%g:%a' -- \"${path}\")",
-    );
+    expect(source).toContain('$(/usr/bin/realpath -e -- "${path}")');
+    expect(source).toContain("$(/usr/bin/stat -c '%u:%g:%a' -- \"${path}\")");
     for (const commandSpec of [
       "find:/usr/bin/find",
       "flock:/usr/bin/flock",
@@ -767,10 +803,25 @@ describe("release-publication-controller.sh", () => {
     ["staged release directory", "release-directory", "root:root:755", 0],
     ["normalized release directory", "release-directory", "root:diesel:750", 0],
     ["staged release executable", "release-executable", "root:root:755:1", 0],
-    ["normalized release executable", "release-executable", "root:diesel:750:1", 0],
+    [
+      "normalized release executable",
+      "release-executable",
+      "root:diesel:750:1",
+      0,
+    ],
     ["group-owned system directory", "system-directory", "root:diesel:750", 1],
-    ["hard-linked release executable", "release-executable", "root:diesel:750:2", 1],
-    ["group-writable release executable", "release-executable", "root:diesel:770:1", 1],
+    [
+      "hard-linked release executable",
+      "release-executable",
+      "root:diesel:750:2",
+      1,
+    ],
+    [
+      "group-writable release executable",
+      "release-executable",
+      "root:diesel:770:1",
+      1,
+    ],
   ] as const)(
     "classifies %s at the direct controller source boundary",
     async (_name, profile, metadata, expectedStatus) => {
@@ -796,7 +847,9 @@ describe("release-publication-controller.sh", () => {
   it.each(["/opt/diesel", "/opt/diesel/", "/opt//diesel"])(
     "rejects sourced controller bootstrap root %s before inspecting paths",
     async (deployRoot) => {
-      const root = await mkdtemp(join(tmpdir(), "diesel-controller-bootstrap-"));
+      const root = await mkdtemp(
+        join(tmpdir(), "diesel-controller-bootstrap-"),
+      );
       const marker = join(root, "path-inspected");
       const productionEntry = `${deployRoot}/releases/${RELEASE_ID}/scripts/deploy/release-publication-controller.sh`;
 
@@ -842,9 +895,7 @@ describe("release-publication-controller.sh", () => {
     const rootPathIndex = source.indexOf(
       'export PATH="/usr/sbin:/usr/bin:/sbin:/bin"',
     );
-    const ledgerSourceIndex = source.indexOf(
-      'source -- "${expected_ledger}"',
-    );
+    const ledgerSourceIndex = source.indexOf('source -- "${expected_ledger}"');
 
     expect(entryBindingIndex).toBeGreaterThanOrEqual(0);
     expect(ledgerValidationIndex).toBeGreaterThan(entryBindingIndex);
@@ -859,7 +910,9 @@ describe("release-publication-controller.sh", () => {
   it.each(["entry", "ledger"] as const)(
     "does not execute a poisoned controller ledger when %s validation fails",
     async (rejectedObject) => {
-      const root = await mkdtemp(join(tmpdir(), "diesel-controller-bootstrap-"));
+      const root = await mkdtemp(
+        join(tmpdir(), "diesel-controller-bootstrap-"),
+      );
       const deployRoot = join(root, "diesel");
       const releaseDirectory = join(deployRoot, "releases", RELEASE_ID);
       const deployDirectory = join(releaseDirectory, "scripts", "deploy");
@@ -881,10 +934,10 @@ describe("release-publication-controller.sh", () => {
           'BOOTSTRAP_REJECT="$5"',
           'BOOTSTRAP_LOG="$6"',
           'BOOTSTRAP_MARKER="$7"',
-          'release_publication_controller_require_cli_bootstrap_path() {',
+          "release_publication_controller_require_cli_bootstrap_path() {",
           '  printf "%s|%s\\n" "$1" "$2" >>"${BOOTSTRAP_LOG}"',
           '  [[ "$1" != "${BOOTSTRAP_REJECT}" ]]',
-          '}',
+          "}",
           'release_publication_controller_cli_bootstrap "$2" "$3" "$4"',
         ].join("\n");
         const result = await execute("/bin/bash", [
@@ -953,9 +1006,9 @@ describe("release-publication-controller.sh", () => {
         'source -- "$1"',
         'BOOTSTRAP_LOG="$5"',
         'BOOTSTRAP_MARKER="$6"',
-        'release_publication_controller_require_cli_bootstrap_path() {',
+        "release_publication_controller_require_cli_bootstrap_path() {",
         '  printf "%s|%s\\n" "$1" "$2" >>"${BOOTSTRAP_LOG}"',
-        '}',
+        "}",
         'release_publication_controller_cli_bootstrap "$2" "$3" "$4"',
       ].join("\n");
       const result = await execute("/bin/bash", [
@@ -973,9 +1026,7 @@ describe("release-publication-controller.sh", () => {
       ]);
 
       expect(result).toEqual({ exitCode: 0, stderr: "", stdout: "" });
-      await expect(readFile(marker, "utf8")).resolves.toBe(
-        "ledger-executed\n",
-      );
+      await expect(readFile(marker, "utf8")).resolves.toBe("ledger-executed\n");
       const validatedPaths = (await readFile(validationLog, "utf8"))
         .trim()
         .split("\n");
@@ -1029,15 +1080,75 @@ describe("release-publication-controller.sh", () => {
 
   it.each([
     ["fresh directory", "directory", "no", "0", "0", "755", "2", "1001", 0],
-    ["normalized directory", "directory", "no", "0", "1001", "750", "2", "1001", 0],
+    [
+      "normalized directory",
+      "directory",
+      "no",
+      "0",
+      "1001",
+      "750",
+      "2",
+      "1001",
+      0,
+    ],
     ["fresh executable", "file", "yes", "0", "0", "755", "1", "1001", 0],
-    ["normalized executable", "file", "yes", "0", "1001", "750", "1", "1001", 0],
+    [
+      "normalized executable",
+      "file",
+      "yes",
+      "0",
+      "1001",
+      "750",
+      "1",
+      "1001",
+      0,
+    ],
     ["fresh regular file", "file", "no", "0", "0", "644", "1", "1001", 0],
-    ["normalized regular file", "file", "no", "0", "1001", "640", "1", "1001", 0],
-    ["private staged directory", "directory", "no", "0", "0", "700", "2", "1001", 1],
-    ["mixed normalized directory", "directory", "no", "0", "1001", "755", "2", "1001", 1],
+    [
+      "normalized regular file",
+      "file",
+      "no",
+      "0",
+      "1001",
+      "640",
+      "1",
+      "1001",
+      0,
+    ],
+    [
+      "private staged directory",
+      "directory",
+      "no",
+      "0",
+      "0",
+      "700",
+      "2",
+      "1001",
+      1,
+    ],
+    [
+      "mixed normalized directory",
+      "directory",
+      "no",
+      "0",
+      "1001",
+      "755",
+      "2",
+      "1001",
+      1,
+    ],
     ["mixed staged executable", "file", "yes", "0", "0", "750", "1", "1001", 1],
-    ["private normalized file", "file", "no", "0", "1001", "600", "1", "1001", 1],
+    [
+      "private normalized file",
+      "file",
+      "no",
+      "0",
+      "1001",
+      "600",
+      "1",
+      "1001",
+      1,
+    ],
     ["hard-linked staged file", "file", "no", "0", "0", "644", "2", "1001", 1],
     ["non-root owner", "file", "yes", "501", "0", "755", "1", "1001", 1],
     ["unexpected group", "file", "yes", "0", "999", "755", "1", "1001", 1],
@@ -1084,7 +1195,11 @@ describe("release-publication-controller.sh", () => {
     const source = await readFile(controllerScript, "utf8");
 
     expect(source).toContain("release_publication_controller_reconcile");
-    expect(source.includes("publish | finalize-committed | application | finalize-application)")).toBe(true);
+    expect(
+      source.includes(
+        "publish | finalize-committed | application | finalize-application)",
+      ),
+    ).toBe(true);
     expect(source).not.toMatch(
       /host_activation_ledger_(?:begin|transition|write_record)/,
     );
@@ -1306,18 +1421,18 @@ describe("release-publication-controller.sh", () => {
     expectedActions: string[];
     name: string;
     scenario: ControllerScenario;
-  }>)("normalizes an ordinary $name failure to 70 and stops", async ({
-    expectedActions,
-    scenario,
-  }) => {
-    const result = await runScenario(scenario);
+  }>)(
+    "normalizes an ordinary $name failure to 70 and stops",
+    async ({ expectedActions, scenario }) => {
+      const result = await runScenario(scenario);
 
-    expect(result.exitCode).toBe(70);
-    expect(actionEvents(result.events)).toEqual(expectedActions);
-    expect(actionEvents(result.events)).not.toContain(
-      "governance:finalize-committed",
-    );
-  });
+      expect(result.exitCode).toBe(70);
+      expect(actionEvents(result.events)).toEqual(expectedActions);
+      expect(actionEvents(result.events)).not.toContain(
+        "governance:finalize-committed",
+      );
+    },
+  );
 
   it.each(
     ([129, 130, 137, 143] as const).flatMap((status) => [
@@ -1328,12 +1443,7 @@ describe("release-publication-controller.sh", () => {
         status,
       },
       {
-        expectedActions: [
-          "pending:0",
-          "prepare",
-          "pending:0",
-          "activate",
-        ],
+        expectedActions: ["pending:0", "prepare", "pending:0", "activate"],
         name: `activation ${status}`,
         scenario: { activateStatus: status },
         status,
@@ -1367,19 +1477,18 @@ describe("release-publication-controller.sh", () => {
         status,
       },
     ]),
-  )("preserves signal-shaped status for $name", async ({
-    expectedActions,
-    scenario,
-    status,
-  }) => {
-    const result = await runScenario(scenario);
+  )(
+    "preserves signal-shaped status for $name",
+    async ({ expectedActions, scenario, status }) => {
+      const result = await runScenario(scenario);
 
-    expect(result.exitCode).toBe(status);
-    expect(actionEvents(result.events)).toEqual(expectedActions);
-    expect(actionEvents(result.events)).not.toContain(
-      "governance:finalize-committed",
-    );
-  });
+      expect(result.exitCode).toBe(status);
+      expect(actionEvents(result.events)).toEqual(expectedActions);
+      expect(actionEvents(result.events)).not.toContain(
+        "governance:finalize-committed",
+      );
+    },
+  );
 
   it("fails closed when publish returns zero without a commit-shaped ledger", async () => {
     const result = await runScenario({ strictStates: ["PENDING:none"] });
@@ -1555,19 +1664,16 @@ describe("release-publication-controller.sh", () => {
   it.each(["PENDING:PUBLISH_COMMITTED", "PENDING:PUBLISH_FINALIZED"])(
     "resumes a %s retry with finalize only",
     async (entryState) => {
-    const result = await runScenario({
-      entryPoint: "reconcile-committed",
-      strictStates: [
-        entryState,
-        "COMMITTED:PUBLISH_FINALIZED",
-      ],
-    });
+      const result = await runScenario({
+        entryPoint: "reconcile-committed",
+        strictStates: [entryState, "COMMITTED:PUBLISH_FINALIZED"],
+      });
 
-    expect(result.exitCode).toBe(0);
-    expect(actionEvents(result.events)).toEqual([
-      "governance:finalize-committed",
-    ]);
-    expect(actionEvents(result.events)).not.toContain("governance:publish");
+      expect(result.exitCode).toBe(0);
+      expect(actionEvents(result.events)).toEqual([
+        "governance:finalize-committed",
+      ]);
+      expect(actionEvents(result.events)).not.toContain("governance:publish");
     },
   );
 

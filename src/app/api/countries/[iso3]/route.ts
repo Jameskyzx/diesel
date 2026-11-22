@@ -10,7 +10,7 @@ import { getErrorCode } from "@/lib/api-error";
 import { getDictionary, type Dictionary } from "@/i18n/dictionaries";
 import { localeFromRequest } from "@/i18n/locale";
 import { isKnownCountryIso3 } from "@/server/services/country-directory";
-import { getCountryDetails } from "@/server/services/country-service";
+import { getCachedCountryDetails } from "@/server/services/country-read-cache";
 import { createPublicApiRequestObserver } from "@/server/http/public-api-response";
 import { runPublicDataOperation } from "@/server/http/public-data-admission";
 
@@ -22,7 +22,10 @@ type CountryRouteContext = {
   }>;
 };
 
-function internalErrorResponse(error: unknown, messages: Dictionary["apiErrors"]) {
+function internalErrorResponse(
+  error: unknown,
+  messages: Dictionary["apiErrors"],
+) {
   console.error("Country detail request failed", {
     errorCode: getErrorCode(error),
   });
@@ -44,8 +47,7 @@ export async function GET(request: Request, context: CountryRouteContext) {
     const { iso3 } = await context.params;
     const searchParams = new URL(request.url).searchParams;
     input = countryDetailQuerySchema.parse({
-      applicationScope:
-        searchParams.get("applicationScope") ?? undefined,
+      applicationScope: searchParams.get("applicationScope") ?? undefined,
       asOf: searchParams.get("asOf") ?? undefined,
       iso3,
       powerKw: searchParams.get("powerKw") ?? undefined,
@@ -54,60 +56,75 @@ export async function GET(request: Request, context: CountryRouteContext) {
     if (error instanceof ZodError) {
       const failedField = String(error.issues[0]?.path[0] ?? "");
       if (failedField === "asOf") {
-        return observer.finish(NextResponse.json(
-          countryApiErrorSchema.parse({
-            error: {
-              code: "INVALID_AS_OF",
-              message: messages.invalidAsOf,
-            },
-          }),
-          { status: 400 },
-        ), "INVALID_AS_OF");
+        return observer.finish(
+          NextResponse.json(
+            countryApiErrorSchema.parse({
+              error: {
+                code: "INVALID_AS_OF",
+                message: messages.invalidAsOf,
+              },
+            }),
+            { status: 400 },
+          ),
+          "INVALID_AS_OF",
+        );
       }
       if (failedField === "iso3") {
-        return observer.finish(NextResponse.json(
-          countryApiErrorSchema.parse({
-            error: {
-              code: "INVALID_ISO3",
-              message: messages.invalidIso3,
-            },
-          }),
-          { status: 400 },
-        ), "INVALID_ISO3");
+        return observer.finish(
+          NextResponse.json(
+            countryApiErrorSchema.parse({
+              error: {
+                code: "INVALID_ISO3",
+                message: messages.invalidIso3,
+              },
+            }),
+            { status: 400 },
+          ),
+          "INVALID_ISO3",
+        );
       }
       if (failedField === "applicationScope" || failedField === "powerKw") {
-        return observer.finish(NextResponse.json(
-          countryApiErrorSchema.parse({
-            error: {
-              code: "INVALID_FILTER",
-              message: messages.invalidCountryFilter,
-            },
-          }),
-          { status: 400 },
-        ), "INVALID_FILTER");
+        return observer.finish(
+          NextResponse.json(
+            countryApiErrorSchema.parse({
+              error: {
+                code: "INVALID_FILTER",
+                message: messages.invalidCountryFilter,
+              },
+            }),
+            { status: 400 },
+          ),
+          "INVALID_FILTER",
+        );
       }
     }
 
-    return observer.finish(internalErrorResponse(error, messages), "INTERNAL_ERROR");
+    return observer.finish(
+      internalErrorResponse(error, messages),
+      "INTERNAL_ERROR",
+    );
   }
 
   if (!isKnownCountryIso3(input.iso3)) {
-    return observer.finish(NextResponse.json(
-      countryApiErrorSchema.parse({
-        error: {
-          code: "COUNTRY_NOT_FOUND",
-          message: messages.countryNotFound,
-        },
-      }),
-      { status: 404 },
-    ), "COUNTRY_NOT_FOUND");
+    return observer.finish(
+      NextResponse.json(
+        countryApiErrorSchema.parse({
+          error: {
+            code: "COUNTRY_NOT_FOUND",
+            message: messages.countryNotFound,
+          },
+        }),
+        { status: 404 },
+      ),
+      "COUNTRY_NOT_FOUND",
+    );
   }
 
   try {
     const operation = await runPublicDataOperation({
       request,
       route: "/api/countries/:iso3",
-      work: (signal) => getCountryDetails(input, { signal }),
+      work: (signal) => getCachedCountryDetails(input, { signal }),
     });
     if (operation.status === "failed") {
       throw operation.error;
@@ -131,6 +148,9 @@ export async function GET(request: Request, context: CountryRouteContext) {
     }
     return observer.finish(NextResponse.json(operation.value));
   } catch (error) {
-    return observer.finish(internalErrorResponse(error, messages), "INTERNAL_ERROR");
+    return observer.finish(
+      internalErrorResponse(error, messages),
+      "INTERNAL_ERROR",
+    );
   }
 }

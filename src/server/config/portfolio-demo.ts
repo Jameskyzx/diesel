@@ -13,18 +13,14 @@ const portfolioDemoRuntimeSchema = z
   })
   .strict();
 
-export type PortfolioDemoRuntime = z.infer<
-  typeof portfolioDemoRuntimeSchema
->;
+export type PortfolioDemoRuntime = z.infer<typeof portfolioDemoRuntimeSchema>;
 
 /**
  * Demo mode is deliberately fail-closed: it can only run with the in-memory
  * fixture database outside production. A deployment cannot accidentally turn
  * a public production process into the portfolio simulation.
  */
-export function resolvePortfolioDemoMode(
-  input: PortfolioDemoRuntime,
-): boolean {
+export function resolvePortfolioDemoMode(input: PortfolioDemoRuntime): boolean {
   const runtime = portfolioDemoRuntimeSchema.parse(input);
 
   if (!runtime.enabled) {
@@ -35,9 +31,7 @@ export function resolvePortfolioDemoMode(
     runtime.databaseMode !== "pglite-demo" ||
     runtime.nodeEnv !== "development"
   ) {
-    throw new Error(
-      "PORTFOLIO_DEMO_MODE requires development + pglite-demo.",
-    );
+    throw new Error("PORTFOLIO_DEMO_MODE requires development + pglite-demo.");
   }
 
   return true;

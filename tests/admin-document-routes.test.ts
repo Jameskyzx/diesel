@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 const mocks = vi.hoisted(() => ({
   parseDocumentImportFormData: vi.fn(),
@@ -8,9 +16,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/server/services/knowledge-service", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("@/server/services/knowledge-service")
-  >();
+  const actual =
+    await importOriginal<
+      typeof import("@/server/services/knowledge-service")
+    >();
   return {
     ...actual,
     parseDocumentImportFormData: mocks.parseDocumentImportFormData,
@@ -19,9 +28,10 @@ vi.mock("@/server/services/knowledge-service", async (importOriginal) => {
 });
 
 vi.mock("@/server/services/governance-service", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("@/server/services/governance-service")
-  >();
+  const actual =
+    await importOriginal<
+      typeof import("@/server/services/governance-service")
+    >();
   return {
     ...actual,
     reprocessGovernedDocument: mocks.reprocessGovernedDocument,

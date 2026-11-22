@@ -2,7 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createSalesChatTools } from "@/server/ai/sales-chat";
 import { getDemoDatabase } from "@/server/db/demo-client";
-import { buildSalesChatEvidenceContract, evidenceContractAllowsModelText } from "@/server/ai/evidence-contract";
+import {
+  buildSalesChatEvidenceContract,
+  evidenceContractAllowsModelText,
+} from "@/server/ai/evidence-contract";
 import { searchKnowledgeBaseResultSchema } from "@/features/ai/schemas";
 
 const originalDatabaseMode = process.env.DATABASE_MODE;
@@ -21,12 +24,32 @@ afterAll(async () => {
 
 describe("knowledge delivery denial through the production stream", () => {
   it("retrieves original source sections with business terms, without a fabricated date filter", async () => {
-    const tools = createSalesChatTools({ auditRepository: { recordToolCall: async () => undefined }, selectedCountryIso3: null, sessionId: crypto.randomUUID() });
-    const result = searchKnowledgeBaseResultSchema.parse(await tools.searchKnowledgeBase.execute!({
-      query: "non road emissions regulation", countryIso3: "CHN", applicationScope: "non-road",
-    }, { context: undefined as never, messages: [], toolCallId: "natural-source" }));
+    const tools = createSalesChatTools({
+      auditRepository: { recordToolCall: async () => undefined },
+      selectedCountryIso3: null,
+      sessionId: crypto.randomUUID(),
+    });
+    const result = searchKnowledgeBaseResultSchema.parse(
+      await tools.searchKnowledgeBase.execute!(
+        {
+          query: "non road emissions regulation",
+          countryIso3: "CHN",
+          applicationScope: "non-road",
+        },
+        {
+          context: undefined as never,
+          messages: [],
+          toolCallId: "natural-source",
+        },
+      ),
+    );
     expect(result.evidenceSufficient).toBe(true);
-    const contract = buildSalesChatEvidenceContract({ selectedCountryIso3: null, userTexts: ["Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations."] });
+    const contract = buildSalesChatEvidenceContract({
+      selectedCountryIso3: null,
+      userTexts: [
+        "Retrieve the original text, sections, and source evidence for CHN non-road emissions regulations.",
+      ],
+    });
     expect(evidenceContractAllowsModelText(contract, [result])).toBe(true);
   }, 15000);
 });

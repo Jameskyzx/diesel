@@ -317,7 +317,9 @@ describe("client AI tool locale copy", () => {
     expect(productFitReasonMessage(reason, "en")).toContain(
       "No traceable certification record",
     );
-    expect(productFitReasonMessage(reason, "en")).not.toMatch(/[\p{Script=Han}]/u);
+    expect(productFitReasonMessage(reason, "en")).not.toMatch(
+      /[\p{Script=Han}]/u,
+    );
     expect(productFitReasonMessage(reason, "zh-CN")).toContain(
       "没有可追溯认证记录",
     );
@@ -358,10 +360,7 @@ describe("client AI tool locale copy", () => {
   ] as const)(
     "selects stable copy for $code without parsing server-authored facts",
     ({ code, english, message, rawValues, zh }) => {
-      const englishMessage = productFitReasonMessage(
-        { code, message },
-        "en",
-      );
+      const englishMessage = productFitReasonMessage({ code, message }, "en");
       const chineseMessage = productFitReasonMessage(
         { code, message },
         "zh-CN",
@@ -447,8 +446,7 @@ describe("client AI tool locale copy", () => {
             },
             power: {
               code: "PRODUCT_POWER_MATCH",
-              message:
-                "产品功率范围覆盖 100 kW（区间按 [min, max) 判断）。",
+              message: "产品功率范围覆盖 100 kW（区间按 [min, max) 判断）。",
               status: "pass",
             },
           },
@@ -612,9 +610,13 @@ describe("client AI tool locale copy", () => {
       expect.stringContaining("1 条知识片段未记录生效日期"),
     ]);
     expect(englishWarnings).toEqual([
-      expect.stringContaining("1 knowledge excerpt(s) do not record an application scope"),
+      expect.stringContaining(
+        "1 knowledge excerpt(s) do not record an application scope",
+      ),
       expect.stringContaining("1 knowledge excerpt(s) do not record a country"),
-      expect.stringContaining("1 knowledge excerpt(s) do not record a valid-from date"),
+      expect.stringContaining(
+        "1 knowledge excerpt(s) do not record a valid-from date",
+      ),
     ]);
     expect(chineseWarnings.join(" ")).not.toContain("validFrom");
     expect(chineseWarnings.join(" ")).not.toContain("metadata");
@@ -627,12 +629,10 @@ describe("client AI tool locale copy", () => {
     const driftedHitWarning = structuredClone(result) as unknown as {
       search: { results: Array<{ warnings: string[] }> };
     };
-    driftedHitWarning.search.results[0]?.warnings.push(
-      "FORGED_HIT_WARNING",
+    driftedHitWarning.search.results[0]?.warnings.push("FORGED_HIT_WARNING");
+    expect(clientAiToolResultSchema.safeParse(driftedHitWarning).success).toBe(
+      false,
     );
-    expect(
-      clientAiToolResultSchema.safeParse(driftedHitWarning).success,
-    ).toBe(false);
     expect(chineseWarnings.join(" ")).not.toContain("DRIFTED_INTERNAL_WARNING");
   });
 
@@ -955,69 +955,69 @@ describe("client AI tool locale copy", () => {
 
   it("rebuilds sales-brief structure without raw service-authored free text", () => {
     const brief = {
-        marketScore: {
-          components: [
-            {
-              configuredWeight: 0.5,
-              contribution: 42,
-              effectiveWeight: 0.5,
-              key: "marketPotential",
-              score: 84,
-              status: "available",
-            },
-            {
-              configuredWeight: 0.3,
-              contribution: 18,
-              effectiveWeight: 0.3,
-              key: "productReadiness",
-              score: 60,
-              status: "available",
-            },
-            {
-              configuredWeight: 0.2,
-              contribution: 12,
-              effectiveWeight: 0.2,
-              key: "regulatoryCoverage",
-              score: 60,
-              status: "available",
-            },
-          ],
-          countryIso3: "BRA",
-          dataCoveragePct: 100,
-          gaps: [],
-          overallScore: 72,
+      marketScore: {
+        components: [
+          {
+            configuredWeight: 0.5,
+            contribution: 42,
+            effectiveWeight: 0.5,
+            key: "marketPotential",
+            score: 84,
+            status: "available",
+          },
+          {
+            configuredWeight: 0.3,
+            contribution: 18,
+            effectiveWeight: 0.3,
+            key: "productReadiness",
+            score: 60,
+            status: "available",
+          },
+          {
+            configuredWeight: 0.2,
+            contribution: 12,
+            effectiveWeight: 0.2,
+            key: "regulatoryCoverage",
+            score: 60,
+            status: "available",
+          },
+        ],
+        countryIso3: "BRA",
+        dataCoveragePct: 100,
+        gaps: [],
+        overallScore: 72,
+      },
+      opportunities: [
+        {
+          metricCodes: ["DEMO_ADDRESSABLE_UNITS"],
+          ruleCode: "MARKET_POTENTIAL_AT_LEAST_50",
         },
-        opportunities: [
-          {
-            metricCodes: ["DEMO_ADDRESSABLE_UNITS"],
-            ruleCode: "MARKET_POTENTIAL_AT_LEAST_50",
-          },
-        ],
-        query: {
-          applicationScope: "non-road",
-          asOf: "2026-08-12",
-          countryIso3s: ["CHN", "BRA"],
-          powerKw: 100,
-          targetCountryIso3: "BRA",
+      ],
+      query: {
+        applicationScope: "non-road",
+        asOf: "2026-08-12",
+        countryIso3s: ["CHN", "BRA"],
+        powerKw: 100,
+        targetCountryIso3: "BRA",
+      },
+      recommendedProducts: [],
+      risks: [
+        {
+          productIds: ["product-1", "product-2"],
+          ruleCode: "PRODUCT_EVIDENCE_UNKNOWN",
         },
-        recommendedProducts: [],
-        risks: [
-          {
-            productIds: ["product-1", "product-2"],
-            ruleCode: "PRODUCT_EVIDENCE_UNKNOWN",
-          },
-        ],
-        salesActions: [
-          {
-            priority: "high",
-            regulationIds: ["regulation-1"],
-            ruleCode: "REVALIDATE_BEFORE_FUTURE_REGULATION",
-          },
-        ],
-      } as unknown as Extract<
-        ClientAiToolResult,
-        { tool: "generateSalesBrief" }
-      >["brief"];
+      ],
+      salesActions: [
+        {
+          priority: "high",
+          regulationIds: ["regulation-1"],
+          ruleCode: "REVALIDATE_BEFORE_FUTURE_REGULATION",
+        },
+      ],
+    } as unknown as Extract<
+      ClientAiToolResult,
+      { tool: "generateSalesBrief" }
+    >["brief"];
     const renderBrief = (locale: "en" | "zh-CN") => {
       const copy = getDictionary(locale).chat;
       const actionCopy = localizedSalesBriefAction(
@@ -1030,13 +1030,7 @@ describe("client AI tool locale copy", () => {
         actionCopy,
         rendered: [
           localizedSalesBriefSummary(brief, locale, copy),
-          localizedSalesBriefItem(
-            brief.risks[0]!,
-            0,
-            "risk",
-            locale,
-            copy,
-          ),
+          localizedSalesBriefItem(brief.risks[0]!, 0, "risk", locale, copy),
           localizedSalesBriefItem(
             brief.opportunities[0]!,
             0,
@@ -1482,8 +1476,7 @@ describe("client AI tool locale copy", () => {
         chinese,
       ),
     ).toBe(opaque);
-    const legacyProductLocator =
-      "DEMO-ENG-100; availability 2025-01-01–open";
+    const legacyProductLocator = "DEMO-ENG-100; availability 2025-01-01–open";
     expect(
       localizedCitationLocator(
         { ...baseCitation, locator: legacyProductLocator },
@@ -1583,9 +1576,9 @@ describe("client AI tool locale copy", () => {
         modelCode: "DEMO-ENG-100",
       },
     ]) {
-      expect(citationLocatorDescriptorSchema.safeParse(descriptor).success).toBe(
-        true,
-      );
+      expect(
+        citationLocatorDescriptorSchema.safeParse(descriptor).success,
+      ).toBe(true);
     }
     expect(
       citationLocatorDescriptorSchema.safeParse({

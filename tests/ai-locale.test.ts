@@ -5,16 +5,21 @@ import { chatRequestSchema } from "@/features/ai/schemas";
 import { buildDirectChatResponse } from "@/server/ai/chat-turn-guidance";
 
 describe("AI locale contract", () => {
-
   it("accepts only supported optional chat locales without overriding the request cookie fallback", () => {
     const base = {
-      messages: [{ id: "m1", parts: [{ text: "hello", type: "text" }], role: "user" }],
+      messages: [
+        { id: "m1", parts: [{ text: "hello", type: "text" }], role: "user" },
+      ],
       sessionId: "9fb7d93c-0b56-4708-8d04-6435919791a0",
     };
 
     expect(chatRequestSchema.parse(base).locale).toBeUndefined();
-    expect(chatRequestSchema.parse({ ...base, locale: "zh-CN" }).locale).toBe("zh-CN");
-    expect(chatRequestSchema.safeParse({ ...base, locale: "fr" }).success).toBe(false);
+    expect(chatRequestSchema.parse({ ...base, locale: "zh-CN" }).locale).toBe(
+      "zh-CN",
+    );
+    expect(chatRequestSchema.safeParse({ ...base, locale: "fr" }).success).toBe(
+      false,
+    );
   });
 
   it("localizes direct guidance without weakening required parameters", () => {
@@ -30,7 +35,13 @@ describe("AI locale contract", () => {
 
   it.each([
     {
-      expected: ["rated power in kW", "positive value", "CHN", "Non-road", "retain your country, application and date"],
+      expected: [
+        "rated power in kW",
+        "positive value",
+        "CHN",
+        "Non-road",
+        "retain your country, application and date",
+      ],
       locale: "en" as const,
       text: "Check current CHN non-road regulations.",
     },

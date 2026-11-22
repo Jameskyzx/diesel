@@ -116,22 +116,37 @@ export function getErrorCode(error: unknown): string {
 }
 
 const admissionDatabaseErrorCodeSchema = z.enum([
-  "55P03", "57014", "25P03", "53300", "57P01",
-  "08000", "08001", "08003", "08006",
-  "CONNECTION_CLOSED", "CONNECTION_ENDED", "CONNECTION_DESTROYED",
-  "CONNECT_TIMEOUT", "CONNECTION_TIMEOUT",
-  "ECONNRESET", "ECONNREFUSED", "ETIMEDOUT",
+  "55P03",
+  "57014",
+  "25P03",
+  "53300",
+  "57P01",
+  "08000",
+  "08001",
+  "08003",
+  "08006",
+  "CONNECTION_CLOSED",
+  "CONNECTION_ENDED",
+  "CONNECTION_DESTROYED",
+  "CONNECT_TIMEOUT",
+  "CONNECTION_TIMEOUT",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "ETIMEDOUT",
 ]);
 
 /** Server diagnostics only. Production minification can rename constructors;
  * retain a finite SQLSTATE/transport allowlist, never SQL, URLs or messages. */
-export function getAdmissionDatabaseErrorCode(error: unknown):
-  z.infer<typeof admissionDatabaseErrorCodeSchema> | "UNKNOWN_DATABASE_ERROR" {
+export function getAdmissionDatabaseErrorCode(
+  error: unknown,
+): z.infer<typeof admissionDatabaseErrorCodeSchema> | "UNKNOWN_DATABASE_ERROR" {
   try {
     let current: unknown = error;
     for (let depth = 0; depth < 5; depth += 1) {
       if (typeof current !== "object" || current === null) break;
-      const code = admissionDatabaseErrorCodeSchema.safeParse("code" in current ? current.code : undefined);
+      const code = admissionDatabaseErrorCodeSchema.safeParse(
+        "code" in current ? current.code : undefined,
+      );
       if (code.success) return code.data;
       current = "cause" in current ? current.cause : undefined;
     }

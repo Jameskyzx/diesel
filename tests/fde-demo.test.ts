@@ -18,9 +18,9 @@ describe("FDE implementation demo boundaries", () => {
     expect(isFdeImplementationDemoMode(valid)).toBe(true);
 
     for (const key of Object.keys(valid)) {
-      expect(
-        isFdeImplementationDemoMode({ ...valid, [key]: undefined }),
-      ).toBe(false);
+      expect(isFdeImplementationDemoMode({ ...valid, [key]: undefined })).toBe(
+        false,
+      );
     }
     expect(
       isFdeImplementationDemoMode({ ...valid, NODE_ENV: "production" }),

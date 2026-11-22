@@ -46,7 +46,11 @@ export const feedbackSourceKindLabels: Record<FeedbackSourceKind, Label> = {
   text: { en: "Text", zh: "文字" },
 };
 
-export function feedbackLabel(labels: Record<string, Label>, key: string, locale: Locale): string {
+export function feedbackLabel(
+  labels: Record<string, Label>,
+  key: string,
+  locale: Locale,
+): string {
   const label = labels[key];
-  return label ? locale === "zh-CN" ? label.zh : label.en : key;
+  return label ? (locale === "zh-CN" ? label.zh : label.en) : key;
 }

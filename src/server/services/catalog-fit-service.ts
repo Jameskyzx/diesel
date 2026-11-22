@@ -30,11 +30,18 @@ async function getRegulationRepository(options: RequestSignalOptions) {
   return createRegulationRepository(getDatabase());
 }
 
-function toCatalogFitRegulation(regulation: ApplicableRegulationRecord): CatalogFitRegulation {
+function toCatalogFitRegulation(
+  regulation: ApplicableRegulationRecord,
+): CatalogFitRegulation {
   // The repository only returns rows in force at asOf, including a superseded
   // record inside its closed historical interval.
-  if ((regulation.status !== "effective" && regulation.status !== "superseded") || regulation.effectiveFrom === null) {
-    throw new Error("Catalogue-fit evidence contained a regulation that was not in force at the query date.");
+  if (
+    (regulation.status !== "effective" && regulation.status !== "superseded") ||
+    regulation.effectiveFrom === null
+  ) {
+    throw new Error(
+      "Catalogue-fit evidence contained a regulation that was not in force at the query date.",
+    );
   }
   return {
     regulationId: regulation.regulationId,
@@ -71,6 +78,8 @@ export async function evaluateCatalogFitForMarket(
   return evaluateCatalogFit({
     catalog,
     query,
-    applicableRegulations: groupApplicableRegulationRows(rows).map(toCatalogFitRegulation),
+    applicableRegulations: groupApplicableRegulationRows(rows).map(
+      toCatalogFitRegulation,
+    ),
   });
 }

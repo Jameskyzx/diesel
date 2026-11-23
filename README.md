@@ -47,7 +47,7 @@ sources.
 
 | | |
 | --- | --- |
-| Countries checked against official sources | 97 (28 regulations, 203 sources) |
+| Countries checked against official sources | 97 (29 regulations, 204 sources) |
 | Countries in the directory | 178 |
 | Engine catalogue | 24 models — **fictional demo data**, not any real manufacturer |
 | Languages | Site in English and Chinese; customer brief in 6 languages |

@@ -88,7 +88,7 @@ Tabler is MIT licensed; the upstream notice is preserved below.
 ## Page composition
 
 - Home: the versioned published snapshot is the primary metric row: 97
-  jurisdictions, 28 regulations, 651 limit records, 203 sources and zero approved
+  jurisdictions, 29 regulations, 667 limit records, 204 sources and zero approved
   real products. These values are checked against the signed publication closure
   by unit tests; they are not live database counts. API-derived
   catalog/review/freshness counts remain separate. Review counts are not numerical

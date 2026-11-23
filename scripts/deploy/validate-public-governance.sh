@@ -14,7 +14,7 @@ validate_public_governance() {
 release_id="${1:?expected app version is required}"
 export release_id
 public_origin="https://diesel.jamesky.site"
-# Expected target/full graph closure: 97 jurisdictions / 28 regulations / 651 limits / 203 sources.
+# Expected target/full graph closure: 97 jurisdictions / 29 regulations / 667 limits / 204 sources.
 published_countries="CRI ECU PAN DOM PHL PAK SAU ARE ISR ZAF EGY GHA KEN RWA TZA ZMB ZWE CIV DZA TUN ETH CMR SEN NGA UGA BWA NAM SWZ KHM LAO LKA MMR MNG LIE SGP MAR QAT KWT OMN JOR IRN IRQ LBN SYR GUY HTI JAM BLZ CUB LBR LBY MLI MRT NER GTM HND NIC PRY URY PRK PSE SDN PRI NCL ERI GAB GMB GNB GNQ MOZ LSO MDG MUS FJI CAF COD COG GIN DJI AUS PNG BRN BTN SLB TLS MWI SLE SOM SSD TCD SLV SUR TTO CAN USA CHN MLT"
 export PUBLISHED_COUNTRIES="${published_countries}"
 read -r -a published_country_codes <<<"${published_countries}"

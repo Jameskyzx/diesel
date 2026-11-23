@@ -10,12 +10,17 @@ import {
   fixtureCountryJurisdictions,
   fixtureJurisdictions,
   fixtureRegulations,
-  fixtureSources,
+  // These tests lock each source as it was originally reviewed. The November 2026
+  // re-verification only moves verifiedAt/updatedAt for the confirmed sources;
+  // tests/reverification-2026-11.test.ts locks that overlay exactly.
+  fixtureSourcesAddedNovember2026,
+  baseFixtureSources as fixtureSources,
 } from "@/server/db/seed/acceptance-fixtures";
 import {
   fixtureMarketMetrics,
   fixtureMarketSources,
 } from "@/server/db/seed/accepted-market-fixtures";
+import { NOVEMBER_2026_REVERIFICATION_ISO } from "@/server/db/seed/reverification-2026-11";
 import { seedDemoData } from "@/server/db/seed/demo-data";
 import { createCountryRepository } from "@/server/repositories/country-repository";
 import { createRegulationRepository } from "@/server/repositories/regulation-repository";
@@ -469,7 +474,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       acceptanceFixtureIds.source.cnHj1014,
     );
     expect(cnMeeJurisdiction?.source.verifiedAt.toISOString()).toBe(
-      "2026-11-17T08:38:02.000Z",
+      NOVEMBER_2026_REVERIFICATION_ISO,
     );
     const currentEffectiveRegulations = details?.regulations.filter(
       (regulation) =>
@@ -627,7 +632,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     }
   });
 
-  it("DEU resolves EU instruments with explicit statuses and the 2027-11-29 switch", async () => {
+  it("DEU resolves EU instruments with explicit statuses and the 2029-05-29 switch", async () => {
     const countryRepository = createCountryRepository(testDatabase.database);
     const details = await countryRepository.findDetailsByIso3({
       asOf: "2026-08-05",
@@ -644,13 +649,13 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     const euroVi = byCitation.get("CELEX:32009R0595");
     expect(euroVi).toMatchObject({
       effectiveFrom: "2012-12-31",
-      effectiveTo: "2027-11-29",
+      effectiveTo: "2029-05-29",
       status: "effective",
     });
 
     const euro7 = byCitation.get("CELEX:32024R1257");
     expect(euro7).toMatchObject({
-      effectiveFrom: "2027-11-29",
+      effectiveFrom: "2029-05-29",
       status: "adopted",
     });
 
@@ -1377,8 +1382,9 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
             row.limit.testCycleCode === "FTP/SET" &&
             row.limit.unitCode === "g/hp-hr" &&
             row.limit.validFrom === "2010-01-01" &&
+            row.limit.validTo === "2027-01-01" &&
             row.limit.verifiedAt.toISOString() ===
-              CANADA_COMPLETENESS_SIGNOFF_ISO,
+              NOVEMBER_2026_REVERIFICATION_ISO,
         ),
       ).toBe(true);
     }
@@ -1404,6 +1410,70 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
         powerKw: 300,
       }),
     ).resolves.toHaveLength(0);
+  });
+
+  it("CAN switches MY2027+ road engines to the 2026 Interim Order's 40 CFR 1036.104 path", async () => {
+    const query = (
+      applicationScope: "on-road-truck" | "on-road-bus",
+      asOf: string,
+    ) =>
+      repository().findEffectiveByCountry({
+        applicationScope,
+        asOf,
+        countryIso3: "CAN",
+        powerKw: 300,
+      });
+    const lastSor2003Day = await query("on-road-truck", "2026-12-31");
+    expect(lastSor2003Day).toHaveLength(4);
+    expect(
+      lastSor2003Day.every((row) => row.citationCode === "SOR/2003-2"),
+    ).toBe(true);
+
+    for (const [applicationScope, asOf] of [
+      ["on-road-truck", "2027-01-01"],
+      ["on-road-bus", "2027-10-12"],
+    ] as const) {
+      const rows = await query(applicationScope, asOf);
+      expect(rows).toHaveLength(8);
+      expect(
+        new Map(
+          rows.map((row) => [
+            `${row.limit.testCycleCode}:${row.limit.pollutantCode}`,
+            Number(row.limit.limitValue),
+          ]),
+        ),
+      ).toEqual(
+        new Map([
+          ["FTP/SET:NOX", 0.035],
+          ["FTP/SET:PM", 0.005],
+          ["FTP/SET:CO", 6],
+          ["FTP/SET:NMHC", 0.06],
+          ["LLC:NOX", 0.05],
+          ["LLC:NMHC", 0.14],
+          ["LLC:PM", 0.005],
+          ["LLC:CO", 6],
+        ]),
+      );
+      expect(
+        rows.every(
+          (row) =>
+            row.regulationId ===
+              acceptanceFixtureIds.regulation.canadaRoadInterimOrder2026 &&
+            row.citationCode ===
+              "CEPA Interim Order 2026-10-13 s.3(1) / SOR/2003-2 s.16(2)" &&
+            row.source.id ===
+              acceptanceFixtureIds.source.canadaInterimOrder2026 &&
+            row.limit.sourceId === acceptanceFixtureIds.source.usEcfr1036 &&
+            row.limit.validFrom === "2027-01-01" &&
+            row.limit.validTo === "2027-10-13" &&
+            row.limit.verifiedAt.toISOString() ===
+              NOVEMBER_2026_REVERIFICATION_ISO,
+        ),
+      ).toBe(true);
+    }
+
+    // The Interim Order lapses at the latest one year after it was made.
+    await expect(query("on-road-truck", "2027-10-13")).resolves.toHaveLength(0);
   });
 
   it("CAN SOR/2020-258 preserves every rounded-power Tier 4 band", async () => {
@@ -1493,7 +1563,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
     expect(road).toMatchObject({
       adoptedOn: "2002-12-12",
-      verifiedAt: new Date(CANADA_COMPLETENESS_SIGNOFF_ISO),
+      // The MY2027 boundary was added in the November 2026 re-verification.
+      verifiedAt: new Date(NOVEMBER_2026_REVERIFICATION_ISO),
     });
     expect(nonroad).toMatchObject({
       adoptedOn: "2020-12-04",
@@ -2615,61 +2686,98 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     );
   });
 
-  it("PER applies D.S. 029 Euro VI/A to heavy trucks and buses from 2024-10-01", async () => {
+  it("PER keeps the annex I.7/I.8 Euro IV path current while D.S. 003-2024-EM holds Euro VI/A back", async () => {
     for (const applicationScope of ["on-road-truck", "on-road-bus"] as const) {
-      await expect(
-        repository().findEffectiveByCountry({
+      for (const asOf of [
+        "2021-10-16",
+        "2024-10-01",
+        "2026-11-19",
+        "2032-01-01",
+      ]) {
+        const rows = await repository().findEffectiveByCountry({
           applicationScope,
-          asOf: "2024-09-30",
+          asOf,
           countryIso3: "PER",
           powerKw: 300,
-        }),
-      ).resolves.toHaveLength(0);
-
-      const rows = await repository().findEffectiveByCountry({
-        applicationScope,
-        asOf: "2024-10-01",
-        countryIso3: "PER",
-        powerKw: 300,
-      });
-      expect(rows).toHaveLength(12);
-      expect(
-        rows.every(
-          (row) =>
-            row.citationCode ===
-            "D.S. 010-2017-MINAM annex I.7 / D.S. 029-2021-MINAM",
-        ),
-      ).toBe(true);
-      const values = new Map(
-        rows.map((row) => [
-          `${row.limit.testCycleCode}:${row.limit.pollutantCode}`,
-          Number(row.limit.limitValue),
-        ]),
-      );
-      expect(values.get("WHSC:NOX")).toBe(400);
-      expect(values.get("WHSC:PM")).toBe(10);
-      expect(values.get("WHSC:PN")).toBe(800);
-      expect(values.get("WHTC:NOX")).toBe(460);
-      expect(values.get("WHTC:PM")).toBe(10);
-      expect(values.get("WHTC:PN")).toBe(600);
-
-      const fixtureRows = buildFixtureLimits().filter(
-        (row) =>
-          row.regulationId ===
-            acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi &&
-          row.applicationScope === applicationScope,
-      );
-      expect(fixtureRows).toHaveLength(12);
-      expect(
-        fixtureRows.every(
-          (row) =>
-            row.measurementBasis?.includes("alternative") === true &&
-            row.measurementBasis?.includes("not cumulative") === true &&
-            row.measurementBasis?.includes("EPA 2010") === true &&
-            row.dataSourceId === acceptanceFixtureIds.source.peruDecree029,
-        ),
-      ).toBe(true);
+        });
+        expect(rows).toHaveLength(9);
+        expect(
+          rows.every(
+            (row) =>
+              row.regulationId ===
+                acceptanceFixtureIds.regulation.peruHeavyVehicleEuroIv &&
+              row.citationCode ===
+                "D.S. 010-2017-MINAM annex I.7/I.8 Euro IV / D.S. 029-2021-MINAM / D.S. 003-2024-EM" &&
+              row.limit.dataSourceId ===
+                acceptanceFixtureIds.source.peruDecree029 &&
+              row.limit.validFrom === "2018-04-01" &&
+              row.limit.validTo === null &&
+              row.limit.verifiedAt.toISOString() ===
+                NOVEMBER_2026_REVERIFICATION_ISO,
+          ),
+        ).toBe(true);
+        expect(
+          new Map(
+            rows.map((row) => [
+              `${row.limit.testCycleCode}:${row.limit.pollutantCode}`,
+              `${Number(row.limit.limitValue)} ${row.limit.unitCode}`,
+            ]),
+          ),
+        ).toEqual(
+          new Map([
+            ["ESC:CO", "1.5 g/kWh"],
+            ["ESC:HC", "0.46 g/kWh"],
+            ["ESC:NOX", "3.5 g/kWh"],
+            ["ESC:PM", "0.02 g/kWh"],
+            ["ETC:CO", "4 g/kWh"],
+            ["ETC:NMHC", "0.55 g/kWh"],
+            ["ETC:NOX", "3.5 g/kWh"],
+            ["ETC:PM", "0.03 g/kWh"],
+            ["ELR:OPACITY", "0.5 m-1"],
+          ]),
+        );
+      }
     }
+
+    const euroVi = fixtureRegulations.find(
+      (row) =>
+        row.id === acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
+    );
+    expect(euroVi).toMatchObject({
+      dataSourceId: acceptanceFixtureIds.source.peruDs0032024Em,
+      effectiveFrom: null,
+      status: "adopted",
+    });
+    expect(euroVi?.summary).toContain("2030-08-31");
+    expect(euroVi?.summary).toContain("本库不设生效日");
+
+    // The Euro VI/A values stay on file for the adopted record only.
+    const euroViRows = buildFixtureLimits().filter(
+      (row) =>
+        row.regulationId ===
+        acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
+    );
+    expect(euroViRows).toHaveLength(24);
+    expect(
+      euroViRows.every(
+        (row) =>
+          row.measurementBasis?.includes("D.S. 003-2024-EM") === true &&
+          row.measurementBasis?.includes("not cumulative") === true &&
+          row.dataSourceId === acceptanceFixtureIds.source.peruDecree029 &&
+          row.verifiedAt.toISOString() === NOVEMBER_2026_REVERIFICATION_ISO,
+      ),
+    ).toBe(true);
+    const whsc = new Map(
+      euroViRows
+        .filter(
+          (row) =>
+            row.applicationScope === "on-road-truck" &&
+            row.testCycleCode === "WHSC",
+        )
+        .map((row) => [row.pollutantCode, Number(row.limitValue)]),
+    );
+    expect(whsc.get("NOX")).toBe(400);
+    expect(whsc.get("PN")).toBe(800);
   });
 
   it("PER keeps construction and agriculture outside the road transport decree", async () => {
@@ -2699,13 +2807,17 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       },
       validFrom: "2021-10-16",
     });
-    const regulation = fixtureRegulations.find(
-      (row) =>
-        row.id === acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
-    );
-    expect(regulation?.summary).toContain(
-      "construction/agriculture 不从道路车辆规则外推",
-    );
+    for (const regulationId of [
+      acceptanceFixtureIds.regulation.peruHeavyVehicleEuroIv,
+      acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
+    ]) {
+      const regulation = fixtureRegulations.find(
+        (row) => row.id === regulationId,
+      );
+      expect(regulation?.summary).toContain(
+        "construction/agriculture 不从道路车辆规则外推",
+      );
+    }
   });
 
   it("PHL applies the complete Euro IV heavy-duty R49 path from 2016-01-01", async () => {
@@ -3145,15 +3257,16 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       expect(new Set(rows.map((row) => row.limit.dataSourceId))).toEqual(
         new Set([acceptanceFixtureIds.source.euReg595]),
       );
+      // The 2029-05-29 boundary was corrected in the November 2026 re-verification.
       expect(new Set(rows.map((row) => row.verifiedAt.toISOString()))).toEqual(
-        new Set(["2026-08-08T03:55:43.000Z"]),
+        new Set([NOVEMBER_2026_REVERIFICATION_ISO]),
       );
     }
 
     await expect(
       repository().findEffectiveByCountry({
         applicationScope: "on-road-truck",
-        asOf: "2027-11-28",
+        asOf: "2029-05-28",
         countryIso3: "ISL",
         powerKw: 300,
       }),
@@ -3161,7 +3274,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     await expect(
       repository().findEffectiveByCountry({
         applicationScope: "on-road-truck",
-        asOf: "2027-11-29",
+        asOf: "2029-05-29",
         countryIso3: "ISL",
         powerKw: 300,
       }),
@@ -6839,7 +6952,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
 
   it("keeps stable source IDs live and limits non-publishable regulation IDs to governance tombstones", () => {
     const fixtureSourceIds = new Set(
-      fixtureSources
+      [...fixtureSources, ...fixtureSourcesAddedNovember2026]
         .map(({ id }) => id)
         .filter((id): id is string => id !== undefined),
     );
@@ -7566,7 +7679,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
           row.limit.sourceUrl ===
             "https://www.ambiente.gub.uy/oan/documentos/DCA-Decreto_135_021_calidad_de_aire-2021.pdf" &&
           row.limit.validFrom === "2023-05-14" &&
-          row.source.verifiedAt.toISOString() === "2026-08-10T20:09:01.000Z",
+          row.source.verifiedAt.toISOString() ===
+            NOVEMBER_2026_REVERIFICATION_ISO,
       ),
     ).toBe(true);
     const fixtureRows = buildFixtureLimits().filter(
@@ -11478,7 +11592,7 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
     });
     expect(
       maltaAfterAccession?.jurisdictions[0]?.membershipSource.verifiedAt,
-    ).toEqual(new Date("2026-08-11T04:27:59.000Z"));
+    ).toEqual(new Date(NOVEMBER_2026_REVERIFICATION_ISO));
   });
 
   it("applies signed EU limits to member countries without crossing accession dates", async () => {

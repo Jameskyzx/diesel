@@ -3,9 +3,9 @@ export const portfolioPublicationSummary = {
   approvedRealCertifications: 0,
   approvedRealProducts: 0,
   jurisdictions: 97,
-  limits: 651,
-  regulations: 28,
-  sources: 203,
+  limits: 667,
+  regulations: 29,
+  sources: 204,
 } as const;
 
 /**

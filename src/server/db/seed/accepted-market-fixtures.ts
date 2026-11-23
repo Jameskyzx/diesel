@@ -1,5 +1,6 @@
 import { dataSources, marketMetrics } from "@/server/db/schema";
 import { marketMetricDecimalSchema } from "@/features/database/schemas";
+import { withNovember2026SourceReverification } from "@/server/db/seed/reverification-2026-11";
 
 const marketReadbackTimestamp = new Date("2026-08-03T00:00:00.000Z");
 const marketRecordTimestamps = {
@@ -51,7 +52,8 @@ export const acceptedMarketFixtureIds = {
   },
 } as const;
 
-export const fixtureMarketSources: (typeof dataSources.$inferInsert)[] = [
+/** Market source records as originally reviewed, before the November 2026 re-verification. */
+export const baseMarketSources: (typeof dataSources.$inferInsert)[] = [
   {
     ...marketRecordTimestamps,
     id: acceptedMarketFixtureIds.source.chnNbs2024,
@@ -145,6 +147,9 @@ export const fixtureMarketSources: (typeof dataSources.$inferInsert)[] = [
     url: "https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-Senatran/frota-de-veiculos-2023",
   },
 ];
+
+export const fixtureMarketSources: (typeof dataSources.$inferInsert)[] =
+  withNovember2026SourceReverification(baseMarketSources);
 
 type MarketFixture = typeof marketMetrics.$inferInsert;
 type RoadScope = "on-road-bus" | "on-road-truck";

@@ -37,6 +37,19 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   comparison in one pipelined wave after the coverage gate (7 → 5 database round-trips for a
   filtered lookup, ARCHITECTURE.md). The canary's `CHN` non-road lookup returned 200 in 1.7–2.7 s
   end to end after the switch.
+- Release attempt 2026-11-23 (`08d440a4`, full governance release of the November
+  re-verification, durable operation `a76d1157`): failed safely and is not live.
+  - The host activated at 13:58 UTC. The pre-write governance snapshot export then reached its
+    90-minute budget and was terminated, and the host rolled back to
+    `7462e6ca5856a8f76ef8f4f500601f1ac3816213` at 15:29 UTC.
+  - No governance data was written, and no recovery marker remains. At 15:31 UTC,
+    `/api/health` returned `status=ok` on 7462e6ca.
+  - Cause: the server-to-database link was about 3–6× slower than in the October releases.
+    Reading 500 limit rows took about 22 s instead of about 9 s, and the reader saw four
+    `CONNECTION_CLOSED` retries. The data had grown only about 6%.
+  - A durable operation is single-use per SHA, so the retry uses a newer master commit. It
+    starts only after a read-only link check shows normal speed. The 90-minute budget is
+    unchanged.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health` and also accepts the
   exact master commit it checked out, so the window before this record merges does not fail.

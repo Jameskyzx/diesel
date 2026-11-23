@@ -13,6 +13,7 @@ import {
   fixtureCountryJurisdictions,
 } from "../src/server/db/seed/acceptance-fixtures";
 import { CANADA_COMPLETENESS_SIGNOFF_ISO } from "../scripts/db/ingest-signoff";
+import { NOVEMBER_2026_REVERIFICATION_ISO } from "../src/server/db/seed/reverification-2026-11";
 
 describe("accepted fixture target selection", () => {
   const limits = buildFixtureLimits();
@@ -230,9 +231,9 @@ describe("accepted fixture target selection", () => {
     expect(portfolioReleaseCountryIso3s).toHaveLength(97);
     expect(new Set(portfolioReleaseCountryIso3s).size).toBe(97);
     expect(full.jurisdictionIds.size).toBe(97);
-    expect(full.regulationIds.size).toBe(28);
-    expect(full.limitRows).toHaveLength(651);
-    expect(full.sourceIds.size).toBe(203);
+    expect(full.regulationIds.size).toBe(29);
+    expect(full.limitRows).toHaveLength(667);
+    expect(full.sourceIds.size).toBe(204);
     expect(full.jurisdictionIds).toEqual(targetJurisdictionIds);
     expect(full.regulationIds).toEqual(targetRegulationIds);
     expect(full.sourceIds).toEqual(targetSourceIds);
@@ -300,17 +301,25 @@ describe("accepted fixture target selection", () => {
     const full = buildFullIngestSelection(["CAN"], limits);
     const expectedRegulationIds = new Set([
       acceptanceFixtureIds.regulation.canadaRoad2003,
+      acceptanceFixtureIds.regulation.canadaRoadInterimOrder2026,
       acceptanceFixtureIds.regulation.canadaOffroad2020,
     ]);
     const expectedSourceIds = new Set([
       acceptanceFixtureIds.source.canadaRoadRegulation,
+      acceptanceFixtureIds.source.canadaInterimOrder2026,
       acceptanceFixtureIds.source.canadaOffroadRegulation,
       acceptanceFixtureIds.source.usEcfr86,
+      acceptanceFixtureIds.source.usEcfr1036,
       acceptanceFixtureIds.source.usEcfr1039,
     ]);
     const roadRows = target.limitRows.filter(
       ({ regulationId }) =>
         regulationId === acceptanceFixtureIds.regulation.canadaRoad2003,
+    );
+    const interimOrderRows = target.limitRows.filter(
+      ({ regulationId }) =>
+        regulationId ===
+        acceptanceFixtureIds.regulation.canadaRoadInterimOrder2026,
     );
     const nonroadRows = target.limitRows.filter(
       ({ regulationId }) =>
@@ -322,8 +331,9 @@ describe("accepted fixture target selection", () => {
     );
     expect(target.regulationIds).toEqual(expectedRegulationIds);
     expect(target.sourceIds).toEqual(expectedSourceIds);
-    expect(target.limitRows).toHaveLength(48);
+    expect(target.limitRows).toHaveLength(64);
     expect(roadRows).toHaveLength(8);
+    expect(interimOrderRows).toHaveLength(16);
     expect(nonroadRows).toHaveLength(40);
     expect(
       roadRows.every(
@@ -331,7 +341,17 @@ describe("accepted fixture target selection", () => {
           row.dataSourceId === acceptanceFixtureIds.source.usEcfr86 &&
           row.testCycleCode === "FTP/SET" &&
           row.validFrom === "2010-01-01" &&
-          row.verifiedAt.toISOString() === CANADA_COMPLETENESS_SIGNOFF_ISO,
+          row.validTo === "2027-01-01" &&
+          row.verifiedAt.toISOString() === NOVEMBER_2026_REVERIFICATION_ISO,
+      ),
+    ).toBe(true);
+    expect(
+      interimOrderRows.every(
+        (row) =>
+          row.dataSourceId === acceptanceFixtureIds.source.usEcfr1036 &&
+          row.validFrom === "2027-01-01" &&
+          row.validTo === "2027-10-13" &&
+          row.verifiedAt.toISOString() === NOVEMBER_2026_REVERIFICATION_ISO,
       ),
     ).toBe(true);
     expect(

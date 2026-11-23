@@ -1733,7 +1733,7 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       'rm -f "${recovery_marker}"',
     );
     expect(publicGovernanceValidator).toContain(
-      "97 jurisdictions / 28 regulations / 651 limits / 203 sources",
+      "97 jurisdictions / 29 regulations / 667 limits / 204 sources",
     );
     expect(deploymentRunbook).toContain("§1039.140 / §1065.20(e) ties-to-even");
     expect(deploymentRunbook).toContain("[129.5,560.501)");

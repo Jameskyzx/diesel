@@ -41,7 +41,7 @@ substitute the currently hosted release for the local walkthrough.
 
 Clarify that 178 ISO3 entries are a country directory and published evidence
 boundary, not 178 countries with numeric emission limits. The reviewed
-publication closure is 97 jurisdictions, 28 regulations, 651 limits, and 203
+publication closure is 97 jurisdictions, 29 regulations, 667 limits, and 204
 sources; there are zero approved real-product fixtures.
 
 ### 0:30–1:15 — Show the failure boundary first

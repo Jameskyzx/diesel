@@ -57,7 +57,7 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 
 | Item | Current | Boundary |
 | --- | --- | --- |
-| Published regulation closure | 97 jurisdictions / 28 regulations / 651 limits / 203 sources | Reviewed public-source fixtures; not legal advice |
+| Published regulation closure | 97 jurisdictions / 29 regulations / 667 limits / 204 sources | Reviewed public-source fixtures; not legal advice |
 | Country directory | 178 ISO3 entries, 177 map features | Directory presence is not numeric-regulation coverage |
 | Approved real products / certifications | 0 / 0 | No real commercial-availability claim |
 | Product catalogue | Governed `catalog_engines`; fixture of 24 fictional `DEMO-` models | Declarations, not certification; public read returns demo rows only |

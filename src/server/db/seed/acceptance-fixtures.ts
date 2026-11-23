@@ -8,6 +8,10 @@ import {
   regulationLimits,
   regulations,
 } from "@/server/db/schema";
+import {
+  november2026ReverificationTimestamp,
+  withNovember2026SourceReverification,
+} from "@/server/db/seed/reverification-2026-11";
 
 /**
  * M1 签核验收事实（ADR-015，2026-07-30 `docs/ACCEPTANCE.md` 总签核批准）。
@@ -497,6 +501,15 @@ const norwayRecordTimestamps = {
   createdAt: norwayVerificationTimestamp,
   updatedAt: norwayVerificationTimestamp,
   verifiedAt: norwayVerificationTimestamp,
+} as const;
+// 2026-11 全量复核更正的记录：事实在复核时重新核对（docs/REVERIFICATION-2026-11.md 第 3 节）。
+const november2026CorrectionTimestamps = {
+  updatedAt: november2026ReverificationTimestamp,
+  verifiedAt: november2026ReverificationTimestamp,
+} as const;
+const november2026NewRecordTimestamps = {
+  createdAt: november2026ReverificationTimestamp,
+  ...november2026CorrectionTimestamps,
 } as const;
 const icelandVerificationTimestamp = new Date("2026-08-08T03:55:43.000Z");
 const icelandRecordTimestamps = {
@@ -1381,6 +1394,8 @@ export const acceptanceFixtureIds = {
     australiaNrdeEvaluation: id("0231"),
     australiaDieselHdStandards: id("0232"),
     canadaRoadRegulation: id("0233"),
+    canadaInterimOrder2026: id("0733"),
+    peruDs0032024Em: id("0734"),
     canadaOffroadRegulation: id("0234"),
     unitedKingdomNrmm: id("0235"),
     unitedKingdomAgricultureApproval: id("0236"),
@@ -1860,6 +1875,8 @@ export const acceptanceFixtureIds = {
     australiaAdr80_03: id("0422"),
     australiaAdr80_04: id("0423"),
     canadaRoad2003: id("0424"),
+    canadaRoadInterimOrder2026: id("0492"),
+    peruHeavyVehicleEuroIv: id("0493"),
     canadaOffroad2020: id("0425"),
     unitedKingdomNrmmStageV: id("0426"),
     indiaBs6: id("0427"),
@@ -1945,7 +1962,8 @@ export const acceptedLimitUnavailableRegulationIds = [
   acceptanceFixtureIds.regulation.indiaTrem2026Draft,
 ] as const;
 
-export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
+/** Source records as originally reviewed, before the November 2026 re-verification. */
+export const baseFixtureSources: (typeof dataSources.$inferInsert)[] = [
   {
     ...chinaNonroadRecordTimestamps,
     id: acceptanceFixtureIds.source.cnGb17691,
@@ -5656,6 +5674,40 @@ export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
   },
 ];
 
+/** Sources added by the November 2026 re-verification corrections. */
+export const fixtureSourcesAddedNovember2026: (typeof dataSources.$inferInsert)[] =
+  [
+    {
+      ...november2026NewRecordTimestamps,
+      id: acceptanceFixtureIds.source.canadaInterimOrder2026,
+      isDemo: false,
+      publishedOn: "2026-10-31",
+      publisher:
+        "Canada Gazette, Part I, Vol. 160, No. 44 (Government Notices) / Environment and Climate Change Canada",
+      sourceType: "official-regulation",
+      title:
+        "Interim Order Modifying the Operation of Certain Regulations Made Under the Canadian Environmental Protection Act, 1999",
+      url: "https://gazette.gc.ca/rp-pr/p1/2026/2026-10-31/html/notice-avis-eng.html",
+    },
+    {
+      ...november2026NewRecordTimestamps,
+      id: acceptanceFixtureIds.source.peruDs0032024Em,
+      isDemo: false,
+      publishedOn: "2024-02-02",
+      publisher:
+        "Peru Ministerio de Energia y Minas / Diario Oficial El Peruano",
+      sourceType: "official-regulation",
+      title:
+        "Decreto Supremo 003-2024-EM: modifica los plazos para el uso y la comercializacion de Diesel, Gasolinas y Gasoholes de bajo azufre no mayor de 10 ppm",
+      url: "https://cdn.www.gob.pe/uploads/document/file/5811876/5156101-ds-003-2024-em.pdf",
+    },
+  ];
+
+export const fixtureSources: (typeof dataSources.$inferInsert)[] = [
+  ...withNovember2026SourceReverification(baseFixtureSources),
+  ...fixtureSourcesAddedNovember2026,
+];
+
 export const fixtureJurisdictions: (typeof jurisdictions.$inferInsert)[] = [
   {
     ...chinaNonroadRecordTimestamps,
@@ -8738,15 +8790,16 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     canonicalName:
       "Regulation (EC) No 595/2009 on type-approval of heavy-duty vehicles (Euro VI)",
     citationCode: "CELEX:32009R0595",
+    ...november2026CorrectionTimestamps,
     dataSourceId: acceptanceFixtureIds.source.euReg595,
     effectiveFrom: "2012-12-31",
-    effectiveTo: "2027-11-29",
+    effectiveTo: "2029-05-29",
     id: acceptanceFixtureIds.regulation.euReg595,
     isDemo: false,
     jurisdictionId: acceptanceFixtureIds.jurisdiction.eu,
     status: "effective",
     summary:
-      "Euro VI 重型车辆（M2/M3/N2/N3）型式批准；自 2027-11-29 被 Euro 7（2024/1257）废止。代表性柴油 WHSC/WHTC 限值已读回入库。",
+      "Euro VI 重型车辆（M2/M3/N2/N3）型式批准。Euro 7（2024/1257）第 20 条：M2/M3/N2/N3 新车型自 2028-05-29、全部新车自 2029-05-29 适用，595/2009 自 2031-07-01 废止；本库以全部新车适用日 2029-05-29 为道路路径切换日（半开区间）。代表性柴油 WHSC/WHTC 限值已读回入库。",
   },
   {
     ...recordTimestamps,
@@ -8769,14 +8822,15 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     canonicalName:
       "Regulation (EU) 2024/1257 on type-approval of motor vehicles and engines (Euro 7)",
     citationCode: "CELEX:32024R1257",
+    ...november2026CorrectionTimestamps,
     dataSourceId: acceptanceFixtureIds.source.euReg1257,
-    effectiveFrom: "2027-11-29",
+    effectiveFrom: "2029-05-29",
     id: acceptanceFixtureIds.regulation.euReg1257,
     isDemo: false,
     jurisdictionId: acceptanceFixtureIds.jurisdiction.eu,
     status: "adopted",
     summary:
-      "已通过、已生效但 M2/M3/N2/N3 自 2027-11-29 起适用并废止 595/2009；该日之前在数据中为 adopted。",
+      "已通过、已生效；第 20 条规定 M2/M3/N2/N3 新车型自 2028-05-29、全部新车自 2029-05-29 适用，595/2009 自 2031-07-01 废止。本库以 2029-05-29 为重型车辆适用日，该日之前在数据中为 adopted。",
   },
   {
     ...japanRecordTimestamps,
@@ -8949,6 +9003,7 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     canonicalName:
       "On-Road Vehicle and Engine Emission Regulations (SOR/2003-2)",
     citationCode: "SOR/2003-2",
+    ...november2026CorrectionTimestamps,
     dataSourceId: acceptanceFixtureIds.source.canadaRoadRegulation,
     effectiveFrom: "2004-01-01",
     id: acceptanceFixtureIds.regulation.canadaRoad2003,
@@ -8956,7 +9011,23 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     jurisdictionId: acceptanceFixtureIds.jurisdiction.canada,
     status: "effective",
     summary:
-      "加拿大道路车辆与发动机排放法规；条文第 16(2) 对柴油重型发动机直接引用对应机型年的 40 CFR 86.11；当前道路卡车与客车共用 MY2010+ petroleum-diesel engine-certified HDE 代表路径。",
+      "加拿大道路车辆与发动机排放法规；条文第 16(2) 对柴油重型发动机直接引用对应机型年的 40 CFR 86.11；道路卡车与客车共用 MY2010–2026 petroleum-diesel engine-certified HDE 代表路径，以 2027-01-01 作为机型年代理截止。MY2027+ 由 2026-10-13 Interim Order 的 40 CFR 1036.104 代表路径接续。",
+  },
+  {
+    ...november2026NewRecordTimestamps,
+    adoptedOn: "2026-10-13",
+    canonicalName:
+      "Interim Order Modifying the Operation of Certain Regulations Made Under the Canadian Environmental Protection Act, 1999 — SOR/2003-2 s.16(2) for MY2027+ diesel heavy-duty engines",
+    citationCode: "CEPA Interim Order 2026-10-13 s.3(1) / SOR/2003-2 s.16(2)",
+    dataSourceId: acceptanceFixtureIds.source.canadaInterimOrder2026,
+    effectiveFrom: "2027-01-01",
+    effectiveTo: "2027-10-13",
+    id: acceptanceFixtureIds.regulation.canadaRoadInterimOrder2026,
+    isDemo: false,
+    jurisdictionId: acceptanceFixtureIds.jurisdiction.canada,
+    status: "effective",
+    summary:
+      "环境部长 2026-10-13 签发、2026-10-31 刊登于 Canada Gazette Part I 的 Interim Order 第 3(1) 条，把 SOR/2003-2 第 16(2) 条对 2027 及以后机型年柴油重型发动机读作：2026-12-20 起完成制造的须符合 40 CFR 1036.104；2027 机型年且在该日前完成制造的也可按 40 CFR 86.007-11。本库以 2027-01-01 作为机型年查询代理（与美国记录一致），沿用 40 CFR 1036.104 primary FTP/SET 与 LLC 代表限值，不累加 off-cycle、ABT/FEL 与 2026-12-20 前的替代路径。总督令把 Interim Order 延长至自签发日起最长一年，本记录到 2027-10-13 截止（半开区间），之后以正式修订为准。",
   },
   {
     ...canadaRecordTimestamps,
@@ -9582,19 +9653,37 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
       "Resolucion 0762/2022 article 19 自法规发布满 24 个月的 2024-07-18 起，对在哥伦比亚制造、组装或进口的 19–560 kW 柴油非道路移动源实施 Table 23 EU 或 Table 24 US 替代路径。本库只建模 Table 23 EU 代表路径；article 3(c) 明确排除专用于农业作业的非道路移动源。",
   },
   {
-    ...peruRecordTimestamps,
+    ...november2026NewRecordTimestamps,
     adoptedOn: "2021-10-15",
     canonicalName:
-      "Peru D.S. 010-2017-MINAM annex I.7 heavy-duty Euro VI/A limits as amended by D.S. 029-2021-MINAM",
-    citationCode: "D.S. 010-2017-MINAM annex I.7 / D.S. 029-2021-MINAM",
+      "Peru D.S. 010-2017-MINAM annex I.7/I.8 heavy-duty Euro IV limits as amended by D.S. 029-2021-MINAM",
+    citationCode:
+      "D.S. 010-2017-MINAM annex I.7/I.8 Euro IV / D.S. 029-2021-MINAM / D.S. 003-2024-EM",
     dataSourceId: acceptanceFixtureIds.source.peruDecree029,
-    effectiveFrom: "2024-10-01",
-    id: acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
+    effectiveFrom: "2018-04-01",
+    id: acceptanceFixtureIds.regulation.peruHeavyVehicleEuroIv,
     isDemo: false,
     jurisdictionId: acceptanceFixtureIds.jurisdiction.peru,
     status: "effective",
     summary:
-      "D.S. 029-2021-MINAM article 2 与第一项最终补充规定，自 2024-10-01 对纳入秘鲁国家道路运输系统、PBV > 3.5 t 的压燃式客货车辆实施 annex I.7 Euro VI/A WHSC/WHTC 限值；annex I.9.1 另列 EPA 2010 路径。本库只建模 Euro VI/A 代表路径，不与 EPA 2010 累计；construction/agriculture 不从道路车辆规则外推。",
+      "D.S. 029-2021-MINAM article 2 重新列出的 annex I.7（ESC/ELR）与 I.8（ETC）Euro IV 行，适用于纳入秘鲁国家道路运输系统、PBV > 3.5 t 的压燃式客货车辆，表中写自 2018 年 4 月起。表中原写到 2024 年 9 月止，但 D.S. 003-2024-EM 把 Euro 6/VI 的启用推迟到 10 ppm 低硫燃油义务生效后 6 个月，Euro VI 至今未启用，因此本库以 Euro IV 为当前路径、不设截止日。年份按提单日期计。annex I.9.1 另列 EPA 替代路径，不累计；construction/agriculture 不从道路车辆规则外推。",
+  },
+  {
+    ...peruRecordTimestamps,
+    ...november2026CorrectionTimestamps,
+    adoptedOn: "2021-10-15",
+    canonicalName:
+      "Peru D.S. 010-2017-MINAM annex I.7 heavy-duty Euro VI/A limits as amended by D.S. 029-2021-MINAM",
+    citationCode:
+      "D.S. 010-2017-MINAM annex I.7 / D.S. 029-2021-MINAM / D.S. 003-2024-EM",
+    dataSourceId: acceptanceFixtureIds.source.peruDs0032024Em,
+    effectiveFrom: null,
+    id: acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
+    isDemo: false,
+    jurisdictionId: acceptanceFixtureIds.jurisdiction.peru,
+    status: "adopted",
+    summary:
+      "已通过、尚未生效。D.S. 029-2021-MINAM article 2 的 annex I.7 Euro VI/A WHSC/WHTC 限值原定 2024-10-01 起适用；D.S. 003-2024-EM（2024-02-02）改写其第一项最终补充规定：Euro 6/VI、Tier 3 与 EPA 2010 自 D.S. 014-2021-EM 第 4 条（10 ppm 低硫燃油义务）生效后 6 个月起适用。D.S. 024-2026-EM（2026-10-29）把 10 ppm 的 Diesel B5 定为 2030-08-31、汽油定为 2029-08-31（Loreto 除外）。条文没有写明按哪一种燃油日期起算，本库不设生效日；若按柴油日期推算约为 2031-02-28，待负责人确认。annex I.9.1 另列 EPA 2010 路径，不累计；construction/agriculture 不从道路车辆规则外推。",
   },
   {
     ...singaporeRecordTimestamps,
@@ -9664,15 +9753,16 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     canonicalName:
       "Iceland Regulation 377/2013 heavy-duty Euro VI emission requirements",
     citationCode: "Reglugerð 377/2013 art. 12 and Annex IV items 45zzk/45zzl",
+    ...november2026CorrectionTimestamps,
     dataSourceId: acceptanceFixtureIds.source.icelandRoadRegulation2013,
     effectiveFrom: "2013-04-15",
-    effectiveTo: "2027-11-29",
+    effectiveTo: "2029-05-29",
     id: acceptanceFixtureIds.regulation.icelandHeavyVehicleEuroVi,
     isDemo: false,
     jurisdictionId: acceptanceFixtureIds.jurisdiction.iceland,
     status: "effective",
     summary:
-      "377/2013 article 12 requires vehicles to meet the emission standard applicable to them under 595/2009, while Annex IV items 45zzk and 45zzl register 595/2009 and 582/2011 for heavy-vehicle emissions; the instrument states immediate effect on its 2013-04-15 ministerial date. 603/2026 confirms the live 595/2009 entry and incorporates Euro 7. This fixture keeps the Euro VI representative path through the heavy-vehicle Euro 7 application date 2027-11-29.",
+      "377/2013 article 12 requires vehicles to meet the emission standard applicable to them under 595/2009, while Annex IV items 45zzk and 45zzl register 595/2009 and 582/2011 for heavy-vehicle emissions; the instrument states immediate effect on its 2013-04-15 ministerial date. 603/2026 confirms the live 595/2009 entry and incorporates Euro 7. This fixture keeps the Euro VI representative path until 2029-05-29, when 2024/1257 article 20 applies Euro 7 to all new M2/M3/N2/N3 vehicles (new types from 2028-05-29).",
   },
   {
     ...icelandRecordTimestamps,
@@ -11140,7 +11230,7 @@ export function buildFixtureLimits(): FixtureLimit[] {
   // 保留既有 NOx/PM 行在 builder 中的位置以维持 UUID 稳定；同一路径缺失的
   // CO/NMHC 行在 builder 末尾追加。
   const canadaRoadMeasurementBasis =
-    "SOR/2003-2 s.16(2) dynamically incorporates 40 CFR 86.007-11; MY2010+ petroleum-diesel engine-certified HDE representative pathway for GVWR > 14,000 lb; CFR source values are in g/bhp-hr and are stored in the schema's g/hp-hr unit; FTP/SET base standards are published without accumulating ABT/FEL, NTE, smoke, crankcase, or chassis-certified alternative requirements";
+    "SOR/2003-2 s.16(2) dynamically incorporates 40 CFR 86.007-11; MY2010-2026 petroleum-diesel engine-certified HDE representative pathway for GVWR > 14,000 lb, ending at the 2027-01-01 model-year proxy (MY2027+ follows the 2026-10-13 CEPA Interim Order and 40 CFR 1036.104); CFR source values are in g/bhp-hr and are stored in the schema's g/hp-hr unit; FTP/SET base standards are published without accumulating ABT/FEL, NTE, smoke, crankcase, or chassis-certified alternative requirements";
   const canadaRoadRepresentativeLimits = [
     { pollutantCode: "NOX", limitValue: "0.20", unitCode: "g/hp-hr" },
     { pollutantCode: "PM", limitValue: "0.01", unitCode: "g/hp-hr" },
@@ -11157,7 +11247,8 @@ export function buildFixtureLimits(): FixtureLimit[] {
             measurementBasis: canadaRoadMeasurementBasis,
             testCycleCode: "FTP/SET",
             validFrom: "2010-01-01",
-            verifiedAt: canadaVerificationTimestamp,
+            validTo: "2027-01-01",
+            verifiedAt: november2026ReverificationTimestamp,
           },
         ),
       );
@@ -12675,10 +12766,11 @@ export function buildFixtureLimits(): FixtureLimit[] {
     }
   }
 
-  // Peru D.S. 029-2021-MINAM replaces annex I.7 of D.S. 010-2017-MINAM.
-  // From 2024-10-01, compression-ignition passenger and cargo vehicles over
-  // 3.5 t may use the Euro VI/A WHSC/WHTC path. Annex I.9.1 separately lists
-  // EPA 2010, so the two compliance paths must not be accumulated.
+  // Peru D.S. 029-2021-MINAM replaces annex I.7 of D.S. 010-2017-MINAM with a
+  // Euro VI/A WHSC/WHTC path for compression-ignition vehicles over 3.5 t.
+  // D.S. 003-2024-EM defers its start to six months after the 10 ppm fuel
+  // obligation, so these rows belong to an adopted record without a date.
+  // Annex I.9.1 separately lists EPA 2010; the paths are not accumulated.
   for (const applicationScope of scopes) {
     for (const [testCycleCode, rows] of [
       ["WHSC", euro6Whsc],
@@ -12693,10 +12785,10 @@ export function buildFixtureLimits(): FixtureLimit[] {
               ...row,
               applicationScope,
               measurementBasis:
-                "Peru D.S. 010-2017-MINAM annex I.7 as replaced by D.S. 029-2021-MINAM article 2; Euro VI/A is a representative alternative pathway and is not cumulative with annex I.9.1 EPA 2010",
+                "Peru D.S. 010-2017-MINAM annex I.7 as replaced by D.S. 029-2021-MINAM article 2; the table's 2024-10-01 start is deferred by D.S. 003-2024-EM to six months after the 10 ppm fuel obligation of D.S. 014-2021-EM article 4, so the regulation is adopted without an effective date; Euro VI/A is a representative alternative pathway and is not cumulative with annex I.9.1 EPA 2010",
               testCycleCode,
               validFrom: "2024-10-01",
-              verifiedAt: peruVerificationTimestamp,
+              verifiedAt: november2026ReverificationTimestamp,
             },
           ),
         );
@@ -12877,8 +12969,8 @@ export function buildFixtureLimits(): FixtureLimit[] {
                 "Iceland Regulation 377/2013 article 12 and Annex IV items 45zzk/45zzl incorporate 595/2009 and 582/2011; Regulation 603/2026 confirms the current entry; limit value traced to the EU official Euro VI table",
               testCycleCode,
               validFrom: "2013-04-15",
-              validTo: "2027-11-29",
-              verifiedAt: icelandVerificationTimestamp,
+              validTo: "2029-05-29",
+              verifiedAt: november2026ReverificationTimestamp,
             },
           ),
         );
@@ -13474,7 +13566,8 @@ export function buildFixtureLimits(): FixtureLimit[] {
             measurementBasis: canadaRoadMeasurementBasis,
             testCycleCode: "FTP/SET",
             validFrom: "2010-01-01",
-            verifiedAt: canadaVerificationTimestamp,
+            validTo: "2027-01-01",
+            verifiedAt: november2026ReverificationTimestamp,
           },
         ),
       );
@@ -13867,6 +13960,87 @@ export function buildFixtureLimits(): FixtureLimit[] {
     }
   }
 
+  // Canada CEPA Interim Order (2026-10-13; Canada Gazette, Part I, 2026-10-31)
+  // reads SOR/2003-2 s.16(2) for MY2027+ diesel heavy-duty engines as 40 CFR
+  // 1036.104. Appended so every previously published fixture UUID remains
+  // stable; values are the same eCFR rows as the United States 1036.104 path.
+  const canadaInterimOrderMeasurementBasis =
+    "CEPA Interim Order of 2026-10-13 (Canada Gazette, Part I, 2026-10-31) s.3(1) reads SOR/2003-2 s.16(2) for MY2027+ diesel heavy-duty engines as 40 CFR 1036.104 when manufacture is completed on or after 2026-12-20 (MY2027 engines completed earlier may meet 40 CFR 86.007-11 instead); values traced to the eCFR 1036.104 primary duty-cycle table, diesel HC stored as NMHC; 2027-01-01 is the model-year query proxy and 2027-10-13 the latest Interim Order expiry; off-cycle, ABT/FEL and the pre-2026-12-20 alternative are not statically modeled";
+  for (const applicationScope of scopes) {
+    for (const row of [
+      ...cfr1036Ftp.map((ftpRow) => ({
+        ...ftpRow,
+        testCycleCode: "FTP/SET" as const,
+      })),
+      ...usCfr1036MissingRows,
+    ]) {
+      limits.push(
+        fixtureLimit(
+          acceptanceFixtureIds.regulation.canadaRoadInterimOrder2026,
+          acceptanceFixtureIds.source.usEcfr1036,
+          {
+            ...row,
+            applicationScope,
+            measurementBasis: canadaInterimOrderMeasurementBasis,
+            validFrom: "2027-01-01",
+            validTo: "2027-10-13",
+            verifiedAt: november2026ReverificationTimestamp,
+          },
+        ),
+      );
+    }
+  }
+
+  // Peru keeps the Euro IV rows of annex I.7 (ESC/ELR) and I.8 (ETC) while
+  // D.S. 003-2024-EM holds Euro VI back until six months after the 10 ppm
+  // fuel obligation. Values read from the D.S. 029-2021-MINAM text in El
+  // Peruano; CH4 applies to natural-gas engines only and is not stored for
+  // diesel. Appended so every previously published fixture UUID stays stable.
+  const peruEuroIvMeasurementBasis =
+    "Peru D.S. 010-2017-MINAM annex I.7 (ESC and ELR) and I.8 (ETC) Euro IV rows, 2005/55/EC (B1), as restated by D.S. 029-2021-MINAM article 2; applicable from April 2018 by bill-of-lading date and still current because D.S. 003-2024-EM defers Euro VI to six months after the 10 ppm fuel obligation; annex I.9.1 EPA rows are an alternative and are not cumulative";
+  for (const applicationScope of scopes) {
+    for (const [testCycleCode, rows] of [
+      [
+        "ESC",
+        [
+          { pollutantCode: "CO", limitValue: "1.5", unitCode: "g/kWh" },
+          { pollutantCode: "HC", limitValue: "0.46", unitCode: "g/kWh" },
+          { pollutantCode: "NOX", limitValue: "3.5", unitCode: "g/kWh" },
+          { pollutantCode: "PM", limitValue: "0.02", unitCode: "g/kWh" },
+        ],
+      ],
+      [
+        "ETC",
+        [
+          { pollutantCode: "CO", limitValue: "4.0", unitCode: "g/kWh" },
+          { pollutantCode: "NMHC", limitValue: "0.55", unitCode: "g/kWh" },
+          { pollutantCode: "NOX", limitValue: "3.5", unitCode: "g/kWh" },
+          { pollutantCode: "PM", limitValue: "0.03", unitCode: "g/kWh" },
+        ],
+      ],
+      [
+        "ELR",
+        [{ pollutantCode: "OPACITY", limitValue: "0.5", unitCode: "m-1" }],
+      ],
+    ] as const) {
+      for (const row of rows) {
+        limits.push(
+          fixtureLimit(
+            acceptanceFixtureIds.regulation.peruHeavyVehicleEuroIv,
+            acceptanceFixtureIds.source.peruDecree029,
+            {
+              ...row,
+              applicationScope,
+              measurementBasis: peruEuroIvMeasurementBasis,
+              testCycleCode,
+              validFrom: "2018-04-01",
+              verifiedAt: november2026ReverificationTimestamp,
+            },
+          ),
+        );
+      }
+    }
+  }
   return limits;
 }
 

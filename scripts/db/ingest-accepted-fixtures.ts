@@ -48,6 +48,10 @@ import {
   fixtureMarketSources,
 } from "../../src/server/db/seed/accepted-market-fixtures";
 import { countryCatalog } from "../../src/server/db/seed/country-catalog";
+import {
+  NOVEMBER_2026_REVERIFICATION_ISO,
+  november2026ReverifiedCountryIso3,
+} from "../../src/server/db/seed/reverification-2026-11";
 import * as schema from "../../src/server/db/schema";
 import { getDatabaseUrl } from "../../src/server/db/environment";
 import { createGovernanceRepository } from "../../src/server/repositories/governance-repository";
@@ -409,7 +413,15 @@ const explicitlyCoveredCountryIso3 = [
   ...euMemberCountryIso3,
 ];
 
+const november2026ReverifiedCountrySet = new Set(
+  november2026ReverifiedCountryIso3,
+);
+
 function countrySignoffVerifiedAt(iso3: string): string {
+  // 2026-11 全量复核：来源全部确认的 158 国以复核日期为准（docs/REVERIFICATION-2026-11.md）。
+  if (november2026ReverifiedCountrySet.has(iso3)) {
+    return NOVEMBER_2026_REVERIFICATION_ISO;
+  }
   const sourceRefreshSignoff = findSourceRefreshSignoffVerifiedAt(iso3);
   if (sourceRefreshSignoff) {
     return sourceRefreshSignoff;
@@ -842,6 +854,7 @@ const ingestedSourceIds = new Set<string>([
   acceptanceFixtureIds.source.australiaNrdeEvaluation,
   acceptanceFixtureIds.source.australiaDieselHdStandards,
   acceptanceFixtureIds.source.canadaRoadRegulation,
+  acceptanceFixtureIds.source.canadaInterimOrder2026,
   acceptanceFixtureIds.source.canadaOffroadRegulation,
   acceptanceFixtureIds.source.unitedKingdomNrmm,
   acceptanceFixtureIds.source.unitedKingdomAgricultureApproval,
@@ -881,6 +894,7 @@ const ingestedSourceIds = new Set<string>([
   acceptanceFixtureIds.source.chileHeavyVehicleDecree50,
   acceptanceFixtureIds.source.colombiaResolution762,
   acceptanceFixtureIds.source.peruDecree029,
+  acceptanceFixtureIds.source.peruDs0032024Em,
   acceptanceFixtureIds.source.philippinesLtoMc20151946,
   acceptanceFixtureIds.source.philippinesEuro4LimitsBoI,
   acceptanceFixtureIds.source.philippinesUnr49CycleNotice,
@@ -3247,6 +3261,10 @@ async function main(): Promise<void> {
         atUpperBoundary,
         aboveUpperBoundary,
         agricultureAboveUpperBoundary,
+        truckBeforeInterimOrder,
+        truckInterimOrder,
+        busInterimOrder,
+        truckAfterInterimOrder,
       ] = await Promise.all([
         query("on-road-truck", "2009-12-31", 300),
         query("on-road-truck", "2010-01-01", 300),
@@ -3265,6 +3283,10 @@ async function main(): Promise<void> {
           "2026-08-10",
           firstRawPowerAboveCfr1039Rounded560Kw,
         ),
+        query("on-road-truck", "2026-12-31", 300),
+        query("on-road-truck", "2027-01-01", 300),
+        query("on-road-bus", "2027-10-12", 300),
+        query("on-road-truck", "2027-10-13", 300),
       ]);
       const nonroadPowerRows = await Promise.all(
         (["construction", "agriculture"] as const).flatMap((applicationScope) =>
@@ -3273,6 +3295,7 @@ async function main(): Promise<void> {
           ),
         ),
       );
+      const interimOrderRows = [...truckInterimOrder, ...busInterimOrder];
       const expectedRoadValues = new Map([
         ["CO", 15.5],
         ["NMHC", 0.14],
@@ -3336,8 +3359,28 @@ async function main(): Promise<void> {
             row.limit.sourceId === acceptanceFixtureIds.source.usEcfr86 &&
             row.limit.testCycleCode === "FTP/SET" &&
             row.limit.validFrom === "2010-01-01" &&
+            row.limit.validTo === "2027-01-01" &&
             row.limit.verifiedAt.toISOString() ===
-              CANADA_COMPLETENESS_SIGNOFF_ISO,
+              NOVEMBER_2026_REVERIFICATION_ISO,
+        ) &&
+        // MY2027+ follows the 2026-10-13 CEPA Interim Order (40 CFR 1036.104).
+        truckBeforeInterimOrder.length === 4 &&
+        truckBeforeInterimOrder.every(
+          (row) =>
+            row.regulationId === acceptanceFixtureIds.regulation.canadaRoad2003,
+        ) &&
+        truckInterimOrder.length === 8 &&
+        busInterimOrder.length === 8 &&
+        truckAfterInterimOrder.length === 0 &&
+        interimOrderRows.every(
+          (row) =>
+            row.regulationId ===
+              acceptanceFixtureIds.regulation.canadaRoadInterimOrder2026 &&
+            row.limit.sourceId === acceptanceFixtureIds.source.usEcfr1036 &&
+            row.limit.validFrom === "2027-01-01" &&
+            row.limit.validTo === "2027-10-13" &&
+            row.limit.verifiedAt.toISOString() ===
+              NOVEMBER_2026_REVERIFICATION_ISO,
         ) &&
         nonroadRows.every(
           (row) =>
@@ -5305,62 +5348,65 @@ async function main(): Promise<void> {
         },
       },
       {
-        name: "PER applies D.S. 029 Euro VI/A to road vehicles and keeps non-road no-data",
+        name: "PER keeps Euro IV current, holds Euro VI/A as adopted without a date and keeps non-road no-data",
         run: async () => {
-          const before = await regulationRepository.findEffectiveByCountry({
-            applicationScope: "on-road-truck",
-            asOf: "2024-09-30",
-            countryIso3: "PER",
-            powerKw: 300,
-          });
-          const truckRows = await regulationRepository.findEffectiveByCountry({
-            applicationScope: "on-road-truck",
-            asOf: "2024-10-01",
-            countryIso3: "PER",
-            powerKw: 300,
-          });
-          const busRows = await regulationRepository.findEffectiveByCountry({
-            applicationScope: "on-road-bus",
-            asOf: "2024-10-01",
-            countryIso3: "PER",
-            powerKw: 300,
-          });
-          const nonRoadResults = await Promise.all(
-            (["construction", "agriculture"] as const).map((applicationScope) =>
-              regulationRepository.findEffectiveByCountry({
-                applicationScope,
-                asOf: "2026-08-08",
-                countryIso3: "PER",
-                powerKw: 150,
-              }),
-            ),
-          );
+          const query = (
+            applicationScope:
+              "on-road-truck" | "on-road-bus" | "construction" | "agriculture",
+            asOf: string,
+            powerKw = 300,
+          ) =>
+            regulationRepository.findEffectiveByCountry({
+              applicationScope,
+              asOf,
+              countryIso3: "PER",
+              powerKw,
+            });
+          const [truckRows, busRows, farFutureRows, ...nonRoadResults] =
+            await Promise.all([
+              query("on-road-truck", "2026-11-19"),
+              query("on-road-bus", "2024-10-01"),
+              query("on-road-truck", "2032-01-01"),
+              query("construction", "2026-11-19", 150),
+              query("agriculture", "2026-11-19", 150),
+            ]);
           const values = new Map(
             truckRows.map((row) => [
               `${row.limit.testCycleCode}:${row.limit.pollutantCode}`,
               Number(row.limit.limitValue),
             ]),
           );
-          const fixtureRows = buildFixtureLimits().filter(
+          const euroVi = fixtureRegulations.find(
             (row) =>
-              row.regulationId ===
-                acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi &&
-              row.applicationScope === "on-road-truck",
+              row.id === acceptanceFixtureIds.regulation.peruHeavyVehicleEuroVi,
           );
-          return (
-            before.length === 0 &&
-            truckRows.length === 12 &&
-            busRows.length === 12 &&
-            nonRoadResults.every((rows) => rows.length === 0) &&
-            fixtureRows.every(
+          const euroIvOnly = (rows: typeof truckRows) =>
+            rows.length === 9 &&
+            rows.every(
               (row) =>
-                row.measurementBasis?.includes("alternative") === true &&
-                row.measurementBasis?.includes("not cumulative") === true,
-            ) &&
-            values.get("WHSC:NOX") === 400 &&
-            values.get("WHSC:PN") === 800 &&
-            values.get("WHTC:NOX") === 460 &&
-            values.get("WHTC:PN") === 600
+                row.regulationId ===
+                  acceptanceFixtureIds.regulation.peruHeavyVehicleEuroIv &&
+                row.limit.validFrom === "2018-04-01" &&
+                row.limit.validTo === null &&
+                row.limit.verifiedAt.toISOString() ===
+                  NOVEMBER_2026_REVERIFICATION_ISO,
+            );
+          return (
+            euroIvOnly(truckRows) &&
+            euroIvOnly(busRows) &&
+            euroIvOnly(farFutureRows) &&
+            nonRoadResults.every((rows) => rows.length === 0) &&
+            euroVi?.status === "adopted" &&
+            euroVi.effectiveFrom === null &&
+            euroVi.dataSourceId ===
+              acceptanceFixtureIds.source.peruDs0032024Em &&
+            values.get("ESC:CO") === 1.5 &&
+            values.get("ESC:HC") === 0.46 &&
+            values.get("ESC:NOX") === 3.5 &&
+            values.get("ESC:PM") === 0.02 &&
+            values.get("ETC:NMHC") === 0.55 &&
+            values.get("ETC:PM") === 0.03 &&
+            values.get("ELR:OPACITY") === 0.5
           );
         },
       },
@@ -5498,8 +5544,8 @@ async function main(): Promise<void> {
               ["on-road-truck", "2013-04-14"],
               ["on-road-truck", "2013-04-15"],
               ["on-road-bus", "2013-04-15"],
-              ["on-road-truck", "2027-11-28"],
-              ["on-road-truck", "2027-11-29"],
+              ["on-road-truck", "2029-05-28"],
+              ["on-road-truck", "2029-05-29"],
             ].map(([applicationScope, asOf]) =>
               regulationRepository.findEffectiveByCountry({
                 applicationScope: applicationScope as

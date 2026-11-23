@@ -105,7 +105,7 @@ M1）；工程机械与农业机械共用 GB 20891-2014（MEE 解读明确覆盖
 | on-road-truck / on-road-bus | Euro VI 实施措施（限值在 Annex II） | Commission Regulation (EU) No 582/2011（CELEX 32011R0582） | in force；最新合并版 02011R0582-20260312 | https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32011R0582 | 间接核验（CELLAR） |
 | construction / agriculture | 非道路移动机械 Stage V | Regulation (EU) 2016/1628（CELEX 32016R1628） | in force；Stage V 新机型 2019-01-01、投放市场 2020-12-31 起（<56 kW 另有节点）；合并版 02016R1628-20220717；**NRE 限值表已读回**（附件 II 表 II-1，CELLAR 官方文本：130≤P≤560 → CO 3.5 / HC 0.19 / NOx 0.40 / PM 0.015 g/kWh、PN 1×10¹² #/kWh；56≤P<130 → CO 5.0 / HC 0.19 / NOx 0.40 / PM 0.015；19≤P<37 与 37≤P<56 → CO 5.0、HC+NOx ≤ 4.70、PM 0.015；P>560 → CO 3.5 / HC 0.19 / NOx 3.5 / PM 0.045） | https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R1628 | 已核验（2026-07-30 经 CELLAR 官方文本读回限值） |
 | on-road | 型式批准与市场监督框架 | Regulation (EU) 2018/858（CELEX 32018R0858） | in force；2020-09-01 起适用 | https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32018R0858 | 间接核验（CELLAR） |
-| on-road-truck / on-road-bus | Euro 7 | Regulation (EU) 2024/1257（CELEX 32024R1257） | in force，未来适用：M2/M3/N2/N3 自 **2027-11-29** 起适用并废止 595/2009 | https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1257 | 间接核验（CELLAR） |
+| on-road-truck / on-road-bus | Euro 7 | Regulation (EU) 2024/1257（CELEX 32024R1257） | in force，未来适用：第 20 条规定 M2/M3/N2/N3 新车型自 **2028-05-29**、全部新车自 **2029-05-29** 适用，595/2009 自 2031-07-01 废止（2026-11 复核更正，原写 2027-11-29） | https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1257 | 间接核验（CELLAR） |
 | on-road | 582/2011 近期修订 | (EU) 2025/258、(EU) 2026/361 | in force（CELLAR amends 边确认） | https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32026R0361 | 间接核验（CELLAR） |
 
 德国落地：非道路 Stage V 经 28. BImSchV（BGBl. I S. 3125, 2021-07-21）执行；
@@ -310,7 +310,8 @@ Stage V 或 ADR 道路值。
 
 | scope | 正式文书 | 引用 | 状态与关键日期 | 官方 URL | 核验 |
 | --- | --- | --- | --- | --- | --- |
-| on-road-truck / on-road-bus | On-Road Vehicle and Engine Emission Regulations | SOR/2003-2，第 16(2) | effective：适用于 2004-01-01 起进口或制造的道路车辆和发动机；柴油重型发动机按对应机型年采用 40 CFR 86.11。当前代表性 2007+ 值：NOx 0.20、PM 0.01 g/hp-hr | https://laws-lois.justice.gc.ca/eng/regulations/SOR-2003-2/index.html | 已核验（2026-08-06，Justice Laws 条文读回） |
+| on-road-truck / on-road-bus | On-Road Vehicle and Engine Emission Regulations | SOR/2003-2，第 16(2) | effective：适用于 2004-01-01 起进口或制造的道路车辆和发动机；柴油重型发动机按对应机型年采用 40 CFR 86.11。当前代表性 2007+ 值：NOx 0.20、PM 0.01 g/hp-hr；MY2010–2026 路径以 `2027-01-01` 机型年代理截止 | https://laws-lois.justice.gc.ca/eng/regulations/SOR-2003-2/index.html | 已核验（2026-08-06，Justice Laws 条文读回）；2026-11-19 复核并加截止日（ACCEPTANCE #265） |
+| on-road-truck / on-road-bus | Interim Order Modifying the Operation of Certain Regulations Made Under the Canadian Environmental Protection Act, 1999 | 第 3(1) 条，读作 SOR/2003-2 第 16(2) 条 | effective `2027-01-01`–`2027-10-13`：MY2027+ 柴油重型发动机 2026-12-20 起完成制造的须符合 40 CFR 1036.104（此前完成的 MY2027 发动机可按 86.007-11）；总督令延长至签发后最长一年 | https://gazette.gc.ca/rp-pr/p1/2026/2026-10-31/html/notice-avis-eng.html | 已核验（2026-11-19，Canada Gazette Part I 2026-10-31 读回） |
 | construction / agriculture | Off-road Compression-Ignition (Mobile and Stationary) and Large Spark-Ignition Engine Emission Regulations | SOR/2020-258，第 10(1)(a)、第 79 条 | effective：法规注册/采纳日 2020-12-04 后六个月，即 2021-06-04；移动/固定压燃发动机采用 40 CFR 1039.101。代表性 130≤P≤560 kW Tier 4 四列：CO 3.5、NMHC 0.19、NOx 0.40、PM 0.02 g/kWh | https://laws-lois.justice.gc.ca/eng/regulations/SOR-2020-258/index.html | 已由 #246 / ADR-133 纠正旧日期、端点与完整列（2026-08-11） |
 
 数据语义：SOR/2003-2 的具体限值由其引用的美国 CFR 按机型年决定；本批只写入已读回的
@@ -622,12 +623,15 @@ El Peruano 签署公报读回 D.S. 029-2021-MINAM 的完整修订表和生效条
 
 | scope | 正式文书/入口 | 状态与关键日期 | 官方 URL | 核验 |
 | --- | --- | --- | --- | --- |
-| on-road-truck / on-road-bus | D.S. 010-2017-MINAM annex I.7，经 D.S. 029-2021-MINAM article 2 替换 | 纳入国家道路运输系统、PBV > 3.5 t 的压燃式客货车辆自 2024-10-01 按提单日期执行 Euro VI/A。WHSC：CO 1.50、HCT 0.13、NOx 0.40、PM 0.01 g/kWh、NH3 10 ppm、PN 8e11；WHTC：CO 4.0、HCT 0.16、NOx 0.46、PM 0.01 g/kWh、NH3 10 ppm、PN 6e11。Annex I.9.1 另列 EPA 2010 路径，本批建模 Euro VI/A 代表路径 | https://www.gob.pe/institucion/minam/normas-legales/2213166-029-2021-minam | 已核验（2026-08-08，El Peruano 2021-10-16 公报 pp.22–26、annex I.7/I.9.1 与第一项最终补充规定原图） |
+| on-road-truck / on-road-bus（现行） | D.S. 010-2017-MINAM annex I.7/I.8 Euro IV 行，经 D.S. 029-2021-MINAM article 2 重列 | 2018 年 4 月起按提单日期执行 Euro IV（2005/55/EC B1）。ESC：CO 1.50、HC 0.46、NOx 3.50、PM 0.02 g/kWh；ELR 烟度 0.50 m⁻¹；ETC：CO 4.00、NMHC 0.55、NOx 3.5、PM 0.03 g/kWh。表中原写到 2024 年 9 月止，因 Euro VI 被推迟，仍为现行路径 | https://www.gob.pe/institucion/minam/normas-legales/2213166-029-2021-minam | 已核验（2026-11-19，El Peruano D.S. 029-2021-MINAM 文本读回；ACCEPTANCE #266） |
+| on-road-truck / on-road-bus（已通过、未生效） | D.S. 003-2024-EM 改写 D.S. 029-2021-MINAM 第一项最终补充规定 | Euro 6/VI、Tier 3 与 EPA 2010 自 D.S. 014-2021-EM 第 4 条（10 ppm 低硫燃油）生效后 6 个月起适用；D.S. 024-2026-EM 把 10 ppm 柴油 B5 定为 2030-08-31、汽油 2029-08-31。不设生效日，按柴油推算约 2031-02-28，待负责人确认 | https://cdn.www.gob.pe/uploads/document/file/5811876/5156101-ds-003-2024-em.pdf | 已核验（2026-11-19，El Peruano 2024-02-02 公报读回）；D.S. 024-2026-EM 见 https://busquedas.elperuano.pe/dispositivo/NL/2569490-1 |
+| on-road-truck / on-road-bus（Euro VI/A 数值，随上一行生效） | D.S. 010-2017-MINAM annex I.7，经 D.S. 029-2021-MINAM article 2 替换 | 原定 2024-10-01 起按提单日期执行 Euro VI/A。WHSC：CO 1.50、HCT 0.13、NOx 0.40、PM 0.01 g/kWh、NH3 10 ppm、PN 8e11；WHTC：CO 4.0、HCT 0.16、NOx 0.46、PM 0.01 g/kWh、NH3 10 ppm、PN 6e11。Annex I.9.1 另列 EPA 2010 路径，本批建模 Euro VI/A 代表路径 | https://www.gob.pe/institucion/minam/normas-legales/2213166-029-2021-minam | 已核验（2026-08-08，El Peruano 2021-10-16 公报 pp.22–26、annex I.7/I.9.1 与第一项最终补充规定原图） |
 | construction / agriculture | D.S. 029-2021-MINAM item I scope | 标题与 article 1 将修订范围限定为纳入 Sistema Nacional de Transporte Terrestre 的新旧机动车；本批未取得秘鲁非道路工程/农业柴油机械独立法定限值，两个 scope 保持 no-data，不从道路表外推 | 同上 | 已核验道路 scope 边界（2026-08-08）；非道路独立文书仍为缺口 |
 
-数据语义：`PE-MINAM` 从 `2024-10-01` 返回 Euro VI/A WHSC/WHTC 代表路径，
+数据语义（2026-11 更正）：`PE-MINAM` 当前返回 annex I.7/I.8 Euro IV 路径，
+不设截止日；Euro VI/A WHSC/WHTC 记录为 adopted、无生效日，不作为现行结果返回。
 日期按原表脚注对应提单日期而非车辆入境/登记日。D.S. 029 同时列出 annex I.9.1
-EPA 2010 路径，不能与 Euro VI/A 累计。第二项最终补充规定要求 MINAM 在
+EPA 路径，不能与 Euro IV 或 Euro VI/A 累计。第二项最终补充规定要求 MINAM 在
 2024-10-01 后两年内更新 Euro VI/A 到 VI/C 的试验协议；截至 2026-08-08 尚未
 到该期限，不能提前把未来更新当作现行法规。
 
@@ -709,12 +713,12 @@ Reglugerðasafn 直接读回 377/2013、603/2026、1200/2020 与 179/2021，并�
 
 | scope | 正式文书/入口 | 状态与关键日期 | 官方 URL | 核验 |
 | --- | --- | --- | --- | --- |
-| on-road-truck / on-road-bus | Reglugerð 377/2013（修订 822/2004）article 12、Annex IV 45zzk/45zzl；现行修订 603/2026；冰岛政府 EEA 条目 32009R0595 | 377/2013 要求车辆符合当时适用的 595/2009，并在附件登记 595/2009、582/2011；文书以 2013-04-15 部长日期规定立即生效。政府 EEA 数据库把 595/2009 标为已纳入且仍有效，JCD 41/2012 确认 2012-05-01 生效。603/2026 于 2026-05-29 发布，继续更新 595/2009 条目并纳入 Euro 7；本批按 2027-11-29 重型车辆 Euro 7 适用日结束 Euro VI 路径 | https://www.reglugerd.is/reglugerdir/allar/nr/377-2013 / https://www.reglugerd.is/reglugerdir/allar/nr/0603-2026 / https://gagnagrunnur.ees.is/32009r0595 | 已核验（2026-08-08，国内条款、附件、发布信息及政府 EEA 状态页直接读回） |
+| on-road-truck / on-road-bus | Reglugerð 377/2013（修订 822/2004）article 12、Annex IV 45zzk/45zzl；现行修订 603/2026；冰岛政府 EEA 条目 32009R0595 | 377/2013 要求车辆符合当时适用的 595/2009，并在附件登记 595/2009、582/2011；文书以 2013-04-15 部长日期规定立即生效。政府 EEA 数据库把 595/2009 标为已纳入且仍有效，JCD 41/2012 确认 2012-05-01 生效。603/2026 于 2026-05-29 发布，继续更新 595/2009 条目并纳入 Euro 7；本批按 2029-05-29 重型车辆 Euro 7 全部新车适用日结束 Euro VI 路径（2026-11 复核更正，原为 2027-11-29） | https://www.reglugerd.is/reglugerdir/allar/nr/377-2013 / https://www.reglugerd.is/reglugerdir/allar/nr/0603-2026 / https://gagnagrunnur.ees.is/32009r0595 | 已核验（2026-08-08，国内条款、附件、发布信息及政府 EEA 状态页直接读回） |
 | construction / agriculture | Reglugerð 1200/2020 arts. 1/7/8；现行 Reglugerð 179/2021 arts. 1/7/8 | 1200/2020 自 2020-12-01 对非道路移动机械发动机实施 EU 2016/1628 及配套文书，并废止 465/2009；179/2021 自 2021-02-23 无缝替代且现行合并文本最后修订于 2023-05-31。本批对 construction 与 agriculture 保存 Stage V NRE 全功率带代表限值 | https://www.reglugerd.is/reglugerdir/allar/nr/1200-2020 / https://www.reglugerd.is/reglugerdir/allar/nr/179-2021 | 已核验（2026-08-08，范围、主管机关、EEA 实施条款、生效/废止历史直接读回） |
 
 数据语义：`IS-NATIONAL` 自 2013-04-15 建立可追溯国家辖区关系。道路国内适用
 起点晚于 JCD 41/2012 的 EEA 层日期，因此使用国内文书日期，不直接复用 EU 成员
-关系。道路 `effective_to = 2027-11-29` 为半开区间；到期后本批暂不返回尚未录入
+关系。道路 `effective_to = 2029-05-29` 为半开区间；到期后本批暂不返回尚未录入
 限值的 Euro 7。Stage V 以两条法规记录保存 2020-12-01 至 2021-02-23 的替代链，
 切换日不得重复或断档；560 kW 进入高功率带。污染物数字继续追溯 EU 官方表，
 冰岛文书用于证明国内范围、主管机关与有效日期。
@@ -1460,8 +1464,9 @@ tractors、passenger/goods vehicles 和底盘也须 Euro 4。FRCS 2026 年公告
 1. **道路卡车**（N3，300 kW）：as-of 2026-07-30 → Euro VI（595/2009 +
    582/2011 Annex II），框架 2018/858，国家程序 EG-FGV/KBA；排除 Stage V。
 2. **道路客车**（M3，210 kW）：as-of 2026-07-30 → Euro VI；as-of 2028-01-01
-   → Euro 7（2024/1257，M2/M3/N2/N3 自 2027-11-29 适用，595/2009 废止）。
-   切换日 2027-11-29 由 Art. 26 类别触发，确定性可测；proposed/effective
+   仍为 Euro VI；as-of 2029-05-29 → Euro 7（2024/1257 第 20 条：M2/M3/N2/N3
+   新车型 2028-05-29、全部新车 2029-05-29 适用；595/2009 自 2031-07-01 废止）。
+   切换日按全部新车适用日 2029-05-29 确定，确定性可测；proposed/effective
    不得混淆。
 3. **工程机械**（150 kW，NRE 130–560 kW）：as-of 2025-06-01 → Stage V
    （2016/1628 Annex II/III），德国执行 28. BImSchV；排除 Euro VI 分支。
@@ -1658,12 +1663,14 @@ tractors、passenger/goods vehicles 和底盘也须 Euro 4。FRCS 2026 年公告
 
 ### PER
 
-1. **道路卡车/客车**（300 kW）：as-of 2024-09-30 不返回 D.S. 029 新路径，
-   2024-10-01 起返回 annex I.7 Euro VI/A。WHSC：CO 1500、HCT 130、NOx 400、
-   PM 10 mg/kWh、NH3 10 ppm、PN 8e11；WHTC：CO 4000、HCT 160、NOx 460、
-   PM 10 mg/kWh、NH3 10 ppm、PN 6e11；每个 scope 12 条。日期语义为提单日期。
-2. **替代路径与范围边界**：annex I.9.1 的 EPA 2010 是另一条合规路径，不与
-   Euro VI/A 累计。D.S. 029 item I 只覆盖纳入国家道路运输系统的机动车；
+1. **道路卡车/客车**（300 kW，2026-11 更正，ACCEPTANCE #266）：返回 annex
+   I.7/I.8 Euro IV，每个 scope 9 条：ESC CO 1.5、HC 0.46、NOx 3.5、PM 0.02
+   g/kWh；ETC CO 4.0、NMHC 0.55、NOx 3.5、PM 0.03 g/kWh；ELR 烟度 0.5 m⁻¹。
+   2021-10-16 至 2032-01-01 均为该 9 条。Euro VI/A（WHSC NOx 400、PN 8e11；
+   WHTC NOx 460、PN 6e11）为 adopted、无生效日，不作为现行结果返回。日期语义为
+   提单日期。
+2. **替代路径与范围边界**：annex I.9.1 的 EPA 路径是另一条合规路径，不与
+   Euro IV 或 Euro VI/A 累计。D.S. 029 item I 只覆盖纳入国家道路运输系统的机动车；
    construction/agriculture 返回显式 no-data，不从道路表外推。
 
 ### NOR
@@ -1686,7 +1693,7 @@ tractors、passenger/goods vehicles 和底盘也须 Euro 4。FRCS 2026 年公告
 1. **道路卡车/客车**（300 kW）：as-of 2013-04-14 无结果，2013-04-15 起按
    377/2013 article 12 与 Annex IV 45zzk/45zzl 返回 Euro VI WHSC/WHTC 代表
    路径，每个 scope 12 条。WHSC NOx 400、PN 8e11；WHTC NOx 460 mg/kWh、
-   PN 6e11 #/kWh。2027-11-28 仍返回，2027-11-29 不再返回该路径。
+   PN 6e11 #/kWh。2029-05-28 仍返回，2029-05-29 不再返回该路径。
 2. **工程机械/农业装备**（150 kW）：as-of 2020-11-30 无结果；1200/2020 自
    2020-12-01 返回 Stage V，179/2021 在 2021-02-23 无缝替代。切换日前后各
    返回 5 条且不得重复；现行 150 与 559.999 kW 各 5 条，560 kW 进入高功率带
@@ -3193,7 +3200,7 @@ release `20260812031745` 已通过生产目标图、scope、178 国公开目录/
 | --- | --- | --- |
 | CHN | 公告层 30 天、标准全文 90 天 | GB 标准本身变化慢（约 7 年一次修改单），但实施公告（如 2026 年第 20 号）直接改变生效口径；>560 kW 另行公告需事件驱动监控 |
 | USA | 30 天（eCFR 快照比对） | eCFR 每日更新（实测滞后约 3 个工作日）；规则修订低频但 FR 提案/废止（如 2026-04 GHG 废止）必须快速反映状态 |
-| DEU/EU | EU 文书 30 天 + 里程碑事件驱动；德国国家法令 180 天 | 582/2011 近年多次修订（最新合并版 2026-03-12）；Euro 7 适用日 2027-11-29 为固定里程碑，临近加密核验 |
+| DEU/EU | EU 文书 30 天 + 里程碑事件驱动；德国国家法令 180 天 | 582/2011 近年多次修订（最新合并版 2026-03-12）；Euro 7 重型车辆适用日（新车型 2028-05-29、全部新车 2029-05-29）为固定里程碑，临近加密核验 |
 | IND | CMVR/CEV/TREM 90 天；MoRTH 公报事件驱动 7 天 | 2026 TREM 草案可能改变既有 2026-04-01 日期，必须监控最终 G.S.R.，不能用草案覆盖现行规则 |
 | BRA | CONAMA 决议 90 天；IBAMA IN 30 天 | 决议稳定（P8 2018、MAR-I 2011），实施层（IN、LCVM 程序）变化较快 |
 | JPN | e-Gov/三省告示 90 天；环境省说明页 30 天 | 法律框架稳定，但告示与车型清单持续修订；道路 GVW 分期和非道路功率边界需保持同步 |
@@ -3213,7 +3220,7 @@ release `20260812031745` 已通过生产目标图、scope、178 国公开目录/
 | NZL / NZTA | Rule 33001 合并文本 90 天；Table 2B 修订和非道路政策事件驱动 14 天 | 重点监控新旧车/车型切换节点、替代标准列表与独立非道路法规；不得将 Table 2B 的 `or` 路径叠加 |
 | CHL / MMA | LeyChile 合并文本 90 天；D.S. 55/39 修订与 2030 tractor 里程碑事件驱动 14 天 | 重点监控道路替代路径、移动机械功率范围及拖拉机延期是否再修订；2030 前不得把 adopted 自动当作 effective |
 | COL / MADS | Resolucion 0762 与 MinAmbiente 法规目录 90 天；修订和实施通知事件驱动 14 天 | 重点监控 Table 22/23/24、2024-07-18 非道路节点和农业排除是否修订；替代路径不得叠加 |
-| PER / MINAM | D.S. 010/029 与 Gob.pe 法规目录 90 天；2026-10-01 协议更新里程碑事件驱动 14 天 | 重点监控 Euro VI/A 到 VI/C 试验协议更新、EPA 路径及独立非道路文书；不得提前升级或外推 |
+| PER / MINAM | D.S. 010/029、D.S. 003-2024-EM 与 Gob.pe 法规目录 90 天；10 ppm 燃油日期（D.S. 014-2021-EM 第 4 条）变更事件驱动 14 天 | 重点监控 Euro VI 启用日（10 ppm 燃油义务生效后 6 个月）、Euro VI/A 到 VI/C 试验协议更新、EPA 路径及独立非道路文书；不得提前升级或外推 |
 | PHL / DENR-EMB-LTO | LTO/DENR 文书 90 天；Euro 阶段或 UN R49 采纳修订事件驱动 14 天 | 已闭合 2016-01-01 道路 Euro IV ESC/ELR/ETC；持续监控替代阶段和独立非道路文书，不从在用车公告扩展 scope |
 | ECU / INEN | RTE/NTE 目录 90 天；标准替代或强制实施修订事件驱动 14 天 | 已闭合 >3,500 kg 道路 ECE-49 各 4 条；保持工程/农业明文排除，标准版权不因结构化事实入库而改变 |
 | PAK / Pak-EPA-PSQCA | S.R.O./标准目录 90 天；Gazette 修订事件驱动 14 天 | 已闭合 2012-07-01 道路 Pak-II ECE-R-49 各 4 条；非道路保持 no-data，在用车烟度执法不得覆盖型式认证边界 |
@@ -3225,7 +3232,7 @@ release `20260812031745` 已通过生产目标图、scope、178 国公开目录/
 | LKA / Government Printing | Gazette 90 天；车辆进口/排放 Schedule 修订事件驱动 14 天 | 监控 2018-07-13 道路 5+5、工程 24 的替代路径；任何解释都须保留 clause 8 的 2018-10-31 信用证过渡豁免 |
 | SGP / NEA-AGC | SSO 合并法规与 NEA 指引 90 天；Second Schedule、off-road Schedule 或适用范围修订事件驱动 14 天 | 重点监控 Euro VI/PPNLT 替代路径、Stage II 替代标准与 agriculture 是否取得明确适用映射；不得将替代标准叠加 |
 | NOR / Lovdata | Bilforskriften 与 Maskinforskriften 合并文本 90 天；2029-05-29 道路切换里程碑及 EEA 纳入修订事件驱动 14 天 | 重点监控 G3 的 595/2009 至 2024/1257 切换、Vedlegg XII 修订及历史首次实施日期；国内纳入证据与 EU 数值来源必须同时保留 |
-| ISL / Reglugerðasafn | 822/2004 与 179/2021 合并文本 90 天；2027-11-29 Euro 7 切换及 EEA 纳入修订事件驱动 14 天 | 重点监控 603/2026 后续修订、Euro 7 重型适用节点和 179/2021 Stage V 配套文书；国内实施链与 EU 数值来源必须同时保留 |
+| ISL / Reglugerðasafn | 822/2004 与 179/2021 合并文本 90 天；2029-05-29 Euro 7 切换及 EEA 纳入修订事件驱动 14 天 | 重点监控 603/2026 后续修订、Euro 7 重型适用节点和 179/2021 Stage V 配套文书；国内实施链与 EU 数值来源必须同时保留 |
 
 核验责任建议：法规负责人对样例与限值读回签字；IT/数据负责人维护核验任务
 （周期 + 事件驱动）与 `verified_at` 更新（管理后台来源核验流程已具备）。

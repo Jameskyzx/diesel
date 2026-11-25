@@ -50,6 +50,16 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
   - A durable operation is single-use per SHA, so the retry uses a newer master commit. It
     starts only after a read-only link check shows normal speed. The 90-minute budget is
     unchanged.
+- Release attempt 2026-11-25 (`c9f9d468`, the same release, durable operation `842e024e`): failed
+  safely in the same way and is not live.
+  - The release was started at 12:55 UTC on the owner's instruction, although the link check
+    still showed the slow link (about 17.5 s for 500 limit rows; 0.3 s at 21:06 UTC on 11-23).
+  - The snapshot worker was terminated at the 90-minute budget while still reading
+    `data_change_logs`, and the host rolled back to `7462e6ca`.
+  - At 14:36 UTC, `/api/health` returned `status=ok` on 7462e6ca. No recovery marker remains
+    and no governance data was written.
+  - The fast windows observed so far were early mornings in Beijing time, so the next attempt
+    starts in such a window, after a link check.
 - Deployment and rollback follow [DEPLOYMENT.md](DEPLOYMENT.md). After each release, update
   the block below; the production canary compares it with `/api/health` and also accepts the
   exact master commit it checked out, so the window before this record merges does not fail.

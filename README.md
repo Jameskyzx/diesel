@@ -65,6 +65,8 @@ pnpm install
 pnpm demo
 ```
 
+New here? Start with the [five-minute overview](docs/OVERVIEW.md).
+
 More detail: [architecture](docs/ARCHITECTURE.md) · [data model](docs/DATA_MODEL.md) ·
 [demo walkthrough](docs/DEMO.md) · [case study](docs/FDE_CASE_STUDY.md) ·
 [current status](docs/STATUS.md) · [deployment](docs/DEPLOYMENT.md)

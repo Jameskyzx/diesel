@@ -54,6 +54,8 @@ pnpm install
 pnpm demo
 ```
 
+第一次看？先读[五分钟概览](docs/OVERVIEW.md)。
+
 更多细节：[架构](docs/ARCHITECTURE.md) · [数据模型](docs/DATA_MODEL.md) ·
 [演示流程](docs/DEMO.md) · [项目案例](docs/FDE_CASE_STUDY.md) ·
 [当前状态](docs/STATUS.md) · [部署](docs/DEPLOYMENT.md)

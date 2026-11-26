@@ -877,24 +877,29 @@ describe("governance snapshot export reliability", () => {
     expect(rows).toEqual(sourceRows);
   });
 
-  it("uses the smaller batch only for all three raw JSON selections", async () => {
+  it("reads all three raw JSON tables through digest-verified reuse", async () => {
     const source = await readFile(
       join(process.cwd(), "scripts/db/export-governance-snapshot.ts"),
       "utf8",
     );
-    for (const [start, end] of [
-      ["const governanceDraftRows =", "const marketImportBatchRows ="],
-      ["const marketImportBatchRows =", "const changeLogRows ="],
-      ["const changeLogRows =", "const selectedTables ="],
+    const reader = source.slice(
+      source.indexOf("const readRawTableWithReuse ="),
+      source.indexOf("const governanceDraftRows ="),
+    );
+    expect(reader).toContain("collectGovernanceRowsWithVerifiedReuse");
+    expect(reader).toContain("collectGovernanceSnapshotRowsInBatches");
+    expect(reader).toContain("governanceSnapshotDigestBatchSize,");
+    expect(reader).toContain(
+      "fetchBatchSize: governanceSnapshotRawJsonBatchSize,",
+    );
+    expect(reader).toContain("order by id");
+    expect(reader).toContain("limit ${limit}");
+    for (const table of [
+      "data_governance_drafts",
+      "market_import_batches",
+      "data_change_logs",
     ]) {
-      const selection = source.slice(
-        source.indexOf(start!),
-        source.indexOf(end!),
-      );
-      expect(selection).toContain("collectGovernanceSnapshotRowsInBatches");
-      expect(selection).toContain("governanceSnapshotRawJsonBatchSize,");
-      expect(selection).toContain("order by id");
-      expect(selection).toContain("limit ${limit}");
+      expect(source).toContain(`await readRawTableWithReuse("${table}")`);
     }
     expect(governanceSnapshotDatabaseBatchSize).toBe(500);
     expect(governanceSnapshotWorkerTimeoutMs).toBe(

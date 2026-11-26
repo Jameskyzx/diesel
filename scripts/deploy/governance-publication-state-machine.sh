@@ -817,12 +817,53 @@ governance_assert_maintenance_lock() {
   )
 }
 
+# The optional second argument names an earlier snapshot. The exporter reuses
+# a row from it only after the row's digest matches the live database, so a
+# stale or unusable file only means that more rows are read over the link.
 governance_export_snapshot() {
   local output_path="$1"
+  local reuse_path="${2:-}"
 
-  governance_run_tsx \
-    scripts/db/export-governance-snapshot.ts \
-    --output="${output_path}"
+  if [[ -n "${reuse_path}" ]]; then
+    governance_run_tsx \
+      scripts/db/export-governance-snapshot.ts \
+      --output="${output_path}" \
+      --reuse="${reuse_path}"
+  else
+    governance_run_tsx \
+      scripts/db/export-governance-snapshot.ts \
+      --output="${output_path}"
+  fi
+}
+
+# Selects the newest earlier release's pre-write snapshot, if one exists, as
+# the reuse source for this release's pre-write snapshot.
+governance_find_reusable_snapshot() {
+  local backups_root="$1"
+  local expected_release_id="$2"
+  local own_snapshot="${backups_root}/${expected_release_id}/governance-before.json"
+  local candidate
+  local newest=''
+  local restore_nullglob=1
+
+  if shopt -q nullglob; then
+    restore_nullglob=0
+  fi
+  shopt -s nullglob
+  for candidate in "${backups_root}"/*/governance-before.json; do
+    if [[ "${candidate}" == "${own_snapshot}" ||
+      -L "${candidate}" || ! -f "${candidate}" ]]; then
+      continue
+    fi
+    if [[ -z "${newest}" || "${candidate}" -nt "${newest}" ]]; then
+      newest="${candidate}"
+    fi
+  done
+  if [[ "${restore_nullglob}" -eq 1 ]]; then
+    shopt -u nullglob
+  fi
+
+  GOVERNANCE_REUSABLE_SNAPSHOT_PATH="${newest}"
 }
 
 governance_restore_snapshot() {
@@ -1029,7 +1070,7 @@ governance_export_and_compare_restored_database() {
 
   governance_require_absent \
     "${compare_path}" "recovery comparison snapshot" || return $?
-  governance_export_snapshot "${compare_path}" || return $?
+  governance_export_snapshot "${compare_path}" "${snapshot_path}" || return $?
   governance_require_exact_file \
     "${compare_path}" "root:root:600" \
     "recovery comparison snapshot" || return $?
@@ -1390,7 +1431,9 @@ governance_publish_release() {
   governance_fsync_paths \
     "${public_validation_script}" "${snapshot_directory}"
 
-  governance_export_snapshot "${snapshot_path}"
+  governance_find_reusable_snapshot "${backups_root}" "${expected_release_id}"
+  governance_export_snapshot \
+    "${snapshot_path}" "${GOVERNANCE_REUSABLE_SNAPSHOT_PATH}"
   governance_require_exact_file \
     "${snapshot_path}" "root:root:600" "governance snapshot"
   governance_fsync_paths "${snapshot_path}" "${snapshot_directory}"
@@ -1425,7 +1468,7 @@ governance_publish_release() {
     "${recovery_marker}" "${expected_release_id}" "${deploy_root}"
 
   governance_restore_snapshot "${snapshot_path}" "${snapshot_sha256}" apply
-  governance_export_snapshot "${rehearsal_path}"
+  governance_export_snapshot "${rehearsal_path}" "${snapshot_path}"
   governance_require_exact_file \
     "${rehearsal_path}" "root:root:600" "restore rehearsal snapshot"
   governance_compare_snapshots "${snapshot_path}" "${rehearsal_path}"

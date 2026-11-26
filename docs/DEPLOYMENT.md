@@ -1446,6 +1446,16 @@ PM2 state root、PM2 executable 与 systemd unit fragment 都由版本化脚本�
 worker 只通过有界 IPC 输出表/批次进度，以及白名单阶段、异常类别和错误码；不输出原始
 错误、SQL、连接串或行内容。致命异常只观察、不吞掉，失败退出码仍原样记录。
 
+**快照行复用（2026-11-26）。** 慢链路下导出受带宽限制，主要字节来自
+`data_change_logs`、`data_governance_drafts` 与 `market_import_batches` 的 JSON 列，且每次发布都在增长；
+2026-11-23 与 11-25 两次发布都因此在读 `data_change_logs` 时耗尽 90 分钟预算。exporter 现在接受可选
+`--reuse=<earlier snapshot>`：对这三张表先在同一导出快照内按 id 分批读取由 PostgreSQL 计算的逐行
+SHA-256（对投影后的文本以 `<UTF-8 字节长度>:<文本>` 编码，NULL 记为 `~`），只有摘要与旧文件中同 id 行
+完全一致时才复用该行，其余行按 id 每批 100 行完整读取。复用行与完整读取逐字节相同，因此快照文件、
+SHA-256、restore 与比较契约都不变；旧文件缺失、损坏、是符号链接或超过 256 MB 时只会退回全部读取。
+状态机的发布前快照复用 `backups/` 下除本次外 mtime 最新的 `*/governance-before.json`；restore 演练和
+失败恢复比较的导出复用本次的 `governance-before.json`。其他表仍按原方式读取。
+
 `postgres@3.4.9` 的版本化补丁同时覆盖 ESM/CJS：事务连接关闭时拒绝排队及后续事务请求，
 包括驱动自动 rollback，防止空 socket 写入和旧事务回调借重连连接执行。补丁不重放事务、不
 把断线当成功；安装边界固定校验补丁及工作区配置。离线协议故障测试覆盖查询中断、队列、

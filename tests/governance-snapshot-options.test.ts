@@ -10,6 +10,19 @@ describe("governance snapshot options", () => {
       ]),
     ).toEqual({
       outputPath: "/opt/diesel/backups/release/governance.json",
+      reusePath: null,
+    });
+  });
+
+  it("accepts an optional absolute JSON snapshot to reuse", () => {
+    expect(
+      parseGovernanceSnapshotOptions([
+        "--output=/opt/diesel/backups/release/governance-after.json",
+        "--reuse=/opt/diesel/backups/release/governance-before.json",
+      ]),
+    ).toEqual({
+      outputPath: "/opt/diesel/backups/release/governance-after.json",
+      reusePath: "/opt/diesel/backups/release/governance-before.json",
     });
   });
 
@@ -22,6 +35,18 @@ describe("governance snapshot options", () => {
       args: [
         "--output=/private/tmp/one.json",
         "--output=/private/tmp/two.json",
+      ],
+    },
+    { args: ["--reuse=/private/tmp/one.json"] },
+    { args: ["--output=/private/tmp/one.json", "--reuse=relative.json"] },
+    {
+      args: ["--output=/private/tmp/one.json", "--reuse=/private/tmp/one.json"],
+    },
+    {
+      args: [
+        "--output=/private/tmp/one.json",
+        "--reuse=/private/tmp/two.json",
+        "--reuse=/private/tmp/three.json",
       ],
     },
   ])("rejects unsafe or ambiguous arguments: $args", ({ args }) => {

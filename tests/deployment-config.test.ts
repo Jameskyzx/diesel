@@ -1783,8 +1783,14 @@ describe("diesel.jamesky.site Nginx boundary", () => {
       "install -m 0700 -o root -g root --",
     );
     const exportIndex = publishFunction.indexOf(
-      'governance_export_snapshot "${snapshot_path}"',
+      'governance_export_snapshot \\\n    "${snapshot_path}" "${GOVERNANCE_REUSABLE_SNAPSHOT_PATH}"',
     );
+    // The reuse source is chosen just before the pre-write export.
+    expect(
+      publishFunction.indexOf(
+        'governance_find_reusable_snapshot "${backups_root}" "${expected_release_id}"',
+      ),
+    ).toBeLessThan(exportIndex);
     const dryRunIndex = publishFunction.indexOf(
       'governance_restore_snapshot "${snapshot_path}" "${snapshot_sha256}" dry-run',
     );

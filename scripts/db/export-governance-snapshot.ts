@@ -31,6 +31,16 @@ import {
 } from "../../src/server/db/schema";
 import { parseGovernanceSnapshotOptions } from "./governance-snapshot-options";
 import {
+  collectGovernanceRowsWithVerifiedReuse,
+  governanceSnapshotDigestBatchSize,
+  loadReusableGovernanceRows,
+  projectionDigestExpression,
+  projectionSelectList,
+  type ReusableGovernanceRows,
+  type ReusableGovernanceTableName,
+  reusableGovernanceTables,
+} from "./governance-snapshot-reuse";
+import {
   applyPreciseGovernanceTimestamps,
   applyRawGovernanceJson,
   createGovernanceTableCounts,
@@ -904,7 +914,10 @@ function parseMatchingTimestampBatch(
   return timestampRows;
 }
 
-async function acquireGovernanceSnapshotRows(databaseUrl: string) {
+async function acquireGovernanceSnapshotRows(
+  databaseUrl: string,
+  reusableRows: ReusableGovernanceRows,
+) {
   const anchorClient = postgres(databaseUrl, governanceSnapshotPostgresOptions);
   return runSnapshotAcquisitionAttempt(anchorClient, (client) =>
     executeGovernanceSnapshotAnchorTransaction(
@@ -1256,88 +1269,54 @@ async function acquireGovernanceSnapshotRows(databaseUrl: string) {
               },
             );
 
-          const governanceDraftRows =
-            await collectGovernanceSnapshotRowsInBatches(
-              async (cursor, limit) =>
-                read("data_governance_drafts", async (transaction) => {
-                  const db = transaction;
-                  return db.execute(sql`
-                select id::text as "id",
-                       entity_type::text as "entityType",
-                       entity_key as "entityKey",
-                       version,
-                       workflow_status::text as "workflowStatus",
-                       payload::text as "payload",
-                       change_reason as "changeReason",
-                       created_by as "createdBy",
-                       reviewed_by as "reviewedBy",
-                       published_by as "publishedBy",
-                       to_char(reviewed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "reviewedAt",
-                       to_char(published_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "publishedAt",
-                       to_char(archived_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "archivedAt",
-                       to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt",
-                       to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "updatedAt"
-                  from data_governance_drafts
+          const readRawTableWithReuse = (
+            table: ReusableGovernanceTableName,
+          ) => {
+            const columns = reusableGovernanceTables[table];
+            const tableSql = sql.raw(table);
+            const selectList = sql.raw(projectionSelectList(columns));
+            const digest = sql.raw(projectionDigestExpression(columns));
+            return collectGovernanceRowsWithVerifiedReuse({
+              columns,
+              collectDigests: () =>
+                collectGovernanceSnapshotRowsInBatches(
+                  async (cursor, limit) =>
+                    read(table, async (transaction) =>
+                      transaction.execute(sql`
+                select id::text as "id", ${digest} as "digest"
+                  from ${tableSql}
                  where (${cursor}::uuid is null or id > ${cursor}::uuid)
                  order by id
                  limit ${limit}
-                `);
-                }),
-              governanceSnapshotRawJsonBatchSize,
-            );
-          const marketImportBatchRows =
-            await collectGovernanceSnapshotRowsInBatches(
-              async (cursor, limit) =>
-                read("market_import_batches", async (transaction) => {
-                  const db = transaction;
-                  return db.execute(sql`
-                select id::text as "id",
-                       entity_type::text as "entityType",
-                       status::text as "status",
-                       original_filename as "originalFilename",
-                       content_sha256 as "contentSha256",
-                       preview_rows::text as "previewRows",
-                       validation_errors::text as "validationErrors",
-                       total_rows as "totalRows",
-                       valid_rows as "validRows",
-                       invalid_rows as "invalidRows",
-                       created_by as "createdBy",
-                       confirmed_by as "confirmedBy",
-                       to_char(committed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "committedAt",
-                       to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt"
-                  from market_import_batches
-                 where (${cursor}::uuid is null or id > ${cursor}::uuid)
+                `),
+                    ),
+                  governanceSnapshotDigestBatchSize,
+                ),
+              fetchRows: (ids) =>
+                read(table, async (transaction) =>
+                  transaction.execute(sql`
+                select ${selectList}
+                  from ${tableSql}
+                 where id in (${sql.join(
+                   ids.map((id) => sql`${id}::uuid`),
+                   sql`, `,
+                 )})
                  order by id
-                 limit ${limit}
-                `);
-                }),
-              governanceSnapshotRawJsonBatchSize,
-            );
-          const changeLogRows = await collectGovernanceSnapshotRowsInBatches(
-            async (cursor, limit) =>
-              read("data_change_logs", async (transaction) => {
-                const db = transaction;
-                return db.execute(sql`
-                select id::text as "id",
-                       entity_type::text as "entityType",
-                       entity_key as "entityKey",
-                       action::text as "action",
-                       actor_email as "actorEmail",
-                       actor_role::text as "actorRole",
-                       draft_id::text as "draftId",
-                       import_batch_id::text as "importBatchId",
-                       before_data::text as "beforeData",
-                       after_data::text as "afterData",
-                       reason,
-                       to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt"
-                  from data_change_logs
-                 where (${cursor}::uuid is null or id > ${cursor}::uuid)
-                 order by id
-                 limit ${limit}
-                `);
-              }),
-            governanceSnapshotRawJsonBatchSize,
-          );
+                `),
+                ),
+              fetchBatchSize: governanceSnapshotRawJsonBatchSize,
+              reusable: reusableRows[table],
+            });
+          };
+          const governanceDraftRows = (
+            await readRawTableWithReuse("data_governance_drafts")
+          ).rows;
+          const marketImportBatchRows = (
+            await readRawTableWithReuse("market_import_batches")
+          ).rows;
+          const changeLogRows = (
+            await readRawTableWithReuse("data_change_logs")
+          ).rows;
 
           const selectedTables = {
             catalog_engines: catalogEngineRows,
@@ -1461,11 +1440,17 @@ class GovernanceSnapshotWorkerFailure extends Error {
   }
 }
 
-async function executeGovernanceSnapshotWorker(outputPath: string) {
+async function executeGovernanceSnapshotWorker(
+  outputPath: string,
+  reusePath: string | null,
+) {
   const databaseUrl = getDatabaseUrl();
+  // Read the previous file before the exported snapshot is opened, so local
+  // file work never holds the anchor transaction.
+  const reusableRows = await loadReusableGovernanceRows(reusePath);
   let acquired: AcquiredGovernanceSnapshotRows;
   try {
-    acquired = await acquireGovernanceSnapshotRows(databaseUrl);
+    acquired = await acquireGovernanceSnapshotRows(databaseUrl, reusableRows);
   } catch (error: unknown) {
     reportGovernanceSnapshotFailure("acquisition", error);
     throw new GovernanceSnapshotWorkerFailure(
@@ -1499,7 +1484,7 @@ async function executeGovernanceSnapshotWorker(outputPath: string) {
 
 async function runGovernanceSnapshotWorkerProcess(
   attemptPath: string,
-  _attempt: number,
+  reusePath: string | null,
   timeoutMs: number,
 ): Promise<GovernanceSnapshotWorkerExecution> {
   const scriptPath = process.argv[1];
@@ -1516,6 +1501,7 @@ async function runGovernanceSnapshotWorkerProcess(
       scriptPath,
       governanceSnapshotWorkerFlag,
       `--output=${attemptPath}`,
+      ...(reusePath === null ? [] : [`--reuse=${reusePath}`]),
     ],
     {
       cwd: process.cwd(),
@@ -1695,8 +1681,10 @@ export function waitForGovernanceSnapshotWorkerProcess(
 }
 
 async function workerMain() {
-  const { outputPath } = parseGovernanceSnapshotOptions(process.argv.slice(3));
-  const prepared = await executeGovernanceSnapshotWorker(outputPath);
+  const { outputPath, reusePath } = parseGovernanceSnapshotOptions(
+    process.argv.slice(3),
+  );
+  const prepared = await executeGovernanceSnapshotWorker(outputPath, reusePath);
 
   process.stdout.write(
     `${JSON.stringify({
@@ -1708,14 +1696,17 @@ async function workerMain() {
 }
 
 async function supervisorMain() {
-  const { outputPath } = parseGovernanceSnapshotOptions(process.argv.slice(2));
+  const { outputPath, reusePath } = parseGovernanceSnapshotOptions(
+    process.argv.slice(2),
+  );
   const summary = await superviseGovernanceSnapshotExport({
     onRetry: () => {
       process.stderr.write(
         "Governance snapshot worker failed; retrying once in a fresh process.\n",
       );
     },
-    runWorker: runGovernanceSnapshotWorkerProcess,
+    runWorker: (attemptPath, _attempt, timeoutMs) =>
+      runGovernanceSnapshotWorkerProcess(attemptPath, reusePath, timeoutMs),
     targetPath: outputPath,
   });
 

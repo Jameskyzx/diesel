@@ -102,6 +102,7 @@ const englishDictionary = {
   header: {
     products: "Products",
     compare: "Compare",
+    timeline: "Timeline",
     analyses: "Saved",
     analyze: "Start analysis",
     brandHome: "GD · Global Diesel — Home",
@@ -963,6 +964,7 @@ const chineseDictionary: Dictionary = {
   header: {
     products: "产品库",
     compare: "比较",
+    timeline: "时间线",
     analyses: "已保存",
     analyze: "开始分析",
     brandHome: "GD · Global Diesel — 首页",

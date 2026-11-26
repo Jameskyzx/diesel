@@ -4,6 +4,7 @@ import {
   asc,
   eq,
   gt,
+  gte,
   inArray,
   isNotNull,
   isNull,
@@ -14,6 +15,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
 import { applicableRegulationsQuerySchema } from "@/features/database/schemas";
 import { compareRegulationsInputSchema } from "@/features/marketing/schemas";
+import { regulationTimelineWindowSchema } from "@/features/regulation-timeline/schemas";
 import * as schema from "@/server/db/schema";
 import {
   throwIfRequestAborted,
@@ -383,6 +385,98 @@ export function createRegulationRepository<
           ),
         )
         .orderBy(regulations.canonicalName, regulationLimits.pollutantCode);
+      throwIfRequestAborted(options.signal);
+      return rows;
+    },
+
+    /**
+     * Rows for the cross-country regulation timeline: every published
+     * regulation that starts or ends inside the window, with each country
+     * membership and limit row so the caller can decide applicability on the
+     * event date. Status is returned as recorded; proposed is never promoted.
+     */
+    async findTimelineRows(input: unknown, options: RequestSignalOptions = {}) {
+      const query = regulationTimelineWindowSchema.parse(input);
+      throwIfRequestAborted(options.signal);
+
+      const rows = await database
+        .select({
+          applicationScope: regulationLimits.applicationScope,
+          canonicalName: regulations.canonicalName,
+          citationCode: regulations.citationCode,
+          countryIso3: countryJurisdictions.countryIso3,
+          effectiveFrom: regulations.effectiveFrom,
+          effectiveTo: regulations.effectiveTo,
+          isDemo: regulations.isDemo,
+          jurisdictionCode: jurisdictions.code,
+          limitIsDemo: regulationLimits.isDemo,
+          limitValidFrom: regulationLimits.validFrom,
+          limitValidTo: regulationLimits.validTo,
+          membershipIsDemo: countryJurisdictions.isDemo,
+          membershipValidFrom: countryJurisdictions.validFrom,
+          membershipValidTo: countryJurisdictions.validTo,
+          powerMaxKw: regulationLimits.powerMaxKw,
+          powerMinKw: regulationLimits.powerMinKw,
+          regulationId: regulations.id,
+          source: {
+            id: dataSources.id,
+            isDemo: dataSources.isDemo,
+            title: dataSources.title,
+            url: dataSources.url,
+            verifiedAt: dataSources.verifiedAt,
+          },
+          status: regulations.status,
+          verifiedAt: regulations.verifiedAt,
+        })
+        .from(regulations)
+        .innerJoin(
+          jurisdictions,
+          eq(regulations.jurisdictionId, jurisdictions.id),
+        )
+        .innerJoin(
+          countryJurisdictions,
+          eq(regulations.jurisdictionId, countryJurisdictions.jurisdictionId),
+        )
+        .innerJoin(
+          countries,
+          eq(countryJurisdictions.countryIso3, countries.iso3),
+        )
+        .innerJoin(
+          regulationLimits,
+          eq(regulationLimits.regulationId, regulations.id),
+        )
+        .innerJoin(dataSources, eq(regulations.dataSourceId, dataSources.id))
+        .where(
+          and(
+            isNull(countries.archivedAt),
+            isNull(countryJurisdictions.archivedAt),
+            isNull(jurisdictions.archivedAt),
+            isNull(regulations.archivedAt),
+            isNull(regulationLimits.archivedAt),
+            isNull(dataSources.archivedAt),
+            inArray(regulations.status, [
+              "proposed",
+              "adopted",
+              "effective",
+              "superseded",
+            ]),
+            or(
+              and(
+                gte(regulations.effectiveFrom, query.from),
+                lte(regulations.effectiveFrom, query.to),
+              ),
+              and(
+                gte(regulations.effectiveTo, query.from),
+                lte(regulations.effectiveTo, query.to),
+              ),
+            ),
+          ),
+        )
+        .orderBy(
+          asc(regulations.id),
+          asc(countryJurisdictions.countryIso3),
+          asc(regulationLimits.id),
+        );
       throwIfRequestAborted(options.signal);
       return rows;
     },

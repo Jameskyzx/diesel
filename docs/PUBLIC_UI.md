@@ -105,6 +105,17 @@ Tabler is MIT licensed; the upstream notice is preserved below.
   shared URL, preserves unrelated parameters and cancels pending product work.
   Product fit remains a separate workflow, explicitly labeled when its entire
   catalogue is fictional Demo data.
+- Timeline (`/timeline`): one dated list of published regulations that take
+  effect or stop applying, across all countries, from 12 months before today to
+  12, 36 or 60 months ahead (default 60). Filters (application, power, horizon)
+  live in the URL; an invalid filter falls back to the default view. Countries
+  and limits are taken as they apply on the event date. Status stays explicit
+  and visible: a proposed date is labeled "not adopted, not binding", and demo
+  rows carry a demo badge. Each event shows its source and verification date and
+  links each country at that date. With both an application and a power, each
+  "takes effect" event lists the demo catalogue models that already declare its
+  citation code and those that would have a declaration gap, using the same
+  literal rule as `catalog-fit-v1`; declarations are not certification.
 - Chat: applicability parameters are editable beside a bounded conversation pane.
   Empty, configured, error and completed responses retain their real states.
   The starting context comes from the validated URL, not model memory. Applying

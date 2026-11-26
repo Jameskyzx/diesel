@@ -85,7 +85,7 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 | Approved real products / certifications | 0 / 0 | No real commercial-availability claim |
 | Product catalogue | Governed `catalog_engines`; fixture of 24 fictional `DEMO-` models | Declarations, not certification; public read returns demo rows only |
 | Demo governed products | 2 fictional configurations | Exercise `fit / not_fit / unknown` |
-| Market observations | 24 reviewed fixtures (CHN/USA/DEU/BRA, 2022/2023) | Not live market data |
+| Market observations | 24 reviewed fixtures (CHN/USA/DEU/BRA, 2022/2023); 6 TUR fixtures (TÜİK) added locally 2026-11-26, not yet released | Not live market data |
 
 ## Quality checks / 质量检查
 

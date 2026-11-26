@@ -155,8 +155,8 @@ describe("accepted real-fact fixtures (ADR-015 sign-off)", () => {
       fixtureMarketSources.map(({ id }) => id).filter((id) => id !== undefined),
     );
 
-    expect(fixtureMarketSources).toHaveLength(9);
-    expect(fixtureMarketMetrics).toHaveLength(24);
+    expect(fixtureMarketSources).toHaveLength(10);
+    expect(fixtureMarketMetrics).toHaveLength(30);
     expect(
       [...marketSourceIds].filter((id) => regulationSourceIds.has(id)),
     ).toEqual([]);

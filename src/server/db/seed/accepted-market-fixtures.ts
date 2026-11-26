@@ -23,6 +23,7 @@ export const acceptedMarketFixtureIds = {
     usaFhwaMv10x2023: id("1207"),
     usaFhwaMv1x2022: id("1208"),
     usaFhwaMv1x2023: id("1209"),
+    turTuikYillara2026: id("1210"),
   },
   observation: {
     braBus2022: id("1301"),
@@ -49,6 +50,12 @@ export const acceptedMarketFixtureIds = {
     usaTruck2022: id("1322"),
     usaTruck2023: id("1323"),
     usaTruckYoy2023: id("1324"),
+    turTruck2022: id("1325"),
+    turTruck2023: id("1326"),
+    turBus2022: id("1327"),
+    turBus2023: id("1328"),
+    turTruckYoy2023: id("1329"),
+    turBusYoy2023: id("1330"),
   },
 } as const;
 
@@ -148,8 +155,32 @@ export const baseMarketSources: (typeof dataSources.$inferInsert)[] = [
   },
 ];
 
-export const fixtureMarketSources: (typeof dataSources.$inferInsert)[] =
-  withNovember2026SourceReverification(baseMarketSources);
+// TÜİK was added after the November 2026 re-verification, so it carries its own
+// readback time instead of the August market timestamp. TÜİK permits reuse
+// without permission when the source is cited (tuik.gov.tr/Kurumsal/Yasal_Uyari).
+const turkeyReadbackTimestamp = new Date("2026-11-26T10:02:00.000Z");
+const turkeyRecordTimestamps = {
+  createdAt: turkeyReadbackTimestamp,
+  updatedAt: turkeyReadbackTimestamp,
+  verifiedAt: turkeyReadbackTimestamp,
+} as const;
+
+const turkeyMarketSource: typeof dataSources.$inferInsert = {
+  ...turkeyRecordTimestamps,
+  id: acceptedMarketFixtureIds.source.turTuikYillara2026,
+  isDemo: false,
+  publishedOn: null,
+  publisher: "Türkiye İstatistik Kurumu (TÜİK)",
+  sourceType: "other",
+  title:
+    "Motorlu Kara Taşıtları, Ekim 2026 — Yıllara göre motorlu kara taşıtları sayısı, 2002-2026",
+  url: "https://veriportali.tuik.gov.tr/tr/press/58049",
+};
+
+export const fixtureMarketSources: (typeof dataSources.$inferInsert)[] = [
+  ...withNovember2026SourceReverification(baseMarketSources),
+  turkeyMarketSource,
+];
 
 type MarketFixture = typeof marketMetrics.$inferInsert;
 type RoadScope = "on-road-bus" | "on-road-truck";
@@ -188,16 +219,17 @@ function divideAndRound(numerator: bigint, denominator: bigint): bigint {
 
 function yearEndObservation(input: {
   applicationScope: RoadScope;
-  countryIso3: "BRA" | "CHN" | "DEU" | "USA";
+  countryIso3: "BRA" | "CHN" | "DEU" | "TUR" | "USA";
   dataSourceId: string;
   definition: string;
   id: string;
   methodologyVersion: string;
+  timestamps?: typeof marketRecordTimestamps | typeof turkeyRecordTimestamps;
   value: string;
   year: 2022 | 2023;
 }): MarketFixture {
   return {
-    ...marketRecordTimestamps,
+    ...(input.timestamps ?? marketRecordTimestamps),
     applicationScope: input.applicationScope,
     countryIso3: input.countryIso3,
     currencyCode: null,
@@ -244,7 +276,9 @@ function yoyObservation(input: {
   );
 
   return {
-    ...marketRecordTimestamps,
+    createdAt: input.current.createdAt,
+    updatedAt: input.current.updatedAt,
+    verifiedAt: input.current.verifiedAt,
     applicationScope: input.current.applicationScope,
     countryIso3: input.current.countryIso3,
     currencyCode: null,
@@ -440,6 +474,54 @@ const yearEndFixtures: MarketFixture[] = [
     value: "1152852",
     year: 2023,
   }),
+  yearEndObservation({
+    applicationScope: "on-road-truck",
+    countryIso3: "TUR",
+    dataSourceId: acceptedMarketFixtureIds.source.turTuikYillara2026,
+    definition:
+      "TÜİK Motorlu Kara Taşıtları，Yıllara göre motorlu kara taşıtları sayısı：Kamyon（原表注 2：含道路牵引车、自卸车、罐车、垃圾车等重型车辆）；排除 Kamyonet。",
+    id: acceptedMarketFixtureIds.observation.turTruck2022,
+    methodologyVersion: "official-register-stock-tur-tuik-v1",
+    timestamps: turkeyRecordTimestamps,
+    value: "919125",
+    year: 2022,
+  }),
+  yearEndObservation({
+    applicationScope: "on-road-truck",
+    countryIso3: "TUR",
+    dataSourceId: acceptedMarketFixtureIds.source.turTuikYillara2026,
+    definition:
+      "TÜİK Motorlu Kara Taşıtları，Yıllara göre motorlu kara taşıtları sayısı：Kamyon（原表注 2：含道路牵引车、自卸车、罐车、垃圾车等重型车辆）；排除 Kamyonet。",
+    id: acceptedMarketFixtureIds.observation.turTruck2023,
+    methodologyVersion: "official-register-stock-tur-tuik-v1",
+    timestamps: turkeyRecordTimestamps,
+    value: "959793",
+    year: 2023,
+  }),
+  yearEndObservation({
+    applicationScope: "on-road-bus",
+    countryIso3: "TUR",
+    dataSourceId: acceptedMarketFixtureIds.source.turTuikYillara2026,
+    definition:
+      "TÜİK Motorlu Kara Taşıtları，Yıllara göre motorlu kara taşıtları sayısı：Otobüs + Minibüs。",
+    id: acceptedMarketFixtureIds.observation.turBus2022,
+    methodologyVersion: "official-register-stock-tur-tuik-v1",
+    timestamps: turkeyRecordTimestamps,
+    value: "695823",
+    year: 2022,
+  }),
+  yearEndObservation({
+    applicationScope: "on-road-bus",
+    countryIso3: "TUR",
+    dataSourceId: acceptedMarketFixtureIds.source.turTuikYillara2026,
+    definition:
+      "TÜİK Motorlu Kara Taşıtları，Yıllara göre motorlu kara taşıtları sayısı：Otobüs + Minibüs。",
+    id: acceptedMarketFixtureIds.observation.turBus2023,
+    methodologyVersion: "official-register-stock-tur-tuik-v1",
+    timestamps: turkeyRecordTimestamps,
+    value: "713368",
+    year: 2023,
+  }),
 ];
 
 const yearEndById = new Map(
@@ -494,6 +576,16 @@ const yoySpecs = [
     acceptedMarketFixtureIds.observation.braBusYoy2023,
     acceptedMarketFixtureIds.observation.braBus2022,
     acceptedMarketFixtureIds.observation.braBus2023,
+  ],
+  [
+    acceptedMarketFixtureIds.observation.turTruckYoy2023,
+    acceptedMarketFixtureIds.observation.turTruck2022,
+    acceptedMarketFixtureIds.observation.turTruck2023,
+  ],
+  [
+    acceptedMarketFixtureIds.observation.turBusYoy2023,
+    acceptedMarketFixtureIds.observation.turBus2022,
+    acceptedMarketFixtureIds.observation.turBus2023,
   ],
 ] as const;
 

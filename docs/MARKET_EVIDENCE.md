@@ -4,6 +4,16 @@
 
 - 状态：M3 证据门，2026-08-05 建立；CHN、USA、DEU、BRA 的 24 条签核市场 fixture
   已通过治理流程发布，active 集合仅保留每个自然键的一条记录。
+- 2026-11-26 本地新增（尚未治理发布、待 owner 签核）：TUR 6 条年末注册车队 fixture，
+  来源为 TÜİK《Motorlu Kara Taşıtları, Ekim 2026》表“Yıllara göre motorlu kara
+  taşıtları sayısı, 2002-2026”（<https://veriportali.tuik.gov.tr/tr/press/58049>）。
+  卡车取 `Kamyon`（原表注 2 含道路牵引车、自卸车、罐车、垃圾车等重型车辆，排除
+  `Kamyonet`）：2022 年 919,125、2023 年 959,793；客车取 `Otobüs + Minibüs`：
+  695,823、713,368；同比由两期确定性计算。许可依据 TÜİK 法律声明
+  （<https://www.tuik.gov.tr/Kurumsal/Yasal_Uyari>）：注明来源即可再利用。
+  `methodologyVersion = official-register-stock-tur-tuik-v1`，与其他四国口径不同，
+  不构成跨国可比。MEX 的 INEGI 条款允许注明来源再利用，但车辆登记表只能通过交互式
+  OLAP 读取，本批未取得可复核数值，未新增。
 - 目标：为 CHN、USA、DEU、BRA 选择 2–3 个许可清晰、同口径且能解释业务含义的
   年度指标，并通过现有 CSV Preview → Draft → Reviewed → Published 流程发布。
 - 红线：来源可访问不等于允许再分发；“最新值”年份不同不得比较；贸易额、宏观

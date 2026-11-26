@@ -24,8 +24,8 @@
  * 定向发布单一国家：在命令末尾追加 --country=NGA；该模式只发布目标国家引用的
  * 来源、辖区成员关系、可用法规、限值和覆盖状态，并运行聚焦验收。没有可发布法规
  * 的国家也可定向发布来源边界，验收会确认四个 scope 继续返回 no-data。
- * 仅重发市场事实：在命令末尾追加 --market-only；该模式只验收市场来源和 24 条
- * 观测，不因未重发的法规覆盖检查失败。
+ * 仅重发市场事实：在命令末尾追加 --market-only；该模式只验收市场来源和 30 条
+ * 观测（BRA/CHN/DEU/TUR/USA），不因未重发的法规覆盖检查失败。
  */
 import { randomUUID } from "node:crypto";
 
@@ -1949,6 +1949,7 @@ async function main(): Promise<void> {
               "BRA",
               "CHN",
               "DEU",
+              "TUR",
               "USA",
             ]),
             inArray(schema.marketMetrics.metricCode, [
@@ -1971,7 +1972,7 @@ async function main(): Promise<void> {
           );
         });
       process.stdout.write(
-        `${passed ? "PASS" : "FAIL"}  24 signed market observations have unique market-source identities\n`,
+        `${passed ? "PASS" : "FAIL"}  30 signed market observations have unique market-source identities\n`,
       );
       if (!passed) {
         process.exitCode = 1;

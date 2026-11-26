@@ -999,6 +999,7 @@ for (const locale of ["en", "zh-CN"] as const) {
           "/chat",
           "/map",
           "/compare",
+          "/timeline",
           "/products",
           "/analyses",
         ]) {
@@ -1017,8 +1018,8 @@ for (const locale of ["en", "zh-CN"] as const) {
     });
     const labels =
       locale === "en"
-        ? ["Home", "Chat", "Map", "Compare", "Products", "Saved"]
-        : ["首页", "对话", "地图", "比较", "产品库", "已保存"];
+        ? ["Home", "Chat", "Map", "Compare", "Timeline", "Products", "Saved"]
+        : ["首页", "对话", "地图", "比较", "时间线", "产品库", "已保存"];
     await expect(navigation.getByRole("link")).toHaveText(labels);
 
     const expectHeaderFits = async (width: number) => {
@@ -1098,6 +1099,7 @@ for (const locale of ["en", "zh-CN"] as const) {
       "/chat",
       "/map",
       "/compare",
+      "/timeline",
       "/products",
       "/analyses",
     ].entries()) {

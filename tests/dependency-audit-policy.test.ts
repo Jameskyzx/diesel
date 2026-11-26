@@ -201,20 +201,18 @@ describe("remediated braces tooling exception", () => {
   const id = "GHSA-vfj7-8cjw-p6xm";
 
   it("removes the exception after removing the vulnerable dependency graph", () => {
-    // The braces exception stays removed. The only registered exception is the
-    // maintainer-approved seven-day picomatch tooling window (no upstream fix).
-    expect(policy.reviewedAt).toBe("2026-11-18");
-    expect(policy.advisories.map((advisory) => advisory.id)).toEqual([
-      "GHSA-fc5q-39xc-vjpf",
-    ]);
-    expect(policy.advisories[0]?.expiresOn).toBe("2026-11-24");
+    // The braces exception stays removed. The seven-day picomatch window was
+    // removed, not renewed, after GitHub withdrew GHSA-fc5q-39xc-vjpf and
+    // pnpm audit stopped reporting it (DEPENDENCY_SECURITY.md, 2026-11-25).
+    expect(policy.reviewedAt).toBe("2026-11-25");
+    expect(policy.advisories).toEqual([]);
     expect(
       evaluateAuditPolicy({
         policy,
         report: report("GHSA-fc5q-39xc-vjpf", "high"),
         today: "2026-11-25",
       }),
-    ).toEqual(["GHSA-fc5q-39xc-vjpf exception expired on 2026-11-24"]);
+    ).toEqual(["GHSA-fc5q-39xc-vjpf is high and has no registered exception"]);
   });
 
   it("rejects a reintroduced braces finding even before the old expiry", () => {

@@ -415,6 +415,12 @@ tinyglobby/fdir 进入 ESLint 与 Vite/Vitest 开发依赖，`pnpm why picomatch
 glob 模式来自已审阅的仓库配置而非用户输入。恶意配置仍可能拖慢工具进程；其余门禁不变。
 原失败记录保留；此豁免不等于漏洞已修复。
 
+2026-11-25：复审 GHSA-fc5q-39xc-vjpf。GitHub 公告库显示该公告已撤回（`withdrawn_at`
+2026-11-18T15:38:56Z），npm 上 picomatch 最新版仍是 4.0.7。在 `c9f9d468` 的锁文件上运行
+`pnpm audit --json`，结果是 0 critical、0 high、8 moderate（next 16.4.4 的 7 条，加 minimatch 1 条），
+不再报告 picomatch。因此删除这条豁免，而不是续期，登记表恢复为空。如果该公告重新发布，
+原门禁会照常失败，需要重新复审。8 条 moderate 不在阻断范围内，Next.js 16.4.5 的升级另行处理。
+
 ## Earlier advisory review (2026-09-30)
 
 The post-merge CI run for `cd81849473fccdf63ad365436a603755ed74ab80`

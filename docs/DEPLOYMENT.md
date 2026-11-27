@@ -2385,6 +2385,26 @@ BLR、KAZ、KGZ、RUS 五个 EAEU membership 均活跃，日期分别为 2015-01
 175 国、175 `covered` / 0 `no_data`；19 个详情 API、19 个 `/countries/{ISO3}` 页面、
 首页与 `/api/health` 均返回成功。网页动态读取 PostgreSQL，本批无需重建或切换 VPS。
 
+#### 未变更实体跳过与空库重建顺序（2026-11-27）
+
+`ingest-accepted-fixtures.ts` 对 data source、market metric、jurisdiction、regulation
+与 covered 国家只在内容变化时走 Draft → Reviewed → Published：最新草稿已发布、规范化
+payload 相同（regulation limit 的随机 id 与顺序不计）且实体未归档时输出 `unchanged`，
+不新增草稿或变更日志。其他任何情况（无历史、待审新草稿、已归档、字段变化）仍走完整
+治理路径。重复执行同一 release 的 97 国命令因此不再让共享法域与来源反复升版。
+
+空库从零重建只能在维护锁内、完成全量 `pg_dump` 并核对行数后执行，顺序固定为：
+
+1. `pnpm db:migrate`；
+2. `node --conditions=react-server --import tsx scripts/db/seed.ts --country-directory-only`
+   （仅 Natural Earth 目录来源与非 Demo 国家目录）；
+3. accepted fixture ingest（国家先发布为非 Demo，市场观测随后引用）；
+4. Demo 目录与反馈导入；
+5. 完整 Demo seed（`scripts/db/seed.ts` 不带参数）。
+
+重复第 3、4 步应读回 0 published。重建不保留 e2e 上传残留的 Demo 文档/来源与已归档
+产品；保留哪些非治理表（如 AI 会话记录）必须在执行前由运营者明确决定并记录。
+
 ### 4.3 工程维护发布扩展（实施中，未替代生产验收）
 
 在保留上述 master/CI 授权、不可变 staging、锁与独立读回的前提下，新增

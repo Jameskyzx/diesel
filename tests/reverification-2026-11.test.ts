@@ -99,7 +99,13 @@ describe("November 2026 re-verification", () => {
       fixtureSources.slice(0, baseFixtureSources.length),
       245,
     ],
-    ["market", baseMarketSources, fixtureMarketSources, 7],
+    [
+      "market",
+      baseMarketSources,
+      // TÜİK (TUR) was added after the re-verification and is appended last.
+      fixtureMarketSources.slice(0, baseMarketSources.length),
+      7,
+    ],
   ] as const)(
     "moves only verifiedAt and updatedAt of the re-verified %s sources",
     (_label, before, published, reverifiedCount) => {

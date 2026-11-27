@@ -8,6 +8,7 @@ import {
   Map,
   MessageSquareText,
   ShieldCheck,
+  CalendarClock,
   Columns3,
   FolderOpen,
 } from "lucide-react";
@@ -45,6 +46,12 @@ const navigationItems = [
     icon: Columns3,
     label: "compare",
     matches: (path: string) => path === "/compare",
+  },
+  {
+    href: "/timeline",
+    icon: CalendarClock,
+    label: "timeline",
+    matches: (path: string) => path === "/timeline",
   },
   {
     href: "/products",

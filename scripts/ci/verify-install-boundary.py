@@ -133,11 +133,11 @@ if present:
     fail("root install lifecycle scripts are forbidden: " + ", ".join(present))
 
 expected_workspace_sha256 = (
-    "e40301df7a97766fafc27bc45d071049762d760311dec47ec9b09eaba9163d03"
+    "af21418362d63ae1354f174e59b76a39034b0594bb76f600dfde0d97df87b554"
 )
 if hashlib.sha256(workspace_bytes).hexdigest() != expected_workspace_sha256:
     fail("pnpm-workspace.yaml does not match the reviewed execution config")
-next_patch_bytes = read_regular("patches/next@16.4.1.patch", 256 * 1024)
+next_patch_bytes = read_regular("patches/next@16.4.6.patch", 256 * 1024)
 if hashlib.sha256(next_patch_bytes).hexdigest() != (
     "a2d8725c99756c136baafafbab5d58107f5e6600c6a3b54a6b588ac624cdb767"
 ):

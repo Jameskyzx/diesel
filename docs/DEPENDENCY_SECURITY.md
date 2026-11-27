@@ -67,7 +67,7 @@ when their locked versions or the workspace hash changes.
 
 ### Pinned Next static-file cancellation correction
 
-`patches/next@16.4.1.patch` changes only the installed CJS and ESM
+`patches/next@16.4.6.patch` changes only the installed CJS and ESM
 `serve-static.js` handlers. The original implementation settled on `finish`
 but could wait indefinitely when the client disconnected before delivery.
 The correction registers finish/close/error listeners before file I/O and
@@ -420,6 +420,14 @@ glob 模式来自已审阅的仓库配置而非用户输入。恶意配置仍可
 `pnpm audit --json`，结果是 0 critical、0 high、8 moderate（next 16.4.4 的 7 条，加 minimatch 1 条），
 不再报告 picomatch。因此删除这条豁免，而不是续期，登记表恢复为空。如果该公告重新发布，
 原门禁会照常失败，需要重新复审。8 条 moderate 不在阻断范围内，Next.js 16.4.5 的升级另行处理。
+
+2026-11-27：`next` 从 `16.4.1` 升到 `16.4.6`（2026-11-09 发布，16.4.x 最新补丁），修复上面 7 条
+`next <=16.4.4` moderate 公告（GHSA-mfr8-8qww-v76h、GHSA-vc7v-qv4w-wrv8、GHSA-7qx7-33qx-rqx2、
+GHSA-f3mh-rxg3-f5g2、GHSA-pc58-hwjq-p385、GHSA-rhh4-g77r-r9qj、GHSA-vvgp-ww4w-46vf）。锁文件只改
+`next`、`@next/env` 和 `@next/swc-*`；`eslint-config-next` 仍为 `16.3.6`。16.4.1 与 16.4.6 tarball 中
+CJS/ESM `serve-static.js` 逐字节相同，因此静态文件补丁原样改名为 `patches/next@16.4.6.patch`，
+patch hash 不变；install-boundary guard 的 workspace hash 与各 CI job 的 guard digest 随之更新。
+剩余 1 条 moderate 为开发依赖 minimatch（GHSA-g3hv-75wg-m249），不在阻断范围内。
 
 ## Earlier advisory review (2026-09-30)
 

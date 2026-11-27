@@ -55,6 +55,7 @@ import {
 import * as schema from "../../src/server/db/schema";
 import { getDatabaseUrl } from "../../src/server/db/environment";
 import { createGovernanceRepository } from "../../src/server/repositories/governance-repository";
+import { publishFixtureIfChanged } from "./governed-publish-if-changed";
 import { createRegulationRepository } from "../../src/server/repositories/regulation-repository";
 import { createCountryRepository } from "../../src/server/repositories/country-repository";
 import {
@@ -100,6 +101,15 @@ const retiredRegulationIdsByCountry = new Map<string, readonly string[]>([
   ["ETH", [acceptanceFixtureIds.regulation.ethiopiaVehicleEmission2025]],
   ["NGA", [acceptanceFixtureIds.regulation.nigeriaVehicularEmissions2011]],
 ]);
+
+/** Published verification time of a fixture source, after re-verification overlays. */
+function fixtureSourceVerifiedAtIso(sourceId: string): string {
+  const source = fixtureSources.find((row) => row.id === sourceId);
+  if (!source) {
+    throw new Error(`Fixture source ${sourceId} is missing.`);
+  }
+  return requireVerifiedAt(source.verifiedAt, `data source ${sourceId}`);
+}
 
 const SIGNOFF_ISO = "2026-07-30T00:00:00.000Z";
 const AFRICA_DEEP_REVIEW_SIGNOFF_ISO = "2026-08-10T17:13:30.000Z";
@@ -1570,9 +1580,9 @@ async function main(): Promise<void> {
       const sourceReason = marketSourceIds.has(sourceId)
         ? marketReadbackReason
         : signoffReason;
-      const draft = await governance.createDraft({
-        actor: editor,
-        changeReason: sourceReason,
+      const outcome = await publishFixtureIfChanged({
+        database,
+        editor,
         entityKey: sourceId,
         entityType: "data_source",
         payload: {
@@ -1588,18 +1598,11 @@ async function main(): Promise<void> {
             `data source ${sourceId}`,
           ),
         },
-      });
-      await governance.reviewDraft({
-        actor: reviewer,
-        draftId: draft.id,
+        governance,
         reason: sourceReason,
+        reviewer,
       });
-      await governance.publishDraft({
-        actor: reviewer,
-        draftId: draft.id,
-        reason: sourceReason,
-      });
-      process.stdout.write(`data_source ${sourceId}: published\n`);
+      process.stdout.write(`data_source ${sourceId}: ${outcome}\n`);
     }
 
     // 新增到静态目录、但尚未同步到目标库的国家必须先以 planned 建档，
@@ -1645,55 +1648,6 @@ async function main(): Promise<void> {
       }
     }
 
-    // 2a.75) 官方注册车队与确定性同比。同比在 fixture 构建时由两期
-    // 年末值计算，并在 definition 中保留两条上游观察值 ID。
-    for (const metric of selectMarketFixturesForIngestion(
-      fixtureMarketMetrics,
-      ingestOptions,
-    )) {
-      const metricId = requireId(metric.id, metric.metricCode);
-      const draft = await governance.createDraft({
-        actor: editor,
-        changeReason: marketReadbackReason,
-        entityKey: metricId,
-        entityType: "market_metric",
-        payload: {
-          applicationScope: metric.applicationScope ?? null,
-          countryIso3: metric.countryIso3,
-          currencyCode: metric.currencyCode ?? null,
-          dataSourceId: metric.dataSourceId,
-          definition: metric.definition,
-          id: metricId,
-          isDemo: metric.isDemo,
-          methodologyVersion: metric.methodologyVersion,
-          metricCode: metric.metricCode,
-          metricName: metric.metricName,
-          periodEnd: metric.periodEnd,
-          periodStart: metric.periodStart,
-          publishedOn: metric.publishedOn ?? null,
-          unitCode: metric.unitCode,
-          valueNumeric: metric.valueNumeric,
-          verifiedAt: requireVerifiedAt(
-            metric.verifiedAt,
-            `${metric.countryIso3}:${metric.metricCode}:${metric.applicationScope}:${metric.periodStart}`,
-          ),
-        },
-      });
-      await governance.reviewDraft({
-        actor: reviewer,
-        draftId: draft.id,
-        reason: marketReadbackReason,
-      });
-      await governance.publishDraft({
-        actor: reviewer,
-        draftId: draft.id,
-        reason: marketReadbackReason,
-      });
-      process.stdout.write(
-        `market_metric ${metric.countryIso3}/${metric.applicationScope}/${metric.metricCode}/${metric.periodStart}: published\n`,
-      );
-    }
-
     // 2a.5) 辖区与国家成员关系（治理发布，ADR-043）。
     for (const jurisdiction of fixtureJurisdictions.filter((row) => {
       if (marketOnly) {
@@ -1720,9 +1674,9 @@ async function main(): Promise<void> {
           `jurisdiction membership ${membership.countryIso3}`,
         ),
       }));
-      const draft = await governance.createDraft({
-        actor: editor,
-        changeReason: signoffReason,
+      const outcome = await publishFixtureIfChanged({
+        database,
+        editor,
         entityKey: jurisdictionId,
         entityType: "jurisdiction",
         payload: {
@@ -1740,19 +1694,12 @@ async function main(): Promise<void> {
           ),
           websiteUrl: jurisdiction.websiteUrl ?? null,
         },
-      });
-      await governance.reviewDraft({
-        actor: reviewer,
-        draftId: draft.id,
+        governance,
         reason: signoffReason,
-      });
-      await governance.publishDraft({
-        actor: reviewer,
-        draftId: draft.id,
-        reason: signoffReason,
+        reviewer,
       });
       process.stdout.write(
-        `jurisdiction ${jurisdiction.code} (${memberships.length} memberships): published\n`,
+        `jurisdiction ${jurisdiction.code} (${memberships.length} memberships): ${outcome}\n`,
       );
     }
 
@@ -1840,9 +1787,9 @@ async function main(): Promise<void> {
       if (limits.length === 0 && !limitsUnavailable) {
         throw new Error(`Regulation ${regulationId} has no limits to publish.`);
       }
-      const draft = await governance.createDraft({
-        actor: editor,
-        changeReason: signoffReason,
+      const outcome = await publishFixtureIfChanged({
+        database,
+        editor,
         entityKey: regulationId,
         entityType: "regulation",
         payload: {
@@ -1865,19 +1812,12 @@ async function main(): Promise<void> {
             `regulation ${regulationId}`,
           ),
         },
-      });
-      await governance.reviewDraft({
-        actor: reviewer,
-        draftId: draft.id,
+        governance,
         reason: signoffReason,
-      });
-      await governance.publishDraft({
-        actor: reviewer,
-        draftId: draft.id,
-        reason: signoffReason,
+        reviewer,
       });
       process.stdout.write(
-        `regulation ${regulation.citationCode} (${limits.length} limits): published\n`,
+        `regulation ${regulation.citationCode} (${limits.length} limits): ${outcome}\n`,
       );
     }
 
@@ -1890,9 +1830,9 @@ async function main(): Promise<void> {
       if (!entry) {
         throw new Error(`Catalog entry for ${iso3} is missing.`);
       }
-      const draft = await governance.createDraft({
-        actor: editor,
-        changeReason: signoffReason,
+      const outcome = await publishFixtureIfChanged({
+        database,
+        editor,
         entityKey: iso3,
         entityType: "country",
         payload: {
@@ -1907,18 +1847,56 @@ async function main(): Promise<void> {
           subregionCode: entry.subregionCode,
           verifiedAt: countrySignoffVerifiedAt(iso3),
         },
-      });
-      await governance.reviewDraft({
-        actor: reviewer,
-        draftId: draft.id,
+        governance,
         reason: signoffReason,
+        reviewer,
       });
-      await governance.publishDraft({
-        actor: reviewer,
-        draftId: draft.id,
-        reason: signoffReason,
+      process.stdout.write(
+        `country ${iso3}: coverage -> covered (${outcome})\n`,
+      );
+    }
+
+    // 2d) 官方注册车队与确定性同比。放在国家发布之后：空库重建时
+    // 国家先由 2c 发布为非 Demo，真实市场观测才能引用它们。同比在 fixture 构建时由两期
+    // 年末值计算，并在 definition 中保留两条上游观察值 ID。
+    for (const metric of selectMarketFixturesForIngestion(
+      fixtureMarketMetrics,
+      ingestOptions,
+    )) {
+      const metricId = requireId(metric.id, metric.metricCode);
+      const outcome = await publishFixtureIfChanged({
+        database,
+        editor,
+        entityKey: metricId,
+        entityType: "market_metric",
+        payload: {
+          applicationScope: metric.applicationScope ?? null,
+          countryIso3: metric.countryIso3,
+          currencyCode: metric.currencyCode ?? null,
+          dataSourceId: metric.dataSourceId,
+          definition: metric.definition,
+          id: metricId,
+          isDemo: metric.isDemo,
+          methodologyVersion: metric.methodologyVersion,
+          metricCode: metric.metricCode,
+          metricName: metric.metricName,
+          periodEnd: metric.periodEnd,
+          periodStart: metric.periodStart,
+          publishedOn: metric.publishedOn ?? null,
+          unitCode: metric.unitCode,
+          valueNumeric: metric.valueNumeric,
+          verifiedAt: requireVerifiedAt(
+            metric.verifiedAt,
+            `${metric.countryIso3}:${metric.metricCode}:${metric.applicationScope}:${metric.periodStart}`,
+          ),
+        },
+        governance,
+        reason: marketReadbackReason,
+        reviewer,
       });
-      process.stdout.write(`country ${iso3}: coverage -> covered\n`);
+      process.stdout.write(
+        `market_metric ${metric.countryIso3}/${metric.applicationScope}/${metric.metricCode}/${metric.periodStart}: ${outcome}\n`,
+      );
     }
 
     if (marketOnly) {
@@ -3161,7 +3139,7 @@ async function main(): Promise<void> {
         cnMeeJurisdiction?.code === "CN-MEE" &&
         cnMeeJurisdiction.source.id === acceptanceFixtureIds.source.cnHj1014 &&
         cnMeeJurisdiction.source.verifiedAt.toISOString() ===
-          CHINA_NONROAD_COMPLETENESS_SIGNOFF_ISO
+          fixtureSourceVerifiedAtIso(acceptanceFixtureIds.source.cnHj1014)
       );
     };
 
@@ -3225,7 +3203,7 @@ async function main(): Promise<void> {
           acceptanceFixtureIds.source.euCountries &&
         membership.verifiedAt.toISOString() === EU_MEMBERSHIP_SIGNOFF_ISO &&
         membership.membershipSource.verifiedAt.toISOString() ===
-          EU_MEMBERSHIP_SIGNOFF_ISO &&
+          fixtureSourceVerifiedAtIso(acceptanceFixtureIds.source.euCountries) &&
         roadTruck.length === 12 &&
         roadBus.length === 12 &&
         plant.length === 5 &&
@@ -5527,8 +5505,10 @@ async function main(): Promise<void> {
           return (
             roadResults.map((rows) => rows.length).join(",") ===
               "0,12,12,12,0" &&
+            // EU 2016/1628 NRE-v/c-6 covers 130 <= P <= 560 kW, so 560 kW
+            // stays in that band (fixture upper bound 560.001).
             nonRoadResults.map((rows) => rows.length).join(",") ===
-              "0,5,5,4,0,5,5,4" &&
+              "0,5,5,5,0,5,5,5" &&
             fixtureRows.every(
               (row) =>
                 row.measurementBasis?.includes("Norway") === true &&
@@ -5587,8 +5567,9 @@ async function main(): Promise<void> {
           return (
             roadResults.map((rows) => rows.length).join(",") ===
               "0,12,12,12,0" &&
+            // 560 kW stays in the 130 <= P <= 560 kW Stage V band.
             nonRoadResults.map((rows) => rows.length).join(",") ===
-              "0,5,5,5,5,4,0,5,5,5,5,4" &&
+              "0,5,5,5,5,5,0,5,5,5,5,5" &&
             fixtureRows.length > 0 &&
             fixtureRows.every(
               (row) =>

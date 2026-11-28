@@ -9996,8 +9996,7 @@ export const fixtureRegulations: (typeof regulations.$inferInsert)[] = [
     adoptedOn: "2025-06-23",
     canonicalName:
       "Nepal Vehicle Pollution Standard 2082 heavy compression-ignition M/N pathway",
-    citationCode:
-      "नेपाल सवारी साधन प्रदूषण मापदण्ड, २०८२ §§1, 3, 6(b), 14 and 16",
+    citationCode: "नेपाल सवारी साधन प्रदूषण मापदण्ड, २०८२ §§1, 3, 6(b), 14 and 16",
     dataSourceId: acceptanceFixtureIds.source.nepalVehicleEmissionGazette,
     effectiveFrom: "2025-06-23",
     id: acceptanceFixtureIds.regulation.nepalHeavyVehicle2082,

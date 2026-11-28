@@ -59,7 +59,7 @@ describe("installed source-map-js security boundary (GHSA-68fv-2mgg-jv7q)", () =
       z
         .object({
           name: z.literal("source-map-js"),
-          version: z.literal("1.2.2"),
+          version: z.literal("1.2.4"),
         })
         .passthrough()
         .safeParse(installedPackage).success,

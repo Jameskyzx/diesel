@@ -618,6 +618,43 @@ const demoDocumentChunks = [
   },
 ] satisfies (typeof documentChunks.$inferInsert)[];
 
+/**
+ * Empty-database rebuild bootstrap: the public-domain country directory only,
+ * with every catalogue country as a non-demo row (no Demo overrides). Governed
+ * fixture ingestion then publishes regulations, coverage and market facts on
+ * top; `seedDemoData` may run afterwards and only adds the fictional Demo rows,
+ * because every insert there skips existing keys.
+ */
+export async function seedCountryDirectory<
+  TQueryResult extends PgQueryResultHKT,
+>(database: PgDatabase<TQueryResult, typeof schema>): Promise<void> {
+  await database.transaction(async (transaction) => {
+    await transaction
+      .insert(dataSources)
+      .values(
+        demoSources.filter(({ id }) => id === demoIds.source.countryDirectory),
+      )
+      .onConflictDoNothing();
+    await transaction
+      .insert(countries)
+      .values(
+        countryCatalog.map(
+          (entry) =>
+            ({
+              ...demoRecordTimestamps,
+              ...entry,
+              dataCoverageStatus: plannedCoverageIso3.has(entry.iso3)
+                ? "planned"
+                : "no_data",
+              dataSourceId: demoIds.source.countryDirectory,
+              isDemo: false,
+            }) satisfies typeof countries.$inferInsert,
+        ),
+      )
+      .onConflictDoNothing();
+  });
+}
+
 export async function seedDemoData<TQueryResult extends PgQueryResultHKT>(
   database: PgDatabase<TQueryResult, typeof schema>,
 ): Promise<void> {

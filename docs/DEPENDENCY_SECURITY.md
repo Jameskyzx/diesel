@@ -20,10 +20,11 @@ the advisory rows and rejects metadata drift. Informational, low, and moderate
 rows remain visible but do not require a high-severity exception.
 
 Runtime dependencies added for product features, each pinned exactly and released at
-least two weeks before adoption: `read-excel-file` 9.3.x (MIT; catalogue .xlsx import),
-`postal-mime` 4.0.8 (MIT-0, no dependencies; reads uploaded .eml feedback) and
-`@napi-rs/canvas` 1.0.10 (MIT, prebuilt native binaries per platform; renders scanned PDF
-pages for feedback recognition, kept in `serverExternalPackages`).
+least two weeks before first adoption (current versions are in `package.json`):
+`read-excel-file` (MIT; catalogue .xlsx import), `postal-mime` (MIT-0, no dependencies;
+reads uploaded .eml feedback) and `@napi-rs/canvas` (MIT, prebuilt native binaries per
+platform; renders scanned PDF pages for feedback recognition, kept in
+`serverExternalPackages`).
 
 Dependabot opens weekly pnpm/npm and GitHub Actions updates. A dependency update
 must pass lint, typecheck, application coverage, the independent Linux
@@ -428,6 +429,13 @@ GHSA-f3mh-rxg3-f5g2、GHSA-pc58-hwjq-p385、GHSA-rhh4-g77r-r9qj、GHSA-vvgp-ww4w
 CJS/ESM `serve-static.js` 逐字节相同，因此静态文件补丁原样改名为 `patches/next@16.4.6.patch`，
 patch hash 不变；install-boundary guard 的 workspace hash 与各 CI job 的 guard digest 随之更新。
 剩余 1 条 moderate 为开发依赖 minimatch（GHSA-g3hv-75wg-m249），不在阻断范围内。
+
+2026-11-28：Dependabot 生产依赖组（PR #10）把 `ai` 升到 7.0.181、`@ai-sdk/openai-compatible`
+升到 3.0.94、`postal-mime` 升到 4.2.1、`@napi-rs/canvas` 升到 1.2.0，另有 lucide-react、
+read-excel-file、tailwind-merge 的补丁或小版本更新。`@ai-sdk/provider-utils` 5.0.83 不再依赖
+undici，锁文件里已没有 undici 包。`tests/undici-security.test.ts` 改为断言 undici 不存在，
+重新出现时必须重新审阅。`pnpm-workspace.yaml` 里的 `undici@7.29.0` override 现在不匹配任何包，
+暂时保留，因为删掉它需要同步 install-boundary 的 workspace hash 和每个 CI job 的 guard digest。
 
 ## Earlier advisory review (2026-09-30)
 

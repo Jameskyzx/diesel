@@ -43,7 +43,8 @@ export function canonicalFixturePayload(
   if (entityType === "regulation" && Array.isArray(parsed.limits)) {
     parsed.limits = parsed.limits
       .map((limit) => {
-        const { id: _id, ...rest } = limit as Record<string, unknown>;
+        const rest = { ...(limit as Record<string, unknown>) };
+        delete rest.id;
         return JSON.stringify(canonicalJson(rest));
       })
       .toSorted();

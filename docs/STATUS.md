@@ -95,16 +95,17 @@ The current-state index. Detailed release narratives up to 2026-10-17 are frozen
 - Offline AI eval: `pnpm ai:eval` (deterministic, no paid model).
 - Paid live AI eval: `pnpm ai:eval:live` writes `docs/evals/ai-live-eval-latest.json`;
   see [evals/README.md](evals/README.md). Last recorded runs, 2026-11-10 14:18 and 14:19 UTC,
-  on clean commit `f492ba4` (contract `sales-chat-live-v27`, `deepseek-flash`, prompt
+  on clean commit `f492ba4` (pre-migration history, kept in the private archive rather than
+  this public repository; contract `sales-chat-live-v27`, `deepseek-flash`, prompt
   `sales-chat-system-v14`): **18/18 passed twice**, 170,204 and 161,960 tokens of the 180,000
   budget, and no safety-critical case failed. The committed report is the second run. Both
   ran locally on Node 24.22.1, not the pinned 22.22.3. Two runs on one model are not proof of
   stability, and the first run used 95% of the token budget.
   - Earlier: 2026-10-18, prompt `v13`, 18/18 on an uncommitted worktree; before that 16/18
     (`v12`) and 7/18 (`v11`, stopped by the token budget). Details are in git history.
-- Production canary: every 6 hours via
+- Production canary: scheduled every 6 hours via
   [production-canary.yml](../.github/workflows/production-canary.yml), including one real
-  AI starter.
+  AI starter. GitHub runs schedules best-effort; 2026-11-22 to 11-28 it ran about twice a day.
 
 ## External gates / 不能由代码替代的外部门槛
 
